@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -22,6 +23,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
 
 type TendemintRpcMessage struct {
@@ -421,6 +423,102 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	}
 }
 
+func getTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPCError, error) {
+	var rpcError *tenderminttypes.RPCError
+	if jsonError != nil {
+		errData, ok := (jsonError.Data).(string)
+		if !ok {
+			return nil, utils.LavaFormatError("(rpcMsg.Error.Data).(string) conversion failed", nil, &map[string]string{"data": fmt.Sprintf("%v", jsonError.Data)})
+		}
+		rpcError = &tenderminttypes.RPCError{
+			Code:    jsonError.Code,
+			Message: jsonError.Message,
+			Data:    errData,
+		}
+	}
+	return rpcError, nil
+}
+
+func convertErrorToRPCError(err error) *tenderminttypes.RPCError {
+	var rpcError *tenderminttypes.RPCError
+	unmarshalError := json.Unmarshal([]byte(err.Error()), &rpcError)
+	if unmarshalError != nil {
+		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": err.Error()})
+		rpcError = &tenderminttypes.RPCError{
+			Code:    -1, // TODO get code from error
+			Message: "Rpc Error",
+			Data:    err.Error(),
+		}
+	}
+	return rpcError
+}
+
+type jsonrpcId interface {
+	isJSONRPCID()
+}
+
+// JSONRPCStringID a wrapper for JSON-RPC string IDs
+type JSONRPCStringID string
+
+func (JSONRPCStringID) isJSONRPCID()      {}
+func (id JSONRPCStringID) String() string { return string(id) }
+
+// JSONRPCIntID a wrapper for JSON-RPC integer IDs
+type JSONRPCIntID int
+
+func (JSONRPCIntID) isJSONRPCID()      {}
+func (id JSONRPCIntID) String() string { return fmt.Sprintf("%d", id) }
+
+func idFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
+	var idInterface interface{}
+	err := json.Unmarshal(rawID, &idInterface)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to unmarshal id from response", err, &map[string]string{"id": fmt.Sprintf("%v", rawID)})
+	}
+
+	switch id := idInterface.(type) {
+	case string:
+		return JSONRPCStringID(id), nil
+	case float64:
+		// json.Unmarshal uses float64 for all numbers
+		return JSONRPCIntID(int(id)), nil
+	default:
+		typ := reflect.TypeOf(id)
+		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, &map[string]string{"id": fmt.Sprintf("%v", rawID), "id type": fmt.Sprintf("%v", typ)})
+	}
+}
+
+type RPCResponse struct {
+	JSONRPC string                    `json:"jsonrpc"`
+	ID      jsonrpcId                 `json:"id,omitempty"`
+	Result  json.RawMessage           `json:"result,omitempty"`
+	Error   *tenderminttypes.RPCError `json:"error,omitempty"`
+}
+
+func convertTendermintMsg(rpcMsg *rpcclient.JsonrpcMessage) (*RPCResponse, error) {
+	// Return an error if the message was not sent
+	if rpcMsg == nil {
+		return nil, ErrFailedToConvertMessage
+	}
+	rpcError, err := getTendermintRPCError(rpcMsg.Error)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonid, err := idFromRawMessage(rpcMsg.ID)
+	if err != nil {
+		return nil, err
+	}
+	msg := &RPCResponse{
+		JSONRPC: rpcMsg.Version,
+		ID:      jsonid,
+		Result:  rpcMsg.Result,
+		Error:   rpcError,
+	}
+
+	return msg, nil
+}
+
 // Send sends either Tendermint RPC or URI call depending on the type
 func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// If path exists then the call is URI
@@ -492,6 +590,7 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
+	var replyMessage *RPCResponse
 	var sub *rpcclient.ClientSubscription
 
 	// If ch is not nil do subscription
@@ -506,34 +605,30 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
 	}
 
-	// create variable for the jsonrpc message
-	var replyMsg JsonrpcMessage
-	// check if there was an error
+	var replyMsg *RPCResponse
+	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
 		}
-
-		// create a new jsonrpc message with the error message
-		replyMsg = JsonrpcMessage{
-			Version: nm.msg.Version,
-			ID:      nm.msg.ID,
+		id, idErr := idFromRawMessage(nm.msg.ID)
+		if idErr != nil {
+			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", idErr, nil)
 		}
-		replyMsg.Error = &rpcclient.JsonError{
-			Code:    1,
-			Message: fmt.Sprintf("%s", err),
+		replyMsg = &RPCResponse{
+			JSONRPC: nm.msg.Version,
+			ID:      id,
+			Error:   convertErrorToRPCError(err),
 		}
 	} else {
-		// convert the rpcMessage to jsonrpcMessage
-		replyMessage, err := convertMsg(rpcMessage)
+		replyMessage, err = convertTendermintMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
 		}
 
-		// assign the reply message to the msg variable
-		nm.msg = replyMessage
-		replyMsg = *replyMessage
+		replyMsg = replyMessage
+		nm.msg.Result = replyMessage.Result
 	}
 
 	// marshal the jsonrpc message to json

@@ -854,10 +854,12 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 			requestedBlockHash = []byte(requestedBlockHashStr)
 		}
 		request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
-		if request.RequestBlock > latestBlock {
-			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
-			return nil, utils.LavaFormatError("Requested a block that is too new", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
-		}
+
+		// TODO: uncomment when we add chain tracker
+		// if request.RequestBlock > latestBlock {
+		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
+		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		// }
 
 		finalized = g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	}
