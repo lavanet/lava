@@ -230,7 +230,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
-	entries := []types.StakeEntry{}
+	var entries []types.StakeEntry
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
