@@ -13,7 +13,7 @@ func TestConvertJsonRPCMsg_Success(t *testing.T) {
 		Version: "2.0",
 		ID:      json.RawMessage(`"1"`),
 		Method:  "test",
-		Params:  nil,
+		Params:  json.RawMessage(`"test_params"`),
 		Error:   nil,
 		Result:  json.RawMessage(`"test_result"`),
 	}
@@ -23,7 +23,7 @@ func TestConvertJsonRPCMsg_Success(t *testing.T) {
 	assert.Equal(t, "2.0", msg.Version)
 	assert.Equal(t, json.RawMessage(`"1"`), msg.ID)
 	assert.Equal(t, "test", msg.Method)
-	assert.Nil(t, msg.Params)
+	assert.Equal(t, json.RawMessage(`"test_params"`), msg.Params)
 	assert.Nil(t, msg.Error)
 	assert.Equal(t, json.RawMessage(`"test_result"`), msg.Result)
 }

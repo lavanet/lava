@@ -195,6 +195,12 @@ func TestIdFromRawMessage(t *testing.T) {
 			expectedResult: nil,
 			expectedErr:    true,
 		},
+		{
+			name:           "Unmarshal json",
+			rawID:          []byte(`{invalid: "id"}`),
+			expectedResult: nil,
+			expectedErr:    true,
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -245,6 +251,22 @@ func TestConvertTendermintMsg(t *testing.T) {
 			},
 			false,
 			"",
+		},
+		{
+			"error in GetTendermintRPCError",
+			&rpcclient.JsonrpcMessage{
+				Version: "2.0",
+				ID:      json.RawMessage(`[]`),
+				Result:  json.RawMessage(`{"key":"value"}`),
+				Error: &rpcclient.JsonError{
+					Code:    0,
+					Message: "error message",
+					Data:    []int{1, 2, 3},
+				},
+			},
+			nil,
+			true,
+			"(rpcMsg.Error.Data).(string) conversion failed -- map[data:[1 2 3]]",
 		},
 		{
 			"error in IdFromRawMessage",
