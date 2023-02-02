@@ -38,7 +38,7 @@ type EpochstorageKeeper interface {
 	GetStakeEntryByAddressCurrent(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	UnstakeEntryByAddress(ctx sdk.Context, storageType string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
-	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, found bool)
+	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
 	GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage epochstoragetypes.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)

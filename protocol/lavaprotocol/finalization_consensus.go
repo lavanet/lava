@@ -166,7 +166,7 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData := chainParser.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 	averageBlockTime_ms := averageBlockTime
 	listExpectedBlockHeights := []int64{}
 

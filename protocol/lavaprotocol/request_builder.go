@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -74,7 +75,7 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, chain
 }
 
 func GetTimePerCu(cu uint64) time.Duration {
-	return time.Duration(cu*TimePerCU) + MinimumTimePerRelayDelay
+	return chainlib.LocalNodeTimePerCu(cu) + MinimumTimePerRelayDelay
 }
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {

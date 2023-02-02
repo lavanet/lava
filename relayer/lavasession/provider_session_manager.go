@@ -1,6 +1,7 @@
 package lavasession
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -12,6 +13,8 @@ type ProviderSessionManager struct {
 	sessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
 	lock                     sync.RWMutex
 	blockedEpoch             uint64 // requests from this epoch are blocked
+	rpcProviderEndpoint      *RPCProviderEndpoint
+	stateQuery               StateQuery
 }
 
 // reads cs.BlockedEpoch atomically
@@ -30,24 +33,11 @@ func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) bool {
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
 func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string) (active bool, err error) {
-	psm.lock.RLock()
-	defer psm.lock.RUnlock()
-	if psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
-		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
-		return false, InvalidEpochError
+	_, err = psm.getActiveConsumer(epoch, address)
+	if err != nil {
+		return false, nil
 	}
-
-	if mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]; ok {
-		if providerSessionWithConsumer, ok := mapOfProviderSessionsWithConsumer[address]; ok {
-			if providerSessionWithConsumer.atomicReadBlockedEpoch() == blockListedConsumer { // we atomic read block listed so we dont need to lock the consumer. (double lock is always a bad idea.)
-				// consumer is blocked.
-				utils.LavaFormatWarning("IsActiveConsumer", ConsumerIsBlockListed, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "ConsumerAddress": address})
-				return false, ConsumerIsBlockListed
-			}
-			return true, nil // no error
-		}
-	}
-	return false, nil
+	return true, nil // no error
 }
 
 func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch uint64, relayNum uint64, sessionId uint64) (*SingleProviderSession, error) {
@@ -64,7 +54,7 @@ func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch u
 	if activeConsumer {
 		singleProviderSession, err = psm.getSessionFromAnActiveConsumer(epoch, address, sessionId) // after getting session verify relayNum etc..
 	} else if relayNum == 0 {
-		// if no session found, we need to create and validate few things:
+		// if no session found, we need to create and validate few things: pairing,
 		// return here and call a different function.
 		// in this function
 
@@ -84,29 +74,46 @@ func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch u
 	return singleProviderSession, nil
 }
 
-// func (psm *ProviderSessionManager) createANewSingleProviderSession(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
-// 	// providerSessionWithConsumer must be locked here.
-// 	if providerSessionWithConsumer.Lock.TryRLock() { // verify.
-// 		// if we managed to lock throw an error for misuse.
-// 		defer providerSessionWithConsumer.Lock.RUnlock()
-// 		return nil, sdkerrors.Wrapf(LockMisUseDetectedError, "providerSessionWithConsumer.Lock must be locked before accessing this method, additional info:")
-// 	}
+func (psm *ProviderSessionManager) createNewSingleProviderSession(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
+	providerSessionWithConsumer.Lock.Lock()
+	defer providerSessionWithConsumer.Lock.Unlock()
 
-// 	return nil, nil
-// }
+	// TODO: create a new single provider session
+
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address string) (singleProviderSession *ProviderSessionsWithConsumer, err error) {
+	psm.lock.RLock()
+	defer psm.lock.RUnlock()
+	if psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
+		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
+		return nil, InvalidEpochError
+	}
+	if mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]; ok {
+		if providerSessionWithConsumer, ok := mapOfProviderSessionsWithConsumer[address]; ok {
+			if providerSessionWithConsumer.atomicReadBlockedEpoch() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
+				// consumer is blocked.
+				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "ConsumerAddress": address})
+				return nil, ConsumerIsBlockListed
+			}
+			return providerSessionWithConsumer, nil // no error
+		}
+	}
+	return nil, ConsumerNotActive
+}
 
 func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(epoch uint64, address string, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
-	// activeConsumer, err := psm.IsActiveConsumer(epoch, address) // check again
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if session, ok := providerSessionWithConsumer.Sessions[sessionId]; ok {
-	// 	return session, nil
-	// }
+	providerSessionWithConsumer, err := psm.getActiveConsumer(epoch, address)
+	if err != nil {
+		return nil, err
+	}
+	session, err := providerSessionWithConsumer.GetExistingSession(sessionId)
+	if err == nil {
+		return session, nil
+	}
 	// if we don't have a session we need to create a new one.
-	// return psm.createANewSingleProviderSession(providerSessionWithConsumer, sessionId)
-	return
+	return psm.createNewSingleProviderSession(providerSessionWithConsumer, sessionId)
 }
 
 func (psm *ProviderSessionManager) getNewSession(epoch uint64, address string) (singleProviderSession *SingleProviderSession, err error) {
@@ -129,7 +136,15 @@ func (psm *ProviderSessionManager) OnSessionDone(proof string) (epoch uint64, er
 	return 0, nil
 }
 
+func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
+	return psm.rpcProviderEndpoint
+}
+
+func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
+	// update the epoch to limit consumer usage
+}
+
 // Returning a new provider session manager
-func GetProviderSessionManager() *ProviderSessionManager {
-	return &ProviderSessionManager{}
+func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, stateQuery StateQuery) *ProviderSessionManager {
+	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, stateQuery: stateQuery}
 }
