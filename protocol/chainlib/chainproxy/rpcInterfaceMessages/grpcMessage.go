@@ -19,10 +19,14 @@ type GrpcMessage struct {
 	Path string
 }
 
+// GetParams will be deprecated after we remove old client
+// Currently needed because of parser.RPCInput interface
 func (cp GrpcMessage) GetParams() interface{} {
 	return nil
 }
 
+// GetResult will be deprecated after we remove old client
+// Currently needed because of parser.RPCInput interface
 func (cp GrpcMessage) GetResult() json.RawMessage {
 	return nil
 }

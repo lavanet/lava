@@ -277,3 +277,17 @@ func TestConvertTendermintMsg(t *testing.T) {
 		})
 	}
 }
+
+func TestJSONRPCID(t *testing.T) {
+	stringID := JSONRPCStringID("12345")
+	expected := "12345"
+	if stringID.String() != expected {
+		t.Errorf("Expected %q, but got %q", expected, stringID.String())
+	}
+
+	intID := JSONRPCIntID(123)
+	expected = "123"
+	if intID.String() != expected {
+		t.Errorf("Expected %q, but got %q", expected, intID.String())
+	}
+}
