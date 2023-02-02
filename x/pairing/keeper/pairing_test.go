@@ -47,7 +47,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	require.Equal(t, len(providers1), len(providers2))
 
-	diffrent := false
+	different := false
 
 	for _, provider := range providers1 {
 		found := false
@@ -57,11 +57,11 @@ func TestPairingUniqueness(t *testing.T) {
 			}
 		}
 		if !found {
-			diffrent = true
+			different = true
 		}
 	}
 
-	require.True(t, diffrent)
+	require.True(t, different)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -70,10 +70,33 @@ func TestPairingUniqueness(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Equal(t, len(providers1), len(providers11))
+	different = false
 	for i := range providers1 {
-		require.NotEqual(t, providers1[i].Address, providers11[i].Address)
+		if providers1[i].Address != providers11[i].Address {
+			different = true
+			break
+		}
 	}
+	require.True(t, different)
 
+	//test that get pairing gives the same results for the whole epoch
+	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	for i := uint64(0); i < epochBlocks-1; i++ {
+		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+
+		providers111, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+		require.Nil(t, err)
+
+		for i := range providers1 {
+			require.Equal(t, providers11[i].Address, providers111[i].Address)
+
+			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
+			require.Nil(t, err)
+			valid, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.True(t, valid)
+		}
+
+	}
 }
 
 // Test that verifies that new get-pairing return values (CurrentEpoch, TimeLeftToNextPairing, SpecLastUpdatedBlock) is working properly
