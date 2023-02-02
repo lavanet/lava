@@ -214,11 +214,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	// get here only if performed a regular relay successfully
 	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
-	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, reply.LatestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()) // session done successfully
+	pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
+	latestBlock := relayResult.Reply.LatestBlock
+	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, pairingAddressesLen) // session done successfully
 
 	// set cache in a non blocking call
 	go func() {
-		err2 := rpccs.cache.SetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
+		err2 := rpccs.cache.SetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 			utils.LavaFormatWarning("error updating cache with new entry", err2, nil)
 		}
