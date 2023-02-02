@@ -30,6 +30,7 @@ func (cp TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
 
 func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPCError, error) {
 	// Guard that the jsonError exists
+	//nolint
 	if jsonError == nil {
 		return nil, nil
 	}
