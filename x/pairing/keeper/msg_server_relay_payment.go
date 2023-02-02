@@ -286,7 +286,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 
 	// check that servicersToPair is bigger than 1
 	if servicersToPair <= 1 {
-		return utils.LavaFormatError("servicersToPair is less than or equal to one. The value is invalid", nil, &map[string]string{"servicersToPair": strconv.FormatUint(servicersToPair, 10)})
+		servicersToPair = 2
 	}
 
 	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses

@@ -67,7 +67,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && providerPaymentStorageKeyList != nil {
+			if len(providerPaymentStorageKeyList) != 0 {
 				err = k.punishUnresponsiveProvider(ctx, epochTemp, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
