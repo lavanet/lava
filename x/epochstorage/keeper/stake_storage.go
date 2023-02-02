@@ -354,7 +354,7 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 
 	// this stake storage entries are sorted by deadline
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
-	entries := []types.StakeEntry{}
+	var entries []types.StakeEntry
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
