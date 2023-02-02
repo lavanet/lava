@@ -29,6 +29,11 @@ func (cp TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
 }
 
 func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPCError, error) {
+	// Guard that the jsonError exists
+	if jsonError == nil {
+		return nil, nil
+	}
+
 	var rpcError *tenderminttypes.RPCError
 	if jsonError != nil {
 		errData, ok := (jsonError.Data).(string)
@@ -45,6 +50,11 @@ func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 }
 
 func ConvertErrorToRPCError(err error) *tenderminttypes.RPCError {
+	// Guard that err exists to prevent panic
+	if err == nil {
+		return nil
+	}
+
 	var rpcError *tenderminttypes.RPCError
 	unmarshalError := json.Unmarshal([]byte(err.Error()), &rpcError)
 	if unmarshalError != nil {
