@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	DefaultTimeout            = 5 * time.Second
+	DefaultTimeout            = 10 * time.Second
 	TimePerCU                 = uint64(100 * time.Millisecond)
 	ContextUserValueKeyDappID = "dappID"
 	MinimumTimePerRelayDelay  = time.Second
