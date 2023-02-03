@@ -58,6 +58,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.cache = cache
 	rpccs.consumerTxSender = consumerStateTracker
 	rpccs.requiredResponses = requiredResponses
+	rpccs.VrfSk = vrfSk
 	pLogs, err := common.NewRPCConsumerLogs()
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err, nil)
@@ -127,8 +128,11 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
+	fmt.Println("DataReliability enabled", enabled)
+	fmt.Println("dataReliabilityThreshold", dataReliabilityThreshold)
 	if enabled {
 		for _, relayResult := range relayResults {
+			fmt.Println("USAOOO")
 			go rpccs.sendDataReliabilityRelayIfApplicable(ctx, relayResult, chainMessage, dataReliabilityThreshold, &relayRequestCommonData) // runs asynchronously
 		}
 	}
@@ -299,6 +303,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	// compare results for both relays, if there is a difference send a detection tx with both requests and both responses
 	specCategory := chainMessage.GetInterface().Category
 	if !specCategory.Deterministic || !relayResult.Finalized {
+		fmt.Println("IZASAOO", specCategory.Deterministic)
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 	var dataReliabilitySessions []*lavasession.DataReliabilitySession
