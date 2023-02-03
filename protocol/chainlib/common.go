@@ -66,17 +66,6 @@ func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 	return handler
 }
 
-func convertToJsonError(errorMsg string) string {
-	jsonResponse, err := json.Marshal(fiber.Map{
-		"error": errorMsg,
-	})
-	if err != nil {
-		return `{"error": "Failed to marshal error response to json"}`
-	}
-
-	return string(jsonResponse)
-}
-
 func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
 	if dappID, ok := dappIDLocal.(string); ok {
@@ -88,8 +77,19 @@ func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	return "NoDappID"
 }
 
+func convertToJsonError(errorMsg string) string {
+	jsonResponse, err := json.Marshal(fiber.Map{
+		"error": errorMsg,
+	})
+	if err != nil {
+		return `{"error": "Failed to marshal error response to json"}`
+	}
+
+	return string(jsonResponse)
+}
+
 func addAttributeToError(key string, value string, errorMessage string) string {
-	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
 func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
@@ -126,6 +126,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	return serverApis, taggedApis
 }
 
+// matchSpecApiByName returns service api which match given name
 func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
