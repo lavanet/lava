@@ -966,7 +966,7 @@ func init() {
 	//proto.RegisterType((*MsgExitSwapExternAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgExitSwapExternAmountOutResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/gamm/v1beta1/tx.proto", fileDescriptor_cfc8fd3ac7df3247) }
+func init() { proto.RegisterFile("osmosis/gamm/v1beta1/tx.proto", fileDescriptor_cfc8fd3ac7df3247) }// }
 
 var fileDescriptor_cfc8fd3ac7df3247 = []byte{
 	// 1121 bytes of a gzipped FileDescriptorProto

@@ -1502,7 +1502,7 @@ func init() {
 	//proto.RegisterType((*QueryTotalLiquidityResponse)(nil), "osmosis.gamm.v1beta1.QueryTotalLiquidityResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/gamm/v1beta1/query.proto", fileDescriptor_d9a717df9ca609ef) }
+func init() { proto.RegisterFile("osmosis/gamm/v1beta1/query.proto", fileDescriptor_d9a717df9ca609ef) }//}
 
 var fileDescriptor_d9a717df9ca609ef = []byte{
 	// 1795 bytes of a gzipped FileDescriptorProto
