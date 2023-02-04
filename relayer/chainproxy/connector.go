@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	DialTimeout                                = 500 * time.Millisecond
+	DialTimeout                                = 5 * time.Second
 	ParallelConnectionsFlag                    = "parallel-connections"
 	MaximumNumberOfParallelConnectionsAttempts = 10
 )

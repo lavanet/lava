@@ -41,10 +41,10 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		lava_thirdparty.RegisterLavaProtobufs(s, cb)
 		ibc_thirdparty.RegisterLavaProtobufs(s, cb)
 	case "COS3", "COS4":
-		cosmos_thirdparty.RegisterOsmosisProtobufs(s, cb)
-		ibc_thirdparty.RegisterOsmosisProtobufs(s, cb)
 		osmosis_thirdparty.RegisterOsmosisProtobufs(s, cb)
-		cosmwasm.RegisterOsmosisProtobufs(s, cb)
+		// cosmos_thirdparty.RegisterOsmosisProtobufs(s, cb)
+		// ibc_thirdparty.RegisterOsmosisProtobufs(s, cb)
+		// cosmwasm.RegisterOsmosisProtobufs(s, cb)
 	case "COS5", "COS5T":
 		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
 		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)

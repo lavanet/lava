@@ -2,6 +2,7 @@ package thirdparty
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"testing"
 
@@ -54,18 +55,18 @@ func TestJunGRPC(t *testing.T) {
 
 }
 
-// func TestOsmosisGRPC(t *testing.T) { WIP
-// 	ctx := context.Background()
+func TestOsmosisGRPC(t *testing.T) {
+	ctx := context.Background()
 
-// 	req := &pairing.QueryClientsRequest{}
-// 	resp := &pairing.QueryClientsResponse{}
+	req := &pairing.QueryClientsRequest{}
+	resp := &pairing.QueryClientsResponse{}
 
-// 	conn, err := grpc.DialContext(ctx, osmosisGRPC, grpc.WithInsecure(), grpc.WithBlock())
-// 	require.Nil(t, err)
+	conn, err := grpc.DialContext(ctx, osmosisGRPC, grpc.WithInsecure(), grpc.WithBlock())
+	require.Nil(t, err)
 
-// 	defer conn.Close()
-// 	err = grpc.Invoke(ctx, "osmosis.gamm.v1beta1.Query/NumPools", req, resp, conn)
-// 	require.Nil(t, err)
-// 	log.Println("response:", resp)
-
-// }
+	defer conn.Close()
+	err = grpc.Invoke(ctx, "osmosis.gamm.v1beta1.Query/EpochInfos", req, resp, conn)
+	fmt.Println(resp, err)
+	log.Println("response:", resp)
+	require.Nil(t, err)
+}
