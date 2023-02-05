@@ -629,11 +629,11 @@ func getRequest(url string) ([]byte, error) {
 
 func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug --parallel-connections 100",
-		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug --parallel-connections 100",
-		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug --parallel-connections 100",
-		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug --parallel-connections 100",
-		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug --parallel-connections 100",
+		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug",
 	}
 
 	for idx, providerCommand := range providerCommands {
@@ -949,7 +949,7 @@ func runE2E() {
 
 	lt.checkPayments(time.Minute * 10)
 
-	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30) // TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
+	grpcErr := grpcTests("127.0.0.1:3342", time.Second*5) // TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
 	if grpcErr != nil {
 		panic(grpcErr)
 	} else {
