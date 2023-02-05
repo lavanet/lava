@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"golang.org/x/net/context"

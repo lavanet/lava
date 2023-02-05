@@ -10,7 +10,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/rpc/core"
 )
 
 const INVALID_INDEX = -2
@@ -48,7 +47,7 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 	verifiedUser := false
 
 	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
-	userStakedEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, requestedEpochStart, epochstoragetypes.ClientKey, chainID)
+	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, requestedEpochStart, epochstoragetypes.ClientKey, chainID)
 	if !found {
 		return nil, utils.LavaError(ctx, logger, "client_entries_pairing", map[string]string{"chainID": chainID, "query Epoch": strconv.FormatUint(requestedEpochStart, 10), "query block": strconv.FormatUint(block, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "no EpochStakeEntries entries at all for this spec")
 	}
@@ -84,12 +83,12 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
-	possibleProviders, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, currentEpoch, epochstoragetypes.ProviderKey, chainID)
+	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, currentEpoch, epochstoragetypes.ProviderKey, chainID)
 	if !found {
 		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
 	}
 
-	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation)
+	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation, epochHash)
 
 	return
 }
@@ -107,12 +106,12 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 		return false, nil, INVALID_INDEX, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
-	providerStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epochStart, epochstoragetypes.ProviderKey, chainID)
+	providerStakeEntries, found, blockHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epochStart, epochstoragetypes.ProviderKey, chainID)
 	if !found {
 		return false, nil, INVALID_INDEX, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", epochStart, chainID)
 	}
 
-	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID, userStake.Geolocation)
+	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID, userStake.Geolocation, blockHash)
 	if errorRet != nil {
 		return false, nil, INVALID_INDEX, errorRet
 	}
@@ -124,7 +123,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	return false, userStake, INVALID_INDEX, nil
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, epochStartBlock uint64, chainID string, geolocation uint64) (validProviders []epochstoragetypes.StakeEntry, addrList []sdk.AccAddress, err error) {
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte) (validProviders []epochstoragetypes.StakeEntry, addrList []sdk.AccAddress, err error) {
 	if epochStartBlock > uint64(ctx.BlockHeight()) {
 		k.Logger(ctx).Error("\ninvalid session start\n")
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
@@ -145,7 +144,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
 
-		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
+		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID, epochHash)
 	} else {
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 	}
@@ -181,7 +180,7 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 }
 
 // this function randomly chooses count providers by weight
-func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sdk.AccAddress, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
+func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sdk.AccAddress, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	stakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 	hashData := make([]byte, 0)
 	for _, stakedProvider := range providersMaps {
@@ -193,13 +192,7 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 	}
 
 	// add the session start block hash to the function to make it as unpredictable as we can
-	block_height := int64(block)
-	epochStartBlock, err := core.Block(nil, &block_height)
-	if err != nil {
-		k.Logger(ctx).Error("Failed To Get block from tendermint core")
-	}
-	sessionBlockHash := epochStartBlock.Block.Hash()
-	hashData = append(hashData, sessionBlockHash...)
+	hashData = append(hashData, epochHash...)
 	hashData = append(hashData, chainID...)       // to make this pairing unique per chainID
 	hashData = append(hashData, clientAddress...) // to make this pairing unique per consumer
 

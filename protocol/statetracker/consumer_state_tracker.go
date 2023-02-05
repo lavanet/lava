@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 )

@@ -1,4 +1,4 @@
-package v0_4_6
+package v0_5_0
 
 import (
 	"log"
@@ -13,9 +13,9 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const UpgradeName = "v0.4.6"
+const UpgradeName = "v0.5.0"
 
-var Upgrade_v0_4_6 = upgrades.Upgrade{
+var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,           // upgrade name defined few lines above
 	CreateUpgradeHandler: CreateUpgradeHandler,  // create CreateUpgradeHandler in upgrades.go below
 	StoreUpgrades:        store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
