@@ -128,8 +128,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	fmt.Println("DataReliability enabled", enabled)
-	fmt.Println("dataReliabilityThreshold", dataReliabilityThreshold)
 	if enabled {
 		for _, relayResult := range relayResults {
 			// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
@@ -226,7 +224,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// set cache in a non blocking call
 	go func() {
-		err2 := rpccs.cache.SetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
+		new_ctx := context.Background()
+		new_ctx, cancel := context.WithTimeout(new_ctx, lavaprotocol.DataReliabilityTimeoutIncrease)
+		defer cancel()
+		err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 			utils.LavaFormatWarning("error updating cache with new entry", err2, nil)
 		}
@@ -309,7 +310,6 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	// compare results for both relays, if there is a difference send a detection tx with both requests and both responses
 	specCategory := chainMessage.GetInterface().Category
 	if !specCategory.Deterministic || !relayResult.Finalized {
-		fmt.Println("IZASAOO", specCategory.Deterministic)
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 	var dataReliabilitySessions []*lavasession.DataReliabilitySession
@@ -407,7 +407,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 				for _, conflict := range conflicts {
 					err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
 					if err != nil {
-						utils.LavaFormatError("could not send detection Transaction", err, nil)
+						utils.LavaFormatError("could not send detection Transaction", err, &map[string]string{"conflict": fmt.Sprintf("%+v", conflict)})
 					}
 				}
 			}
