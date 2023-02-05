@@ -24,13 +24,14 @@ import (
 )
 
 const (
-	DefaultTimeout            = 10 * time.Second
-	TimePerCU                 = uint64(100 * time.Millisecond)
-	ContextUserValueKeyDappID = "dappID"
-	MinimumTimePerRelayDelay  = time.Second
-	AverageWorldLatency       = 200 * time.Millisecond
-	LavaErrorCode             = 555
-	InternalErrorString       = "Internal Error"
+	DefaultTimeout                   = 10 * time.Second
+	TimePerCU                        = uint64(100 * time.Millisecond)
+	ContextUserValueKeyDappID        = "dappID"
+	MinimumTimePerRelayDelay         = time.Second
+	AverageWorldLatency              = 200 * time.Millisecond
+	LavaErrorCode                    = 555
+	InternalErrorString              = "Internal Error"
+	dataReliabilityContextMultiplier = 30
 )
 
 type NodeMessage interface {
@@ -249,7 +250,11 @@ func SendRelay(
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
 		relaySentTime := time.Now()
-		reply, err := c.Relay(ctx, relayRequest)
+		// create a new context for data reliability, it needs to be a new Background context because the ctx might be canceled by the user.
+		connectCtxDataReliability, cancel := context.WithTimeout(context.Background(), (getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)*dataReliabilityContextMultiplier)
+		defer cancel()
+
+		reply, err := c.Relay(connectCtxDataReliability, relayRequest)
 		if err != nil {
 			return nil, nil, 0, err
 		}
