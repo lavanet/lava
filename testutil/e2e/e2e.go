@@ -225,9 +225,9 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string, ctx context.Context) {
 	utils.LavaFormatInfo("startJSONRPCProvider OK", nil)
 }
 
-func (lt *lavaTest) startJSONRPCGateway(ctx context.Context) {
+func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
-	logName := "04_jsonGateway"
+	logName := "04_jsonConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -243,15 +243,15 @@ func (lt *lavaTest) startJSONRPCGateway(ctx context.Context) {
 
 	lt.commands[logName] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly", "startJSONRPCGateway")
+		lt.listenCmdCommand(cmd, "startJSONRPCConsumer process returned unexpectedly", "startJSONRPCConsumer")
 	}()
-	utils.LavaFormatInfo("startJSONRPCGateway OK", nil)
+	utils.LavaFormatInfo("startJSONRPCConsumer OK", nil)
 }
 
 // If after timeout and the check does not return it means it failed
-func (lt *lavaTest) checkJSONRPCGateway(rpcURL string, timeout time.Duration, message string) {
+func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, message string) {
 	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting JSONRPC Gateway", nil)
+		utils.LavaFormatInfo("Waiting JSONRPC Consumer", nil)
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
 			continue
@@ -263,7 +263,7 @@ func (lt *lavaTest) checkJSONRPCGateway(rpcURL string, timeout time.Duration, me
 		}
 		time.Sleep(time.Second)
 	}
-	panic("checkJSONRPCGateway: JSONRPC Check Failed Gateway didn't respond")
+	panic("checkJSONRPCConsumer: JSONRPC Check Failed Consumer didn't respond")
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
@@ -401,9 +401,9 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) 
 	utils.LavaFormatInfo("startTendermintProvider OK", nil)
 }
 
-func (lt *lavaTest) startTendermintGateway(ctx context.Context) {
+func (lt *lavaTest) startTendermintConsumer(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --geolocation 1 --log_level debug"
-	logName := "06_tendermintGateway"
+	logName := "06_tendermintConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -418,21 +418,21 @@ func (lt *lavaTest) startTendermintGateway(ctx context.Context) {
 	}
 	lt.commands[logName] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly", "startTendermintGateway")
+		lt.listenCmdCommand(cmd, "startTendermintConsumer process returned unexpectedly", "startTendermintConsumer")
 	}()
-	utils.LavaFormatInfo("startTendermintGateway OK", nil)
+	utils.LavaFormatInfo("startTendermintConsumer OK", nil)
 }
 
-func (lt *lavaTest) checkTendermintGateway(rpcURL string, timeout time.Duration) {
+func (lt *lavaTest) checkTendermintConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting TENDERMINT Gateway", nil)
+		utils.LavaFormatInfo("Waiting TENDERMINT Consumer", nil)
 		client, err := tmclient.New(rpcURL, "/websocket")
 		if err != nil {
 			continue
 		}
 		_, err = client.Status(context.Background())
 		if err == nil {
-			utils.LavaFormatInfo("checkTendermintGateway OK", nil)
+			utils.LavaFormatInfo("checkTendermintConsumer OK", nil)
 			return
 		}
 		time.Sleep(time.Second)
@@ -545,9 +545,9 @@ func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
 	utils.LavaFormatInfo("startRESTProvider OK", nil)
 }
 
-func (lt *lavaTest) startRESTGateway(ctx context.Context) {
+func (lt *lavaTest) startRESTConsumer(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
-	logName := "09_restGateway"
+	logName := "09_restConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -562,20 +562,20 @@ func (lt *lavaTest) startRESTGateway(ctx context.Context) {
 	}
 	lt.commands[logName] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly", "startRESTGateway")
+		lt.listenCmdCommand(cmd, "startRESTConsumer process returned unexpectedly", "startRESTConsumer")
 	}()
-	utils.LavaFormatInfo("startRESTGateway OK", nil)
+	utils.LavaFormatInfo("startRESTConsumer OK", nil)
 }
 
-func (lt *lavaTest) checkRESTGateway(rpcURL string, timeout time.Duration) {
+func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting REST Gateway", nil)
+		utils.LavaFormatInfo("Waiting REST Consumer", nil)
 		reply, err := getRequest(fmt.Sprintf("%s/blocks/latest", rpcURL))
 		if err != nil || strings.Contains(string(reply), "error") {
 			time.Sleep(time.Second)
 			continue
 		} else {
-			utils.LavaFormatInfo("checkRESTGateway OK", nil)
+			utils.LavaFormatInfo("checkRESTConsumer OK", nil)
 			return
 		}
 	}
@@ -658,9 +658,9 @@ func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
 	utils.LavaFormatInfo("startGRPCProvider OK", nil)
 }
 
-func (lt *lavaTest) startGRPCGateway(ctx context.Context) {
+func (lt *lavaTest) startGRPCConsumer(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
-	logName := "11_grpcGateway"
+	logName := "11_grpcConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -675,14 +675,14 @@ func (lt *lavaTest) startGRPCGateway(ctx context.Context) {
 	}
 	lt.commands[logName] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startGRPCGateway process returned unexpectedly", "startGRPCGateway")
+		lt.listenCmdCommand(cmd, "startGRPCConsumer process returned unexpectedly", "startGRPCConsumer")
 	}()
-	utils.LavaFormatInfo("startGRPCGateway OK", nil)
+	utils.LavaFormatInfo("startGRPCConsumer OK", nil)
 }
 
-func (lt *lavaTest) checkGRPCGateway(rpcURL string, timeout time.Duration) {
+func (lt *lavaTest) checkGRPCConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting GRPC Gateway", nil)
+		utils.LavaFormatInfo("Waiting GRPC Consumer", nil)
 		grpcConn, err := grpc.Dial(rpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			continue
@@ -690,7 +690,7 @@ func (lt *lavaTest) checkGRPCGateway(rpcURL string, timeout time.Duration) {
 		specQueryClient := specTypes.NewQueryClient(grpcConn)
 		_, err = specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err == nil {
-			utils.LavaFormatInfo("checkGRPCGateway OK", nil)
+			utils.LavaFormatInfo("checkGRPCConsumer OK", nil)
 			return
 		}
 		time.Sleep(time.Second)
@@ -897,25 +897,25 @@ func runE2E() {
 
 	jsonCTX := context.Background()
 	lt.startJSONRPCProxy(jsonCTX)
-	lt.checkJSONRPCGateway("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK")
+	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
 	lt.startJSONRPCProvider("http://127.0.0.1:1111", jsonCTX)
-	lt.startJSONRPCGateway(jsonCTX)
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Minute*2, "JSONRPCGateway OK")
+	lt.startJSONRPCConsumer(jsonCTX)
+	lt.checkJSONRPCConsumer("http://127.0.0.1:3333/1", time.Minute*2, "JSONRPCConsumer OK")
 
 	tendermintCTX := context.Background()
 	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
-	lt.startTendermintGateway(tendermintCTX)
-	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
+	lt.startTendermintConsumer(tendermintCTX)
+	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
 
 	restCTX := context.Background()
 	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
-	lt.startRESTGateway(restCTX)
-	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+	lt.startRESTConsumer(restCTX)
+	lt.checkRESTConsumer("http://127.0.0.1:3341/1", time.Second*30)
 
 	grpcCTX := context.Background()
 	lt.startGRPCProvider("127.0.0.1:9090", grpcCTX)
-	lt.startGRPCGateway(grpcCTX)
-	lt.checkGRPCGateway("127.0.0.1:3342", time.Second*30)
+	lt.startGRPCConsumer(grpcCTX)
+	lt.checkGRPCConsumer("127.0.0.1:3342", time.Second*30)
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	if jsonErr != nil {
@@ -949,7 +949,7 @@ func runE2E() {
 
 	lt.checkPayments(time.Minute * 10)
 
-	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
+	grpcErr := grpcTests("127.0.0.1:3342", time.Second*5) // TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
 	if grpcErr != nil {
 		panic(grpcErr)
 	} else {

@@ -77,7 +77,7 @@ jobs:
     ### Run relayer unitests
     ######################################################
     - name: Run Relayer unit Tests
-      run: go test ./relayer/lavasession/ ./protocol/chaintracker/ ./relayer/chainproxy/ -v
+      run: go test ./protocol/lavasession/ ./protocol/chaintracker/ ./relayer/chainproxy/ -v
     - name: Run Relayer Metrics Unit Tests
       run: go test ./relayer/metrics/  -v
 
@@ -118,14 +118,14 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
 
-    - name: JSON Gateway All Logs
+    - name: JSON Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/04_jsonGateway.log
+      run: cat testutil/e2e/logs/04_jsonConsumer.log
 
-    - name: JSON Gateway Error Only Logs
+    - name: JSON Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/04_jsonGateway_errors.log
+      run: cat testutil/e2e/logs/04_jsonConsumer_errors.log
 
     - name: Tendermint Provider All Logs
       if: always()
@@ -136,14 +136,14 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
 
-    - name: Tendermint Gateway All Logs
+    - name: Tendermint Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/06_tendermintGateway.log
+      run: cat testutil/e2e/logs/06_tendermintConsumer.log
 
-    - name: Tendermint Gateway Error Only Logs
+    - name: Tendermint Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/06_tendermintGateway_errors.log
+      run: cat testutil/e2e/logs/06_tendermintConsumer_errors.log
 
     - name: Lava over Lava All Logs
       if: always()
@@ -163,14 +163,14 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
 
-    - name: Rest Gateway All Logs
+    - name: Rest Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/09_restGateway.log
+      run: cat testutil/e2e/logs/09_restConsumer.log
 
-    - name: Rest Gateway Error Only Logs
+    - name: Rest Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/09_restGateway_errors.log
+      run: cat testutil/e2e/logs/09_restConsumer_errors.log
     
     - name: GRPC Provider All Logs
       if: always()
@@ -181,11 +181,11 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
-    - name: GRPC Gateway All Logs
+    - name: GRPC Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/11_grpcGateway.log
+      run: cat testutil/e2e/logs/11_grpcConsumer.log
 
-    - name: GRPC Gateway Error Only Logs
+    - name: GRPC Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/11_grpcGateway_errors.log
+      run: cat testutil/e2e/logs/11_grpcConsumer_errors.log

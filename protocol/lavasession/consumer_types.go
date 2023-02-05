@@ -334,3 +334,8 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 			})
 	}
 }
+
+// validate if this is a data reliability session
+func (scs *SingleConsumerSession) IsDataReliabilitySession() bool {
+	return scs.SessionId <= DataReliabilitySessionId
+}
