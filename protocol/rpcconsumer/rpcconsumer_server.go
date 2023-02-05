@@ -129,7 +129,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		for _, relayResult := range relayResults {
-			go rpccs.sendDataReliabilityRelayIfApplicable(ctx, relayResult, chainMessage, dataReliabilityThreshold, &relayRequestCommonData) // runs asynchronously
+			// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
+			// as data reliability happens in a go routine it will continue while the response returns.
+			dataReliabilityContext := context.Background()
+			go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, relayResult, chainMessage, dataReliabilityThreshold, &relayRequestCommonData) // runs asynchronously
 		}
 	}
 
@@ -230,7 +233,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
 	relaySentTime := time.Now()
-	connectCtx, cancel := context.WithTimeout(ctx, lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu)+lavaprotocol.AverageWorldLatency)
+	extraTimeForContext := time.Duration(0)
+	if singleConsumerSession.IsDataReliabilitySession() { // for data reliability session we add more time to timeout
+		extraTimeForContext += lavaprotocol.DataReliabilityTimeoutIncrease
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu)+lavaprotocol.AverageWorldLatency+extraTimeForContext)
 	defer cancel()
 	relayRequest := relayResult.Request
 	providerPublicAddress := relayResult.ProviderAddress

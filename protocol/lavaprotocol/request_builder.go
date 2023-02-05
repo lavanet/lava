@@ -18,10 +18,11 @@ import (
 )
 
 const (
-	TimePerCU                = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay = time.Second
-	AverageWorldLatency      = 200 * time.Millisecond
-	SupportedNumberOfVRFs    = 2
+	TimePerCU                      = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay       = time.Second
+	AverageWorldLatency            = 200 * time.Millisecond
+	DataReliabilityTimeoutIncrease = 5 * time.Second
+	SupportedNumberOfVRFs          = 2
 )
 
 type RelayRequestCommonData struct {
