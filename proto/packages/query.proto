@@ -1,0 +1,59 @@
+syntax = "proto3";
+package lavanet.lava.packages;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "packages/params.proto";
+import "packages/package_versions_storage.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/lavanet/lava/x/packages/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/packages/params";
+  }
+  // Queries a PackageVersionsStorage by index.
+	rpc PackageVersionsStorage(QueryGetPackageVersionsStorageRequest) returns (QueryGetPackageVersionsStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/packages/package_versions_storage/{packageIndex}";
+	}
+
+	// Queries a list of PackageVersionsStorage items.
+	rpc PackageVersionsStorageAll(QueryAllPackageVersionsStorageRequest) returns (QueryAllPackageVersionsStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/packages/package_versions_storage";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetPackageVersionsStorageRequest {
+	  string packageIndex = 1;
+
+}
+
+message QueryGetPackageVersionsStorageResponse {
+	PackageVersionsStorage packageVersionsStorage = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllPackageVersionsStorageRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllPackageVersionsStorageResponse {
+	repeated PackageVersionsStorage packageVersionsStorage = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// this line is used by starport scaffolding # 3
