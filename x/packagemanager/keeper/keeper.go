@@ -45,3 +45,8 @@ func NewKeeper(
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
+
+// we dont want to do the calculation here too, epochStorage keeper did it
+func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
+	return k.epochStorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
+}

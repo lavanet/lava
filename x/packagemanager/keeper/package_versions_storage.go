@@ -256,3 +256,59 @@ func (k Keeper) deletePackage(ctx sdk.Context, packageIndex string, epoch uint64
 
 	return nil
 }
+
+// Function to get the packages that should be deleted (package was edited and there are no subs for it. Also, currentEpoch > packageEpoch + packageDuration)
+func (k Keeper) getPackagesToDelete(ctx sdk.Context) (map[string][]uint64, error) {
+	// create map of packages to delete: key = packageIndex, value = list of epochs (which indicate the packages to delete)
+	var packagesToDeleteMap map[string][]uint64
+
+	// get all the package storages
+	allPackageStorages := k.GetAllPackageVersionsStorage(ctx)
+
+	// get current epoch
+	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
+
+	// iterate over the package storages
+	for _, packageStorage := range allPackageStorages {
+		// get the package fixation entry list
+		entryList := packageStorage.GetPackageStorage().GetEntryList()
+
+		// check if the entryList's length is more than 1. If it's not, the package wasn't edited so it shouldn't be deleted
+		if len(entryList) <= 1 {
+			continue
+		}
+
+		// don't check the first packageFixationEntry is the entryList, since this is the latest package version so it should not be deleted (because it's still buyable)
+		entryListWithoutLatestPackageVersion := entryList[1:]
+
+		// iterate over the package fixation entries
+		for _, packageFixationEntry := range entryListWithoutLatestPackageVersion {
+			// get the package from the package fixation entry
+			packageToCheck, err := k.getPackageFromPackageFixationEntry(ctx, packageFixationEntry)
+			if err != nil {
+				return nil, utils.LavaError(ctx, k.Logger(ctx), "get_package_from_package_entry", map[string]string{"err": err.Error()}, "could not get unmarshal data from packageFixationEntry to get package object")
+			}
+
+			// check if the package is stale (the epoch it was created + defined duration has passed)
+			if currentEpoch > packageToCheck.GetEpoch()+packageToCheck.GetDuration() {
+				// check if the package also has no subscriptions
+				if packageToCheck.GetSubscriptions() == 0 {
+					// check if the map already has the current packageIndex key
+					epochList, keyExists := packagesToDeleteMap[packageToCheck.GetIndex()]
+					if !keyExists {
+						// packageIndex doesn't exist in map -> create new epoch list
+						packagesToDeleteMap[packageToCheck.GetIndex()] = []uint64{packageToCheck.GetEpoch()}
+					} else {
+						// packageIndex exist in map -> update the epoch list
+						updatedEpochList := append(epochList, packageToCheck.GetEpoch())
+						packagesToDeleteMap[packageToCheck.GetIndex()] = updatedEpochList
+					}
+				}
+			}
+
+		}
+
+	}
+
+	return packagesToDeleteMap, nil
+}
