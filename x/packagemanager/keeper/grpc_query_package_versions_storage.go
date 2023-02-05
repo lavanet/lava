@@ -31,7 +31,6 @@ func (k Keeper) PackageVersionsStorageAll(c context.Context, req *types.QueryAll
 		packageVersionsStorages = append(packageVersionsStorages, packageVersionsStorage)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

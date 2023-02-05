@@ -25,7 +25,6 @@ func (k Keeper) SetPackageVersionsStorage(ctx sdk.Context, packageVersionsStorag
 func (k Keeper) GetPackageVersionsStorage(
 	ctx sdk.Context,
 	packageIndex string,
-
 ) (val types.PackageVersionsStorage, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PackageVersionsStorageKeyPrefix))
 
@@ -44,7 +43,6 @@ func (k Keeper) GetPackageVersionsStorage(
 func (k Keeper) RemovePackageVersionsStorage(
 	ctx sdk.Context,
 	packageIndex string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PackageVersionsStorageKeyPrefix))
 	store.Delete(types.PackageVersionsStorageKey(
