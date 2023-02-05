@@ -31,7 +31,7 @@ const (
 	AverageWorldLatency              = 200 * time.Millisecond
 	LavaErrorCode                    = 555
 	InternalErrorString              = "Internal Error"
-	dataReliabilityContextMultiplier = 30
+	dataReliabilityContextMultiplier = 20
 )
 
 type NodeMessage interface {
