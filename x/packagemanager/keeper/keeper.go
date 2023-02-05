@@ -13,10 +13,11 @@ import (
 
 type (
 	Keeper struct {
-		cdc        codec.BinaryCodec
-		storeKey   sdk.StoreKey
-		memKey     sdk.StoreKey
-		paramstore paramtypes.Subspace
+		cdc                codec.BinaryCodec
+		storeKey           sdk.StoreKey
+		memKey             sdk.StoreKey
+		paramstore         paramtypes.Subspace
+		epochStorageKeeper types.EpochstorageKeeper
 	}
 )
 
@@ -25,7 +26,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
-
+	epochStorageKeeper types.EpochstorageKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -33,11 +34,11 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
+		cdc:                cdc,
+		storeKey:           storeKey,
+		memKey:             memKey,
+		paramstore:         ps,
+		epochStorageKeeper: epochStorageKeeper,
 	}
 }
 

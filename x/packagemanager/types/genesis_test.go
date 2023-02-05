@@ -19,12 +19,34 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid:    true,
 		},
 		{
-			desc:     "valid genesis state",
+			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
+				PackageVersionsStorageList: []types.PackageVersionsStorage{
+					{
+						PackageIndex: "0",
+					},
+					{
+						PackageIndex: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
+		},
+		{
+			desc: "duplicated packageVersionsStorage",
+			genState: &types.GenesisState{
+				PackageVersionsStorageList: []types.PackageVersionsStorage{
+					{
+						PackageIndex: "0",
+					},
+					{
+						PackageIndex: "0",
+					},
+				},
+			},
+			valid: false,
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {

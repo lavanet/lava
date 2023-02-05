@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -113,34 +113,240 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+type QueryGetPackageVersionsStorageRequest struct {
+	PackageIndex string `protobuf:"bytes,1,opt,name=packageIndex,proto3" json:"packageIndex,omitempty"`
+}
+
+func (m *QueryGetPackageVersionsStorageRequest) Reset()         { *m = QueryGetPackageVersionsStorageRequest{} }
+func (m *QueryGetPackageVersionsStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryGetPackageVersionsStorageRequest) ProtoMessage()    {}
+func (*QueryGetPackageVersionsStorageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dea614b74c5d3a71, []int{2}
+}
+func (m *QueryGetPackageVersionsStorageRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetPackageVersionsStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetPackageVersionsStorageRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetPackageVersionsStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetPackageVersionsStorageRequest.Merge(m, src)
+}
+func (m *QueryGetPackageVersionsStorageRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetPackageVersionsStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetPackageVersionsStorageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetPackageVersionsStorageRequest proto.InternalMessageInfo
+
+func (m *QueryGetPackageVersionsStorageRequest) GetPackageIndex() string {
+	if m != nil {
+		return m.PackageIndex
+	}
+	return ""
+}
+
+type QueryGetPackageVersionsStorageResponse struct {
+	PackageVersionsStorage PackageVersionsStorage `protobuf:"bytes,1,opt,name=packageVersionsStorage,proto3" json:"packageVersionsStorage"`
+}
+
+func (m *QueryGetPackageVersionsStorageResponse) Reset() {
+	*m = QueryGetPackageVersionsStorageResponse{}
+}
+func (m *QueryGetPackageVersionsStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryGetPackageVersionsStorageResponse) ProtoMessage()    {}
+func (*QueryGetPackageVersionsStorageResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dea614b74c5d3a71, []int{3}
+}
+func (m *QueryGetPackageVersionsStorageResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetPackageVersionsStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetPackageVersionsStorageResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetPackageVersionsStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetPackageVersionsStorageResponse.Merge(m, src)
+}
+func (m *QueryGetPackageVersionsStorageResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetPackageVersionsStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetPackageVersionsStorageResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetPackageVersionsStorageResponse proto.InternalMessageInfo
+
+func (m *QueryGetPackageVersionsStorageResponse) GetPackageVersionsStorage() PackageVersionsStorage {
+	if m != nil {
+		return m.PackageVersionsStorage
+	}
+	return PackageVersionsStorage{}
+}
+
+type QueryAllPackageVersionsStorageRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllPackageVersionsStorageRequest) Reset()         { *m = QueryAllPackageVersionsStorageRequest{} }
+func (m *QueryAllPackageVersionsStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAllPackageVersionsStorageRequest) ProtoMessage()    {}
+func (*QueryAllPackageVersionsStorageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dea614b74c5d3a71, []int{4}
+}
+func (m *QueryAllPackageVersionsStorageRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllPackageVersionsStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllPackageVersionsStorageRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllPackageVersionsStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllPackageVersionsStorageRequest.Merge(m, src)
+}
+func (m *QueryAllPackageVersionsStorageRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllPackageVersionsStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllPackageVersionsStorageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllPackageVersionsStorageRequest proto.InternalMessageInfo
+
+func (m *QueryAllPackageVersionsStorageRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAllPackageVersionsStorageResponse struct {
+	PackageVersionsStorage []PackageVersionsStorage `protobuf:"bytes,1,rep,name=packageVersionsStorage,proto3" json:"packageVersionsStorage"`
+	Pagination             *query.PageResponse      `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) Reset() {
+	*m = QueryAllPackageVersionsStorageResponse{}
+}
+func (m *QueryAllPackageVersionsStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAllPackageVersionsStorageResponse) ProtoMessage()    {}
+func (*QueryAllPackageVersionsStorageResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dea614b74c5d3a71, []int{5}
+}
+func (m *QueryAllPackageVersionsStorageResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllPackageVersionsStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllPackageVersionsStorageResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllPackageVersionsStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllPackageVersionsStorageResponse.Merge(m, src)
+}
+func (m *QueryAllPackageVersionsStorageResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllPackageVersionsStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllPackageVersionsStorageResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllPackageVersionsStorageResponse proto.InternalMessageInfo
+
+func (m *QueryAllPackageVersionsStorageResponse) GetPackageVersionsStorage() []PackageVersionsStorage {
+	if m != nil {
+		return m.PackageVersionsStorage
+	}
+	return nil
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.packagemanager.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.packagemanager.QueryParamsResponse")
+	proto.RegisterType((*QueryGetPackageVersionsStorageRequest)(nil), "lavanet.lava.packagemanager.QueryGetPackageVersionsStorageRequest")
+	proto.RegisterType((*QueryGetPackageVersionsStorageResponse)(nil), "lavanet.lava.packagemanager.QueryGetPackageVersionsStorageResponse")
+	proto.RegisterType((*QueryAllPackageVersionsStorageRequest)(nil), "lavanet.lava.packagemanager.QueryAllPackageVersionsStorageRequest")
+	proto.RegisterType((*QueryAllPackageVersionsStorageResponse)(nil), "lavanet.lava.packagemanager.QueryAllPackageVersionsStorageResponse")
 }
 
 func init() { proto.RegisterFile("packagemanager/query.proto", fileDescriptor_dea614b74c5d3a71) }
 
 var fileDescriptor_dea614b74c5d3a71 = []byte{
-	// 304 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0x31, 0x4b, 0x03, 0x31,
-	0x14, 0xc7, 0x2f, 0xa2, 0x1d, 0xe2, 0x16, 0x3b, 0xc8, 0x55, 0xa2, 0xb4, 0x08, 0xa2, 0x90, 0xd8,
-	0xfa, 0x09, 0xec, 0xe4, 0xa8, 0x9d, 0xc4, 0xed, 0x5d, 0x09, 0xf1, 0xb0, 0x97, 0x97, 0x5e, 0xd2,
-	0x62, 0x57, 0x3f, 0x81, 0xe0, 0xe2, 0xec, 0xa7, 0xe9, 0x58, 0x70, 0x71, 0x12, 0x69, 0xfd, 0x20,
-	0xd2, 0xe4, 0x96, 0x56, 0x29, 0x4e, 0x2f, 0xbc, 0xfc, 0x7f, 0xbf, 0xbc, 0x3c, 0x9a, 0x5a, 0xe8,
-	0x3f, 0x80, 0x56, 0x05, 0x18, 0xd0, 0xaa, 0x94, 0xc3, 0x91, 0x2a, 0x27, 0xc2, 0x96, 0xe8, 0x91,
-	0x35, 0x06, 0x30, 0x06, 0xa3, 0xbc, 0x58, 0x56, 0xb1, 0x1a, 0x4c, 0xeb, 0x1a, 0x35, 0x86, 0x9c,
-	0x5c, 0x9e, 0x22, 0x92, 0x1e, 0x68, 0x44, 0x3d, 0x50, 0x12, 0x6c, 0x2e, 0xc1, 0x18, 0xf4, 0xe0,
-	0x73, 0x34, 0xae, 0xba, 0x3d, 0xed, 0xa3, 0x2b, 0xd0, 0xc9, 0x0c, 0x9c, 0x8a, 0x2f, 0xc9, 0x71,
-	0x3b, 0x53, 0x1e, 0xda, 0xd2, 0x82, 0xce, 0x4d, 0x08, 0x57, 0xd9, 0xc6, 0xda, 0x60, 0x16, 0x4a,
-	0x28, 0x2a, 0x51, 0xb3, 0x4e, 0xd9, 0xcd, 0x12, 0xbf, 0x0e, 0xcd, 0x9e, 0x1a, 0x8e, 0x94, 0xf3,
-	0xcd, 0x5b, 0xba, 0xb7, 0xd2, 0x75, 0x16, 0x8d, 0x53, 0xec, 0x92, 0xd6, 0x22, 0xbc, 0x4f, 0x8e,
-	0xc8, 0xc9, 0x6e, 0xa7, 0x25, 0x36, 0xfc, 0x4b, 0x44, 0xb8, 0xbb, 0x3d, 0xfd, 0x3c, 0x4c, 0x7a,
-	0x15, 0xd8, 0x79, 0x23, 0x74, 0x27, 0xa8, 0xd9, 0x2b, 0xa1, 0xb5, 0x18, 0x61, 0x72, 0xa3, 0xe7,
-	0xf7, 0x7c, 0xe9, 0xf9, 0xff, 0x81, 0x38, 0x7a, 0xf3, 0xec, 0xe9, 0xfd, 0xfb, 0x65, 0xeb, 0x98,
-	0xb5, 0x64, 0x45, 0x86, 0x2a, 0xff, 0x5c, 0x4d, 0xf7, 0x6a, 0x3a, 0xe7, 0x64, 0x36, 0xe7, 0xe4,
-	0x6b, 0xce, 0xc9, 0xf3, 0x82, 0x27, 0xb3, 0x05, 0x4f, 0x3e, 0x16, 0x3c, 0xb9, 0x13, 0x3a, 0xf7,
-	0xf7, 0xa3, 0x4c, 0xf4, 0xb1, 0x58, 0x15, 0x3d, 0xae, 0xab, 0xfc, 0xc4, 0x2a, 0x97, 0xd5, 0xc2,
-	0x96, 0x2f, 0x7e, 0x02, 0x00, 0x00, 0xff, 0xff, 0x2b, 0x0f, 0x0e, 0x44, 0x1d, 0x02, 0x00, 0x00,
+	// 526 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0xc1, 0x6b, 0x13, 0x41,
+	0x14, 0xc6, 0x33, 0xb5, 0x06, 0x1c, 0x3d, 0x8d, 0xa5, 0xe8, 0x56, 0x56, 0x99, 0xd2, 0x2a, 0x8a,
+	0x33, 0xb6, 0x45, 0x3c, 0x79, 0x48, 0x94, 0x56, 0xd1, 0x43, 0x8c, 0x20, 0xe2, 0xa5, 0x4c, 0xe2,
+	0x30, 0x06, 0x37, 0x3b, 0x93, 0x9d, 0x49, 0x68, 0x11, 0x2f, 0xfe, 0x05, 0x82, 0x17, 0xc1, 0x7f,
+	0xa8, 0xc7, 0x82, 0x17, 0x4f, 0x22, 0x49, 0xef, 0xde, 0x3d, 0xc9, 0xce, 0x4c, 0x69, 0xb6, 0x59,
+	0x33, 0x8b, 0xe2, 0x69, 0x93, 0xdd, 0xf7, 0xbe, 0xef, 0xfb, 0xbd, 0x7d, 0xb3, 0x30, 0x52, 0xac,
+	0xfb, 0x96, 0x09, 0xde, 0x67, 0x29, 0x13, 0x3c, 0xa3, 0x83, 0x21, 0xcf, 0xf6, 0x89, 0xca, 0xa4,
+	0x91, 0x68, 0x25, 0x61, 0x23, 0x96, 0x72, 0x43, 0xf2, 0x2b, 0x29, 0x16, 0x46, 0x4b, 0x42, 0x0a,
+	0x69, 0xeb, 0x68, 0xfe, 0xcb, 0xb5, 0x44, 0x57, 0x84, 0x94, 0x22, 0xe1, 0x94, 0xa9, 0x1e, 0x65,
+	0x69, 0x2a, 0x0d, 0x33, 0x3d, 0x99, 0x6a, 0xff, 0xf4, 0x66, 0x57, 0xea, 0xbe, 0xd4, 0xb4, 0xc3,
+	0x34, 0x77, 0x4e, 0x74, 0xb4, 0xd1, 0xe1, 0x86, 0x6d, 0x50, 0xc5, 0x44, 0x2f, 0xb5, 0xc5, 0xbe,
+	0x76, 0xe5, 0x54, 0x30, 0xc5, 0x32, 0xd6, 0x3f, 0x16, 0xba, 0x3d, 0xf3, 0xd0, 0xfe, 0xdd, 0x1d,
+	0xf1, 0x4c, 0xe7, 0x7e, 0xbb, 0xda, 0xc8, 0x8c, 0x09, 0xee, 0xca, 0xf1, 0x12, 0x44, 0xcf, 0x72,
+	0xb7, 0x96, 0xd5, 0x68, 0xf3, 0xc1, 0x90, 0x6b, 0x83, 0x5f, 0xc2, 0x8b, 0x85, 0xbb, 0x5a, 0xc9,
+	0x54, 0x73, 0xd4, 0x80, 0x75, 0xe7, 0x75, 0x09, 0x5c, 0x03, 0x37, 0xce, 0x6f, 0xae, 0x92, 0x39,
+	0x63, 0x20, 0xae, 0xb9, 0xb9, 0x78, 0xf0, 0xfd, 0x6a, 0xad, 0xed, 0x1b, 0xf1, 0x13, 0xb8, 0x66,
+	0x95, 0x77, 0xb8, 0x69, 0xb9, 0xf2, 0x17, 0x3e, 0xd8, 0x73, 0x97, 0xcb, 0x47, 0x40, 0x18, 0x5e,
+	0xf0, 0x7a, 0x8f, 0xd3, 0xd7, 0x7c, 0xcf, 0x3a, 0x9e, 0x6b, 0x17, 0xee, 0xe1, 0x2f, 0x00, 0xae,
+	0x87, 0xd4, 0x7c, 0xf4, 0x01, 0x5c, 0x56, 0xa5, 0x15, 0x1e, 0x65, 0x2b, 0x80, 0x52, 0xd6, 0xea,
+	0xd1, 0xfe, 0x20, 0x8c, 0xa5, 0x47, 0x6d, 0x24, 0xc9, 0x7c, 0xd4, 0x6d, 0x08, 0x4f, 0xde, 0xb1,
+	0xcf, 0xb3, 0x4e, 0xdc, 0x42, 0x90, 0x7c, 0x21, 0x88, 0x5b, 0x3d, 0xbf, 0x10, 0xa4, 0x75, 0xd2,
+	0xdb, 0x9e, 0xea, 0xc4, 0x47, 0xc7, 0xe3, 0x98, 0xe3, 0x58, 0x61, 0x1c, 0x67, 0xfe, 0xcb, 0x38,
+	0xd0, 0x4e, 0x81, 0x72, 0xc1, 0x52, 0x5e, 0x0f, 0x52, 0xba, 0xbc, 0xd3, 0x98, 0x9b, 0xbf, 0x16,
+	0xe1, 0x59, 0x8b, 0x89, 0x3e, 0x03, 0x58, 0x77, 0x5b, 0x86, 0xe8, 0xdc, 0xc0, 0xb3, 0x2b, 0x1e,
+	0xdd, 0xa9, 0xde, 0xe0, 0x32, 0xe0, 0x5b, 0x1f, 0xbe, 0x1e, 0x7d, 0x5a, 0x58, 0x43, 0xab, 0xd4,
+	0x77, 0xda, 0x2b, 0x2d, 0x3d, 0x8c, 0xe8, 0x27, 0x80, 0xcb, 0xe5, 0x63, 0x42, 0xcd, 0xb0, 0x73,
+	0xe8, 0x74, 0x44, 0x0f, 0xfe, 0x49, 0xc3, 0x03, 0x3d, 0xb5, 0x40, 0xdb, 0xe8, 0x61, 0x00, 0xa8,
+	0xfc, 0x03, 0x42, 0xdf, 0x4d, 0x9f, 0xc5, 0xf7, 0x68, 0x02, 0xe0, 0xe5, 0x72, 0xc3, 0x46, 0x92,
+	0x54, 0x81, 0x0e, 0x9d, 0x93, 0x2a, 0xd0, 0xc1, 0xcd, 0xc7, 0xf7, 0x2d, 0xf4, 0x3d, 0x74, 0xf7,
+	0xaf, 0xa0, 0x9b, 0x8f, 0x0e, 0xc6, 0x31, 0x38, 0x1c, 0xc7, 0xe0, 0xc7, 0x38, 0x06, 0x1f, 0x27,
+	0x71, 0xed, 0x70, 0x12, 0xd7, 0xbe, 0x4d, 0xe2, 0xda, 0x2b, 0x22, 0x7a, 0xe6, 0xcd, 0xb0, 0x43,
+	0xba, 0xb2, 0x5f, 0x94, 0xde, 0x3b, 0x2d, 0x6e, 0xf6, 0x15, 0xd7, 0x9d, 0xba, 0xfd, 0x00, 0x6f,
+	0xfd, 0x0e, 0x00, 0x00, 0xff, 0xff, 0x08, 0x8d, 0x7b, 0x92, 0x67, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -157,6 +363,10 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// Queries a PackageVersionsStorage by index.
+	PackageVersionsStorage(ctx context.Context, in *QueryGetPackageVersionsStorageRequest, opts ...grpc.CallOption) (*QueryGetPackageVersionsStorageResponse, error)
+	// Queries a list of PackageVersionsStorage items.
+	PackageVersionsStorageAll(ctx context.Context, in *QueryAllPackageVersionsStorageRequest, opts ...grpc.CallOption) (*QueryAllPackageVersionsStorageResponse, error)
 }
 
 type queryClient struct {
@@ -176,10 +386,32 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
+func (c *queryClient) PackageVersionsStorage(ctx context.Context, in *QueryGetPackageVersionsStorageRequest, opts ...grpc.CallOption) (*QueryGetPackageVersionsStorageResponse, error) {
+	out := new(QueryGetPackageVersionsStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.packagemanager.Query/PackageVersionsStorage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) PackageVersionsStorageAll(ctx context.Context, in *QueryAllPackageVersionsStorageRequest, opts ...grpc.CallOption) (*QueryAllPackageVersionsStorageResponse, error) {
+	out := new(QueryAllPackageVersionsStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.packagemanager.Query/PackageVersionsStorageAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// Queries a PackageVersionsStorage by index.
+	PackageVersionsStorage(context.Context, *QueryGetPackageVersionsStorageRequest) (*QueryGetPackageVersionsStorageResponse, error)
+	// Queries a list of PackageVersionsStorage items.
+	PackageVersionsStorageAll(context.Context, *QueryAllPackageVersionsStorageRequest) (*QueryAllPackageVersionsStorageResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -188,6 +420,12 @@ type UnimplementedQueryServer struct {
 
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+}
+func (*UnimplementedQueryServer) PackageVersionsStorage(ctx context.Context, req *QueryGetPackageVersionsStorageRequest) (*QueryGetPackageVersionsStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PackageVersionsStorage not implemented")
+}
+func (*UnimplementedQueryServer) PackageVersionsStorageAll(ctx context.Context, req *QueryAllPackageVersionsStorageRequest) (*QueryAllPackageVersionsStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PackageVersionsStorageAll not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -212,6 +450,42 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_PackageVersionsStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetPackageVersionsStorageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).PackageVersionsStorage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.packagemanager.Query/PackageVersionsStorage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).PackageVersionsStorage(ctx, req.(*QueryGetPackageVersionsStorageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_PackageVersionsStorageAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllPackageVersionsStorageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).PackageVersionsStorageAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.packagemanager.Query/PackageVersionsStorageAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).PackageVersionsStorageAll(ctx, req.(*QueryAllPackageVersionsStorageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.packagemanager.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -219,6 +493,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Params",
 			Handler:    _Query_Params_Handler,
+		},
+		{
+			MethodName: "PackageVersionsStorage",
+			Handler:    _Query_PackageVersionsStorage_Handler,
+		},
+		{
+			MethodName: "PackageVersionsStorageAll",
+			Handler:    _Query_PackageVersionsStorageAll_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -281,6 +563,153 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryGetPackageVersionsStorageRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetPackageVersionsStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetPackageVersionsStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PackageIndex) > 0 {
+		i -= len(m.PackageIndex)
+		copy(dAtA[i:], m.PackageIndex)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.PackageIndex)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetPackageVersionsStorageResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetPackageVersionsStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetPackageVersionsStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.PackageVersionsStorage.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllPackageVersionsStorageRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllPackageVersionsStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllPackageVersionsStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.PackageVersionsStorage) > 0 {
+		for iNdEx := len(m.PackageVersionsStorage) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.PackageVersionsStorage[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -309,6 +738,62 @@ func (m *QueryParamsResponse) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryGetPackageVersionsStorageRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.PackageIndex)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetPackageVersionsStorageResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.PackageVersionsStorage.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryAllPackageVersionsStorageRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAllPackageVersionsStorageResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.PackageVersionsStorage) > 0 {
+		for _, e := range m.PackageVersionsStorage {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -427,6 +912,377 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetPackageVersionsStorageRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetPackageVersionsStorageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetPackageVersionsStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PackageIndex", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PackageIndex = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetPackageVersionsStorageResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetPackageVersionsStorageResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetPackageVersionsStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PackageVersionsStorage", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.PackageVersionsStorage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllPackageVersionsStorageRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllPackageVersionsStorageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllPackageVersionsStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllPackageVersionsStorageResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllPackageVersionsStorageResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllPackageVersionsStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PackageVersionsStorage", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PackageVersionsStorage = append(m.PackageVersionsStorage, PackageVersionsStorage{})
+			if err := m.PackageVersionsStorage[len(m.PackageVersionsStorage)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
