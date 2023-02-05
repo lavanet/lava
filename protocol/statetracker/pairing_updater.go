@@ -2,7 +2,7 @@ package statetracker
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
