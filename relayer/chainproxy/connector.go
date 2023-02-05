@@ -36,6 +36,7 @@ type Connector struct {
 
 func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
+	utils.LavaFormatInfo("Setting Number of Parallel Connections", &map[string]string{"nConns": strconv.FormatUint(uint64(NumberOfParallelConnections), 10)})
 	connector := &Connector{
 		freeClients: make([]*rpcclient.Client, 0, nConns),
 		addr:        addr,
@@ -195,6 +196,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 	}
 
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
+	utils.LavaFormatInfo("Setting Number of Parallel Connections", &map[string]string{"nConns": strconv.FormatUint(uint64(NumberOfParallelConnections), 10)})
 	reachedClientLimit := false
 
 	for i := uint(0); i < nConns; i++ {
