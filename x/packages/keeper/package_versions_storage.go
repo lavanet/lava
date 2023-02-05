@@ -9,7 +9,7 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/packagemanager/types"
+	"github.com/lavanet/lava/x/packages/types"
 )
 
 // SetPackageVersionsStorage set a specific packageVersionsStorage in the store from its index
@@ -260,7 +260,7 @@ func (k Keeper) deletePackage(ctx sdk.Context, packageIndex string, epoch uint64
 // Function to get the packages that should be deleted (package was edited and there are no subs for it. Also, currentEpoch > packageEpoch + packageDuration)
 func (k Keeper) getPackagesToDelete(ctx sdk.Context) (map[string][]uint64, error) {
 	// create map of packages to delete: key = packageIndex, value = list of epochs (which indicate the packages to delete)
-	var packagesToDeleteMap map[string][]uint64
+	packagesToDeleteMap := make(map[string][]uint64)
 
 	// get all the package storages
 	allPackageStorages := k.GetAllPackageVersionsStorage(ctx)
@@ -282,15 +282,22 @@ func (k Keeper) getPackagesToDelete(ctx sdk.Context) (map[string][]uint64, error
 		entryListWithoutLatestPackageVersion := entryList[1:]
 
 		// iterate over the package fixation entries
-		for _, packageFixationEntry := range entryListWithoutLatestPackageVersion {
-			// get the package from the package fixation entry
+		for packageIndex, packageFixationEntry := range entryListWithoutLatestPackageVersion {
+			// get the package to check from the package fixation entry
 			packageToCheck, err := k.getPackageFromPackageFixationEntry(ctx, packageFixationEntry)
 			if err != nil {
 				return nil, utils.LavaError(ctx, k.Logger(ctx), "get_package_from_package_entry", map[string]string{"err": err.Error()}, "could not get unmarshal data from packageFixationEntry to get package object")
 			}
 
-			// check if the package is stale (the epoch it was created + defined duration has passed)
-			if currentEpoch > packageToCheck.GetEpoch()+packageToCheck.GetDuration() {
+			// get the package to check's updated package
+			updateOfPackageToCheckFixatioEntry := entryListWithoutLatestPackageVersion[packageIndex-1]
+			updateOfPackageToCheck, err := k.getPackageFromPackageFixationEntry(ctx, updateOfPackageToCheckFixatioEntry)
+			if err != nil {
+				return nil, utils.LavaError(ctx, k.Logger(ctx), "get_package_from_package_entry", map[string]string{"err": err.Error()}, "could not get unmarshal data from packageFixationEntry to get package object")
+			}
+
+			// check if the package is stale (current epoch is bigger than the epoch its update was created + this package's duration)
+			if currentEpoch > updateOfPackageToCheck.GetEpoch()+packageToCheck.GetDuration() {
 				// check if the package also has no subscriptions
 				if packageToCheck.GetSubscriptions() == 0 {
 					// check if the map already has the current packageIndex key
@@ -300,15 +307,59 @@ func (k Keeper) getPackagesToDelete(ctx sdk.Context) (map[string][]uint64, error
 						packagesToDeleteMap[packageToCheck.GetIndex()] = []uint64{packageToCheck.GetEpoch()}
 					} else {
 						// packageIndex exist in map -> update the epoch list
-						updatedEpochList := append(epochList, packageToCheck.GetEpoch())
-						packagesToDeleteMap[packageToCheck.GetIndex()] = updatedEpochList
+						epochList := append(epochList, packageToCheck.GetEpoch())
+						packagesToDeleteMap[packageToCheck.GetIndex()] = epochList
 					}
 				}
 			}
-
 		}
-
 	}
 
 	return packagesToDeleteMap, nil
+}
+
+func (k Keeper) setSubscriptions(ctx sdk.Context, packageIndex string, subscriptions uint64) error {
+	// get the package storage of the input package ID
+	packageVersionsStorage, found := k.GetPackageVersionsStorage(ctx, packageIndex)
+	if !found {
+		return utils.LavaError(ctx, k.Logger(ctx), "get_package_versions_storage", map[string]string{"packageIndex": packageIndex}, "could not get packageVersionsStorage with package index")
+	}
+
+	// get the fixation entry list
+	entryList := packageVersionsStorage.GetPackageStorage().GetEntryList()
+
+	// get the latest package fixation entry (we get the latest because it's the only buyable version)
+	latestPackageFixationEntry := common.GetLatestFixatedEntry(entryList)
+
+	// get the package out of the package fixation entry
+	packageToEdit, err := k.getPackageFromPackageFixationEntry(ctx, latestPackageFixationEntry)
+	if err != nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "get_package_from_package_fixation_entry", map[string]string{"err": err.Error(), "packageIndex": packageIndex}, "could not get package's from package fixation entry")
+	}
+
+	// update the subscriptions field
+	packageToEdit.Subscriptions = subscriptions
+
+	// marshal the edited package
+	marshaledPackage, err := k.cdc.Marshal(packageToEdit)
+	if err != nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "marshal_new_package", map[string]string{"err": err.Error()}, "could not marshal package")
+	}
+
+	// create a new fixated entry
+	updatedPackageFixationEntry, err := common.CreateNewFixatedEntry(ctx, packageToEdit.GetEpoch(), marshaledPackage)
+	if err != nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "create_new_fixated_entry", map[string]string{"err": err.Error()}, "could not create new fixated entry")
+	}
+
+	// replace the latest package fixation entry in entryList
+	entryList[0] = updatedPackageFixationEntry
+
+	// update the packageVersionsStorage's entry list
+	packageVersionsStorage.PackageStorage.EntryList = entryList
+
+	// update the KVStore with the new packageVersionsStorage
+	k.SetPackageVersionsStorage(ctx, packageVersionsStorage)
+
+	return nil
 }
