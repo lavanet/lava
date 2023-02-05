@@ -103,3 +103,7 @@ func (k Keeper) RecommendedEpochNumToCollectPayment(ctx sdk.Context) (res uint64
 	k.paramstore.Get(ctx, types.KeyRecommendedEpochNumToCollectPayment, &res)
 	return
 }
+
+func (k Keeper) SetRecommendedEpochNumToCollectPayment(ctx sdk.Context, val uint64) {
+	k.paramstore.Set(ctx, types.KeyRecommendedEpochNumToCollectPayment, val)
+}
