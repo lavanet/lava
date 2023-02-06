@@ -3,12 +3,12 @@ package ibc_thirdparty
 import (
 	"context"
 
-	pb_pkg6 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/controller/types"
-	pb_pkg5 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/host/types"
-	pb_pkg1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/apps/transfer/types"
-	pb_pkg2 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
-	pb_pkg3 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
-	pb_pkg4 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
+	pb_pkg6 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/controller/types"
+	pb_pkg5 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/host/types"
+	pb_pkg1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/apps/transfer/types"
+	pb_pkg2 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
+	pb_pkg3 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	pb_pkg4 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
 	"google.golang.org/grpc"
 )
 

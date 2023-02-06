@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
