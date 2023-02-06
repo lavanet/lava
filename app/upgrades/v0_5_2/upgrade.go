@@ -1,4 +1,4 @@
-package v0_5_1
+package v0_5_2
 
 import (
 	"log"
@@ -12,7 +12,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-const UpgradeName = "v0.5.1"
+const UpgradeName = "v0.5.2"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,           // upgrade name defined few lines above
