@@ -354,11 +354,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 
 		query := "?" + string(c.Request().URI().QueryString())
 		path := c.Params("*")
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
+		dappID := extractDappIDFromFiberContext(c)
 		msgSeed := apil.logger.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
