@@ -39,7 +39,6 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Advance epoch
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
@@ -66,10 +65,8 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			} else {
 				require.NotEqual(t, tt.moniker, stakeEntry.Moniker)
 			}
-
 		})
 	}
-
 }
 
 func TestModifyStakeProviderWithMoniker(t *testing.T) {
@@ -107,7 +104,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	require.True(t, foundProvider)
 	require.Equal(t, moniker, stakeEntry.Moniker)
 
-	//modify moniker
+	// modify moniker
 	moniker = "anotherExampleMoniker"
 	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
 	require.Nil(t, err)

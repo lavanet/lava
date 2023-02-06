@@ -14,7 +14,6 @@ import (
 
 // Test that if the EpochBlocks param decreases make sure the provider/client is staked only after the original EpochBlocks value (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksDecrease(t *testing.T) {
-
 	// Create teststruct ts
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -84,7 +83,6 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// check if the provider/client are staked
 			_, foundProvider, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, foundProvider)
@@ -92,12 +90,10 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 			require.Equal(t, tt.shouldBeStaked, foundClient)
 		})
 	}
-
 }
 
 // Test that if the EpochBlocks param increases make sure the provider/client is staked after the original EpochBlocks value, and not the new enlarged one (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksIncrease(t *testing.T) {
-
 	// Create teststruct ts
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -171,7 +167,6 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// check if the provider/client are staked
 			_, found, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, found)
@@ -179,12 +174,10 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 			require.Equal(t, tt.shouldBeStaked, found)
 		})
 	}
-
 }
 
 // Test that if the UnstakeHoldBlocks param decreases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
 func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
-
 	// Create teststruct ts
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -263,12 +256,10 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
-
 }
 
 // Test that if the UnstakeHoldBlocks param increases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
 func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
-
 	// Create teststruct ts
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -349,5 +340,4 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
-
 }

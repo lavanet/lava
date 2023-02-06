@@ -87,7 +87,6 @@ func (ts *testStruct) getProvider(addr string) *account {
 
 // Test that a provider payment is valid if he asked it within the chain's memory, and check the relay payment object (RPO)
 func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
-
 	// setup testnet with mock spec, a staked client and a staked provider
 	ts := setupForPaymentTest(t)
 
@@ -122,7 +121,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 	for _, tt := range tests {
 		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Advance epochs according to the epochsToAdvance
 			if tt.epochsToAdvance != 0 {
 				for i := 0; i < int(tt.epochsToAdvance); i++ {
@@ -164,10 +162,8 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
 			verifyRelayPaymentObjects(t, ts, relayRequest, tt.valid)
-
 		})
 	}
-
 }
 
 func setupForPaymentTest(t *testing.T) *testStruct {
@@ -189,7 +185,6 @@ func setupForPaymentTest(t *testing.T) *testStruct {
 }
 
 func TestRelayPaymentBlockHeight(t *testing.T) {
-
 	tests := []struct {
 		name      string
 		blockTime int64
@@ -202,8 +197,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			ts := setupForPaymentTest(t) //reset the keepers state before each state
+			ts := setupForPaymentTest(t) // reset the keepers state before each state
 			ts.spec = common.CreateMockSpec()
 			ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 			err := ts.addClient(1)
@@ -255,7 +249,6 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			} else {
 				require.NotNil(t, err)
 			}
-
 		})
 	}
 }
@@ -534,7 +527,6 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 	burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
 	newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 	require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
-
 }
 
 func TestRelayPaymentDataModification(t *testing.T) {
@@ -578,7 +570,6 @@ func TestRelayPaymentDataModification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			relayRequest.Provider = tt.provider
 			relayRequest.CuSum = tt.cu
 			relayRequest.SessionId = uint64(tt.id)
@@ -637,13 +628,12 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	}{
 		{"Epoch", 1},
 		{"Memory-Epoch", epochToSave - 1},
-		{"Memory", 1},       //epochToSave
-		{"Memory+Epoch", 1}, //epochToSave + 1
+		{"Memory", 1},       // epochToSave
+		{"Memory+Epoch", 1}, // epochToSave + 1
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			for i := 0; i < int(tt.advance); i++ {
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 			}
@@ -654,7 +644,6 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 			require.NotNil(t, err)
-
 		})
 	}
 }
@@ -685,10 +674,10 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 		epoch int64
 		valid bool
 	}{
-		{"Epoch", 1, 1, true},                               //current -1*epoch
-		{"Memory-Epoch", 2, int64(epochsToSave - 1), true},  //current -epoch to save + 1
-		{"Memory", 3, int64(epochsToSave), true},            //current - epochToSave
-		{"Memory+Epoch", 4, int64(epochsToSave + 1), false}, //current - epochToSave - 1
+		{"Epoch", 1, 1, true},                               // current -1*epoch
+		{"Memory-Epoch", 2, int64(epochsToSave - 1), true},  // current -epoch to save + 1
+		{"Memory", 3, int64(epochsToSave), true},            // current - epochToSave
+		{"Memory+Epoch", 4, int64(epochsToSave + 1), false}, // current - epochToSave - 1
 	}
 
 	for _, tt := range tests {
@@ -731,7 +720,6 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 			} else {
 				require.NotNil(t, err)
 			}
-
 		})
 	}
 }
@@ -812,7 +800,6 @@ func TestRelayPaymentQoS(t *testing.T) {
 			} else {
 				require.NotNil(t, err)
 			}
-
 		})
 	}
 }
@@ -846,7 +833,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 			params.ServicersToPairCount = 100
 			ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-			ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
+			ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) // we need that in order for the param set to take effect
 			err := ts.addClient(1)
 			require.Nil(t, err)
 			err = ts.addProvider(100)
@@ -990,7 +977,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) // we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -1108,7 +1095,7 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 5
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) // we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(5)
@@ -1199,7 +1186,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) // we need that in order for the param set to take effect
 	err := ts.addClient(2)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -1297,7 +1284,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) // we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -1401,7 +1388,6 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 // Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
 func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, valid bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
-
 	// Get provider's and consumer's before payment
 	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
 	stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
@@ -1428,8 +1414,7 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 }
 
 func TestEpochPaymentDeletion(t *testing.T) {
-
-	ts := setupForPaymentTest(t) //reset the keepers state before each state
+	ts := setupForPaymentTest(t) // reset the keepers state before each state
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	err := ts.addClient(1)
@@ -1488,5 +1473,4 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	ans, err := ts.keepers.Pairing.EpochPaymentsAll(ts.ctx, &types.QueryAllEpochPaymentsRequest{})
 	require.Nil(t, err)
 	require.Equal(t, 0, len(ans.EpochPayments))
-
 }
