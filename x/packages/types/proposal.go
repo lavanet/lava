@@ -25,19 +25,14 @@ func checkPackagesProposal(packageToCheck Package) error {
 		return sdkerrors.Wrap(ErrInvalidPackageOveruse, "package can't allow CU overuse and have overuse rate of zero")
 	}
 
-	// check compute units fields
-	if packageToCheck.GetComputeUnits() == 0 || packageToCheck.GetComputeUnitsPerEpoch() == 0 {
+	// check the compute units field
+	if packageToCheck.GetComputeUnits() == 0 {
 		return sdkerrors.Wrap(ErrInvalidPackageComputeUnits, "package's compute units fields can't be zero")
 	}
 
 	// check that the package's servicersToPair is larger than 1
 	if packageToCheck.GetServicersToPair() <= 1 {
 		return sdkerrors.Wrap(ErrInvalidPackageServicersToPair, "package's servicersToPair field can't be zero")
-	}
-
-	// check that the subscriptions field is zero (this field counts the number of users subscribed to this package. If it's a new package, it must be zero)
-	if packageToCheck.GetSubscriptions() != 0 {
-		return sdkerrors.Wrap(ErrInvalidPackageSubscriptions, "package's subscriptions field can't be non-zero")
 	}
 
 	// check that the package's name length is below the max length

@@ -140,6 +140,17 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 	}
 	packageToAdd.Epoch = nextEpoch
 
+	// make the package's computeUnitsPerEpoch be computeUnits / duration (in epochs)
+	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, currentEpoch)
+	if err != nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "epoch_blocks", map[string]string{"err": err.Error()}, "could not get epoch blocks")
+	}
+	durationInEpochs := packageToAdd.GetDuration() / epochBlocks
+	packageToAdd.ComputeUnitsPerEpoch = packageToAdd.GetComputeUnits() / durationInEpochs
+
+	// make the package's subscriptions field zero (it's a new package, so no one is subscribed yet)
+	packageToAdd.Subscriptions = 0
+
 	// marshal the package
 	marshaledPackage, err := k.cdc.Marshal(packageToAdd)
 	if err != nil {
