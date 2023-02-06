@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.packages;
 
 option go_package = "github.com/lavanet/lava/x/packages/types";
+option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 

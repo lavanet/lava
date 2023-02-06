@@ -8,7 +8,6 @@ import (
 	common "github.com/lavanet/lava/common"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/packages/types"
 )
 
@@ -130,15 +129,16 @@ func (k Keeper) getPackageFromPackageFixationEntry(ctx sdk.Context, packageFixat
 }
 
 // Function to add a new package to the packageVersionsStorage. It supports addition of packages with new index and packages with existing index (index that is already saved in the storage)
-func (k Keeper) addNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Package) error {
-	// get current epoch
+func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Package) error {
+	// get current epoch and next epoch
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
 
-	// verify package's fields
-	err := k.verifyNewPackage(ctx, packageToAdd, currentEpoch)
+	// make the package's epoch the next epoch (which is when it will be added)
+	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, currentEpoch)
 	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_new_package", map[string]string{"err": err.Error()}, "one or more fields of the new package hold invalid values")
+		return utils.LavaError(ctx, k.Logger(ctx), "get_next_epoch", map[string]string{"err": err.Error()}, "could not get next epoch")
 	}
+	packageToAdd.Epoch = nextEpoch
 
 	// marshal the package
 	marshaledPackage, err := k.cdc.Marshal(packageToAdd)
@@ -176,51 +176,6 @@ func (k Keeper) addNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 
 	// update the KVStore with the new packageVersionsStorage
 	k.SetPackageVersionsStorage(ctx, packageVersionsStorage)
-
-	return nil
-}
-
-// Function to verify a package object fields
-func (k Keeper) verifyNewPackage(ctx sdk.Context, packageToCheck *types.Package, epochToAddPackage uint64) error {
-	// check that the epoch field inside the package object matches the epoch that the package is going to be added on
-	if packageToCheck.GetEpoch() != epochToAddPackage {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageEpoch": strconv.FormatUint(packageToCheck.GetEpoch(), 10), "epochToAddPackage": strconv.FormatUint(epochToAddPackage, 10)}, "the package's epoch field does not match the epoch it's supposed to be added on")
-	}
-
-	// check that the package's duration is non-zero
-	if packageToCheck.GetDuration() == 0 {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageDuration": strconv.FormatUint(packageToCheck.GetDuration(), 10)}, "the package's duration is zero")
-	}
-
-	// check that the package's price is non-zero
-	if packageToCheck.GetPrice() == sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()) {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packagePrice": strconv.FormatUint(packageToCheck.GetPrice().Amount.Uint64(), 10)}, "the package's price is zero")
-	}
-
-	// check that if overuse is allowed then the overuse rate is non-zero
-	if packageToCheck.GetAllowOveruse() && packageToCheck.GetOveruseRate() == 0 {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageAllowOveruse": strconv.FormatBool(packageToCheck.GetAllowOveruse()), "overuseRate": strconv.FormatUint(packageToCheck.GetOveruseRate(), 10)}, "package allows overuse but overuse rate is 0")
-	}
-
-	// check compute units fields
-	if packageToCheck.GetComputeUnits() == 0 || packageToCheck.GetComputeUnitsPerEpoch() == 0 {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageComputeUnits": strconv.FormatUint(packageToCheck.GetComputeUnits(), 10), "packageComputeUnitsPerEpoch": strconv.FormatUint(packageToCheck.GetComputeUnitsPerEpoch(), 10)}, "one or more of the package's compute unit fields is zero")
-	}
-
-	// check that the package's servicersToPair is larger than 1
-	if packageToCheck.GetServicersToPair() <= 1 {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageServicersToPair": strconv.FormatUint(packageToCheck.GetServicersToPair(), 10)}, "package's servicersToPair field is less than or equal to zero")
-	}
-
-	// check that the subscriptions field is zero (this field counts the number of users subscribed to this package. If it's a new package, it must be zero)
-	if packageToCheck.GetSubscriptions() != 0 {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageSubscriptions": strconv.FormatUint(packageToCheck.GetSubscriptions(), 10)}, "package's subscriptions field is not equal to zero")
-	}
-
-	// check that the package's name length is below the max length
-	if len(packageToCheck.GetName()) > types.MAX_LEN_PACKAGE_NAME {
-		return utils.LavaError(ctx, k.Logger(ctx), "verify_package_fields", map[string]string{"packageName": packageToCheck.GetName()}, "package's name is too long")
-	}
 
 	return nil
 }

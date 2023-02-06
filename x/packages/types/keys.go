@@ -15,6 +15,9 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_packages"
+
+	// Proposals router keys
+	ProposalsRouterKey = "packagesproposals"
 )
 
 func KeyPrefix(p string) []byte {
