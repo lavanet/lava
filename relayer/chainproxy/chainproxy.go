@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -318,34 +317,27 @@ func SendRelay(
 func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		// dappID := ""
-		// if len(c.Route().Params) > 1 {
-		// 	dappID = c.Route().Params[1]
-		// 	dappID = strings.ReplaceAll(dappID, "*", "")
-		// }
+		dappId := ExtractDappIDFromFiberContext(c)
+		c.Locals("dappId", dappId)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
 
 func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
-	if dappID, ok := dappIDLocal.(string); ok {
-		// zeroallocation policy for fiber.Ctx
-		buffer := make([]byte, len(dappID))
-		copy(buffer, dappID)
-		return string(buffer)
+	dappId, ok := c.Locals("dappId").(string)
+	if !ok {
+		dappId = "NoDappID"
 	}
-	return "NoDappID"
+	return dappId
 }
 
 func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	if len(c.Route().Params) > 1 {
-		dappID = c.Route().Params[1]
-		dappID = strings.ReplaceAll(dappID, "*", "")
-		return
+	dappID = c.Params("dappId")
+	if dappID == "" {
+		dappID = "NoDappID"
 	}
-	return "NoDappID"
+	return dappID
 }
 
 func getTimePerCu(cu uint64) time.Duration {
