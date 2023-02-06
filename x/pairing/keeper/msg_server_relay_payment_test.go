@@ -1409,6 +1409,7 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 	// perform payment
 	_, err := ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
 	if valid {
+		require.Nil(t, err)
 		// payment is valid, provider's balance should increase
 		mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
 		want := mint.MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum)) // The compensation for a single query
