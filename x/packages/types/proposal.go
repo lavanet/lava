@@ -45,6 +45,16 @@ func checkPackagesProposal(packageToCheck Package) error {
 		return sdkerrors.Wrap(ErrInvalidPackageName, "package's name is too long")
 	}
 
+	// check that the package's description length is below the max length
+	if len(packageToCheck.GetDescription()) > MAX_LEN_PACKAGE_DESCRIPTION {
+		return sdkerrors.Wrap(ErrInvalidPackageDescription, "package's description is too long")
+	}
+
+	// check that the package's type length is below the max length
+	if len(packageToCheck.GetType()) > MAX_LEN_PACKAGE_TYPE {
+		return sdkerrors.Wrap(ErrInvalidPackageType, "package's type is too long")
+	}
+
 	return nil
 }
 

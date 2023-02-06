@@ -18,4 +18,6 @@ message Package {
     uint64 overuseRate = 9; // price of CU overuse
     uint64 subscriptions = 10; // the amount of users currently subscribed to this package
     string name = 11; // package name (non-unique "human" name)
+    string description = 12; // package description (for humans)
+    string type = 13; // package type
 }
