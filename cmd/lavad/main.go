@@ -18,11 +18,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/relayer"
 	"github.com/lavanet/lava/relayer/chainproxy"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -306,8 +306,8 @@ func main() {
 					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
 				}
 			}
-			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
-			return nil
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+			return err
 		},
 	}
 
@@ -425,8 +425,8 @@ func main() {
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
 			}
-			rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
-			return nil
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
+			return err
 		},
 	}
 

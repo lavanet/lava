@@ -9,7 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -18,10 +18,11 @@ import (
 )
 
 const (
-	TimePerCU                = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay = time.Second
-	AverageWorldLatency      = 200 * time.Millisecond
-	SupportedNumberOfVRFs    = 2
+	TimePerCU                      = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay       = time.Second
+	AverageWorldLatency            = 200 * time.Millisecond
+	DataReliabilityTimeoutIncrease = 5 * time.Second
+	SupportedNumberOfVRFs          = 2
 )
 
 type RelayRequestCommonData struct {

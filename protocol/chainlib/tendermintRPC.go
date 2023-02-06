@@ -17,7 +17,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
@@ -337,7 +337,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			c.Status(fiber.StatusInternalServerError)
 
 			// Construct json response
-			response := convertToJsonError(errMasking)
+			response := chainproxy.ConvertToTendermintError(errMasking, c.Body())
 
 			// Return error json response
 			return c.SendString(response)
@@ -515,7 +515,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 		replyMsg = &chainproxy.RPCResponse{
 			JSONRPC: nodeMessage.Version,
 			ID:      id,
-			Error:   chainproxy.ConvertErrorToRPCError(err),
+			Error:   chainproxy.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
 		}
 	} else {
 		replyMessage, err = chainproxy.ConvertTendermintMsg(rpcMessage)

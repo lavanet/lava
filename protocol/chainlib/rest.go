@@ -13,7 +13,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"

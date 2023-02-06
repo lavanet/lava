@@ -335,10 +335,16 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
-func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker) {
-	config.validate()
+func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+	err = config.validate()
+	if err != nil {
+		return nil, err
+	}
 	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory}
-	chainTracker.start(ctx, config.AverageBlockTime)
-	chainTracker.serve(ctx, config.ServerAddress)
+	err = chainTracker.start(ctx, config.AverageBlockTime)
+	if err != nil {
+		return nil, err
+	}
+	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
 }

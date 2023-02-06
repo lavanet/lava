@@ -77,6 +77,9 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 		}
 		connector.freeClients = append(connector.freeClients, rpcClient)
 	}
+	if len(connector.freeClients) == 0 {
+		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, &map[string]string{"address": addr})
+	}
 	utils.LavaFormatInfo("Number of parallel connections created: "+strconv.Itoa(len(connector.freeClients)), nil)
 	go connector.connectorLoop(ctx)
 	return connector
@@ -225,6 +228,9 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 			break
 		}
 		connector.freeClients = append(connector.freeClients, grpcClient)
+	}
+	if len(connector.freeClients) == 0 {
+		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, &map[string]string{"address": addr})
 	}
 	go connector.connectorLoop(ctx)
 	return connector

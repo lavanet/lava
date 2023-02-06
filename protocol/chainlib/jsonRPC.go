@@ -14,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/parser"
 

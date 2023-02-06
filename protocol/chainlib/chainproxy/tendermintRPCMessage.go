@@ -44,15 +44,15 @@ func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 	return rpcError, nil
 }
 
-func ConvertErrorToRPCError(err error) *tenderminttypes.RPCError {
+func ConvertErrorToRPCError(errString string, code int) *tenderminttypes.RPCError {
 	var rpcError *tenderminttypes.RPCError
-	unmarshalError := json.Unmarshal([]byte(err.Error()), &rpcError)
+	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
 	if unmarshalError != nil {
-		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": err.Error()})
+		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
 		rpcError = &tenderminttypes.RPCError{
-			Code:    -1, // TODO get code from error
+			Code:    code,
 			Message: "Rpc Error",
-			Data:    err.Error(),
+			Data:    errString,
 		}
 	}
 	return rpcError
@@ -122,4 +122,28 @@ func ConvertTendermintMsg(rpcMsg *rpcclient.JsonrpcMessage) (*RPCResponse, error
 	}
 
 	return msg, nil
+}
+
+func ConvertToTendermintError(errString string, inputInfo []byte) string {
+	var msg JsonrpcMessage
+	err := json.Unmarshal(inputInfo, &msg)
+	if err == nil {
+		id, errId := IdFromRawMessage(msg.ID)
+		if errId != nil {
+			utils.LavaFormatError("error idFromRawMessage", errId, nil)
+			return InternalErrorString
+		}
+		res, merr := json.Marshal(&RPCResponse{
+			JSONRPC: msg.Version,
+			ID:      id,
+			Error:   ConvertErrorToRPCError(errString, LavaErrorCode),
+		})
+		if merr != nil {
+			utils.LavaFormatError("convertToTendermintError json.Marshal", merr, nil)
+			return InternalErrorString
+		}
+		return string(res)
+	}
+	utils.LavaFormatError("error convertToTendermintError", err, nil)
+	return InternalErrorString
 }
