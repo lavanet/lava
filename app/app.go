@@ -88,6 +88,7 @@ import (
 	"github.com/lavanet/lava/app/upgrades"
 	"github.com/lavanet/lava/app/upgrades/v0_5_0"
 	"github.com/lavanet/lava/app/upgrades/v0_5_2"
+	"github.com/lavanet/lava/app/upgrades/v0_5_1"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -117,7 +118,7 @@ const (
 )
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
-var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_2.Upgrade}
+var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_1.Upgrade, v0_5_2.Upgrade}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
