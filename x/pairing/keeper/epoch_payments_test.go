@@ -39,6 +39,7 @@ func TestEpochPaymentsGet(t *testing.T) {
 		)
 	}
 }
+
 func TestEpochPaymentsRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNEpochPayments(keeper, ctx, 10)

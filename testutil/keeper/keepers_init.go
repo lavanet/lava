@@ -18,6 +18,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
@@ -31,7 +32,9 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
-const BLOCK_TIME = 30 * time.Second
+const (
+	BLOCK_TIME = 30 * time.Second
+)
 
 const BLOCK_HEADER_LEN = 32
 
@@ -214,20 +217,9 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 // Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-	block := uint64(unwrapedCtx.BlockHeight())
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		ks.Epochstorage.FixateParams(unwrapedCtx, block)
-		// begin block
-		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
-		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
-		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
-
-		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
-
-		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
-		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
+		ks.Epochstorage.EpochStart(unwrapedCtx)
+		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)

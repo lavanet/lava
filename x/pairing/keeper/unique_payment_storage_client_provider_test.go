@@ -39,6 +39,7 @@ func TestUniquePaymentStorageClientProviderGet(t *testing.T) {
 		)
 	}
 }
+
 func TestUniquePaymentStorageClientProviderRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNUniquePaymentStorageClientProvider(keeper, ctx, 10)

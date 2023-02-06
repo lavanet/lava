@@ -26,10 +26,10 @@ func TestServicersToPair(t *testing.T) {
 
 	tests := []struct {
 		name                    string
-		Block                   uint64 //advance test to this block
-		ServicersToPair         uint64 //set this if not zero at the start of the test
+		Block                   uint64 // advance test to this block
+		ServicersToPair         uint64 // set this if not zero at the start of the test
 		ExpectedServicersToPair uint64
-		NumOfFixation           int //expected number of fixations in the memory
+		NumOfFixation           int // expected number of fixations in the memory
 	}{
 		{"FillHalfMemory", blocksInMemory / 2, 0, servicersToParCount, 1},
 		{"ParamChange", blocksInMemory / 2, 2 * servicersToParCount, servicersToParCount, 1},
@@ -84,14 +84,12 @@ func TestServicersToPair(t *testing.T) {
 				Block                   uint64
 				ExpectedServicersToPair uint64
 			}{Block: tt.Block, ExpectedServicersToPair: tt.ExpectedServicersToPair})
-
 		})
 	}
 }
 
 func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
-
-	ts := setupForPaymentTest(t) //reset the keepers state before each state
+	ts := setupForPaymentTest(t) // reset the keepers state before each state
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	err := ts.addClient(1)
@@ -120,18 +118,18 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	//make payment request
+	// make payment request
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
 	require.Nil(t, err)
 
-	//shorten memory
+	// shorten memory
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSave/2, 10)+"\"")
 	require.NoError(t, err)
 
-	//advance epoch
+	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	//make another request
+	// make another request
 	relayRequest.SessionId++
 
 	sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
@@ -141,14 +139,13 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
 	require.Nil(t, err)
 
-	//check that both payments were deleted
+	// check that both payments were deleted
 	for i := 0; i < int(epochsToSave); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//check second payment was deleted
+	// check second payment was deleted
 	ans, err := ts.keepers.Pairing.EpochPaymentsAll(ts.ctx, &pairingtypes.QueryAllEpochPaymentsRequest{})
 	require.Nil(t, err)
 	require.Equal(t, 0, len(ans.EpochPayments))
-
 }

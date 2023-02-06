@@ -15,7 +15,7 @@ import (
 func TestPairingUniqueness(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
@@ -79,7 +79,7 @@ func TestPairingUniqueness(t *testing.T) {
 	}
 	require.True(t, different)
 
-	//test that get pairing gives the same results for the whole epoch
+	// test that get pairing gives the same results for the whole epoch
 	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	foundIndexMap := map[string]int{}
 	for i := uint64(0); i < epochBlocks-1; i++ {
@@ -129,7 +129,6 @@ func TestGetPairing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Advance an epoch according to the test
 			switch tt.name {
 			case "zeroEpoch":
@@ -221,7 +220,6 @@ func TestGetPairing(t *testing.T) {
 				// verify nextPairingBlock
 				require.Equal(t, nextPairingBlock, pairing.BlockOfNextPairing)
 			}
-
 		})
 	}
 }
@@ -229,7 +227,7 @@ func TestGetPairing(t *testing.T) {
 func TestPairingStatic(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	spec := common.CreateMockSpec()
 	spec.ProvidersTypes = spectypes.Spec_static
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
@@ -246,7 +244,7 @@ func TestPairingStatic(t *testing.T) {
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i), true)
 	}
 
-	//we expect to get all the providers in static spec
+	// we expect to get all the providers in static spec
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -256,5 +254,4 @@ func TestPairingStatic(t *testing.T) {
 	for i, provider := range providers {
 		require.Equal(t, provider.Stake.Amount.Int64(), stake+int64(i))
 	}
-
 }

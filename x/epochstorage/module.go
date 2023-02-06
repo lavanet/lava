@@ -169,28 +169,8 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	if am.keeper.IsEpochStart(ctx) {
-		block := uint64(ctx.BlockHeight())
-
-		// save params for this epoch
-		am.keeper.FixateParams(ctx, block)
-
-		// on Epoch start we need to do:
-		// 1. update Epoch start
-		// 2. update the StakeStorage
-		// on epoch start block end: (because other modules need this info) to clear their storages
-		// 3. remove old StakeStorage
-		// 4. update earliest epoch start
-
-		am.keeper.SetEpochDetailsStart(ctx, block)
-
-		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ProviderKey)
-
-		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ClientKey)
-
-		am.keeper.UpdateEarliestEpochstart(ctx)
-
-		am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
-		am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
+		// run functions that are supposed to run in epoch start
+		am.keeper.EpochStart(ctx)
 
 		// Notify world we have a new session
 
