@@ -226,7 +226,7 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string, ctx context.Context) {
 }
 
 func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
+	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
 	logName := "04_jsonConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -401,8 +401,8 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) 
 	utils.LavaFormatInfo("startTendermintProvider OK", nil)
 }
 
-func (lt *lavaTest) startTendermintConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --geolocation 1 --log_level debug"
+func (lt *lavaTest) startRPCConsumer(ctx context.Context) {
+	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3340 LAV1 tendermintrpc 127.0.0.1:3341 LAV1 rest 127.0.0.1:3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
 	logName := "06_tendermintConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -546,7 +546,7 @@ func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
 }
 
 func (lt *lavaTest) startRESTConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
+	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
 	logName := "09_restConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -904,17 +904,16 @@ func runE2E() {
 
 	tendermintCTX := context.Background()
 	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
-	lt.startTendermintConsumer(tendermintCTX)
-	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
 
 	restCTX := context.Background()
 	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
-	lt.startRESTConsumer(restCTX)
-	lt.checkRESTConsumer("http://127.0.0.1:3341/1", time.Second*30)
 
 	grpcCTX := context.Background()
 	lt.startGRPCProvider("127.0.0.1:9090", grpcCTX)
-	lt.startGRPCConsumer(grpcCTX)
+
+	lt.startRPCConsumer(tendermintCTX)
+	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
+	lt.checkRESTConsumer("http://127.0.0.1:3341/1", time.Second*30)
 	lt.checkGRPCConsumer("127.0.0.1:3342", time.Second*30)
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)

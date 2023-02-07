@@ -1,4 +1,4 @@
-name: Lava e2e Tests
+name: Lava E2E Tests
 
 on: [pull_request]
 
