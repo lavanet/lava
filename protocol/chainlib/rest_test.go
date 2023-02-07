@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -58,4 +59,33 @@ func TestRestChainParser_NilGuard(t *testing.T) {
 	apip.ChainBlockStats()
 	apip.getSupportedApi("")
 	apip.ParseMsg("", []byte{}, "")
+}
+
+func TestRestGetSupportedApi(t *testing.T) {
+	// Test case 1: Successful scenario, returns a supported API
+	apip := &RestChainParser{
+		rwLock:     sync.RWMutex{},
+		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+	}
+	api, err := apip.getSupportedApi("API1")
+	assert.NoError(t, err)
+	assert.Equal(t, "API1", api.Name)
+
+	// Test case 2: Returns error if the API does not exist
+	apip = &RestChainParser{
+		rwLock:     sync.RWMutex{},
+		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+	}
+	_, err = apip.getSupportedApi("API2")
+	assert.Error(t, err)
+	assert.Equal(t, "rest api not supported", err.Error())
+
+	// Test case 3: Returns error if the API is disabled
+	apip = &RestChainParser{
+		rwLock:     sync.RWMutex{},
+		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: false}},
+	}
+	_, err = apip.getSupportedApi("API1")
+	assert.Error(t, err)
+	assert.Equal(t, "api is disabled", err.Error())
 }

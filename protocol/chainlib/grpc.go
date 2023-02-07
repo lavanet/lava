@@ -98,7 +98,7 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("JRPC api not supported")
+		return nil, errors.New("GRPC api not supported")
 	}
 
 	// Return an error if api is disabled
