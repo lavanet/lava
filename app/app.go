@@ -373,8 +373,6 @@ func New(
 		AddRoute(paramproposal.RouterKey, spec.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		// user defined
 		AddRoute(packagesmoduletypes.ProposalsRouterKey, packages.NewPackagesProposalsHandler(app.PackagesKeeper)).
-		// copied the code from param and changed the handler to enable functionality
-		AddRoute(paramproposal.RouterKey, packages.NewParamChangeProposalHandler(app.ParamsKeeper)).
 
 		//
 		// default
