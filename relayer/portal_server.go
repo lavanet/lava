@@ -27,7 +27,10 @@ func PortalServer(
 	apiInterface string,
 	flagSet *pflag.FlagSet,
 ) {
-	utils.LavaFormatError("lavad portal_server is deprecated, please ", nil, nil)
+	utils.LavaFormatError("+++++ Important Notice +++++", nil, nil)
+	utils.LavaFormatError("lavad portal_server is deprecated, please use rpcconsumer instead.", nil, nil)
+	utils.LavaFormatError("lavad portal_server will cease to be available in version v0.7.0", nil, nil)
+	utils.LavaFormatError("++++++++++++++++++++++++++++", nil, nil)
 	//
 	utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 	rand.Seed(time.Now().UnixNano())
