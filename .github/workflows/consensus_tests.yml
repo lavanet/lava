@@ -1,0 +1,68 @@
+name: Lava e2e Tests
+
+on: [push, pull_request]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.2
+    
+    # Install Ignite
+    - name: ignite install
+      run: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
+      # run: curl https://get.ignite.com/cli! | bash
+    - name: ignite version
+      run:  ignite version
+
+    # Setup Paths
+    - name: home
+      run:  pwd && ls -l
+    - name: ls usr 
+      run: ls -l /home/runner/work/lava/lava
+    - name: cp lava
+      run:  cp -r ~/work/lava/lava ~/go/lava 
+    - name: export PATH
+      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
+    - name: export GOPATH
+      run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+    - name: export LAVA
+      run: export LAVA=/home/runner/work/lava/lava
+    - name: go env
+      run:  go env
+    - name: pwd
+      run: pwd
+    - name: tree
+      run: tree
+    - name: ls -l
+      run: ls -l
+
+    # Pre-build with ignite
+    - name: ignite build
+      uses: nick-fields/retry@v2
+      with:
+        max_attempts: 3
+        retry_on: error
+        timeout_minutes: 20
+        command: ignite chain build -v
+
+    ######################################################
+    ### Run Consensus unitests
+    ######################################################
+    - name: lava pairing unit Tests
+      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types -v
+      
+    - name: lava epochstorage unit Tests
+      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types -v
+
+    - name: lava spec unit Tests
+      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types -v
+
+    - name: lava conflict unit Tests
+      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
+
