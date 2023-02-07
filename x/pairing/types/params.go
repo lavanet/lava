@@ -78,6 +78,11 @@ var (
 	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) // 0.5
 )
 
+var (
+	KeyRecommendedEpochNumToCollectPayment            = []byte("RecommendedEpochNumToCollectPayment") // the recommended amount of max epochs that a provider should wait before collecting its payment (if he'll collect later, there's a higher chance to get punished)
+	DefaultRecommendedEpochNumToCollectPayment uint64 = 3
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -96,19 +101,21 @@ func NewParams(
 	slashLimit sdk.Dec,
 	dataReliabilityReward sdk.Dec,
 	qoSWeight sdk.Dec,
+	recommendedEpochNumToCollectPayment uint64,
 ) Params {
 	return Params{
-		MintCoinsPerCU:           mintCoinsPerCU,
-		BurnCoinsPerCU:           burnCoinsPerCU,
-		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
-		FraudSlashingAmount:      fraudSlashingAmount,
-		ServicersToPairCount:     servicersToPairCount,
-		EpochBlocksOverlap:       epochBlocksOverlap,
-		StakeToMaxCUList:         stakeToMaxCUList,
-		UnpayLimit:               unpayLimit,
-		SlashLimit:               slashLimit,
-		DataReliabilityReward:    dataReliabilityReward,
-		QoSWeight:                qoSWeight,
+		MintCoinsPerCU:                      mintCoinsPerCU,
+		BurnCoinsPerCU:                      burnCoinsPerCU,
+		FraudStakeSlashingFactor:            fraudStakeSlashingFactor,
+		FraudSlashingAmount:                 fraudSlashingAmount,
+		ServicersToPairCount:                servicersToPairCount,
+		EpochBlocksOverlap:                  epochBlocksOverlap,
+		StakeToMaxCUList:                    stakeToMaxCUList,
+		UnpayLimit:                          unpayLimit,
+		SlashLimit:                          slashLimit,
+		DataReliabilityReward:               dataReliabilityReward,
+		QoSWeight:                           qoSWeight,
+		RecommendedEpochNumToCollectPayment: recommendedEpochNumToCollectPayment,
 	}
 }
 
@@ -126,6 +133,7 @@ func DefaultParams() Params {
 		DefaultSlashLimit,
 		DefaultDataReliabilityReward,
 		DefaultQoSWeight,
+		DefaultRecommendedEpochNumToCollectPayment,
 	)
 }
 
@@ -143,6 +151,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
 		paramtypes.NewParamSetPair(KeyQoSWeight, &p.QoSWeight, validateQoSWeight),
+		paramtypes.NewParamSetPair(KeyRecommendedEpochNumToCollectPayment, &p.RecommendedEpochNumToCollectPayment, validateRecommendedEpochNumToCollectPayment),
 	}
 }
 
@@ -184,6 +193,9 @@ func (p Params) Validate() error {
 		return err
 	}
 	if err := validateDataReliabilityReward(p.DataReliabilityReward); err != nil {
+		return err
+	}
+	if err := validateRecommendedEpochNumToCollectPayment(p.RecommendedEpochNumToCollectPayment); err != nil {
 		return err
 	}
 	return nil
@@ -351,6 +363,19 @@ func validateQoSWeight(v interface{}) error {
 	if QoSWeight.GT(sdk.OneDec()) || QoSWeight.LT(sdk.ZeroDec()) {
 		return fmt.Errorf("invalid parameter QoSWeight")
 	}
+
+	return nil
+}
+
+// validateRecommendedEpochNumToCollectPayment validates the RecommendedEpochNumToCollectPayment param
+func validateRecommendedEpochNumToCollectPayment(v interface{}) error {
+	recommendedEpochNumToCollectPayment, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = recommendedEpochNumToCollectPayment
 
 	return nil
 }

@@ -19,6 +19,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.SlashLimit(ctx),
 		k.DataReliabilityReward(ctx),
 		k.QoSWeight(ctx),
+		k.RecommendedEpochNumToCollectPayment(ctx),
 	)
 }
 
@@ -95,4 +96,14 @@ func (k Keeper) DataReliabilityReward(ctx sdk.Context) (res sdk.Dec) {
 func (k Keeper) QoSWeight(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyQoSWeight, &res)
 	return
+}
+
+// RecommendedEpochNumToCollectPayment returns the RecommendedEpochNumToCollectPayment param
+func (k Keeper) RecommendedEpochNumToCollectPayment(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyRecommendedEpochNumToCollectPayment, &res)
+	return
+}
+
+func (k Keeper) SetRecommendedEpochNumToCollectPayment(ctx sdk.Context, val uint64) {
+	k.paramstore.Set(ctx, types.KeyRecommendedEpochNumToCollectPayment, val)
 }
