@@ -55,16 +55,14 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappId := extractDappIDFromFiberContext(c)
-		c.Locals("dappId", dappId)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
 
 func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappId, ok := c.Locals("dappId").(string)
-	if !ok {
+	dappId := c.Params("dappId")
+	if dappId == "" {
 		dappId = "NoDappID"
 	}
 	return dappId
