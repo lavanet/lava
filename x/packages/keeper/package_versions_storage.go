@@ -140,11 +140,18 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 	}
 	packageToAdd.Epoch = nextEpoch
 
-	// make the package's computeUnitsPerEpoch be computeUnits / duration (in epochs)
+	// get current epochBlocks
 	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, currentEpoch)
 	if err != nil {
 		return utils.LavaError(ctx, k.Logger(ctx), "epoch_blocks", map[string]string{"err": err.Error()}, "could not get epoch blocks")
 	}
+
+	// check that the duration is at least an epoch
+	if packageToAdd.GetDuration() < epochBlocks {
+		return utils.LavaError(ctx, k.Logger(ctx), "package_duration", map[string]string{"err": err.Error()}, "duration can't be less than an epoch")
+	}
+
+	// make the package's computeUnitsPerEpoch be computeUnits / duration (in epochs)
 	durationInEpochs := packageToAdd.GetDuration() / epochBlocks
 	packageToAdd.ComputeUnitsPerEpoch = packageToAdd.GetComputeUnits() / durationInEpochs
 

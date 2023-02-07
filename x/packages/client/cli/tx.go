@@ -14,8 +14,8 @@ import (
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/lavanet/lava/x/packages/client/utils"
 	"github.com/lavanet/lava/x/packages/types"
-	"github.com/lavanet/lava/x/spec/client/utils"
 )
 
 var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
@@ -70,7 +70,7 @@ $ %s tx gov packages-proposal packages-add <path/to/proposal.json> --from=<key_o
 			if err != nil {
 				return err
 			}
-			proposal, err := utils.ParseSpecAddProposalJSON(clientCtx.LegacyAmino, args[0])
+			proposal, err := utils.ParsePackagesAddProposalJSON(clientCtx.LegacyAmino, args[0])
 			if err != nil {
 				return err
 			}

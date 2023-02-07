@@ -20,7 +20,7 @@ func NewPackagesProposalsHandler(k keeper.Keeper) govtypes.Handler {
 
 		default:
 			log.Println("unrecognized packages proposal content")
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized spec proposal content type: %T", c)
+			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized packages proposal content type: %T", c)
 		}
 	}
 }
