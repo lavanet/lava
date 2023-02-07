@@ -31,10 +31,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -391,7 +391,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		isValidBlockHeight := validateRequestedBlockHeight(uint64(req.BlockHeight))
 		if !isValidBlockHeight {
 			return nil, utils.LavaFormatError("User requested with invalid block height", err, &map[string]string{
-				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10),
+				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10), "expected": strconv.FormatUint(g_sentry.GetCurrentEpochHeight(), 10),
 			})
 		}
 

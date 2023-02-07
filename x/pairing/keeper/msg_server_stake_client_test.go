@@ -16,7 +16,7 @@ import (
 func TestNewStakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -39,7 +39,6 @@ func TestNewStakeClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: tt.stake, Geolocation: 1, Vrfpk: vrfPk.String()})
 
 			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -60,7 +59,7 @@ func TestNewStakeClient(t *testing.T) {
 func TestAddStakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -103,13 +102,12 @@ func TestAddStakeClient(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestStakeClientPairingimmediately(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	var balance int64 = 10000
 	consumer := common.CreateNewAccount(ctx, *keepers, balance)
 	provider1 := common.CreateNewAccount(ctx, *keepers, balance)
@@ -128,7 +126,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	//check pairing in the same epoch
+	// check pairing in the same epoch
 	clientStakeEntry, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
@@ -136,17 +134,16 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
 	require.Nil(t, err)
 
-	//try to change stake
+	// try to change stake
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, 2*stake, false)
 	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
 
-	//new stake takes effect
+	// new stake takes effect
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(2*stake))
-
 }

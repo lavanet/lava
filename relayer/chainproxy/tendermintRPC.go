@@ -16,8 +16,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -289,11 +289,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				break
 			}
-			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
+			dappID := ExtractDappIDFromWebsocketConnection(c)
+			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg), "dappID": dappID})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			dappID := ExtractDappIDFromWebsocketConnection(c)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
 			go cp.portalLogs.AddMetric(metricsData, err != nil)
@@ -361,8 +361,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
 
-			// Construct json response
-			response := convertToJsonError(errMasking)
+			// Construct json (tendermint) response
+			response := convertToTendermintError(errMasking, c.Body())
 
 			// Return error json response
 			return c.SendString(response)
@@ -379,11 +379,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 		query := "?" + string(c.Request().URI().QueryString())
 		path := c.Params("*")
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
+		dappID := ExtractDappIDFromFiberContext(c)
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -423,6 +419,30 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	}
 }
 
+func convertToTendermintError(errString string, inputInfo []byte) string {
+	var msg JsonrpcMessage
+	err := json.Unmarshal(inputInfo, &msg)
+	if err == nil {
+		id, errId := idFromRawMessage(msg.ID)
+		if errId != nil {
+			utils.LavaFormatError("error idFromRawMessage", errId, nil)
+			return InternalErrorString
+		}
+		res, merr := json.Marshal(&RPCResponse{
+			JSONRPC: msg.Version,
+			ID:      id,
+			Error:   convertErrorToRPCError(errString, LavaErrorCode),
+		})
+		if merr != nil {
+			utils.LavaFormatError("convertToTendermintError json.Marshal", merr, nil)
+			return InternalErrorString
+		}
+		return string(res)
+	}
+	utils.LavaFormatError("error convertToTendermintError", err, nil)
+	return InternalErrorString
+}
+
 func getTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPCError, error) {
 	var rpcError *tenderminttypes.RPCError
 	if jsonError != nil {
@@ -439,15 +459,15 @@ func getTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 	return rpcError, nil
 }
 
-func convertErrorToRPCError(err error) *tenderminttypes.RPCError {
+func convertErrorToRPCError(errString string, code int) *tenderminttypes.RPCError {
 	var rpcError *tenderminttypes.RPCError
-	unmarshalError := json.Unmarshal([]byte(err.Error()), &rpcError)
+	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
 	if unmarshalError != nil {
-		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": err.Error()})
+		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
 		rpcError = &tenderminttypes.RPCError{
-			Code:    -1, // TODO get code from error
+			Code:    code,
 			Message: "Rpc Error",
-			Data:    err.Error(),
+			Data:    errString,
 		}
 	}
 	return rpcError
@@ -619,7 +639,7 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 		replyMsg = &RPCResponse{
 			JSONRPC: nm.msg.Version,
 			ID:      id,
-			Error:   convertErrorToRPCError(err),
+			Error:   convertErrorToRPCError(err.Error(), -1), // TODO: fetch error code from err.
 		}
 	} else {
 		replyMessage, err = convertTendermintMsg(rpcMessage)

@@ -21,4 +21,5 @@ func TestGetParams(t *testing.T) {
 	require.EqualValues(t, params.FraudSlashingAmount, k.FraudSlashingAmount(ctx))
 	require.EqualValues(t, params.ServicersToPairCount, k.ServicersToPairCountRaw(ctx))
 	require.EqualValues(t, params.EpochBlocksOverlap, k.EpochBlocksOverlap(ctx))
+	require.EqualValues(t, params.RecommendedEpochNumToCollectPayment, k.RecommendedEpochNumToCollectPayment(ctx))
 }

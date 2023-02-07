@@ -50,6 +50,11 @@ func (k Keeper) UnstakeHoldBlocksStaticRaw(ctx sdk.Context) (res uint64) {
 	return
 }
 
+// UnstakeHoldBlocksRaw sets the UnstakeHoldBlocks param
+func (k Keeper) SetUnstakeHoldBlocksStaticRaw(ctx sdk.Context, unstakeHoldBlocksStatic uint64) {
+	k.paramstore.Set(ctx, types.KeyUnstakeHoldBlocksStatic, unstakeHoldBlocksStatic)
+}
+
 // EpochBlocks returns the EpochBlocks fixated param
 func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error) {
 	err = k.GetParamForBlock(ctx, string(types.KeyEpochBlocks), block, &res)

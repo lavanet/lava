@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
@@ -50,20 +51,15 @@ func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 	return rpcError, nil
 }
 
-func ConvertErrorToRPCError(err error) *tenderminttypes.RPCError {
-	// Guard that err exists to prevent panic
-	if err == nil {
-		return nil
-	}
-
+func ConvertErrorToRPCError(errString string, code int) *tenderminttypes.RPCError {
 	var rpcError *tenderminttypes.RPCError
-	unmarshalError := json.Unmarshal([]byte(err.Error()), &rpcError)
+	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
 	if unmarshalError != nil {
-		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": err.Error()})
+		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
 		rpcError = &tenderminttypes.RPCError{
-			Code:    -1, // TODO get code from error
+			Code:    code,
 			Message: "Rpc Error",
-			Data:    err.Error(),
+			Data:    errString,
 		}
 	}
 	return rpcError
@@ -133,4 +129,28 @@ func ConvertTendermintMsg(rpcMsg *rpcclient.JsonrpcMessage) (*RPCResponse, error
 	}
 
 	return msg, nil
+}
+
+func ConvertToTendermintError(errString string, inputInfo []byte) string {
+	var msg JsonrpcMessage
+	err := json.Unmarshal(inputInfo, &msg)
+	if err == nil {
+		id, errId := IdFromRawMessage(msg.ID)
+		if errId != nil {
+			utils.LavaFormatError("error idFromRawMessage", errId, nil)
+			return chainproxy.InternalErrorString
+		}
+		res, merr := json.Marshal(&RPCResponse{
+			JSONRPC: msg.Version,
+			ID:      id,
+			Error:   ConvertErrorToRPCError(errString, chainproxy.LavaErrorCode),
+		})
+		if merr != nil {
+			utils.LavaFormatError("convertToTendermintError json.Marshal", merr, nil)
+			return chainproxy.InternalErrorString
+		}
+		return string(res)
+	}
+	utils.LavaFormatError("error convertToTendermintError", err, nil)
+	return chainproxy.InternalErrorString
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
@@ -40,7 +40,7 @@ type RPCConsumerServer struct {
 }
 
 type ConsumerTxSender interface {
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -58,6 +58,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.cache = cache
 	rpccs.consumerTxSender = consumerStateTracker
 	rpccs.requiredResponses = requiredResponses
+	rpccs.VrfSk = vrfSk
 	pLogs, err := common.NewRPCConsumerLogs()
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err, nil)
@@ -129,7 +130,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		for _, relayResult := range relayResults {
-			go rpccs.sendDataReliabilityRelayIfApplicable(ctx, relayResult, chainMessage, dataReliabilityThreshold, &relayRequestCommonData) // runs asynchronously
+			// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
+			// as data reliability happens in a go routine it will continue while the response returns.
+			dataReliabilityContext := context.Background()
+			go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, relayResult, chainMessage, dataReliabilityThreshold, &relayRequestCommonData) // runs asynchronously
 		}
 	}
 
@@ -214,11 +218,16 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	// get here only if performed a regular relay successfully
 	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
-	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, reply.LatestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()) // session done successfully
+	pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
+	latestBlock := relayResult.Reply.LatestBlock
+	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, pairingAddressesLen) // session done successfully
 
 	// set cache in a non blocking call
 	go func() {
-		err2 := rpccs.cache.SetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
+		new_ctx := context.Background()
+		new_ctx, cancel := context.WithTimeout(new_ctx, lavaprotocol.DataReliabilityTimeoutIncrease)
+		defer cancel()
+		err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 			utils.LavaFormatWarning("error updating cache with new entry", err2, nil)
 		}
@@ -230,7 +239,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
 	relaySentTime := time.Now()
-	connectCtx, cancel := context.WithTimeout(ctx, lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu)+lavaprotocol.AverageWorldLatency)
+	extraTimeForContext := time.Duration(0)
+	if singleConsumerSession.IsDataReliabilitySession() { // for data reliability session we add more time to timeout
+		extraTimeForContext += lavaprotocol.DataReliabilityTimeoutIncrease
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu)+lavaprotocol.AverageWorldLatency+extraTimeForContext)
 	defer cancel()
 	relayRequest := relayResult.Request
 	providerPublicAddress := relayResult.ProviderAddress
@@ -392,7 +405,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			report, conflicts := lavaprotocol.VerifyReliabilityResults(relayResult, dataReliabilityVerifications, numberOfReliabilitySessions)
 			if report {
 				for _, conflict := range conflicts {
-					rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
+					err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
+					if err != nil {
+						utils.LavaFormatError("could not send detection Transaction", err, &map[string]string{"conflict": fmt.Sprintf("%+v", conflict)})
+					}
 				}
 			}
 			// detectionMessage = conflicttypes.NewMsgDetection(consumerAddress, nil, &responseConflict, nil)

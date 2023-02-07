@@ -39,6 +39,7 @@ func TestProviderPaymentStorageGet(t *testing.T) {
 		)
 	}
 }
+
 func TestProviderPaymentStorageRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderPaymentStorage(keeper, ctx, 10)

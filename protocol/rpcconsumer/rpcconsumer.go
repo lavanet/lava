@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -33,9 +33,9 @@ var (
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
+	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
 
 type RPCConsumer struct {
@@ -46,11 +46,12 @@ type RPCConsumer struct {
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
 	// spawn up ConsumerStateTracker
-	consumerStateTracker := statetracker.ConsumerStateTracker{}
-	rpcc.consumerStateTracker, err = consumerStateTracker.New(ctx, txFactory, clientCtx)
+	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
 		return err
 	}
+	rpcc.consumerStateTracker = consumerStateTracker
 	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
 
 	keyName, err := sigs.GetKeyName(clientCtx)
@@ -78,7 +79,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		if err != nil {
 			return err
 		}
-		consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
+		err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
+		if err != nil {
+			return err
+		}
 		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}

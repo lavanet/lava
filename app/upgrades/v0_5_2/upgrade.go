@@ -1,4 +1,4 @@
-package v0_4_6
+package v0_5_2
 
 import (
 	"log"
@@ -9,13 +9,12 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/app/upgrades"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-const UpgradeName = "v0.4.6"
+const UpgradeName = "v0.5.2"
 
-var Upgrade_v0_4_6 = upgrades.Upgrade{
+var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,           // upgrade name defined few lines above
 	CreateUpgradeHandler: CreateUpgradeHandler,  // create CreateUpgradeHandler in upgrades.go below
 	StoreUpgrades:        store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
@@ -32,13 +31,8 @@ func CreateUpgradeHandler(
 		log.Println("#   STARTING UPGRADE   #")
 		log.Println("########################")
 
-		specs := keepers.SpecKeeper.GetAllSpec(ctx)
-		for _, spec := range specs {
-			spec.MinStakeClient = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(5000000000))
-			spec.MinStakeProvider = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(500000000000))
-			spec.ProvidersTypes = spectypes.Spec_dynamic
-			keepers.SpecKeeper.SetSpec(ctx, spec)
-		}
+		// we use a dedicated SET since the upgrade package doesn't have access to the paramstore, thus can't set a parameter directly
+		keepers.PairingKeeper.SetRecommendedEpochNumToCollectPayment(ctx, pairingtypes.DefaultRecommendedEpochNumToCollectPayment)
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}

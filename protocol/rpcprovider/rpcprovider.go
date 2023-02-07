@@ -12,10 +12,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -92,13 +92,15 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		_, avergaeBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{
-			ServerAddress:     rpcProviderEndpoint.NodeUrl,
 			BlocksToSave:      blocksToSaveChainTracker,
-			AverageBlockTime:  avergaeBlockTime, // divide here to make the querying more often so we don't miss block changes by that much
+			AverageBlockTime:  avergaeBlockTime,
 			ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 		}
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy)
-		chainTracker := chaintracker.New(ctx, chainFetcher, chainTrackerConfig)
+		chainTracker, err := chaintracker.New(ctx, chainFetcher, chainTrackerConfig)
+		if err != nil {
+			utils.LavaFormatFatal("failed creating chain tracker", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig)})
+		}
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
 
