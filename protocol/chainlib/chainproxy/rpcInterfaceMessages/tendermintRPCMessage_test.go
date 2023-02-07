@@ -142,11 +142,6 @@ func TestConvertErrorToRPCError(t *testing.T) {
 		expectedRPC *tenderminttypes.RPCError
 	}{
 		{
-			name:        "nil error",
-			err:         nil,
-			expectedRPC: nil,
-		},
-		{
 			name: "valid error string",
 			err:  fmt.Errorf("test error"),
 			expectedRPC: &tenderminttypes.RPCError{
@@ -160,7 +155,13 @@ func TestConvertErrorToRPCError(t *testing.T) {
 	for _, testCase := range testTable {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			result := ConvertErrorToRPCError(testCase.err)
+			errMsg := ""
+
+			if testCase.err != nil {
+				errMsg = testCase.err.Error()
+			}
+
+			result := ConvertErrorToRPCError(errMsg, -1)
 			if !reflect.DeepEqual(result, testCase.expectedRPC) {
 				t.Errorf("ConvertErrorToRPCError(%v) = %v, expected %v", testCase.err, result, testCase.expectedRPC)
 			}
