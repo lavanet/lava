@@ -430,31 +430,35 @@ func main() {
 		},
 	}
 
+	// Server command flags
 	flags.AddTxFlagsToCmd(cmdServer)
 	cmdServer.MarkFlagRequired(flags.FlagFrom)
+	cmdServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdServer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdServer.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdServer.Flags().String(rpcprovider.TendermintProviderHttpEndpoint, "", "The http endpoint when starting a Tendermint Provider process, otherwise leave empty")
+	rootCmd.AddCommand(cmdServer)
+
+	// Portal Server command flags
 	flags.AddTxFlagsToCmd(cmdPortalServer)
 	cmdPortalServer.MarkFlagRequired(flags.FlagFrom)
-	flags.AddTxFlagsToCmd(cmdTestClient)
-
 	cmdPortalServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdTestClient.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdPortalServer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
-	cmdTestClient.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
-	cmdServer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
-	cmdTestClient.MarkFlagRequired(sentry.GeolocationFlag)
-	cmdServer.MarkFlagRequired(sentry.GeolocationFlag)
 	cmdPortalServer.MarkFlagRequired(sentry.GeolocationFlag)
-	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
-	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
-
-	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
+
+	// Test Client command flags
+	flags.AddTxFlagsToCmd(cmdTestClient)
+	cmdTestClient.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdTestClient.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdTestClient.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
+	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	rootCmd.AddCommand(cmdTestClient)
 
 	// RPCConsumer command flags

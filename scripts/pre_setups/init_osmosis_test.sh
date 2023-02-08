@@ -25,7 +25,7 @@ screen -d -m -S cos4_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3340 COS4 rest --from user4 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug | tee $LOGS_DIR/COS4_tendermint_portal.log"; sleep 0.3
 screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3341 COS4 tendermintrpc --from user4 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug | tee $LOGS_DIR/COS4_tendermint_portal.log"
 
-lavad server 127.0.0.1 2261 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug
+lavad server 127.0.0.1 2261 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $OSMO_TEST_RPC_HTTP
 # Lava Over Lava ETH
 
 sleep 3 # wait for the portal to start.

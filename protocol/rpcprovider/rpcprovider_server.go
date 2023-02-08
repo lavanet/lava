@@ -10,6 +10,8 @@ import (
 	"github.com/lavanet/lava/relayer/performance"
 )
 
+const TendermintProviderHttpEndpoint = "tendermint-http-endpoint"
+
 type RPCProviderServer struct{}
 
 type ReliabilityManagerInf interface {

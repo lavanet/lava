@@ -11,13 +11,16 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/spf13/pflag"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -35,6 +38,7 @@ type TendemintRpcMessage struct {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
+	httpUrl string
 }
 
 func (m TendemintRpcMessage) GetParams() interface{} {
@@ -130,7 +134,19 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	return hash, nil
 }
 
-func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
+func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, flagSet *pflag.FlagSet) ChainProxy {
+	var httpUrl string
+	if nodeUrl != "" { // provider process
+		var err error
+		httpUrl, err = flagSet.GetString(rpcprovider.TendermintProviderHttpEndpoint)
+		if err != nil {
+			utils.LavaFormatFatal("Error fetching rpc provider flag.", err, nil)
+		}
+		if httpUrl == "" {
+			utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+rpcprovider.TendermintProviderHttpEndpoint, err, nil)
+		}
+	}
+
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
 			nodeUrl:    nodeUrl,
@@ -139,6 +155,7 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 			portalLogs: pLogs,
 			csm:        csm,
 		},
+		httpUrl: httpUrl,
 	}
 }
 
@@ -564,7 +581,7 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 	}
 
 	// construct the url by concatenating the node url with the path variable
-	url := nm.cp.nodeUrl + "/" + nm.path
+	url := nm.cp.httpUrl + "/" + nm.path
 
 	// create a new http request
 	req, err := http.NewRequest(http.MethodGet, url, nil)

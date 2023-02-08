@@ -370,13 +370,13 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) {
+func (lt *lavaTest) startTendermintProvider(rpcURL string, httpUrl string, ctx context.Context) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
 	}
 
 	for idx, providerCommand := range providerCommands {
@@ -903,7 +903,7 @@ func runE2E() {
 	lt.checkJSONRPCConsumer("http://127.0.0.1:3333/1", time.Minute*2, "JSONRPCConsumer OK")
 
 	tendermintCTX := context.Background()
-	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
+	lt.startTendermintProvider("ws://0.0.0.0:26657/websocket", "http://0.0.0.0:26657", tendermintCTX)
 	lt.startTendermintConsumer(tendermintCTX)
 	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
 
