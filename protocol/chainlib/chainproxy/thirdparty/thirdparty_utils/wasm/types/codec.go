@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -10,7 +11,7 @@ import (
 )
 
 // RegisterLegacyAminoCodec registers the account types and interface
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) { //nolint:staticcheck
 	cdc.RegisterConcrete(&MsgStoreCode{}, "wasm/MsgStoreCode", nil)
 	cdc.RegisterConcrete(&MsgInstantiateContract{}, "wasm/MsgInstantiateContract", nil)
 	cdc.RegisterConcrete(&MsgInstantiateContract2{}, "wasm/MsgInstantiateContract2", nil)
@@ -18,6 +19,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgMigrateContract{}, "wasm/MsgMigrateContract", nil)
 	cdc.RegisterConcrete(&MsgUpdateAdmin{}, "wasm/MsgUpdateAdmin", nil)
 	cdc.RegisterConcrete(&MsgClearAdmin{}, "wasm/MsgClearAdmin", nil)
+	cdc.RegisterConcrete(&MsgUpdateInstantiateConfig{}, "wasm/MsgUpdateInstantiateConfig", nil)
 
 	cdc.RegisterConcrete(&PinCodesProposal{}, "wasm/PinCodesProposal", nil)
 	cdc.RegisterConcrete(&UnpinCodesProposal{}, "wasm/UnpinCodesProposal", nil)
@@ -31,7 +33,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&ClearAdminProposal{}, "wasm/ClearAdminProposal", nil)
 	cdc.RegisterConcrete(&UpdateInstantiateConfigProposal{}, "wasm/UpdateInstantiateConfigProposal", nil)
 
-	// cdc.RegisterInterface((*ContractInfoExtension)(nil), nil)
+	cdc.RegisterInterface((*ContractInfoExtension)(nil), nil)
 
 	cdc.RegisterInterface((*ContractAuthzFilterX)(nil), nil)
 	cdc.RegisterConcrete(&AllowAllMessagesFilter{}, "wasm/AllowAllMessagesFilter", nil)
@@ -60,6 +62,7 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgClearAdmin{},
 		&MsgIBCCloseChannel{},
 		&MsgIBCSend{},
+		&MsgUpdateInstantiateConfig{},
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
@@ -77,7 +80,7 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&StoreAndInstantiateContractProposal{},
 	)
 
-	// registry.RegisterInterface("ContractInfoExtension", (*ContractInfoExtension)(nil))
+	registry.RegisterInterface("ContractInfoExtension", (*ContractInfoExtension)(nil))
 
 	registry.RegisterInterface("ContractAuthzFilterX", (*ContractAuthzFilterX)(nil))
 	registry.RegisterImplementations(
@@ -113,7 +116,7 @@ var (
 )
 
 func init() {
-	// RegisterLegacyAminoCodec(amino)
-	// cryptocodec.RegisterCrypto(amino)
-	// amino.Seal()
+	RegisterLegacyAminoCodec(amino)
+	cryptocodec.RegisterCrypto(amino)
+	amino.Seal()
 }

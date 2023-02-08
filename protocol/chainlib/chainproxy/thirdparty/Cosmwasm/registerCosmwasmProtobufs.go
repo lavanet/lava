@@ -3,7 +3,7 @@ package cosmwasm_thirdparty
 import (
 	"context"
 
-	pkg "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/cosmwasm_types"
+	pkg "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/wasm/types"
 	"google.golang.org/grpc"
 )
 

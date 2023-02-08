@@ -123,11 +123,11 @@ func (m *MsgIBCCloseChannel) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgIBCCloseChannel proto.InternalMessageInfo
 
 func init() {
-	//proto.RegisterType((*MsgIBCSend)(nil), "cosmwasm.wasm.v1.MsgIBCSend")
-	//proto.RegisterType((*MsgIBCCloseChannel)(nil), "cosmwasm.wasm.v1.MsgIBCCloseChannel")
+	proto.RegisterType((*MsgIBCSend)(nil), "cosmwasm.wasm.v1.MsgIBCSend")
+	proto.RegisterType((*MsgIBCCloseChannel)(nil), "cosmwasm.wasm.v1.MsgIBCCloseChannel")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/ibc.proto", fileDescriptor_af0d1c43ea53c4b9) }
+func init() { proto.RegisterFile("cosmwasm/wasm/v1/ibc.proto", fileDescriptor_af0d1c43ea53c4b9) }
 
 var fileDescriptor_af0d1c43ea53c4b9 = []byte{
 	// 299 bytes of a gzipped FileDescriptorProto

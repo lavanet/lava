@@ -63,14 +63,14 @@ func GetContractStorePrefix(addr sdk.AccAddress) []byte {
 // GetContractByCreatedSecondaryIndexKey returns the key for the secondary index:
 // `<prefix><codeID><created/last-migrated><contractAddr>`
 func GetContractByCreatedSecondaryIndexKey(contractAddr sdk.AccAddress, c ContractCodeHistoryEntry) []byte {
-	// prefix := GetContractByCodeIDSecondaryIndexPrefix(c.CodeID)
-	// prefixLen := len(prefix)
-	// contractAddrLen := len(contractAddr)
-	// r := make([]byte, prefixLen+AbsoluteTxPositionLen+contractAddrLen)
-	// copy(r[0:], prefix)
-	// copy(r[prefixLen:], c.Updated.Bytes())
-	// copy(r[prefixLen+AbsoluteTxPositionLen:], contractAddr)
-	return nil
+	prefix := GetContractByCodeIDSecondaryIndexPrefix(c.CodeID)
+	prefixLen := len(prefix)
+	contractAddrLen := len(contractAddr)
+	r := make([]byte, prefixLen+AbsoluteTxPositionLen+contractAddrLen)
+	copy(r[0:], prefix)
+	copy(r[prefixLen:], c.Updated.Bytes())
+	copy(r[prefixLen+AbsoluteTxPositionLen:], contractAddr)
+	return r
 }
 
 // GetContractByCodeIDSecondaryIndexPrefix returns the prefix for the second index: `<prefix><codeID>`
@@ -85,15 +85,15 @@ func GetContractByCodeIDSecondaryIndexPrefix(codeID uint64) []byte {
 
 // GetContractByCreatorSecondaryIndexKey returns the key for the second index: `<prefix><creatorAddress length><created time><creatorAddress><contractAddr>`
 func GetContractByCreatorSecondaryIndexKey(bz []byte, position []byte, contractAddr sdk.AccAddress) []byte {
-	// prefixBytes := GetContractsByCreatorPrefix(bz)
-	// lenPrefixBytes := len(prefixBytes)
-	// r := make([]byte, lenPrefixBytes+AbsoluteTxPositionLen+len(contractAddr))
+	prefixBytes := GetContractsByCreatorPrefix(bz)
+	lenPrefixBytes := len(prefixBytes)
+	r := make([]byte, lenPrefixBytes+AbsoluteTxPositionLen+len(contractAddr))
 
-	// copy(r[:lenPrefixBytes], prefixBytes)
-	// copy(r[lenPrefixBytes:lenPrefixBytes+AbsoluteTxPositionLen], position)
-	// copy(r[lenPrefixBytes+AbsoluteTxPositionLen:], contractAddr)
+	copy(r[:lenPrefixBytes], prefixBytes)
+	copy(r[lenPrefixBytes:lenPrefixBytes+AbsoluteTxPositionLen], position)
+	copy(r[lenPrefixBytes+AbsoluteTxPositionLen:], contractAddr)
 
-	return nil
+	return r
 }
 
 // GetContractCodeHistoryElementKey returns the key a contract code history entry: `<prefix><contractAddr><position>`

@@ -66,30 +66,30 @@ func ConvertToProposals(keys []string) ([]ProposalType, error) {
 }
 
 func init() { // register new content types with the sdk
-	// govtypes.RegisterProposalType(string(ProposalTypeStoreCode))
-	// govtypes.RegisterProposalType(string(ProposalTypeInstantiateContract))
-	// govtypes.RegisterProposalType(string(ProposalTypeInstantiateContract2))
-	// govtypes.RegisterProposalType(string(ProposalTypeMigrateContract))
-	// govtypes.RegisterProposalType(string(ProposalTypeSudoContract))
-	// govtypes.RegisterProposalType(string(ProposalTypeExecuteContract))
-	// govtypes.RegisterProposalType(string(ProposalTypeUpdateAdmin))
-	// govtypes.RegisterProposalType(string(ProposalTypeClearAdmin))
-	// govtypes.RegisterProposalType(string(ProposalTypePinCodes))
-	// govtypes.RegisterProposalType(string(ProposalTypeUnpinCodes))
-	// govtypes.RegisterProposalType(string(ProposalTypeUpdateInstantiateConfig))
-	// govtypes.RegisterProposalType(string(ProposalTypeStoreAndInstantiateContractProposal))
-	// govtypes.RegisterProposalTypeCodec(&StoreCodeProposal{}, "wasm/StoreCodeProposal")
-	// govtypes.RegisterProposalTypeCodec(&InstantiateContractProposal{}, "wasm/InstantiateContractProposal")
-	// govtypes.RegisterProposalTypeCodec(&InstantiateContract2Proposal{}, "wasm/InstantiateContract2Proposal")
-	// govtypes.RegisterProposalTypeCodec(&MigrateContractProposal{}, "wasm/MigrateContractProposal")
-	// govtypes.RegisterProposalTypeCodec(&SudoContractProposal{}, "wasm/SudoContractProposal")
-	// govtypes.RegisterProposalTypeCodec(&ExecuteContractProposal{}, "wasm/ExecuteContractProposal")
-	// govtypes.RegisterProposalTypeCodec(&UpdateAdminProposal{}, "wasm/UpdateAdminProposal")
-	// govtypes.RegisterProposalTypeCodec(&ClearAdminProposal{}, "wasm/ClearAdminProposal")
-	// govtypes.RegisterProposalTypeCodec(&PinCodesProposal{}, "wasm/PinCodesProposal")
-	// govtypes.RegisterProposalTypeCodec(&UnpinCodesProposal{}, "wasm/UnpinCodesProposal")
-	// govtypes.RegisterProposalTypeCodec(&UpdateInstantiateConfigProposal{}, "wasm/UpdateInstantiateConfigProposal")
-	// govtypes.RegisterProposalTypeCodec(&StoreAndInstantiateContractProposal{}, "wasm/StoreAndInstantiateContractProposal")
+	govtypes.RegisterProposalType(string(ProposalTypeStoreCode))
+	govtypes.RegisterProposalType(string(ProposalTypeInstantiateContract))
+	govtypes.RegisterProposalType(string(ProposalTypeInstantiateContract2))
+	govtypes.RegisterProposalType(string(ProposalTypeMigrateContract))
+	govtypes.RegisterProposalType(string(ProposalTypeSudoContract))
+	govtypes.RegisterProposalType(string(ProposalTypeExecuteContract))
+	govtypes.RegisterProposalType(string(ProposalTypeUpdateAdmin))
+	govtypes.RegisterProposalType(string(ProposalTypeClearAdmin))
+	govtypes.RegisterProposalType(string(ProposalTypePinCodes))
+	govtypes.RegisterProposalType(string(ProposalTypeUnpinCodes))
+	govtypes.RegisterProposalType(string(ProposalTypeUpdateInstantiateConfig))
+	govtypes.RegisterProposalType(string(ProposalTypeStoreAndInstantiateContractProposal))
+	govtypes.RegisterProposalTypeCodec(&StoreCodeProposal{}, "wasm/StoreCodeProposal")
+	govtypes.RegisterProposalTypeCodec(&InstantiateContractProposal{}, "wasm/InstantiateContractProposal")
+	govtypes.RegisterProposalTypeCodec(&InstantiateContract2Proposal{}, "wasm/InstantiateContract2Proposal")
+	govtypes.RegisterProposalTypeCodec(&MigrateContractProposal{}, "wasm/MigrateContractProposal")
+	govtypes.RegisterProposalTypeCodec(&SudoContractProposal{}, "wasm/SudoContractProposal")
+	govtypes.RegisterProposalTypeCodec(&ExecuteContractProposal{}, "wasm/ExecuteContractProposal")
+	govtypes.RegisterProposalTypeCodec(&UpdateAdminProposal{}, "wasm/UpdateAdminProposal")
+	govtypes.RegisterProposalTypeCodec(&ClearAdminProposal{}, "wasm/ClearAdminProposal")
+	govtypes.RegisterProposalTypeCodec(&PinCodesProposal{}, "wasm/PinCodesProposal")
+	govtypes.RegisterProposalTypeCodec(&UnpinCodesProposal{}, "wasm/UnpinCodesProposal")
+	govtypes.RegisterProposalTypeCodec(&UpdateInstantiateConfigProposal{}, "wasm/UpdateInstantiateConfigProposal")
+	govtypes.RegisterProposalTypeCodec(&StoreAndInstantiateContractProposal{}, "wasm/StoreAndInstantiateContractProposal")
 }
 
 func NewStoreCodeProposal(
@@ -523,6 +523,22 @@ func (p StoreAndInstantiateContractProposal) MarshalYAML() (interface{}, error) 
 	}, nil
 }
 
+func NewMigrateContractProposal(
+	title string,
+	description string,
+	contract string,
+	codeID uint64,
+	msg RawContractMessage,
+) *MigrateContractProposal {
+	return &MigrateContractProposal{
+		Title:       title,
+		Description: description,
+		Contract:    contract,
+		CodeID:      codeID,
+		Msg:         msg,
+	}
+}
+
 // ProposalRoute returns the routing key of a parameter change proposal.
 func (p MigrateContractProposal) ProposalRoute() string { return RouterKey }
 
@@ -578,6 +594,20 @@ func (p MigrateContractProposal) MarshalYAML() (interface{}, error) {
 		CodeID:      p.CodeID,
 		Msg:         string(p.Msg),
 	}, nil
+}
+
+func NewSudoContractProposal(
+	title string,
+	description string,
+	contract string,
+	msg RawContractMessage,
+) *SudoContractProposal {
+	return &SudoContractProposal{
+		Title:       title,
+		Description: description,
+		Contract:    contract,
+		Msg:         msg,
+	}
 }
 
 // ProposalRoute returns the routing key of a parameter change proposal.
@@ -790,6 +820,18 @@ func (p ClearAdminProposal) String() string {
 `, p.Title, p.Description, p.Contract)
 }
 
+func NewPinCodesProposal(
+	title string,
+	description string,
+	codeIDs []uint64,
+) *PinCodesProposal {
+	return &PinCodesProposal{
+		Title:       title,
+		Description: description,
+		CodeIDs:     codeIDs,
+	}
+}
+
 // ProposalRoute returns the routing key of a parameter change proposal.
 func (p PinCodesProposal) ProposalRoute() string { return RouterKey }
 
@@ -820,6 +862,18 @@ func (p PinCodesProposal) String() string {
   Description: %s
   Codes:       %v
 `, p.Title, p.Description, p.CodeIDs)
+}
+
+func NewUnpinCodesProposal(
+	title string,
+	description string,
+	codeIDs []uint64,
+) *UnpinCodesProposal {
+	return &UnpinCodesProposal{
+		Title:       title,
+		Description: description,
+		CodeIDs:     codeIDs,
+	}
 }
 
 // ProposalRoute returns the routing key of a parameter change proposal.
@@ -874,6 +928,18 @@ func validateProposalCommons(title, description string) error {
 		return sdkerrors.Wrapf(govtypes.ErrInvalidProposalContent, "proposal description is longer than max length of %d", govtypes.MaxDescriptionLength)
 	}
 	return nil
+}
+
+func NewUpdateInstantiateConfigProposal(
+	title string,
+	description string,
+	accessConfigUpdates ...AccessConfigUpdate,
+) *UpdateInstantiateConfigProposal {
+	return &UpdateInstantiateConfigProposal{
+		Title:               title,
+		Description:         description,
+		AccessConfigUpdates: accessConfigUpdates,
+	}
 }
 
 // ProposalRoute returns the routing key of a parameter change proposal.
