@@ -14,11 +14,11 @@ on:
 
 jobs:
   ci:
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         os: [macos-latest, ubuntu-latest]
-
     steps:
       - name: Setup | Checkout
         uses: actions/checkout@v3
