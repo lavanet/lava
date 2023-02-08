@@ -60,7 +60,7 @@ func (pl *PortalLogs) GetMessageSeed() string {
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	data := map[string]interface{}{
-		"Error GUID": msgSeed,
+		"Error_GUID": msgSeed,
 	}
 	if ReturnMaskedErrors == "false" {
 		data["Error"] = responseError.Error()
@@ -83,7 +83,7 @@ func (pl *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
-			"Error Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+			"Error_Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
 		c.WriteMessage(mt, jsonResponse)

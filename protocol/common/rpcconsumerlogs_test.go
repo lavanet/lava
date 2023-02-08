@@ -12,11 +12,11 @@ import (
 )
 
 type WebSocketError struct {
-	ErrorReceived string `json:"Error Received"`
+	ErrorReceived string `json:"Error_Received"`
 }
 
 type ErrorData struct {
-	GUID   string `json:"Error GUID"`
+	GUID   string `json:"Error_GUID"`
 	Error1 string `json:"Error"`
 }
 
