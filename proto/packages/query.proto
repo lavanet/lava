@@ -9,6 +9,7 @@ import "packages/package_versions_storage.proto";
 // this line is used by starport scaffolding # 1
 
 import "cosmos/base/v1beta1/coin.proto";
+import "packages/package.proto";
 option go_package = "github.com/lavanet/lava/x/packages/types";
 
 // Query defines the gRPC querier service.
@@ -30,6 +31,11 @@ service Query {
 // Queries a list of ShowAllPackages items.
 	rpc ShowAllPackages(QueryShowAllPackagesRequest) returns (QueryShowAllPackagesResponse) {
 		option (google.api.http).get = "/lavanet/lava/packages/show_all_packages";
+	}
+
+// Queries a list of ShowPackageInfo items.
+	rpc ShowPackageInfo(QueryShowPackageInfoRequest) returns (QueryShowPackageInfoResponse) {
+		option (google.api.http).get = "/lavanet/lava/packages/show_package_info/{packageIndex}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -73,6 +79,14 @@ message showAllPackagesInfoStruct {
 	string index = 1;
 	string name = 2;
 	cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false];
+}
+
+message QueryShowPackageInfoRequest {
+  string packageIndex = 1;
+}
+
+message QueryShowPackageInfoResponse {
+  Package packageInfo = 1;
 }
 
 // this line is used by starport scaffolding # 3

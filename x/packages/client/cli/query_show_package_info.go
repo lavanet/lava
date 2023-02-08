@@ -11,12 +11,14 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdShowAllPackages() *cobra.Command {
+func CmdShowPackageInfo() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-all-packages",
-		Short: "Query to show all available packages",
-		Args:  cobra.ExactArgs(0),
+		Use:   "show-package-info [package-index]",
+		Short: "Query to show package info",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqPackageIndex := args[0]
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -24,9 +26,12 @@ func CmdShowAllPackages() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowAllPackagesRequest{}
+			params := &types.QueryShowPackageInfoRequest{
 
-			res, err := queryClient.ShowAllPackages(cmd.Context(), params)
+				PackageIndex: reqPackageIndex,
+			}
+
+			res, err := queryClient.ShowPackageInfo(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
