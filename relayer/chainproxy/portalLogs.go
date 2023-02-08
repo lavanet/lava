@@ -1,11 +1,12 @@
 package chainproxy
 
 import (
-	"fmt"
+	"encoding/json"
 	"math/rand"
 	"os"
 	"strconv"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/gofiber/websocket/v2"
@@ -58,14 +59,17 @@ func (pl *PortalLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	var ret string
-	ret = "Error GUID: " + msgSeed
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
-	if ReturnMaskedErrors == "false" {
-		ret += fmt.Sprintf(", Error: %v", responseError)
+	data := map[string]interface{}{
+		"Error GUID": msgSeed,
 	}
+	if ReturnMaskedErrors == "false" {
+		data["Error"] = responseError.Error()
+	}
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 
-	return ret
+	ret, _ := json.Marshal(data)
+
+	return string(ret)
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
@@ -77,7 +81,12 @@ func (pl *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 			return
 		}
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-		c.WriteMessage(mt, []byte("Error Received: "+pl.GetUniqueGuidResponseForError(err, msgSeed)))
+
+		jsonResponse, _ := json.Marshal(fiber.Map{
+			"Error Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+		})
+
+		c.WriteMessage(mt, jsonResponse)
 	}
 }
 
