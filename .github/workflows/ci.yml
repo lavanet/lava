@@ -1,32 +1,51 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  macos:
-    runs-on: macos-latest
+  ci:
     strategy:
       fail-fast: true
       matrix:
-        target:
-          - amd64
-          - arm64
+        os: [macos-latest, ubuntu-latest]
 
     steps:
       - name: Setup | Checkout
         uses: actions/checkout@v3
-      # TODO MACOS
 
-  linux:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        target:
-          - amd64
-          - arm64
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ">=1.18.0"
+      - run: go version
 
-    steps:
-      - name: Setup | Checkout
-        uses: actions/checkout@v3
-      # TODO LINUX
+      - name: "Build lavad (${{ matrix.os }})"
+        run: |
+          make build
+
+      # note should be replaced by action (https://github.com/golangci/golangci-lint-action)
+      # when it supports passing in a config file
+      - name: "Download linter script, check hash and install"
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh > install.sh
+          hash=$(shasum -a 256 install.sh |   cut -d ' ' -f 1)
+          [[ $hash == "0e09dedc7e35f511b7924b885e50d7fe48eef25bec78c86f22f5b5abd24976cc" ]] && echo "golangci-lint hash matched"
+          sh install.sh -b $(go env GOPATH)/bin v1.51.1
+          golangci-lint --version
+
+      - name: "Run linter"
+        run: |
+          make lint
+
+      - name: "Run tests"
+        run: |
+          make test
