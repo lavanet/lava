@@ -112,15 +112,6 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
 
-    - name: Tendermint Consumer All Logs
-      if: always()
-      run: cat testutil/e2e/logs/06_tendermintConsumer.log
-
-    - name: Tendermint Consumer Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: cat testutil/e2e/logs/06_tendermintConsumer_errors.log
-
     - name: Lava over Lava All Logs
       if: always()
       run: cat testutil/e2e/logs/07_lavaOverLava.log
@@ -139,15 +130,6 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
 
-    - name: Rest Consumer All Logs
-      if: always()
-      run: cat testutil/e2e/logs/09_restConsumer.log
-
-    - name: Rest Consumer Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: cat testutil/e2e/logs/09_restConsumer_errors.log
-    
     - name: GRPC Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
@@ -157,11 +139,13 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
-    - name: GRPC Consumer All Logs
+    - name: RPCConsumer Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/11_grpcConsumer.log
+      run: cat testutil/e2e/logs/06_RPCConsumer.log
 
-    - name: GRPC Consumer Error Only Logs
+    - name: RPCConsumer Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/11_grpcConsumer_errors.log
+      run: cat testutil/e2e/logs/06_RPCConsumer_errors.log
+
+ 

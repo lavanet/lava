@@ -403,7 +403,7 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) 
 
 func (lt *lavaTest) startRPCConsumer(ctx context.Context) {
 	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3340 LAV1 tendermintrpc 127.0.0.1:3341 LAV1 rest 127.0.0.1:3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
-	logName := "06_tendermintConsumer"
+	logName := "06_RPCConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -418,9 +418,9 @@ func (lt *lavaTest) startRPCConsumer(ctx context.Context) {
 	}
 	lt.commands[logName] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startTendermintConsumer process returned unexpectedly", "startTendermintConsumer")
+		lt.listenCmdCommand(cmd, "startRPCConsumer process returned unexpectedly", "startRPCConsumer")
 	}()
-	utils.LavaFormatInfo("startTendermintConsumer OK", nil)
+	utils.LavaFormatInfo("startRPCConsumer OK", nil)
 }
 
 func (lt *lavaTest) checkTendermintConsumer(rpcURL string, timeout time.Duration) {
