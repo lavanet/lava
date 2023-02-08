@@ -91,10 +91,10 @@ func (m *GenesisState) GetChannelGenesis() types2.GenesisState {
 }
 
 func init() {
-	//proto.RegisterType((*GenesisState)(nil), "ibc.core.types.v1.GenesisState")
+	proto.RegisterType((*GenesisState)(nil), "ibc.core.types.v1.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/types/v1/genesis.proto", fileDescriptor_b9a49c5663e6fc59) }
+func init() { proto.RegisterFile("ibc/core/types/v1/genesis.proto", fileDescriptor_b9a49c5663e6fc59) }
 
 var fileDescriptor_b9a49c5663e6fc59 = []byte{
 	// 324 bytes of a gzipped FileDescriptorProto

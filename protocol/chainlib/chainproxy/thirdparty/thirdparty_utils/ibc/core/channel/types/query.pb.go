@@ -1676,6 +1676,7 @@ func (m *QueryNextSequenceReceiveResponse) GetProofHeight() types.Height {
 	return types.Height{}
 }
 
+// disabled because of duplicate proto type error
 func init() {
 	//proto.RegisterType((*QueryChannelRequest)(nil), "ibc.core.channel.v1.QueryChannelRequest")
 	//proto.RegisterType((*QueryChannelResponse)(nil), "ibc.core.channel.v1.QueryChannelResponse")
@@ -1705,7 +1706,7 @@ func init() {
 	//proto.RegisterType((*QueryNextSequenceReceiveResponse)(nil), "ibc.core.channel.v1.QueryNextSequenceReceiveResponse")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/query.proto", fileDescriptor_1034a1e9abc4cca1) }
+func init() { proto.RegisterFile("ibc/core/channel/v1/query.proto", fileDescriptor_1034a1e9abc4cca1) }
 
 var fileDescriptor_1034a1e9abc4cca1 = []byte{
 	// 1490 bytes of a gzipped FileDescriptorProto

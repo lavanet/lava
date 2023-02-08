@@ -362,6 +362,7 @@ func (m *MsgSubmitMisbehaviourResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSubmitMisbehaviourResponse proto.InternalMessageInfo
 
+// disabled because of duplicate proto type error
 func init() {
 	//proto.RegisterType((*MsgCreateClient)(nil), "ibc.core.client.v1.MsgCreateClient")
 	//proto.RegisterType((*MsgCreateClientResponse)(nil), "ibc.core.client.v1.MsgCreateClientResponse")

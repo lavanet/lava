@@ -486,19 +486,20 @@ func (*Acknowledgement) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// disabled because of duplicate proto type error
 func init() {
 	// proto.RegisterEnum("ibc.core.channel.v1.State", State_name, State_value)
 	// proto.RegisterEnum("ibc.core.channel.v1.Order", Order_name, Order_value)
-	//proto.RegisterType((*Channel)(nil), "ibc.core.channel.v1.Channel")
-	//proto.RegisterType((*IdentifiedChannel)(nil), "ibc.core.channel.v1.IdentifiedChannel")
-	//proto.RegisterType((*Counterparty)(nil), "ibc.core.channel.v1.Counterparty")
-	//proto.RegisterType((*Packet)(nil), "ibc.core.channel.v1.Packet")
-	//proto.RegisterType((*PacketState)(nil), "ibc.core.channel.v1.PacketState")
-	//proto.RegisterType((*PacketId)(nil), "ibc.core.channel.v1.PacketId")
-	//proto.RegisterType((*Acknowledgement)(nil), "ibc.core.channel.v1.Acknowledgement")
+	// proto.RegisterType((*Channel)(nil), "ibc.core.channel.v1.Channel")
+	// proto.RegisterType((*IdentifiedChannel)(nil), "ibc.core.channel.v1.IdentifiedChannel")
+	// proto.RegisterType((*Counterparty)(nil), "ibc.core.channel.v1.Counterparty")
+	// proto.RegisterType((*Packet)(nil), "ibc.core.channel.v1.Packet")
+	// proto.RegisterType((*PacketState)(nil), "ibc.core.channel.v1.PacketState")
+	// proto.RegisterType((*PacketId)(nil), "ibc.core.channel.v1.PacketId")
+	// proto.RegisterType((*Acknowledgement)(nil), "ibc.core.channel.v1.Acknowledgement")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/channel.proto", fileDescriptor_c3a07336710636a0) }
+func init() { proto.RegisterFile("ibc/core/channel/v1/channel.proto", fileDescriptor_c3a07336710636a0) }
 
 var fileDescriptor_c3a07336710636a0 = []byte{
 	// 925 bytes of a gzipped FileDescriptorProto

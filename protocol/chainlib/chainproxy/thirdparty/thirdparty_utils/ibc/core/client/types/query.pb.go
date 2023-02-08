@@ -960,6 +960,7 @@ func (m *QueryUpgradedConsensusStateResponse) GetUpgradedConsensusState() *types
 	return nil
 }
 
+// disabled because of duplicate proto type error
 func init() {
 	//proto.RegisterType((*QueryClientStateRequest)(nil), "ibc.core.client.v1.QueryClientStateRequest")
 	//proto.RegisterType((*QueryClientStateResponse)(nil), "ibc.core.client.v1.QueryClientStateResponse")
