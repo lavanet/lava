@@ -367,7 +367,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
 	}
-
+	// TODO:: res.StatusCode
 	if res.Body != nil {
 		defer res.Body.Close()
 	}

@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gogo/status"
 	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -653,7 +654,7 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 		replyMsg = &RPCResponse{
 			JSONRPC: nm.msg.Version,
 			ID:      id,
-			Error:   convertErrorToRPCError(err.Error(), -1), // TODO: fetch error code from err.
+			Error:   convertErrorToRPCError(err.Error(), int(status.Code(err))),
 		}
 	} else {
 		replyMessage, err = convertTendermintMsg(rpcMessage)

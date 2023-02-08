@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogo/status"
 	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -452,7 +453,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			ID:      nm.msg.ID,
 		}
 		replyMsg.Error = &rpcclient.JsonError{
-			Code:    1,
+			Code:    int(status.Code(err)),
 			Message: fmt.Sprintf("%s", err),
 		}
 		// this later causes returning an error
