@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -88,4 +89,31 @@ func TestRestGetSupportedApi(t *testing.T) {
 	_, err = apip.getSupportedApi("API1")
 	assert.Error(t, err)
 	assert.Equal(t, "api is disabled", err.Error())
+}
+
+func TestRestParseMessage(t *testing.T) {
+	var apip = &RestChainParser{
+		rwLock: sync.RWMutex{},
+		serverApis: map[string]spectypes.ServiceApi{
+			"API1": {
+				Name:    "API1",
+				Enabled: true,
+				ApiInterfaces: []spectypes.ApiInterface{{
+					Type: spectypes.APIInterfaceRest,
+				}},
+			},
+		},
+	}
+
+	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceRest)
+
+	assert.Nil(t, err)
+	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
+
+	restMessage := rpcInterfaceMessages.RestMessage{
+		Msg:  []byte("test message"),
+		Path: "API1",
+	}
+
+	assert.Equal(t, restMessage, msg.GetRPCMessage())
 }

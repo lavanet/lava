@@ -1,10 +1,12 @@
 package chainlib
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -88,4 +90,38 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 	_, err = apip.getSupportedApi("API1")
 	assert.Error(t, err)
 	assert.Equal(t, "api is disabled", err.Error())
+}
+
+func TestTendermintParseMessage(t *testing.T) {
+	var apip = &TendermintChainParser{
+		rwLock: sync.RWMutex{},
+		serverApis: map[string]spectypes.ServiceApi{
+			"API1": {
+				Name:    "API1",
+				Enabled: true,
+				ApiInterfaces: []spectypes.ApiInterface{{
+					Type: spectypes.APIInterfaceTendermintRPC,
+				}},
+				BlockParsing: spectypes.BlockParser{
+					ParserArg:  []string{"latest"},
+					ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+				},
+			},
+		},
+	}
+
+	data := rpcInterfaceMessages.TendermintrpcMessage{
+		JsonrpcMessage: rpcInterfaceMessages.JsonrpcMessage{
+			Method: "API1",
+		},
+		Path: "",
+	}
+
+	marshalledData, _ := json.Marshal(data)
+
+	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceTendermintRPC)
+
+	assert.Nil(t, err)
+	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
+	assert.Equal(t, msg.RequestedBlock(), int64(-2))
 }
