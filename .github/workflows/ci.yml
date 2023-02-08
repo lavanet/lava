@@ -34,16 +34,18 @@ jobs:
 
       # note should be replaced by action (https://github.com/golangci/golangci-lint-action)
       # when it supports passing in a config file
-      - name: "Download linter script, check hash and install"
+      - name: "Run linter"
         run: |
+          # download golangci-lint install script
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh > install.sh
+
+          # verify the install script
           hash=$(shasum -a 256 install.sh |   cut -d ' ' -f 1)
           [[ $hash == "0e09dedc7e35f511b7924b885e50d7fe48eef25bec78c86f22f5b5abd24976cc" ]] && echo "golangci-lint hash matched"
           sh install.sh -b $(go env GOPATH)/bin v1.51.1
           golangci-lint --version
 
-      - name: "Run linter"
-        run: |
+          # run linter
           make lint
 
       - name: "Run tests"
