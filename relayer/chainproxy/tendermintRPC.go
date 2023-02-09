@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -245,12 +246,18 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, err
 	}
 
+	var extraTimeout time.Duration
+	if apiInterface.HangingApi {
+		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
+	}
+
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
-			serviceApi:     serviceApi,
-			apiInterface:   apiInterface,
-			msg:            &msg,
-			requestedBlock: requestedBlock,
+			serviceApi:           serviceApi,
+			apiInterface:         apiInterface,
+			msg:                  &msg,
+			requestedBlock:       requestedBlock,
+			extendContextTimeout: extraTimeout,
 		},
 		path: path,
 		cp:   cp,
@@ -567,7 +574,10 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 	url := nm.cp.nodeUrl + "/" + nm.path
 
 	// create a new http request
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -619,7 +629,7 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
 		// create a context with a timeout set by the getTimePerCu function
-		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits))
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)

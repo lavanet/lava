@@ -60,6 +60,7 @@ type ChainMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	GetInterface() *spectypes.ApiInterface
 	RequestedBlock() int64
+	GetAverageBlockTime() int64
 	GetRPCMessage() parser.RPCInput
 }
 

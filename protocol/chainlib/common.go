@@ -18,10 +18,15 @@ const (
 )
 
 type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	requestedBlock int64
-	msg            interface{}
+	serviceApi       *spectypes.ServiceApi
+	apiInterface     *spectypes.ApiInterface
+	averageBlockTime int64
+	requestedBlock   int64
+	msg              interface{}
+}
+
+func (pm parsedMessage) GetAverageBlockTime() int64 {
+	return pm.averageBlockTime
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {

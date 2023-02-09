@@ -27,6 +27,7 @@ message ApiInterface {
   uint64 extra_compute_units = 3;
   SpecCategory category = 4;
   BlockParser overwrite_block_parsing = 5;
+  bool hanging_api = 6;
 }
 
 message BlockParser {

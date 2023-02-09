@@ -30433,6 +30433,9 @@ paths:
                     type: string
                   QoSWeight:
                     type: string
+                  recommendedEpochNumToCollectPayment:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30476,14 +30479,17 @@ paths:
                     epoch:
                       type: string
                       format: uint64
-                    unresponsiveness_complaints:
-                      type: array
-                      items:
-                        type: string
                     uniquePaymentStorageClientProviderKeys:
                       type: array
                       items:
                         type: string
+                    complainersTotalCu:
+                      type: string
+                      format: uint64
+                      title: >-
+                        total CU that were supposed to be served by the provider
+                        but didn't because he was unavailable (so consumers
+                        complained about him)
               pagination:
                 type: object
                 properties:
@@ -30606,14 +30612,17 @@ paths:
                   epoch:
                     type: string
                     format: uint64
-                  unresponsiveness_complaints:
-                    type: array
-                    items:
-                      type: string
                   uniquePaymentStorageClientProviderKeys:
                     type: array
                     items:
                       type: string
+                  complainersTotalCu:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total CU that were supposed to be served by the provider
+                      but didn't because he was unavailable (so consumers
+                      complained about him)
         default:
           description: An unexpected error response.
           schema:
@@ -31368,6 +31377,8 @@ paths:
                                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                          - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                          - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                hanging_api:
+                                  type: boolean
                           reserved:
                             type: object
                             properties:
@@ -31685,6 +31696,8 @@ paths:
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                        - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                        - DEFAULT: means parameters are non related to block, and should fetch latest block
+                              hanging_api:
+                                type: boolean
                         reserved:
                           type: object
                           properties:
@@ -53600,6 +53613,9 @@ definitions:
         type: string
       QoSWeight:
         type: string
+      recommendedEpochNumToCollectPayment:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.ProviderPaymentStorage:
     type: object
@@ -53609,14 +53625,16 @@ definitions:
       epoch:
         type: string
         format: uint64
-      unresponsiveness_complaints:
-        type: array
-        items:
-          type: string
       uniquePaymentStorageClientProviderKeys:
         type: array
         items:
           type: string
+      complainersTotalCu:
+        type: string
+        format: uint64
+        title: >-
+          total CU that were supposed to be served by the provider but didn't
+          because he was unavailable (so consumers complained about him)
   lavanet.lava.pairing.QueryAllEpochPaymentsResponse:
     type: object
     properties:
@@ -53669,14 +53687,17 @@ definitions:
             epoch:
               type: string
               format: uint64
-            unresponsiveness_complaints:
-              type: array
-              items:
-                type: string
             uniquePaymentStorageClientProviderKeys:
               type: array
               items:
                 type: string
+            complainersTotalCu:
+              type: string
+              format: uint64
+              title: >-
+                total CU that were supposed to be served by the provider but
+                didn't because he was unavailable (so consumers complained about
+                him)
       pagination:
         type: object
         properties:
@@ -53878,14 +53899,17 @@ definitions:
           epoch:
             type: string
             format: uint64
-          unresponsiveness_complaints:
-            type: array
-            items:
-              type: string
           uniquePaymentStorageClientProviderKeys:
             type: array
             items:
               type: string
+          complainersTotalCu:
+            type: string
+            format: uint64
+            title: >-
+              total CU that were supposed to be served by the provider but
+              didn't because he was unavailable (so consumers complained about
+              him)
   lavanet.lava.pairing.QueryGetUniquePaymentStorageClientProviderResponse:
     type: object
     properties:
@@ -53932,6 +53956,9 @@ definitions:
             type: string
           QoSWeight:
             type: string
+          recommendedEpochNumToCollectPayment:
+            type: string
+            format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -54151,6 +54178,8 @@ definitions:
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                - DEFAULT: means parameters are non related to block, and should fetch latest block
+      hanging_api:
+        type: boolean
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -54342,6 +54371,8 @@ definitions:
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                  - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                  - DEFAULT: means parameters are non related to block, and should fetch latest block
+                        hanging_api:
+                          type: boolean
                   reserved:
                     type: object
                     properties:
@@ -54571,6 +54602,8 @@ definitions:
                                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                - DEFAULT: means parameters are non related to block, and should fetch latest block
+                      hanging_api:
+                        type: boolean
                 reserved:
                   type: object
                   properties:
@@ -54813,6 +54846,8 @@ definitions:
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                      - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                      - DEFAULT: means parameters are non related to block, and should fetch latest block
+            hanging_api:
+              type: boolean
       reserved:
         type: object
         properties:
@@ -54956,6 +54991,8 @@ definitions:
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                            - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                            - DEFAULT: means parameters are non related to block, and should fetch latest block
+                  hanging_api:
+                    type: boolean
             reserved:
               type: object
               properties:

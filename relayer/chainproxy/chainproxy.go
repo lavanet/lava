@@ -39,6 +39,7 @@ type NodeMessage interface {
 	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 	RequestedBlock() int64
 	GetMsg() interface{}
+	GetExtraContextTimeout() time.Duration
 }
 
 type ChainProxy interface {
@@ -158,7 +159,7 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency+nodeMsg.GetExtraContextTimeout())
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient

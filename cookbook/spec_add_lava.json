@@ -11,7 +11,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
+                "average_block_time": "60000",
                 "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -310,7 +310,8 @@
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+                                "hanging_api": true
                             }
                         ]
                     },
@@ -638,7 +639,8 @@
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+                                "hanging_api": true
                             }
                         ]
                     },
@@ -928,7 +930,8 @@
                                 },
                                 "interface": "rest",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+                                "hanging_api": true
                             }
                         ]
                     },
@@ -5459,7 +5462,8 @@
                                 },
                                 "interface": "grpc",
                                 "type": "",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+                                "hanging_api": true
                             },
                             {
                                 "category": {
