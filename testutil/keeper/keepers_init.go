@@ -17,6 +17,9 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/packages"
+	packageskeeper "github.com/lavanet/lava/x/packages/keeper"
+	packagestypes "github.com/lavanet/lava/x/packages/types"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
@@ -35,6 +38,7 @@ const BLOCK_TIME = 30 * time.Second
 type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
 	Spec          speckeeper.Keeper
+	Packages      packageskeeper.Keeper
 	Pairing       pairingkeeper.Keeper
 	Conflict      conflictkeeper.Keeper
 	BankKeeper    mockBankKeeper
@@ -48,12 +52,24 @@ type Servers struct {
 	SpecServer     spectypes.MsgServer
 	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
+	PackagesServer packagestypes.MsgServer
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
 	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
 	return
+}
+
+func SimulatePackageProposal(ctx sdk.Context, packagesKeeper packageskeeper.Keeper, packagesToPropose []packagestypes.Package) error {
+	proposal := packagestypes.NewPackagesAddProposal("mockProposal", "mockProposal for testing", packagesToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := packages.NewPackagesProposalsHandler(packagesKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
@@ -72,6 +88,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	specMemStoreKey := storetypes.NewMemoryStoreKey(spectypes.MemStoreKey)
 	stateStore.MountStoreWithDB(specStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(specMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	packagesStoreKey := sdk.NewKVStoreKey(packagestypes.StoreKey)
+	packagesMemStoreKey := storetypes.NewMemoryStoreKey(packagestypes.MemStoreKey)
+	stateStore.MountStoreWithDB(packagesStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(packagesMemStoreKey, sdk.StoreTypeMemory, nil)
 
 	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
 	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
@@ -102,6 +123,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
 
+	packagesparamsSubspace, _ := paramsKeeper.GetSubspace(packagestypes.ModuleName)
+
 	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
 		conflicttypes.Amino,
 		conflictStoreKey,
@@ -114,6 +137,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
+	ks.Packages = *packageskeeper.NewKeeper(cdc, packagesStoreKey, packagesMemStoreKey, packagesparamsSubspace, &ks.Epochstorage)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
@@ -126,12 +150,14 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
+	ks.Packages.SetParams(ctx, packagestypes.DefaultParams())
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
+	ss.PackagesServer = packageskeeper.NewMsgServerImpl(ks.Packages)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 
@@ -221,6 +247,8 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
+
+		ks.Packages.EpochStart(unwrapedCtx)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
