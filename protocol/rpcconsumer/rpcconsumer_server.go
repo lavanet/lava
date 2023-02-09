@@ -172,7 +172,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	isSubscription := chainMessage.GetInterface().Category.Subscription
 	extraRelayTimeout := time.Duration(0)
-	utils.LavaFormatInfo("TEST "+fmt.Sprintf(" chainMessage.GetInterface().HangingApi: %v", chainMessage.GetInterface().HangingApi), nil)
 	if chainMessage.GetInterface().HangingApi {
 		extraRelayTimeout = time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
 	}
