@@ -26,6 +26,7 @@ func NewPackagesProposalsHandler(k keeper.Keeper) govtypes.Handler {
 }
 
 func handlePackagesProposal(ctx sdk.Context, k keeper.Keeper, p *types.PackagesAddProposal) error {
+	// add the packages to the package storage
 	for _, packageElem := range p.Packages {
 		logger := k.Logger(ctx)
 		err := k.AddNewPackageToStorage(ctx, &packageElem)

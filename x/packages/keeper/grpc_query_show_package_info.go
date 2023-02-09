@@ -16,7 +16,7 @@ func (k Keeper) ShowPackageInfo(goCtx context.Context, req *types.QueryShowPacka
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	packageToPrint, err := k.getPackageLatestVersion(ctx, req.GetPackageIndex())
+	packageToPrint, err := k.GetPackageLatestVersion(ctx, req.GetPackageIndex())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "package not found")
 	}

@@ -91,7 +91,7 @@ func (k Keeper) getPackageByEpoch(ctx sdk.Context, packageIndex string, epoch ui
 }
 
 // Function to get a package's latest version
-func (k Keeper) getPackageLatestVersion(ctx sdk.Context, packageIndex string) (*types.Package, error) {
+func (k Keeper) GetPackageLatestVersion(ctx sdk.Context, packageIndex string) (*types.Package, error) {
 	// get packageVersionsStorage
 	packageVersionsStorage, found := k.GetPackageVersionsStorage(ctx, packageIndex)
 	if !found {
@@ -148,7 +148,7 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 
 	// check that the duration is at least an epoch
 	if packageToAdd.GetDuration() < epochBlocks {
-		return utils.LavaError(ctx, k.Logger(ctx), "package_duration", map[string]string{"err": err.Error()}, "duration can't be less than an epoch")
+		return utils.LavaError(ctx, k.Logger(ctx), "package_duration", map[string]string{"epochBlocks": strconv.FormatUint(epochBlocks, 10), "packageDuration": strconv.FormatUint(packageToAdd.GetDuration(), 10)}, "duration can't be less than an epoch")
 	}
 
 	// make the package's computeUnitsPerEpoch be computeUnits / duration (in epochs)
@@ -182,15 +182,6 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 		// create a new packageVersionsStorage
 		packageVersionsStorage = types.PackageVersionsStorage{PackageIndex: packageToAdd.GetIndex(), PackageStorage: entryStorage}
 	} else {
-		// compare the packageToAdd to the latest version with the same package index. If they're the same, do not add the package
-		latestVersionPackage, err := k.getPackageLatestVersion(ctx, packageToAdd.GetIndex())
-		if err != nil {
-			return utils.LavaError(ctx, k.Logger(ctx), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageToAdd.GetIndex()}, "could not get latest version package")
-		}
-		if latestVersionPackage == packageToAdd {
-			return utils.LavaError(ctx, k.Logger(ctx), "add_new_package_to_storage", map[string]string{"packageIndex": packageToAdd.GetIndex()}, "cannot add an identical package with the same package index")
-		}
-
 		// packageVersionsStorage found -> get a new entry list with the new entry preprended to it
 		updatedEntryList, err := common.SetFixatedEntry(ctx, packageVersionsStorage.GetPackageStorage().GetEntryList(), packageFixationEntryToAdd, true)
 		if err != nil {
@@ -203,14 +194,6 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 
 	// update the KVStore with the new packageVersionsStorage
 	k.SetPackageVersionsStorage(ctx, packageVersionsStorage)
-
-	packageToPrint := k.GetAllPackageVersionsStorage(ctx)
-	for _, storage := range packageToPrint {
-		utils.LogLavaEvent(ctx, k.Logger(ctx), "package_index", map[string]string{"packageIndex": storage.PackageIndex}, "add package index")
-		for _, pkg := range storage.GetPackageStorage().EntryList {
-			utils.LogLavaEvent(ctx, k.Logger(ctx), "added_packages", map[string]string{"packageDetails": pkg.String()}, "added packages")
-		}
-	}
 
 	return nil
 }
@@ -291,18 +274,15 @@ func (k Keeper) getPackagesToDelete(ctx sdk.Context) (map[string][]uint64, error
 
 			// check if the package is stale (current epoch is bigger than the epoch its update was created + this package's duration)
 			if currentEpoch > updateOfPackageToCheck.GetEpoch()+packageToCheck.GetDuration() {
-				// check if the package also has no subscriptions
-				if packageToCheck.GetSubscriptions() == 0 {
-					// check if the map already has the current packageIndex key
-					epochList, keyExists := packagesToDeleteMap[packageToCheck.GetIndex()]
-					if !keyExists {
-						// packageIndex doesn't exist in map -> create new epoch list
-						packagesToDeleteMap[packageToCheck.GetIndex()] = []uint64{packageFixationEntry.GetEpoch()}
-					} else {
-						// packageIndex exist in map -> update the epoch list
-						epochList := append(epochList, packageToCheck.GetEpoch())
-						packagesToDeleteMap[packageToCheck.GetIndex()] = epochList
-					}
+				// check if the map already has the current packageIndex key
+				epochList, keyExists := packagesToDeleteMap[packageToCheck.GetIndex()]
+				if !keyExists {
+					// packageIndex doesn't exist in map -> create new epoch list
+					packagesToDeleteMap[packageToCheck.GetIndex()] = []uint64{packageFixationEntry.GetEpoch()}
+				} else {
+					// packageIndex exist in map -> update the epoch list
+					epochList := append(epochList, packageToCheck.GetEpoch())
+					packagesToDeleteMap[packageToCheck.GetIndex()] = epochList
 				}
 			}
 		}

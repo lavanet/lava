@@ -28,7 +28,7 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 		packageInfoStruct.Index = packageStorage.GetPackageIndex()
 
 		// get the latest version package
-		latestVersionPackage, err := k.getPackageLatestVersion(ctx, packageStorage.GetPackageIndex())
+		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageStorage.GetPackageIndex())
 		if err != nil {
 			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageStorage.GetPackageIndex()}, "could not get the latest version of the package")
 		}

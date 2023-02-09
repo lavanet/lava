@@ -41,14 +41,20 @@ func SetFixatedEntry(ctx sdk.Context, entryList []*types.Entry, entry *types.Ent
 		return nil, utils.LavaError(ctx, ctx.Logger(), "set_fixated_entry", nil, "entry list or modified entry is nil. Can't set fixated entry")
 	}
 
+	// handle package addition
 	if shouldAdd {
 		// make sure that the new entry's epoch field is bigger than the epoch field of the latest entry in entryList
-		if entry.GetEpoch() <= entryList[0].GetEpoch() {
+		if entry.GetEpoch() < entryList[0].GetEpoch() {
 			return nil, utils.LavaError(ctx, ctx.Logger(), "set_fixated_entry", nil, "the new entry's epoch is smaller than or equal to the latest entry in entryList. The new entry's epoch must be larger")
+		} else if entry.GetEpoch() == entryList[0].GetEpoch() {
+			// the new entry has the same epoch as the latest entry -> switch the latest entry
+			entryList[0] = entry
+		} else {
+			// the new entry is in an epoch that is bigger than the latest entry -> prepend the new entry
+			entryList = append([]*types.Entry{entry}, entryList...)
 		}
 
-		// prepend the new entry
-		entryList = append([]*types.Entry{entry}, entryList...)
+		// handle package removal
 	} else {
 		// get the entry to delete's index in entryList
 		_, entryToDeleteIndex, found := GetFixatedEntry(entryList, entry.GetEpoch())
