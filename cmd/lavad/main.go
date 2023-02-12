@@ -470,7 +470,7 @@ func main() {
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	// rootCmd.AddCommand(cmdRPCConsumer) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
+	rootCmd.AddCommand(cmdRPCConsumer)
 
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
