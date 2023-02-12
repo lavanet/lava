@@ -327,7 +327,12 @@ type JrpcChainProxy struct {
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &JrpcChainProxy{}
-	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
+	var nodeUrl string
+	if len(rpcProviderEndpoint.NodeUrl) > 0 {
+		nodeUrl = rpcProviderEndpoint.NodeUrl[0]
+		verifyRPCEndpoint(nodeUrl)
+	}
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {

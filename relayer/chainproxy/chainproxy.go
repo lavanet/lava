@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -358,4 +359,18 @@ func convertToJsonError(errorMsg string) string {
 	}
 
 	return string(jsonResponse)
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCendpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+	}
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatError("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
 }

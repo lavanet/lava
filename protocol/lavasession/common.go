@@ -35,6 +35,6 @@ func PrintRPCEndpoint(endpoint *RPCEndpoint) (retStr string) {
 }
 
 func PrintRPCProviderEndpoint(endpoint *RPCProviderEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + endpoint.NodeUrl + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + endpoint.NodeUrl[0] + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 	return
 }

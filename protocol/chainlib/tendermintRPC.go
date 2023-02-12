@@ -397,12 +397,17 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	nodeUrl string
+	httpNodeUrl string
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	cp := &tendermintRpcChainProxy{nodeUrl: rpcProviderEndpoint.NodeUrl}
-	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
+	var httpUrl string
+	var websocketUrl string
+	if len(rpcProviderEndpoint.NodeUrl) > 0 { // provider.
+		websocketUrl, httpUrl = verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrl)
+	}
+	cp := &tendermintRpcChainProxy{httpNodeUrl: httpUrl}
+	return cp, cp.start(ctx, nConns, websocketUrl)
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
@@ -437,7 +442,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *cha
 	}
 
 	// construct the url by concatenating the node url with the path variable
-	url := cp.nodeUrl + "/" + nodeMessage.Path
+	url := cp.httpNodeUrl + "/" + nodeMessage.Path
 
 	// create a new http request
 	req, err := http.NewRequest(http.MethodGet, url, nil)

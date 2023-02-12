@@ -438,7 +438,7 @@ func main() {
 	cmdServer.MarkFlagRequired(sentry.GeolocationFlag)
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
-	cmdServer.Flags().String(rpcprovider.TendermintProviderHttpEndpoint, "", "The http endpoint when starting a Tendermint Provider process, otherwise leave empty")
+	cmdServer.Flags().String(chainproxy.TendermintProviderHttpEndpoint, "", "The http endpoint when starting a Tendermint Provider process, otherwise leave empty")
 	rootCmd.AddCommand(cmdServer)
 
 	// Portal Server command flags

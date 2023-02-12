@@ -3,6 +3,7 @@ package chainlib
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -132,4 +133,42 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 		}
 	}
 	return spectypes.ServiceApi{}, false
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCEndpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+	}
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatFatal("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, httpEndpoint string) {
+	for _, endpoint := range endpoints {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+		}
+		switch u.Scheme {
+		case "http", "https":
+			httpEndpoint = endpoint
+		case "ws", "wss":
+			websocketEndpoint = endpoint
+		default:
+			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+		}
+	}
+
+	if websocketEndpoint == "" || httpEndpoint == "" {
+		utils.LavaFormatFatal("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
+			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
+	}
+	return websocketEndpoint, httpEndpoint
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 
 	"github.com/lavanet/lava/relayer/parser"
@@ -28,6 +27,8 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
+
+const TendermintProviderHttpEndpoint = "tendermint-http-endpoint"
 
 type TendemintRpcMessage struct {
 	JrpcMessage
@@ -134,19 +135,24 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	return hash, nil
 }
 
-func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, flagSet *pflag.FlagSet) ChainProxy {
+func verifyTendermintNodeURL(nodeUrl string, flagSet *pflag.FlagSet) string {
 	var httpUrl string
 	if nodeUrl != "" { // provider process
+		verifyRPCendpoint(nodeUrl) // verify websocket
 		var err error
-		httpUrl, err = flagSet.GetString(rpcprovider.TendermintProviderHttpEndpoint)
+		httpUrl, err = flagSet.GetString(TendermintProviderHttpEndpoint)
 		if err != nil {
 			utils.LavaFormatFatal("Error fetching rpc provider flag.", err, nil)
 		}
 		if httpUrl == "" {
-			utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+rpcprovider.TendermintProviderHttpEndpoint, err, nil)
+			utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+TendermintProviderHttpEndpoint, err, nil)
 		}
 	}
+	return httpUrl
+}
 
+func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, flagSet *pflag.FlagSet) ChainProxy {
+	httpUrl := verifyTendermintNodeURL(nodeUrl, flagSet)
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
 			nodeUrl:    nodeUrl,

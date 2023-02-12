@@ -225,7 +225,11 @@ type GrpcChainProxy struct {
 }
 
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
+	var nodeUrl string
+	if len(rpcProviderEndpoint.NodeUrl) > 0 {
+		nodeUrl = strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")
+	}
+
 	cp := &GrpcChainProxy{}
 	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if cp.conn == nil {

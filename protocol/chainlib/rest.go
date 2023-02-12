@@ -276,7 +276,10 @@ type RestChainProxy struct {
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
+	var nodeUrl string
+	if len(rpcProviderEndpoint.NodeUrl) > 0 {
+		nodeUrl = strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")
+	}
 	rcp := &RestChainProxy{nodeUrl: nodeUrl}
 	return rcp, nil
 }
