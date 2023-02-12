@@ -31349,6 +31349,8 @@ paths:
                                     stateful:
                                       type: integer
                                       format: int64
+                                    hanging_api:
+                                      type: boolean
                                 overwrite_block_parsing:
                                   type: object
                                   properties:
@@ -31377,8 +31379,6 @@ paths:
                                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                          - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                          - DEFAULT: means parameters are non related to block, and should fetch latest block
-                                hanging_api:
-                                  type: boolean
                           reserved:
                             type: object
                             properties:
@@ -31391,6 +31391,8 @@ paths:
                               stateful:
                                 type: integer
                                 format: int64
+                              hanging_api:
+                                type: boolean
                           parsing:
                             type: object
                             properties:
@@ -31668,6 +31670,8 @@ paths:
                                   stateful:
                                     type: integer
                                     format: int64
+                                  hanging_api:
+                                    type: boolean
                               overwrite_block_parsing:
                                 type: object
                                 properties:
@@ -31696,8 +31700,6 @@ paths:
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                        - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                        - DEFAULT: means parameters are non related to block, and should fetch latest block
-                              hanging_api:
-                                type: boolean
                         reserved:
                           type: object
                           properties:
@@ -31710,6 +31712,8 @@ paths:
                             stateful:
                               type: integer
                               format: int64
+                            hanging_api:
+                              type: boolean
                         parsing:
                           type: object
                           properties:
@@ -54151,6 +54155,8 @@ definitions:
           stateful:
             type: integer
             format: int64
+          hanging_api:
+            type: boolean
       overwrite_block_parsing:
         type: object
         properties:
@@ -54178,8 +54184,6 @@ definitions:
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                - DEFAULT: means parameters are non related to block, and should fetch latest block
-      hanging_api:
-        type: boolean
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -54344,6 +54348,8 @@ definitions:
                             stateful:
                               type: integer
                               format: int64
+                            hanging_api:
+                              type: boolean
                         overwrite_block_parsing:
                           type: object
                           properties:
@@ -54371,8 +54377,6 @@ definitions:
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                  - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                  - DEFAULT: means parameters are non related to block, and should fetch latest block
-                        hanging_api:
-                          type: boolean
                   reserved:
                     type: object
                     properties:
@@ -54385,6 +54389,8 @@ definitions:
                       stateful:
                         type: integer
                         format: int64
+                      hanging_api:
+                        type: boolean
                   parsing:
                     type: object
                     properties:
@@ -54575,6 +54581,8 @@ definitions:
                           stateful:
                             type: integer
                             format: int64
+                          hanging_api:
+                            type: boolean
                       overwrite_block_parsing:
                         type: object
                         properties:
@@ -54602,8 +54610,6 @@ definitions:
                                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                - DEFAULT: means parameters are non related to block, and should fetch latest block
-                      hanging_api:
-                        type: boolean
                 reserved:
                   type: object
                   properties:
@@ -54616,6 +54622,8 @@ definitions:
                     stateful:
                       type: integer
                       format: int64
+                    hanging_api:
+                      type: boolean
                 parsing:
                   type: object
                   properties:
@@ -54819,6 +54827,8 @@ definitions:
                 stateful:
                   type: integer
                   format: int64
+                hanging_api:
+                  type: boolean
             overwrite_block_parsing:
               type: object
               properties:
@@ -54846,8 +54856,6 @@ definitions:
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                      - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                      - DEFAULT: means parameters are non related to block, and should fetch latest block
-            hanging_api:
-              type: boolean
       reserved:
         type: object
         properties:
@@ -54860,6 +54868,8 @@ definitions:
           stateful:
             type: integer
             format: int64
+          hanging_api:
+            type: boolean
       parsing:
         type: object
         properties:
@@ -54964,6 +54974,8 @@ definitions:
                       stateful:
                         type: integer
                         format: int64
+                      hanging_api:
+                        type: boolean
                   overwrite_block_parsing:
                     type: object
                     properties:
@@ -54991,8 +55003,6 @@ definitions:
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                            - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                            - DEFAULT: means parameters are non related to block, and should fetch latest block
-                  hanging_api:
-                    type: boolean
             reserved:
               type: object
               properties:
@@ -55005,6 +55015,8 @@ definitions:
                 stateful:
                   type: integer
                   format: int64
+                hanging_api:
+                  type: boolean
             parsing:
               type: object
               properties:
@@ -55109,6 +55121,8 @@ definitions:
       stateful:
         type: integer
         format: int64
+      hanging_api:
+        type: boolean
   lavanet.lava.spec.apiList:
     type: object
     properties:

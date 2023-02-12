@@ -274,12 +274,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -299,12 +299,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -628,12 +628,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -919,12 +919,12 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "rest",
                                 "type": "POST",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -5231,12 +5231,12 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "grpc",
                                 "type": "",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -6820,12 +6820,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -6845,12 +6845,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -7174,12 +7174,12 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -7465,12 +7465,12 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "rest",
                                 "type": "POST",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -7933,12 +7933,12 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "rest",
                                 "type": "POST",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -11778,12 +11778,12 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "interface": "grpc",
                                 "type": "",
-                                "extra_compute_units": "0",
-                                "hanging_api": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },

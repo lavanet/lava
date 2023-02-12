@@ -1001,7 +1001,7 @@ func (s *Sentry) SendRelay(
 	sessionEpoch uint64,
 	providerPubAddress string,
 	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error),
-	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error),
+	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, time.Duration, error),
 	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, bool, error) {
 	// callback user
@@ -1076,6 +1076,7 @@ func (s *Sentry) SendRelay(
 
 			sendReliabilityRelay := func(singleConsumerSession *lavasession.SingleConsumerSession, providerAddress string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
 				var dataReliabilityLatency time.Duration
+				var dataReliabilityTimeout time.Duration
 				s.VrfSkMu.Lock()
 				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
@@ -1088,7 +1089,7 @@ func (s *Sentry) SendRelay(
 					QueryHash:      utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
 					Sig:            nil,                                // calculated in cb_send_reliability
 				}
-				relay_rep, relay_req, dataReliabilityLatency, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
+				relay_rep, relay_req, dataReliabilityLatency, dataReliabilityTimeout, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
 					errRet := s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
 					if errRet != nil {
@@ -1098,7 +1099,7 @@ func (s *Sentry) SendRelay(
 				}
 
 				expectedBH, numOfProviders := s.ExpectedBlockHeight()
-				err = s.consumerSessionManager.OnDataReliabilitySessionDone(singleConsumerSession, relay_rep.LatestBlock, singleConsumerSession.LatestRelayCu, dataReliabilityLatency, expectedBH, numOfProviders, s.GetProvidersCount())
+				err = s.consumerSessionManager.OnDataReliabilitySessionDone(singleConsumerSession, relay_rep.LatestBlock, singleConsumerSession.LatestRelayCu, dataReliabilityLatency, singleConsumerSession.CalculateExpectedLatency(dataReliabilityTimeout), expectedBH, numOfProviders, s.GetProvidersCount())
 				return relay_rep, relay_req, err
 			}
 

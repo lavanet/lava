@@ -247,7 +247,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	}
 
 	var extraTimeout time.Duration
-	if apiInterface.HangingApi {
+	if apiInterface.Category.HangingApi {
 		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
 	}
 

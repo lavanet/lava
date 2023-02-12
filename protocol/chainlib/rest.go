@@ -316,7 +316,15 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if connectionTypeSlected == http.MethodGet {
 		url += string(nodeMessage.Msg)
 	}
-	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}

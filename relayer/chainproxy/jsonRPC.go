@@ -250,7 +250,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	}
 
 	var extraTimeout time.Duration
-	if apiInterface.HangingApi {
+	if apiInterface.Category.HangingApi {
 		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
 	}
 
