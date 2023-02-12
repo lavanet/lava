@@ -371,6 +371,6 @@ func verifyRPCendpoint(endpoint string) {
 	case "ws", "wss":
 		return
 	default:
-		utils.LavaFormatError("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
 	}
 }
