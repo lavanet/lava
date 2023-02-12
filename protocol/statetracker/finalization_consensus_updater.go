@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
 )
@@ -19,7 +18,7 @@ type FinalizationConsensusUpdater struct {
 	stateQuery                        *ConsumerStateQuery
 }
 
-func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
+func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
 	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 

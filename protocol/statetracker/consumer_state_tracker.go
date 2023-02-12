@@ -6,7 +6,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -18,9 +17,8 @@ import (
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
-	consumerAddress sdk.AccAddress
-	stateQuery      *ConsumerStateQuery
-	txSender        *ConsumerTxSender
+	stateQuery *ConsumerStateQuery
+	txSender   *ConsumerTxSender
 	*StateTracker
 }
 
@@ -39,17 +37,20 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
 	// register this CSM to get the updated pairing list when a new epoch starts
-	pairingUpdater := NewPairingUpdater(cst.consumerAddress, cst.stateQuery)
+	pairingUpdater := NewPairingUpdater(cst.stateQuery)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*PairingUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", pairingUpdaterRaw)})
 	}
-	pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
+	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
+	if err != nil {
+		utils.LavaFormatError("failed registering for pairing updates", err, &map[string]string{"data": fmt.Sprintf("%+v", consumerSessionManager.RPCEndpoint())})
+	}
 }
 
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
-	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.consumerAddress, cst.stateQuery)
+	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.stateQuery)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*FinalizationConsensusUpdater)
 	if !ok {

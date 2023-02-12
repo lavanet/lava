@@ -63,7 +63,3 @@ func (cst *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater
 	}
 	return existingUpdater
 }
-
-type EpochUpdatable interface {
-	UpdateEpoch(epoch uint64)
-}

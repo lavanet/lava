@@ -5,7 +5,9 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -23,6 +25,16 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq.PairingQueryClient = pairingtypes.NewQueryClient(clientCtx)
 	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
 	return sq
+}
+
+func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
+	spec, err := csq.SpecQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		ChainID: chainID,
+	})
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": chainID})
+	}
+	return &spec.Spec, nil
 }
 
 type ConsumerStateQuery struct {
@@ -74,12 +86,69 @@ func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID stri
 	return UserEntryRes.GetMaxCU(), nil
 }
 
-func (csq *ConsumerStateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
-	spec, err := csq.SpecQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		ChainID: chainID,
-	})
+type ProviderStateQuery struct {
+	StateQuery
+	clientCtx client.Context
+}
+
+func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *ProviderStateQuery {
+	csq := &ProviderStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx}
+	return csq
+}
+
+func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
+	epochDetails, err := psq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": chainID})
+		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err, nil)
 	}
-	return &spec.Spec, nil
+	details := epochDetails.GetEpochDetails()
+	return details.StartBlock, nil
+
+}
+
+func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
+	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
+	if err != nil {
+		return nil, err
+	}
+	transactionResults := blockResults.TxsResults
+	for _, tx := range transactionResults {
+		events := tx.Events
+		for _, event := range events {
+			if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName {
+				vote, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
+				if err != nil {
+					return nil, err
+				}
+				votes = append(votes, vote)
+			}
+		}
+	}
+
+	beginBlockEvents := blockResults.BeginBlockEvents
+	for _, event := range beginBlockEvents {
+		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
+			// eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
+			// 	if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+			// 		for idx, voteID := range votesList {
+			// 			num_str := e.Events[eventToListen+".voteDeadline"][idx]
+			// 			voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+			// 			if err != nil {
+			// 				utils.LavaFormatError("parsing vote deadline", err, &map[string]string{"VoteDeadline": num_str})
+			// 				continue
+			// 			}
+			// 			go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
+			// 		}
+			// 	}
+
+			// 	eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
+			// 	if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+			// 		for _, voteID := range votesList {
+			// 			voteParams := &VoteParams{CloseVote: true}
+			// 			go s.voteInitiationCb(ctx, voteID, 0, voteParams)
+			// 		}
+			// 	}
+		}
+	}
+	return
 }

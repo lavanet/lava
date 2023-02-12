@@ -104,3 +104,16 @@ func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizatio
 	}
 	return nil
 }
+
+type ProviderTxSender struct {
+	*TxSender
+}
+
+func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Factory) (ret *ProviderTxSender, err error) {
+	txSender, err := NewTxSender(ctx, clientCtx, txFactory)
+	if err != nil {
+		return nil, err
+	}
+	ts := &ProviderTxSender{TxSender: txSender}
+	return ts, nil
+}

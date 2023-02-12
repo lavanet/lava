@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -21,7 +20,7 @@ type PairingUpdater struct {
 	stateQuery                 *ConsumerStateQuery
 }
 
-func NewPairingUpdater(consumerAddress sdk.AccAddress, stateQuery *ConsumerStateQuery) *PairingUpdater {
+func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
 	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
 }
 
@@ -32,7 +31,10 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 		return err
 	}
 	pu.updateConsummerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
-	pu.nextBlockForUpdate = nextBlockForUpdate // make sure we don't update twice when launching.
+	if nextBlockForUpdate > pu.nextBlockForUpdate {
+		// make sure we don't update twice, this updates pu.nextBlockForUpdate
+		pu.Update(int64(nextBlockForUpdate))
+	}
 	consumerSessionsManagersList, ok := pu.consumerSessionManagersMap[chainID]
 	if !ok {
 		pu.consumerSessionManagersMap[chainID] = []*lavasession.ConsumerSessionManager{consumerSessionManager}
@@ -70,7 +72,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 			}
 		}
 	}
-	nextBlockForUpdateMin := uint64(0)
+	nextBlockForUpdateMin := uint64(latestBlock) // in case the list is empty
 	for idx, blockToUpdate := range nextBlockForUpdateList {
 		if idx == 0 || blockToUpdate < nextBlockForUpdateMin {
 			nextBlockForUpdateMin = blockToUpdate
