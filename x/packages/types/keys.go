@@ -23,3 +23,8 @@ const (
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
+
+const (
+	PackageUniqueIndexKey      = "PackageUniqueIndex-value-"
+	PackageUniqueIndexCountKey = "PackageUniqueIndex-count-"
+)

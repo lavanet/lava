@@ -29,6 +29,15 @@ func TestGenesisState_Validate(t *testing.T) {
 						PackageIndex: "1",
 					},
 				},
+				PackageUniqueIndexList: []types.PackageUniqueIndex{
+					{
+						Id: 0,
+					},
+					{
+						Id: 1,
+					},
+				},
+				PackageUniqueIndexCount: 2,
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -44,6 +53,32 @@ func TestGenesisState_Validate(t *testing.T) {
 						PackageIndex: "0",
 					},
 				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated packageUniqueIndex",
+			genState: &types.GenesisState{
+				PackageUniqueIndexList: []types.PackageUniqueIndex{
+					{
+						Id: 0,
+					},
+					{
+						Id: 0,
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "invalid packageUniqueIndex count",
+			genState: &types.GenesisState{
+				PackageUniqueIndexList: []types.PackageUniqueIndex{
+					{
+						Id: 1,
+					},
+				},
+				PackageUniqueIndexCount: 0,
 			},
 			valid: false,
 		},

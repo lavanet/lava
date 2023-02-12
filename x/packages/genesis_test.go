@@ -22,6 +22,15 @@ func TestGenesis(t *testing.T) {
 				PackageIndex: "1",
 			},
 		},
+		PackageUniqueIndexList: []types.PackageUniqueIndex{
+			{
+				Id: 0,
+			},
+			{
+				Id: 1,
+			},
+		},
+		PackageUniqueIndexCount: 2,
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -34,5 +43,7 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(got)
 
 	require.ElementsMatch(t, genesisState.PackageVersionsStorageList, got.PackageVersionsStorageList)
+	require.ElementsMatch(t, genesisState.PackageUniqueIndexList, got.PackageUniqueIndexList)
+	require.Equal(t, genesisState.PackageUniqueIndexCount, got.PackageUniqueIndexCount)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

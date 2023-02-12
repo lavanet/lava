@@ -1,0 +1,10 @@
+syntax = "proto3";
+package lavanet.lava.packages;
+
+option go_package = "github.com/lavanet/lava/x/packages/types";
+
+message PackageUniqueIndex {
+  uint64 id = 1;
+  string index = 2; 
+  
+}

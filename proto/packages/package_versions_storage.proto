@@ -7,6 +7,6 @@ option go_package = "github.com/lavanet/lava/x/packages/types";
 
 message PackageVersionsStorage {
   string packageIndex = 1; 
-  common.EntryStorage packageStorage = 2;  
+  common.Entry fixatedEntry = 2;  
 }
 

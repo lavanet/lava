@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -137,7 +138,8 @@ func TestPackageAdditionAndRemoval(t *testing.T) {
 	// get the package storage and verify that there are two packages in the package storage
 	packageStorage, found := ts.keepers.Packages.GetPackageVersionsStorage(sdk.UnwrapSDKContext(ts.ctx), testPackages[0].GetIndex())
 	require.True(t, found)
-	require.Equal(t, 2, len(packageStorage.GetPackageStorage().GetEntryList()))
+	_, indexList := common.GetAllEntriesFromStorage(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
+	require.Equal(t, 2, len(indexList))
 
 	// verify that testPackages[1] is the latest package version (should be first in the entryList)
 	packageLatestVersion, err := ts.keepers.Packages.GetPackageLatestVersion(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex())
@@ -148,7 +150,8 @@ func TestPackageAdditionAndRemoval(t *testing.T) {
 	for i := 0; i < int(packageDurationInEpochs)+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
-	require.Equal(t, 2, len(packageStorage.GetPackageStorage().GetEntryList()))
+	_, indexList = common.GetAllEntriesFromStorage(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
+	require.Equal(t, 2, len(indexList))
 
 	// advance one more epoch to remove the stale package (the deletePackage function is invoked in the start of every epoch)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -158,7 +161,8 @@ func TestPackageAdditionAndRemoval(t *testing.T) {
 	require.True(t, found)
 	packageLeft, err := ts.keepers.Packages.GetPackageLatestVersion(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex())
 	require.Nil(t, err)
-	require.Equal(t, 1, len(packageStorage.GetPackageStorage().GetEntryList()))
+	_, indexList = common.GetAllEntriesFromStorage(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
+	require.Equal(t, 1, len(indexList))
 	require.Equal(t, testPackages[1].GetOveruseRate(), packageLeft.GetOveruseRate())
 }
 
@@ -183,7 +187,8 @@ func TestUpdatePackageInSameEpoch(t *testing.T) {
 	require.True(t, found)
 	packageLeft, err := ts.keepers.Packages.GetPackageLatestVersion(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex())
 	require.Nil(t, err)
-	require.Equal(t, 1, len(packageStorage.GetPackageStorage().GetEntryList()))
+	_, indexList := common.GetAllEntriesFromStorage(sdk.UnwrapSDKContext(ts.ctx), packageStorage.GetPackageIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
+	require.Equal(t, 1, len(indexList))
 	require.Equal(t, testPackages[1].GetOveruseRate(), packageLeft.GetOveruseRate())
 }
 

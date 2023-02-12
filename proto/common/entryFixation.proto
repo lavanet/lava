@@ -4,11 +4,6 @@ package lavanet.lava.common;
 option go_package = "github.com/lavanet/lava/common/types";
 import "gogoproto/gogo.proto"; 
 
-
-message EntryStorage {
-  repeated Entry entryList = 1; // list of entries to track changes (latest change is first in list)
-}
-
 message Entry {
     uint64 epoch = 1; // epoch the entry was created (functions as key)
     bytes marshaledData = 2; // marshaled data of the entry
