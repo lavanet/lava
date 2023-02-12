@@ -36,6 +36,7 @@ type TendemintRpcMessage struct {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
+	// httpUrl string
 }
 
 func (m TendemintRpcMessage) GetParams() interface{} {
@@ -131,7 +132,19 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	return hash, nil
 }
 
+// func parseNodeUrl(nodeUrl string) (string, error) {
+// 	u, err := url.Parse(nodeUrl)
+// 	if err != nil {
+// 		utils.LavaFormatFatal("Failed to parse node url", err, &map[string]string{"url": nodeUrl})
+// 	}
+// 	if u.Scheme == "" {
+// 	}
+// 	return nodeUrl, nil
+// }
+
 func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
+	// httpUrl := nodeUrl
+
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
 			nodeUrl:    nodeUrl,
@@ -140,6 +153,7 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 			portalLogs: pLogs,
 			csm:        csm,
 		},
+		// httpUrl: httpUrl,
 	}
 }
 
