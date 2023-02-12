@@ -21,4 +21,4 @@ sleep_until_next_epoch
 screen -d -m -S gth_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2121 $GTH_RPC_WS GTH1 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/GTH1_2121.log" && sleep 0.25
 screen -S gth_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2122 $GTH_RPC_WS GTH1 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/GTH1_2122.log"
 
-screen -d -m -S portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3339 GTH1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3339.log"
+screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3339 GTH1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3339.log"
