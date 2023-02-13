@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -118,8 +119,9 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 			if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName {
 				vote, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
 				if err != nil {
-					return nil, err
+					return nil, utils.LavaFormatError("failed conflict_vote_detection_event parsing", err, &map[string]string{"event": fmt.Sprintf("%v", event)})
 				}
+				utils.LavaFormatDebug("conflict_vote_detection_event", &map[string]string{"voteID": vote.VoteID})
 				votes = append(votes, vote)
 			}
 		}
@@ -128,26 +130,24 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 	beginBlockEvents := blockResults.BeginBlockEvents
 	for _, event := range beginBlockEvents {
 		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
-			// eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
-			// 	if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
-			// 		for idx, voteID := range votesList {
-			// 			num_str := e.Events[eventToListen+".voteDeadline"][idx]
-			// 			voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
-			// 			if err != nil {
-			// 				utils.LavaFormatError("parsing vote deadline", err, &map[string]string{"VoteDeadline": num_str})
-			// 				continue
-			// 			}
-			// 			go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
-			// 		}
-			// 	}
-
-			// 	eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
-			// 	if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
-			// 		for _, voteID := range votesList {
-			// 			voteParams := &VoteParams{CloseVote: true}
-			// 			go s.voteInitiationCb(ctx, voteID, 0, voteParams)
-			// 		}
-			// 	}
+			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
+			if err != nil {
+				return nil, utils.LavaFormatError("failed conflict_vote_reveal_event parsing", err, &map[string]string{"event": fmt.Sprintf("%v", event)})
+			}
+			vote_reveal := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: voteDeadline, ParamsType: reliabilitymanager.RevealVoteType}
+			utils.LavaFormatDebug("conflict_vote_reveal_event", &map[string]string{"voteID": voteID})
+			votes = append(votes, vote_reveal)
+		}
+		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName {
+			voteID, _, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
+			if err != nil {
+				if !reliabilitymanager.NoVoteDeadline.Is(err) {
+					return nil, utils.LavaFormatError("failed conflict_vote_resolved_event parsing", err, &map[string]string{"event": fmt.Sprintf("%v", event)})
+				}
+			}
+			vote_resolved := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: 0, ParamsType: reliabilitymanager.CloseVoteType, CloseVote: true}
+			votes = append(votes, vote_resolved)
+			utils.LavaFormatDebug("conflict_vote_resolved_event", &map[string]string{"voteID": voteID})
 		}
 	}
 	return

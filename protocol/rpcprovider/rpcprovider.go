@@ -34,11 +34,13 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
-	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
+	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
+	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData)
+	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData)
 }
 
 type RPCProvider struct {
@@ -48,14 +50,15 @@ type RPCProvider struct {
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
 	// single state tracker
-	providerStateTracker := statetracker.ProviderStateTracker{}
-	rpcp.providerStateTracker, err = providerStateTracker.New(ctx, txFactory, clientCtx)
+	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
 		return err
 	}
+	rpcp.providerStateTracker = providerStateTracker
 	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer, len(rpcProviderEndpoints))
 	// single reward server
-	rewardServer := rewardserver.NewRewardServer(&providerStateTracker)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker)
 
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -75,14 +78,14 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, &providerStateTracker)
+		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, providerStateTracker)
 		key := rpcProviderEndpoint.Key()
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
-		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
+		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcProviderEndpoint.ChainID)
 
 		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint)
 		if err != nil {
@@ -101,7 +104,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		if err != nil {
 			utils.LavaFormatFatal("failed creating chain tracker", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig)})
 		}
-		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker)
+		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
 
 		rpcp.rpcProviderServers[key] = &RPCProviderServer{}

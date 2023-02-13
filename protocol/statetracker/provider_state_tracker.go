@@ -34,7 +34,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	return pst, nil
 }
 
-func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable *EpochUpdatable) {
+func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
 	// create an epoch updater
 	// add epoch updater to the updater map
 	epochUpdater := NewEpochUpdater(pst.stateQuery)
@@ -65,4 +65,11 @@ func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consume
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest) {
 	// TODO: implement
+}
+
+func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) {
+
+}
+func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) {
+
 }

@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"golang.org/x/net/context"
 )
 
@@ -10,8 +11,7 @@ const (
 )
 
 type VoteUpdatable interface {
-	VoteCommit()
-	VoteReveal()
+	VoteHandler(*reliabilitymanager.VoteParams)
 }
 
 type VoteUpdater struct {
@@ -34,8 +34,13 @@ func (vu *VoteUpdater) UpdaterKey() string {
 
 func (vu *VoteUpdater) Update(latestBlock int64) {
 	ctx := context.Background()
-	_, err := vu.stateQuery.VoteEvents(ctx, latestBlock)
+	votes, err := vu.stateQuery.VoteEvents(ctx, latestBlock)
 	if err != nil {
 		return
+	}
+	for _, vote := range votes {
+		endpoint := lavasession.RPCEndpoint{ChainID: vote.ChainID, ApiInterface: vote.ApiInterface}
+		updatable := vu.voteUpdatables[endpoint.Key()]
+		(*updatable).VoteHandler(vote)
 	}
 }
