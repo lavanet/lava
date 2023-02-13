@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -26,13 +27,14 @@ import (
 )
 
 type RestMessage struct {
-	cp             *RestChainProxy
-	serviceApi     *spectypes.ServiceApi
-	path           string
-	msg            []byte
-	requestedBlock int64
-	Result         json.RawMessage
-	apiInterface   *spectypes.ApiInterface
+	cp                   *RestChainProxy
+	serviceApi           *spectypes.ServiceApi
+	path                 string
+	msg                  []byte
+	requestedBlock       int64
+	Result               json.RawMessage
+	apiInterface         *spectypes.ApiInterface
+	extendContextTimeout time.Duration
 }
 
 type RestChainProxy struct {
@@ -41,6 +43,10 @@ type RestChainProxy struct {
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
 	cache      *performance.Cache
+}
+
+func (r *RestMessage) GetExtraContextTimeout() time.Duration {
+	return r.extendContextTimeout
 }
 
 func (r *RestMessage) GetMsg() interface{} {
@@ -216,13 +222,20 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
+
+	var extraTimeout time.Duration
+	if apiInterface.Category.HangingApi {
+		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
+	}
+
 	// data contains the query string
 	nodeMsg := &RestMessage{
-		cp:           cp,
-		serviceApi:   serviceApi,
-		path:         path,
-		msg:          data,
-		apiInterface: apiInterface, // POST,GET etc..
+		cp:                   cp,
+		serviceApi:           serviceApi,
+		path:                 path,
+		msg:                  data,
+		apiInterface:         apiInterface, // POST,GET etc..
+		extendContextTimeout: extraTimeout,
 	}
 
 	return nodeMsg, nil
@@ -284,11 +297,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
+		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
@@ -356,7 +365,11 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	if connectionTypeSelected == http.MethodGet {
 		url += string(nm.msg)
 	}
-	req, err := http.NewRequest(connectionTypeSelected, url, msgBuffer)
+
+	connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSelected, url, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

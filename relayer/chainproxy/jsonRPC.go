@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -35,11 +36,16 @@ type JsonrpcMessage struct {
 }
 
 type JrpcMessage struct {
-	cp             *JrpcChainProxy
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	msg            *JsonrpcMessage
-	requestedBlock int64
+	cp                   *JrpcChainProxy
+	serviceApi           *spectypes.ServiceApi
+	apiInterface         *spectypes.ApiInterface
+	msg                  *JsonrpcMessage
+	requestedBlock       int64
+	extendContextTimeout time.Duration
+}
+
+func (r *JrpcMessage) GetExtraContextTimeout() time.Duration {
+	return r.extendContextTimeout
 }
 
 func (j *JrpcMessage) GetMsg() interface{} {
@@ -242,12 +248,19 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
+
+	var extraTimeout time.Duration
+	if apiInterface.Category.HangingApi {
+		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
+	}
+
 	nodeMsg := &JrpcMessage{
-		cp:             cp,
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
-		msg:            &msg,
-		requestedBlock: requestedBlock,
+		cp:                   cp,
+		serviceApi:           serviceApi,
+		apiInterface:         apiInterface,
+		msg:                  &msg,
+		requestedBlock:       requestedBlock,
+		extendContextTimeout: extraTimeout,
 	}
 	return nodeMsg, nil
 }
@@ -306,11 +319,11 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				break
 			}
-			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
+			dappID := ExtractDappIDFromWebsocketConnection(c)
+			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg), "dappID": dappID})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			dappID := ExtractDappIDFromWebsocketConnection(c)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
 			go cp.portalLogs.AddMetric(metricsData, err != nil)
@@ -435,7 +448,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
-		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits))
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
 	}

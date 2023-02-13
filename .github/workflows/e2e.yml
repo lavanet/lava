@@ -1,6 +1,6 @@
-name: Lava e2e Tests
+name: Lava E2E Tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   go:
@@ -15,15 +15,14 @@ jobs:
     
     # Install Ignite
     - name: ignite install
-      uses: nick-fields/retry@v2
-      with:
-        max_attempts: 3
-        retry_on: error
-        timeout_minutes: 20
-        command: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
-
+      run: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
+      # run: curl https://get.ignite.com/cli! | bash
     - name: ignite version
       run:  ignite version
+    # - name: starport install
+    #   run: curl https://get.starport.network/starport@v0.19.2! | bash
+    # - name: starport version
+    #   run:  starport version
 
     # Setup Paths
     - name: home
@@ -57,29 +56,6 @@ jobs:
         retry_on: error
         timeout_minutes: 20
         command: ignite chain build -v
-
-    ######################################################
-    ### Run lava unitests
-    ######################################################
-    - name: lava pairing unit Tests
-      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types -v
-      
-    - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types -v
-
-    - name: lava spec unit Tests
-      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types -v
-
-    - name: lava conflict unit Tests
-      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
-
-    ######################################################
-    ### Run relayer unitests
-    ######################################################
-    - name: Run Relayer unit Tests
-      run: go test ./protocol/lavasession/ ./protocol/chaintracker/ ./relayer/chainproxy/ -v
-    - name: Run Relayer Metrics Unit Tests
-      run: go test ./relayer/metrics/  -v
 
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
@@ -136,15 +112,6 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
 
-    - name: Tendermint Consumer All Logs
-      if: always()
-      run: cat testutil/e2e/logs/06_tendermintConsumer.log
-
-    - name: Tendermint Consumer Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: cat testutil/e2e/logs/06_tendermintConsumer_errors.log
-
     - name: Lava over Lava All Logs
       if: always()
       run: cat testutil/e2e/logs/07_lavaOverLava.log
@@ -163,15 +130,6 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
 
-    - name: Rest Consumer All Logs
-      if: always()
-      run: cat testutil/e2e/logs/09_restConsumer.log
-
-    - name: Rest Consumer Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: cat testutil/e2e/logs/09_restConsumer_errors.log
-    
     - name: GRPC Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
@@ -181,11 +139,13 @@ jobs:
       continue-on-error: true
       run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
-    - name: GRPC Consumer All Logs
+    - name: RPCConsumer Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/11_grpcConsumer.log
+      run: cat testutil/e2e/logs/06_RPCConsumer.log
 
-    - name: GRPC Consumer Error Only Logs
+    - name: RPCConsumer Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/11_grpcConsumer_errors.log
+      run: cat testutil/e2e/logs/06_RPCConsumer_errors.log
+
+ 

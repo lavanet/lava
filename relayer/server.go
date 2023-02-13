@@ -391,7 +391,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		isValidBlockHeight := validateRequestedBlockHeight(uint64(req.BlockHeight))
 		if !isValidBlockHeight {
 			return nil, utils.LavaFormatError("User requested with invalid block height", err, &map[string]string{
-				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10),
+				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10), "expected": strconv.FormatUint(g_sentry.GetCurrentEpochHeight(), 10),
 			})
 		}
 

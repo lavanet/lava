@@ -64,11 +64,11 @@ func (m *InterchainAccount) XXX_DiscardUnknown() {
 var xxx_messageInfo_InterchainAccount proto.InternalMessageInfo
 
 func init() {
-	//proto.RegisterType((*InterchainAccount)(nil), "ibc.applications.interchain_accounts.v1.InterchainAccount")
+	proto.RegisterType((*InterchainAccount)(nil), "ibc.applications.interchain_accounts.v1.InterchainAccount")
 }
 
 func init() {
-	// proto.RegisterFile("ibc/applications/interchain_accounts/v1/account.proto", fileDescriptor_5561bd92625bf7da)
+	proto.RegisterFile("ibc/applications/interchain_accounts/v1/account.proto", fileDescriptor_5561bd92625bf7da)
 }
 
 var fileDescriptor_5561bd92625bf7da = []byte{

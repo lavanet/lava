@@ -3,7 +3,7 @@ package juno_thirdparty
 import (
 	"context"
 
-	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/juno/mint/types"
+	pb_pkg "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/juno/mint/types"
 	"google.golang.org/grpc"
 )
 

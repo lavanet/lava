@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -18,10 +19,15 @@ const (
 )
 
 type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	requestedBlock int64
-	msg            interface{}
+	serviceApi       *spectypes.ServiceApi
+	apiInterface     *spectypes.ApiInterface
+	averageBlockTime int64
+	requestedBlock   int64
+	msg              interface{}
+}
+
+type BaseChainProxy struct {
+	averageBlockTime time.Duration
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
@@ -45,25 +51,29 @@ func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	if len(c.Route().Params) > 1 {
-		dappID = c.Route().Params[1]
-		dappID = strings.ReplaceAll(dappID, "*", "")
-		return
+	dappID = c.Params("dappId")
+	if dappID == "" {
+		dappID = "NoDappID"
 	}
-	return "NoDappID"
+	return dappID
 }
 
 func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		// dappID := ""
-		// if len(c.Route().Params) > 1 {
-		// 	dappID = c.Route().Params[1]
-		// 	dappID = strings.ReplaceAll(dappID, "*", "")
-		// }
+		dappId := extractDappIDFromFiberContext(c)
+		c.Locals("dappId", dappId)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
+}
+
+func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
+	dappId, ok := c.Locals("dappId").(string)
+	if !ok {
+		dappId = "NoDappID"
+	}
+	return dappId
 }
 
 func convertToJsonError(errorMsg string) string {
@@ -75,17 +85,6 @@ func convertToJsonError(errorMsg string) string {
 	}
 
 	return string(jsonResponse)
-}
-
-func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
-	if dappID, ok := dappIDLocal.(string); ok {
-		// zeroallocation policy for fiber.Ctx
-		buffer := make([]byte, len(dappID))
-		copy(buffer, dappID)
-		return string(buffer)
-	}
-	return "NoDappID"
 }
 
 func addAttributeToError(key string, value string, errorMessage string) string {

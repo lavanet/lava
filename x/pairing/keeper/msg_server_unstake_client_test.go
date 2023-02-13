@@ -16,7 +16,7 @@ import (
 func TestUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -67,7 +67,7 @@ func TestUnstakeClient(t *testing.T) {
 func TestUnstakeNotStakedClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -96,7 +96,6 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 
 			balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 			require.Equal(t, amount, balance)
-
 		})
 	}
 }
@@ -104,7 +103,7 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 func TestDoubleUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))

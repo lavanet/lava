@@ -306,8 +306,8 @@ func main() {
 					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
 				}
 			}
-			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
-			return nil
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+			return err
 		},
 	}
 
@@ -425,8 +425,8 @@ func main() {
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
 			}
-			rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
-			return nil
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
+			return err
 		},
 	}
 
@@ -466,7 +466,7 @@ func main() {
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	// rootCmd.AddCommand(cmdRPCConsumer) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
+	rootCmd.AddCommand(cmdRPCConsumer)
 
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
