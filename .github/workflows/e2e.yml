@@ -1,6 +1,6 @@
-name: Lava e2e Tests
+name: Lava E2E Tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   go:
@@ -58,28 +58,94 @@ jobs:
         command: ignite chain build -v
 
     ######################################################
-    ### Run lava unitests
-    ######################################################
-    - name: lava pairing unit Tests
-      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types -v
-      
-    - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types -v
-
-    - name: lava spec unit Tests
-      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types -v
-
-    - name: lava conflict unit Tests
-      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
-      
-    ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
+      
+    - name: Stake Lava All Logs
+      if: always()
+      run: cat testutil/e2e/logs/01_stakeLava.log
 
-    ######################################################
-    ### Run relayer unitests
-    ######################################################
-    - name: Run Relayer unit Tests
-      run: go test ./relayer/lavasession/ ./relayer/chainTracker/ -v
+    - name: Stake Lava Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: cat testutil/e2e/logs/01_stakeLava_errors.log
+
+    - name: head -n 300 JSON Proxy Logs
+      if: always()
+      run: head -n 300 testutil/e2e/logs/02_jsonProxy.log
+
+    - name: tail -n 300 JSON Proxy Logs
+      if: always()
+      run: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
+
+    - name: JSON Proxy Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: cat testutil/e2e/logs/02_jsonProxy_errors.log
+
+    - name: JSON Provider All Logs
+      if: always()
+      run: grep "" testutil/e2e/logs/03_jsonProvider* --exclude="*errors*"
+
+    - name: JSON Provider Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
+
+    - name: JSON Consumer All Logs
+      if: always()
+      run: cat testutil/e2e/logs/04_jsonConsumer.log
+
+    - name: JSON Consumer Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: cat testutil/e2e/logs/04_jsonConsumer_errors.log
+
+    - name: Tendermint Provider All Logs
+      if: always()
+      run: grep "" testutil/e2e/logs/05_tendermintProvider* --exclude="*errors*"
+
+    - name: Tendermint Provider Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
+
+    - name: Lava over Lava All Logs
+      if: always()
+      run: cat testutil/e2e/logs/07_lavaOverLava.log
+
+    - name: Lava over Lava Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: cat testutil/e2e/logs/07_lavaOverLava_errors.log
+
+    - name: Rest Provider All Logs
+      if: always()
+      run: grep "" testutil/e2e/logs/08_restProvider* --exclude="*errors*"
+
+    - name: Rest Provider Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
+
+    - name: GRPC Provider All Logs
+      if: always()
+      run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
+
+    - name: GRPC Provider Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
+
+    - name: RPCConsumer Consumer All Logs
+      if: always()
+      run: cat testutil/e2e/logs/06_RPCConsumer.log
+
+    - name: RPCConsumer Consumer Error Only Logs
+      if: always()
+      continue-on-error: true
+      run: cat testutil/e2e/logs/06_RPCConsumer_errors.log
+
+ 

@@ -15,7 +15,6 @@ import (
 // Test that if the QosWeight param changes before the provider collected its reward, the provider's payment is according to the last QosWeight value (QosWeight is not fixated)
 // Provider reward formula: reward = reward*(QOSScore*QOSWeight + (1-QOSWeight))
 func TestRelayPaymentGovQosWeightChange(t *testing.T) {
-
 	// setup testnet with mock spec, a staked client and a staked provider
 	ts := setupForPaymentTest(t)
 
@@ -64,7 +63,6 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
@@ -123,7 +121,6 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 // Test that if the EpochBlocks param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -171,7 +168,6 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
@@ -198,13 +194,11 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 // TODO: Currently the test passes since PaymentBeforeEpochBlocksChangesToFifty's value is false. It should be true. After bug CNS-83 is fixed, change this test
 // Test that if the EpochBlocks param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -256,7 +250,6 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
@@ -283,12 +276,10 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 // Test that if the EpochToSave param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -341,7 +332,6 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// advance to one block to reach the start of the newDecreasedEpochsToSave+1 epoch -> the provider from epochAfterChange shouldn't be able to get its payments (epoch out of memory)
 			if ti == 2 {
 				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
@@ -373,13 +363,11 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 // TODO: Currently the test passes since PaymentBeforeEpochsToSaveChangesToTwenty's value is false. It should be true. After bug CNS-83 is fixed, change this test
 // Test that if the EpochToSave param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -425,7 +413,6 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
@@ -452,12 +439,10 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 // Test that if the StakeToMaxCU.MaxCU param decreases make sure the client can send queries according to the original StakeToMaxCUList in the current epoch (This parameter is fixated)
 func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -548,12 +533,10 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 // Test that if the StakeToMaxCU.StakeThreshold param increases make sure the client can send queries according to the original StakeToMaxCUList in the current epoch (This parameter is fixated)
 func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -644,7 +627,6 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
@@ -699,7 +681,6 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// change the EpochBlocks parameter according to the epoch test values
 			epochBlocksNew := uint64(epochTests[ti].epochBlocksNewValues)
 			err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksNew, 10)+"\"")
@@ -741,11 +722,9 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
-
 }
 
 func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -827,7 +806,6 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 
 // this test checks what happens if a single provider stake, get payment, and then unstake and gets its money.
 func TestStakePaymentUnstake(t *testing.T) {
-
 	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
 
@@ -888,7 +866,6 @@ func TestStakePaymentUnstake(t *testing.T) {
 // TODO: Currently the test passes since second call to verifyRelayPaymentObjects is called with true (see TODO comment right next to it). It should be false. After bug CNS-83 is fixed, change this test
 // Test that the payment object is deleted in the end of the memory and can't be used to double spend all while making gov changes
 func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing.T) {
-
 	tests := []struct {
 		name                string // Test name
 		decreaseEpochBlocks bool   // flag to indicate if EpochBlocks is decreased or not
@@ -975,7 +952,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 // Helper function to verify the relay payment objects that are saved on-chain after getting payment from a relay request
 func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairingtypes.RelayRequest, objectExists bool) {
-
 	// Get EpochPayment struct from current epoch and perform basic verifications
 	epochPayments, found, epochPaymentKey := ts.keepers.Pairing.GetEpochPaymentsFromBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()))
 	if objectExists {
@@ -991,9 +967,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 
 	// Get the providerPaymentStorage struct from epochPayments
 	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
-	for _, providerPaymentStorageFromEpochPaymentsElem := range epochPayments.GetClientsPayments() {
-		if providerPaymentStorageFromEpochPaymentsElem.GetIndex() == providerPaymentStorageKey {
-			providerPaymentStorageFromEpochPayments = *providerPaymentStorageFromEpochPaymentsElem
+	for _, providerPaymentStorageFromEpochPaymentsElemKey := range epochPayments.GetProviderPaymentStorageKeys() {
+		if providerPaymentStorageFromEpochPaymentsElemKey == providerPaymentStorageKey {
+			providerPaymentStorageFromEpochPayments, found = ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageFromEpochPaymentsElemKey)
+			require.True(t, found)
 		}
 	}
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
@@ -1004,9 +981,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 
 	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
 	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}
-	for _, uniquePaymentStorageClientProviderFromProviderPaymentStorageElem := range providerPaymentStorageFromEpochPayments.GetUniquePaymentStorageClientProvider() {
-		if uniquePaymentStorageClientProviderFromProviderPaymentStorageElem.GetIndex() == uniquePaymentStorageClientProviderKey {
-			uniquePaymentStorageClientProviderFromProviderPaymentStorage = *uniquePaymentStorageClientProviderFromProviderPaymentStorageElem
+	for _, uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey := range providerPaymentStorageFromEpochPayments.GetUniquePaymentStorageClientProviderKeys() {
+		if uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey == uniquePaymentStorageClientProviderKey {
+			uniquePaymentStorageClientProviderFromProviderPaymentStorage, found = ts.keepers.Pairing.GetUniquePaymentStorageClientProvider(sdk.UnwrapSDKContext(ts.ctx), uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey)
+			require.True(t, found)
 		}
 	}
 	require.NotEmpty(t, uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetIndex())

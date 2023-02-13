@@ -7,16 +7,10 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Params defines the parameters for the module.
 message Params {
+  reserved 1,2;
   option (gogoproto.goproto_stringer) = false;
   
-  string minStakeProvider = 1 [(gogoproto.moretags) = "yaml:\"min_stake_provider\"",
-  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-  (gogoproto.nullable)   = false
-  ];
-  string minStakeClient = 2 [(gogoproto.moretags) = "yaml:\"min_stake_client\"",
-  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-  (gogoproto.nullable)   = false
-  ];
+  
   string mintCoinsPerCU = 3 [
     (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
@@ -60,4 +54,5 @@ message Params {
       (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
       (gogoproto.nullable)   = false
       ];
+    uint64 recommendedEpochNumToCollectPayment = 14 [(gogoproto.moretags) = "yaml:\"recommended_epoch_num_to_collect_payment\""];
 }

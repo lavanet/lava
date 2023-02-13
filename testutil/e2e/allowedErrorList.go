@@ -9,4 +9,5 @@ var allowedErrors = map[string]string{
 	"purging provider after all endpoints are disabled provider":     "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"query hash mismatch on data reliability message":                "This error is allowed temporarily because of data reliability",
 	"invalid pairing with consumer":                                  "This error is allowed temporarily because of data reliability",
+	"Could not get reply to reliability relay":                       "This error is allowed temporarily because of data reliability",
 }

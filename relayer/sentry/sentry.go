@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand"
 	"regexp"
 	"sort"
 	"strconv"
@@ -19,7 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	singletonLogger "github.com/lavanet/lava/utils/logger"
@@ -101,6 +103,13 @@ type ProviderHashesConsensus struct {
 	agreeingProviders     map[string]providerDataContainer
 }
 
+type RewardHandler struct {
+	epochEventTriggered bool
+	delayRewardBy       int
+	waitedBlocks        int
+	blockHeight         int64
+}
+
 type Sentry struct {
 	ClientCtx               client.Context
 	rpcClient               rpcclient.Client
@@ -165,7 +174,7 @@ func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessio
 	if err != nil {
 		utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 	}
-	err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+	err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 	if err != nil {
 		utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 	}
@@ -273,17 +282,17 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 		//
 		pairingEndpoints := make([]*lavasession.Endpoint, len(relevantEndpoints))
 		for idx, relevantEndpoint := range relevantEndpoints {
-			endp := &lavasession.Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
+			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
 			pairingEndpoints[idx] = endp
 		}
 
 		pairing = append(pairing, &lavasession.ConsumerSessionsWithProvider{
-			Acc:             provider.Address,
-			Endpoints:       pairingEndpoints,
-			Sessions:        map[int64]*lavasession.SingleConsumerSession{},
-			MaxComputeUnits: maxcu,
-			ReliabilitySent: false,
-			PairingEpoch:    s.GetCurrentEpochHeight(),
+			PublicLavaAddress: provider.Address,
+			Endpoints:         pairingEndpoints,
+			Sessions:          map[int64]*lavasession.SingleConsumerSession{},
+			MaxComputeUnits:   maxcu,
+			ReliabilitySent:   false,
+			PairingEpoch:      s.GetCurrentEpochHeight(),
 		})
 	}
 	if len(pairing) == 0 {
@@ -596,6 +605,8 @@ func (s *Sentry) PrintExpectedPayments() string {
 }
 
 func (s *Sentry) Start(ctx context.Context) {
+	rewardHandler := &RewardHandler{}
+
 	if !s.isUser {
 		// listen for transactions for proof of relay payment
 		go s.ListenForTXEvents(ctx)
@@ -604,9 +615,9 @@ func (s *Sentry) Start(ctx context.Context) {
 	// Get logger instance
 	logger := singletonLogger.GetInstance()
 
-	//
 	// Listen for blockchain events
 	for e := range s.NewBlockEvents {
+		//
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
 			//
@@ -626,9 +637,12 @@ func (s *Sentry) Start(ctx context.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed in FetchChainParams", err, nil)
 				}
-
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
+					epochSize := s.GetEpochSize()
+					rewardHandler.epochEventTriggered = true
+					rewardHandler.delayRewardBy = int(math.Abs(rand.Float64() * float64(epochSize/2)))
+					rewardHandler.blockHeight = (data.Block.Height - StaleEpochDistance*int64(epochSize))
+					utils.LavaFormatInfo("delaying to ask rewards", &map[string]string{"delayedBlocks": strconv.Itoa(rewardHandler.delayRewardBy)})
 				}
 
 				//
@@ -650,7 +664,7 @@ func (s *Sentry) Start(ctx context.Context) {
 					if err != nil {
 						utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 					}
-					err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+					err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 					if err != nil {
 						utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 					}
@@ -709,6 +723,16 @@ func (s *Sentry) Start(ctx context.Context) {
 		default:
 			{
 			}
+		}
+
+		// This happens at the end of the epoch switch case as we might get 0 delay and want to trigger the reward in the same block
+		if s.newEpochCb != nil && rewardHandler.epochEventTriggered {
+			if rewardHandler.waitedBlocks >= rewardHandler.delayRewardBy {
+				utils.LavaFormatInfo("Asking for rewards", &map[string]string{"delayedBlocks": strconv.Itoa(rewardHandler.delayRewardBy)})
+				go s.newEpochCb(rewardHandler.blockHeight) // Currently this is only askForRewards
+				rewardHandler = &RewardHandler{}           // reset reward handler to default.
+			}
+			rewardHandler.waitedBlocks += 1
 		}
 	}
 }

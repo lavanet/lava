@@ -5,18 +5,18 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -25,12 +25,7 @@ func TestUnstakeClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	specName := "mockSpec"
-	spec := spectypes.Spec{}
-	spec.Name = specName
-	spec.Index = specName
-	spec.Enabled = true
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
+	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/10)), Geolocation: 1, Vrfpk: vrfPk.String()})
@@ -44,8 +39,8 @@ func TestUnstakeClient(t *testing.T) {
 		chainID string
 		valid   bool
 	}{
-		{"HappyFlow", specName, true},
-		{"WrongChain", "Not" + specName, false},
+		{"HappyFlow", spec.Index, true},
+		{"WrongChain", "Not" + spec.Index, false},
 	}
 
 	for _, tt := range tests {
@@ -72,7 +67,7 @@ func TestUnstakeClient(t *testing.T) {
 func TestUnstakeNotStakedClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -81,20 +76,15 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	specName := "mockSpec"
-	spec := spectypes.Spec{}
-	spec.Name = specName
-	spec.Index = specName
-	spec.Enabled = true
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
+	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	tests := []struct {
 		name    string
 		chainID string
 	}{
-		{"SameChain", specName},
-		{"WrongChain", "not" + specName},
+		{"SameChain", spec.Index},
+		{"WrongChain", "not" + spec.Index},
 	}
 
 	for _, tt := range tests {
@@ -106,7 +96,6 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 
 			balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 			require.Equal(t, amount, balance)
-
 		})
 	}
 }
@@ -114,7 +103,7 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 func TestDoubleUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
+	// init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
@@ -123,12 +112,7 @@ func TestDoubleUnstakeClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	specName := "mockSpec"
-	spec := spectypes.Spec{}
-	spec.Name = specName
-	spec.Index = specName
-	spec.Enabled = true
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
+	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), Geolocation: 1, Vrfpk: vrfPk.String()})
@@ -140,8 +124,8 @@ func TestDoubleUnstakeClient(t *testing.T) {
 		chainID string
 		valid   bool
 	}{
-		{"SameChain", specName, false},
-		{"WrongChain", "Not" + specName, false},
+		{"SameChain", spec.Index, false},
+		{"WrongChain", "Not" + spec.Index, false},
 	}
 
 	for _, tt := range tests {

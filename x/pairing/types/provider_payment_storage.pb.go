@@ -23,10 +23,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ProviderPaymentStorage struct {
-	Index                              string                                `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
-	UniquePaymentStorageClientProvider []*UniquePaymentStorageClientProvider `protobuf:"bytes,2,rep,name=uniquePaymentStorageClientProvider,proto3" json:"uniquePaymentStorageClientProvider,omitempty"`
-	Epoch                              uint64                                `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	UnresponsivenessComplaints         []string                              `protobuf:"bytes,4,rep,name=unresponsiveness_complaints,json=unresponsivenessComplaints,proto3" json:"unresponsiveness_complaints,omitempty"`
+	Index                                  string   `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+	Epoch                                  uint64   `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	UniquePaymentStorageClientProviderKeys []string `protobuf:"bytes,5,rep,name=uniquePaymentStorageClientProviderKeys,proto3" json:"uniquePaymentStorageClientProviderKeys,omitempty"`
+	ComplainersTotalCu                     uint64   `protobuf:"varint,6,opt,name=complainersTotalCu,proto3" json:"complainersTotalCu,omitempty"`
 }
 
 func (m *ProviderPaymentStorage) Reset()         { *m = ProviderPaymentStorage{} }
@@ -69,13 +69,6 @@ func (m *ProviderPaymentStorage) GetIndex() string {
 	return ""
 }
 
-func (m *ProviderPaymentStorage) GetUniquePaymentStorageClientProvider() []*UniquePaymentStorageClientProvider {
-	if m != nil {
-		return m.UniquePaymentStorageClientProvider
-	}
-	return nil
-}
-
 func (m *ProviderPaymentStorage) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
@@ -83,11 +76,18 @@ func (m *ProviderPaymentStorage) GetEpoch() uint64 {
 	return 0
 }
 
-func (m *ProviderPaymentStorage) GetUnresponsivenessComplaints() []string {
+func (m *ProviderPaymentStorage) GetUniquePaymentStorageClientProviderKeys() []string {
 	if m != nil {
-		return m.UnresponsivenessComplaints
+		return m.UniquePaymentStorageClientProviderKeys
 	}
 	return nil
+}
+
+func (m *ProviderPaymentStorage) GetComplainersTotalCu() uint64 {
+	if m != nil {
+		return m.ComplainersTotalCu
+	}
+	return 0
 }
 
 func init() {
@@ -99,25 +99,25 @@ func init() {
 }
 
 var fileDescriptor_4f1d2e8d774659ae = []byte{
-	// 287 bytes of a gzipped FileDescriptorProto
+	// 276 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2b, 0x48, 0xcc, 0x2c,
 	0xca, 0xcc, 0x4b, 0xd7, 0x2f, 0x28, 0xca, 0x2f, 0xcb, 0x4c, 0x49, 0x2d, 0x8a, 0x2f, 0x48, 0xac,
 	0xcc, 0x4d, 0xcd, 0x2b, 0x89, 0x2f, 0x2e, 0xc9, 0x2f, 0x4a, 0x4c, 0x4f, 0xd5, 0x2b, 0x28, 0xca,
 	0x2f, 0xc9, 0x17, 0x12, 0xc9, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x50,
 	0x4d, 0x52, 0x26, 0x30, 0xdd, 0xa5, 0x79, 0x99, 0x85, 0xa5, 0xa9, 0xe8, 0x7a, 0xe3, 0x93, 0x73,
-	0x32, 0x41, 0x5c, 0x98, 0xd9, 0x10, 0xb3, 0x94, 0x26, 0x30, 0x71, 0x89, 0x05, 0x40, 0x85, 0x02,
+	0x32, 0x41, 0x5c, 0x98, 0xd9, 0x10, 0xb3, 0x94, 0x6e, 0x30, 0x72, 0x89, 0x05, 0x40, 0x85, 0x02,
 	0x20, 0x3a, 0x82, 0x21, 0x1a, 0x84, 0x44, 0xb8, 0x58, 0x33, 0xf3, 0x52, 0x52, 0x2b, 0x24, 0x18,
-	0x15, 0x18, 0x35, 0x38, 0x83, 0x20, 0x1c, 0xa1, 0x0e, 0x46, 0x2e, 0x25, 0x88, 0x0d, 0xa8, 0xca,
-	0x9d, 0xc1, 0xc6, 0xc3, 0x8c, 0x92, 0x60, 0x52, 0x60, 0xd6, 0xe0, 0x36, 0xb2, 0xd0, 0xc3, 0xe6,
-	0x54, 0xbd, 0x50, 0x82, 0xfa, 0x83, 0x88, 0xb0, 0x03, 0xe4, 0xc0, 0xd4, 0x82, 0xfc, 0xe4, 0x0c,
-	0x09, 0x66, 0x05, 0x46, 0x0d, 0x96, 0x20, 0x08, 0x47, 0xc8, 0x9e, 0x4b, 0xba, 0x34, 0xaf, 0x28,
-	0xb5, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0xb3, 0x2c, 0x35, 0x2f, 0xb5, 0xb8, 0x38, 0x3e, 0x39, 0x3f,
-	0xb7, 0x20, 0x27, 0x31, 0x33, 0xaf, 0xa4, 0x58, 0x82, 0x45, 0x81, 0x59, 0x83, 0x33, 0x48, 0x0a,
-	0x5d, 0x89, 0x33, 0x5c, 0x85, 0x93, 0xe3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e,
-	0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31,
-	0x44, 0xa9, 0xa7, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x43, 0x3d, 0x06,
-	0xa6, 0xf5, 0x2b, 0xf4, 0x61, 0x81, 0x5f, 0x52, 0x59, 0x90, 0x5a, 0x9c, 0xc4, 0x06, 0x0e, 0x5c,
-	0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x3e, 0x8f, 0xa8, 0xee, 0xd2, 0x01, 0x00, 0x00,
+	0x15, 0x18, 0x35, 0x38, 0x83, 0x20, 0x1c, 0x90, 0x68, 0x6a, 0x41, 0x7e, 0x72, 0x86, 0x04, 0xb3,
+	0x02, 0xa3, 0x06, 0x4b, 0x10, 0x84, 0x23, 0x14, 0xc6, 0xa5, 0x06, 0xb1, 0x16, 0xd5, 0x0c, 0x67,
+	0xb0, 0x9d, 0x30, 0xf3, 0xbd, 0x53, 0x2b, 0x8b, 0x25, 0x58, 0x15, 0x98, 0x35, 0x38, 0x83, 0x88,
+	0x54, 0x2d, 0xa4, 0xc7, 0x25, 0x94, 0x9c, 0x9f, 0x5b, 0x90, 0x93, 0x98, 0x99, 0x97, 0x5a, 0x54,
+	0x1c, 0x92, 0x5f, 0x92, 0x98, 0xe3, 0x5c, 0x2a, 0xc1, 0x06, 0xb6, 0x1a, 0x8b, 0x8c, 0x17, 0x0b,
+	0x07, 0x93, 0x00, 0xb3, 0x17, 0x0b, 0x07, 0x8b, 0x00, 0xab, 0x93, 0xe3, 0x89, 0x47, 0x72, 0x8c,
+	0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72,
+	0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44, 0xa9, 0xa7, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7,
+	0xe7, 0xea, 0x43, 0xc3, 0x12, 0x4c, 0xeb, 0x57, 0xe8, 0xc3, 0x02, 0xb1, 0xa4, 0xb2, 0x20, 0xb5,
+	0x38, 0x89, 0x0d, 0x1c, 0x48, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x01, 0xa4, 0x36, 0x92,
+	0x9a, 0x01, 0x00, 0x00,
 }
 
 func (m *ProviderPaymentStorage) Marshal() (dAtA []byte, err error) {
@@ -140,33 +140,24 @@ func (m *ProviderPaymentStorage) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	_ = i
 	var l int
 	_ = l
-	if len(m.UnresponsivenessComplaints) > 0 {
-		for iNdEx := len(m.UnresponsivenessComplaints) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.UnresponsivenessComplaints[iNdEx])
-			copy(dAtA[i:], m.UnresponsivenessComplaints[iNdEx])
-			i = encodeVarintProviderPaymentStorage(dAtA, i, uint64(len(m.UnresponsivenessComplaints[iNdEx])))
+	if m.ComplainersTotalCu != 0 {
+		i = encodeVarintProviderPaymentStorage(dAtA, i, uint64(m.ComplainersTotalCu))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.UniquePaymentStorageClientProviderKeys) > 0 {
+		for iNdEx := len(m.UniquePaymentStorageClientProviderKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.UniquePaymentStorageClientProviderKeys[iNdEx])
+			copy(dAtA[i:], m.UniquePaymentStorageClientProviderKeys[iNdEx])
+			i = encodeVarintProviderPaymentStorage(dAtA, i, uint64(len(m.UniquePaymentStorageClientProviderKeys[iNdEx])))
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x2a
 		}
 	}
 	if m.Epoch != 0 {
 		i = encodeVarintProviderPaymentStorage(dAtA, i, uint64(m.Epoch))
 		i--
 		dAtA[i] = 0x18
-	}
-	if len(m.UniquePaymentStorageClientProvider) > 0 {
-		for iNdEx := len(m.UniquePaymentStorageClientProvider) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.UniquePaymentStorageClientProvider[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintProviderPaymentStorage(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
 	}
 	if len(m.Index) > 0 {
 		i -= len(m.Index)
@@ -199,20 +190,17 @@ func (m *ProviderPaymentStorage) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProviderPaymentStorage(uint64(l))
 	}
-	if len(m.UniquePaymentStorageClientProvider) > 0 {
-		for _, e := range m.UniquePaymentStorageClientProvider {
-			l = e.Size()
-			n += 1 + l + sovProviderPaymentStorage(uint64(l))
-		}
-	}
 	if m.Epoch != 0 {
 		n += 1 + sovProviderPaymentStorage(uint64(m.Epoch))
 	}
-	if len(m.UnresponsivenessComplaints) > 0 {
-		for _, s := range m.UnresponsivenessComplaints {
+	if len(m.UniquePaymentStorageClientProviderKeys) > 0 {
+		for _, s := range m.UniquePaymentStorageClientProviderKeys {
 			l = len(s)
 			n += 1 + l + sovProviderPaymentStorage(uint64(l))
 		}
+	}
+	if m.ComplainersTotalCu != 0 {
+		n += 1 + sovProviderPaymentStorage(uint64(m.ComplainersTotalCu))
 	}
 	return n
 }
@@ -284,40 +272,6 @@ func (m *ProviderPaymentStorage) Unmarshal(dAtA []byte) error {
 			}
 			m.Index = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UniquePaymentStorageClientProvider", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProviderPaymentStorage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthProviderPaymentStorage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthProviderPaymentStorage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UniquePaymentStorageClientProvider = append(m.UniquePaymentStorageClientProvider, &UniquePaymentStorageClientProvider{})
-			if err := m.UniquePaymentStorageClientProvider[len(m.UniquePaymentStorageClientProvider)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
@@ -337,9 +291,9 @@ func (m *ProviderPaymentStorage) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UnresponsivenessComplaints", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field UniquePaymentStorageClientProviderKeys", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -367,8 +321,27 @@ func (m *ProviderPaymentStorage) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UnresponsivenessComplaints = append(m.UnresponsivenessComplaints, string(dAtA[iNdEx:postIndex]))
+			m.UniquePaymentStorageClientProviderKeys = append(m.UniquePaymentStorageClientProviderKeys, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ComplainersTotalCu", wireType)
+			}
+			m.ComplainersTotalCu = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProviderPaymentStorage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ComplainersTotalCu |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProviderPaymentStorage(dAtA[iNdEx:])

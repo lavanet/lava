@@ -2,16 +2,18 @@ package chainproxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -21,11 +23,14 @@ import (
 )
 
 const (
-	DefaultTimeout            = 5 * time.Second
-	TimePerCU                 = uint64(100 * time.Millisecond)
-	ContextUserValueKeyDappID = "dappID"
-	MinimumTimePerRelayDelay  = time.Second
-	AverageWorldLatency       = 200 * time.Millisecond
+	DefaultTimeout                   = 10 * time.Second
+	TimePerCU                        = uint64(100 * time.Millisecond)
+	ContextUserValueKeyDappID        = "dappID"
+	MinimumTimePerRelayDelay         = time.Second
+	AverageWorldLatency              = 200 * time.Millisecond
+	LavaErrorCode                    = 555
+	InternalErrorString              = "Internal Error"
+	dataReliabilityContextMultiplier = 20
 )
 
 type NodeMessage interface {
@@ -107,6 +112,7 @@ func SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
+	analytics *metrics.RelayMetrics,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
@@ -144,6 +150,7 @@ func SendRelay(
 			DataReliability:       nil,
 			UnresponsiveProviders: reportedProviders,
 		}
+
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, nil, nil, 0, false, err
@@ -175,6 +182,12 @@ func SendRelay(
 			}
 		}
 		currentLatency := time.Since(relaySentTime)
+
+		if analytics != nil {
+			analytics.Latency = currentLatency.Milliseconds()
+			analytics.ComputeUnits = relayRequest.CuSum
+		}
+
 		if err != nil {
 			return nil, nil, nil, 0, false, err
 		}
@@ -187,6 +200,7 @@ func SendRelay(
 			if err != nil {
 				return nil, nil, nil, 0, false, err
 			}
+			requestedBlock = relayRequest.RequestBlock
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
 			err := cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
@@ -235,7 +249,11 @@ func SendRelay(
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
 		relaySentTime := time.Now()
-		reply, err := c.Relay(ctx, relayRequest)
+		// create a new context for data reliability, it needs to be a new Background context because the ctx might be canceled by the user.
+		connectCtxDataReliability, cancel := context.WithTimeout(context.Background(), (getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)*dataReliabilityContextMultiplier)
+		defer cancel()
+
+		reply, err := c.Relay(connectCtxDataReliability, relayRequest)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -299,37 +317,44 @@ func SendRelay(
 func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
-		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
-		return webSocketCallback(c)                                 // uses external dappID
+		dappId := ExtractDappIDFromFiberContext(c)
+		c.Locals("dappId", dappId)
+		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
 
 func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
-	if dappID, ok := dappIDLocal.(string); ok {
-		// zeroallocation policy for fiber.Ctx
-		buffer := make([]byte, len(dappID))
-		copy(buffer, dappID)
-		return string(buffer)
+	dappId, ok := c.Locals("dappId").(string)
+	if !ok {
+		dappId = "NoDappID"
 	}
-	return "NoDappID"
+	return dappId
 }
 
 func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	if len(c.Route().Params) > 1 {
-		dappID = c.Route().Params[1]
-		dappID = strings.ReplaceAll(dappID, "*", "")
-		return
+	dappID = c.Params("dappId")
+	if dappID == "" {
+		dappID = "NoDappID"
 	}
-	return "NoDappID"
+	return dappID
 }
 
 func getTimePerCu(cu uint64) time.Duration {
 	return time.Duration(cu*TimePerCU) + MinimumTimePerRelayDelay
+}
+
+func addAttributeToError(key string, value string, errorMessage string) string {
+	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+}
+
+func convertToJsonError(errorMsg string) string {
+	jsonResponse, err := json.Marshal(fiber.Map{
+		"error": errorMsg,
+	})
+	if err != nil {
+		return `{"error": "Failed to marshal error response to json"}`
+	}
+
+	return string(jsonResponse)
 }

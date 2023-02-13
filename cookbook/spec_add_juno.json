@@ -13,6 +13,14 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
                 "allowed_block_lag_for_qos_sync": "2",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "abci_info",
@@ -818,20 +826,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/latest",
-                            "function_tag": "getBlockNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block",
-                                    "header",
-                                    "height"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/blocks/{height}",
@@ -855,19 +850,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/%d",
-                            "function_tag": "getBlockByNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block_id",
-                                    "hash"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/validatorsets/latest",
@@ -1430,7 +1413,20 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/params",
@@ -1862,7 +1858,19 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
@@ -6557,6 +6565,14 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
                 "allowed_block_lag_for_qos_sync": "2",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "abci_info",
@@ -7362,20 +7378,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/latest",
-                            "function_tag": "getBlockNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block",
-                                    "header",
-                                    "height"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/blocks/{height}",
@@ -7399,19 +7402,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/%d",
-                            "function_tag": "getBlockByNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block_id",
-                                    "hash"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/validatorsets/latest",
@@ -7974,7 +7965,20 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/params",
@@ -8406,7 +8410,19 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",

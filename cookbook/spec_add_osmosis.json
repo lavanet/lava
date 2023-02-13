@@ -13,6 +13,14 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
                 "allowed_block_lag_for_qos_sync": "3",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "abci_info",
@@ -805,7 +813,7 @@
                             "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -818,20 +826,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/latest",
-                            "function_tag": "getBlockNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block",
-                                    "header",
-                                    "height"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/blocks/{height}",
@@ -842,7 +837,7 @@
                             "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -855,19 +850,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/%d",
-                            "function_tag": "getBlockByNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block_id",
-                                    "hash"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/validatorsets/latest",
@@ -2451,7 +2434,20 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
@@ -2475,7 +2471,19 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/node_info",
@@ -9557,6 +9565,14 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
                 "allowed_block_lag_for_qos_sync": "3",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "abci_info",
@@ -10349,7 +10365,7 @@
                             "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -10362,20 +10378,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/latest",
-                            "function_tag": "getBlockNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block",
-                                    "header",
-                                    "height"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/blocks/{height}",
@@ -10386,7 +10389,7 @@
                             "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -10399,19 +10402,7 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ],
-                        "parsing": {
-                            "function_template": "/blocks/%d",
-                            "function_tag": "getBlockByNumber",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "block_id",
-                                    "hash"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            }
-                        }
+                        ]
                     },
                     {
                         "name": "/validatorsets/latest",
@@ -11995,7 +11986,20 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
@@ -12019,7 +12023,19 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/node_info",

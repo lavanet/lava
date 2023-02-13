@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // getDummyRequest creates dummy request used in tests
@@ -36,7 +37,7 @@ func TestRelayShallowCopy(t *testing.T) {
 		"Only nested values should be shared",
 		func(t *testing.T) {
 			t.Parallel()
-			
+
 			dataReliability := &VRFData{
 				Differentiator: true,
 			}

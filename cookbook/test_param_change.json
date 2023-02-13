@@ -3,6 +3,15 @@
     "description": "testing, testing, 1, 2, 3",
     "changes": [
         {
+            "subspace": "consensus_params",
+            "key": "block",
+            "value": {
+                "max_bytes": "22020096",
+                "max_gas": "-1",
+                "time_iota_ms": "1000"
+            }
+        },
+        {
             "subspace": "staking",
             "key": "MaxValidators",
             "value": 100
