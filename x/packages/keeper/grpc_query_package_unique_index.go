@@ -32,7 +32,6 @@ func (k Keeper) PackageUniqueIndexAll(c context.Context, req *types.QueryAllPack
 		packageUniqueIndexs = append(packageUniqueIndexs, packageUniqueIndex)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

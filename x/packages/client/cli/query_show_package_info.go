@@ -27,7 +27,6 @@ func CmdShowPackageInfo() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryShowPackageInfoRequest{
-
 				PackageIndex: reqPackageIndex,
 			}
 
