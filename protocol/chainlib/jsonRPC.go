@@ -327,11 +327,11 @@ type JrpcChainProxy struct {
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &JrpcChainProxy{}
-	var nodeUrl string
-	if len(rpcProviderEndpoint.NodeUrl) > 0 {
-		nodeUrl = rpcProviderEndpoint.NodeUrl[0]
-		verifyRPCEndpoint(nodeUrl)
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
+	nodeUrl := rpcProviderEndpoint.NodeUrl[0]
+	verifyRPCEndpoint(nodeUrl)
 	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 

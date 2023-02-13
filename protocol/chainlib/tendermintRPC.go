@@ -403,9 +403,10 @@ type tendermintRpcChainProxy struct {
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	var httpUrl string
 	var websocketUrl string
-	if len(rpcProviderEndpoint.NodeUrl) > 0 { // provider.
-		websocketUrl, httpUrl = verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrl)
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
+	websocketUrl, httpUrl = verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrl)
 	cp := &tendermintRpcChainProxy{httpNodeUrl: httpUrl}
 	return cp, cp.start(ctx, nConns, websocketUrl)
 }

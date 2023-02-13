@@ -276,11 +276,10 @@ type RestChainProxy struct {
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	var nodeUrl string
-	if len(rpcProviderEndpoint.NodeUrl) > 0 {
-		nodeUrl = strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
-	rcp := &RestChainProxy{nodeUrl: nodeUrl}
+	rcp := &RestChainProxy{nodeUrl: strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")}
 	return rcp, nil
 }
 

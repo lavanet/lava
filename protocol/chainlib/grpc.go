@@ -225,13 +225,12 @@ type GrpcChainProxy struct {
 }
 
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	var nodeUrl string
-	if len(rpcProviderEndpoint.NodeUrl) > 0 {
-		nodeUrl = strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
 
 	cp := &GrpcChainProxy{}
-	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
+	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"))
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
 	}
