@@ -60,10 +60,8 @@ jobs:
     ######################################################
     ### Run protocol unitests
     ######################################################
-    - name: Run Lava Session Tests
-      run: go test ./protocol/lavasession/ -v
-    - name: Run Lava Chain Tracker Tests
-      run: go test ./protocol/chaintracker/ -v
+    - name: Run Lava Protocol Tests
+      run: go test ./protocol/...  -v
     - name: Run Lava Chain Proxy Tests
       run: go test ./relayer/chainproxy/ -v
     - name: Run Relayer Metrics Unit Tests
