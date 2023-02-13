@@ -364,7 +364,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
 		if chainMessage.GetInterface().Category.HangingApi {
-			relayTimeout += time.Duration(cp.averageBlockTime) * time.Millisecond
+			relayTimeout += cp.averageBlockTime
 		}
 		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()
