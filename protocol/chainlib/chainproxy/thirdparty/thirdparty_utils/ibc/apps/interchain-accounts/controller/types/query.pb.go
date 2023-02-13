@@ -211,14 +211,14 @@ func (m *QueryParamsResponse) GetParams() *Params {
 }
 
 func init() {
-	//proto.RegisterType((*QueryInterchainAccountRequest)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest")
-	//proto.RegisterType((*QueryInterchainAccountResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse")
-	//proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest")
-	//proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse")
+	proto.RegisterType((*QueryInterchainAccountRequest)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest")
+	proto.RegisterType((*QueryInterchainAccountResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse")
+	proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest")
+	proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse")
 }
 
 func init() {
-	// proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/query.proto", fileDescriptor_df0d8b259d72854e)
+	proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/query.proto", fileDescriptor_df0d8b259d72854e)
 }
 
 var fileDescriptor_df0d8b259d72854e = []byte{

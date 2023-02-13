@@ -203,14 +203,14 @@ func (m *MsgSendTxResponse) GetSequence() uint64 {
 }
 
 func init() {
-	//proto.RegisterType((*MsgRegisterInterchainAccount)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount")
-	//proto.RegisterType((*MsgRegisterInterchainAccountResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccountResponse")
-	//proto.RegisterType((*MsgSendTx)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgSendTx")
-	//proto.RegisterType((*MsgSendTxResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgSendTxResponse")
+	proto.RegisterType((*MsgRegisterInterchainAccount)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount")
+	proto.RegisterType((*MsgRegisterInterchainAccountResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccountResponse")
+	proto.RegisterType((*MsgSendTx)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgSendTx")
+	proto.RegisterType((*MsgSendTxResponse)(nil), "ibc.applications.interchain_accounts.controller.v1.MsgSendTxResponse")
 }
 
 func init() {
-	// proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/tx.proto", fileDescriptor_7def041328c84a30)
+	proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/tx.proto", fileDescriptor_7def041328c84a30)
 }
 
 var fileDescriptor_7def041328c84a30 = []byte{
