@@ -210,7 +210,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	extraRelayTimeout := time.Duration(0)
 	if chainMessage.GetInterface().Category.HangingApi {
-		extraRelayTimeout = time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 	}
 	relayTimeout := extraRelayTimeout + lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu) + lavaprotocol.AverageWorldLatency
 	relayResult, relayLatency, err := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)

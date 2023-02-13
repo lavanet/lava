@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -27,21 +26,15 @@ import (
 )
 
 type RestChainParser struct {
-	spec             spectypes.Spec
-	averageBlockTime int64
-	rwLock           sync.RWMutex
-	serverApis       map[string]spectypes.ServiceApi
-	taggedApis       map[string]spectypes.ServiceApi
+	spec       spectypes.Spec
+	rwLock     sync.RWMutex
+	serverApis map[string]spectypes.ServiceApi
+	taggedApis map[string]spectypes.ServiceApi
 }
 
 // NewRestChainParser creates a new instance of RestChainParser
 func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
-}
-
-// Atomic Read Average block time from spec.
-func (apip *RestChainParser) getAverageBlockTime() int64 {
-	return atomic.LoadInt64(&apip.averageBlockTime)
 }
 
 // ParseMsg parses message data into chain message object
@@ -76,10 +69,9 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
-		serviceApi:       serviceApi,
-		apiInterface:     apiInterface,
-		msg:              restMessage,
-		averageBlockTime: apip.getAverageBlockTime(),
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		msg:          restMessage,
 	}
 	return nodeMsg, nil
 }
@@ -127,7 +119,6 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
-	apip.averageBlockTime = spec.AverageBlockTime
 	apip.serverApis = serverApis
 	apip.taggedApis = taggedApis
 }
@@ -160,7 +151,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.averageBlockTime) * time.Millisecond
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -281,12 +272,15 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 }
 
 type RestChainProxy struct {
+	BaseChainProxy
 	nodeUrl string
 }
 
-func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
-	rcp := &RestChainProxy{nodeUrl: nodeUrl}
+	rcp := &RestChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+		nodeUrl:        nodeUrl}
 	return rcp, nil
 }
 
@@ -320,7 +314,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
-		relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+		relayTimeout += time.Duration(rcp.averageBlockTime) * time.Millisecond
 	}
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()

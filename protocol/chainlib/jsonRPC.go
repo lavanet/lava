@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,21 +26,15 @@ import (
 )
 
 type JsonRPCChainParser struct {
-	spec             spectypes.Spec
-	averageBlockTime int64
-	rwLock           sync.RWMutex
-	serverApis       map[string]spectypes.ServiceApi
-	taggedApis       map[string]spectypes.ServiceApi
+	spec       spectypes.Spec
+	rwLock     sync.RWMutex
+	serverApis map[string]spectypes.ServiceApi
+	taggedApis map[string]spectypes.ServiceApi
 }
 
 // NewJrpcChainParser creates a new instance of JsonRPCChainParser
 func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
-}
-
-// Atomic Read Average block time from spec.
-func (apip *JsonRPCChainParser) getAverageBlockTime() int64 {
-	return atomic.LoadInt64(&apip.averageBlockTime)
 }
 
 // ParseMsg parses message data into chain message object
@@ -81,11 +74,10 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	nodeMsg := &parsedMessage{
-		serviceApi:       serviceApi,
-		apiInterface:     apiInterface,
-		requestedBlock:   requestedBlock,
-		msg:              msg,
-		averageBlockTime: apip.getAverageBlockTime(),
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		requestedBlock: requestedBlock,
+		msg:            msg,
 	}
 	return nodeMsg, nil
 }
@@ -106,7 +98,6 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
-	apip.averageBlockTime = spec.AverageBlockTime
 	apip.serverApis = serverApis
 	apip.taggedApis = taggedApis
 }
@@ -166,7 +157,7 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.averageBlockTime) * time.Millisecond
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -331,11 +322,14 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 }
 
 type JrpcChainProxy struct {
+	BaseChainProxy
 	conn *chainproxy.Connector
 }
 
-func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	cp := &JrpcChainProxy{}
+func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	cp := &JrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+	}
 	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
 }
 
@@ -370,7 +364,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
 		if chainMessage.GetInterface().Category.HangingApi {
-			relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+			relayTimeout += time.Duration(cp.averageBlockTime) * time.Millisecond
 		}
 		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()

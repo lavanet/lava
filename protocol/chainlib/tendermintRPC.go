@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,21 +26,15 @@ import (
 )
 
 type TendermintChainParser struct {
-	spec             spectypes.Spec
-	averageBlockTime int64
-	rwLock           sync.RWMutex
-	serverApis       map[string]spectypes.ServiceApi
-	taggedApis       map[string]spectypes.ServiceApi
+	spec       spectypes.Spec
+	rwLock     sync.RWMutex
+	serverApis map[string]spectypes.ServiceApi
+	taggedApis map[string]spectypes.ServiceApi
 }
 
 // NewTendermintRpcChainParser creates a new instance of TendermintChainParser
 func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err error) {
 	return &TendermintChainParser{}, nil
-}
-
-// Atomic Read Average block time from spec.
-func (apip *TendermintChainParser) getAverageBlockTime() int64 {
-	return atomic.LoadInt64(&apip.averageBlockTime)
 }
 
 // ParseMsg parses message data into chain message object
@@ -128,11 +121,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	}
 
 	nodeMsg := &parsedMessage{
-		serviceApi:       serviceApi,
-		apiInterface:     apiInterface,
-		requestedBlock:   requestedBlock,
-		msg:              msg,
-		averageBlockTime: apip.getAverageBlockTime(),
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		requestedBlock: requestedBlock,
+		msg:            msg,
 	}
 	return nodeMsg, nil
 }
@@ -180,7 +172,6 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 
 	// Set the spec field of the TendermintChainParser object
 	apip.spec = spec
-	apip.averageBlockTime = spec.AverageBlockTime
 	apip.serverApis = serverApis
 	apip.taggedApis = taggedApis
 }
@@ -213,7 +204,7 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.averageBlockTime) * time.Millisecond
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -409,8 +400,11 @@ type tendermintRpcChainProxy struct {
 	nodeUrl string
 }
 
-func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	cp := &tendermintRpcChainProxy{nodeUrl: rpcProviderEndpoint.NodeUrl}
+func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	cp := &tendermintRpcChainProxy{
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
+		nodeUrl:        rpcProviderEndpoint.NodeUrl,
+	}
 	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
 }
 
@@ -452,7 +446,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *cha
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
-		relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+		relayTimeout += time.Duration(cp.averageBlockTime) * time.Millisecond
 	}
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
@@ -512,7 +506,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
 		if chainMessage.GetInterface().Category.HangingApi {
-			relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+			relayTimeout += time.Duration(cp.averageBlockTime) * time.Millisecond
 		}
 		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()

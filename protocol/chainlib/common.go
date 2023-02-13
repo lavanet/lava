@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -25,8 +26,8 @@ type parsedMessage struct {
 	msg              interface{}
 }
 
-func (pm parsedMessage) GetAverageBlockTime() int64 {
-	return pm.averageBlockTime
+type BaseChainProxy struct {
+	averageBlockTime time.Duration
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {

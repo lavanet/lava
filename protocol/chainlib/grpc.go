@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/fullstorydev/grpcurl"
@@ -32,21 +31,15 @@ import (
 )
 
 type GrpcChainParser struct {
-	spec             spectypes.Spec
-	averageBlockTime int64
-	rwLock           sync.RWMutex
-	serverApis       map[string]spectypes.ServiceApi
-	taggedApis       map[string]spectypes.ServiceApi
+	spec       spectypes.Spec
+	rwLock     sync.RWMutex
+	serverApis map[string]spectypes.ServiceApi
+	taggedApis map[string]spectypes.ServiceApi
 }
 
 // NewGrpcChainParser creates a new instance of GrpcChainParser
 func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
-}
-
-// Atomic Read Average block time from spec.
-func (apip *GrpcChainParser) getAverageBlockTime() int64 {
-	return atomic.LoadInt64(&apip.averageBlockTime)
 }
 
 // ParseMsg parses message data into chain message object
@@ -81,10 +74,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
-		serviceApi:       serviceApi,
-		apiInterface:     apiInterface,
-		msg:              grpcMessage,
-		averageBlockTime: apip.getAverageBlockTime(),
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		msg:          grpcMessage,
 	}
 	return nodeMsg, nil
 }
@@ -132,7 +124,6 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
-	apip.averageBlockTime = spec.AverageBlockTime
 	apip.serverApis = serverApis
 	apip.taggedApis = taggedApis
 }
@@ -165,7 +156,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.averageBlockTime) * time.Millisecond
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -230,17 +221,19 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 }
 
 type GrpcChainProxy struct {
+	BaseChainProxy
 	conn *chainproxy.GRPCConnector
 }
 
-func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
-	cp := &GrpcChainProxy{}
+	cp := &GrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+	}
 	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
 	}
-
 	return cp, nil
 }
 
@@ -262,7 +255,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
-		relayTimeout += time.Duration(chainMessage.GetAverageBlockTime()) * time.Millisecond
+		relayTimeout += time.Duration(cp.averageBlockTime) * time.Millisecond
 	}
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
