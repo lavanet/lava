@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/gofiber/websocket/v2"
@@ -59,12 +58,18 @@ func (pl *PortalLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	data := map[string]interface{}{
-		"Error_GUID": msgSeed,
+	type ErrorData struct {
+		Error_GUID string `json:"Error_GUID"`
+		Error      string `json:"Error,omitempty"`
+	}
+
+	data := ErrorData{
+		Error_GUID: msgSeed,
 	}
 	if ReturnMaskedErrors == "false" {
-		data["Error"] = responseError.Error()
+		data.Error = responseError.Error()
 	}
+
 	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 
 	ret, _ := json.Marshal(data)
@@ -82,8 +87,12 @@ func (pl *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 		}
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 
-		jsonResponse, _ := json.Marshal(fiber.Map{
-			"Error_Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+		type ErrorResponse struct {
+			ErrorReceived string `json:"Error_Received"`
+		}
+
+		jsonResponse, _ := json.Marshal(ErrorResponse{
+			ErrorReceived: pl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
 		c.WriteMessage(mt, jsonResponse)

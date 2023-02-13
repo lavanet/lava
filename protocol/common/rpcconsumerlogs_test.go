@@ -36,6 +36,20 @@ func TestGetUniqueGuidResponseForError(t *testing.T) {
 	assert.Equal(t, errObject.Error1, "response error")
 }
 
+func TestGetUniqueGuidResponseDeterministic(t *testing.T) {
+	plog, err := NewRPCConsumerLogs()
+	assert.Nil(t, err)
+
+	responseError := errors.New("response error")
+	errorMsg := plog.GetUniqueGuidResponseForError(responseError, "msgSeed")
+
+	for i := 1; i < 10000; i++ {
+		err := plog.GetUniqueGuidResponseForError(responseError, "msgSeed")
+
+		assert.Equal(t, err, errorMsg)
+	}
+}
+
 func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 	app := fiber.New()
 

@@ -58,12 +58,18 @@ func (pl *RPCConsumerLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	data := map[string]interface{}{
-		"Error_GUID": msgSeed,
+	type ErrorData struct {
+		Error_GUID string `json:"Error_GUID"`
+		Error      string `json:"Error,omitempty"`
+	}
+
+	data := ErrorData{
+		Error_GUID: msgSeed,
 	}
 	if ReturnMaskedErrors == "false" {
-		data["Error"] = responseError.Error()
+		data.Error = responseError.Error()
 	}
+
 	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 
 	ret, _ := json.Marshal(data)
