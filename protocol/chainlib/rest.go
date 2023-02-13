@@ -280,7 +280,8 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
 	rcp := &RestChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
-		nodeUrl:        nodeUrl}
+		nodeUrl:        nodeUrl,
+	}
 	return rcp, nil
 }
 
@@ -314,7 +315,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
-		relayTimeout += time.Duration(rcp.averageBlockTime) * time.Millisecond
+		relayTimeout += rcp.averageBlockTime
 	}
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
