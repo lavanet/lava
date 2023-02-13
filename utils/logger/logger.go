@@ -26,7 +26,7 @@ type LogMessage struct {
 }
 
 // List of error codes we want to put in allow-list
-var epochErrors = []uint32{NoPairingAvailableError}
+var epochErrors = []uint32{}
 
 type Logger struct {
 	logChan             chan LogMessage // channel to send log messages
