@@ -76,7 +76,7 @@ func TestHappyFlow(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -99,7 +99,7 @@ func TestPairingReset(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -173,7 +173,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -217,7 +217,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		if rand.Intn(1) > 0 {
 			successfulRelays += 1
 			cuSum += cuForFirstRequest
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -241,7 +241,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		if rand.Intn(1) > 0 {
 			successfulRelays += 1
 			cuSum += cuForFirstRequest
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -263,7 +263,7 @@ func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *test
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	ch <- p
 }
