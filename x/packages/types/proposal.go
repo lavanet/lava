@@ -16,7 +16,7 @@ func checkPackagesProposal(packageToCheck Package) error {
 	}
 
 	// check that the package's price is non-zero
-	if packageToCheck.GetPrice() == sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()) {
+	if packageToCheck.GetPrice().IsEqual(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())) {
 		return sdkerrors.Wrap(ErrInvalidPackagePrice, "package's price can't be zero")
 	}
 

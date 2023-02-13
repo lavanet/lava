@@ -8,25 +8,31 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-type getterFunc func(ctx sdk.Context, index string) (*types.Entry, bool)
-type setterFunc func(ctx sdk.Context, index string, entry *types.Entry) error
-type removerFunc func(ctx sdk.Context, index string)
+type (
+	GetterFunc  func(ctx sdk.Context, index string) (*types.Entry, bool)
+	setterFunc  func(ctx sdk.Context, index string, entry *types.Entry) error
+	removerFunc func(ctx sdk.Context, index string)
+)
 
 // Function to add an entry to the KVStore and update the older versions entries' indices that are saved in the KVStore
-func AddFixatedEntryToStorage(ctx sdk.Context, entryToSet *types.Entry, index string, getEntry getterFunc, setEntry setterFunc, removeEntry removerFunc) (bool, error) {
+func AddFixatedEntryToStorage(ctx sdk.Context, entryToSet *types.Entry, index string, getEntry GetterFunc, setEntry setterFunc, removeEntry removerFunc) (bool, error) {
 	// check that the function pointers are not nil
 	if setEntry == nil || getEntry == nil || removeEntry == nil {
-		return false, utils.LavaError(ctx, ctx.Logger(), "set_fixated_entry", nil, "setterFunc and/or getterFunc input is nil")
+		return false, utils.LavaError(ctx, ctx.Logger(), "set_fixated_entry", nil, "setterFunc and/or GetterFunc input is nil")
 	}
 
-	// update the older versions entries indices
-	isFirstVersion, err := UpdateEntryIndices(ctx, index, getEntry, setEntry, removeEntry)
-	if err != nil {
-		return isFirstVersion, utils.LavaError(ctx, ctx.Logger(), "update_entry_indices", map[string]string{"entryToSetIndex": index}, "could not update entries indices (due to entry addition)")
+	isFirstVersion := false
+	if !checkEntryProposedInThisEpoch(ctx, entryToSet, index, getEntry) {
+		// update the older versions entries indices
+		isFirstVersionTemp, err := UpdateEntryIndices(ctx, index, getEntry, setEntry, removeEntry)
+		if err != nil {
+			return isFirstVersion, utils.LavaError(ctx, ctx.Logger(), "update_entry_indices", map[string]string{"entryToSetIndex": index}, "could not update entries indices (due to entry addition)")
+		}
+		isFirstVersion = isFirstVersionTemp
 	}
 
 	// set the new entry as the latest version (by using the index without number suffix)
-	err = setEntry(ctx, index, entryToSet)
+	err := setEntry(ctx, index, entryToSet)
 	if err != nil {
 		return isFirstVersion, utils.LavaError(ctx, ctx.Logger(), "set_entry", map[string]string{"entryToSetIndex": index}, "could not set entry with index")
 	}
@@ -34,10 +40,20 @@ func AddFixatedEntryToStorage(ctx sdk.Context, entryToSet *types.Entry, index st
 	return isFirstVersion, nil
 }
 
+func checkEntryProposedInThisEpoch(ctx sdk.Context, newEntryToPropose *types.Entry, newEntryIndex string, getEntry GetterFunc) bool {
+	oldEntry, found := getEntry(ctx, newEntryIndex)
+	if found {
+		if newEntryToPropose.GetEpoch() == oldEntry.GetEpoch() {
+			return true
+		}
+	}
+	return false
+}
+
 // Function to update the indices of older versions of some entry due to new entry version (number suffix is increased by 1)
-func UpdateEntryIndices(ctx sdk.Context, index string, getEntry getterFunc, setEntry setterFunc, removeEntry removerFunc) (bool, error) {
+func UpdateEntryIndices(ctx sdk.Context, index string, getEntry GetterFunc, setEntry setterFunc, removeEntry removerFunc) (bool, error) {
 	// get the index list of version entries saved in the KVStore
-	entryList, indexList := GetAllEntriesFromStorage(ctx, index, getEntry)
+	entryList, indexList := GetAllEntriesFromStorageByIndex(ctx, index, getEntry)
 
 	// get the number of versions saved in the KVStore
 	entryVersionsAmount := len(entryList)
@@ -51,8 +67,8 @@ func UpdateEntryIndices(ctx sdk.Context, index string, getEntry getterFunc, setE
 	// update the older version entries' indices (the number suffix is increased by 1). Note that we start from the oldest version back, and handle the latest version package separately (see below)
 	for i := 0; i < entryVersionsAmount; i++ {
 		// get the older version entry and its index (the suffix number of the index will be entryVersionsAmount-i-1 since the first entry (the latest version) is without suffix)
-		olderVersionEntry := entryList[entryVersionsAmount-i]
-		olderVersionEntryIndex := indexList[entryVersionsAmount-i]
+		olderVersionEntry := entryList[entryVersionsAmount-i-1]
+		olderVersionEntryIndex := indexList[entryVersionsAmount-i-1]
 
 		// remove the older version entry from the storage
 		err := RemoveEntryFromStorage(ctx, olderVersionEntryIndex, removeEntry)
@@ -61,7 +77,7 @@ func UpdateEntryIndices(ctx sdk.Context, index string, getEntry getterFunc, setE
 		}
 
 		// construct an updated index for the older version entry (increase the number suffix by 1)
-		olderVersionEntryUpdatedIndex := index + "_" + strconv.FormatUint(uint64(entryVersionsAmount-i), 10)
+		olderVersionEntryUpdatedIndex := index + "_" + strconv.FormatUint(uint64(entryVersionsAmount-i-1), 10)
 
 		// set the older version entry with the updated index
 		err = setEntry(ctx, olderVersionEntryUpdatedIndex, olderVersionEntry)
@@ -87,10 +103,10 @@ func CreateNewFixatedEntry(ctx sdk.Context, epoch uint64, marshaledData []byte) 
 }
 
 // Function to get the marshaled data from an entry by epoch
-func GetMarshaledDataFromFixatedEntryByEpoch(ctx sdk.Context, epoch uint64, index string, getEntry getterFunc) ([]byte, error) {
+func GetMarshaledDataFromFixatedEntryByEpoch(ctx sdk.Context, epoch uint64, index string, getEntry GetterFunc) ([]byte, error) {
 	// check that getEntry is not nil
 	if getEntry == nil {
-		return nil, utils.LavaError(ctx, ctx.Logger(), "get_marshaled_data_from_fixated_entry_by_epoch", nil, "getterFunc input is nil")
+		return nil, utils.LavaError(ctx, ctx.Logger(), "get_marshaled_data_from_fixated_entry_by_epoch", nil, "GetterFunc input is nil")
 	}
 
 	// use the getter function to get the entry by the index
@@ -109,11 +125,11 @@ func GetMarshaledDataFromFixatedEntryByEpoch(ctx sdk.Context, epoch uint64, inde
 }
 
 // Function to search for an entry in the storage (latest version's index is index, older versions' index is index_0, index_1, ...)
-func GetEntryFromStorage(ctx sdk.Context, index string, epoch uint64, getEntry getterFunc) (*types.Entry, bool) {
+func GetEntryFromStorage(ctx sdk.Context, index string, epoch uint64, getEntry GetterFunc) (*types.Entry, bool) {
 	// try getting the entry with the original index. return only if the requested epoch is larger than the entry's epoch
 	entry, found := getEntry(ctx, index)
 	if found {
-		if epoch > entry.GetEpoch() {
+		if epoch >= entry.GetEpoch() {
 			return entry, true
 		}
 	} else {
@@ -146,8 +162,8 @@ func GetEntryFromStorage(ctx sdk.Context, index string, epoch uint64, getEntry g
 	return nil, false
 }
 
-// Function that returns all the entries and their corresponding indices (i.e., the latest version entry and all of its older versions)
-func GetAllEntriesFromStorage(ctx sdk.Context, index string, getEntry getterFunc) ([]*types.Entry, []string) {
+// Function that gets an index for storage and returns all the entries and their corresponding indices (i.e., the latest version entry and all of its older versions)
+func GetAllEntriesFromStorageByIndex(ctx sdk.Context, index string, getEntry GetterFunc) ([]*types.Entry, []string) {
 	entryList := []*types.Entry{}
 	indexList := []string{}
 

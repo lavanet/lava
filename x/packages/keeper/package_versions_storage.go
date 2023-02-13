@@ -170,7 +170,7 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 	packageToAdd.ComputeUnitsPerEpoch = packageToAdd.GetComputeUnits() / durationInEpochs
 
 	// make the package's subscriptions field zero (it's a new package, so no one is subscribed yet)
-	packageToAdd.Subscriptions = 0
+	packageToAdd.Subscriptions = uint64(0)
 
 	// marshal the package
 	marshaledPackage, err := k.cdc.Marshal(packageToAdd)
@@ -192,7 +192,7 @@ func (k Keeper) AddNewPackageToStorage(ctx sdk.Context, packageToAdd *types.Pack
 
 	// if this package is the first of its kind, add its index to the unique index list
 	if isFirstVersion {
-		k.SetPackageUniqueIndex(ctx, types.PackageUniqueIndex{Index: packageToAdd.GetIndex()})
+		k.AppendPackageUniqueIndex(ctx, types.PackageUniqueIndex{Index: packageToAdd.GetIndex()})
 	}
 
 	return nil
@@ -249,7 +249,7 @@ func (k Keeper) deletePackages(ctx sdk.Context) error {
 	// go over all the packageVersionsStorage objects
 	for _, uniquePackageIndex := range uniquePackagesIndices {
 		// get all the package versions indices
-		packageVersionsList, packageVersionsIndexList := common.GetAllEntriesFromStorage(ctx, uniquePackageIndex.GetIndex(), k.GetFixationEntryByIndex)
+		packageVersionsList, packageVersionsIndexList := common.GetAllEntriesFromStorageByIndex(ctx, uniquePackageIndex.GetIndex(), k.GetFixationEntryByIndex)
 
 		// go over the package indices and check if they need to be deleted (i starts from 1 since the first package is the latest version and is still buyable)
 		for i := 1; i < len(packageVersionsList); i++ {
