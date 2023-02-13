@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -34,6 +35,8 @@ import (
 )
 
 const BLOCK_TIME = 30 * time.Second
+
+const BLOCK_HEADER_LEN = 32
 
 type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
@@ -173,6 +176,10 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 
 	block := uint64(unwrapedCtx.BlockHeight() + 1)
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
+
+	headerHash := make([]byte, BLOCK_HEADER_LEN)
+	rand.Read(headerHash)
+	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
 	if len(customBlockTime) > 0 {
 		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks, customBlockTime...)
 	} else {

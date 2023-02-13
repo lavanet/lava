@@ -250,7 +250,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
 	// TODO: subscribe instead of repeatedly fetching
-	ticker := time.NewTicker(pollingBlockTime)
+	// TODO: improve the polling time, we don't need to poll the first half of every block change
+	ticker := time.NewTicker(pollingBlockTime / 10) // divide here so we don't miss new blocks by all that much
 
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
@@ -334,7 +335,7 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
-func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker) {
 	config.validate()
 	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory}
 	chainTracker.start(ctx, config.AverageBlockTime)

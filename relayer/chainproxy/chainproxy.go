@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -24,11 +24,14 @@ import (
 )
 
 const (
-	DefaultTimeout            = 5 * time.Second
-	TimePerCU                 = uint64(100 * time.Millisecond)
-	ContextUserValueKeyDappID = "dappID"
-	MinimumTimePerRelayDelay  = time.Second
-	AverageWorldLatency       = 200 * time.Millisecond
+	DefaultTimeout                   = 10 * time.Second
+	TimePerCU                        = uint64(100 * time.Millisecond)
+	ContextUserValueKeyDappID        = "dappID"
+	MinimumTimePerRelayDelay         = time.Second
+	AverageWorldLatency              = 200 * time.Millisecond
+	LavaErrorCode                    = 555
+	InternalErrorString              = "Internal Error"
+	dataReliabilityContextMultiplier = 20
 )
 
 type NodeMessage interface {
@@ -247,7 +250,11 @@ func SendRelay(
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
 		relaySentTime := time.Now()
-		reply, err := c.Relay(ctx, relayRequest)
+		// create a new context for data reliability, it needs to be a new Background context because the ctx might be canceled by the user.
+		connectCtxDataReliability, cancel := context.WithTimeout(context.Background(), (getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)*dataReliabilityContextMultiplier)
+		defer cancel()
+
+		reply, err := c.Relay(connectCtxDataReliability, relayRequest)
 		if err != nil {
 			return nil, nil, 0, err
 		}

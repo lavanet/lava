@@ -74,6 +74,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/user_entry/{address}/{chainID}";
 	}
 
+// Queries a list of StaticProvidersList items.
+	rpc StaticProvidersList(QueryStaticProvidersListRequest) returns (QueryStaticProvidersListResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/static_providers_list/{chainID}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -192,6 +197,14 @@ message QueryUserEntryRequest {
 message QueryUserEntryResponse {
   lavanet.lava.epochstorage.StakeEntry consumer = 1 [(gogoproto.nullable) = false];
   uint64 maxCU =2;
+}
+
+message QueryStaticProvidersListRequest {
+  string chainID = 1;
+}
+
+message QueryStaticProvidersListResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

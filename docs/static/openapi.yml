@@ -29758,6 +29758,9 @@ paths:
                   latestParamChange:
                     type: string
                     format: uint64
+                  unstakeHoldBlocksStatic:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30142,33 +30145,10 @@ paths:
                   properties:
                     index:
                       type: string
-                    clientsPayments:
+                    providerPaymentStorageKeys:
                       type: array
                       items:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          uniquePaymentStorageClientProvider:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                index:
-                                  type: string
-                                block:
-                                  type: string
-                                  format: uint64
-                                usedCU:
-                                  type: string
-                                  format: uint64
-                          epoch:
-                            type: string
-                            format: uint64
-                          unresponsiveness_complaints:
-                            type: array
-                            items:
-                              type: string
+                        type: string
               pagination:
                 type: object
                 properties:
@@ -30288,33 +30268,10 @@ paths:
                 properties:
                   index:
                     type: string
-                  clientsPayments:
+                  providerPaymentStorageKeys:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        uniquePaymentStorageClientProvider:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              index:
-                                type: string
-                              block:
-                                type: string
-                                format: uint64
-                              usedCU:
-                                type: string
-                                format: uint64
-                        epoch:
-                          type: string
-                          format: uint64
-                        unresponsiveness_complaints:
-                          type: array
-                          items:
-                            type: string
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -30451,10 +30408,6 @@ paths:
                 description: params holds all the parameters of this module.
                 type: object
                 properties:
-                  minStakeProvider:
-                    type: string
-                  minStakeClient:
-                    type: string
                   mintCoinsPerCU:
                     type: string
                   burnCoinsPerCU:
@@ -30520,23 +30473,14 @@ paths:
                   properties:
                     index:
                       type: string
-                    uniquePaymentStorageClientProvider:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          block:
-                            type: string
-                            format: uint64
-                          usedCU:
-                            type: string
-                            format: uint64
                     epoch:
                       type: string
                       format: uint64
                     unresponsiveness_complaints:
+                      type: array
+                      items:
+                        type: string
+                    uniquePaymentStorageClientProviderKeys:
                       type: array
                       items:
                         type: string
@@ -30659,23 +30603,14 @@ paths:
                 properties:
                   index:
                     type: string
-                  uniquePaymentStorageClientProvider:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        block:
-                          type: string
-                          format: uint64
-                        usedCU:
-                          type: string
-                          format: uint64
                   epoch:
                     type: string
                     format: uint64
                   unresponsiveness_complaints:
+                    type: array
+                    items:
+                      type: string
+                  uniquePaymentStorageClientProviderKeys:
                     type: array
                     items:
                       type: string
@@ -30762,6 +30697,87 @@ paths:
                       type: string
               output:
                 type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: chainID
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  '/lavanet/lava/pairing/static_providers_list/{chainID}':
+    get:
+      summary: Queries a list of StaticProvidersList items.
+      operationId: LavanetLavaPairingStaticProvidersList
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              providers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    address:
+                      type: string
+                    deadline:
+                      type: string
+                      format: uint64
+                    endpoints:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          iPPORT:
+                            type: string
+                          useType:
+                            type: string
+                          geolocation:
+                            type: string
+                            format: uint64
+                    geolocation:
+                      type: string
+                      format: uint64
+                    chain:
+                      type: string
+                    vrfpk:
+                      type: string
+                    moniker:
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -31157,10 +31173,19 @@ paths:
           schema:
             type: object
             properties:
-              chainNames:
+              chainInfoList:
                 type: array
                 items:
-                  type: string
+                  type: object
+                  properties:
+                    chainName:
+                      type: string
+                    chainID:
+                      type: string
+                    enabledApiInterfaces:
+                      type: array
+                      items:
+                        type: string
         default:
           description: An unexpected error response.
           schema:
@@ -31274,16 +31299,17 @@ paths:
                                   - PARSE_CANONICAL
                                   - PARSE_DICTIONARY
                                   - PARSE_DICTIONARY_OR_ORDERED
+                                  - PARSE_DICTIONARY_OR_DEFAULT
                                   - DEFAULT
                                 default: EMPTY
                                 title: >-
                                   - PARSE_BY_ARG: means parameters are ordered
-                                  and flat expected areguments are: [param
-                                  index] (example: PARAMS:
-                                  [<#BlockNum>,"banana"])
-                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                  and flat expected arguments are: [param index]
+                                  (example: PARAMS: [<#BlockNum>,"banana"])
+                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                    - DEFAULT: means parameters are non related to block, and should fetch latest block
                           compute_units:
                             type: string
@@ -31314,6 +31340,34 @@ paths:
                                     stateful:
                                       type: integer
                                       format: int64
+                                overwrite_block_parsing:
+                                  type: object
+                                  properties:
+                                    parser_arg:
+                                      type: array
+                                      items:
+                                        type: string
+                                    parser_func:
+                                      type: string
+                                      enum:
+                                        - EMPTY
+                                        - PARSE_BY_ARG
+                                        - PARSE_CANONICAL
+                                        - PARSE_DICTIONARY
+                                        - PARSE_DICTIONARY_OR_ORDERED
+                                        - PARSE_DICTIONARY_OR_DEFAULT
+                                        - DEFAULT
+                                      default: EMPTY
+                                      title: >-
+                                        - PARSE_BY_ARG: means parameters are
+                                        ordered and flat expected arguments are:
+                                        [param index] (example: PARAMS:
+                                        [<#BlockNum>,"banana"])
+                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                                         - DEFAULT: means parameters are non related to block, and should fetch latest block
                           reserved:
                             type: object
                             properties:
@@ -31348,16 +31402,18 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
+                                      - PARSE_DICTIONARY_OR_DEFAULT
                                       - DEFAULT
                                     default: EMPTY
                                     title: >-
                                       - PARSE_BY_ARG: means parameters are
-                                      ordered and flat expected areguments are:
+                                      ordered and flat expected arguments are:
                                       [param index] (example: PARAMS:
                                       [<#BlockNum>,"banana"])
-                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                        - DEFAULT: means parameters are non related to block, and should fetch latest block
                     enabled:
                       type: boolean
@@ -31381,6 +31437,42 @@ paths:
                     block_last_updated:
                       type: string
                       format: uint64
+                    min_stake_provider:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    min_stake_client:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    providers_types:
+                      type: string
+                      enum:
+                        - dynamic
+                        - static
+                      default: dynamic
               pagination:
                 type: object
                 properties:
@@ -31524,15 +31616,17 @@ paths:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
+                                - PARSE_DICTIONARY_OR_DEFAULT
                                 - DEFAULT
                               default: EMPTY
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
-                                flat expected areguments are: [param index]
+                                flat expected arguments are: [param index]
                                 (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                  - DEFAULT: means parameters are non related to block, and should fetch latest block
                         compute_units:
                           type: string
@@ -31563,6 +31657,34 @@ paths:
                                   stateful:
                                     type: integer
                                     format: int64
+                              overwrite_block_parsing:
+                                type: object
+                                properties:
+                                  parser_arg:
+                                    type: array
+                                    items:
+                                      type: string
+                                  parser_func:
+                                    type: string
+                                    enum:
+                                      - EMPTY
+                                      - PARSE_BY_ARG
+                                      - PARSE_CANONICAL
+                                      - PARSE_DICTIONARY
+                                      - PARSE_DICTIONARY_OR_ORDERED
+                                      - PARSE_DICTIONARY_OR_DEFAULT
+                                      - DEFAULT
+                                    default: EMPTY
+                                    title: >-
+                                      - PARSE_BY_ARG: means parameters are
+                                      ordered and flat expected arguments are:
+                                      [param index] (example: PARAMS:
+                                      [<#BlockNum>,"banana"])
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
                         reserved:
                           type: object
                           properties:
@@ -31597,16 +31719,18 @@ paths:
                                     - PARSE_CANONICAL
                                     - PARSE_DICTIONARY
                                     - PARSE_DICTIONARY_OR_ORDERED
+                                    - PARSE_DICTIONARY_OR_DEFAULT
                                     - DEFAULT
                                   default: EMPTY
                                   title: >-
                                     - PARSE_BY_ARG: means parameters are ordered
-                                    and flat expected areguments are: [param
+                                    and flat expected arguments are: [param
                                     index] (example: PARAMS:
                                     [<#BlockNum>,"banana"])
-                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                      - DEFAULT: means parameters are non related to block, and should fetch latest block
                   enabled:
                     type: boolean
@@ -31630,6 +31754,42 @@ paths:
                   block_last_updated:
                     type: string
                     format: uint64
+                  min_stake_provider:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  min_stake_client:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  providers_types:
+                    type: string
+                    enum:
+                      - dynamic
+                      - static
+                    default: dynamic
         default:
           description: An unexpected error response.
           schema:
@@ -53049,6 +53209,9 @@ definitions:
       latestParamChange:
         type: string
         format: uint64
+      unstakeHoldBlocksStatic:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.epochstorage.QueryAllFixatedParamsResponse:
     type: object
@@ -53282,6 +53445,9 @@ definitions:
           latestParamChange:
             type: string
             format: uint64
+          unstakeHoldBlocksStatic:
+            type: string
+            format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.epochstorage.StakeEntry:
     type: object
@@ -53392,33 +53558,10 @@ definitions:
     properties:
       index:
         type: string
-      clientsPayments:
+      providerPaymentStorageKeys:
         type: array
         items:
-          type: object
-          properties:
-            index:
-              type: string
-            uniquePaymentStorageClientProvider:
-              type: array
-              items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  block:
-                    type: string
-                    format: uint64
-                  usedCU:
-                    type: string
-                    format: uint64
-            epoch:
-              type: string
-              format: uint64
-            unresponsiveness_complaints:
-              type: array
-              items:
-                type: string
+          type: string
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
   lavanet.lava.pairing.MsgStakeClientResponse:
@@ -53432,10 +53575,6 @@ definitions:
   lavanet.lava.pairing.Params:
     type: object
     properties:
-      minStakeProvider:
-        type: string
-      minStakeClient:
-        type: string
       mintCoinsPerCU:
         type: string
       burnCoinsPerCU:
@@ -53467,23 +53606,14 @@ definitions:
     properties:
       index:
         type: string
-      uniquePaymentStorageClientProvider:
-        type: array
-        items:
-          type: object
-          properties:
-            index:
-              type: string
-            block:
-              type: string
-              format: uint64
-            usedCU:
-              type: string
-              format: uint64
       epoch:
         type: string
         format: uint64
       unresponsiveness_complaints:
+        type: array
+        items:
+          type: string
+      uniquePaymentStorageClientProviderKeys:
         type: array
         items:
           type: string
@@ -53497,33 +53627,10 @@ definitions:
           properties:
             index:
               type: string
-            clientsPayments:
+            providerPaymentStorageKeys:
               type: array
               items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  uniquePaymentStorageClientProvider:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        block:
-                          type: string
-                          format: uint64
-                        usedCU:
-                          type: string
-                          format: uint64
-                  epoch:
-                    type: string
-                    format: uint64
-                  unresponsiveness_complaints:
-                    type: array
-                    items:
-                      type: string
+                type: string
       pagination:
         type: object
         properties:
@@ -53559,23 +53666,14 @@ definitions:
           properties:
             index:
               type: string
-            uniquePaymentStorageClientProvider:
-              type: array
-              items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  block:
-                    type: string
-                    format: uint64
-                  usedCU:
-                    type: string
-                    format: uint64
             epoch:
               type: string
               format: uint64
             unresponsiveness_complaints:
+              type: array
+              items:
+                type: string
+            uniquePaymentStorageClientProviderKeys:
               type: array
               items:
                 type: string
@@ -53704,33 +53802,10 @@ definitions:
         properties:
           index:
             type: string
-          clientsPayments:
+          providerPaymentStorageKeys:
             type: array
             items:
-              type: object
-              properties:
-                index:
-                  type: string
-                uniquePaymentStorageClientProvider:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      block:
-                        type: string
-                        format: uint64
-                      usedCU:
-                        type: string
-                        format: uint64
-                epoch:
-                  type: string
-                  format: uint64
-                unresponsiveness_complaints:
-                  type: array
-                  items:
-                    type: string
+              type: string
   lavanet.lava.pairing.QueryGetPairingResponse:
     type: object
     properties:
@@ -53800,23 +53875,14 @@ definitions:
         properties:
           index:
             type: string
-          uniquePaymentStorageClientProvider:
-            type: array
-            items:
-              type: object
-              properties:
-                index:
-                  type: string
-                block:
-                  type: string
-                  format: uint64
-                usedCU:
-                  type: string
-                  format: uint64
           epoch:
             type: string
             format: uint64
           unresponsiveness_complaints:
+            type: array
+            items:
+              type: string
+          uniquePaymentStorageClientProviderKeys:
             type: array
             items:
               type: string
@@ -53841,10 +53907,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
         properties:
-          minStakeProvider:
-            type: string
-          minStakeClient:
-            type: string
           mintCoinsPerCU:
             type: string
           burnCoinsPerCU:
@@ -53922,6 +53984,55 @@ definitions:
               type: string
       output:
         type: string
+  lavanet.lava.pairing.QueryStaticProvidersListResponse:
+    type: object
+    properties:
+      providers:
+        type: array
+        items:
+          type: object
+          properties:
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            address:
+              type: string
+            deadline:
+              type: string
+              format: uint64
+            endpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  iPPORT:
+                    type: string
+                  useType:
+                    type: string
+                  geolocation:
+                    type: string
+                    format: uint64
+            geolocation:
+              type: string
+              format: uint64
+            chain:
+              type: string
+            vrfpk:
+              type: string
+            moniker:
+              type: string
   lavanet.lava.pairing.QueryUserEntryResponse:
     type: object
     properties:
@@ -54013,6 +54124,33 @@ definitions:
           stateful:
             type: integer
             format: int64
+      overwrite_block_parsing:
+        type: object
+        properties:
+          parser_arg:
+            type: array
+            items:
+              type: string
+          parser_func:
+            type: string
+            enum:
+              - EMPTY
+              - PARSE_BY_ARG
+              - PARSE_CANONICAL
+              - PARSE_DICTIONARY
+              - PARSE_DICTIONARY_OR_ORDERED
+              - PARSE_DICTIONARY_OR_DEFAULT
+              - DEFAULT
+            default: EMPTY
+            title: >-
+              - PARSE_BY_ARG: means parameters are ordered and flat expected
+              arguments are: [param index] (example: PARAMS:
+              [<#BlockNum>,"banana"])
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+               - DEFAULT: means parameters are non related to block, and should fetch latest block
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -54028,15 +54166,16 @@ definitions:
           - PARSE_CANONICAL
           - PARSE_DICTIONARY
           - PARSE_DICTIONARY_OR_ORDERED
+          - PARSE_DICTIONARY_OR_DEFAULT
           - DEFAULT
         default: EMPTY
         title: >-
           - PARSE_BY_ARG: means parameters are ordered and flat expected
-          areguments are: [param index] (example: PARAMS:
-          [<#BlockNum>,"banana"])
-           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+          arguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
+           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
            - DEFAULT: means parameters are non related to block, and should fetch latest block
   lavanet.lava.spec.PARSER_FUNC:
     type: string
@@ -54046,14 +54185,16 @@ definitions:
       - PARSE_CANONICAL
       - PARSE_DICTIONARY
       - PARSE_DICTIONARY_OR_ORDERED
+      - PARSE_DICTIONARY_OR_DEFAULT
       - DEFAULT
     default: EMPTY
     title: >-
-      - PARSE_BY_ARG: means parameters are ordered and flat expected areguments
+      - PARSE_BY_ARG: means parameters are ordered and flat expected arguments
       are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
-       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
        - DEFAULT: means parameters are non related to block, and should fetch latest block
   lavanet.lava.spec.Params:
     type: object
@@ -54087,15 +54228,17 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
+              - PARSE_DICTIONARY_OR_DEFAULT
               - DEFAULT
             default: EMPTY
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
-              areguments are: [param index] (example: PARAMS:
+              arguments are: [param index] (example: PARAMS:
               [<#BlockNum>,"banana"])
-               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                - DEFAULT: means parameters are non related to block, and should fetch latest block
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
@@ -54131,15 +54274,17 @@ definitions:
                           - PARSE_CANONICAL
                           - PARSE_DICTIONARY
                           - PARSE_DICTIONARY_OR_ORDERED
+                          - PARSE_DICTIONARY_OR_DEFAULT
                           - DEFAULT
                         default: EMPTY
                         title: >-
                           - PARSE_BY_ARG: means parameters are ordered and flat
-                          expected areguments are: [param index] (example:
+                          expected arguments are: [param index] (example:
                           PARAMS: [<#BlockNum>,"banana"])
-                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                            - DEFAULT: means parameters are non related to block, and should fetch latest block
                   compute_units:
                     type: string
@@ -54170,6 +54315,33 @@ definitions:
                             stateful:
                               type: integer
                               format: int64
+                        overwrite_block_parsing:
+                          type: object
+                          properties:
+                            parser_arg:
+                              type: array
+                              items:
+                                type: string
+                            parser_func:
+                              type: string
+                              enum:
+                                - EMPTY
+                                - PARSE_BY_ARG
+                                - PARSE_CANONICAL
+                                - PARSE_DICTIONARY
+                                - PARSE_DICTIONARY_OR_ORDERED
+                                - PARSE_DICTIONARY_OR_DEFAULT
+                                - DEFAULT
+                              default: EMPTY
+                              title: >-
+                                - PARSE_BY_ARG: means parameters are ordered and
+                                flat expected arguments are: [param index]
+                                (example: PARAMS: [<#BlockNum>,"banana"])
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
                   reserved:
                     type: object
                     properties:
@@ -54204,15 +54376,17 @@ definitions:
                               - PARSE_CANONICAL
                               - PARSE_DICTIONARY
                               - PARSE_DICTIONARY_OR_ORDERED
+                              - PARSE_DICTIONARY_OR_DEFAULT
                               - DEFAULT
                             default: EMPTY
                             title: >-
                               - PARSE_BY_ARG: means parameters are ordered and
-                              flat expected areguments are: [param index]
+                              flat expected arguments are: [param index]
                               (example: PARAMS: [<#BlockNum>,"banana"])
-                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                                - DEFAULT: means parameters are non related to block, and should fetch latest block
             enabled:
               type: boolean
@@ -54236,6 +54410,42 @@ definitions:
             block_last_updated:
               type: string
               format: uint64
+            min_stake_provider:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            min_stake_client:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            providers_types:
+              type: string
+              enum:
+                - dynamic
+                - static
+              default: dynamic
       pagination:
         type: object
         properties:
@@ -54293,15 +54503,17 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
+                        - PARSE_DICTIONARY_OR_DEFAULT
                         - DEFAULT
                       default: EMPTY
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
-                        expected areguments are: [param index] (example: PARAMS:
+                        expected arguments are: [param index] (example: PARAMS:
                         [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
                 compute_units:
                   type: string
@@ -54332,6 +54544,33 @@ definitions:
                           stateful:
                             type: integer
                             format: int64
+                      overwrite_block_parsing:
+                        type: object
+                        properties:
+                          parser_arg:
+                            type: array
+                            items:
+                              type: string
+                          parser_func:
+                            type: string
+                            enum:
+                              - EMPTY
+                              - PARSE_BY_ARG
+                              - PARSE_CANONICAL
+                              - PARSE_DICTIONARY
+                              - PARSE_DICTIONARY_OR_ORDERED
+                              - PARSE_DICTIONARY_OR_DEFAULT
+                              - DEFAULT
+                            default: EMPTY
+                            title: >-
+                              - PARSE_BY_ARG: means parameters are ordered and
+                              flat expected arguments are: [param index]
+                              (example: PARAMS: [<#BlockNum>,"banana"])
+                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                               - DEFAULT: means parameters are non related to block, and should fetch latest block
                 reserved:
                   type: object
                   properties:
@@ -54366,15 +54605,17 @@ definitions:
                             - PARSE_CANONICAL
                             - PARSE_DICTIONARY
                             - PARSE_DICTIONARY_OR_ORDERED
+                            - PARSE_DICTIONARY_OR_DEFAULT
                             - DEFAULT
                           default: EMPTY
                           title: >-
                             - PARSE_BY_ARG: means parameters are ordered and
-                            flat expected areguments are: [param index]
-                            (example: PARAMS: [<#BlockNum>,"banana"])
-                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                            flat expected arguments are: [param index] (example:
+                            PARAMS: [<#BlockNum>,"banana"])
+                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                              - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                             - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                              - DEFAULT: means parameters are non related to block, and should fetch latest block
           enabled:
             type: boolean
@@ -54398,6 +54639,42 @@ definitions:
           block_last_updated:
             type: string
             format: uint64
+          min_stake_provider:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          min_stake_client:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          providers_types:
+            type: string
+            enum:
+              - dynamic
+              - static
+            default: dynamic
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
@@ -54415,10 +54692,19 @@ definitions:
   lavanet.lava.spec.QueryShowAllChainsResponse:
     type: object
     properties:
-      chainNames:
+      chainInfoList:
         type: array
         items:
-          type: string
+          type: object
+          properties:
+            chainName:
+              type: string
+            chainID:
+              type: string
+            enabledApiInterfaces:
+              type: array
+              items:
+                type: string
   lavanet.lava.spec.QueryShowChainInfoResponse:
     type: object
     properties:
@@ -54459,15 +54745,17 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
+              - PARSE_DICTIONARY_OR_DEFAULT
               - DEFAULT
             default: EMPTY
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
-              areguments are: [param index] (example: PARAMS:
+              arguments are: [param index] (example: PARAMS:
               [<#BlockNum>,"banana"])
-               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                - DEFAULT: means parameters are non related to block, and should fetch latest block
       compute_units:
         type: string
@@ -54498,6 +54786,33 @@ definitions:
                 stateful:
                   type: integer
                   format: int64
+            overwrite_block_parsing:
+              type: object
+              properties:
+                parser_arg:
+                  type: array
+                  items:
+                    type: string
+                parser_func:
+                  type: string
+                  enum:
+                    - EMPTY
+                    - PARSE_BY_ARG
+                    - PARSE_CANONICAL
+                    - PARSE_DICTIONARY
+                    - PARSE_DICTIONARY_OR_ORDERED
+                    - PARSE_DICTIONARY_OR_DEFAULT
+                    - DEFAULT
+                  default: EMPTY
+                  title: >-
+                    - PARSE_BY_ARG: means parameters are ordered and flat
+                    expected arguments are: [param index] (example: PARAMS:
+                    [<#BlockNum>,"banana"])
+                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                     - DEFAULT: means parameters are non related to block, and should fetch latest block
       reserved:
         type: object
         properties:
@@ -54532,15 +54847,17 @@ definitions:
                   - PARSE_CANONICAL
                   - PARSE_DICTIONARY
                   - PARSE_DICTIONARY_OR_ORDERED
+                  - PARSE_DICTIONARY_OR_DEFAULT
                   - DEFAULT
                 default: EMPTY
                 title: >-
                   - PARSE_BY_ARG: means parameters are ordered and flat expected
-                  areguments are: [param index] (example: PARAMS:
+                  arguments are: [param index] (example: PARAMS:
                   [<#BlockNum>,"banana"])
-                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                    - DEFAULT: means parameters are non related to block, and should fetch latest block
   lavanet.lava.spec.Spec:
     type: object
@@ -54571,15 +54888,17 @@ definitions:
                     - PARSE_CANONICAL
                     - PARSE_DICTIONARY
                     - PARSE_DICTIONARY_OR_ORDERED
+                    - PARSE_DICTIONARY_OR_DEFAULT
                     - DEFAULT
                   default: EMPTY
                   title: >-
                     - PARSE_BY_ARG: means parameters are ordered and flat
-                    expected areguments are: [param index] (example: PARAMS:
+                    expected arguments are: [param index] (example: PARAMS:
                     [<#BlockNum>,"banana"])
-                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                      - DEFAULT: means parameters are non related to block, and should fetch latest block
             compute_units:
               type: string
@@ -54610,6 +54929,33 @@ definitions:
                       stateful:
                         type: integer
                         format: int64
+                  overwrite_block_parsing:
+                    type: object
+                    properties:
+                      parser_arg:
+                        type: array
+                        items:
+                          type: string
+                      parser_func:
+                        type: string
+                        enum:
+                          - EMPTY
+                          - PARSE_BY_ARG
+                          - PARSE_CANONICAL
+                          - PARSE_DICTIONARY
+                          - PARSE_DICTIONARY_OR_ORDERED
+                          - PARSE_DICTIONARY_OR_DEFAULT
+                          - DEFAULT
+                        default: EMPTY
+                        title: >-
+                          - PARSE_BY_ARG: means parameters are ordered and flat
+                          expected arguments are: [param index] (example:
+                          PARAMS: [<#BlockNum>,"banana"])
+                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
+                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
+                           - DEFAULT: means parameters are non related to block, and should fetch latest block
             reserved:
               type: object
               properties:
@@ -54644,15 +54990,17 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
+                        - PARSE_DICTIONARY_OR_DEFAULT
                         - DEFAULT
                       default: EMPTY
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
-                        expected areguments are: [param index] (example: PARAMS:
+                        expected arguments are: [param index] (example: PARAMS:
                         [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
+                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
       enabled:
         type: boolean
@@ -54676,6 +55024,42 @@ definitions:
       block_last_updated:
         type: string
         format: uint64
+      min_stake_provider:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+      min_stake_client:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+      providers_types:
+        type: string
+        enum:
+          - dynamic
+          - static
+        default: dynamic
+  lavanet.lava.spec.Spec.ProvidersTypes:
+    type: string
+    enum:
+      - dynamic
+      - static
+    default: dynamic
   lavanet.lava.spec.SpecCategory:
     type: object
     properties:
@@ -54694,6 +55078,17 @@ definitions:
       interface:
         type: string
       supportedApis:
+        type: array
+        items:
+          type: string
+  lavanet.lava.spec.showAllChainsInfoStruct:
+    type: object
+    properties:
+      chainName:
+        type: string
+      chainID:
+        type: string
+      enabledApiInterfaces:
         type: array
         items:
           type: string

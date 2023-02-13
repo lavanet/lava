@@ -230,7 +230,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
-	entries := []types.StakeEntry{}
+	var entries []types.StakeEntry
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
@@ -345,22 +345,16 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
 }
 
-func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) error {
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) error {
 	// update unstake deadline to the higher among params (unstakeholdblocks and blockstosave)
-	// TODO validate in paramchange that unstakeholdblocks >= blockstosave and remove redundancy check
+
 	blockHeight := uint64(ctx.BlockHeight())
-	blocksToSave, err := k.BlocksToSave(ctx, blockHeight)
-	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "append_stake_blockstosave_get_fail", map[string]string{}, "failed to get BlocksToSave")
-	}
-	stakeEntry.Deadline = blockHeight + blocksToSave
-	holdBlocks := blockHeight + k.UnstakeHoldBlocks(ctx, blockHeight)
-	if stakeEntry.Deadline < holdBlocks {
-		stakeEntry.Deadline = holdBlocks
-	}
+
+	stakeEntry.Deadline = blockHeight + unstakeHoldBlocks
+
 	// this stake storage entries are sorted by deadline
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
-	entries := []types.StakeEntry{}
+	var entries []types.StakeEntry
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
@@ -476,13 +470,13 @@ func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID strin
 	return &stakeStorage.StakeEntries, nil
 }
 
-func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
+func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool, epochHash []byte) {
 	key := k.StakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)
 	if !found {
-		return nil, false
+		return nil, false, nil
 	}
-	return stakeStorage.StakeEntries, true
+	return stakeStorage.StakeEntries, true, stakeStorage.EpochBlockHash
 }
 
 // append to epoch stake entries ONLY if it doesn't exist

@@ -10,7 +10,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,12 +25,7 @@ func TestNewStakeClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	specName := "mockSpec"
-	spec := spectypes.Spec{}
-	spec.Name = specName
-	spec.Index = specName
-	spec.Enabled = true
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
+	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	tests := []struct {
@@ -39,7 +33,7 @@ func TestNewStakeClient(t *testing.T) {
 		stake sdk.Coin
 		valid bool
 	}{
-		{"MinStake", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10)), false},
+		{"MinStake", sdk.NewCoin(spec.MinStakeClient.Denom, spec.MinStakeClient.Amount.Sub(sdk.NewInt(1))), false},
 		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount+1)), false},
 		{"HappyFlow", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), true},
 	}
@@ -75,12 +69,7 @@ func TestAddStakeClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	specName := "mockSpec"
-	spec := spectypes.Spec{}
-	spec.Name = specName
-	spec.Index = specName
-	spec.Enabled = true
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
+	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	firstStake := amount / 10

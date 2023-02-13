@@ -119,8 +119,7 @@ func TestChainTracker(t *testing.T) {
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
-			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
-			require.NoError(t, err)
+			chainTracker := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -177,8 +176,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
-			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
-			require.NoError(t, err)
+			chainTracker := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -258,8 +256,8 @@ func TestChainTrackerCallbacks(t *testing.T) {
 		callbackCalledNewLatest = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
-	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
-	require.NoError(t, err)
+	chainTracker := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
 			utils.LavaFormatInfo("started test "+tt.name, nil)
@@ -340,8 +338,8 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 		callbackCalledFork = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
-	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
-	require.NoError(t, err)
+	chainTracker := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
 			utils.LavaFormatInfo("started test "+tt.name, nil)

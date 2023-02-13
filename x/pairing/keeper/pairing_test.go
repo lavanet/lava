@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,6 +38,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
+	// test that 2 different clients get different pairings
 	providers1, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
 	require.Nil(t, err)
 
@@ -45,7 +47,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	require.Equal(t, len(providers1), len(providers2))
 
-	diffrent := false
+	different := false
 
 	for _, provider := range providers1 {
 		found := false
@@ -55,12 +57,52 @@ func TestPairingUniqueness(t *testing.T) {
 			}
 		}
 		if !found {
-			diffrent = true
+			different = true
 		}
 	}
 
-	require.True(t, diffrent)
+	require.True(t, different)
 
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	// test that in different epoch we get different pairings for consumer1
+	providers11, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	require.Nil(t, err)
+
+	require.Equal(t, len(providers1), len(providers11))
+	different = false
+	for i := range providers1 {
+		if providers1[i].Address != providers11[i].Address {
+			different = true
+			break
+		}
+	}
+	require.True(t, different)
+
+	//test that get pairing gives the same results for the whole epoch
+	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	foundIndexMap := map[string]int{}
+	for i := uint64(0); i < epochBlocks-1; i++ {
+		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+
+		providers111, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+		require.Nil(t, err)
+
+		for i := range providers1 {
+			require.Equal(t, providers11[i].Address, providers111[i].Address)
+
+			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
+			require.Nil(t, err)
+			valid, _, foundIndex, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.True(t, valid)
+			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
+				foundIndexMap[providers11[i].Address] = foundIndex
+			} else {
+				require.Equal(t, foundIndexMap[providers11[i].Address], foundIndex)
+			}
+		}
+
+	}
 }
 
 // Test that verifies that new get-pairing return values (CurrentEpoch, TimeLeftToNextPairing, SpecLastUpdatedBlock) is working properly
@@ -182,4 +224,37 @@ func TestGetPairing(t *testing.T) {
 
 		})
 	}
+}
+
+func TestPairingStatic(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	//init keepers state
+	spec := common.CreateMockSpec()
+	spec.ProvidersTypes = spectypes.Spec_static
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	servicersToPair := keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ctx))
+
+	consumer := common.CreateNewAccount(ctx, *keepers, balance)
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, stake, false)
+
+	for i := uint64(0); i < servicersToPair*2; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i), true)
+	}
+
+	//we expect to get all the providers in static spec
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	providers, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+	require.Nil(t, err)
+
+	for i, provider := range providers {
+		require.Equal(t, provider.Stake.Amount.Int64(), stake+int64(i))
+	}
+
 }
