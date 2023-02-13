@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -19,10 +20,15 @@ const (
 )
 
 type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	requestedBlock int64
-	msg            interface{}
+	serviceApi       *spectypes.ServiceApi
+	apiInterface     *spectypes.ApiInterface
+	averageBlockTime int64
+	requestedBlock   int64
+	msg              interface{}
+}
+
+type BaseChainProxy struct {
+	averageBlockTime time.Duration
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {

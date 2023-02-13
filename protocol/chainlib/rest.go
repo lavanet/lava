@@ -151,7 +151,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -272,14 +272,18 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 }
 
 type RestChainProxy struct {
+	BaseChainProxy
 	nodeUrl string
 }
 
-func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrl) == 0 {
-		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+		utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
-	rcp := &RestChainProxy{nodeUrl: strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/")}
+	rcp := &RestChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/"),
+	}
 	return rcp, nil
 }
 
@@ -309,7 +313,15 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if connectionTypeSlected == http.MethodGet {
 		url += string(nodeMessage.Msg)
 	}
-	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += rcp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}

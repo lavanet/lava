@@ -156,7 +156,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -221,20 +221,21 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 }
 
 type GrpcChainProxy struct {
+	BaseChainProxy
 	conn *chainproxy.GRPCConnector
 }
 
-func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrl) == 0 {
-		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+		utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
-
-	cp := &GrpcChainProxy{}
+	cp := &GrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+	}
 	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"))
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
 	}
-
 	return cp, nil
 }
 
@@ -253,8 +254,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
-
-	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += cp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn)) // TODO: improve functionality, this is reading descriptors every send

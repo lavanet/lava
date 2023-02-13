@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -700,23 +700,24 @@ func (m *QueryConnectionParamsResponse) GetParams() *Params {
 	return nil
 }
 
+// disabled because of duplicate proto type error
 func init() {
-	//proto.RegisterType((*QueryConnectionRequest)(nil), "ibc.core.connection.v1.QueryConnectionRequest")
-	//proto.RegisterType((*QueryConnectionResponse)(nil), "ibc.core.connection.v1.QueryConnectionResponse")
-	//proto.RegisterType((*QueryConnectionsRequest)(nil), "ibc.core.connection.v1.QueryConnectionsRequest")
-	//proto.RegisterType((*QueryConnectionsResponse)(nil), "ibc.core.connection.v1.QueryConnectionsResponse")
-	//proto.RegisterType((*QueryClientConnectionsRequest)(nil), "ibc.core.connection.v1.QueryClientConnectionsRequest")
-	//proto.RegisterType((*QueryClientConnectionsResponse)(nil), "ibc.core.connection.v1.QueryClientConnectionsResponse")
-	//proto.RegisterType((*QueryConnectionClientStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionClientStateRequest")
-	//proto.RegisterType((*QueryConnectionClientStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionClientStateResponse")
-	//proto.RegisterType((*QueryConnectionConsensusStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateRequest")
-	//proto.RegisterType((*QueryConnectionConsensusStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateResponse")
-	//proto.RegisterType((*QueryConnectionParamsRequest)(nil), "ibc.core.connection.v1.QueryConnectionParamsRequest")
-	//proto.RegisterType((*QueryConnectionParamsResponse)(nil), "ibc.core.connection.v1.QueryConnectionParamsResponse")
+	// proto.RegisterType((*QueryConnectionRequest)(nil), "ibc.core.connection.v1.QueryConnectionRequest")
+	// proto.RegisterType((*QueryConnectionResponse)(nil), "ibc.core.connection.v1.QueryConnectionResponse")
+	// proto.RegisterType((*QueryConnectionsRequest)(nil), "ibc.core.connection.v1.QueryConnectionsRequest")
+	// proto.RegisterType((*QueryConnectionsResponse)(nil), "ibc.core.connection.v1.QueryConnectionsResponse")
+	// proto.RegisterType((*QueryClientConnectionsRequest)(nil), "ibc.core.connection.v1.QueryClientConnectionsRequest")
+	// proto.RegisterType((*QueryClientConnectionsResponse)(nil), "ibc.core.connection.v1.QueryClientConnectionsResponse")
+	// proto.RegisterType((*QueryConnectionClientStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionClientStateRequest")
+	// proto.RegisterType((*QueryConnectionClientStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionClientStateResponse")
+	// proto.RegisterType((*QueryConnectionConsensusStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateRequest")
+	// proto.RegisterType((*QueryConnectionConsensusStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateResponse")
+	// proto.RegisterType((*QueryConnectionParamsRequest)(nil), "ibc.core.connection.v1.QueryConnectionParamsRequest")
+	// proto.RegisterType((*QueryConnectionParamsResponse)(nil), "ibc.core.connection.v1.QueryConnectionParamsResponse")
 }
 
 func init() {
-	//proto.RegisterFile("ibc/core/connection/v1/query.proto", fileDescriptor_cd8d529f8c7cd06b)
+	proto.RegisterFile("ibc/core/connection/v1/query.proto", fileDescriptor_cd8d529f8c7cd06b)
 }
 
 var fileDescriptor_cd8d529f8c7cd06b = []byte{

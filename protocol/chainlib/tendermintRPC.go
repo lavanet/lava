@@ -204,7 +204,7 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -400,14 +400,17 @@ type tendermintRpcChainProxy struct {
 	httpNodeUrl string
 }
 
-func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	var httpUrl string
 	var websocketUrl string
 	if len(rpcProviderEndpoint.NodeUrl) == 0 {
-		utils.LavaFormatFatal("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+		utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
 	websocketUrl, httpUrl = verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrl)
-	cp := &tendermintRpcChainProxy{httpNodeUrl: httpUrl}
+	cp := &tendermintRpcChainProxy{
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
+		httpNodeUrl:    httpUrl,
+	}
 	return cp, cp.start(ctx, nConns, websocketUrl)
 }
 
@@ -445,8 +448,17 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *cha
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl + "/" + nodeMessage.Path
 
+	// create context
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += cp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+
 	// create a new http request
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -496,8 +508,13 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 		// subscribe to the rpc call if the channel is not nil
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		// create a context with a timeout set by the getTimePerCu function
-		connectCtx, cancel := context.WithTimeout(ctx, LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits))
+		// create a context with a timeout set by the LocalNodeTimePerCu function
+		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+		// check if this API is hanging (waiting for block confirmation)
+		if chainMessage.GetInterface().Category.HangingApi {
+			relayTimeout += cp.averageBlockTime
+		}
+		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
