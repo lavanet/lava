@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -373,18 +373,19 @@ func (m *MsgConnectionOpenConfirmResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgConnectionOpenConfirmResponse proto.InternalMessageInfo
 
+// disabled because of duplicate proto type error
 func init() {
-	//proto.RegisterType((*MsgConnectionOpenInit)(nil), "ibc.core.connection.v1.MsgConnectionOpenInit")
-	//proto.RegisterType((*MsgConnectionOpenInitResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenInitResponse")
-	//proto.RegisterType((*MsgConnectionOpenTry)(nil), "ibc.core.connection.v1.MsgConnectionOpenTry")
-	//proto.RegisterType((*MsgConnectionOpenTryResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenTryResponse")
-	//proto.RegisterType((*MsgConnectionOpenAck)(nil), "ibc.core.connection.v1.MsgConnectionOpenAck")
-	//proto.RegisterType((*MsgConnectionOpenAckResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenAckResponse")
-	//proto.RegisterType((*MsgConnectionOpenConfirm)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirm")
-	//proto.RegisterType((*MsgConnectionOpenConfirmResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirmResponse")
+	// proto.RegisterType((*MsgConnectionOpenInit)(nil), "ibc.core.connection.v1.MsgConnectionOpenInit")
+	// proto.RegisterType((*MsgConnectionOpenInitResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenInitResponse")
+	// proto.RegisterType((*MsgConnectionOpenTry)(nil), "ibc.core.connection.v1.MsgConnectionOpenTry")
+	// proto.RegisterType((*MsgConnectionOpenTryResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenTryResponse")
+	// proto.RegisterType((*MsgConnectionOpenAck)(nil), "ibc.core.connection.v1.MsgConnectionOpenAck")
+	// proto.RegisterType((*MsgConnectionOpenAckResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenAckResponse")
+	// proto.RegisterType((*MsgConnectionOpenConfirm)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirm")
+	// proto.RegisterType((*MsgConnectionOpenConfirmResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirmResponse")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
+func init() { proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
 
 var fileDescriptor_5d00fde5fc97399e = []byte{
 	// 929 bytes of a gzipped FileDescriptorProto

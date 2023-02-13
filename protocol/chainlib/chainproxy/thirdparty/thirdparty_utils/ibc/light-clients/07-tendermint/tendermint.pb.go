@@ -6,8 +6,8 @@ package tendermint
 import (
 	fmt "fmt"
 	_go "github.com/confio/ics23/go"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/23-commitment/types"
+	types "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/23-commitment/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
@@ -311,15 +311,15 @@ func (m *Fraction) GetDenominator() uint64 {
 }
 
 func init() {
-	//proto.RegisterType((*ClientState)(nil), "ibc.lightclients.tendermint.v1.ClientState")
-	//proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.tendermint.v1.ConsensusState")
-	//proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.tendermint.v1.Misbehaviour")
-	//proto.RegisterType((*Header)(nil), "ibc.lightclients.tendermint.v1.Header")
-	//proto.RegisterType((*Fraction)(nil), "ibc.lightclients.tendermint.v1.Fraction")
+	proto.RegisterType((*ClientState)(nil), "ibc.lightclients.tendermint.v1.ClientState")
+	proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.tendermint.v1.ConsensusState")
+	proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.tendermint.v1.Misbehaviour")
+	proto.RegisterType((*Header)(nil), "ibc.lightclients.tendermint.v1.Header")
+	proto.RegisterType((*Fraction)(nil), "ibc.lightclients.tendermint.v1.Fraction")
 }
 
 func init() {
-	//proto.RegisterFile("ibc/lightclients/tendermint/v1/tendermint.proto", fileDescriptor_c6d6cf2b288949be)
+	proto.RegisterFile("ibc/lightclients/tendermint/v1/tendermint.proto", fileDescriptor_c6d6cf2b288949be)
 }
 
 var fileDescriptor_c6d6cf2b288949be = []byte{

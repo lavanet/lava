@@ -1,5 +1,6 @@
 build/
 release/
+ts-client/
 
 # Intellij
 .idea/
