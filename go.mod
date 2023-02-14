@@ -28,7 +28,6 @@ require (
 require (
 	cosmossdk.io/api v0.2.5
 	github.com/CosmWasm/wasmvm v1.2.0
-	github.com/CosmosContracts/juno v1.0.2
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.3

@@ -492,7 +492,7 @@ func getTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 func convertErrorToRPCError(errString string, code int) *tenderminttypes.RPCError {
 	var rpcError *tenderminttypes.RPCError
 	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
-	if unmarshalError != nil {
+	if unmarshalError != nil || (rpcError.Data == "" && rpcError.Message == "") {
 		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
 		rpcError = &tenderminttypes.RPCError{
 			Code:    code,

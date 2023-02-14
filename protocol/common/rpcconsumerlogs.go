@@ -1,11 +1,12 @@
 package common
 
 import (
-	"fmt"
+	"encoding/json"
 	"math/rand"
 	"os"
 	"strconv"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	"github.com/lavanet/lava/relayer/metrics"
@@ -57,14 +58,23 @@ func (pl *RPCConsumerLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	var ret string
-	ret = "Error GUID: " + msgSeed
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
-	if ReturnMaskedErrors == "false" {
-		ret += fmt.Sprintf(", Error: %v", responseError)
+	type ErrorData struct {
+		Error_GUID string `json:"Error_GUID"`
+		Error      string `json:"Error,omitempty"`
 	}
 
-	return ret
+	data := ErrorData{
+		Error_GUID: msgSeed,
+	}
+	if ReturnMaskedErrors == "false" {
+		data.Error = responseError.Error()
+	}
+
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
+
+	ret, _ := json.Marshal(data)
+
+	return string(ret)
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
@@ -76,7 +86,12 @@ func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Con
 			return
 		}
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-		c.WriteMessage(mt, []byte("Error Received: "+pl.GetUniqueGuidResponseForError(err, msgSeed)))
+
+		jsonResponse, _ := json.Marshal(fiber.Map{
+			"Error_Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+		})
+
+		c.WriteMessage(mt, jsonResponse)
 	}
 }
 

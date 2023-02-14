@@ -22,7 +22,7 @@ func TestRestChainParser_Spec(t *testing.T) {
 		Enabled:                       true,
 		ReliabilityThreshold:          10,
 		AllowedBlockLagForQosSync:     11,
-		AverageBlockTime:              12,
+		AverageBlockTime:              12000,
 		BlockDistanceForFinalizedData: 13,
 		BlocksInFinalizationProof:     14,
 	}
@@ -35,7 +35,7 @@ func TestRestChainParser_Spec(t *testing.T) {
 	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, blocksInFinalizationProof := apip.ChainBlockStats()
 
 	// convert block time
-	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Second
+	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// check that the spec was set correctly
 	assert.Equal(t, apip.spec.Enabled, enabled)

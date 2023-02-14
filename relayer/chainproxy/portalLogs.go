@@ -1,7 +1,7 @@
 package chainproxy
 
 import (
-	"fmt"
+	"encoding/json"
 	"math/rand"
 	"os"
 	"strconv"
@@ -58,14 +58,23 @@ func (pl *PortalLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	var ret string
-	ret = "Error GUID: " + msgSeed
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
-	if ReturnMaskedErrors == "false" {
-		ret += fmt.Sprintf(", Error: %v", responseError)
+	type ErrorData struct {
+		Error_GUID string `json:"Error_GUID"`
+		Error      string `json:"Error,omitempty"`
 	}
 
-	return ret
+	data := ErrorData{
+		Error_GUID: msgSeed,
+	}
+	if ReturnMaskedErrors == "false" {
+		data.Error = responseError.Error()
+	}
+
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
+
+	ret, _ := json.Marshal(data)
+
+	return string(ret)
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
@@ -77,7 +86,16 @@ func (pl *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 			return
 		}
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-		c.WriteMessage(mt, []byte("Error Received: "+pl.GetUniqueGuidResponseForError(err, msgSeed)))
+
+		type ErrorResponse struct {
+			ErrorReceived string `json:"Error_Received"`
+		}
+
+		jsonResponse, _ := json.Marshal(ErrorResponse{
+			ErrorReceived: pl.GetUniqueGuidResponseForError(err, msgSeed),
+		})
+
+		c.WriteMessage(mt, jsonResponse)
 	}
 }
 
