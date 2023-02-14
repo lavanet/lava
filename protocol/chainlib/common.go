@@ -168,7 +168,7 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 		case "ws", "wss":
 			websocketEndpoint = endpoint
 		default:
-			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil, nil)
 		}
 	}
 
