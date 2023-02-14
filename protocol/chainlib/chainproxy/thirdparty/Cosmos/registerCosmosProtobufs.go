@@ -16,7 +16,7 @@ import (
 	slashing "cosmossdk.io/api/cosmos/slashing/v1beta1"
 	staking "cosmossdk.io/api/cosmos/staking/v1beta1"
 	upgrade "cosmossdk.io/api/cosmos/upgrade/v1beta1"
-	tx "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/tx/v1beta1"
+	tx "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/cosmos/tx/v1beta1"
 	"google.golang.org/grpc"
 )
 

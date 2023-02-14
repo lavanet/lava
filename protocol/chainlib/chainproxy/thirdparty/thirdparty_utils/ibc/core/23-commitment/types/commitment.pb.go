@@ -118,6 +118,7 @@ type MerklePath struct {
 }
 
 func (m *MerklePath) Reset()      { *m = MerklePath{} }
+func (m *MerklePath) String() string { return proto.CompactTextString(m) }
 func (*MerklePath) ProtoMessage() {}
 func (*MerklePath) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7921d88972a41469, []int{2}
@@ -126,26 +127,25 @@ func (m *MerklePath) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *MerklePath) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	// if deterministic {
-	// 	return xxx_messageInfo_MerklePath.Marshal(b, m, deterministic)
-	// } else {
-	// 	b = b[:cap(b)]
-	// 	n, err := m.MarshalToSizedBuffer(b)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return b[:n], nil
-	// }
-	return nil,nil
+	if deterministic {
+		return xxx_messageInfo_MerklePath.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MerklePath) XXX_Merge(src proto.Message) {
-	// xxx_messageInfo_MerklePath.Merge(m, src)
+	xxx_messageInfo_MerklePath.Merge(m, src)
 }
 func (m *MerklePath) XXX_Size() int {
 	return m.Size()
 }
 func (m *MerklePath) XXX_DiscardUnknown() {
-	// xxx_messageInfo_MerklePath.DiscardUnknown(m)
+	xxx_messageInfo_MerklePath.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_MerklePath proto.InternalMessageInfo
@@ -207,14 +207,14 @@ func (m *MerkleProof) GetProofs() []*_go.CommitmentProof {
 }
 
 func init() {
-	//proto.RegisterType((*MerkleRoot)(nil), "ibc.core.commitment.v1.MerkleRoot")
-	//proto.RegisterType((*MerklePrefix)(nil), "ibc.core.commitment.v1.MerklePrefix")
-	// //proto.RegisterType((*MerklePath)(nil), "ibc.core.commitment.v1.MerklePath")
-	//proto.RegisterType((*MerkleProof)(nil), "ibc.core.commitment.v1.MerkleProof")
+	// proto.RegisterType((*MerkleRoot)(nil), "ibc.core.commitment.v1.MerkleRoot")
+	// proto.RegisterType((*MerklePrefix)(nil), "ibc.core.commitment.v1.MerklePrefix")
+	// proto.RegisterType((*MerklePath)(nil), "ibc.core.commitment.v1.MerklePath")
+	// proto.RegisterType((*MerkleProof)(nil), "ibc.core.commitment.v1.MerkleProof")
 }
 
 func init() {
-	//proto.RegisterFile("ibc/core/commitment/v1/commitment.proto", fileDescriptor_7921d88972a41469)
+	proto.RegisterFile("ibc/core/commitment/v1/commitment.proto", fileDescriptor_7921d88972a41469)
 }
 
 var fileDescriptor_7921d88972a41469 = []byte{

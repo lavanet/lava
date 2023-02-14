@@ -27,11 +27,12 @@ func NewPairingUpdater(consumerAddress sdk.AccAddress, stateQuery *ConsumerState
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
-	pairingList, epoch, _, err := pu.stateQuery.GetPairing(context.Background(), chainID, -1)
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(context.Background(), chainID, -1)
 	if err != nil {
 		return err
 	}
 	pu.updateConsummerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
+	pu.nextBlockForUpdate = nextBlockForUpdate // make sure we don't update twice when launching.
 	consumerSessionsManagersList, ok := pu.consumerSessionManagersMap[chainID]
 	if !ok {
 		pu.consumerSessionManagersMap[chainID] = []*lavasession.ConsumerSessionManager{consumerSessionManager}

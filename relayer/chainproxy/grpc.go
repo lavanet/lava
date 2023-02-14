@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -18,9 +19,9 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/chainproxy/thirdparty"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
@@ -38,14 +39,15 @@ type GrpcMessage struct {
 	methodDesc *desc.MethodDescriptor
 	formatter  grpcurl.Formatter
 
-	cp             *GrpcChainProxy
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	path           string
-	msg            interface{}
-	requestedBlock int64
-	connectionType string
-	Result         json.RawMessage
+	cp                   *GrpcChainProxy
+	serviceApi           *spectypes.ServiceApi
+	apiInterface         *spectypes.ApiInterface
+	path                 string
+	msg                  interface{}
+	requestedBlock       int64
+	connectionType       string
+	Result               json.RawMessage
+	extendContextTimeout time.Duration
 }
 
 type GrpcChainProxy struct {
@@ -57,6 +59,10 @@ type GrpcChainProxy struct {
 	portalLogs *PortalLogs
 	chainID    string
 	cache      *performance.Cache
+}
+
+func (r *GrpcMessage) GetExtraContextTimeout() time.Duration {
+	return r.extendContextTimeout
 }
 
 func (r *GrpcMessage) GetMsg() interface{} {
@@ -250,13 +256,19 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
+	var extraTimeout time.Duration
+	if apiInterface.Category.HangingApi {
+		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
+	}
+
 	nodeMsg := &GrpcMessage{
-		cp:             cp,
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
-		path:           path,
-		msg:            data,
-		connectionType: connectionType,
+		cp:                   cp,
+		serviceApi:           serviceApi,
+		apiInterface:         apiInterface,
+		path:                 path,
+		msg:                  data,
+		connectionType:       connectionType,
+		extendContextTimeout: extraTimeout,
 	}
 
 	return nodeMsg, nil
@@ -325,7 +337,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 	defer nm.cp.conn.ReturnRpc(conn)
 
-	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout+nm.GetExtraContextTimeout())
 	defer cancel()
 
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))

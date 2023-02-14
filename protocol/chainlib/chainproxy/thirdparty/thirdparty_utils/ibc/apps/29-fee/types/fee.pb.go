@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
