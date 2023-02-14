@@ -347,7 +347,7 @@ func getTimePerCu(cu uint64) time.Duration {
 }
 
 func addAttributeToError(key string, value string, errorMessage string) string {
-	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
 func convertToJsonError(errorMsg string) string {

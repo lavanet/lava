@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -62,7 +62,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Construct restMessage
-	restMessage := chainproxy.RestMessage{
+	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  data,
 		Path: url,
 	}
@@ -294,7 +294,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
