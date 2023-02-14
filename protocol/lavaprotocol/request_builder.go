@@ -29,8 +29,9 @@ type RelayRequestCommonData struct {
 	ChainID        string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
 	ConnectionType string `protobuf:"bytes,2,opt,name=connection_type,json=connectionType,proto3" json:"connection_type,omitempty"`
 	ApiUrl         string `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
-	Data           []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	RequestBlock   int64  `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+	Data           []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	RequestBlock   int64  `protobuf:"varint,5,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+	ApiInterface   string `protobuf:"bytes,6,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
 }
 
 type RelayResult struct {
@@ -41,13 +42,14 @@ type RelayResult struct {
 	Finalized       bool
 }
 
-func NewRelayRequestCommonData(chainID string, connectionType string, apiUrl string, data []byte, requestBlock int64) RelayRequestCommonData {
+func NewRelayRequestCommonData(chainID string, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) RelayRequestCommonData {
 	return RelayRequestCommonData{
 		ChainID:        chainID,
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
 		Data:           data,
 		RequestBlock:   requestBlock,
+		ApiInterface:   apiInterface,
 	}
 }
 
@@ -66,6 +68,7 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, chain
 		QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 		DataReliability:       nil,
 		UnresponsiveProviders: reportedProviders,
+		ApiInterface:          relayRequestCommonData.ApiInterface,
 	}
 	sig, err := sigs.SignRelay(privKey, *relayRequest)
 	if err != nil {

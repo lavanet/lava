@@ -80,6 +80,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
 		}
 
+		expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, relay.ChainID)
+		if !expectedInterfaces[relay.ApiInterface] {
+			details := map[string]string{"expectedInterfaces": fmt.Sprintf("%+v", expectedInterfaces), "apiInterface": relay.ApiInterface}
+			return errorLogAndFormat("relay_payment_apiInterface", details, "unexpected api interface")
+		}
+
 		payReliability := false
 		// validate data reliability
 		if relay.DataReliability != nil {

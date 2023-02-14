@@ -46,6 +46,7 @@ type ProviderStateTrackerInf interface {
 type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderServers   map[string]*RPCProviderServer
+	rpcProviderListeners map[string]*ProviderListener
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
@@ -107,9 +108,28 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
-		rpcp.rpcProviderServers[key] = &RPCProviderServer{}
-		utils.LavaFormatInfo("RPCProvider Listening", &map[string]string{"endpoints": lavasession.PrintRPCProviderEndpoint(rpcProviderEndpoint)})
-		rpcp.rpcProviderServers[key].ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy)
+		rpcProviderServer := &RPCProviderServer{}
+		rpcp.rpcProviderServers[key] = rpcProviderServer
+		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy)
+
+		// set up grpc listener
+		var listener *ProviderListener
+		if rpcProviderEndpoint.NetworkAddress == "" && len(rpcp.rpcProviderListeners) > 0 {
+			// handle case only one network address was defined
+			for _, listener_p := range rpcp.rpcProviderListeners {
+				listener = listener_p
+				listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+				break
+			}
+		} else {
+			var ok bool
+			listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress]
+			if !ok {
+				listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+				rpcp.rpcProviderListeners[listener.Key()] = listener
+			}
+			listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+		}
 	}
 
 	signalChan := make(chan os.Signal, 1)

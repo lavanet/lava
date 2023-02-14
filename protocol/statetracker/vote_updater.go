@@ -25,7 +25,6 @@ func NewVoteUpdater(stateQuery *ProviderStateQuery) *VoteUpdater {
 
 func (vu *VoteUpdater) RegisterVoteUpdatable(ctx context.Context, voteUpdatable *VoteUpdatable, endpoint lavasession.RPCEndpoint) {
 	vu.voteUpdatables[endpoint.Key()] = voteUpdatable
-	return
 }
 
 func (vu *VoteUpdater) UpdaterKey() string {

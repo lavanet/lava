@@ -2,12 +2,14 @@ package rpcprovider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type RPCProviderServer struct{}
@@ -42,4 +44,10 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	// sign the response
 	// send the proof to reward server
 	// finalize the session
+}
+func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
+	return fmt.Errorf("not implemented")
 }

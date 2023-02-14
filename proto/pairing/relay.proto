@@ -26,6 +26,7 @@ message RelayRequest {
     VRFData DataReliability = 12;
     QualityOfServiceReport QoSReport = 13;
     bytes unresponsive_providers = 14;
+    string apiInterface = 15;
 }
 
 message RelayReply {

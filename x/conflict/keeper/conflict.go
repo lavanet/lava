@@ -39,7 +39,9 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if conflictData.ConflictRelayData0.Request.RequestBlock != conflictData.ConflictRelayData1.Request.RequestBlock {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RequestBlock, conflictData.ConflictRelayData1.Request.RequestBlock)
 	}
-
+	if conflictData.ConflictRelayData0.Request.ApiInterface != conflictData.ConflictRelayData1.Request.ApiInterface {
+		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.ApiInterface, conflictData.ConflictRelayData1.Request.ApiInterface)
+	}
 	// 1.5 validate params
 	epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
 	if err != nil {

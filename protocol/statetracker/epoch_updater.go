@@ -24,7 +24,6 @@ func NewEpochUpdater(stateQuery *ProviderStateQuery) *EpochUpdater {
 
 func (eu *EpochUpdater) RegisterEpochUpdatable(ctx context.Context, epochUpdatable EpochUpdatable) {
 	eu.epochUpdatables = append(eu.epochUpdatables, &epochUpdatable)
-	return
 }
 
 func (eu *EpochUpdater) UpdaterKey() string {
