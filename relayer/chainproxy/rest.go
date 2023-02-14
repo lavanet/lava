@@ -252,7 +252,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, metricsData)
-		go cp.portalLogs.AddMetric(metricsData, err != nil)
+		if cp.portalLogs.ShouldCountMetric(c) {
+			go cp.portalLogs.AddMetric(metricsData, err == nil)
+		}
+
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
@@ -289,7 +292,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID, analytics)
-		go cp.portalLogs.AddMetric(analytics, err != nil)
+		if cp.portalLogs.ShouldCountMetric(c) {
+			go cp.portalLogs.AddMetric(analytics, err == nil)
+		}
+
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)

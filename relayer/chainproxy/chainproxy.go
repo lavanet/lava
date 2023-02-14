@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -314,11 +315,11 @@ func SendRelay(
 	return reply, replyServer, err
 }
 
-func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func ConstructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappId := ExtractDappIDFromFiberContext(c)
-		c.Locals("dappId", dappId)
+		c.Locals("dappId", ExtractDappIDFromFiberContext(c))
+		c.Locals(refererHeaderKey, ExtractHeaderFiberContext(c, refererHeaderKey))
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -338,6 +339,18 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 		dappID = "NoDappID"
 	}
 	return dappID
+}
+
+func ExtractHeaderFiberContext(c *fiber.Ctx, headerKey string) string {
+	headers := c.GetReqHeaders()
+	headerValue, exist := headers[headerKey]
+	if !exist {
+		headerValue, exist = headers[strings.ToLower(refererHeaderKey)]
+		if !exist {
+			headerValue = "NoValue"
+		}
+	}
+	return headerValue
 }
 
 func getTimePerCu(cu uint64) time.Duration {

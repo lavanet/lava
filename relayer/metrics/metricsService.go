@@ -89,11 +89,16 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 	var toSendData []RelayAnalyticsDTO
 	for chainKey, chainData := range projectData {
 		for apiTypekey, apiTypeData := range chainData {
+			var averageLatency int64
+			if apiTypeData.RelaysCount > 0 {
+				averageLatency = apiTypeData.TotalLatency / apiTypeData.SuccessCount
+			}
+
 			toSendData = append(toSendData, RelayAnalyticsDTO{
 				ProjectHash:  projectKey,
 				APIType:      apiTypekey,
 				ChainID:      chainKey,
-				Latency:      apiTypeData.TotalLatency / apiTypeData.RelaysCount, // we loose the precise during this, and this would never be 0 if we have any record on this project
+				Latency:      averageLatency,
 				RelayCounts:  apiTypeData.RelaysCount,
 				SuccessCount: apiTypeData.SuccessCount,
 			})
@@ -131,20 +136,21 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	})
 
 	var successCount int64
+	var successLatencyValue int64
 	if data.Success {
 		successCount = 1
+		successLatencyValue = data.Latency
 	}
-
 	store := *m.AggregatedMetricMap // for simplicity during operations
 	projectData, exists := store[data.ProjectHash]
 	if exists {
-		m.storeChainIdData(projectData, data, successCount)
+		m.storeChainIdData(projectData, data, successCount, successLatencyValue)
 	} else {
 		// means we haven't stored any data yet for this project, so we build all the maps
 		projectData = map[string]map[string]*AggregatedMetric{
 			data.ChainID: {
 				data.APIType: &AggregatedMetric{
-					TotalLatency: data.Latency,
+					TotalLatency: successLatencyValue,
 					RelaysCount:  1,
 					SuccessCount: successCount,
 				},
@@ -155,14 +161,14 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	return nil
 }
 
-func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64) {
+func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue int64) {
 	chainIdData, exists := projectData[data.ChainID]
 	if exists {
-		m.storeApiTypeData(chainIdData, data, successCount)
+		m.storeApiTypeData(chainIdData, data, successCount, successLatencyValue)
 	} else {
 		chainIdData = map[string]*AggregatedMetric{
 			data.APIType: {
-				TotalLatency: data.Latency,
+				TotalLatency: successLatencyValue,
 				RelaysCount:  1,
 				SuccessCount: successCount,
 			},
@@ -171,15 +177,15 @@ func (m *MetricService) storeChainIdData(projectData map[string]map[string]*Aggr
 	}
 }
 
-func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64) {
+func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue int64) {
 	apiTypesData, exists := chainIdData[data.APIType]
 	if exists {
-		apiTypesData.TotalLatency += data.Latency
+		apiTypesData.TotalLatency += successLatencyValue
 		apiTypesData.SuccessCount += successCount
 		apiTypesData.RelaysCount += 1
 	} else {
 		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType] = &AggregatedMetric{
-			TotalLatency: data.Latency,
+			TotalLatency: successLatencyValue,
 			RelaysCount:  1,
 			SuccessCount: successCount,
 		}

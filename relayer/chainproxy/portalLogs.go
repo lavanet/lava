@@ -1,10 +1,14 @@
 package chainproxy
 
 import (
+	"context"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"google.golang.org/grpc/metadata"
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -18,11 +22,13 @@ import (
 var ReturnMaskedErrors = "false"
 
 const webSocketCloseMessage = "websocket: close 1005 (no status)"
+const refererHeaderKey = "Referer"
 
 type PortalLogs struct {
-	newRelicApplication *newrelic.Application
-	MetricService       *metrics.MetricService
-	StoreMetricData     bool
+	newRelicApplication       *newrelic.Application
+	metricService             *metrics.MetricService
+	storeMetricData           bool
+	toExcludeMetricsReferrers string
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
@@ -43,11 +49,12 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigLicense(newRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
+	portal := &PortalLogs{newRelicApplication: newRelicApplication, storeMetricData: false}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
-		portal.StoreMetricData = true
-		portal.MetricService = metrics.NewMetricService()
+		portal.storeMetricData = true
+		portal.metricService = metrics.NewMetricService()
+		portal.toExcludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
 	}
 	return portal, err
 }
@@ -96,9 +103,38 @@ func (pl *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *PortalLogs) AddMetric(data *metrics.RelayMetrics, isNotSuccessful bool) {
-	if pl.StoreMetricData {
-		data.Success = !isNotSuccessful
-		pl.MetricService.SendData(*data)
+func (pl *PortalLogs) AddMetric(data *metrics.RelayMetrics, isSuccessful bool) {
+	if pl.storeMetricData {
+		data.Success = isSuccessful
+		pl.metricService.SendData(*data)
 	}
+}
+
+func (pl *PortalLogs) ShouldCountMetric(c *fiber.Ctx) bool {
+	refererHeaderValue := c.Get(refererHeaderKey, "")
+	if refererHeaderValue == "" {
+		refererHeaderValue = c.Get(strings.ToLower(refererHeaderKey), "")
+	}
+	if len(pl.toExcludeMetricsReferrers) > 0 && refererHeaderKey != "" {
+		return !strings.Contains(refererHeaderValue, pl.toExcludeMetricsReferrers)
+	}
+	return true
+}
+
+func (pl *PortalLogs) ShouldCountMetricForWebSocket(c *websocket.Conn) bool {
+	refererHeaderValue := c.Locals(refererHeaderKey).(string)
+	if len(pl.toExcludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
+		return !strings.Contains(refererHeaderValue, pl.toExcludeMetricsReferrers)
+	}
+	return true
+}
+
+func (pl *PortalLogs) ShouldCountMetricForGrpc(ctx context.Context) bool {
+	headersValues, ok := metadata.FromIncomingContext(ctx)
+	if ok && len(pl.toExcludeMetricsReferrers) > 0 {
+		refererHeaderValue := headersValues.Get(refererHeaderKey)
+		result := len(refererHeaderValue) > 0 && strings.Contains(refererHeaderValue[0], pl.toExcludeMetricsReferrers)
+		return !result
+	}
+	return true
 }
