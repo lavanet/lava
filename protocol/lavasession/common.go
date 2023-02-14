@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,6 +36,6 @@ func PrintRPCEndpoint(endpoint *RPCEndpoint) (retStr string) {
 }
 
 func PrintRPCProviderEndpoint(endpoint *RPCProviderEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + endpoint.NodeUrl + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 	return
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/spf13/pflag"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -54,13 +56,13 @@ type ChainProxy interface {
 	GetCache() *performance.Cache
 }
 
-func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
+func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs, flagSet *pflag.FlagSet) (ChainProxy, error) {
 	consumerSessionManagerInstance := &lavasession.ConsumerSessionManager{}
 	switch sentry.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs, flagSet), nil
 	case spectypes.APIInterfaceRest:
 		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
 	case spectypes.APIInterfaceGrpc:
@@ -309,7 +311,7 @@ func SendRelay(
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
 	}
-	if reply.Data == nil && err == nil {
+	if replyServer == nil && reply.Data == nil && err == nil {
 		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
 	}
 
@@ -359,4 +361,18 @@ func convertToJsonError(errorMsg string) string {
 	}
 
 	return string(jsonResponse)
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCendpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+	}
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
 }
