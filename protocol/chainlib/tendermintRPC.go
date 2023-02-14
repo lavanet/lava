@@ -14,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -46,10 +46,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	// connectionType is currently only used in rest api
 	// Unmarshal request
-	var msg chainproxy.JsonrpcMessage
+	var msg rpcInterfaceMessages.JsonrpcMessage
 	if string(data) != "" {
 		// Fetch pointer to message and error
-		msgPtr, err := chainproxy.ParseJsonRPCMsg(data)
+		msgPtr, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 			parsedMethod = url[0:idx]
 		}
 
-		msg = chainproxy.JsonrpcMessage{
+		msg = rpcInterfaceMessages.JsonrpcMessage{
 			ID:      []byte("1"),
 			Version: "2.0",
 			Method:  parsedMethod,
@@ -204,7 +204,7 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -337,7 +337,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			c.Status(fiber.StatusInternalServerError)
 
 			// Construct json response
-			response := chainproxy.ConvertToTendermintError(errMasking, c.Body())
+			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, c.Body())
 
 			// Return error json response
 			return c.SendString(response)
@@ -400,8 +400,11 @@ type tendermintRpcChainProxy struct {
 	nodeUrl string
 }
 
-func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	cp := &tendermintRpcChainProxy{nodeUrl: rpcProviderEndpoint.NodeUrl}
+func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	cp := &tendermintRpcChainProxy{
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
+		nodeUrl:        rpcProviderEndpoint.NodeUrl,
+	}
 	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
 }
 
@@ -412,7 +415,7 @@ func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan inte
 	}
 	defer cp.conn.ReturnRpc(rpc)
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.TendermintrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
@@ -424,7 +427,7 @@ func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan inte
 	return cp.SendRPC(ctx, &nodeMessage, ch, chainMessage)
 }
 
-func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *chainproxy.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// check if the input channel is not nil
 	if ch != nil {
 		// return an error if the channel is not nil
@@ -439,8 +442,17 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *cha
 	// construct the url by concatenating the node url with the path variable
 	url := cp.nodeUrl + "/" + nodeMessage.Path
 
+	// create context
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += cp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+
 	// create a new http request
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -471,7 +483,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *cha
 }
 
 // SendRPC sends Tendermint HTTP or WebSockets call
-func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *chainproxy.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
 	rpc, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
@@ -482,7 +494,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *chainproxy.RPCResponse
+	var replyMessage *rpcInterfaceMessages.RPCResponse
 	var sub *rpcclient.ClientSubscription
 
 	// If ch is not nil do subscription
@@ -490,31 +502,36 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 		// subscribe to the rpc call if the channel is not nil
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		// create a context with a timeout set by the getTimePerCu function
-		connectCtx, cancel := context.WithTimeout(ctx, LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits))
+		// create a context with a timeout set by the LocalNodeTimePerCu function
+		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+		// check if this API is hanging (waiting for block confirmation)
+		if chainMessage.GetInterface().Category.HangingApi {
+			relayTimeout += cp.averageBlockTime
+		}
+		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
 	}
 
-	var replyMsg *chainproxy.RPCResponse
+	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
 		}
-		id, idErr := chainproxy.IdFromRawMessage(nodeMessage.ID)
+		id, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
 		if idErr != nil {
 			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", idErr, nil)
 		}
-		replyMsg = &chainproxy.RPCResponse{
+		replyMsg = &rpcInterfaceMessages.RPCResponse{
 			JSONRPC: nodeMessage.Version,
 			ID:      id,
-			Error:   chainproxy.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
+			Error:   rpcInterfaceMessages.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
 		}
 	} else {
-		replyMessage, err = chainproxy.ConvertTendermintMsg(rpcMessage)
+		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
 		}

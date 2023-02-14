@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/golang/protobuf/proto"
-	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	pb_pkg "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	"github.com/lavanet/lava/utils"
 )
 

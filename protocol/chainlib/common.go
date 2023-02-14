@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -18,10 +19,15 @@ const (
 )
 
 type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	requestedBlock int64
-	msg            interface{}
+	serviceApi       *spectypes.ServiceApi
+	apiInterface     *spectypes.ApiInterface
+	averageBlockTime int64
+	requestedBlock   int64
+	msg              interface{}
+}
+
+type BaseChainProxy struct {
+	averageBlockTime time.Duration
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
@@ -55,16 +61,14 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappId := extractDappIDFromFiberContext(c)
-		c.Locals("dappId", dappId)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
 
 func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappId, ok := c.Locals("dappId").(string)
-	if !ok {
+	dappId := c.Params("dappId")
+	if dappId == "" {
 		dappId = "NoDappID"
 	}
 	return dappId
@@ -82,7 +86,7 @@ func convertToJsonError(errorMsg string) string {
 }
 
 func addAttributeToError(key string, value string, errorMessage string) string {
-	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
 func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
@@ -119,6 +123,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	return serverApis, taggedApis
 }
 
+// matchSpecApiByName returns service api which match given name
 func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {

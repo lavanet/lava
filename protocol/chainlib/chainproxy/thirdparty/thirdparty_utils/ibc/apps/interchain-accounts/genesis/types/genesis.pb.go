@@ -5,8 +5,8 @@ package types
 
 import (
 	fmt "fmt"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/host/types"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/controller/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/host/types"
+	types "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/apps/interchain-accounts/controller/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -348,15 +348,15 @@ func (m *RegisteredInterchainAccount) GetAccountAddress() string {
 }
 
 func init() {
-	//proto.RegisterType((*GenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.GenesisState")
-	//proto.RegisterType((*ControllerGenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState")
-	//proto.RegisterType((*HostGenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.HostGenesisState")
-	//proto.RegisterType((*ActiveChannel)(nil), "ibc.applications.interchain_accounts.genesis.v1.ActiveChannel")
-	//proto.RegisterType((*RegisteredInterchainAccount)(nil), "ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount")
+	proto.RegisterType((*GenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.GenesisState")
+	proto.RegisterType((*ControllerGenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState")
+	proto.RegisterType((*HostGenesisState)(nil), "ibc.applications.interchain_accounts.genesis.v1.HostGenesisState")
+	proto.RegisterType((*ActiveChannel)(nil), "ibc.applications.interchain_accounts.genesis.v1.ActiveChannel")
+	proto.RegisterType((*RegisteredInterchainAccount)(nil), "ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount")
 }
 
 func init() {
-	// proto.RegisterFile("ibc/applications/interchain_accounts/genesis/v1/genesis.proto", fileDescriptor_d4aa48c8e29a1947)
+	proto.RegisterFile("ibc/applications/interchain_accounts/genesis/v1/genesis.proto", fileDescriptor_d4aa48c8e29a1947)
 }
 
 var fileDescriptor_d4aa48c8e29a1947 = []byte{

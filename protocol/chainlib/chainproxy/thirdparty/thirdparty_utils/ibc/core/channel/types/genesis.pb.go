@@ -187,12 +187,13 @@ func (m *PacketSequence) GetSequence() uint64 {
 	return 0
 }
 
+// disabled because of duplicate proto type error
 func init() {
-	//proto.RegisterType((*GenesisState)(nil), "ibc.core.channel.v1.GenesisState")
-	//proto.RegisterType((*PacketSequence)(nil), "ibc.core.channel.v1.PacketSequence")
+	// proto.RegisterType((*GenesisState)(nil), "ibc.core.channel.v1.GenesisState")
+	// proto.RegisterType((*PacketSequence)(nil), "ibc.core.channel.v1.PacketSequence")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/genesis.proto", fileDescriptor_cb06ec201f452595) }
+func init() { proto.RegisterFile("ibc/core/channel/v1/genesis.proto", fileDescriptor_cb06ec201f452595) }
 
 var fileDescriptor_cb06ec201f452595 = []byte{
 	// 507 bytes of a gzipped FileDescriptorProto

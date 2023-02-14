@@ -83,17 +83,17 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			return err
 		}
 		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
-
-		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint)
+		_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
 		if err != nil {
 			utils.LavaFormatFatal("failed creating chain proxy", err, &map[string]string{"parallelConnections": strconv.FormatUint(uint64(parallelConnections), 10), "rpcProviderEndpoint": fmt.Sprintf("%+v", rpcProviderEndpoint)})
 		}
 
-		_, avergaeBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+		_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{
 			BlocksToSave:      blocksToSaveChainTracker,
-			AverageBlockTime:  avergaeBlockTime,
+			AverageBlockTime:  averageBlockTime,
 			ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 		}
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy)

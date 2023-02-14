@@ -18,6 +18,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
@@ -67,7 +68,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Construct grpcMessage
-	grpcMessage := chainproxy.GrpcMessage{
+	grpcMessage := rpcInterfaceMessages.GrpcMessage{
 		Msg:  data,
 		Path: url,
 	}
@@ -97,7 +98,7 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("JRPC api not supported")
+		return nil, errors.New("GRPC api not supported")
 	}
 
 	// Return an error if api is disabled
@@ -156,7 +157,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -221,17 +222,19 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 }
 
 type GrpcChainProxy struct {
+	BaseChainProxy
 	conn *chainproxy.GRPCConnector
 }
 
-func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
-	cp := &GrpcChainProxy{}
+	cp := &GrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+	}
 	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
 	}
-
 	return cp, nil
 }
 
@@ -246,17 +249,21 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	defer cp.conn.ReturnRpc(conn)
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.GrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.GrpcMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
-
-	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += cp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn)) // TODO: improve functionality, this is reading descriptors every send
-	descriptorSource := chainproxy.DescriptorSourceFromServer(cl)
-	svc, methodName := chainproxy.ParseSymbol(nodeMessage.Path)
+	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
+	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
 		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)

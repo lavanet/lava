@@ -37,6 +37,7 @@ type ReplacePoolIncentivesProposal struct {
 }
 
 func (m *ReplacePoolIncentivesProposal) Reset()      { *m = ReplacePoolIncentivesProposal{} }
+func (m *ReplacePoolIncentivesProposal) String() string { return proto.CompactTextString(m) }
 func (*ReplacePoolIncentivesProposal) ProtoMessage() {}
 func (*ReplacePoolIncentivesProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96caede426ba9516, []int{0}
@@ -45,25 +46,25 @@ func (m *ReplacePoolIncentivesProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	// if deterministic {
-	// 	return xxx_messageInfo_ReplacePoolIncentivesProposal.Marshal(b, m, deterministic)
-	// } else {
+	if deterministic {
+		return xxx_messageInfo_ReplacePoolIncentivesProposal.Marshal(b, m, deterministic)
+	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	// }
+	}
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Merge(src proto.Message) {
-	// xxx_messageInfo_ReplacePoolIncentivesProposal.Merge(m, src)
+	xxx_messageInfo_ReplacePoolIncentivesProposal.Merge(m, src)
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *ReplacePoolIncentivesProposal) XXX_DiscardUnknown() {
-	// xxx_messageInfo_ReplacePoolIncentivesProposal.DiscardUnknown(m)
+	xxx_messageInfo_ReplacePoolIncentivesProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ReplacePoolIncentivesProposal proto.InternalMessageInfo
@@ -82,6 +83,7 @@ type UpdatePoolIncentivesProposal struct {
 }
 
 func (m *UpdatePoolIncentivesProposal) Reset()      { *m = UpdatePoolIncentivesProposal{} }
+func (m *UpdatePoolIncentivesProposal) String() string { return proto.CompactTextString(m) }
 func (*UpdatePoolIncentivesProposal) ProtoMessage() {}
 func (*UpdatePoolIncentivesProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96caede426ba9516, []int{1}
@@ -90,36 +92,36 @@ func (m *UpdatePoolIncentivesProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	// if deterministic {
-	// 	return xxx_messageInfo_UpdatePoolIncentivesProposal.Marshal(b, m, deterministic)
-	// } else {
+	if deterministic {
+		return xxx_messageInfo_UpdatePoolIncentivesProposal.Marshal(b, m, deterministic)
+	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	// }
+	}
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Merge(src proto.Message) {
-	// xxx_messageInfo_UpdatePoolIncentivesProposal.Merge(m, src)
+	xxx_messageInfo_UpdatePoolIncentivesProposal.Merge(m, src)
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpdatePoolIncentivesProposal) XXX_DiscardUnknown() {
-	// xxx_messageInfo_UpdatePoolIncentivesProposal.DiscardUnknown(m)
+	xxx_messageInfo_UpdatePoolIncentivesProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdatePoolIncentivesProposal proto.InternalMessageInfo
 
 func init() {
-	// //proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
-	// //proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
+	proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
+	proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
 }
 
 func init() {
-	//proto.RegisterFile("osmosis/pool-incentives/v1beta1/gov.proto", fileDescriptor_96caede426ba9516)
+	proto.RegisterFile("osmosis/pool-incentives/v1beta1/gov.proto", fileDescriptor_96caede426ba9516)
 }
 
 var fileDescriptor_96caede426ba9516 = []byte{
@@ -141,8 +143,8 @@ var fileDescriptor_96caede426ba9516 = []byte{
 	0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c,
 	0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0x65, 0x9d, 0x9e, 0x59, 0x92, 0x51, 0x9a,
 	0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x0f, 0xb5, 0x4d, 0x37, 0x27, 0x31, 0xa9, 0x18, 0xc6, 0xd1, 0x2f,
-	0x33, 0x34, 0xd6, 0xaf, 0xc0, 0x88, 0xd2, 0x92, 0xca, 0x82, 0xd4, 0xe2, 0x24, 0x36, 0x70, 0x34,
-	0x1a, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x79, 0xb6, 0xa1, 0xb7, 0x5b, 0x02, 0x00, 0x00,
+	0x33, 0x34, 0xd1, 0xaf, 0xc0, 0x88, 0xd2, 0x92, 0xca, 0x82, 0xd4, 0xe2, 0x24, 0x36, 0x70, 0x34,
+	0x1a, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xa0, 0x44, 0x7c, 0x37, 0x5b, 0x02, 0x00, 0x00,
 }
 
 func (this *ReplacePoolIncentivesProposal) Equal(that interface{}) bool {

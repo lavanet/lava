@@ -31349,6 +31349,8 @@ paths:
                                     stateful:
                                       type: integer
                                       format: int64
+                                    hanging_api:
+                                      type: boolean
                                 overwrite_block_parsing:
                                   type: object
                                   properties:
@@ -31389,6 +31391,8 @@ paths:
                               stateful:
                                 type: integer
                                 format: int64
+                              hanging_api:
+                                type: boolean
                           parsing:
                             type: object
                             properties:
@@ -31666,6 +31670,8 @@ paths:
                                   stateful:
                                     type: integer
                                     format: int64
+                                  hanging_api:
+                                    type: boolean
                               overwrite_block_parsing:
                                 type: object
                                 properties:
@@ -31706,6 +31712,8 @@ paths:
                             stateful:
                               type: integer
                               format: int64
+                            hanging_api:
+                              type: boolean
                         parsing:
                           type: object
                           properties:
@@ -54147,6 +54155,8 @@ definitions:
           stateful:
             type: integer
             format: int64
+          hanging_api:
+            type: boolean
       overwrite_block_parsing:
         type: object
         properties:
@@ -54338,6 +54348,8 @@ definitions:
                             stateful:
                               type: integer
                               format: int64
+                            hanging_api:
+                              type: boolean
                         overwrite_block_parsing:
                           type: object
                           properties:
@@ -54377,6 +54389,8 @@ definitions:
                       stateful:
                         type: integer
                         format: int64
+                      hanging_api:
+                        type: boolean
                   parsing:
                     type: object
                     properties:
@@ -54567,6 +54581,8 @@ definitions:
                           stateful:
                             type: integer
                             format: int64
+                          hanging_api:
+                            type: boolean
                       overwrite_block_parsing:
                         type: object
                         properties:
@@ -54606,6 +54622,8 @@ definitions:
                     stateful:
                       type: integer
                       format: int64
+                    hanging_api:
+                      type: boolean
                 parsing:
                   type: object
                   properties:
@@ -54809,6 +54827,8 @@ definitions:
                 stateful:
                   type: integer
                   format: int64
+                hanging_api:
+                  type: boolean
             overwrite_block_parsing:
               type: object
               properties:
@@ -54848,6 +54868,8 @@ definitions:
           stateful:
             type: integer
             format: int64
+          hanging_api:
+            type: boolean
       parsing:
         type: object
         properties:
@@ -54952,6 +54974,8 @@ definitions:
                       stateful:
                         type: integer
                         format: int64
+                      hanging_api:
+                        type: boolean
                   overwrite_block_parsing:
                     type: object
                     properties:
@@ -54991,6 +55015,8 @@ definitions:
                 stateful:
                   type: integer
                   format: int64
+                hanging_api:
+                  type: boolean
             parsing:
               type: object
               properties:
@@ -55095,6 +55121,8 @@ definitions:
       stateful:
         type: integer
         format: int64
+      hanging_api:
+        type: boolean
   lavanet.lava.spec.apiList:
     type: object
     properties:

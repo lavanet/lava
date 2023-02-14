@@ -229,14 +229,14 @@ func (m *MsgSwapExactAmountOutResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgSwapExactAmountOutResponse proto.InternalMessageInfo
 
 func init() {
-	//proto.RegisterType((*MsgSwapExactAmountIn)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountIn")
-	//proto.RegisterType((*MsgSwapExactAmountInResponse)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountInResponse")
-	//proto.RegisterType((*MsgSwapExactAmountOut)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountOut")
-	//proto.RegisterType((*MsgSwapExactAmountOutResponse)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountOutResponse")
+	proto.RegisterType((*MsgSwapExactAmountIn)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountIn")
+	proto.RegisterType((*MsgSwapExactAmountInResponse)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountInResponse")
+	proto.RegisterType((*MsgSwapExactAmountOut)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountOut")
+	proto.RegisterType((*MsgSwapExactAmountOutResponse)(nil), "osmosis.swaprouter.v1beta1.MsgSwapExactAmountOutResponse")
 }
 
 func init() {
-	//proto.RegisterFile("osmosis/swaprouter/v1beta1/tx.proto", fileDescriptor_05a4da63b1afc25d)
+	proto.RegisterFile("osmosis/swaprouter/v1beta1/tx.proto", fileDescriptor_05a4da63b1afc25d)
 }
 
 var fileDescriptor_05a4da63b1afc25d = []byte{

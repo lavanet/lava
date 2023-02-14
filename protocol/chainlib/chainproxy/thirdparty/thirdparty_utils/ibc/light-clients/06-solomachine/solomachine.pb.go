@@ -368,18 +368,18 @@ func (m *HeaderData) XXX_DiscardUnknown() {
 var xxx_messageInfo_HeaderData proto.InternalMessageInfo
 
 func init() {
-	//proto.RegisterType((*ClientState)(nil), "ibc.lightclients.solomachine.v3.ClientState")
-	//proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.solomachine.v3.ConsensusState")
-	//proto.RegisterType((*Header)(nil), "ibc.lightclients.solomachine.v3.Header")
-	//proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.solomachine.v3.Misbehaviour")
-	//proto.RegisterType((*SignatureAndData)(nil), "ibc.lightclients.solomachine.v3.SignatureAndData")
-	//proto.RegisterType((*TimestampedSignatureData)(nil), "ibc.lightclients.solomachine.v3.TimestampedSignatureData")
-	//proto.RegisterType((*SignBytes)(nil), "ibc.lightclients.solomachine.v3.SignBytes")
-	//proto.RegisterType((*HeaderData)(nil), "ibc.lightclients.solomachine.v3.HeaderData")
+	proto.RegisterType((*ClientState)(nil), "ibc.lightclients.solomachine.v3.ClientState")
+	proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.solomachine.v3.ConsensusState")
+	proto.RegisterType((*Header)(nil), "ibc.lightclients.solomachine.v3.Header")
+	proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.solomachine.v3.Misbehaviour")
+	proto.RegisterType((*SignatureAndData)(nil), "ibc.lightclients.solomachine.v3.SignatureAndData")
+	proto.RegisterType((*TimestampedSignatureData)(nil), "ibc.lightclients.solomachine.v3.TimestampedSignatureData")
+	proto.RegisterType((*SignBytes)(nil), "ibc.lightclients.solomachine.v3.SignBytes")
+	proto.RegisterType((*HeaderData)(nil), "ibc.lightclients.solomachine.v3.HeaderData")
 }
 
 func init() {
-	//proto.RegisterFile("ibc/lightclients/solomachine/v3/solomachine.proto", fileDescriptor_264187157b9220a4)
+	proto.RegisterFile("ibc/lightclients/solomachine/v3/solomachine.proto", fileDescriptor_264187157b9220a4)
 }
 
 var fileDescriptor_264187157b9220a4 = []byte{
