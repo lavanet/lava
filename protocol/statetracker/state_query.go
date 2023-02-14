@@ -41,7 +41,7 @@ func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.
 type ConsumerStateQuery struct {
 	StateQuery
 	clientCtx      client.Context
-	cachedPairings map[string]*pairingtypes.QueryGetPairingResponse
+	cachedPairings map[string]*pairingtypes.QueryGetPairingResponse // TODO: replace this with TTL so we don't keep entries forever
 }
 
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
@@ -51,7 +51,7 @@ func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *Consu
 
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, errRet error) {
 	if chainID == "" {
-		// the caller doesn;t care which so just return the first
+		// the caller doesn't care which so just return the first
 		for key := range csq.cachedPairings {
 			chainID = key
 		}
@@ -89,12 +89,36 @@ func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID stri
 
 type ProviderStateQuery struct {
 	StateQuery
-	clientCtx client.Context
+	clientCtx      client.Context
+	cachedPairings map[string]*pairingtypes.QueryVerifyPairingResponse // TODO: replace this with TTL so we don't keep entries forever
+	cachedEntries  map[string]*pairingtypes.QueryUserEntryResponse     // TODO: replace this with TTL so we don't keep entries forever
 }
 
 func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *ProviderStateQuery {
 	csq := &ProviderStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx}
 	return csq
+}
+
+func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
+	key := psq.entryKey(consumerAddress, chainID, epoch, "")
+	UserEntryRes, ok := psq.cachedEntries[key]
+	if !ok {
+		UserEntryRes, err = psq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: consumerAddress, Block: epoch})
+		if err != nil {
+			return nil, 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, &map[string]string{"chainID": chainID, "address": consumerAddress, "block": strconv.FormatUint(epoch, 10)})
+		}
+		psq.cachedEntries[key] = UserEntryRes
+	}
+	vrfPk = &utils.VrfPubKey{}
+	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
+	if err != nil {
+		err = utils.LavaFormatError("decoding vrfpk from bech32", err, &map[string]string{"chainID": chainID, "address": consumerAddress, "block": strconv.FormatUint(epoch, 10), "UserEntryRes": fmt.Sprintf("%v", UserEntryRes)})
+	}
+	return vrfPk, UserEntryRes.GetMaxCU(), err
+}
+
+func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, epoch uint64, providerAddress string) string {
+	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
 }
 
 func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
@@ -151,4 +175,33 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 		}
 	}
 	return
+}
+
+func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error) {
+	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
+	verifyResponse, ok := psq.cachedPairings[key]
+	if !ok {
+		verifyResponse, err = psq.PairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+			ChainID:  chainID,
+			Client:   consumerAddress,
+			Provider: providerAddress,
+			Block:    epoch,
+		})
+		if err != nil {
+			return false, 0, err
+		}
+		psq.cachedPairings[key] = verifyResponse
+	}
+	if !verifyResponse.Valid {
+		return false, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, &map[string]string{"provider": providerAddress, "consumer address": consumerAddress, "epoch": strconv.FormatUint(epoch, 10)})
+	}
+	return verifyResponse.Valid, verifyResponse.GetIndex(), nil
+}
+
+func (psq *ProviderStateQuery) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
+	res, err := psq.PairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return 0, err
+	}
+	return uint32(res.GetParams().ServicersToPairCount), nil
 }

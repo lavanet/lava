@@ -41,6 +41,10 @@ type ProviderStateTrackerInf interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
+	LatestBlock() int64
+	GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error)
+	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error)
+	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 }
 
 type RPCProvider struct {
@@ -110,7 +114,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 		rpcProviderServer := &RPCProviderServer{}
 		rpcp.rpcProviderServers[key] = rpcProviderServer
-		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy)
+		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr)
 
 		// set up grpc listener
 		var listener *ProviderListener

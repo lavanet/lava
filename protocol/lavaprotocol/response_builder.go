@@ -12,7 +12,16 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 )
+
+func ExtractSignerAddress(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
+	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey.Address(), nil
+}
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
 	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)

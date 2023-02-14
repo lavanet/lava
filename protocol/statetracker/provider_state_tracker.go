@@ -36,8 +36,6 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
-	// create an epoch updater
-	// add epoch updater to the updater map
 	epochUpdater := NewEpochUpdater(pst.stateQuery)
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*EpochUpdater)
@@ -80,4 +78,20 @@ func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliability
 }
 func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
 	return pst.txSender.SendVoteCommitment(voteID, vote)
+}
+
+func (pst *ProviderStateTracker) LatestBlock() int64 {
+	return pst.StateTracker.chainTracker.GetLatestBlockNum()
+}
+
+func (pst *ProviderStateTracker) GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
+	return pst.stateQuery.GetVrfPkAndMaxCuForUser(ctx, consumerAddress, chainID, epoch)
+}
+
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error) {
+	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
+}
+
+func (pst *ProviderStateTracker) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
+	return pst.stateQuery.GetProvidersCountForConsumer(ctx, consumerAddress, epoch, chainID)
 }

@@ -21,6 +21,10 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, singleProviderSession
 	// write to a channel the epoch
 }
 
+func (rws *RewardServer) SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string) {
+
+}
+
 func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 	//
 	rws := &RewardServer{}
