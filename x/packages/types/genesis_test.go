@@ -21,7 +21,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-				PackageVersionsStorageList: []types.PackageVersionsStorage{
+				PackageEntryList: []types.PackageEntry{
 					{
 						PackageIndex: "0",
 					},
@@ -43,9 +43,9 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid: true,
 		},
 		{
-			desc: "duplicated packageVersionsStorage",
+			desc: "duplicated packageEntry",
 			genState: &types.GenesisState{
-				PackageVersionsStorageList: []types.PackageVersionsStorage{
+				PackageEntryList: []types.PackageEntry{
 					{
 						PackageIndex: "0",
 					},

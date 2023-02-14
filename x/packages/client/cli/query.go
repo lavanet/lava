@@ -25,8 +25,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	}
 
 	cmd.AddCommand(CmdQueryParams())
-	cmd.AddCommand(CmdListPackageVersionsStorage())
-	cmd.AddCommand(CmdShowPackageVersionsStorage())
+	cmd.AddCommand(CmdListPackageEntry())
+	cmd.AddCommand(CmdShowPackageEntry())
 	cmd.AddCommand(CmdShowAllPackages())
 
 	cmd.AddCommand(CmdShowPackageInfo())

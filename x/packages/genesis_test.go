@@ -14,7 +14,7 @@ func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 
-		PackageVersionsStorageList: []types.PackageVersionsStorage{
+		PackageEntryList: []types.PackageEntry{
 			{
 				PackageIndex: "0",
 			},
@@ -42,7 +42,7 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
 
-	require.ElementsMatch(t, genesisState.PackageVersionsStorageList, got.PackageVersionsStorageList)
+	require.ElementsMatch(t, genesisState.PackageEntryList, got.PackageEntryList)
 	require.ElementsMatch(t, genesisState.PackageUniqueIndexList, got.PackageUniqueIndexList)
 	require.Equal(t, genesisState.PackageUniqueIndexCount, got.PackageUniqueIndexCount)
 	// this line is used by starport scaffolding # genesis/test/assert

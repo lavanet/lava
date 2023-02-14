@@ -5,6 +5,6 @@ option go_package = "github.com/lavanet/lava/common/types";
 import "gogoproto/gogo.proto"; 
 
 message Entry {
-    uint64 epoch = 1; // epoch the entry was created (functions as key)
-    bytes marshaledData = 2; // marshaled data of the entry
+    uint64 block = 1; // block the entry was created (functions as key)
+    bytes marshaled_data = 2; // marshaled data of the entry
 }

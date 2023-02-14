@@ -17,20 +17,17 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 	var allPackagesInfo []*types.ShowAllPackagesInfoStruct
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// get all packages' storages
-	allPackagesStorages := k.GetAllPackageVersionsStorage(ctx)
+	// get all packages' unique indices
+	allPackageEntryUniqueIndices := k.GetAllPackageUniqueIndex(ctx)
 
-	// go over all the packages' storages
-	for _, packageStorage := range allPackagesStorages {
+	// go over all the packages' unique indices
+	for _, packageEntryUniqueIndex := range allPackageEntryUniqueIndices {
 		packageInfoStruct := types.ShowAllPackagesInfoStruct{}
 
-		// get the package index
-		packageInfoStruct.Index = packageStorage.GetPackageIndex()
-
 		// get the latest version package
-		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageStorage.GetPackageIndex())
+		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageEntryUniqueIndex.GetPackageUniqueIndex())
 		if err != nil {
-			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageStorage.GetPackageIndex()}, "could not get the latest version of the package")
+			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageEntryUniqueIndex.GetPackageUniqueIndex()}, "could not get the latest version of the package")
 		}
 
 		// get the name and price of the package

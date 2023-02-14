@@ -25,21 +25,21 @@ type testStruct struct {
 	keepers *testkeeper.Keepers
 }
 
-func createNPackageVersionsStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PackageVersionsStorage {
-	items := make([]types.PackageVersionsStorage, n)
+func createNPackageEntry(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PackageEntry {
+	items := make([]types.PackageEntry, n)
 	for i := range items {
 		items[i].PackageIndex = strconv.Itoa(i)
 
-		keeper.SetPackageVersionsStorage(ctx, items[i])
+		keeper.SetPackageEntry(ctx, items[i])
 	}
 	return items
 }
 
-func TestPackageVersionsStorageGet(t *testing.T) {
+func TestPackageEntryGet(t *testing.T) {
 	keeper, ctx := testkeeper.PackagesKeeper(t)
-	items := createNPackageVersionsStorage(keeper, ctx, 10)
+	items := createNPackageEntry(keeper, ctx, 10)
 	for _, item := range items {
-		rst, found := keeper.GetPackageVersionsStorage(ctx,
+		rst, found := keeper.GetPackageEntry(ctx,
 			item.PackageIndex,
 		)
 		require.True(t, found)
@@ -50,26 +50,26 @@ func TestPackageVersionsStorageGet(t *testing.T) {
 	}
 }
 
-func TestPackageVersionsStorageRemove(t *testing.T) {
+func TestPackageEntryRemove(t *testing.T) {
 	keeper, ctx := testkeeper.PackagesKeeper(t)
-	items := createNPackageVersionsStorage(keeper, ctx, 10)
+	items := createNPackageEntry(keeper, ctx, 10)
 	for _, item := range items {
-		keeper.RemovePackageVersionsStorage(ctx,
+		keeper.RemovePackageEntry(ctx,
 			item.PackageIndex,
 		)
-		_, found := keeper.GetPackageVersionsStorage(ctx,
+		_, found := keeper.GetPackageEntry(ctx,
 			item.PackageIndex,
 		)
 		require.False(t, found)
 	}
 }
 
-func TestPackageVersionsStorageGetAll(t *testing.T) {
+func TestPackageEntryGetAll(t *testing.T) {
 	keeper, ctx := testkeeper.PackagesKeeper(t)
-	items := createNPackageVersionsStorage(keeper, ctx, 10)
+	items := createNPackageEntry(keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllPackageVersionsStorage(ctx)),
+		nullify.Fill(keeper.GetAllPackageEntry(ctx)),
 	)
 }
 
@@ -151,7 +151,7 @@ func TestPackageAdditionAndRemoval(t *testing.T) {
 	storageIndexList, _ = getAllEntriesFromStorage(ts, ts.keepers.Packages.GetFixationEntryByIndex)
 	require.Equal(t, 2, len(storageIndexList))
 
-	// advance one more epoch to remove the stale package (the deletePackages function is invoked in the start of every epoch)
+	// advance one more epoch to remove the stale package (the deleteOldPackages function is invoked in the start of every epoch)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// test that there is only one package in the storage
@@ -313,7 +313,7 @@ func getAllEntriesFromStorage(ts *testStruct, getEntry common.GetterFunc) ([]str
 	storageIndexList := []string{}
 	storageEntryList := []*commontypes.Entry{}
 	for _, uniqueIndex := range uniqueIndices {
-		entryList, indexList := common.GetAllEntriesFromStorageByIndex(sdk.UnwrapSDKContext(ts.ctx), uniqueIndex.GetIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
+		entryList, indexList := common.GetAllEntriesFromStorageByIndex(sdk.UnwrapSDKContext(ts.ctx), uniqueIndex.GetPackageUniqueIndex(), ts.keepers.Packages.GetFixationEntryByIndex)
 		storageIndexList = append(storageIndexList, indexList...)
 		storageEntryList = append(storageEntryList, entryList...)
 	}

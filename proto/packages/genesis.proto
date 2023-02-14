@@ -3,7 +3,7 @@ package lavanet.lava.packages;
 
 import "gogoproto/gogo.proto";
 import "packages/params.proto";
-import "packages/package_versions_storage.proto";
+import "packages/package_entry.proto";
 import "packages/package_unique_index.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
@@ -12,7 +12,7 @@ option go_package = "github.com/lavanet/lava/x/packages/types";
 // GenesisState defines the packages module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  repeated PackageVersionsStorage packageVersionsStorageList = 2 [(gogoproto.nullable) = false];
+  repeated PackageEntry packageEntryList = 2 [(gogoproto.nullable) = false];
   repeated PackageUniqueIndex packageUniqueIndexList = 3 [(gogoproto.nullable) = false];
   uint64 packageUniqueIndexCount = 4;
   // this line is used by starport scaffolding # genesis/proto/state

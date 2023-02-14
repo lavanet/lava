@@ -21,27 +21,27 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func networkWithPackageVersionsStorageObjects(t *testing.T, n int) (*network.Network, []types.PackageVersionsStorage) {
+func networkWithPackageEntryObjects(t *testing.T, n int) (*network.Network, []types.PackageEntry) {
 	t.Helper()
 	cfg := network.DefaultConfig()
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
 	for i := 0; i < n; i++ {
-		packageVersionsStorage := types.PackageVersionsStorage{
+		packageEntry := types.PackageEntry{
 			PackageIndex: strconv.Itoa(i),
 		}
-		nullify.Fill(&packageVersionsStorage)
-		state.PackageVersionsStorageList = append(state.PackageVersionsStorageList, packageVersionsStorage)
+		nullify.Fill(&packageEntry)
+		state.PackageEntryList = append(state.PackageEntryList, packageEntry)
 	}
 	buf, err := cfg.Codec.MarshalJSON(&state)
 	require.NoError(t, err)
 	cfg.GenesisState[types.ModuleName] = buf
-	return network.New(t, cfg), state.PackageVersionsStorageList
+	return network.New(t, cfg), state.PackageEntryList
 }
 
-func TestShowPackageVersionsStorage(t *testing.T) {
-	net, objs := networkWithPackageVersionsStorageObjects(t, 2)
+func TestShowPackageEntry(t *testing.T) {
+	net, objs := networkWithPackageEntryObjects(t, 2)
 
 	ctx := net.Validators[0].ClientCtx
 	common := []string{
@@ -53,7 +53,7 @@ func TestShowPackageVersionsStorage(t *testing.T) {
 
 		args []string
 		err  error
-		obj  types.PackageVersionsStorage
+		obj  types.PackageEntry
 	}{
 		{
 			desc:           "found",
@@ -75,27 +75,27 @@ func TestShowPackageVersionsStorage(t *testing.T) {
 				tc.idPackageIndex,
 			}
 			args = append(args, tc.args...)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowPackageVersionsStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowPackageEntry(), args)
 			if tc.err != nil {
 				stat, ok := status.FromError(tc.err)
 				require.True(t, ok)
 				require.ErrorIs(t, stat.Err(), tc.err)
 			} else {
 				require.NoError(t, err)
-				var resp types.QueryGetPackageVersionsStorageResponse
+				var resp types.QueryGetPackageEntryResponse
 				require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-				require.NotNil(t, resp.PackageVersionsStorage)
+				require.NotNil(t, resp.PackageEntry)
 				require.Equal(t,
 					nullify.Fill(&tc.obj),
-					nullify.Fill(&resp.PackageVersionsStorage),
+					nullify.Fill(&resp.PackageEntry),
 				)
 			}
 		})
 	}
 }
 
-func TestListPackageVersionsStorage(t *testing.T) {
-	net, objs := networkWithPackageVersionsStorageObjects(t, 5)
+func TestListPackageEntry(t *testing.T) {
+	net, objs := networkWithPackageEntryObjects(t, 5)
 
 	ctx := net.Validators[0].ClientCtx
 	request := func(next []byte, offset, limit uint64, total bool) []string {
@@ -117,14 +117,14 @@ func TestListPackageVersionsStorage(t *testing.T) {
 		step := 2
 		for i := 0; i < len(objs); i += step {
 			args := request(nil, uint64(i), uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageVersionsStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageEntry(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllPackageVersionsStorageResponse
+			var resp types.QueryAllPackageEntryResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.PackageVersionsStorage), step)
+			require.LessOrEqual(t, len(resp.PackageEntry), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.PackageVersionsStorage),
+				nullify.Fill(resp.PackageEntry),
 			)
 		}
 	})
@@ -133,29 +133,29 @@ func TestListPackageVersionsStorage(t *testing.T) {
 		var next []byte
 		for i := 0; i < len(objs); i += step {
 			args := request(next, 0, uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageVersionsStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageEntry(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllPackageVersionsStorageResponse
+			var resp types.QueryAllPackageEntryResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.PackageVersionsStorage), step)
+			require.LessOrEqual(t, len(resp.PackageEntry), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.PackageVersionsStorage),
+				nullify.Fill(resp.PackageEntry),
 			)
 			next = resp.Pagination.NextKey
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
 		args := request(nil, 0, uint64(len(objs)), true)
-		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageVersionsStorage(), args)
+		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListPackageEntry(), args)
 		require.NoError(t, err)
-		var resp types.QueryAllPackageVersionsStorageResponse
+		var resp types.QueryAllPackageEntryResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
 		require.Equal(t, len(objs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
-			nullify.Fill(resp.PackageVersionsStorage),
+			nullify.Fill(resp.PackageEntry),
 		)
 	})
 }

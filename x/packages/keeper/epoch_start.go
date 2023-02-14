@@ -17,6 +17,6 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 	// on epoch start we need to do:
 	// 1. delete stale packages (package was edited and there are no subs for it. Also, currentEpoch > packageEpoch + packageDuration)
 	// get packagesToDeleteMap
-	err := k.deletePackages(ctx)
-	logOnErr(err, "deletePackages")
+	err := k.deleteOldPackages(ctx)
+	logOnErr(err, "deleteOldPackages")
 }

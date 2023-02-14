@@ -18,33 +18,33 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func TestPackageVersionsStorageQuerySingle(t *testing.T) {
+func TestPackageEntryQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.PackagesKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPackageVersionsStorage(keeper, ctx, 2)
+	msgs := createNPackageEntry(keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
-		request  *types.QueryGetPackageVersionsStorageRequest
-		response *types.QueryGetPackageVersionsStorageResponse
+		request  *types.QueryGetPackageEntryRequest
+		response *types.QueryGetPackageEntryResponse
 		err      error
 	}{
 		{
 			desc: "First",
-			request: &types.QueryGetPackageVersionsStorageRequest{
+			request: &types.QueryGetPackageEntryRequest{
 				PackageIndex: msgs[0].PackageIndex,
 			},
-			response: &types.QueryGetPackageVersionsStorageResponse{PackageVersionsStorage: msgs[0]},
+			response: &types.QueryGetPackageEntryResponse{PackageEntry: msgs[0]},
 		},
 		{
 			desc: "Second",
-			request: &types.QueryGetPackageVersionsStorageRequest{
+			request: &types.QueryGetPackageEntryRequest{
 				PackageIndex: msgs[1].PackageIndex,
 			},
-			response: &types.QueryGetPackageVersionsStorageResponse{PackageVersionsStorage: msgs[1]},
+			response: &types.QueryGetPackageEntryResponse{PackageEntry: msgs[1]},
 		},
 		{
 			desc: "KeyNotFound",
-			request: &types.QueryGetPackageVersionsStorageRequest{
+			request: &types.QueryGetPackageEntryRequest{
 				PackageIndex: strconv.Itoa(100000),
 			},
 			err: status.Error(codes.NotFound, "not found"),
@@ -55,7 +55,7 @@ func TestPackageVersionsStorageQuerySingle(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			response, err := keeper.PackageVersionsStorage(wctx, tc.request)
+			response, err := keeper.PackageEntry(wctx, tc.request)
 			if tc.err != nil {
 				require.ErrorIs(t, err, tc.err)
 			} else {
@@ -69,13 +69,13 @@ func TestPackageVersionsStorageQuerySingle(t *testing.T) {
 	}
 }
 
-func TestPackageVersionsStorageQueryPaginated(t *testing.T) {
+func TestPackageEntryQueryPaginated(t *testing.T) {
 	keeper, ctx := keepertest.PackagesKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNPackageVersionsStorage(keeper, ctx, 5)
+	msgs := createNPackageEntry(keeper, ctx, 5)
 
-	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllPackageVersionsStorageRequest {
-		return &types.QueryAllPackageVersionsStorageRequest{
+	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllPackageEntryRequest {
+		return &types.QueryAllPackageEntryRequest{
 			Pagination: &query.PageRequest{
 				Key:        next,
 				Offset:     offset,
@@ -87,12 +87,12 @@ func TestPackageVersionsStorageQueryPaginated(t *testing.T) {
 	t.Run("ByOffset", func(t *testing.T) {
 		step := 2
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.PackageVersionsStorageAll(wctx, request(nil, uint64(i), uint64(step), false))
+			resp, err := keeper.PackageEntryAll(wctx, request(nil, uint64(i), uint64(step), false))
 			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.PackageVersionsStorage), step)
+			require.LessOrEqual(t, len(resp.PackageEntry), step)
 			require.Subset(t,
 				nullify.Fill(msgs),
-				nullify.Fill(resp.PackageVersionsStorage),
+				nullify.Fill(resp.PackageEntry),
 			)
 		}
 	})
@@ -100,27 +100,27 @@ func TestPackageVersionsStorageQueryPaginated(t *testing.T) {
 		step := 2
 		var next []byte
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.PackageVersionsStorageAll(wctx, request(next, 0, uint64(step), false))
+			resp, err := keeper.PackageEntryAll(wctx, request(next, 0, uint64(step), false))
 			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.PackageVersionsStorage), step)
+			require.LessOrEqual(t, len(resp.PackageEntry), step)
 			require.Subset(t,
 				nullify.Fill(msgs),
-				nullify.Fill(resp.PackageVersionsStorage),
+				nullify.Fill(resp.PackageEntry),
 			)
 			next = resp.Pagination.NextKey
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
-		resp, err := keeper.PackageVersionsStorageAll(wctx, request(nil, 0, 0, true))
+		resp, err := keeper.PackageEntryAll(wctx, request(nil, 0, 0, true))
 		require.NoError(t, err)
 		require.Equal(t, len(msgs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
 			nullify.Fill(msgs),
-			nullify.Fill(resp.PackageVersionsStorage),
+			nullify.Fill(resp.PackageEntry),
 		)
 	})
 	t.Run("InvalidRequest", func(t *testing.T) {
-		_, err := keeper.PackageVersionsStorageAll(wctx, nil)
+		_, err := keeper.PackageEntryAll(wctx, nil)
 		require.ErrorIs(t, err, status.Error(codes.InvalidArgument, "invalid request"))
 	})
 }

@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdListPackageVersionsStorage() *cobra.Command {
+func CmdListPackageEntry() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-package-versions-storage",
-		Short: "list all packageVersionsStorage",
+		Short: "list all packageEntry",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 
@@ -23,11 +23,11 @@ func CmdListPackageVersionsStorage() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryAllPackageVersionsStorageRequest{
+			params := &types.QueryAllPackageEntryRequest{
 				Pagination: pageReq,
 			}
 
-			res, err := queryClient.PackageVersionsStorageAll(context.Background(), params)
+			res, err := queryClient.PackageEntryAll(context.Background(), params)
 			if err != nil {
 				return err
 			}
@@ -42,10 +42,10 @@ func CmdListPackageVersionsStorage() *cobra.Command {
 	return cmd
 }
 
-func CmdShowPackageVersionsStorage() *cobra.Command {
+func CmdShowPackageEntry() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show-package-versions-storage [package-index]",
-		Short: "shows a packageVersionsStorage",
+		Short: "shows a packageEntry",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx := client.GetClientContextFromCmd(cmd)
@@ -54,11 +54,11 @@ func CmdShowPackageVersionsStorage() *cobra.Command {
 
 			argPackageIndex := args[0]
 
-			params := &types.QueryGetPackageVersionsStorageRequest{
+			params := &types.QueryGetPackageEntryRequest{
 				PackageIndex: argPackageIndex,
 			}
 
-			res, err := queryClient.PackageVersionsStorage(context.Background(), params)
+			res, err := queryClient.PackageEntry(context.Background(), params)
 			if err != nil {
 				return err
 			}

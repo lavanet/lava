@@ -45,7 +45,7 @@ func (pcp *PackagesAddProposal) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrEmptyPackages, "proposal packages cannot be empty")
 	}
 	for _, packageElem := range pcp.Packages {
-		err := checkPackagesProposal(packageElem)
+		err := packageElem.ValidatePackage()
 		if err != nil {
 			return err
 		}

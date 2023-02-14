@@ -5,7 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "packages/params.proto";
-import "packages/package_versions_storage.proto";
+import "packages/package_entry.proto";
 import "packages/package_unique_index.proto";
 // this line is used by starport scaffolding # 1
 
@@ -19,14 +19,14 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/packages/params";
   }
-  // Queries a PackageVersionsStorage by index.
-	rpc PackageVersionsStorage(QueryGetPackageVersionsStorageRequest) returns (QueryGetPackageVersionsStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_versions_storage/{packageIndex}";
+  // Queries a PackageEntry by index.
+	rpc PackageEntry(QueryGetPackageEntryRequest) returns (QueryGetPackageEntryResponse) {
+		option (google.api.http).get = "/lavanet/lava/packages/package_entry/{package_index}";
 	}
 
-	// Queries a list of PackageVersionsStorage items.
-	rpc PackageVersionsStorageAll(QueryAllPackageVersionsStorageRequest) returns (QueryAllPackageVersionsStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_versions_storage";
+	// Queries a list of PackageEntry items.
+	rpc PackageEntryAll(QueryAllPackageEntryRequest) returns (QueryAllPackageEntryResponse) {
+		option (google.api.http).get = "/lavanet/lava/packages/package_entry";
 	}
 
 // Queries a list of ShowAllPackages items.
@@ -36,7 +36,7 @@ service Query {
 
 // Queries a list of ShowPackageInfo items.
 	rpc ShowPackageInfo(QueryShowPackageInfoRequest) returns (QueryShowPackageInfoResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/show_package_info/{packageIndex}";
+		option (google.api.http).get = "/lavanet/lava/packages/show_package_info/{package_index}";
 	}
 
 // Queries a PackageUniqueIndex by id.
@@ -61,21 +61,21 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryGetPackageVersionsStorageRequest {
-	  string packageIndex = 1;
+message QueryGetPackageEntryRequest {
+	  string package_index = 1;
 
 }
 
-message QueryGetPackageVersionsStorageResponse {
-	PackageVersionsStorage packageVersionsStorage = 1 [(gogoproto.nullable) = false];
+message QueryGetPackageEntryResponse {
+	PackageEntry package_entry = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllPackageVersionsStorageRequest {
+message QueryAllPackageEntryRequest {
 	cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-message QueryAllPackageVersionsStorageResponse {
-	repeated PackageVersionsStorage packageVersionsStorage = 1 [(gogoproto.nullable) = false];
+message QueryAllPackageEntryResponse {
+	repeated PackageEntry packageEntry = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
@@ -83,7 +83,7 @@ message QueryShowAllPackagesRequest {
 }
 
 message QueryShowAllPackagesResponse {
-  repeated showAllPackagesInfoStruct packagesInfo = 1;
+  repeated showAllPackagesInfoStruct packages_info = 1;
 }
 
 message showAllPackagesInfoStruct {
@@ -93,11 +93,11 @@ message showAllPackagesInfoStruct {
 }
 
 message QueryShowPackageInfoRequest {
-  string packageIndex = 1;
+  string package_index = 1;
 }
 
 message QueryShowPackageInfoResponse {
-  Package packageInfo = 1;
+  Package package_info = 1;
 }
 
 message QueryGetPackageUniqueIndexRequest {
@@ -105,7 +105,7 @@ message QueryGetPackageUniqueIndexRequest {
 }
 
 message QueryGetPackageUniqueIndexResponse {
-	PackageUniqueIndex PackageUniqueIndex = 1 [(gogoproto.nullable) = false];
+	PackageUniqueIndex package_unique_index = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryAllPackageUniqueIndexRequest {
@@ -113,7 +113,7 @@ message QueryAllPackageUniqueIndexRequest {
 }
 
 message QueryAllPackageUniqueIndexResponse {
-	repeated PackageUniqueIndex PackageUniqueIndex = 1 [(gogoproto.nullable) = false];
+	repeated PackageUniqueIndex package_unique_index = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

@@ -51,8 +51,8 @@ func local_request_Query_Params_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func request_Query_PackageVersionsStorage_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryGetPackageVersionsStorageRequest
+func request_Query_PackageEntry_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryGetPackageEntryRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -62,24 +62,24 @@ func request_Query_PackageVersionsStorage_0(ctx context.Context, marshaler runti
 		_   = err
 	)
 
-	val, ok = pathParams["packageIndex"]
+	val, ok = pathParams["package_index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "packageIndex")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "package_index")
 	}
 
 	protoReq.PackageIndex, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "packageIndex", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "package_index", err)
 	}
 
-	msg, err := client.PackageVersionsStorage(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.PackageEntry(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Query_PackageVersionsStorage_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryGetPackageVersionsStorageRequest
+func local_request_Query_PackageEntry_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryGetPackageEntryRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -89,54 +89,54 @@ func local_request_Query_PackageVersionsStorage_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["packageIndex"]
+	val, ok = pathParams["package_index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "packageIndex")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "package_index")
 	}
 
 	protoReq.PackageIndex, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "packageIndex", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "package_index", err)
 	}
 
-	msg, err := server.PackageVersionsStorage(ctx, &protoReq)
+	msg, err := server.PackageEntry(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_Query_PackageVersionsStorageAll_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_Query_PackageEntryAll_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 )
 
-func request_Query_PackageVersionsStorageAll_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryAllPackageVersionsStorageRequest
+func request_Query_PackageEntryAll_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryAllPackageEntryRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_PackageVersionsStorageAll_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_PackageEntryAll_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.PackageVersionsStorageAll(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.PackageEntryAll(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Query_PackageVersionsStorageAll_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryAllPackageVersionsStorageRequest
+func local_request_Query_PackageEntryAll_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryAllPackageEntryRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_PackageVersionsStorageAll_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_PackageEntryAll_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.PackageVersionsStorageAll(ctx, &protoReq)
+	msg, err := server.PackageEntryAll(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -170,15 +170,15 @@ func request_Query_ShowPackageInfo_0(ctx context.Context, marshaler runtime.Mars
 		_   = err
 	)
 
-	val, ok = pathParams["packageIndex"]
+	val, ok = pathParams["package_index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "packageIndex")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "package_index")
 	}
 
 	protoReq.PackageIndex, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "packageIndex", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "package_index", err)
 	}
 
 	msg, err := client.ShowPackageInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -197,15 +197,15 @@ func local_request_Query_ShowPackageInfo_0(ctx context.Context, marshaler runtim
 		_   = err
 	)
 
-	val, ok = pathParams["packageIndex"]
+	val, ok = pathParams["package_index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "packageIndex")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "package_index")
 	}
 
 	protoReq.PackageIndex, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "packageIndex", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "package_index", err)
 	}
 
 	msg, err := server.ShowPackageInfo(ctx, &protoReq)
@@ -332,7 +332,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
-	mux.Handle("GET", pattern_Query_PackageVersionsStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_PackageEntry_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -343,7 +343,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Query_PackageVersionsStorage_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Query_PackageEntry_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -351,11 +351,11 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 
-		forward_Query_PackageVersionsStorage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_PackageEntry_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Query_PackageVersionsStorageAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_PackageEntryAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -366,7 +366,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Query_PackageVersionsStorageAll_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Query_PackageEntryAll_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -374,7 +374,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 
-		forward_Query_PackageVersionsStorageAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_PackageEntryAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -531,7 +531,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
-	mux.Handle("GET", pattern_Query_PackageVersionsStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_PackageEntry_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -540,18 +540,18 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Query_PackageVersionsStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Query_PackageEntry_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_PackageVersionsStorage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_PackageEntry_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Query_PackageVersionsStorageAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_PackageEntryAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -560,14 +560,14 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Query_PackageVersionsStorageAll_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Query_PackageEntryAll_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_PackageVersionsStorageAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_PackageEntryAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -657,13 +657,13 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "packages", "params"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_PackageVersionsStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "packages", "package_versions_storage", "packageIndex"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_PackageEntry_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "packages", "package_entry", "package_index"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_PackageVersionsStorageAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "packages", "package_versions_storage"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_PackageEntryAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "packages", "package_entry"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_ShowAllPackages_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "packages", "show_all_packages"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ShowPackageInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "packages", "show_package_info", "packageIndex"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ShowPackageInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "packages", "show_package_info", "package_index"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_PackageUniqueIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "packages", "package_unique_index", "id"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -673,9 +673,9 @@ var (
 var (
 	forward_Query_Params_0 = runtime.ForwardResponseMessage
 
-	forward_Query_PackageVersionsStorage_0 = runtime.ForwardResponseMessage
+	forward_Query_PackageEntry_0 = runtime.ForwardResponseMessage
 
-	forward_Query_PackageVersionsStorageAll_0 = runtime.ForwardResponseMessage
+	forward_Query_PackageEntryAll_0 = runtime.ForwardResponseMessage
 
 	forward_Query_ShowAllPackages_0 = runtime.ForwardResponseMessage
 
