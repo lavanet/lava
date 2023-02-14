@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -55,8 +56,15 @@ func (pst *ProviderStateTracker) RegisterChainParserForSpecUpdates(ctx context.C
 	return nil
 }
 
-func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager) {
-	// TODO: change to an interface instead of reliabilitymanager.ReliabilityManager
+func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
+	voteUpdater := NewVoteUpdater(pst.stateQuery)
+	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
+	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", voteUpdaterRaw)})
+	}
+	endpoint := lavasession.RPCEndpoint{ChainID: endpointP.ChainID, ApiInterface: endpointP.ApiInterface}
+	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
 }
 
 func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64) {
@@ -67,9 +75,9 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 	// TODO: implement
 }
 
-func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) {
-
+func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+	return pst.txSender.SendVoteReveal(voteID, vote)
 }
-func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) {
-
+func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+	return pst.txSender.SendVoteCommitment(voteID, vote)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 )
@@ -116,4 +117,22 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	}
 	ts := &ProviderTxSender{TxSender: txSender}
 	return ts, nil
+}
+
+func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg)
+	if err != nil {
+		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err, nil)
+	}
+	return nil
+}
+
+func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg)
+	if err != nil {
+		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err, nil)
+	}
+	return nil
 }

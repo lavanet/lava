@@ -35,12 +35,12 @@ var (
 
 type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
-	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager)
+	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
-	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData)
-	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData)
+	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
+	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 }
 
 type RPCProvider struct {
@@ -105,7 +105,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			utils.LavaFormatFatal("failed creating chain tracker", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig)})
 		}
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
-		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
+		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 		rpcp.rpcProviderServers[key] = &RPCProviderServer{}
 		utils.LavaFormatInfo("RPCProvider Listening", &map[string]string{"endpoints": lavasession.PrintRPCProviderEndpoint(rpcProviderEndpoint)})

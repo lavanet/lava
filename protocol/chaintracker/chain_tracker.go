@@ -230,11 +230,15 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 	}
 	if gotNewBlock || forked {
 		utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10), "currentBlock": strconv.FormatInt(cs.GetLatestBlockNum(), 10)})
-		// TODO: if we didn't fork theres really no need to refetch
+
+		prev_latest := cs.GetLatestBlockNum()
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {
 			if cs.newLatestCallback != nil {
-				cs.newLatestCallback(newLatestBlock)
+				for i := prev_latest + 1; i <= newLatestBlock; i++ {
+					// on catch up of several blocks we don't want to miss any callbacks
+					cs.newLatestCallback(i)
+				}
 			}
 		}
 		if forked {

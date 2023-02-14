@@ -24,8 +24,8 @@ const (
 )
 
 type TxSender interface {
-	SendVoteReveal(voteID string, vote *VoteData)
-	SendVoteCommitment(voteID string, vote *VoteData)
+	SendVoteReveal(voteID string, vote *VoteData) error
+	SendVoteCommitment(voteID string, vote *VoteData) error
 }
 
 type ReliabilityManager struct {

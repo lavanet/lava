@@ -11,7 +11,7 @@ const (
 )
 
 type VoteUpdatable interface {
-	VoteHandler(*reliabilitymanager.VoteParams)
+	VoteHandler(*reliabilitymanager.VoteParams, uint64)
 }
 
 type VoteUpdater struct {
@@ -41,6 +41,6 @@ func (vu *VoteUpdater) Update(latestBlock int64) {
 	for _, vote := range votes {
 		endpoint := lavasession.RPCEndpoint{ChainID: vote.ChainID, ApiInterface: vote.ApiInterface}
 		updatable := vu.voteUpdatables[endpoint.Key()]
-		(*updatable).VoteHandler(vote)
+		(*updatable).VoteHandler(vote, uint64(latestBlock))
 	}
 }
