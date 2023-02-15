@@ -65,6 +65,7 @@ func (pswc *ProviderSessionsWithConsumer) readBlockListedAtomic() {
 type SingleProviderSession struct {
 	userSessionsParent *ProviderSessionsWithConsumer
 	CuSum              uint64
+	LatestRelayCu      uint64
 	UniqueIdentifier   uint64
 	Lock               sync.RWMutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
@@ -72,12 +73,20 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
-func (r *SingleProviderSession) GetPairingEpoch() uint64 {
-	return atomic.LoadUint64(&r.PairingEpoch)
+func (sps *SingleProviderSession) GetPairingEpoch() uint64 {
+	return atomic.LoadUint64(&sps.PairingEpoch)
 }
 
-func (r *SingleProviderSession) SetPairingEpoch(epoch uint64) {
-	atomic.StoreUint64(&r.PairingEpoch, epoch)
+func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
+	atomic.StoreUint64(&sps.PairingEpoch, epoch)
+}
+
+func (sps *SingleProviderSession) PrepareSessionForUsage(cu uint64) error {
+	// verify locked
+	// verify total cu in the parent (atomic read)
+	// set LatestRelayCu (verify it's 0)
+	// add to parent with atomic - make sure there is no race to corrupt the total cu in the parent
+	return fmt.Errorf("not implemented")
 }
 
 func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {

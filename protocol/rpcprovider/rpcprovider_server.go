@@ -9,6 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -17,6 +18,7 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"google.golang.org/grpc/codes"
 )
 
 type RPCProviderServer struct {
@@ -88,11 +90,15 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
-	// relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
-	// if err != nil {
-	// 	return nil, rpcps.handleRelayErrorStatus(err)
-	// }
-
+	relaySession, _, err := rpcps.initRelay(ctx, request)
+	if err != nil {
+		return nil, rpcps.handleRelayErrorStatus(err)
+	}
+	relayCU := uint64(1) //TODO: parse from relay
+	err = relaySession.PrepareSessionForUsage(relayCU)
+	if err != nil {
+		return nil, rpcps.handleRelayErrorStatus(err)
+	}
 	// reply, err := rpcps.TryRelay(ctx, request, userAddr, nodeMsg)
 	// if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
 	// 	// failed to send relay. we need to adjust session state. cuSum and relayNumber.
@@ -274,4 +280,14 @@ func (rpcps *RPCProviderServer) VerifyReliabilityAddressSigning(ctx context.Cont
 			&map[string]string{"consumer": consumer.String(), "PubKey": pubKey.Address().String()})
 	}
 	return rpcps.stateTracker.VerifyPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight), request.ChainID) // return if this pairing is authorised
+}
+
+func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
+	if err == nil {
+		return nil
+	}
+	if lavasession.SessionOutOfSyncError.Is(err) {
+		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
+	}
+	return err
 }
