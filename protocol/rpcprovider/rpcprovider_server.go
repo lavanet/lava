@@ -94,8 +94,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
-	relayCU := uint64(1) //TODO: parse from relay
-	err = relaySession.PrepareSessionForUsage(relayCU)
+	// parse the message to extract the cu and chainMessage for sending it
+	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
+	if err != nil {
+		return nil, rpcps.handleRelayErrorStatus(err)
+	}
+	relayCU := chainMessage.GetServiceApi().ComputeUnits
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
@@ -134,11 +139,12 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		})
 	}
 
-	// Checks
+	// Check data
 	err = rpcps.verifyRelayRequestMetaData(request)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("did not pass relay validation", err, nil)
 	}
+	// check signature
 	consumerBytes, err := lavaprotocol.ExtractSignerAddress(request)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("extract signer address from relay", err, nil)
@@ -148,8 +154,9 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, utils.LavaFormatError("get relay consumer address", err, nil)
 	}
 
+	// handle non data reliability relays
 	if request.DataReliability == nil {
-		//regular session
+		// regular session, verifies pairing epoch and relay number
 		singleProviderSession, err = rpcps.providerSessionManager.GetSession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.RelayNum, request.SessionId)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("failed to get a provider session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
@@ -157,7 +164,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return singleProviderSession, extractedConsumerAddress, nil
 	}
 
-	// handle data reliability session verifications
+	// data reliability session verifications
 	err = rpcps.verifyDataReliabilityRelayRequest(ctx, request, extractedConsumerAddress)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("failed data reliability validation", err, nil)

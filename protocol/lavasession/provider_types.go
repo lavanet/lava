@@ -81,9 +81,10 @@ func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
 	atomic.StoreUint64(&sps.PairingEpoch, epoch)
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(cu uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64) error {
 	// verify locked
 	// verify total cu in the parent (atomic read)
+	// verify the proof is right according to relay cu, last proof CU and current proof CU: CuSum + currentCU = relayRequestTotalCU
 	// set LatestRelayCu (verify it's 0)
 	// add to parent with atomic - make sure there is no race to corrupt the total cu in the parent
 	return fmt.Errorf("not implemented")
