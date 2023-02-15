@@ -89,9 +89,9 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 	var toSendData []RelayAnalyticsDTO
 	for chainKey, chainData := range projectData {
 		for apiTypekey, apiTypeData := range chainData {
-			var averageLatency int64
+			var averageLatency uint64
 			if apiTypeData.SuccessCount > 0 {
-				averageLatency = int64(apiTypeData.TotalLatency / uint64(apiTypeData.SuccessCount))
+				averageLatency = apiTypeData.TotalLatency / uint64(apiTypeData.SuccessCount)
 			}
 
 			toSendData = append(toSendData, RelayAnalyticsDTO{
