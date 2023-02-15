@@ -44,7 +44,7 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, epoch uint64, consumerAddr string)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string)
 	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string)
 }
 
@@ -124,11 +124,19 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-
-			utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
-				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
-				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
-			})
+			if request.DataReliability == nil {
+				rpcps.rewardServer.SendNewProof(ctx, request, relaySession.PairingEpoch, consumerAddress.String())
+				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
+					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+				})
+			} else {
+				rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				utils.LavaFormatDebug("Provider Finished DataReliability Relay Successfully", &map[string]string{
+					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+				})
+			}
 		}
 	}
 	return reply, rpcps.handleRelayErrorStatus(err)
