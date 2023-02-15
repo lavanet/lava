@@ -115,15 +115,20 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		if relayFailureError != nil {
 			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
 		}
-		// utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
-		// 	"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-		// 	"request.userAddr":  userAddr.String(),
-		// })
-	} else {
-		utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
-			"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
-			"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"request.userAddr":  consumerAddress.String(),
 		})
+	} else {
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
+		if relayError != nil {
+			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
+		} else {
+			utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
+				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+			})
+		}
 	}
 	return reply, rpcps.handleRelayErrorStatus(err)
 }

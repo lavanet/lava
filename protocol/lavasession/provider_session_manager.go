@@ -136,8 +136,8 @@ func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *Singl
 	return nil
 }
 
-func (psm *ProviderSessionManager) OnSessionDone(proof string) (epoch uint64, err error) {
-	return 0, nil
+func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession) (err error) {
+	return nil
 }
 
 func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
