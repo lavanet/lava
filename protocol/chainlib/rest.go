@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -62,7 +62,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Construct restMessage
-	restMessage := chainproxy.RestMessage{
+	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  data,
 		Path: url,
 	}
@@ -277,10 +277,12 @@ type RestChainProxy struct {
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
-	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+	}
 	rcp := &RestChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
-		nodeUrl:        nodeUrl,
+		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"),
 	}
 	return rcp, nil
 }
@@ -294,7 +296,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}

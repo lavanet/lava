@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
@@ -46,7 +47,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
-	msg, err := chainproxy.ParseJsonRPCMsg(data)
+	msg, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 	if err != nil {
 		return nil, err
 	}
@@ -327,10 +328,15 @@ type JrpcChainProxy struct {
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+	}
 	cp := &JrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
+	nodeUrl := rpcProviderEndpoint.NodeUrl[0]
+	verifyRPCEndpoint(nodeUrl)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
@@ -350,13 +356,13 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	defer cp.conn.ReturnRpc(rpc)
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.JsonrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *chainproxy.JsonrpcMessage
+	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
@@ -371,10 +377,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
 	}
 
-	var replyMsg chainproxy.JsonrpcMessage
+	var replyMsg rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
-		replyMsg = chainproxy.JsonrpcMessage{
+		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
 			Version: nodeMessage.Version,
 			ID:      nodeMessage.ID,
 		}
@@ -384,7 +390,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 		// this later causes returning an error
 	} else {
-		replyMessage, err = chainproxy.ConvertJsonRPCMsg(rpcMessage)
+		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, nil)
 		}
