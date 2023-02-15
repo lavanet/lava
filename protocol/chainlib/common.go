@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 
 const (
 	ContextUserValueKeyDappID = "dappID"
+	refererHeaderKey          = "Referer"
 )
 
 type parsedMessage struct {
@@ -59,9 +62,10 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
-func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
+		storeRefererHeaderIfNeeded(c)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -176,4 +180,11 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
 	}
 	return websocketEndpoint, httpEndpoint
+}
+
+func storeRefererHeaderIfNeeded(c *fiber.Ctx) {
+	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
+	if isMetricEnabled {
+		c.Locals(refererHeaderKey, c.Get(refererHeaderKey, ""))
+	}
 }
