@@ -109,7 +109,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
-	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
+	if err != nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession)
 		if relayFailureError != nil {
@@ -124,6 +124,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
+
 			utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),

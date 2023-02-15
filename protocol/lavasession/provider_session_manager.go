@@ -133,10 +133,12 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 }
 
 func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession) (err error) {
+	// need to handle dataReliability session failure separately
 	return nil
 }
 
 func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession) (err error) {
+	// need to handle dataReliability session separately
 	return nil
 }
 
