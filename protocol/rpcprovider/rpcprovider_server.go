@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -18,6 +20,7 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 )
 
@@ -90,7 +93,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
-	relaySession, _, err := rpcps.initRelay(ctx, request)
+	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
@@ -104,7 +107,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
-	// reply, err := rpcps.TryRelay(ctx, request, userAddr, nodeMsg)
+	_, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
 	// if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
 	// 	// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 	// 	relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
@@ -297,4 +300,123 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
 	}
 	return err
+}
+
+func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
+	// Send
+	var reqMsg *chainproxy.JsonrpcMessage
+	var reqParams interface{}
+	switch msg := chainMsg.GetRPCMessage().(type) {
+	case *chainproxy.JsonrpcMessage:
+		reqMsg = msg
+		reqParams = reqMsg.Params
+	default:
+		reqMsg = nil
+	}
+	latestBlock := int64(0)
+	finalizedBlockHashes := map[int64]interface{}{}
+	var requestedBlockHash []byte = nil
+	finalized := false
+	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
+	if dataReliabilityEnabled {
+		// Add latest block and finalization data
+		var err error
+		_, _, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
+		fromBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization) - int64(blocksInFinalizationData)
+		toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
+		latestBlock, requestedHashes, err := rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, request.RequestBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("Could not guarantee data reliability", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+		request.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
+		for _, block := range requestedHashes {
+			if block.Block == request.RequestBlock {
+				requestedBlockHash = []byte(block.Hash)
+			} else {
+				finalizedBlockHashes[block.Block] = block.Hash
+			}
+		}
+		if requestedBlockHash == nil {
+			// avoid using cache, but can still service
+			utils.LavaFormatWarning("no hash data for requested block", nil, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+
+		if request.RequestBlock > latestBlock {
+			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
+			return nil, utils.LavaFormatError("Requested a block that is too new", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+
+		finalized = spectypes.IsFinalizedBlock(request.RequestBlock, latestBlock, blockDistanceToFinalization)
+	}
+	cache := rpcps.cache
+	// TODO: handle cache on fork for dataReliability = false
+	var reply *pairingtypes.RelayReply = nil
+	var err error = nil
+	if requestedBlockHash != nil || finalized {
+		reply, err = cache.GetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized)
+	}
+	if err != nil || reply == nil {
+		if err != nil && performance.NotConnectedError.Is(err) {
+			utils.LavaFormatWarning("cache not connected", err, nil)
+		}
+		// cache miss or invalid
+		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg)
+		if err != nil {
+			return nil, utils.LavaFormatError("Sending chainMsg failed", err, nil)
+		}
+		if requestedBlockHash != nil || finalized {
+			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
+			if err != nil && !performance.NotInitialisedError.Is(err) {
+				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
+			}
+		}
+	}
+
+	apiName := chainMsg.GetServiceApi().Name
+	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
+		err := rpcps.processUnsubscribe(apiName, consumerAddr, reqParams)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
+
+	jsonStr, err := json.Marshal(finalizedBlockHashes)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err,
+			&map[string]string{"finalizedBlockHashes": fmt.Sprintf("%v", finalizedBlockHashes)})
+	}
+
+	reply.FinalizedBlocksHashes = jsonStr
+	reply.LatestBlock = latestBlock
+
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	if err != nil {
+		return nil, err
+	}
+
+	// return reply to user
+	return reply, nil
+}
+
+func (rpcps *RPCProviderServer) processUnsubscribe(apiName string, consumerAddr sdk.AccAddress, reqParams interface{}) error {
+	switch p := reqParams.(type) {
+	case []interface{}:
+		subscriptionID, ok := p[0].(string)
+		if !ok {
+			return fmt.Errorf("processUnsubscribe - p[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p[0]))
+		}
+		return rpcps.providerSessionManager.ProcessUnsubscribeEthereum(subscriptionID, consumerAddr)
+	case map[string]interface{}:
+		subscriptionID := ""
+		if apiName == "unsubscribe" {
+			var ok bool
+			subscriptionID, ok = p["query"].(string)
+			if !ok {
+				return fmt.Errorf("processUnsubscribe - p['query'].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p["query"]))
+			}
+		}
+		return rpcps.providerSessionManager.ProcessUnsubscribeTendermint(apiName, subscriptionID, consumerAddr)
+	}
+	return nil
 }

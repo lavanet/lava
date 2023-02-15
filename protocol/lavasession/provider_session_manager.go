@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -145,6 +146,13 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	// update the epoch to limit consumer usage
+}
+func (psm *ProviderSessionManager) ProcessUnsubscribeEthereum(subscriptionID string, consumerAddress sdk.AccAddress) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (psm *ProviderSessionManager) ProcessUnsubscribeTendermint(apiName string, subscriptionID string, consumerAddress sdk.AccAddress) error {
+	return fmt.Errorf("not implemented")
 }
 
 // Returning a new provider session manager

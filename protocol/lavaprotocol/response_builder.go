@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -14,6 +15,30 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 )
+
+func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
+	// request is a copy of the original request, but won't modify it
+	// update relay request requestedBlock to the provided one in case it was arbitrary
+	UpdateRequestedBlock(&request, reply)
+	// Update signature,
+	sig, err := sigs.SignRelayResponse(pkey, reply, &request)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed signing relay response", err,
+			&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply)})
+	}
+	reply.Sig = sig
+
+	if signDataReliability {
+		// update sig blocks signature
+		sigBlocks, err := sigs.SignResponseFinalizationData(pkey, reply, &request, consumerAddress)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed signing finalization data", err,
+				&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply), "userAddr": consumerAddress.String()})
+		}
+		reply.SigBlocks = sigBlocks
+	}
+	return reply, nil
+}
 
 func ExtractSignerAddress(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
 	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
