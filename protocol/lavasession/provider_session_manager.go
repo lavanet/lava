@@ -132,8 +132,8 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (psm *ProviderSessionManager) OnSessionFailure() (epoch uint64, err error) {
-	return 0, nil
+func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession) (err error) {
+	return nil
 }
 
 func (psm *ProviderSessionManager) OnSessionDone(proof string) (epoch uint64, err error) {

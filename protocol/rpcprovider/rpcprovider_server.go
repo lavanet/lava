@@ -10,6 +10,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -107,25 +108,24 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
-	_, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
-	// if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
-	// 	// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-	// 	relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
-	// 	if relayFailureError != nil {
-	// 		err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
-	// 	}
-	// 	utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
-	// 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-	// 		"request.userAddr":  userAddr.String(),
-	// 	})
-	// } else {
-	// 	utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
-	// 		"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
-	// 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
-	// 	})
-	// }
-	// return reply, s.handleRelayErrorStatus(err)
-	return nil, fmt.Errorf("not implemented")
+	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
+	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
+		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
+		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession)
+		if relayFailureError != nil {
+			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
+		}
+		// utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
+		// 	"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+		// 	"request.userAddr":  userAddr.String(),
+		// })
+	} else {
+		utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
+			"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+			"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		})
+	}
+	return reply, rpcps.handleRelayErrorStatus(err)
 }
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
 	return fmt.Errorf("not implemented")
