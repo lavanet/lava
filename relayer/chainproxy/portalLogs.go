@@ -1,15 +1,15 @@
 package chainproxy
 
 import (
-	"context"
-	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"google.golang.org/grpc/metadata"
 	"encoding/json"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -22,14 +22,16 @@ import (
 
 var ReturnMaskedErrors = "false"
 
-const webSocketCloseMessage = "websocket: close 1005 (no status)"
-const refererHeaderKey = "Referer"
+const (
+	webSocketCloseMessage = "websocket: close 1005 (no status)"
+	refererHeaderKey      = "Referer"
+)
 
 type PortalLogs struct {
-	newRelicApplication       *newrelic.Application
-	metricService             *metrics.MetricService
-	storeMetricData           bool
-	toExcludeMetricsReferrers string
+	newRelicApplication     *newrelic.Application
+	MetricService           *metrics.MetricService
+	StoreMetricData         bool
+	excludeMetricsReferrers string
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
@@ -50,12 +52,11 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigLicense(newRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	portal := &PortalLogs{newRelicApplication: newRelicApplication, storeMetricData: false}
+	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
-		portal.storeMetricData = true
-		portal.metricService = metrics.NewMetricService()
-		portal.toExcludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
+		portal.StoreMetricData = true
+		portal.MetricService = metrics.NewMetricService()
 	}
 	return portal, err
 }
@@ -122,38 +123,53 @@ func (pl *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *PortalLogs) AddMetric(data *metrics.RelayMetrics, isSuccessful bool) {
-	if pl.storeMetricData {
+func (pl *PortalLogs) AddMetricForHttp(data *metrics.RelayMetrics, isSuccessful bool, c *fiber.Ctx) {
+	if pl.StoreMetricData && pl.shouldCountMetricForHttp(c) {
 		data.Success = isSuccessful
-		pl.metricService.SendData(*data)
+		pl.MetricService.SendData(*data)
 	}
 }
 
-func (pl *PortalLogs) ShouldCountMetric(c *fiber.Ctx) bool {
+func (pl *PortalLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, isSuccessful bool, c *websocket.Conn) {
+	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
+		data.Success = isSuccessful
+		pl.MetricService.SendData(*data)
+	}
+}
+
+func (pl *PortalLogs) AddMetricForGrpc(data *metrics.RelayMetrics, isSuccessful bool, ctx context.Context) {
+	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(ctx) {
+		data.Success = isSuccessful
+		pl.MetricService.SendData(*data)
+	}
+}
+
+func (pl *PortalLogs) shouldCountMetricForHttp(c *fiber.Ctx) bool {
 	refererHeaderValue := c.Get(refererHeaderKey, "")
-	if refererHeaderValue == "" {
-		refererHeaderValue = c.Get(strings.ToLower(refererHeaderKey), "")
-	}
-	if len(pl.toExcludeMetricsReferrers) > 0 && refererHeaderKey != "" {
-		return !strings.Contains(refererHeaderValue, pl.toExcludeMetricsReferrers)
-	}
-	return true
+	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
-func (pl *PortalLogs) ShouldCountMetricForWebSocket(c *websocket.Conn) bool {
-	refererHeaderValue := c.Locals(refererHeaderKey).(string)
-	if len(pl.toExcludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
-		return !strings.Contains(refererHeaderValue, pl.toExcludeMetricsReferrers)
+func (pl *PortalLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
+	refererHeaderValue, isHeaderFound := c.Locals(refererHeaderKey).(string)
+	if !isHeaderFound {
+		return true
 	}
-	return true
+	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
-func (pl *PortalLogs) ShouldCountMetricForGrpc(ctx context.Context) bool {
+func (pl *PortalLogs) shouldCountMetricForGrpc(ctx context.Context) bool {
 	headersValues, ok := metadata.FromIncomingContext(ctx)
-	if ok && len(pl.toExcludeMetricsReferrers) > 0 {
+	if ok {
 		refererHeaderValue := headersValues.Get(refererHeaderKey)
-		result := len(refererHeaderValue) > 0 && strings.Contains(refererHeaderValue[0], pl.toExcludeMetricsReferrers)
+		result := len(refererHeaderValue) > 0 && pl.shouldCountMetrics(refererHeaderValue[0])
 		return !result
+	}
+	return true
+}
+
+func (pl *PortalLogs) shouldCountMetrics(refererHeaderValue string) bool {
+	if len(pl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
+		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
 	}
 	return true
 }

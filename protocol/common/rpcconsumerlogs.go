@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -13,16 +14,22 @@ import (
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 )
 
 var ReturnMaskedErrors = "false"
 
-const webSocketCloseMessage = "websocket: close 1005 (no status)"
+const (
+	webSocketCloseMessage = "websocket: close 1005 (no status)"
+	refererHeaderKey      = "Referer"
+)
 
 type RPCConsumerLogs struct {
-	newRelicApplication *newrelic.Application
-	MetricService       *metrics.MetricService
-	StoreMetricData     bool
+	newRelicApplication     *newrelic.Application
+	MetricService           *metrics.MetricService
+	StoreMetricData         bool
+	excludeMetricsReferrers string
 }
 
 func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
@@ -48,6 +55,7 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 	if isMetricEnabled {
 		portal.StoreMetricData = true
 		portal.MetricService = metrics.NewMetricService()
+		portal.excludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
 	}
 	return portal, err
 }
@@ -110,9 +118,53 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetric(data *metrics.RelayMetrics, isNotSuccessful bool) {
-	if pl.StoreMetricData {
-		data.Success = !isNotSuccessful
+func (pl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, isSuccessful bool, c *fiber.Ctx) {
+	if pl.StoreMetricData && pl.shouldCountMetricForHttp(c) {
+		data.Success = isSuccessful
 		pl.MetricService.SendData(*data)
 	}
+}
+
+func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, isSuccessful bool, c *websocket.Conn) {
+	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
+		data.Success = isSuccessful
+		pl.MetricService.SendData(*data)
+	}
+}
+
+func (pl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, isSuccessful bool, ctx context.Context) {
+	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(ctx) {
+		data.Success = isSuccessful
+		pl.MetricService.SendData(*data)
+	}
+}
+
+func (pl *RPCConsumerLogs) shouldCountMetricForHttp(c *fiber.Ctx) bool {
+	refererHeaderValue := c.Get(refererHeaderKey, "")
+	return pl.shouldCountMetrics(refererHeaderValue)
+}
+
+func (pl *RPCConsumerLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
+	refererHeaderValue, isHeaderFound := c.Locals(refererHeaderKey).(string)
+	if !isHeaderFound {
+		return true
+	}
+	return pl.shouldCountMetrics(refererHeaderValue)
+}
+
+func (pl *RPCConsumerLogs) shouldCountMetricForGrpc(ctx context.Context) bool {
+	headersValues, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		refererHeaderValue := headersValues.Get(refererHeaderKey)
+		result := len(refererHeaderValue) > 0 && pl.shouldCountMetrics(refererHeaderValue[0])
+		return !result
+	}
+	return true
+}
+
+func (pl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string) bool {
+	if len(pl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
+		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
+	}
+	return true
 }

@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -319,11 +320,12 @@ func SendRelay(
 	return reply, replyServer, err
 }
 
-func ConstructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		c.Locals("dappId", ExtractDappIDFromFiberContext(c))
-		c.Locals(refererHeaderKey, ExtractHeaderFiberContext(c, refererHeaderKey))
+		dappId := ExtractDappIDFromFiberContext(c)
+		c.Locals("dappId", dappId)
+		storeRefererHeaderIfNeeded(c)
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -343,18 +345,6 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 		dappID = "NoDappID"
 	}
 	return dappID
-}
-
-func ExtractHeaderFiberContext(c *fiber.Ctx, headerKey string) string {
-	headers := c.GetReqHeaders()
-	headerValue, exist := headers[headerKey]
-	if !exist {
-		headerValue, exist = headers[strings.ToLower(refererHeaderKey)]
-		if !exist {
-			headerValue = "NoValue"
-		}
-	}
-	return headerValue
 }
 
 func getTimePerCu(cu uint64) time.Duration {
@@ -387,5 +377,12 @@ func verifyRPCendpoint(endpoint string) {
 		return
 	default:
 		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
+}
+
+func storeRefererHeaderIfNeeded(c *fiber.Ctx) {
+	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
+	if isMetricEnabled {
+		c.Locals(refererHeaderKey, c.Get(refererHeaderKey, ""))
 	}
 }

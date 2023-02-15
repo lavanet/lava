@@ -296,17 +296,12 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", cp.chainID, apiInterface)
 		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
-			if cp.portalLogs.ShouldCountMetricForGrpc(ctx) {
-				go cp.portalLogs.AddMetric(metricsData, false)
-			}
-
+			go cp.portalLogs.AddMetricForGrpc(metricsData, err == nil, ctx)
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
 		}
-		if cp.portalLogs.ShouldCountMetricForGrpc(ctx) {
-			go cp.portalLogs.AddMetric(metricsData, true)
-		}
+		go cp.portalLogs.AddMetricForGrpc(metricsData, err == nil, ctx)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
 		return relayReply.Data, nil
 	}

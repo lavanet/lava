@@ -12,7 +12,7 @@ import (
 )
 
 type AggregatedMetric struct {
-	TotalLatency int64
+	TotalLatency uint64
 	RelaysCount  int64
 	SuccessCount int64
 }
@@ -90,8 +90,8 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 	for chainKey, chainData := range projectData {
 		for apiTypekey, apiTypeData := range chainData {
 			var averageLatency int64
-			if apiTypeData.RelaysCount > 0 {
-				averageLatency = apiTypeData.TotalLatency / apiTypeData.SuccessCount
+			if apiTypeData.SuccessCount > 0 {
+				averageLatency = int64(apiTypeData.TotalLatency / uint64(apiTypeData.SuccessCount))
 			}
 
 			toSendData = append(toSendData, RelayAnalyticsDTO{
@@ -136,11 +136,12 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	})
 
 	var successCount int64
-	var successLatencyValue int64
+	var successLatencyValue uint64
 	if data.Success {
 		successCount = 1
-		successLatencyValue = data.Latency
+		successLatencyValue = uint64(data.Latency)
 	}
+
 	store := *m.AggregatedMetricMap // for simplicity during operations
 	projectData, exists := store[data.ProjectHash]
 	if exists {
@@ -161,7 +162,7 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	return nil
 }
 
-func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue int64) {
+func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
 	chainIdData, exists := projectData[data.ChainID]
 	if exists {
 		m.storeApiTypeData(chainIdData, data, successCount, successLatencyValue)
@@ -177,7 +178,7 @@ func (m *MetricService) storeChainIdData(projectData map[string]map[string]*Aggr
 	}
 }
 
-func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue int64) {
+func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
 	apiTypesData, exists := chainIdData[data.APIType]
 	if exists {
 		apiTypesData.TotalLatency += successLatencyValue
