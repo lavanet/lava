@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ProviderSessionManager struct {
@@ -136,11 +137,14 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 }
 
 func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession) (err error) {
+	// need to handle dataReliability session failure separately
 	return nil
 }
 
-func (psm *ProviderSessionManager) OnSessionDone(proof string) (epoch uint64, err error) {
-	return 0, nil
+func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession, request *pairingtypes.RelayRequest) (err error) {
+	// need to handle dataReliability session separately
+	// store the request as proof
+	return nil
 }
 
 func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {

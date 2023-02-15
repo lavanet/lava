@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/spf13/pflag"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +20,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -25,6 +28,8 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
+
+const TendermintProviderHttpEndpoint = "tendermint-http-endpoint"
 
 type TendemintRpcMessage struct {
 	JrpcMessage
@@ -35,7 +40,7 @@ type TendemintRpcMessage struct {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	// httpUrl string
+	httpUrl string
 }
 
 func (m TendemintRpcMessage) GetParams() interface{} {
@@ -131,19 +136,24 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	return hash, nil
 }
 
-// func parseNodeUrl(nodeUrl string) (string, error) {
-// 	u, err := url.Parse(nodeUrl)
-// 	if err != nil {
-// 		utils.LavaFormatFatal("Failed to parse node url", err, &map[string]string{"url": nodeUrl})
-// 	}
-// 	if u.Scheme == "" {
-// 	}
-// 	return nodeUrl, nil
-// }
+func verifyTendermintNodeURL(nodeUrl string, flagSet *pflag.FlagSet) string {
+	var httpUrl string
+	if nodeUrl != "" { // provider process
+		verifyRPCendpoint(nodeUrl) // verify websocket
+		var err error
+		httpUrl, err = flagSet.GetString(TendermintProviderHttpEndpoint)
+		if err != nil {
+			utils.LavaFormatFatal("Error fetching rpc provider flag.", err, nil)
+		}
+		if httpUrl == "" {
+			utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+TendermintProviderHttpEndpoint, err, nil)
+		}
+	}
+	return httpUrl
+}
 
-func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
-	// httpUrl := nodeUrl
-
+func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, flagSet *pflag.FlagSet) ChainProxy {
+	httpUrl := verifyTendermintNodeURL(nodeUrl, flagSet)
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
 			nodeUrl:    nodeUrl,
@@ -152,7 +162,7 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 			portalLogs: pLogs,
 			csm:        csm,
 		},
-		// httpUrl: httpUrl,
+		httpUrl: httpUrl,
 	}
 }
 
@@ -259,12 +269,18 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, err
 	}
 
+	var extraTimeout time.Duration
+	if apiInterface.Category.HangingApi {
+		extraTimeout = time.Duration(cp.sentry.GetAverageBlockTime()) * time.Millisecond
+	}
+
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
-			serviceApi:     serviceApi,
-			apiInterface:   apiInterface,
-			msg:            &msg,
-			requestedBlock: requestedBlock,
+			serviceApi:           serviceApi,
+			apiInterface:         apiInterface,
+			msg:                  &msg,
+			requestedBlock:       requestedBlock,
+			extendContextTimeout: extraTimeout,
 		},
 		path: path,
 		cp:   cp,
@@ -476,7 +492,7 @@ func getTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 func convertErrorToRPCError(errString string, code int) *tenderminttypes.RPCError {
 	var rpcError *tenderminttypes.RPCError
 	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
-	if unmarshalError != nil {
+	if unmarshalError != nil || (rpcError.Data == "" && rpcError.Message == "") {
 		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
 		rpcError = &tenderminttypes.RPCError{
 			Code:    code,
@@ -578,10 +594,13 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 	}
 
 	// construct the url by concatenating the node url with the path variable
-	url := nm.cp.nodeUrl + "/" + nm.path
+	url := nm.cp.httpUrl + "/" + nm.path
 
 	// create a new http request
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -633,7 +652,7 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
 		// create a context with a timeout set by the getTimePerCu function
-		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits))
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits)+nm.GetExtraContextTimeout())
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)

@@ -259,6 +259,7 @@ type UpgradeProposal struct {
 }
 
 func (m *UpgradeProposal) Reset()      { *m = UpgradeProposal{} }
+func (m *UpgradeProposal) String() string { return proto.CompactTextString(m) }
 func (*UpgradeProposal) ProtoMessage() {}
 func (*UpgradeProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b6bc4c8185546947, []int{4}
@@ -308,6 +309,7 @@ type Height struct {
 }
 
 func (m *Height) Reset()      { *m = Height{} }
+func (m *Height) String() string { return proto.CompactTextString(m) }
 func (*Height) ProtoMessage() {}
 func (*Height) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b6bc4c8185546947, []int{5}
@@ -385,17 +387,18 @@ func (m *Params) GetAllowedClients() []string {
 	return nil
 }
 
+// disabled because of duplicate proto type error
 func init() {
-	//proto.RegisterType((*IdentifiedClientState)(nil), "ibc.core.client.v1.IdentifiedClientState")
-	//proto.RegisterType((*ConsensusStateWithHeight)(nil), "ibc.core.client.v1.ConsensusStateWithHeight")
-	//proto.RegisterType((*ClientConsensusStates)(nil), "ibc.core.client.v1.ClientConsensusStates")
-	//proto.RegisterType((*ClientUpdateProposal)(nil), "ibc.core.client.v1.ClientUpdateProposal")
-	// //proto.RegisterType((*UpgradeProposal)(nil), "ibc.core.client.v1.UpgradeProposal")
-	// //proto.RegisterType((*Height)(nil), "ibc.core.client.v1.Height")
-	//proto.RegisterType((*Params)(nil), "ibc.core.client.v1.Params")
+	// proto.RegisterType((*IdentifiedClientState)(nil), "ibc.core.client.v1.IdentifiedClientState")
+	// proto.RegisterType((*ConsensusStateWithHeight)(nil), "ibc.core.client.v1.ConsensusStateWithHeight")
+	// proto.RegisterType((*ClientConsensusStates)(nil), "ibc.core.client.v1.ClientConsensusStates")
+	// proto.RegisterType((*ClientUpdateProposal)(nil), "ibc.core.client.v1.ClientUpdateProposal")
+	// proto.RegisterType((*UpgradeProposal)(nil), "ibc.core.client.v1.UpgradeProposal")
+	// proto.RegisterType((*Height)(nil), "ibc.core.client.v1.Height")
+	// proto.RegisterType((*Params)(nil), "ibc.core.client.v1.Params")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/client/v1/client.proto", fileDescriptor_b6bc4c8185546947) }
+func init() { proto.RegisterFile("ibc/core/client/v1/client.proto", fileDescriptor_b6bc4c8185546947) }
 
 var fileDescriptor_b6bc4c8185546947 = []byte{
 	// 734 bytes of a gzipped FileDescriptorProto

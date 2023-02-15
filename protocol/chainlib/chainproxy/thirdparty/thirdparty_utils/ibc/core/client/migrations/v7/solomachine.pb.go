@@ -6,8 +6,8 @@ package v7
 import (
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	types2 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
+	types2 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -800,26 +800,26 @@ func (m *NextSequenceRecvData) GetNextSeqRecv() uint64 {
 
 func init() {
 	proto.RegisterEnum("ibc.lightclients.solomachine.v2.DataType", DataType_name, DataType_value)
-	//proto.RegisterType((*ClientState)(nil), "ibc.lightclients.solomachine.v2.ClientState")
-	//proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.solomachine.v2.ConsensusState")
-	//proto.RegisterType((*Header)(nil), "ibc.lightclients.solomachine.v2.Header")
-	//proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.solomachine.v2.Misbehaviour")
-	//proto.RegisterType((*SignatureAndData)(nil), "ibc.lightclients.solomachine.v2.SignatureAndData")
-	//proto.RegisterType((*TimestampedSignatureData)(nil), "ibc.lightclients.solomachine.v2.TimestampedSignatureData")
-	//proto.RegisterType((*SignBytes)(nil), "ibc.lightclients.solomachine.v2.SignBytes")
-	//proto.RegisterType((*HeaderData)(nil), "ibc.lightclients.solomachine.v2.HeaderData")
-	//proto.RegisterType((*ClientStateData)(nil), "ibc.lightclients.solomachine.v2.ClientStateData")
-	//proto.RegisterType((*ConsensusStateData)(nil), "ibc.lightclients.solomachine.v2.ConsensusStateData")
-	//proto.RegisterType((*ConnectionStateData)(nil), "ibc.lightclients.solomachine.v2.ConnectionStateData")
-	//proto.RegisterType((*ChannelStateData)(nil), "ibc.lightclients.solomachine.v2.ChannelStateData")
-	//proto.RegisterType((*PacketCommitmentData)(nil), "ibc.lightclients.solomachine.v2.PacketCommitmentData")
-	//proto.RegisterType((*PacketAcknowledgementData)(nil), "ibc.lightclients.solomachine.v2.PacketAcknowledgementData")
-	//proto.RegisterType((*PacketReceiptAbsenceData)(nil), "ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData")
-	//proto.RegisterType((*NextSequenceRecvData)(nil), "ibc.lightclients.solomachine.v2.NextSequenceRecvData")
+	proto.RegisterType((*ClientState)(nil), "ibc.lightclients.solomachine.v2.ClientState")
+	proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.solomachine.v2.ConsensusState")
+	proto.RegisterType((*Header)(nil), "ibc.lightclients.solomachine.v2.Header")
+	proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.solomachine.v2.Misbehaviour")
+	proto.RegisterType((*SignatureAndData)(nil), "ibc.lightclients.solomachine.v2.SignatureAndData")
+	proto.RegisterType((*TimestampedSignatureData)(nil), "ibc.lightclients.solomachine.v2.TimestampedSignatureData")
+	proto.RegisterType((*SignBytes)(nil), "ibc.lightclients.solomachine.v2.SignBytes")
+	proto.RegisterType((*HeaderData)(nil), "ibc.lightclients.solomachine.v2.HeaderData")
+	proto.RegisterType((*ClientStateData)(nil), "ibc.lightclients.solomachine.v2.ClientStateData")
+	proto.RegisterType((*ConsensusStateData)(nil), "ibc.lightclients.solomachine.v2.ConsensusStateData")
+	proto.RegisterType((*ConnectionStateData)(nil), "ibc.lightclients.solomachine.v2.ConnectionStateData")
+	proto.RegisterType((*ChannelStateData)(nil), "ibc.lightclients.solomachine.v2.ChannelStateData")
+	proto.RegisterType((*PacketCommitmentData)(nil), "ibc.lightclients.solomachine.v2.PacketCommitmentData")
+	proto.RegisterType((*PacketAcknowledgementData)(nil), "ibc.lightclients.solomachine.v2.PacketAcknowledgementData")
+	proto.RegisterType((*PacketReceiptAbsenceData)(nil), "ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData")
+	proto.RegisterType((*NextSequenceRecvData)(nil), "ibc.lightclients.solomachine.v2.NextSequenceRecvData")
 }
 
 func init() {
-	//proto.RegisterFile("ibc/lightclients/solomachine/v2/solomachine.proto", fileDescriptor_141333b361aae010)
+	proto.RegisterFile("ibc/lightclients/solomachine/v2/solomachine.proto", fileDescriptor_141333b361aae010)
 }
 
 var fileDescriptor_141333b361aae010 = []byte{

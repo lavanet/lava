@@ -71,11 +71,11 @@ func (m *Params) GetControllerEnabled() bool {
 }
 
 func init() {
-	//proto.RegisterType((*Params)(nil), "ibc.applications.interchain_accounts.controller.v1.Params")
+	proto.RegisterType((*Params)(nil), "ibc.applications.interchain_accounts.controller.v1.Params")
 }
 
 func init() {
-	// proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/controller.proto", fileDescriptor_177fd0fec5eb3400)
+	proto.RegisterFile("ibc/applications/interchain_accounts/controller/v1/controller.proto", fileDescriptor_177fd0fec5eb3400)
 }
 
 var fileDescriptor_177fd0fec5eb3400 = []byte{

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -62,7 +62,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Construct restMessage
-	restMessage := chainproxy.RestMessage{
+	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  data,
 		Path: url,
 	}
@@ -151,7 +151,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -272,12 +272,18 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 }
 
 type RestChainProxy struct {
+	BaseChainProxy
 	nodeUrl string
 }
 
-func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
-	rcp := &RestChainProxy{nodeUrl: nodeUrl}
+func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+	}
+	rcp := &RestChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"),
+	}
 	return rcp, nil
 }
 
@@ -290,7 +296,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
@@ -307,7 +313,15 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if connectionTypeSlected == http.MethodGet {
 		url += string(nodeMessage.Msg)
 	}
-	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+
+	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += rcp.averageBlockTime
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}

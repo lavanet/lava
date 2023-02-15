@@ -13,7 +13,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -44,7 +44,7 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, epoch uint64, consumerAddr string)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string)
 	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string)
 }
 
@@ -109,21 +109,35 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
-	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
+	if err != nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession)
 		if relayFailureError != nil {
 			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
 		}
-		// utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
-		// 	"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-		// 	"request.userAddr":  userAddr.String(),
-		// })
-	} else {
-		utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
-			"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
-			"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"request.userAddr":  consumerAddress.String(),
 		})
+	} else {
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request)
+		if relayError != nil {
+			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
+		} else {
+			if request.DataReliability == nil {
+				rpcps.rewardServer.SendNewProof(ctx, request, relaySession.PairingEpoch, consumerAddress.String())
+				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
+					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+				})
+			} else {
+				rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				utils.LavaFormatDebug("Provider Finished DataReliability Relay Successfully", &map[string]string{
+					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+				})
+			}
+		}
 	}
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
@@ -304,10 +318,10 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
 	// Send
-	var reqMsg *chainproxy.JsonrpcMessage
+	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
 	var reqParams interface{}
 	switch msg := chainMsg.GetRPCMessage().(type) {
-	case *chainproxy.JsonrpcMessage:
+	case *rpcInterfaceMessages.JsonrpcMessage:
 		reqMsg = msg
 		reqParams = reqMsg.Params
 	default:

@@ -420,6 +420,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	latestServicedBlock int64,
 	specComputeUnits uint64,
 	currentLatency time.Duration,
+	expectedLatency time.Duration,
 	expectedBH int64,
 	numOfProviders int,
 	providersCount uint64,
@@ -431,7 +432,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	return nil
 }
 
@@ -442,6 +443,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	latestServicedBlock int64,
 	specComputeUnits uint64,
 	currentLatency time.Duration,
+	expectedLatency time.Duration,
 	expectedBH int64,
 	numOfProviders int,
 	providersCount uint64,
@@ -458,7 +460,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	return nil
 }
 

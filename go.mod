@@ -16,7 +16,7 @@ require (
 	github.com/ignite/cli v0.23.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.23
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
@@ -27,10 +27,11 @@ require (
 
 require (
 	cosmossdk.io/api v0.2.5
-	github.com/CosmosContracts/juno v1.0.2
+	github.com/CosmWasm/wasmvm v1.2.0
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.3
+	github.com/docker/distribution v2.8.1+incompatible
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.2

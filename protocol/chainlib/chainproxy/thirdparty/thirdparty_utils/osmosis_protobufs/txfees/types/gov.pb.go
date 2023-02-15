@@ -35,6 +35,7 @@ type UpdateFeeTokenProposal struct {
 }
 
 func (m *UpdateFeeTokenProposal) Reset()      { *m = UpdateFeeTokenProposal{} }
+func (m *UpdateFeeTokenProposal) String() string { return proto.CompactTextString(m) }
 func (*UpdateFeeTokenProposal) ProtoMessage() {}
 func (*UpdateFeeTokenProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2c4a51bafc82863d, []int{0}
@@ -43,34 +44,34 @@ func (m *UpdateFeeTokenProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpdateFeeTokenProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	// if deterministic {
-	// 	return xxx_messageInfo_UpdateFeeTokenProposal.Marshal(b, m, deterministic)
-	// } else {
+	if deterministic {
+		return xxx_messageInfo_UpdateFeeTokenProposal.Marshal(b, m, deterministic)
+	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	// }
+	}
 }
 func (m *UpdateFeeTokenProposal) XXX_Merge(src proto.Message) {
-	// xxx_messageInfo_UpdateFeeTokenProposal.Merge(m, src)
+	xxx_messageInfo_UpdateFeeTokenProposal.Merge(m, src)
 }
 func (m *UpdateFeeTokenProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpdateFeeTokenProposal) XXX_DiscardUnknown() {
-	// xxx_messageInfo_UpdateFeeTokenProposal.DiscardUnknown(m)
+	xxx_messageInfo_UpdateFeeTokenProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdateFeeTokenProposal proto.InternalMessageInfo
 
 func init() {
-	// //proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
+	proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
 }
 
-func init() { }//proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
+func init() { proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
 
 var fileDescriptor_2c4a51bafc82863d = []byte{
 	// 312 bytes of a gzipped FileDescriptorProto
@@ -91,9 +92,9 @@ var fileDescriptor_2c4a51bafc82863d = []byte{
 	0xe4, 0x19, 0x5e, 0x2c, 0x90, 0x67, 0x74, 0xf2, 0x39, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39,
 	0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63,
 	0x39, 0x86, 0x28, 0xa3, 0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0xbd, 0xe4, 0xfc, 0x5c, 0x7d, 0xa8,
-	0xbd, 0xba, 0x39, 0x89, 0x49, 0xc5, 0x30, 0x8e, 0x7e, 0x99, 0xa1, 0xb1, 0x7e, 0x05, 0x2c, 0x04,
+	0xbd, 0xba, 0x39, 0x89, 0x49, 0xc5, 0x30, 0x8e, 0x7e, 0x99, 0xa1, 0x89, 0x7e, 0x05, 0x2c, 0x04,
 	0x4b, 0x2a, 0x0b, 0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xe1, 0x66, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff,
-	0xe1, 0x59, 0x17, 0x1b, 0xb0, 0x01, 0x00, 0x00,
+	0x96, 0x6e, 0x0f, 0x2a, 0xb0, 0x01, 0x00, 0x00,
 }
 
 func (this *UpdateFeeTokenProposal) Equal(that interface{}) bool {

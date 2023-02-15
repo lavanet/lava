@@ -72,11 +72,11 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_Tx = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Tx")
-	// fd_Tx_body = md_Tx.Fields().ByName("body")
-	// fd_Tx_auth_info = md_Tx.Fields().ByName("auth_info")
-	// fd_Tx_signatures = md_Tx.Fields().ByName("signatures")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_Tx = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Tx")
+	fd_Tx_body = md_Tx.Fields().ByName("body")
+	fd_Tx_auth_info = md_Tx.Fields().ByName("auth_info")
+	fd_Tx_signatures = md_Tx.Fields().ByName("signatures")
 }
 
 var _ protoreflect.Message = (*fastReflection_Tx)(nil)
@@ -710,11 +710,11 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_TxRaw = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("TxRaw")
-	// fd_TxRaw_body_bytes = md_TxRaw.Fields().ByName("body_bytes")
-	// fd_TxRaw_auth_info_bytes = md_TxRaw.Fields().ByName("auth_info_bytes")
-	// fd_TxRaw_signatures = md_TxRaw.Fields().ByName("signatures")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_TxRaw = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("TxRaw")
+	fd_TxRaw_body_bytes = md_TxRaw.Fields().ByName("body_bytes")
+	fd_TxRaw_auth_info_bytes = md_TxRaw.Fields().ByName("auth_info_bytes")
+	fd_TxRaw_signatures = md_TxRaw.Fields().ByName("signatures")
 }
 
 var _ protoreflect.Message = (*fastReflection_TxRaw)(nil)
@@ -1277,12 +1277,12 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_SignDoc = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignDoc")
-	// fd_SignDoc_body_bytes = md_SignDoc.Fields().ByName("body_bytes")
-	// fd_SignDoc_auth_info_bytes = md_SignDoc.Fields().ByName("auth_info_bytes")
-	// fd_SignDoc_chain_id = md_SignDoc.Fields().ByName("chain_id")
-	// fd_SignDoc_account_number = md_SignDoc.Fields().ByName("account_number")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_SignDoc = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignDoc")
+	fd_SignDoc_body_bytes = md_SignDoc.Fields().ByName("body_bytes")
+	fd_SignDoc_auth_info_bytes = md_SignDoc.Fields().ByName("auth_info_bytes")
+	fd_SignDoc_chain_id = md_SignDoc.Fields().ByName("chain_id")
+	fd_SignDoc_account_number = md_SignDoc.Fields().ByName("account_number")
 }
 
 var _ protoreflect.Message = (*fastReflection_SignDoc)(nil)
@@ -1879,14 +1879,14 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_SignDocDirectAux = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignDocDirectAux")
-	// fd_SignDocDirectAux_body_bytes = md_SignDocDirectAux.Fields().ByName("body_bytes")
-	// fd_SignDocDirectAux_public_key = md_SignDocDirectAux.Fields().ByName("public_key")
-	// fd_SignDocDirectAux_chain_id = md_SignDocDirectAux.Fields().ByName("chain_id")
-	// fd_SignDocDirectAux_account_number = md_SignDocDirectAux.Fields().ByName("account_number")
-	// fd_SignDocDirectAux_sequence = md_SignDocDirectAux.Fields().ByName("sequence")
-	// fd_SignDocDirectAux_tip = md_SignDocDirectAux.Fields().ByName("tip")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_SignDocDirectAux = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignDocDirectAux")
+	fd_SignDocDirectAux_body_bytes = md_SignDocDirectAux.Fields().ByName("body_bytes")
+	fd_SignDocDirectAux_public_key = md_SignDocDirectAux.Fields().ByName("public_key")
+	fd_SignDocDirectAux_chain_id = md_SignDocDirectAux.Fields().ByName("chain_id")
+	fd_SignDocDirectAux_account_number = md_SignDocDirectAux.Fields().ByName("account_number")
+	fd_SignDocDirectAux_sequence = md_SignDocDirectAux.Fields().ByName("sequence")
+	fd_SignDocDirectAux_tip = md_SignDocDirectAux.Fields().ByName("tip")
 }
 
 var _ protoreflect.Message = (*fastReflection_SignDocDirectAux)(nil)
@@ -2771,13 +2771,13 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_TxBody = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("TxBody")
-	// fd_TxBody_messages = md_TxBody.Fields().ByName("messages")
-	// fd_TxBody_memo = md_TxBody.Fields().ByName("memo")
-	// fd_TxBody_timeout_height = md_TxBody.Fields().ByName("timeout_height")
-	// fd_TxBody_extension_options = md_TxBody.Fields().ByName("extension_options")
-	// fd_TxBody_non_critical_extension_options = md_TxBody.Fields().ByName("non_critical_extension_options")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_TxBody = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("TxBody")
+	fd_TxBody_messages = md_TxBody.Fields().ByName("messages")
+	fd_TxBody_memo = md_TxBody.Fields().ByName("memo")
+	fd_TxBody_timeout_height = md_TxBody.Fields().ByName("timeout_height")
+	fd_TxBody_extension_options = md_TxBody.Fields().ByName("extension_options")
+	fd_TxBody_non_critical_extension_options = md_TxBody.Fields().ByName("non_critical_extension_options")
 }
 
 var _ protoreflect.Message = (*fastReflection_TxBody)(nil)
@@ -3553,11 +3553,11 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_AuthInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("AuthInfo")
-	// fd_AuthInfo_signer_infos = md_AuthInfo.Fields().ByName("signer_infos")
-	// fd_AuthInfo_fee = md_AuthInfo.Fields().ByName("fee")
-	// fd_AuthInfo_tip = md_AuthInfo.Fields().ByName("tip")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_AuthInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("AuthInfo")
+	fd_AuthInfo_signer_infos = md_AuthInfo.Fields().ByName("signer_infos")
+	fd_AuthInfo_fee = md_AuthInfo.Fields().ByName("fee")
+	fd_AuthInfo_tip = md_AuthInfo.Fields().ByName("tip")
 }
 
 var _ protoreflect.Message = (*fastReflection_AuthInfo)(nil)
@@ -4154,11 +4154,11 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_SignerInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignerInfo")
-	// fd_SignerInfo_public_key = md_SignerInfo.Fields().ByName("public_key")
-	// fd_SignerInfo_mode_info = md_SignerInfo.Fields().ByName("mode_info")
-	// fd_SignerInfo_sequence = md_SignerInfo.Fields().ByName("sequence")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_SignerInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("SignerInfo")
+	fd_SignerInfo_public_key = md_SignerInfo.Fields().ByName("public_key")
+	fd_SignerInfo_mode_info = md_SignerInfo.Fields().ByName("mode_info")
+	fd_SignerInfo_sequence = md_SignerInfo.Fields().ByName("sequence")
 }
 
 var _ protoreflect.Message = (*fastReflection_SignerInfo)(nil)
@@ -4715,10 +4715,10 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_ModeInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo")
-	// fd_ModeInfo_single = md_ModeInfo.Fields().ByName("single")
-	// fd_ModeInfo_multi = md_ModeInfo.Fields().ByName("multi")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_ModeInfo = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo")
+	fd_ModeInfo_single = md_ModeInfo.Fields().ByName("single")
+	fd_ModeInfo_multi = md_ModeInfo.Fields().ByName("multi")
 }
 
 var _ protoreflect.Message = (*fastReflection_ModeInfo)(nil)
@@ -5292,9 +5292,9 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_ModeInfo_Single = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo").Messages().ByName("Single")
-	// fd_ModeInfo_Single_mode = md_ModeInfo_Single.Fields().ByName("mode")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_ModeInfo_Single = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo").Messages().ByName("Single")
+	fd_ModeInfo_Single_mode = md_ModeInfo_Single.Fields().ByName("mode")
 }
 
 var _ protoreflect.Message = (*fastReflection_ModeInfo_Single)(nil)
@@ -5748,10 +5748,10 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_ModeInfo_Multi = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo").Messages().ByName("Multi")
-	// fd_ModeInfo_Multi_bitarray = md_ModeInfo_Multi.Fields().ByName("bitarray")
-	// fd_ModeInfo_Multi_mode_infos = md_ModeInfo_Multi.Fields().ByName("mode_infos")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_ModeInfo_Multi = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("ModeInfo").Messages().ByName("Multi")
+	fd_ModeInfo_Multi_bitarray = md_ModeInfo_Multi.Fields().ByName("bitarray")
+	fd_ModeInfo_Multi_mode_infos = md_ModeInfo_Multi.Fields().ByName("mode_infos")
 }
 
 var _ protoreflect.Message = (*fastReflection_ModeInfo_Multi)(nil)
@@ -6323,12 +6323,12 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_Fee = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Fee")
-	// fd_Fee_amount = md_Fee.Fields().ByName("amount")
-	// fd_Fee_gas_limit = md_Fee.Fields().ByName("gas_limit")
-	// fd_Fee_payer = md_Fee.Fields().ByName("payer")
-	// fd_Fee_granter = md_Fee.Fields().ByName("granter")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_Fee = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Fee")
+	fd_Fee_amount = md_Fee.Fields().ByName("amount")
+	fd_Fee_gas_limit = md_Fee.Fields().ByName("gas_limit")
+	fd_Fee_payer = md_Fee.Fields().ByName("payer")
+	fd_Fee_granter = md_Fee.Fields().ByName("granter")
 }
 
 var _ protoreflect.Message = (*fastReflection_Fee)(nil)
@@ -6991,10 +6991,10 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_Tip = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Tip")
-	// fd_Tip_amount = md_Tip.Fields().ByName("amount")
-	// fd_Tip_tipper = md_Tip.Fields().ByName("tipper")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_Tip = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("Tip")
+	fd_Tip_amount = md_Tip.Fields().ByName("amount")
+	fd_Tip_tipper = md_Tip.Fields().ByName("tipper")
 }
 
 var _ protoreflect.Message = (*fastReflection_Tip)(nil)
@@ -7500,12 +7500,12 @@ var (
 )
 
 func init() {
-	// file_cosmos_tx_v1beta1_tx_proto_init()
-	// md_AuxSignerData = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("AuxSignerData")
-	// fd_AuxSignerData_address = md_AuxSignerData.Fields().ByName("address")
-	// fd_AuxSignerData_sign_doc = md_AuxSignerData.Fields().ByName("sign_doc")
-	// fd_AuxSignerData_mode = md_AuxSignerData.Fields().ByName("mode")
-	// fd_AuxSignerData_sig = md_AuxSignerData.Fields().ByName("sig")
+	file_cosmos_tx_v1beta1_tx_proto_init()
+	md_AuxSignerData = File_cosmos_tx_v1beta1_tx_proto.Messages().ByName("AuxSignerData")
+	fd_AuxSignerData_address = md_AuxSignerData.Fields().ByName("address")
+	fd_AuxSignerData_sign_doc = md_AuxSignerData.Fields().ByName("sign_doc")
+	fd_AuxSignerData_mode = md_AuxSignerData.Fields().ByName("mode")
+	fd_AuxSignerData_sig = md_AuxSignerData.Fields().ByName("sig")
 }
 
 var _ protoreflect.Message = (*fastReflection_AuxSignerData)(nil)
@@ -9198,7 +9198,7 @@ var file_cosmos_tx_v1beta1_tx_proto_depIdxs = []int32{
 }
 
 func init() { 
-	// file_cosmos_tx_v1beta1_tx_proto_init() 
+	file_cosmos_tx_v1beta1_tx_proto_init() 
 }
 func file_cosmos_tx_v1beta1_tx_proto_init() {
 	if File_cosmos_tx_v1beta1_tx_proto != nil {

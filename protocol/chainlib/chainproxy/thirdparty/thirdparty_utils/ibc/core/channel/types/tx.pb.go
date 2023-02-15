@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -890,31 +890,32 @@ func (m *MsgAcknowledgementResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgAcknowledgementResponse proto.InternalMessageInfo
 
+// disabled because of duplicate proto type error
 func init() {
 	// proto.RegisterEnum("ibc.core.channel.v1.ResponseResultType", ResponseResultType_name, ResponseResultType_value)
-	//proto.RegisterType((*MsgChannelOpenInit)(nil), "ibc.core.channel.v1.MsgChannelOpenInit")
-	//proto.RegisterType((*MsgChannelOpenInitResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenInitResponse")
-	//proto.RegisterType((*MsgChannelOpenTry)(nil), "ibc.core.channel.v1.MsgChannelOpenTry")
-	//proto.RegisterType((*MsgChannelOpenTryResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenTryResponse")
-	//proto.RegisterType((*MsgChannelOpenAck)(nil), "ibc.core.channel.v1.MsgChannelOpenAck")
-	//proto.RegisterType((*MsgChannelOpenAckResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenAckResponse")
-	//proto.RegisterType((*MsgChannelOpenConfirm)(nil), "ibc.core.channel.v1.MsgChannelOpenConfirm")
-	//proto.RegisterType((*MsgChannelOpenConfirmResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenConfirmResponse")
-	//proto.RegisterType((*MsgChannelCloseInit)(nil), "ibc.core.channel.v1.MsgChannelCloseInit")
-	//proto.RegisterType((*MsgChannelCloseInitResponse)(nil), "ibc.core.channel.v1.MsgChannelCloseInitResponse")
-	//proto.RegisterType((*MsgChannelCloseConfirm)(nil), "ibc.core.channel.v1.MsgChannelCloseConfirm")
-	//proto.RegisterType((*MsgChannelCloseConfirmResponse)(nil), "ibc.core.channel.v1.MsgChannelCloseConfirmResponse")
-	//proto.RegisterType((*MsgRecvPacket)(nil), "ibc.core.channel.v1.MsgRecvPacket")
-	//proto.RegisterType((*MsgRecvPacketResponse)(nil), "ibc.core.channel.v1.MsgRecvPacketResponse")
-	//proto.RegisterType((*MsgTimeout)(nil), "ibc.core.channel.v1.MsgTimeout")
-	//proto.RegisterType((*MsgTimeoutResponse)(nil), "ibc.core.channel.v1.MsgTimeoutResponse")
-	//proto.RegisterType((*MsgTimeoutOnClose)(nil), "ibc.core.channel.v1.MsgTimeoutOnClose")
-	//proto.RegisterType((*MsgTimeoutOnCloseResponse)(nil), "ibc.core.channel.v1.MsgTimeoutOnCloseResponse")
-	//proto.RegisterType((*MsgAcknowledgement)(nil), "ibc.core.channel.v1.MsgAcknowledgement")
-	//proto.RegisterType((*MsgAcknowledgementResponse)(nil), "ibc.core.channel.v1.MsgAcknowledgementResponse")
+	// proto.RegisterType((*MsgChannelOpenInit)(nil), "ibc.core.channel.v1.MsgChannelOpenInit")
+	// proto.RegisterType((*MsgChannelOpenInitResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenInitResponse")
+	// proto.RegisterType((*MsgChannelOpenTry)(nil), "ibc.core.channel.v1.MsgChannelOpenTry")
+	// proto.RegisterType((*MsgChannelOpenTryResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenTryResponse")
+	// proto.RegisterType((*MsgChannelOpenAck)(nil), "ibc.core.channel.v1.MsgChannelOpenAck")
+	// proto.RegisterType((*MsgChannelOpenAckResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenAckResponse")
+	// proto.RegisterType((*MsgChannelOpenConfirm)(nil), "ibc.core.channel.v1.MsgChannelOpenConfirm")
+	// proto.RegisterType((*MsgChannelOpenConfirmResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenConfirmResponse")
+	// proto.RegisterType((*MsgChannelCloseInit)(nil), "ibc.core.channel.v1.MsgChannelCloseInit")
+	// proto.RegisterType((*MsgChannelCloseInitResponse)(nil), "ibc.core.channel.v1.MsgChannelCloseInitResponse")
+	// proto.RegisterType((*MsgChannelCloseConfirm)(nil), "ibc.core.channel.v1.MsgChannelCloseConfirm")
+	// proto.RegisterType((*MsgChannelCloseConfirmResponse)(nil), "ibc.core.channel.v1.MsgChannelCloseConfirmResponse")
+	// proto.RegisterType((*MsgRecvPacket)(nil), "ibc.core.channel.v1.MsgRecvPacket")
+	// proto.RegisterType((*MsgRecvPacketResponse)(nil), "ibc.core.channel.v1.MsgRecvPacketResponse")
+	// proto.RegisterType((*MsgTimeout)(nil), "ibc.core.channel.v1.MsgTimeout")
+	// proto.RegisterType((*MsgTimeoutResponse)(nil), "ibc.core.channel.v1.MsgTimeoutResponse")
+	// proto.RegisterType((*MsgTimeoutOnClose)(nil), "ibc.core.channel.v1.MsgTimeoutOnClose")
+	// proto.RegisterType((*MsgTimeoutOnCloseResponse)(nil), "ibc.core.channel.v1.MsgTimeoutOnCloseResponse")
+	// proto.RegisterType((*MsgAcknowledgement)(nil), "ibc.core.channel.v1.MsgAcknowledgement")
+	// proto.RegisterType((*MsgAcknowledgementResponse)(nil), "ibc.core.channel.v1.MsgAcknowledgementResponse")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/tx.proto", fileDescriptor_bc4637e0ac3fc7b7) }
+func init() { proto.RegisterFile("ibc/core/channel/v1/tx.proto", fileDescriptor_bc4637e0ac3fc7b7) }
 
 var fileDescriptor_bc4637e0ac3fc7b7 = []byte{
 	// 1294 bytes of a gzipped FileDescriptorProto

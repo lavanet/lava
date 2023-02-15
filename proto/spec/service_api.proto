@@ -49,5 +49,6 @@ message SpecCategory{
   bool local = 2;
   bool subscription = 3;
   uint32 stateful = 4;
+  bool hanging_api = 5;
 }
 
