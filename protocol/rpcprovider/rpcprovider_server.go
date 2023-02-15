@@ -120,7 +120,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			"request.userAddr":  consumerAddress.String(),
 		})
 	} else {
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request)
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
