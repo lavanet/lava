@@ -1248,7 +1248,7 @@ func Server(
 		utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
 	}
 
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, numberOfNodeParallelConnections, newSentry, pLogs)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, numberOfNodeParallelConnections, newSentry, pLogs, flagSet)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 	}

@@ -24,15 +24,15 @@ type ProviderSessionsEpochData struct {
 }
 
 type RPCProviderEndpoint struct {
-	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // IP:PORT
-	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
-	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
-	NodeUrl        string `yaml:"node-url,omitempty" json:"node-url,omitempty" mapstructure:"node-url"`
+	NetworkAddress string   `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // IP:PORT
+	ChainID        string   `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
+	ApiInterface   string   `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64   `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrl        []string `yaml:"node-url,omitempty" json:"node-url,omitempty" mapstructure:"node-url"`
 }
 
 func (rpcpe *RPCProviderEndpoint) Key() string {
-	return rpcpe.ChainID + rpcpe.ApiInterface + rpcpe.NodeUrl
+	return rpcpe.ChainID + rpcpe.ApiInterface
 }
 
 const (

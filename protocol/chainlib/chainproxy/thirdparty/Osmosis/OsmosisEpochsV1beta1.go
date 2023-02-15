@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/epochs/types"
+	pb_pkg "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/epochs/types"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"

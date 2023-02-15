@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/spf13/pflag"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -39,6 +41,7 @@ type NodeMessage interface {
 	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 	RequestedBlock() int64
 	GetMsg() interface{}
+	GetExtraContextTimeout() time.Duration
 }
 
 type ChainProxy interface {
@@ -53,13 +56,13 @@ type ChainProxy interface {
 	GetCache() *performance.Cache
 }
 
-func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
+func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs, flagSet *pflag.FlagSet) (ChainProxy, error) {
 	consumerSessionManagerInstance := &lavasession.ConsumerSessionManager{}
 	switch sentry.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs, flagSet), nil
 	case spectypes.APIInterfaceRest:
 		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
 	case spectypes.APIInterfaceGrpc:
@@ -122,12 +125,12 @@ func SendRelay(
 	isSubscription := nodeMsg.GetInterface().Category.Subscription
 	blockHeight := int64(-1) // to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
-
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := cp.GetConsumerSessionManager().GetSession(ctx, nodeMsg.GetServiceApi().ComputeUnits, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+	relayTimeout := getTimePerCu(singleConsumerSession.LatestRelayCu) + AverageWorldLatency + nodeMsg.GetExtraContextTimeout()
 	// consumerSession is locked here.
 
 	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error) {
@@ -158,7 +161,7 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)
+		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient
@@ -213,11 +216,11 @@ func SendRelay(
 		return reply, &replyServer, relayRequest, currentLatency, false, nil
 	}
 
-	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error) {
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, time.Duration, error) {
 		// client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
-			return nil, nil, 0, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+			return nil, nil, 0, 0, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
@@ -238,32 +241,33 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, nil, 0, 0, err
 		}
 		relayRequest.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, nil, 0, 0, err
 		}
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
 		relaySentTime := time.Now()
 		// create a new context for data reliability, it needs to be a new Background context because the ctx might be canceled by the user.
-		connectCtxDataReliability, cancel := context.WithTimeout(context.Background(), (getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)*dataReliabilityContextMultiplier)
+		drTimeout := (getTimePerCu(consumerSession.LatestRelayCu) + AverageWorldLatency) * dataReliabilityContextMultiplier
+		connectCtxDataReliability, cancel := context.WithTimeout(context.Background(), drTimeout)
 		defer cancel()
 
 		reply, err := c.Relay(connectCtxDataReliability, relayRequest)
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, nil, 0, 0, err
 		}
 		currentLatency := time.Since(relaySentTime)
 		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, nil, 0, 0, err
 		}
 
-		return reply, relayRequest, currentLatency, nil
+		return reply, relayRequest, currentLatency, drTimeout, nil
 	}
 
 	reply, replyServer, relayLatency, isCachedResult, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetInterface().Category)
@@ -303,11 +307,11 @@ func SendRelay(
 		}
 		latestBlock := reply.LatestBlock
 		expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
-		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
+		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
 	}
-	if reply.Data == nil && err == nil {
+	if replyServer == nil && reply.Data == nil && err == nil {
 		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
 	}
 
@@ -345,7 +349,7 @@ func getTimePerCu(cu uint64) time.Duration {
 }
 
 func addAttributeToError(key string, value string, errorMessage string) string {
-	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
 func convertToJsonError(errorMsg string) string {
@@ -357,4 +361,18 @@ func convertToJsonError(errorMsg string) string {
 	}
 
 	return string(jsonResponse)
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCendpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+	}
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
 }
