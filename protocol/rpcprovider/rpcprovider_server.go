@@ -13,7 +13,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -318,10 +318,10 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
 	// Send
-	var reqMsg *chainproxy.JsonrpcMessage
+	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
 	var reqParams interface{}
 	switch msg := chainMsg.GetRPCMessage().(type) {
-	case *chainproxy.JsonrpcMessage:
+	case *rpcInterfaceMessages.JsonrpcMessage:
 		reqMsg = msg
 		reqParams = reqMsg.Params
 	default:
