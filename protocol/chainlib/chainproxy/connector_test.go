@@ -63,6 +63,7 @@ func TestConnector(t *testing.T) {
 	defer listener.Close()
 	ctx := context.Background()
 	conn := NewConnector(ctx, numberOfClients, listenerAddressTcp)
+	time.Sleep(5 * time.Second) // sleep for 5 seconds so all connections will be created asynchronously
 	require.Equal(t, len(conn.freeClients), numberOfClients)
 	increasedClients := numberOfClients * 2 // increase to double the number of clients
 	rpcList := make([]*rpcclient.Client, increasedClients)
@@ -71,11 +72,11 @@ func TestConnector(t *testing.T) {
 		require.Nil(t, err)
 		rpcList[i] = rpc
 	}
-	require.Equal(t, conn.usedClients, increasedClients) // checking we have used clients
+	require.Equal(t, conn.usedClients, int64(increasedClients)) // checking we have used clients
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
-	require.Equal(t, conn.usedClients, 0)                     // checking we dont have clients used
+	require.Equal(t, conn.usedClients, int64(0))              // checking we dont have clients used
 	require.Equal(t, len(conn.freeClients), increasedClients) // checking we cleaned clients
 }
 
@@ -84,6 +85,7 @@ func TestConnectorGrpc(t *testing.T) {
 	defer server.Stop()
 	ctx := context.Background()
 	conn := NewGRPCConnector(ctx, numberOfClients, listenerAddress)
+	time.Sleep(5 * time.Second) // sleep for 5 seconds so all connections will be created asynchronously
 	require.Equal(t, len(conn.freeClients), numberOfClients)
 	increasedClients := numberOfClients * 2 // increase to double the number of clients
 	rpcList := make([]*grpc.ClientConn, increasedClients)
@@ -92,10 +94,10 @@ func TestConnectorGrpc(t *testing.T) {
 		require.Nil(t, err)
 		rpcList[i] = rpc
 	}
-	require.Equal(t, conn.usedClients, increasedClients) // checking we have used clients
+	require.Equal(t, int(conn.usedClients), increasedClients) // checking we have used clients
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
-	require.Equal(t, conn.usedClients, 0)                     // checking we dont have clients used
-	require.Equal(t, len(conn.freeClients), increasedClients) // checking we cleaned clients
+	require.Equal(t, int(conn.usedClients), 0)                // checking we dont have clients used
+	require.Equal(t, increasedClients, len(conn.freeClients)) // checking we cleaned clients
 }
