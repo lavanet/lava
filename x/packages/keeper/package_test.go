@@ -52,7 +52,7 @@ func TestPackageEntryRemove(t *testing.T) {
 	keeper, ctx := testkeeper.PackagesKeeper(t)
 	items := createNPackageEntry(keeper, ctx, 10)
 	for _, item := range items {
-		keeper.RemovePackageEntry(ctx,
+		keeper.RemovePackage(ctx,
 			item.GetIndex(),
 		)
 		_, found, _ := keeper.GetPackageForBlock(ctx,
@@ -74,18 +74,19 @@ func CreateTestPackages(packageAmount uint64, withSameIndex bool) []types.Packag
 
 		// create dummy package and append to the testPackages array
 		dummyPackage := types.Package{
-			Index:                packageIndex,
-			Name:                 "test package",
-			Description:          "package to test",
-			Type:                 "rpc",
-			Duration:             200,
-			Epoch:                100,
-			Price:                sdk.NewCoin("ulava", sdk.OneInt()),
-			ComputeUnits:         1000,
-			ComputeUnitsPerEpoch: 100,
-			ServicersToPair:      3,
-			AllowOveruse:         true,
-			OveruseRate:          overuseRate,
+			Index:                    packageIndex,
+			Name:                     "test package",
+			Description:              "package to test",
+			Type:                     "rpc",
+			Duration:                 200,
+			Block:                    100,
+			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
+			ComputeUnits:             1000,
+			ComputeUnitsPerEpoch:     100,
+			ServicersToPair:          3,
+			AllowOveruse:             true,
+			OveruseRate:              overuseRate,
+			AnnualDiscountPercentage: 20,
 		}
 		testPackages = append(testPackages, dummyPackage)
 
@@ -102,6 +103,7 @@ func CreateTestPackages(packageAmount uint64, withSameIndex bool) []types.Packag
 }
 
 // Test that the process of: package is added, an update is added, stale version is removed works correctly. Make sure that a stale package with subs is not removed
+// TODO: update removal test
 func TestPackageAdditionAndRemoval(t *testing.T) {
 	// setup the testStruct
 	ts := &testStruct{}
@@ -154,6 +156,7 @@ func TestPackageAdditionAndRemoval(t *testing.T) {
 }
 
 // Test that if two packages with the same index are added in the same epoch then we keep only the latest one
+// TODO: panics because in convertDurationFromMonthsToBlocks() we divide by ctx.BlockTime().Second() which results 0 in tests only
 func TestUpdatePackageInSameEpoch(t *testing.T) {
 	// setup the testStruct
 	ts := &testStruct{}
@@ -170,7 +173,7 @@ func TestUpdatePackageInSameEpoch(t *testing.T) {
 	require.Nil(t, err)
 
 	// test that there's a single package in the storage
-	packages := ts.keepers.Packages.GetAllEntriesForIndex(sdk.UnwrapSDKContext(ts.ctx), testPackages[0].GetIndex())
+	packages := ts.keepers.Packages.GetAllPackageVersions(sdk.UnwrapSDKContext(ts.ctx), testPackages[0].GetIndex())
 	require.Equal(t, 1, len(packages))
 
 	// verify it's the latest one (testPackages[1] that is the last element in the testPackages array)
@@ -253,6 +256,7 @@ const (
 )
 
 // Test multiple package addition and removals
+// TODO: update removal test
 func TestMultiplePackagesAdditionsAndRemovals(t *testing.T) {
 	// setup the testStruct
 	ts := &testStruct{}

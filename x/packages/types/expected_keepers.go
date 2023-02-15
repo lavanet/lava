@@ -20,7 +20,6 @@ type BankKeeper interface {
 
 type EpochstorageKeeper interface {
 	// Methods imported from epochStorage should be defined here
-	// Methods imported from bank should be defined here
 	GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64

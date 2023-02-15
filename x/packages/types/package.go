@@ -23,14 +23,14 @@ func (p Package) ValidatePackage() error {
 		return sdkerrors.Wrap(ErrInvalidPackageOveruse, "package can't allow CU overuse and have overuse rate of zero")
 	}
 
-	// check the compute units field
+	// check the compute units field are non-zero
 	if p.GetComputeUnits() == 0 || p.GetComputeUnitsPerEpoch() == 0 {
 		return sdkerrors.Wrap(ErrInvalidPackageComputeUnits, "package's compute units fields can't be zero")
 	}
 
 	// check that the package's servicersToPair is larger than 1
 	if p.GetServicersToPair() <= 1 {
-		return sdkerrors.Wrap(ErrInvalidPackageServicersToPair, "package's servicersToPair field can't be zero")
+		return sdkerrors.Wrap(ErrInvalidPackageServicersToPair, "package's servicersToPair field can't be one or lower")
 	}
 
 	// check that the package's name length is below the max length

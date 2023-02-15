@@ -4,22 +4,23 @@
         "description": "A proposal of test package",
         "packages": [
             {
-                "duration": "1000",
+                "duration": "1",
                 "price": {
                     "denom": "ulava",
                     "amount": "2"
                 },
-                "allowOveruse": true,
-                "epoch": "10",
+                "allow_overuse": true,
+                "block": "10",
                 "index": "TestPackage",
-                "computeUnits": "200",
-                "computeUnitsPerEpoch": "2",
-                "servicersToPair": "2",
-                "overuseRate": "1",
+                "compute_units": "25920",
+                "compute_units_per_epoch": "1",
+                "servicers_to_pair": "2",
+                "overuse_rate": "1",
                 "subscriptions": "0",
                 "name": "dummyPackage",
                 "description": "Lorem Ipsum",
-                "type": "rpc"
+                "type": "rpc",
+                "annual_discount_percentage": "20"
             }
         ]
     },

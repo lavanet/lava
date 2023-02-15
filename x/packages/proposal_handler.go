@@ -29,7 +29,7 @@ func handlePackagesProposal(ctx sdk.Context, k keeper.Keeper, p *types.PackagesA
 	// add the packages to the package storage
 	for _, packageElem := range p.Packages {
 		logger := k.Logger(ctx)
-		err := k.AddNewPackageToStorage(ctx, &packageElem)
+		err := k.AddPackage(ctx, packageElem)
 		if err != nil {
 			return utils.LavaError(ctx, logger, "add_new_package_to_storage", map[string]string{"err": err.Error(), "packageIndex": packageElem.GetIndex()}, "could not add new package")
 		}

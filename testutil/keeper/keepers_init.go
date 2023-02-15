@@ -246,8 +246,6 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 		ks.Epochstorage.EpochStart(unwrapedCtx)
 		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-
-		ks.Packages.EpochStart(unwrapedCtx)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)

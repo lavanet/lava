@@ -24,7 +24,7 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 	for _, packageEntryUniqueIndex := range allPackageEntryUniqueIndices {
 		packageInfoStruct := types.ShowAllPackagesInfoStruct{}
 
-		// get the latest version package
+		// get the latest version package TODO: packageUniqueIndex is empty string. Maybe make it a common proto (and not part of packages)?
 		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageEntryUniqueIndex.GetPackageUniqueIndex())
 		if err != nil {
 			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageEntryUniqueIndex.GetPackageUniqueIndex()}, "could not get the latest version of the package")

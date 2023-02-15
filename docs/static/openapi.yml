@@ -30154,7 +30154,7 @@ paths:
                     type: string
                     format: uint64
                     title: duration of the package's subscription in months
-                  epoch:
+                  block:
                     type: string
                     format: uint64
                     title: the epoch that this package was created
@@ -30206,6 +30206,10 @@ paths:
                   type:
                     type: string
                     title: package type
+                  annual_discount_percentage:
+                    type: string
+                    format: uint64
+                    title: discount for buying the package for a year
         default:
           description: An unexpected error response.
           schema:
@@ -53756,7 +53760,7 @@ definitions:
         type: string
         format: uint64
         title: duration of the package's subscription in months
-      epoch:
+      block:
         type: string
         format: uint64
         title: the epoch that this package was created
@@ -53805,6 +53809,10 @@ definitions:
       type:
         type: string
         title: package type
+      annual_discount_percentage:
+        type: string
+        format: uint64
+        title: discount for buying the package for a year
   lavanet.lava.packages.Params:
     type: object
     description: Params defines the parameters for the module.
@@ -53854,7 +53862,7 @@ definitions:
             type: string
             format: uint64
             title: duration of the package's subscription in months
-          epoch:
+          block:
             type: string
             format: uint64
             title: the epoch that this package was created
@@ -53906,6 +53914,10 @@ definitions:
           type:
             type: string
             title: package type
+          annual_discount_percentage:
+            type: string
+            format: uint64
+            title: discount for buying the package for a year
   lavanet.lava.packages.showAllPackagesInfoStruct:
     type: object
     properties:
