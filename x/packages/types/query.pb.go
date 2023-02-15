@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/types"
-	query "github.com/cosmos/cosmos-sdk/types/query"
+	_ "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -114,190 +114,6 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
-type QueryGetPackageEntryRequest struct {
-	PackageIndex string `protobuf:"bytes,1,opt,name=package_index,json=packageIndex,proto3" json:"package_index,omitempty"`
-}
-
-func (m *QueryGetPackageEntryRequest) Reset()         { *m = QueryGetPackageEntryRequest{} }
-func (m *QueryGetPackageEntryRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryGetPackageEntryRequest) ProtoMessage()    {}
-func (*QueryGetPackageEntryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{2}
-}
-func (m *QueryGetPackageEntryRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetPackageEntryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetPackageEntryRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetPackageEntryRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetPackageEntryRequest.Merge(m, src)
-}
-func (m *QueryGetPackageEntryRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetPackageEntryRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetPackageEntryRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetPackageEntryRequest proto.InternalMessageInfo
-
-func (m *QueryGetPackageEntryRequest) GetPackageIndex() string {
-	if m != nil {
-		return m.PackageIndex
-	}
-	return ""
-}
-
-type QueryGetPackageEntryResponse struct {
-	PackageEntry PackageEntry `protobuf:"bytes,1,opt,name=package_entry,json=packageEntry,proto3" json:"package_entry"`
-}
-
-func (m *QueryGetPackageEntryResponse) Reset()         { *m = QueryGetPackageEntryResponse{} }
-func (m *QueryGetPackageEntryResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryGetPackageEntryResponse) ProtoMessage()    {}
-func (*QueryGetPackageEntryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{3}
-}
-func (m *QueryGetPackageEntryResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetPackageEntryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetPackageEntryResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetPackageEntryResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetPackageEntryResponse.Merge(m, src)
-}
-func (m *QueryGetPackageEntryResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetPackageEntryResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetPackageEntryResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetPackageEntryResponse proto.InternalMessageInfo
-
-func (m *QueryGetPackageEntryResponse) GetPackageEntry() PackageEntry {
-	if m != nil {
-		return m.PackageEntry
-	}
-	return PackageEntry{}
-}
-
-type QueryAllPackageEntryRequest struct {
-	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-}
-
-func (m *QueryAllPackageEntryRequest) Reset()         { *m = QueryAllPackageEntryRequest{} }
-func (m *QueryAllPackageEntryRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryAllPackageEntryRequest) ProtoMessage()    {}
-func (*QueryAllPackageEntryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{4}
-}
-func (m *QueryAllPackageEntryRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryAllPackageEntryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryAllPackageEntryRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryAllPackageEntryRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPackageEntryRequest.Merge(m, src)
-}
-func (m *QueryAllPackageEntryRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryAllPackageEntryRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPackageEntryRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryAllPackageEntryRequest proto.InternalMessageInfo
-
-func (m *QueryAllPackageEntryRequest) GetPagination() *query.PageRequest {
-	if m != nil {
-		return m.Pagination
-	}
-	return nil
-}
-
-type QueryAllPackageEntryResponse struct {
-	PackageEntry []PackageEntry      `protobuf:"bytes,1,rep,name=packageEntry,proto3" json:"packageEntry"`
-	Pagination   *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-}
-
-func (m *QueryAllPackageEntryResponse) Reset()         { *m = QueryAllPackageEntryResponse{} }
-func (m *QueryAllPackageEntryResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryAllPackageEntryResponse) ProtoMessage()    {}
-func (*QueryAllPackageEntryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{5}
-}
-func (m *QueryAllPackageEntryResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryAllPackageEntryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryAllPackageEntryResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryAllPackageEntryResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPackageEntryResponse.Merge(m, src)
-}
-func (m *QueryAllPackageEntryResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryAllPackageEntryResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPackageEntryResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryAllPackageEntryResponse proto.InternalMessageInfo
-
-func (m *QueryAllPackageEntryResponse) GetPackageEntry() []PackageEntry {
-	if m != nil {
-		return m.PackageEntry
-	}
-	return nil
-}
-
-func (m *QueryAllPackageEntryResponse) GetPagination() *query.PageResponse {
-	if m != nil {
-		return m.Pagination
-	}
-	return nil
-}
-
 type QueryShowAllPackagesRequest struct {
 }
 
@@ -305,7 +121,7 @@ func (m *QueryShowAllPackagesRequest) Reset()         { *m = QueryShowAllPackage
 func (m *QueryShowAllPackagesRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryShowAllPackagesRequest) ProtoMessage()    {}
 func (*QueryShowAllPackagesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{6}
+	return fileDescriptor_e23922b351965c54, []int{2}
 }
 func (m *QueryShowAllPackagesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -342,7 +158,7 @@ func (m *QueryShowAllPackagesResponse) Reset()         { *m = QueryShowAllPackag
 func (m *QueryShowAllPackagesResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryShowAllPackagesResponse) ProtoMessage()    {}
 func (*QueryShowAllPackagesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{7}
+	return fileDescriptor_e23922b351965c54, []int{3}
 }
 func (m *QueryShowAllPackagesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -388,7 +204,7 @@ func (m *ShowAllPackagesInfoStruct) Reset()         { *m = ShowAllPackagesInfoSt
 func (m *ShowAllPackagesInfoStruct) String() string { return proto.CompactTextString(m) }
 func (*ShowAllPackagesInfoStruct) ProtoMessage()    {}
 func (*ShowAllPackagesInfoStruct) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{8}
+	return fileDescriptor_e23922b351965c54, []int{4}
 }
 func (m *ShowAllPackagesInfoStruct) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -446,7 +262,7 @@ func (m *QueryShowPackageInfoRequest) Reset()         { *m = QueryShowPackageInf
 func (m *QueryShowPackageInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryShowPackageInfoRequest) ProtoMessage()    {}
 func (*QueryShowPackageInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{9}
+	return fileDescriptor_e23922b351965c54, []int{5}
 }
 func (m *QueryShowPackageInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -490,7 +306,7 @@ func (m *QueryShowPackageInfoResponse) Reset()         { *m = QueryShowPackageIn
 func (m *QueryShowPackageInfoResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryShowPackageInfoResponse) ProtoMessage()    {}
 func (*QueryShowPackageInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{10}
+	return fileDescriptor_e23922b351965c54, []int{6}
 }
 func (m *QueryShowPackageInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -526,268 +342,56 @@ func (m *QueryShowPackageInfoResponse) GetPackageInfo() *Package {
 	return nil
 }
 
-type QueryGetPackageUniqueIndexRequest struct {
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (m *QueryGetPackageUniqueIndexRequest) Reset()         { *m = QueryGetPackageUniqueIndexRequest{} }
-func (m *QueryGetPackageUniqueIndexRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryGetPackageUniqueIndexRequest) ProtoMessage()    {}
-func (*QueryGetPackageUniqueIndexRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{11}
-}
-func (m *QueryGetPackageUniqueIndexRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetPackageUniqueIndexRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetPackageUniqueIndexRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetPackageUniqueIndexRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetPackageUniqueIndexRequest.Merge(m, src)
-}
-func (m *QueryGetPackageUniqueIndexRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetPackageUniqueIndexRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetPackageUniqueIndexRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetPackageUniqueIndexRequest proto.InternalMessageInfo
-
-func (m *QueryGetPackageUniqueIndexRequest) GetId() uint64 {
-	if m != nil {
-		return m.Id
-	}
-	return 0
-}
-
-type QueryGetPackageUniqueIndexResponse struct {
-	PackageUniqueIndex PackageUniqueIndex `protobuf:"bytes,1,opt,name=package_unique_index,json=packageUniqueIndex,proto3" json:"package_unique_index"`
-}
-
-func (m *QueryGetPackageUniqueIndexResponse) Reset()         { *m = QueryGetPackageUniqueIndexResponse{} }
-func (m *QueryGetPackageUniqueIndexResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryGetPackageUniqueIndexResponse) ProtoMessage()    {}
-func (*QueryGetPackageUniqueIndexResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{12}
-}
-func (m *QueryGetPackageUniqueIndexResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryGetPackageUniqueIndexResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryGetPackageUniqueIndexResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryGetPackageUniqueIndexResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetPackageUniqueIndexResponse.Merge(m, src)
-}
-func (m *QueryGetPackageUniqueIndexResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryGetPackageUniqueIndexResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetPackageUniqueIndexResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryGetPackageUniqueIndexResponse proto.InternalMessageInfo
-
-func (m *QueryGetPackageUniqueIndexResponse) GetPackageUniqueIndex() PackageUniqueIndex {
-	if m != nil {
-		return m.PackageUniqueIndex
-	}
-	return PackageUniqueIndex{}
-}
-
-type QueryAllPackageUniqueIndexRequest struct {
-	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-}
-
-func (m *QueryAllPackageUniqueIndexRequest) Reset()         { *m = QueryAllPackageUniqueIndexRequest{} }
-func (m *QueryAllPackageUniqueIndexRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryAllPackageUniqueIndexRequest) ProtoMessage()    {}
-func (*QueryAllPackageUniqueIndexRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{13}
-}
-func (m *QueryAllPackageUniqueIndexRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryAllPackageUniqueIndexRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryAllPackageUniqueIndexRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryAllPackageUniqueIndexRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPackageUniqueIndexRequest.Merge(m, src)
-}
-func (m *QueryAllPackageUniqueIndexRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryAllPackageUniqueIndexRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPackageUniqueIndexRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryAllPackageUniqueIndexRequest proto.InternalMessageInfo
-
-func (m *QueryAllPackageUniqueIndexRequest) GetPagination() *query.PageRequest {
-	if m != nil {
-		return m.Pagination
-	}
-	return nil
-}
-
-type QueryAllPackageUniqueIndexResponse struct {
-	PackageUniqueIndex []PackageUniqueIndex `protobuf:"bytes,1,rep,name=package_unique_index,json=packageUniqueIndex,proto3" json:"package_unique_index"`
-	Pagination         *query.PageResponse  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) Reset()         { *m = QueryAllPackageUniqueIndexResponse{} }
-func (m *QueryAllPackageUniqueIndexResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryAllPackageUniqueIndexResponse) ProtoMessage()    {}
-func (*QueryAllPackageUniqueIndexResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e23922b351965c54, []int{14}
-}
-func (m *QueryAllPackageUniqueIndexResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryAllPackageUniqueIndexResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryAllPackageUniqueIndexResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryAllPackageUniqueIndexResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPackageUniqueIndexResponse.Merge(m, src)
-}
-func (m *QueryAllPackageUniqueIndexResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryAllPackageUniqueIndexResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPackageUniqueIndexResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryAllPackageUniqueIndexResponse proto.InternalMessageInfo
-
-func (m *QueryAllPackageUniqueIndexResponse) GetPackageUniqueIndex() []PackageUniqueIndex {
-	if m != nil {
-		return m.PackageUniqueIndex
-	}
-	return nil
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) GetPagination() *query.PageResponse {
-	if m != nil {
-		return m.Pagination
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.packages.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.packages.QueryParamsResponse")
-	proto.RegisterType((*QueryGetPackageEntryRequest)(nil), "lavanet.lava.packages.QueryGetPackageEntryRequest")
-	proto.RegisterType((*QueryGetPackageEntryResponse)(nil), "lavanet.lava.packages.QueryGetPackageEntryResponse")
-	proto.RegisterType((*QueryAllPackageEntryRequest)(nil), "lavanet.lava.packages.QueryAllPackageEntryRequest")
-	proto.RegisterType((*QueryAllPackageEntryResponse)(nil), "lavanet.lava.packages.QueryAllPackageEntryResponse")
 	proto.RegisterType((*QueryShowAllPackagesRequest)(nil), "lavanet.lava.packages.QueryShowAllPackagesRequest")
 	proto.RegisterType((*QueryShowAllPackagesResponse)(nil), "lavanet.lava.packages.QueryShowAllPackagesResponse")
 	proto.RegisterType((*ShowAllPackagesInfoStruct)(nil), "lavanet.lava.packages.showAllPackagesInfoStruct")
 	proto.RegisterType((*QueryShowPackageInfoRequest)(nil), "lavanet.lava.packages.QueryShowPackageInfoRequest")
 	proto.RegisterType((*QueryShowPackageInfoResponse)(nil), "lavanet.lava.packages.QueryShowPackageInfoResponse")
-	proto.RegisterType((*QueryGetPackageUniqueIndexRequest)(nil), "lavanet.lava.packages.QueryGetPackageUniqueIndexRequest")
-	proto.RegisterType((*QueryGetPackageUniqueIndexResponse)(nil), "lavanet.lava.packages.QueryGetPackageUniqueIndexResponse")
-	proto.RegisterType((*QueryAllPackageUniqueIndexRequest)(nil), "lavanet.lava.packages.QueryAllPackageUniqueIndexRequest")
-	proto.RegisterType((*QueryAllPackageUniqueIndexResponse)(nil), "lavanet.lava.packages.QueryAllPackageUniqueIndexResponse")
 }
 
 func init() { proto.RegisterFile("packages/query.proto", fileDescriptor_e23922b351965c54) }
 
 var fileDescriptor_e23922b351965c54 = []byte{
-	// 884 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x96, 0xcd, 0x4f, 0x13, 0x4d,
-	0x1c, 0xc7, 0xbb, 0xe5, 0x25, 0x61, 0xe0, 0x79, 0x48, 0xe6, 0x29, 0x4f, 0xa0, 0x0f, 0x2c, 0x3c,
-	0x83, 0x22, 0xa2, 0xee, 0x42, 0xab, 0xa6, 0xbe, 0x1c, 0xa4, 0x46, 0x09, 0x07, 0x4d, 0x5d, 0xc2,
-	0xc5, 0x4b, 0x33, 0x6d, 0x87, 0x65, 0xc3, 0x76, 0x67, 0xe9, 0x6e, 0x11, 0x82, 0x5c, 0x3c, 0xe8,
-	0xd5, 0xc4, 0x7f, 0xc2, 0x83, 0x57, 0x3d, 0x79, 0x31, 0x5e, 0x38, 0x92, 0x78, 0xf1, 0x64, 0x0c,
-	0x78, 0xf3, 0x9f, 0x30, 0x3b, 0x3b, 0xdb, 0xee, 0x76, 0x5f, 0xda, 0x2a, 0xa7, 0x2e, 0x33, 0xbf,
-	0x97, 0xcf, 0xf7, 0x37, 0xbf, 0xf9, 0x0d, 0x20, 0x63, 0xe2, 0xea, 0x0e, 0x56, 0x89, 0x25, 0xef,
-	0x36, 0x49, 0xe3, 0x40, 0x32, 0x1b, 0xd4, 0xa6, 0x70, 0x42, 0xc7, 0x7b, 0xd8, 0x20, 0xb6, 0xe4,
-	0xfc, 0x4a, 0x9e, 0x49, 0x36, 0xa3, 0x52, 0x95, 0x32, 0x0b, 0xd9, 0xf9, 0x72, 0x8d, 0xb3, 0xd3,
-	0x2a, 0xa5, 0xaa, 0x4e, 0x64, 0x6c, 0x6a, 0x32, 0x36, 0x0c, 0x6a, 0x63, 0x5b, 0xa3, 0x86, 0xc5,
-	0x77, 0x97, 0xaa, 0xd4, 0xaa, 0x53, 0x4b, 0xae, 0x60, 0x8b, 0xb8, 0x39, 0xe4, 0xbd, 0x95, 0x0a,
-	0xb1, 0xf1, 0x8a, 0x6c, 0x62, 0x55, 0x33, 0x98, 0x31, 0xb7, 0x9d, 0x68, 0xc1, 0x98, 0xb8, 0x81,
-	0xeb, 0x5e, 0x88, 0x69, 0xdf, 0x32, 0xfb, 0x28, 0x13, 0xc3, 0xf6, 0x58, 0xb3, 0xf3, 0xa1, 0xdd,
-	0xa6, 0xa1, 0xed, 0x36, 0x49, 0x59, 0x33, 0x6a, 0x64, 0x9f, 0x1b, 0x89, 0x7e, 0x0a, 0x2f, 0x7f,
-	0x95, 0x6a, 0x5e, 0xe6, 0x7f, 0x3b, 0x83, 0xb8, 0xeb, 0x28, 0x03, 0xe0, 0x13, 0x87, 0xb9, 0xc4,
-	0x78, 0x14, 0xb2, 0xdb, 0x24, 0x96, 0x8d, 0x14, 0xf0, 0x4f, 0x60, 0xd5, 0x32, 0xa9, 0x61, 0x11,
-	0x78, 0x07, 0x0c, 0xbb, 0xdc, 0x93, 0xc2, 0x9c, 0xb0, 0x38, 0x9a, 0x9b, 0x91, 0x22, 0xcb, 0x28,
-	0xb9, 0x6e, 0xc5, 0xc1, 0xe3, 0x6f, 0xb3, 0x29, 0x85, 0xbb, 0xa0, 0x22, 0xf8, 0x8f, 0xc5, 0x5c,
-	0x23, 0x76, 0xc9, 0x35, 0x7c, 0xe0, 0x88, 0xe4, 0x29, 0xe1, 0x3c, 0xf8, 0xcb, 0x93, 0xc7, 0x74,
-	0xb1, 0x14, 0x23, 0xca, 0x18, 0x5f, 0x5c, 0x77, 0xd6, 0x90, 0x01, 0xa6, 0xa3, 0x63, 0x70, 0xc0,
-	0xc7, 0xed, 0x20, 0xac, 0x82, 0x9c, 0x73, 0x3e, 0x96, 0xb3, 0x1d, 0x83, 0xd3, 0x7a, 0xf9, 0xd8,
-	0x1a, 0x22, 0x9c, 0x79, 0x55, 0xd7, 0xa3, 0x98, 0x1f, 0x02, 0xd0, 0x3e, 0x62, 0x9e, 0x6b, 0x41,
-	0x72, 0x4f, 0x42, 0x72, 0x4e, 0x42, 0x72, 0x7b, 0x8e, 0x9f, 0x87, 0x54, 0xc2, 0x2a, 0xe1, 0xbe,
-	0x8a, 0xcf, 0x13, 0x7d, 0x10, 0xb8, 0xae, 0x50, 0x1e, 0xae, 0xeb, 0x11, 0x08, 0x70, 0x4d, 0x0a,
-	0x73, 0x03, 0x7f, 0x20, 0x0b, 0xae, 0x05, 0xb8, 0xd3, 0x8c, 0xfb, 0x52, 0x57, 0x6e, 0x97, 0x25,
-	0x00, 0x3e, 0xc3, 0xeb, 0xb3, 0xb1, 0x4d, 0x9f, 0xb5, 0xd9, 0x5b, 0x6d, 0xd4, 0xe4, 0xb2, 0x42,
-	0xdb, 0x5c, 0xd6, 0x66, 0xeb, 0xb8, 0xac, 0xb2, 0x66, 0x6c, 0x51, 0xae, 0x6b, 0x39, 0x46, 0x97,
-	0x15, 0x0c, 0xb3, 0x6e, 0x6c, 0xd1, 0x0d, 0xbb, 0xd1, 0xac, 0xda, 0x2d, 0x79, 0x6c, 0x0d, 0x3d,
-	0x07, 0x53, 0xb1, 0xa6, 0x30, 0x03, 0x86, 0xfc, 0xfd, 0xe5, 0xfe, 0x01, 0x21, 0x18, 0x34, 0x70,
-	0x9d, 0xb0, 0x5a, 0x8c, 0x28, 0xec, 0x1b, 0xde, 0x00, 0x43, 0x66, 0x43, 0xab, 0x92, 0xc9, 0x01,
-	0x56, 0xa0, 0xa9, 0x40, 0x81, 0xbc, 0xd2, 0xdc, 0xa7, 0x9a, 0xc1, 0x6b, 0xec, 0x5a, 0xb7, 0xfa,
-	0xdc, 0x11, 0x5d, 0xf2, 0x9a, 0x77, 0x8b, 0xf6, 0xd5, 0xe7, 0xd8, 0x57, 0xb8, 0x40, 0x0c, 0x5e,
-	0xb8, 0xd5, 0x56, 0x3f, 0x78, 0x75, 0x73, 0x08, 0xc5, 0xe4, 0x7e, 0x50, 0x46, 0xcd, 0x76, 0x28,
-	0x94, 0x07, 0xff, 0x77, 0x5c, 0xa5, 0x4d, 0x36, 0x55, 0x18, 0x80, 0x07, 0xfb, 0x37, 0x48, 0x6b,
-	0x35, 0x16, 0x7d, 0x50, 0x49, 0x6b, 0x35, 0xf4, 0x4a, 0x00, 0x28, 0xc9, 0x8b, 0xe3, 0xe1, 0xd6,
-	0xd4, 0x0d, 0x8c, 0x2a, 0x8e, 0x79, 0x39, 0x19, 0xd3, 0x17, 0x90, 0x17, 0x16, 0x9a, 0xa1, 0x1d,
-	0xb4, 0xc3, 0xf1, 0xdb, 0x87, 0x1c, 0x81, 0x7f, 0x5e, 0xf7, 0xf3, 0xc4, 0x93, 0x1d, 0x93, 0xad,
-	0xab, 0xec, 0x81, 0x73, 0x92, 0x7d, 0x6e, 0x37, 0x37, 0xf7, 0x73, 0x04, 0x0c, 0x31, 0x49, 0xf0,
-	0xa5, 0x00, 0x86, 0xdd, 0x81, 0x0d, 0xe3, 0x10, 0xc3, 0x2f, 0x44, 0x76, 0xa9, 0x17, 0x53, 0x37,
-	0x2f, 0xba, 0xf8, 0xe2, 0xcb, 0x8f, 0x37, 0xe9, 0x59, 0x38, 0x23, 0x73, 0x1f, 0xf6, 0x2b, 0x77,
-	0xbc, 0x85, 0xf0, 0xbd, 0x00, 0xc6, 0xfc, 0xa3, 0x0b, 0xe6, 0x92, 0x72, 0x44, 0x3f, 0x23, 0xd9,
-	0x7c, 0x5f, 0x3e, 0x1c, 0xf0, 0x2e, 0x03, 0xbc, 0x09, 0xaf, 0xc7, 0x02, 0xfa, 0xde, 0x14, 0xf9,
-	0x30, 0x70, 0x7f, 0x8f, 0xe0, 0x5b, 0x01, 0x8c, 0xfb, 0xc3, 0xae, 0xea, 0x7a, 0x32, 0x7a, 0xf4,
-	0x6b, 0x92, 0x8c, 0x1e, 0xf3, 0x32, 0xa0, 0xab, 0x0c, 0x7d, 0x01, 0x5e, 0xe8, 0x05, 0x1d, 0xbe,
-	0x13, 0xc0, 0x78, 0xc7, 0x30, 0x4e, 0x46, 0x8d, 0x1e, 0xec, 0xc9, 0xa8, 0x31, 0xd3, 0x1e, 0x2d,
-	0x33, 0xd4, 0x25, 0xb8, 0x18, 0x83, 0xea, 0xcc, 0xec, 0x32, 0xd6, 0xf5, 0xb2, 0xb7, 0x02, 0x3f,
-	0x72, 0x5c, 0xdf, 0x08, 0xec, 0x8e, 0x1b, 0x9e, 0xb9, 0xdd, 0x71, 0x23, 0x66, 0x2c, 0xba, 0xc7,
-	0x70, 0x6f, 0xc3, 0x42, 0x12, 0xae, 0x7f, 0x0a, 0x87, 0x1a, 0xe3, 0xb3, 0x00, 0x60, 0xf8, 0x76,
-	0xc3, 0x42, 0x6f, 0x2d, 0x1a, 0x9e, 0x67, 0xd9, 0x5b, 0xbf, 0xe1, 0xc9, 0xd5, 0x14, 0x98, 0x9a,
-	0x1c, 0x5c, 0xee, 0xd2, 0x27, 0xfe, 0xc1, 0x25, 0x1f, 0x6a, 0xb5, 0x23, 0xf8, 0x49, 0x00, 0x13,
-	0xe1, 0xc0, 0x4e, 0x93, 0x17, 0x7a, 0x6b, 0xd8, 0x7e, 0x85, 0x24, 0x0e, 0x59, 0x94, 0x67, 0x42,
-	0xae, 0xc1, 0x2b, 0x7d, 0x08, 0x29, 0x16, 0x8f, 0x4f, 0x45, 0xe1, 0xe4, 0x54, 0x14, 0xbe, 0x9f,
-	0x8a, 0xc2, 0xeb, 0x33, 0x31, 0x75, 0x72, 0x26, 0xa6, 0xbe, 0x9e, 0x89, 0xa9, 0xa7, 0x8b, 0xaa,
-	0x66, 0x6f, 0x37, 0x2b, 0x52, 0x95, 0xd6, 0x83, 0x01, 0xf7, 0xdb, 0x21, 0xed, 0x03, 0x93, 0x58,
-	0x95, 0x61, 0xf6, 0x0f, 0x73, 0xfe, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x1d, 0xf9, 0xf4, 0xc3,
-	0x51, 0x0c, 0x00, 0x00,
+	// 563 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x41, 0x6f, 0xd3, 0x30,
+	0x18, 0x6d, 0xd6, 0xb5, 0x12, 0xee, 0x10, 0x92, 0xe9, 0x50, 0x57, 0xd6, 0x6c, 0x0a, 0x42, 0x2a,
+	0x3d, 0xd8, 0x5b, 0x27, 0x24, 0x04, 0x17, 0x56, 0x4e, 0xbb, 0x8d, 0x4c, 0x5c, 0xb8, 0x54, 0x6e,
+	0xf0, 0xb2, 0x88, 0xd4, 0xf6, 0x6a, 0x77, 0x6c, 0x02, 0x2e, 0x1c, 0x38, 0x23, 0xf1, 0x37, 0xf8,
+	0x09, 0xfc, 0x80, 0x1d, 0x27, 0x71, 0xe1, 0x84, 0x50, 0xcb, 0xef, 0x40, 0x28, 0xb6, 0xb3, 0x26,
+	0x5b, 0xb3, 0xb1, 0x53, 0xdc, 0xcf, 0xef, 0x7b, 0xef, 0xf9, 0xfb, 0x9e, 0x0a, 0xea, 0x82, 0x04,
+	0x6f, 0x49, 0x48, 0x25, 0x3e, 0x1c, 0xd3, 0xd1, 0x09, 0x12, 0x23, 0xae, 0x38, 0x5c, 0x8e, 0xc9,
+	0x11, 0x61, 0x54, 0xa1, 0xe4, 0x8b, 0x52, 0x48, 0xb3, 0x1e, 0xf2, 0x90, 0x6b, 0x04, 0x4e, 0x4e,
+	0x06, 0xdc, 0x5c, 0x0d, 0x39, 0x0f, 0x63, 0x8a, 0x89, 0x88, 0x30, 0x61, 0x8c, 0x2b, 0xa2, 0x22,
+	0xce, 0xa4, 0xbd, 0xed, 0x04, 0x5c, 0x0e, 0xb9, 0xc4, 0x03, 0x22, 0xa9, 0xd1, 0xc0, 0x47, 0x9b,
+	0x03, 0xaa, 0xc8, 0x26, 0x16, 0x24, 0x8c, 0x98, 0x06, 0x5b, 0xec, 0xf2, 0xb9, 0x19, 0x41, 0x46,
+	0x64, 0x98, 0x52, 0xb8, 0x59, 0x8a, 0xb4, 0x39, 0xe0, 0x51, 0xda, 0x76, 0x2f, 0xd3, 0xa6, 0x0f,
+	0xa6, 0xee, 0xd5, 0x01, 0x7c, 0x99, 0x08, 0xee, 0x6a, 0x32, 0x9f, 0x1e, 0x8e, 0xa9, 0x54, 0x9e,
+	0x0f, 0xee, 0xe6, 0xaa, 0x52, 0x70, 0x26, 0x29, 0x7c, 0x06, 0xaa, 0x46, 0xb4, 0xe1, 0xac, 0x3b,
+	0xed, 0x5a, 0xb7, 0x85, 0xe6, 0xce, 0x00, 0x99, 0xb6, 0xde, 0xe2, 0xe9, 0xaf, 0xb5, 0x92, 0x6f,
+	0x5b, 0xbc, 0x16, 0xb8, 0xaf, 0x39, 0xf7, 0x0e, 0xf8, 0xbb, 0xed, 0x38, 0xde, 0xb5, 0xe0, 0x54,
+	0x72, 0x0c, 0x56, 0xe7, 0x5f, 0x5b, 0xed, 0x57, 0xe0, 0x76, 0xca, 0xdf, 0x8f, 0xd8, 0x3e, 0x6f,
+	0x38, 0xeb, 0xe5, 0x76, 0xad, 0xbb, 0x51, 0x60, 0x41, 0xe6, 0x69, 0x76, 0xd8, 0x3e, 0xdf, 0x53,
+	0xa3, 0x71, 0xa0, 0xfc, 0x25, 0x91, 0xa9, 0x79, 0x1f, 0xc0, 0x4a, 0x21, 0x14, 0xd6, 0x41, 0x25,
+	0x62, 0x6f, 0xe8, 0xb1, 0x7e, 0xee, 0x2d, 0xdf, 0xfc, 0x80, 0x10, 0x2c, 0x32, 0x32, 0xa4, 0x8d,
+	0x05, 0x5d, 0xd4, 0x67, 0xf8, 0x18, 0x54, 0xc4, 0x28, 0x0a, 0x68, 0xa3, 0xac, 0x07, 0xb3, 0x82,
+	0xcc, 0x3a, 0x50, 0xb2, 0x0e, 0x64, 0xd7, 0x81, 0x5e, 0xf0, 0x88, 0xd9, 0xa1, 0x18, 0xb4, 0xd7,
+	0xcb, 0xcc, 0xc4, 0xea, 0x27, 0xf2, 0x76, 0x26, 0xf0, 0xc1, 0xf9, 0x9b, 0xfb, 0x59, 0x1f, 0xe9,
+	0x0b, 0x76, 0x92, 0x9a, 0x47, 0x32, 0x83, 0xcb, 0x71, 0xd8, 0xc1, 0x6d, 0x83, 0xa5, 0x19, 0x89,
+	0x9e, 0x5b, 0xe2, 0xd0, 0x2d, 0x5c, 0x9d, 0x3e, 0xf8, 0x35, 0x31, 0xa3, 0xea, 0xfe, 0x2d, 0x83,
+	0x8a, 0xd6, 0x80, 0x9f, 0x1d, 0x50, 0x35, 0xdb, 0x85, 0x8f, 0x0a, 0x18, 0x2e, 0xc7, 0xa9, 0xd9,
+	0xf9, 0x1f, 0xa8, 0xb1, 0xeb, 0x3d, 0xfc, 0xf4, 0xe3, 0xcf, 0xd7, 0x85, 0x35, 0xd8, 0xc2, 0xb6,
+	0x47, 0x7f, 0xf1, 0x85, 0xd4, 0xc3, 0x6f, 0x0e, 0xb8, 0x73, 0x21, 0x2a, 0xb0, 0x7b, 0x95, 0xcc,
+	0xfc, 0xd8, 0x35, 0xb7, 0x6e, 0xd4, 0x63, 0x3d, 0x6e, 0x68, 0x8f, 0x1d, 0xd8, 0x2e, 0xf0, 0x98,
+	0x24, 0xaa, 0x4f, 0xe2, 0xb8, 0x9f, 0x56, 0xe0, 0x77, 0x6b, 0x37, 0xb3, 0xa0, 0xeb, 0xed, 0x5e,
+	0x4e, 0xc4, 0xf5, 0x76, 0xe7, 0x24, 0xc0, 0x7b, 0xae, 0xed, 0x3e, 0x85, 0x4f, 0xae, 0xb2, 0x9b,
+	0xcd, 0x08, 0x7e, 0x9f, 0x8b, 0xdd, 0xc7, 0x5e, 0xef, 0x74, 0xe2, 0x3a, 0x67, 0x13, 0xd7, 0xf9,
+	0x3d, 0x71, 0x9d, 0x2f, 0x53, 0xb7, 0x74, 0x36, 0x75, 0x4b, 0x3f, 0xa7, 0x6e, 0xe9, 0x75, 0x3b,
+	0x8c, 0xd4, 0xc1, 0x78, 0x80, 0x02, 0x3e, 0xcc, 0xb3, 0x1f, 0xcf, 0xf8, 0xd5, 0x89, 0xa0, 0x72,
+	0x50, 0xd5, 0x7f, 0x38, 0x5b, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x45, 0x13, 0xf9, 0x94, 0x4e,
+	0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -804,18 +408,10 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// Queries a PackageEntry by index.
-	PackageEntry(ctx context.Context, in *QueryGetPackageEntryRequest, opts ...grpc.CallOption) (*QueryGetPackageEntryResponse, error)
-	// Queries a list of PackageEntry items.
-	PackageEntryAll(ctx context.Context, in *QueryAllPackageEntryRequest, opts ...grpc.CallOption) (*QueryAllPackageEntryResponse, error)
 	// Queries a list of ShowAllPackages items.
 	ShowAllPackages(ctx context.Context, in *QueryShowAllPackagesRequest, opts ...grpc.CallOption) (*QueryShowAllPackagesResponse, error)
 	// Queries a list of ShowPackageInfo items.
 	ShowPackageInfo(ctx context.Context, in *QueryShowPackageInfoRequest, opts ...grpc.CallOption) (*QueryShowPackageInfoResponse, error)
-	// Queries a PackageUniqueIndex by id.
-	PackageUniqueIndex(ctx context.Context, in *QueryGetPackageUniqueIndexRequest, opts ...grpc.CallOption) (*QueryGetPackageUniqueIndexResponse, error)
-	// Queries a list of PackageUniqueIndex items.
-	PackageUniqueIndexAll(ctx context.Context, in *QueryAllPackageUniqueIndexRequest, opts ...grpc.CallOption) (*QueryAllPackageUniqueIndexResponse, error)
 }
 
 type queryClient struct {
@@ -829,24 +425,6 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
 	err := c.cc.Invoke(ctx, "/lavanet.lava.packages.Query/Params", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) PackageEntry(ctx context.Context, in *QueryGetPackageEntryRequest, opts ...grpc.CallOption) (*QueryGetPackageEntryResponse, error) {
-	out := new(QueryGetPackageEntryResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.packages.Query/PackageEntry", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) PackageEntryAll(ctx context.Context, in *QueryAllPackageEntryRequest, opts ...grpc.CallOption) (*QueryAllPackageEntryResponse, error) {
-	out := new(QueryAllPackageEntryResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.packages.Query/PackageEntryAll", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -871,40 +449,14 @@ func (c *queryClient) ShowPackageInfo(ctx context.Context, in *QueryShowPackageI
 	return out, nil
 }
 
-func (c *queryClient) PackageUniqueIndex(ctx context.Context, in *QueryGetPackageUniqueIndexRequest, opts ...grpc.CallOption) (*QueryGetPackageUniqueIndexResponse, error) {
-	out := new(QueryGetPackageUniqueIndexResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.packages.Query/PackageUniqueIndex", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) PackageUniqueIndexAll(ctx context.Context, in *QueryAllPackageUniqueIndexRequest, opts ...grpc.CallOption) (*QueryAllPackageUniqueIndexResponse, error) {
-	out := new(QueryAllPackageUniqueIndexResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.packages.Query/PackageUniqueIndexAll", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// Queries a PackageEntry by index.
-	PackageEntry(context.Context, *QueryGetPackageEntryRequest) (*QueryGetPackageEntryResponse, error)
-	// Queries a list of PackageEntry items.
-	PackageEntryAll(context.Context, *QueryAllPackageEntryRequest) (*QueryAllPackageEntryResponse, error)
 	// Queries a list of ShowAllPackages items.
 	ShowAllPackages(context.Context, *QueryShowAllPackagesRequest) (*QueryShowAllPackagesResponse, error)
 	// Queries a list of ShowPackageInfo items.
 	ShowPackageInfo(context.Context, *QueryShowPackageInfoRequest) (*QueryShowPackageInfoResponse, error)
-	// Queries a PackageUniqueIndex by id.
-	PackageUniqueIndex(context.Context, *QueryGetPackageUniqueIndexRequest) (*QueryGetPackageUniqueIndexResponse, error)
-	// Queries a list of PackageUniqueIndex items.
-	PackageUniqueIndexAll(context.Context, *QueryAllPackageUniqueIndexRequest) (*QueryAllPackageUniqueIndexResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -914,23 +466,11 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
-func (*UnimplementedQueryServer) PackageEntry(ctx context.Context, req *QueryGetPackageEntryRequest) (*QueryGetPackageEntryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PackageEntry not implemented")
-}
-func (*UnimplementedQueryServer) PackageEntryAll(ctx context.Context, req *QueryAllPackageEntryRequest) (*QueryAllPackageEntryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PackageEntryAll not implemented")
-}
 func (*UnimplementedQueryServer) ShowAllPackages(ctx context.Context, req *QueryShowAllPackagesRequest) (*QueryShowAllPackagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShowAllPackages not implemented")
 }
 func (*UnimplementedQueryServer) ShowPackageInfo(ctx context.Context, req *QueryShowPackageInfoRequest) (*QueryShowPackageInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ShowPackageInfo not implemented")
-}
-func (*UnimplementedQueryServer) PackageUniqueIndex(ctx context.Context, req *QueryGetPackageUniqueIndexRequest) (*QueryGetPackageUniqueIndexResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PackageUniqueIndex not implemented")
-}
-func (*UnimplementedQueryServer) PackageUniqueIndexAll(ctx context.Context, req *QueryAllPackageUniqueIndexRequest) (*QueryAllPackageUniqueIndexResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PackageUniqueIndexAll not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -951,42 +491,6 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).Params(ctx, req.(*QueryParamsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_PackageEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryGetPackageEntryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).PackageEntry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/lavanet.lava.packages.Query/PackageEntry",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).PackageEntry(ctx, req.(*QueryGetPackageEntryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_PackageEntryAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryAllPackageEntryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).PackageEntryAll(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/lavanet.lava.packages.Query/PackageEntryAll",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).PackageEntryAll(ctx, req.(*QueryAllPackageEntryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1027,42 +531,6 @@ func _Query_ShowPackageInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_PackageUniqueIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryGetPackageUniqueIndexRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).PackageUniqueIndex(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/lavanet.lava.packages.Query/PackageUniqueIndex",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).PackageUniqueIndex(ctx, req.(*QueryGetPackageUniqueIndexRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_PackageUniqueIndexAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryAllPackageUniqueIndexRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).PackageUniqueIndexAll(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/lavanet.lava.packages.Query/PackageUniqueIndexAll",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).PackageUniqueIndexAll(ctx, req.(*QueryAllPackageUniqueIndexRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.packages.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -1072,28 +540,12 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Params_Handler,
 		},
 		{
-			MethodName: "PackageEntry",
-			Handler:    _Query_PackageEntry_Handler,
-		},
-		{
-			MethodName: "PackageEntryAll",
-			Handler:    _Query_PackageEntryAll_Handler,
-		},
-		{
 			MethodName: "ShowAllPackages",
 			Handler:    _Query_ShowAllPackages_Handler,
 		},
 		{
 			MethodName: "ShowPackageInfo",
 			Handler:    _Query_ShowPackageInfo_Handler,
-		},
-		{
-			MethodName: "PackageUniqueIndex",
-			Handler:    _Query_PackageUniqueIndex_Handler,
-		},
-		{
-			MethodName: "PackageUniqueIndexAll",
-			Handler:    _Query_PackageUniqueIndexAll_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1153,153 +605,6 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryGetPackageEntryRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetPackageEntryRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetPackageEntryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.PackageIndex) > 0 {
-		i -= len(m.PackageIndex)
-		copy(dAtA[i:], m.PackageIndex)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.PackageIndex)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryGetPackageEntryResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetPackageEntryResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetPackageEntryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.PackageEntry.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryAllPackageEntryRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryAllPackageEntryRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryAllPackageEntryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryAllPackageEntryResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryAllPackageEntryResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryAllPackageEntryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.PackageEntry) > 0 {
-		for iNdEx := len(m.PackageEntry) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PackageEntry[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -1475,151 +780,6 @@ func (m *QueryShowPackageInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryGetPackageUniqueIndexRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetPackageUniqueIndexRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetPackageUniqueIndexRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Id != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryGetPackageUniqueIndexResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryGetPackageUniqueIndexResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryGetPackageUniqueIndexResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.PackageUniqueIndex.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryAllPackageUniqueIndexRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryAllPackageUniqueIndexRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryAllPackageUniqueIndexRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		{
-			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.PackageUniqueIndex) > 0 {
-		for iNdEx := len(m.PackageUniqueIndex) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PackageUniqueIndex[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1648,62 +808,6 @@ func (m *QueryParamsResponse) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *QueryGetPackageEntryRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.PackageIndex)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryGetPackageEntryResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.PackageEntry.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *QueryAllPackageEntryRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryAllPackageEntryResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.PackageEntry) > 0 {
-		for _, e := range m.PackageEntry {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	return n
 }
 
@@ -1771,61 +875,6 @@ func (m *QueryShowPackageInfoResponse) Size() (n int) {
 	_ = l
 	if m.PackageInfo != nil {
 		l = m.PackageInfo.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryGetPackageUniqueIndexRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Id != 0 {
-		n += 1 + sovQuery(uint64(m.Id))
-	}
-	return n
-}
-
-func (m *QueryGetPackageUniqueIndexResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.PackageUniqueIndex.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *QueryAllPackageUniqueIndexRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryAllPackageUniqueIndexResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.PackageUniqueIndex) > 0 {
-		for _, e := range m.PackageUniqueIndex {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	if m.Pagination != nil {
-		l = m.Pagination.Size()
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
@@ -1946,377 +995,6 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryGetPackageEntryRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetPackageEntryRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetPackageEntryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PackageIndex", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PackageIndex = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryGetPackageEntryResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetPackageEntryResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetPackageEntryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PackageEntry", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.PackageEntry.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryAllPackageEntryRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPackageEntryRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPackageEntryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageRequest{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryAllPackageEntryResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPackageEntryResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPackageEntryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PackageEntry", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PackageEntry = append(m.PackageEntry, PackageEntry{})
-			if err := m.PackageEntry[len(m.PackageEntry)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageResponse{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2766,364 +1444,6 @@ func (m *QueryShowPackageInfoResponse) Unmarshal(dAtA []byte) error {
 				m.PackageInfo = &Package{}
 			}
 			if err := m.PackageInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryGetPackageUniqueIndexRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetPackageUniqueIndexRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetPackageUniqueIndexRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryGetPackageUniqueIndexResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetPackageUniqueIndexResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetPackageUniqueIndexResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PackageUniqueIndex", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.PackageUniqueIndex.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryAllPackageUniqueIndexRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPackageUniqueIndexRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPackageUniqueIndexRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageRequest{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryAllPackageUniqueIndexResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPackageUniqueIndexResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPackageUniqueIndexResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PackageUniqueIndex", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PackageUniqueIndex = append(m.PackageUniqueIndex, PackageUniqueIndex{})
-			if err := m.PackageUniqueIndex[len(m.PackageUniqueIndex)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Pagination == nil {
-				m.Pagination = &query.PageResponse{}
-			}
-			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

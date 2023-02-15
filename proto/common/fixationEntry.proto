@@ -5,6 +5,13 @@ option go_package = "github.com/lavanet/lava/common/types";
 import "gogoproto/gogo.proto"; 
 
 message Entry {
-    uint64 block = 1; // block the entry was created (functions as key)
-    bytes marshaled_data = 2; // marshaled data of the entry
+    string index = 1;
+    uint64 block = 2; // block the entry was created (functions as key)
+    bytes marshaled_data = 3; // marshaled data of the entry
 }
+
+message UniqueIndex {
+    uint64 id = 1;
+    string package_unique_index = 2;
+  }
+  

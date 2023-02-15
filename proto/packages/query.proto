@@ -5,8 +5,6 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "packages/params.proto";
-import "packages/package_entry.proto";
-import "packages/package_unique_index.proto";
 // this line is used by starport scaffolding # 1
 
 import "cosmos/base/v1beta1/coin.proto";
@@ -18,16 +16,7 @@ service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/packages/params";
-  }
-  // Queries a PackageEntry by index.
-	rpc PackageEntry(QueryGetPackageEntryRequest) returns (QueryGetPackageEntryResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_entry/{package_index}";
-	}
-
-	// Queries a list of PackageEntry items.
-	rpc PackageEntryAll(QueryAllPackageEntryRequest) returns (QueryAllPackageEntryResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_entry";
-	}
+  }	
 
 // Queries a list of ShowAllPackages items.
 	rpc ShowAllPackages(QueryShowAllPackagesRequest) returns (QueryShowAllPackagesResponse) {
@@ -37,16 +26,6 @@ service Query {
 // Queries a list of ShowPackageInfo items.
 	rpc ShowPackageInfo(QueryShowPackageInfoRequest) returns (QueryShowPackageInfoResponse) {
 		option (google.api.http).get = "/lavanet/lava/packages/show_package_info/{package_index}";
-	}
-
-// Queries a PackageUniqueIndex by id.
-	rpc PackageUniqueIndex(QueryGetPackageUniqueIndexRequest) returns (QueryGetPackageUniqueIndexResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_unique_index/{id}";
-	}
-
-	// Queries a list of PackageUniqueIndex items.
-	rpc PackageUniqueIndexAll(QueryAllPackageUniqueIndexRequest) returns (QueryAllPackageUniqueIndexResponse) {
-		option (google.api.http).get = "/lavanet/lava/packages/package_unique_index";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -59,24 +38,6 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryGetPackageEntryRequest {
-	  string package_index = 1;
-
-}
-
-message QueryGetPackageEntryResponse {
-	PackageEntry package_entry = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllPackageEntryRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllPackageEntryResponse {
-	repeated PackageEntry packageEntry = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryShowAllPackagesRequest {
@@ -100,21 +61,5 @@ message QueryShowPackageInfoResponse {
   Package package_info = 1;
 }
 
-message QueryGetPackageUniqueIndexRequest {
-	uint64 id = 1;
-}
-
-message QueryGetPackageUniqueIndexResponse {
-	PackageUniqueIndex package_unique_index = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllPackageUniqueIndexRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllPackageUniqueIndexResponse {
-	repeated PackageUniqueIndex package_unique_index = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
 
 // this line is used by starport scaffolding # 3

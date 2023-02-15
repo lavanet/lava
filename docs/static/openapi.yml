@@ -30045,6 +30045,192 @@ paths:
           type: string
       tags:
         - Query
+  /lavanet/lava/packages/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaPackagesParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/packages/show_all_packages:
+    get:
+      summary: Queries a list of ShowAllPackages items.
+      operationId: LavanetLavaPackagesShowAllPackages
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              packages_info:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    name:
+                      type: string
+                    price:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  '/lavanet/lava/packages/show_package_info/{package_index}':
+    get:
+      summary: Queries a list of ShowPackageInfo items.
+      operationId: LavanetLavaPackagesShowPackageInfo
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              package_info:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  duration:
+                    type: string
+                    format: uint64
+                    title: duration of the package's subscription in months
+                  epoch:
+                    type: string
+                    format: uint64
+                    title: the epoch that this package was created
+                  price:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    title: package price (in ulava)
+                  compute_units:
+                    type: string
+                    format: uint64
+                    title: max CU for the whole package duration
+                  compute_units_per_epoch:
+                    type: string
+                    format: uint64
+                    title: max CU per epoch for the whole package duration
+                  servicers_to_pair:
+                    type: string
+                    format: uint64
+                    title: max providers to be paired in an epoch
+                  allow_overuse:
+                    type: boolean
+                    title: allow CU overuse flag
+                  overuse_rate:
+                    type: string
+                    format: uint64
+                    title: price of CU overuse
+                  subscriptions:
+                    type: string
+                    format: uint64
+                    title: the amount of users currently subscribed to this package
+                  name:
+                    type: string
+                    title: package name (non-unique "human" name)
+                  description:
+                    type: string
+                    title: package description (for humans)
+                  type:
+                    type: string
+                    title: package type
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: package_index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   '/lavanet/lava/pairing/clients/{chainID}':
     get:
       summary: Queries a list of Clients items.
@@ -53561,6 +53747,184 @@ definitions:
       epochBlockHash:
         type: string
         format: byte
+  lavanet.lava.packages.Package:
+    type: object
+    properties:
+      index:
+        type: string
+      duration:
+        type: string
+        format: uint64
+        title: duration of the package's subscription in months
+      epoch:
+        type: string
+        format: uint64
+        title: the epoch that this package was created
+      price:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+        title: package price (in ulava)
+      compute_units:
+        type: string
+        format: uint64
+        title: max CU for the whole package duration
+      compute_units_per_epoch:
+        type: string
+        format: uint64
+        title: max CU per epoch for the whole package duration
+      servicers_to_pair:
+        type: string
+        format: uint64
+        title: max providers to be paired in an epoch
+      allow_overuse:
+        type: boolean
+        title: allow CU overuse flag
+      overuse_rate:
+        type: string
+        format: uint64
+        title: price of CU overuse
+      subscriptions:
+        type: string
+        format: uint64
+        title: the amount of users currently subscribed to this package
+      name:
+        type: string
+        title: package name (non-unique "human" name)
+      description:
+        type: string
+        title: package description (for humans)
+      type:
+        type: string
+        title: package type
+  lavanet.lava.packages.Params:
+    type: object
+    description: Params defines the parameters for the module.
+  lavanet.lava.packages.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.packages.QueryShowAllPackagesResponse:
+    type: object
+    properties:
+      packages_info:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            name:
+              type: string
+            price:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+  lavanet.lava.packages.QueryShowPackageInfoResponse:
+    type: object
+    properties:
+      package_info:
+        type: object
+        properties:
+          index:
+            type: string
+          duration:
+            type: string
+            format: uint64
+            title: duration of the package's subscription in months
+          epoch:
+            type: string
+            format: uint64
+            title: the epoch that this package was created
+          price:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+            title: package price (in ulava)
+          compute_units:
+            type: string
+            format: uint64
+            title: max CU for the whole package duration
+          compute_units_per_epoch:
+            type: string
+            format: uint64
+            title: max CU per epoch for the whole package duration
+          servicers_to_pair:
+            type: string
+            format: uint64
+            title: max providers to be paired in an epoch
+          allow_overuse:
+            type: boolean
+            title: allow CU overuse flag
+          overuse_rate:
+            type: string
+            format: uint64
+            title: price of CU overuse
+          subscriptions:
+            type: string
+            format: uint64
+            title: the amount of users currently subscribed to this package
+          name:
+            type: string
+            title: package name (non-unique "human" name)
+          description:
+            type: string
+            title: package description (for humans)
+          type:
+            type: string
+            title: package type
+  lavanet.lava.packages.showAllPackagesInfoStruct:
+    type: object
+    properties:
+      index:
+        type: string
+      name:
+        type: string
+      price:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
   lavanet.lava.pairing.CacheUsage:
     type: object
     properties:
