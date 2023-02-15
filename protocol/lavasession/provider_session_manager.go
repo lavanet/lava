@@ -34,12 +34,16 @@ func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool, thres
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
-func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string) (active bool, err error) {
-	_, err = psm.getActiveConsumer(epoch, address)
+func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string) (isActive bool, providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
+	providerSessionWithConsumer, err = psm.getActiveConsumer(epoch, address)
 	if err != nil {
-		return false, nil
+		if ConsumerNotRegisteredYet.Is(err) {
+			// consumer is not registered, but its not an error.
+			return false, nil, nil
+		}
+		return false, nil, err
 	}
-	return true, nil // no error
+	return true, providerSessionWithConsumer, nil // no error
 }
 
 func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, relayNum uint64, sessionId uint64) (*SingleProviderSession, error) {
@@ -49,13 +53,13 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, rela
 		return nil, InvalidEpochError
 	}
 
-	activeConsumer, err := psm.IsActiveConsumer(epoch, address)
+	activeConsumer, providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, address)
 	if err != nil {
 		return nil, err
 	}
 	var singleProviderSession *SingleProviderSession
 	if activeConsumer {
-		singleProviderSession, err = psm.getSessionFromAnActiveConsumer(epoch, address, sessionId) // after getting session verify relayNum etc..
+		singleProviderSession, err = psm.getSessionFromAnActiveConsumer(providerSessionWithConsumer, sessionId) // after getting session verify relayNum etc..
 	} else if relayNum == 1 {
 		// if no session found, we need to create and validate few things: pairing,
 		// return here and call a different function.
@@ -63,8 +67,8 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, rela
 
 		singleProviderSession, err = psm.getNewSession(epoch, address) // after getting session verify relayNum etc..
 	} else {
-		utils.LavaFormatError("GetSession", NewSessionWithRelayNumError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
-		return nil, NewSessionWithRelayNumError
+		return nil, utils.LavaFormatError("GetSession Error, Consumer is not active and relayNum != 1",
+			NewSessionWithRelayNumError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "relayNum": strconv.FormatUint(relayNum, 10)})
 	}
 
 	if err != nil {
@@ -74,6 +78,7 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, rela
 
 	// validate later relayNum etc..
 
+	// singleProviderSession Is locked at this point (currently it isnt dont forget to add locks where needed)
 	return singleProviderSession, nil
 }
 
@@ -86,7 +91,7 @@ func (psm *ProviderSessionManager) createNewSingleProviderSession(providerSessio
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address string) (singleProviderSession *ProviderSessionsWithConsumer, err error) {
+func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address string) (providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
 	psm.lock.RLock()
 	defer psm.lock.RUnlock()
 	valid, _ := psm.IsValidEpoch(epoch)
@@ -104,17 +109,15 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 			return providerSessionWithConsumer, nil // no error
 		}
 	}
-	return nil, ConsumerNotActive
+	return nil, ConsumerNotRegisteredYet
 }
 
-func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(epoch uint64, address string, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
-	providerSessionWithConsumer, err := psm.getActiveConsumer(epoch, address)
-	if err != nil {
-		return nil, err
-	}
+func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
 	session, err := providerSessionWithConsumer.GetExistingSession(sessionId)
 	if err == nil {
 		return session, nil
+	} else if SessionDoesNotExist.Is(err) {
+		utils.LavaFormatFatal("GetExistingSession Unexpected Error", err, nil)
 	}
 	// if we don't have a session we need to create a new one.
 	return psm.createNewSingleProviderSession(providerSessionWithConsumer, sessionId)

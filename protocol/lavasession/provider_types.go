@@ -96,7 +96,7 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 	if session, ok := pswc.Sessions[sessionId]; ok {
 		return session, nil
 	}
-	return nil, fmt.Errorf("session does not exist")
+	return nil, SessionDoesNotExist
 }
 
 type StateQuery interface {
