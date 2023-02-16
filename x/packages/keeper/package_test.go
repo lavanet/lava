@@ -263,7 +263,7 @@ func TestMultiplePackagesAdditions(t *testing.T) {
 	require.Equal(t, TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+TEST_PACKAGES_WITH_SAME_ID_AMOUNT, len(packages))
 }
 
-// Helper function to get all the entries of all indices using the packageUniqueIndex list
+// Helper function to get all the entries of all indices using the uniqueIndex list
 func getAllEntriesFromStorage(t *testing.T, ts *testStruct) []types.Package {
 	uniqueIndices := common.GetAllFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages.GetStoreKey(), ts.keepers.Packages.GetCdc(), types.UniqueIndexKeyPrefix())
 	packages := []types.Package{}

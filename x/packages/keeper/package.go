@@ -10,7 +10,7 @@ import (
 // SetPackage sets a specific package in its fixated form
 func (k Keeper) SetPackage(ctx sdk.Context, packageIndex string, packageToSet types.Package) error {
 	// get the entry to set
-	entry, found := common.GetEntry(ctx, k.storeKey, types.PackageEntryKeyPrefix, k.cdc, packageIndex)
+	entry, found := common.GetEntry(ctx, k.storeKey, types.PackageKeyPrefix, k.cdc, packageIndex)
 	if !found {
 		return utils.LavaError(ctx, k.Logger(ctx), "SetPackage_package_not_found", map[string]string{"packageIndex": packageIndex}, "could not find the package to set")
 	}
@@ -20,7 +20,7 @@ func (k Keeper) SetPackage(ctx sdk.Context, packageIndex string, packageToSet ty
 
 	// update the entry's marshaledData field and set the entry
 	entry.MarshaledData = b
-	common.SetEntry(ctx, k.storeKey, types.PackageEntryKeyPrefix, k.cdc, entry)
+	common.SetEntry(ctx, k.storeKey, types.PackageKeyPrefix, k.cdc, entry)
 	return nil
 }
 
@@ -42,7 +42,7 @@ func (k Keeper) AddPackage(ctx sdk.Context, packageToAdd types.Package) error {
 	b := k.cdc.MustMarshal(&packageToAdd)
 
 	// add a new fixated entry with the marshaled packageToAdd
-	err := common.AddFixatedEntry(ctx, k.storeKey, types.PackageEntryKeyPrefix, types.UniqueIndexKeyPrefix(), k.cdc, packageToAdd.Index, b)
+	err := common.AddFixatedEntry(ctx, k.storeKey, types.PackageKeyPrefix, types.UniqueIndexKeyPrefix(), k.cdc, packageToAdd.Index, b)
 	if err != nil {
 		return utils.LavaError(ctx, k.Logger(ctx), "AddPackage_add_fixated_entry_failed", map[string]string{"packageToAdd": packageToAdd.String()}, "could not add new package fixated entry to storage")
 	}
@@ -53,7 +53,7 @@ func (k Keeper) AddPackage(ctx sdk.Context, packageToAdd types.Package) error {
 // GetPackageForBlock returns a package or its older version (according to the requested block) from its index
 func (k Keeper) GetPackageForBlock(ctx sdk.Context, packageIndex string, block uint64) (types.Package, bool, string) {
 	// get the fixation entry that is suits the requested block
-	entry, found := common.GetEntryOlderVersionByBlock(ctx, k.storeKey, types.PackageEntryKeyPrefix, k.cdc, packageIndex, block)
+	entry, found := common.GetEntryOlderVersionByBlock(ctx, k.storeKey, types.PackageKeyPrefix, k.cdc, packageIndex, block)
 	if !found {
 		return types.Package{}, found, ""
 	}
@@ -70,13 +70,13 @@ func (k Keeper) RemovePackage(
 	ctx sdk.Context,
 	packageIndex string,
 ) {
-	common.RemoveEntry(ctx, k.storeKey, types.PackageEntryKeyPrefix, packageIndex)
+	common.RemoveEntry(ctx, k.storeKey, types.PackageKeyPrefix, packageIndex)
 }
 
 // GetAllPackageVersions returns all package versions by the given index
 func (k Keeper) GetAllPackageVersions(ctx sdk.Context, packageIndex string) []types.Package {
 	// get all the fixation entries by the packageIndex
-	entries := common.GetAllEntriesForIndex(ctx, k.storeKey, types.PackageEntryKeyPrefix, k.cdc, packageIndex)
+	entries := common.GetAllEntriesForIndex(ctx, k.storeKey, types.PackageKeyPrefix, k.cdc, packageIndex)
 
 	// go over the entries
 	packages := []types.Package{}

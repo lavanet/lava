@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common"
@@ -21,7 +20,7 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 
 	// get all packages' unique indices
 	allPackageEntryUniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, k.storeKey, k.cdc, types.UniqueIndexKeyPrefix())
-	fmt.Printf("allPackageEntryUniqueIndices: %v\n", allPackageEntryUniqueIndices)
+
 	// go over all the packages' unique indices
 	for _, packageEntryUniqueIndex := range allPackageEntryUniqueIndices {
 		packageInfoStruct := types.ShowAllPackagesInfoStruct{}
