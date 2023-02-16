@@ -3,6 +3,8 @@ package types
 import (
 	fmt "fmt"
 	"strconv"
+
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const minCU = 1
@@ -16,6 +18,30 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		APIInterfaceTendermintRPC: {},
 		APIInterfaceRest:          {},
 		APIInterfaceGrpc:          {},
+	}
+
+	if spec.ReliabilityThreshold == 0 {
+		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
+	}
+
+	if spec.BlocksInFinalizationProof == 0 {
+		return details, fmt.Errorf("BlocksInFinalizationProof can't be zero")
+	}
+
+	if spec.AverageBlockTime <= 0 {
+		return details, fmt.Errorf("AverageBlockTime can't be zero")
+	}
+
+	if spec.AllowedBlockLagForQosSync <= 0 {
+		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
+	}
+
+	if spec.MinStakeClient.Denom != epochstoragetypes.TokenDenom || spec.MinStakeClient.Amount.IsZero() {
+		return details, fmt.Errorf("MinStakeClient can't be zero andmust have denom of ulava")
+	}
+
+	if spec.MinStakeProvider.Denom != epochstoragetypes.TokenDenom || spec.MinStakeProvider.Amount.IsZero() {
+		return details, fmt.Errorf("MinStakeProvider can't be zero andmust have denom of ulava")
 	}
 
 	for _, api := range spec.Apis {
