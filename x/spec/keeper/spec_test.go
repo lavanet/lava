@@ -181,6 +181,14 @@ var	specTemplates = []struct{
 		ok:      false,
 	},
 	{
+		name:    "import:with-override-dup",
+		desc:    "import two specs with duplicate api with override in current spec",
+		imports: []string{"three-four", "threeX-four"},
+		apis:    []int{6},
+		result:  []int{6, 4},
+		ok:      true,
+	},
+	{
 		name:    "import:two-level",
 		desc:    "import two level (one spec that imports another)",
 		imports: []string{"import:one-spec"}, // assumes 'import:one-spec' already added
@@ -233,7 +241,7 @@ func TestSpecWithImport(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			fullspec, err := keeper.ExpandSpec(ctx, spec)
 			if tt.ok == true {
-				require.Nil(t, err)
+				require.Nil(t, err, err)
 				require.Len(t, fullspec.Apis, len(tt.result))
 				for i := 0; i < len(tt.result); i++ {
 					require.Equal(t, fullspec.Apis[i].Name, apis[tt.result[i]].Name)
