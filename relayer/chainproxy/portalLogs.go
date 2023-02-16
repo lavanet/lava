@@ -42,6 +42,16 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigAppName(newRelicAppName),
 		newrelic.ConfigLicense(newRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
+		func(cfg *newrelic.Config) {
+			// Set specific Config fields inside a custom ConfigOption.
+			sMaxSamplesStored, ok := os.LookupEnv("NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED")
+			if ok {
+				maxSamplesStored, err := strconv.Atoi(sMaxSamplesStored)
+				if err != nil {
+					cfg.TransactionEvents.MaxSamplesStored = maxSamplesStored
+				}
+			}
+		},
 	)
 	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
