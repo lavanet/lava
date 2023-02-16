@@ -2,7 +2,7 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -56,8 +56,18 @@ type ProviderSessionsWithConsumer struct {
 	Lock          sync.RWMutex
 }
 
-// reads cs.BlockedEpoch atomically
-func (pswc *ProviderSessionsWithConsumer) atomicWriteBlockedEpoch(blockStatus uint32) {
+type SingleProviderSession struct {
+	userSessionsParent *ProviderSessionsWithConsumer
+	CuSum              uint64
+	LatestRelayCu      uint64
+	SessionID          uint64
+	lock               sync.RWMutex
+	RelayNum           uint64
+	PairingEpoch       uint64
+}
+
+// reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer    = 1
+func (pswc *ProviderSessionsWithConsumer) atomicWriteBlockedEpoch(blockStatus uint32) { // rename to blocked consumer not blocked epoch
 	atomic.StoreUint32(&pswc.isBlockListed, blockStatus)
 }
 
@@ -66,18 +76,40 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadBlockedEpoch() (blockStatus 
 	return atomic.LoadUint32(&pswc.isBlockListed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) readBlockListedAtomic() {
+func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComputeUnits uint64) {
+	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
-type SingleProviderSession struct {
-	userSessionsParent *ProviderSessionsWithConsumer
-	CuSum              uint64
-	LatestRelayCu      uint64
-	UniqueIdentifier   uint64
-	Lock               sync.RWMutex
-	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
-	RelayNum           uint64
-	PairingEpoch       uint64
+func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
+	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicWriteMaxComputeUnits(maxComputeUnits uint64) {
+	atomic.StoreUint64(&pswc.epochData.MaxComputeUnits, maxComputeUnits)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
+	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
+}
+
+func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+	session = &SingleProviderSession{
+		userSessionsParent: pswc,
+		SessionID:          sessionId,
+		PairingEpoch:       epoch,
+	}
+	session.lock.Lock()
+	return session, nil
+}
+
+func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
+	pswc.Lock.RLock()
+	defer pswc.Lock.RUnlock()
+	if session, ok := pswc.Sessions[sessionId]; ok {
+		session.lock.Lock()
+		return session, nil
+	}
+	return nil, SessionDoesNotExist
 }
 
 func (sps *SingleProviderSession) GetPairingEpoch() uint64 {
@@ -88,22 +120,71 @@ func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
 	atomic.StoreUint64(&sps.PairingEpoch, epoch)
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64) error {
-	// verify locked
-	// verify total cu in the parent (atomic read)
-	// verify the proof is right according to relay cu, last proof CU and current proof CU: CuSum + currentCU = relayRequestTotalCU
-	// set LatestRelayCu (verify it's 0)
-	// add to parent with atomic - make sure there is no race to corrupt the total cu in the parent
-	return fmt.Errorf("not implemented")
+// Verify the SingleProviderSession is locked when getting to this function, if its not locked throw an error
+func (sps *SingleProviderSession) verifyLock() error {
+	if sps.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer sps.lock.Unlock()
+		return LockMisUseDetectedError
+	}
+	return nil
 }
 
-func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
-	pswc.Lock.RLock()
-	defer pswc.Lock.RUnlock()
-	if session, ok := pswc.Sessions[sessionId]; ok {
-		return session, nil
+func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
+	err := sps.verifyLock() // sps is locked
+	if err != nil {
+		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
 	}
-	return nil, SessionDoesNotExist
+
+	if sps.RelayNum+1 != relayNumber {
+		sps.lock.Unlock() // unlock on error
+		return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer, &map[string]string{
+			"relayNumber":  strconv.FormatUint(relayNumber, 10),
+			"sps.RelayNum": strconv.FormatUint(sps.RelayNum+1, 10),
+		})
+	}
+
+	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
+	if relayRequestTotalCU < sps.CuSum+currentCU {
+		sps.lock.Unlock() // unlock on error
+		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch, &map[string]string{
+			"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+			"sps.CuSum":           strconv.FormatUint(sps.CuSum, 10),
+			"currentCU":           strconv.FormatUint(currentCU, 10),
+		})
+	}
+
+	// this must happen first, as we also validate and add the used cu to parent here
+	err = sps.validateAndAddUsedCU(currentCU, maxCu)
+	if err != nil {
+		sps.lock.Unlock() // unlock on error
+		return err
+	}
+	// finished validating, can add all info.
+	sps.LatestRelayCu = currentCU   // 1. update latest
+	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
+	sps.RelayNum = sps.RelayNum + 1
+
+	return nil
+}
+
+func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
+	for {
+		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
+		if usedCu+currentCU > maxCu {
+			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer, &map[string]string{
+				"usedCu":    strconv.FormatUint(usedCu, 10),
+				"currentCU": strconv.FormatUint(currentCU, 10),
+				"maxCu":     strconv.FormatUint(maxCu, 10),
+			})
+		}
+		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again
+		// this can happen when multiple sessions are adding their cu at the same time.
+		// comparing and adding is protecting against race conditions as the parent is not locked.
+		if sps.userSessionsParent.atomicCompareAndWriteUsedComputeUnits(usedCu+currentCU, usedCu) {
+			return nil
+		}
+	}
 }
 
 type StateQuery interface {

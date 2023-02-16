@@ -28,9 +28,12 @@ var ( // Consumer Side Errors
 )
 
 var ( // Provider Side Errors
-	InvalidEpochError           = sdkerrors.New("InvalidEpoch Error", 881, "Requested Epoch Is Too Old")
-	NewSessionWithRelayNumError = sdkerrors.New("NewSessionWithRelayNum Error", 882, "Requested Session With Relay Number Is Invalid")
-	ConsumerIsBlockListed       = sdkerrors.New("ConsumerIsBlockListed Error", 883, "This Consumer Is Blocked.")
-	ConsumerNotRegisteredYet    = sdkerrors.New("ConsumerNotActive Error", 884, "This Consumer Is Not Currently In The Pool.")
-	SessionDoesNotExist         = sdkerrors.New("SessionDoesNotExist Error", 885, "This Session Id Does Not Exist.")
+	InvalidEpochError               = sdkerrors.New("InvalidEpoch Error", 881, "Requested Epoch Is Too Old")
+	NewSessionWithRelayNumError     = sdkerrors.New("NewSessionWithRelayNum Error", 882, "Requested Session With Relay Number Is Invalid")
+	ConsumerIsBlockListed           = sdkerrors.New("ConsumerIsBlockListed Error", 883, "This Consumer Is Blocked.")
+	ConsumerNotRegisteredYet        = sdkerrors.New("ConsumerNotActive Error", 884, "This Consumer Is Not Currently In The Pool.")
+	SessionDoesNotExist             = sdkerrors.New("SessionDoesNotExist Error", 885, "This Session Id Does Not Exist.")
+	MaximumCULimitReachedByConsumer = sdkerrors.New("MaximumCULimitReachedByConsumer Error", 886, "Consumer reached maximum cu limit")
+	ProviderConsumerCuMisMatch      = sdkerrors.New("ProviderConsumerCuMisMatch Error", 887, "Provider and Consumer disagree on total cu for session")
+	RelayNumberMismatch             = sdkerrors.New("RelayNumberMismatch Error", 887, "Provider and Consumer disagree on relay number for session")
 )

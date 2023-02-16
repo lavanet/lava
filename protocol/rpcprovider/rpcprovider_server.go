@@ -105,8 +105,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
-	if err != nil {
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum, request.RelayNum)
+	if err != nil { // TODO: any error here we need to convert to session out of sync error and return that to the user
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
@@ -255,9 +255,18 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	// handle non data reliability relays
 	if request.DataReliability == nil {
 		// regular session, verifies pairing epoch and relay number
-		singleProviderSession, err = rpcps.providerSessionManager.GetSession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.RelayNum, request.SessionId)
+		singleProviderSession, err = rpcps.providerSessionManager.GetSession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("failed to get a provider session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			if lavasession.ConsumerNotRegisteredYet.Is(err) {
+				// TODO:: validate consumer address get max cu and vrf data and transfer register.
+
+				singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId)
+				if err != nil {
+					return nil, nil, utils.LavaFormatError("failed to RegisterProviderSessionWithConsumer", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+				}
+			} else {
+				return nil, nil, utils.LavaFormatError("failed to get a provider session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			}
 		}
 		return singleProviderSession, extractedConsumerAddress, nil
 	}

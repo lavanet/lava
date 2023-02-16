@@ -63,7 +63,11 @@ func TestConnector(t *testing.T) {
 	defer listener.Close()
 	ctx := context.Background()
 	conn := NewConnector(ctx, numberOfClients, listenerAddressTcp)
-	time.Sleep(5 * time.Second) // sleep for 5 seconds so all connections will be created asynchronously
+	for { // wait for the routine to finish connecting
+		if len(conn.freeClients) == numberOfClients {
+			break
+		}
+	}
 	require.Equal(t, len(conn.freeClients), numberOfClients)
 	increasedClients := numberOfClients * 2 // increase to double the number of clients
 	rpcList := make([]*rpcclient.Client, increasedClients)
@@ -85,7 +89,11 @@ func TestConnectorGrpc(t *testing.T) {
 	defer server.Stop()
 	ctx := context.Background()
 	conn := NewGRPCConnector(ctx, numberOfClients, listenerAddress)
-	time.Sleep(5 * time.Second) // sleep for 5 seconds so all connections will be created asynchronously
+	for { // wait for the routine to finish connecting
+		if len(conn.freeClients) == numberOfClients {
+			break
+		}
+	}
 	require.Equal(t, len(conn.freeClients), numberOfClients)
 	increasedClients := numberOfClients * 2 // increase to double the number of clients
 	rpcList := make([]*grpc.ClientConn, increasedClients)
@@ -94,7 +102,7 @@ func TestConnectorGrpc(t *testing.T) {
 		require.Nil(t, err)
 		rpcList[i] = rpc
 	}
-	require.Equal(t, int(conn.usedClients), increasedClients) // checking we have used clients
+	require.Equal(t, increasedClients, int(conn.usedClients)) // checking we have used clients
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
