@@ -37,7 +37,6 @@ type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
-	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
@@ -45,6 +44,7 @@ type ProviderStateTrackerInf interface {
 	GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error)
 	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
+	GetEpochSize(ctx context.Context) (uint64, error)
 }
 
 type RPCProvider struct {
@@ -64,7 +64,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer, len(rpcProviderEndpoints))
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker)
-
+	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err, nil)
@@ -83,7 +83,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, providerStateTracker)
+		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint)
 		key := rpcProviderEndpoint.Key()
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)

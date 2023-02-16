@@ -1,7 +1,6 @@
 package lavasession
 
 import (
-	"context"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -185,8 +184,4 @@ func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu u
 			return nil
 		}
 	}
-}
-
-type StateQuery interface {
-	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
 }

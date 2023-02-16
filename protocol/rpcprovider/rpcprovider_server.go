@@ -46,7 +46,7 @@ type ReliabilityManagerInf interface {
 
 type RewardServerInf interface {
 	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool)
-	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string)
+	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string) (updatedWithProof bool)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
 }
@@ -80,18 +80,9 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.stateTracker = stateTracker
 	rpcps.providerAddress = providerAddress
 }
+
+// function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	// verify the relay metadata is valid (epoch, signature)
-	// verify the consumer is authorised
-	// create/bring a session
-	// verify the relay data is valid (cu, chainParser, requested block)
-	// check cache hit
-	// send the relay to the node using chainProxy
-	// set cache entry (async)
-	// attach data reliability finalization data
-	// sign the response
-	// send the proof to reward server
-	// finalize the session
 	utils.LavaFormatDebug("Provider got relay request", &map[string]string{
 		"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -127,7 +118,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
 				})
 			} else {
-				rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				if !updated {
+					return nil, utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, nil)
+				}
 				utils.LavaFormatDebug("Provider Finished DataReliability Relay Successfully", &map[string]string{
 					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),

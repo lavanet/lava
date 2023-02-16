@@ -16,7 +16,6 @@ type ProviderSessionManager struct {
 	lock                     sync.RWMutex
 	blockedEpoch             uint64 // requests from this epoch are blocked
 	rpcProviderEndpoint      *RPCProviderEndpoint
-	stateQuery               StateQuery
 }
 
 // reads cs.BlockedEpoch atomically
@@ -215,6 +214,6 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 }
 
 // Returning a new provider session manager
-func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, stateQuery StateQuery) *ProviderSessionManager {
-	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, stateQuery: stateQuery}
+func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint) *ProviderSessionManager {
+	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint}
 }

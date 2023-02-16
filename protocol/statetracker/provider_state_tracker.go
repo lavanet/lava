@@ -65,10 +65,6 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64) {
-	// TODO: implement
-}
-
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest) {
 	// TODO: implement
 }
@@ -94,4 +90,8 @@ func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddr
 
 func (pst *ProviderStateTracker) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
 	return pst.stateQuery.GetProvidersCountForConsumer(ctx, consumerAddress, epoch, chainID)
+}
+
+func (pst *ProviderStateTracker) GetEpochSize(ctx context.Context) (uint64, error) {
+	return pst.stateQuery.GetEpochSize(ctx)
 }
