@@ -213,6 +213,12 @@ func (psm *ProviderSessionManager) SubscriptionFailure(consumerAddress string, e
 	// 		userSessions.Lock.Unlock()
 }
 
+// called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
+func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, storedCU uint64) error {
+	// load the session and update the CU inside
+	return fmt.Errorf("not implemented")
+}
+
 // Returning a new provider session manager
 func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, stateQuery StateQuery) *ProviderSessionManager {
 	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, stateQuery: stateQuery}

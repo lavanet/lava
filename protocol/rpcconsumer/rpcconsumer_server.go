@@ -296,6 +296,9 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 		}
 		return relayResult, err
 	}
+	// TODO: need to check that if provider fails and returns error, this is reflected here and we run onSessionDone
+	// my thoughts are that this fails if the grpc fails not if the provider fails, and if the provider returns an error this is reflected by the Recv function on the chainListener calling us here
+	// and this is too late
 	relayResult.ReplyServer = &replyServer
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseRelayAndCu(singleConsumerSession)
 	return relayResult, err

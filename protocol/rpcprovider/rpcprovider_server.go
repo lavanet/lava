@@ -45,7 +45,7 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool)
 	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
@@ -97,18 +97,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
-	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
+	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
-		return nil, rpcps.handleRelayErrorStatus(err)
-	}
-	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
-	if err != nil {
-		return nil, rpcps.handleRelayErrorStatus(err)
-	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
-	if err != nil { // TODO: any error here we need to convert to session out of sync error and return that to the user
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
@@ -128,7 +118,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
 			if request.DataReliability == nil {
-				rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
+				err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+				if err != nil {
+					return nil, err
+				}
 				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -144,6 +137,26 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
+
+func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
+	relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// parse the message to extract the cu and chainMessage for sending it
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	relayCU := chainMessage.GetServiceApi().ComputeUnits
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	if err != nil {
+		// TODO: any error here we need to convert to session out of sync error and return that to the user
+		return nil, nil, nil, err
+	}
+	return relaySession, consumerAddress, chainMessage, nil
+}
+
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
 	if request.DataReliability != nil {
 		return utils.LavaFormatError("subscribe data reliability not supported", nil, nil)
@@ -154,17 +167,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
 	ctx := context.Background()
-	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
-	if err != nil {
-		return rpcps.handleRelayErrorStatus(err)
-	}
-	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
-	if err != nil {
-		return rpcps.handleRelayErrorStatus(err)
-	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
@@ -175,7 +178,10 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
+			err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+			if err != nil {
+				return err
+			}
 			utils.LavaFormatDebug("Provider finished subscribing", &map[string]string{
 				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -194,6 +200,17 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		}
 	}
 	return rpcps.handleRelayErrorStatus(err)
+}
+
+func (rpcps *RPCProviderServer) SendProof(ctx context.Context, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
+	epoch := relaySession.PairingEpoch
+	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
+	if !updatedWithProof && storedCU > request.CuSum {
+		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, &map[string]string{"existing_proof_cu": strconv.FormatUint(storedCU, 10)})
+		return rpcps.handleRelayErrorStatus(err)
+	}
+	return nil
 }
 
 func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress) (subscribed bool, errRet error) {
@@ -264,7 +281,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *
 }
 
 // verifies basic relay fields, and gets a provider session
-func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (singleProviderSession *lavasession.SingleProviderSession, extractedConsumerAddress sdk.AccAddress, err error) {
+func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request *pairingtypes.RelayRequest) (singleProviderSession *lavasession.SingleProviderSession, extractedConsumerAddress sdk.AccAddress, err error) {
 	valid, thresholdEpoch := rpcps.providerSessionManager.IsValidEpoch(uint64(request.BlockHeight))
 	if !valid {
 		return nil, nil, utils.LavaFormatError("user reported invalid lava block height", nil, &map[string]string{

@@ -1,19 +1,25 @@
 package statetracker
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 )
 
 const (
-	defaultGasPrice      = "0.000000001ulava"
-	defaultGasAdjustment = 1.5
+	defaultGasPrice          = "0.000000001ulava"
+	defaultGasAdjustment     = 1.5
+	RETRY_INCORRECT_SEQUENCE = 5
 )
 
 type TxSender struct {
@@ -29,28 +35,80 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 }
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg) error {
-	txf := ts.txFactory.WithGasPrices(defaultGasPrice)
-	txf = txf.WithGasAdjustment(defaultGasAdjustment)
+	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
+	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
 	clientCtx := ts.clientCtx
-	txf, err := ts.prepareFactory(txf)
+	txfactory, err := ts.prepareFactory(txfactory)
 	if err != nil {
 		return err
 	}
 
-	_, gasUsed, err := tx.CalculateGas(clientCtx, txf, msg)
+	_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
 	if err != nil {
 		return err
 	}
 
-	txf = txf.WithGas(gasUsed)
+	txfactory = txfactory.WithGas(gasUsed)
+	myWriter := bytes.Buffer{}
+	hasSequenceError := false
+	success := false
+	idx := -1
+	sequenceNumberParsed := 0
+	summarizedTransactionResult := ""
+	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
+		if hasSequenceError { // a retry
+			// if sequence number error happened it means that we already sent a tx this block.
+			// we need to wait a block for the tx to be approved,
+			// only then we can ask for a new sequence number continue and try again.
+			var seq uint64
+			if sequenceNumberParsed != 0 {
+				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", &map[string]string{"sequence": strconv.Itoa(sequenceNumberParsed)})
+				seq = uint64(sequenceNumberParsed)
+			} else {
+				var err error
+				_, seq, err = clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
+				if err != nil {
+					utils.LavaFormatError("failed to get correct sequence number for account, give up", err, nil)
+					break // give up
+				}
+			}
+			txfactory = txfactory.WithSequence(seq)
+			myWriter.Reset()
+			utils.LavaFormatInfo("Retrying with sequence number:", &map[string]string{
+				"SeqNum": strconv.FormatUint(seq, 10),
+			})
+		}
+		var transactionResult string
+		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
+		if err != nil {
+			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
+				"msg": fmt.Sprintf("%+v", msg),
+			})
+			transactionResult = err.Error() // incase we got an error the tx result is basically the error
+		} else {
+			transactionResult = myWriter.String()
+		}
+		var returnCode int
+		summarizedTransactionResult, returnCode = common.ParseTransactionResult(transactionResult)
 
-	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
-	if err != nil {
-		return err
+		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
+			success = true
+		} else if strings.Contains(transactionResult, "account sequence") {
+			hasSequenceError = true
+			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
+			if err != nil {
+				utils.LavaFormatWarning("Failed findSequenceNumber", err, &map[string]string{"sequence": transactionResult})
+			}
+			summarizedTransactionResult = transactionResult
+		}
 	}
+	if !success {
+		return utils.LavaFormatError(fmt.Sprintf("failed sending transaction %s", summarizedTransactionResult), nil, nil)
+	}
+	utils.LavaFormatInfo(fmt.Sprintf("succeeded sending transaction %s", summarizedTransactionResult), nil)
 	return nil
 }
 

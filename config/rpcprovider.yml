@@ -1,0 +1,13 @@
+endpoints:
+    - chain-id: COS3
+      api-interface: tendermintrpc
+      network-address: 127.0.0.1:3333
+      node-url: ["wss://tendermint-websocket.xyz","https://tendermint-https.xyz"]
+    - chain-id: COS3
+      api-interface: rest
+      network-address: 127.0.0.1:3333
+      node-url: ["https://tendermint-rest.xyz"]
+    - chain-id: ETH1
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3333
+      node-url: ["wss://ethereum-websocket.xyz"]
