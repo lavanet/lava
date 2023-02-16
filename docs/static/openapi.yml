@@ -53152,6 +53152,8 @@ definitions:
       unresponsive_providers:
         type: string
         format: byte
+      apiInterface:
+        type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:

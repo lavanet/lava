@@ -308,7 +308,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 			if lavasession.ConsumerNotRegisteredYet.Is(err) {
 				// TODO:: validate consumer address get max cu and vrf data and transfer register.
 
-				singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId)
+				singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId, request.RelayNum)
 				if err != nil {
 					return nil, nil, utils.LavaFormatError("failed to RegisterProviderSessionWithConsumer", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
 				}
