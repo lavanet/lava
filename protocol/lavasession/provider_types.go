@@ -20,7 +20,7 @@ type ProviderSessionsEpochData struct {
 	UsedComputeUnits uint64
 	MaxComputeUnits  uint64
 	DataReliability  *pairingtypes.VRFData
-	VrfPk            utils.VrfPubKey
+	VrfPk            *utils.VrfPubKey
 }
 
 type RPCProviderEndpoint struct {
@@ -154,7 +154,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relay
 	// finished validating, can add all info.
 	sps.LatestRelayCu = currentCU   // 1. update latest
 	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1
+	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 
 	return nil
 }

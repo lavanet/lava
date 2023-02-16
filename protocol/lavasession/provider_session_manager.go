@@ -72,7 +72,7 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sess
 	return psm.getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer, sessionId, epoch, relayNumber)
 }
 
-func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint64, sessionId uint64) (*ProviderSessionsWithConsumer, error) {
+func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint64, sessionId uint64, vrfPk *utils.VrfPubKey, maxCuForConsumer uint64) (*ProviderSessionsWithConsumer, error) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 
@@ -91,8 +91,11 @@ func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[address]
 	if !foundAddressInMap {
 		providerSessionWithConsumer = &ProviderSessionsWithConsumer{
-			consumer:  address,
-			epochData: &ProviderSessionsEpochData{}, // TODO add here all the epoch data get from user
+			consumer: address,
+			epochData: &ProviderSessionsEpochData{
+				VrfPk:           vrfPk,
+				MaxComputeUnits: maxCuForConsumer,
+			},
 		}
 		mapOfProviderSessionsWithConsumer[address] = providerSessionWithConsumer
 	}
@@ -100,11 +103,11 @@ func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint
 }
 
 // TODO add vrfPk and Max compute units.
-func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(address string, epoch uint64, sessionId uint64, relayNumber uint64, vrfPk *utils.VrfPubKey, maxCuForConsumer uint64) (*SingleProviderSession, error) {
 	providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, address)
 	if err != nil {
 		if ConsumerNotRegisteredYet.Is(err) {
-			providerSessionWithConsumer, err = psm.registerNewSession(address, epoch, sessionId)
+			providerSessionWithConsumer, err = psm.registerNewSession(address, epoch, sessionId, vrfPk, maxCuForConsumer)
 			if err != nil {
 				return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to registerNewSession", err, nil)
 			}
@@ -112,7 +115,6 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(address s
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err, nil)
 		}
 	}
-	// validate relay number?? == 1
 	return psm.getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer, sessionId, epoch, relayNumber)
 }
 

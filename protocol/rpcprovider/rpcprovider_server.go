@@ -302,21 +302,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 	// handle non data reliability relays
 	if request.DataReliability == nil {
-		// regular session, verifies pairing epoch and relay number
-		singleProviderSession, err = rpcps.providerSessionManager.GetSession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId, request.RelayNum)
-		if err != nil {
-			if lavasession.ConsumerNotRegisteredYet.Is(err) {
-				// TODO:: validate consumer address get max cu and vrf data and transfer register.
-
-				singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId, request.RelayNum)
-				if err != nil {
-					return nil, nil, utils.LavaFormatError("failed to RegisterProviderSessionWithConsumer", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
-				}
-			} else {
-				return nil, nil, utils.LavaFormatError("failed to get a provider session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
-			}
-		}
-		return singleProviderSession, extractedConsumerAddress, nil
+		return rpcps.getSingleProviderSessionFlow(ctx, singleProviderSession, request, extractedConsumerAddress)
 	}
 
 	// data reliability session verifications
@@ -329,6 +315,35 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		return nil, nil, utils.LavaFormatError("failed to get a provider data reliability session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "epoch": strconv.FormatInt(request.BlockHeight, 10)})
 	}
 	return dataReliabilitySingleProviderSession, extractedConsumerAddress, nil
+}
+
+func (rpcps *RPCProviderServer) getSingleProviderSessionFlow(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, extractedConsumerAddress sdk.AccAddress) (*lavasession.SingleProviderSession, sdk.AccAddress, error) {
+	consumerAddressString := extractedConsumerAddress.String()
+	// regular session, verifies pairing epoch and relay number
+	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum)
+	if err != nil {
+		if lavasession.ConsumerNotRegisteredYet.Is(err) {
+			valid, _, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.BlockHeight), request.ChainID)
+			if verifyPairingError != nil {
+				return nil, nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			}
+			if !valid {
+				return nil, nil, utils.LavaFormatError("VerifyPairing, this consumer address is not valid with this provider", nil, &map[string]string{"epoch": strconv.FormatInt(request.BlockHeight, 10), "sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			}
+			vrfPk, maxCuForConsumer, getVrfAndMaxCuError := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddressString, request.ChainID, uint64(request.BlockHeight))
+			if getVrfAndMaxCuError != nil {
+				return nil, nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetVrfPkAndMaxCuForUser failed", getVrfAndMaxCuError, &map[string]string{"epoch": strconv.FormatInt(request.BlockHeight, 10), "sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			}
+			// After validating the consumer we can register it with provider session manager.
+			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum, vrfPk, maxCuForConsumer)
+			if err != nil {
+				return nil, nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+			}
+		} else {
+			return nil, nil, utils.LavaFormatError("Failed to get a provider session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "relayNum": strconv.FormatUint(request.RelayNum, 10)})
+		}
+	}
+	return singleProviderSession, extractedConsumerAddress, nil
 }
 
 func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(request *pairingtypes.RelayRequest) error {
