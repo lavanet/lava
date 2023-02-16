@@ -139,7 +139,7 @@ func (pl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err erro
 }
 
 func (pl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string) bool {
-	refererHeaderValue, _ := headers[RefererHeaderKey]
+	refererHeaderValue := headers[RefererHeaderKey]
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 

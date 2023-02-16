@@ -143,7 +143,7 @@ func (pl *PortalLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, me
 }
 
 func (pl *PortalLogs) shouldCountMetricForHttp(headers map[string]string) bool {
-	refererHeaderValue, _ := headers[RefererHeaderKey]
+	refererHeaderValue := headers[RefererHeaderKey]
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
