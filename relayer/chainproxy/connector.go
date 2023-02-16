@@ -7,8 +7,15 @@ package chainproxy
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"log"
+	"math/big"
+	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -16,6 +23,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -187,6 +195,7 @@ type GRPCConnector struct {
 	freeClients []*grpc.ClientConn
 	usedClients int
 	addr        string
+	creds       credentials.TransportCredentials
 }
 
 func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnector {
@@ -194,6 +203,9 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 		freeClients: make([]*grpc.ClientConn, 0, nConns),
 		addr:        addr,
 	}
+	connector.CreateCertificates()
+	// TODO: 1. check how to verify if need certificate or not, some will have a cert some wont. how do we know?
+	// maybe though a config file? get the certificate from a file in a path?
 
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
 	utils.LavaFormatInfo("Setting Number of Parallel Connections", &map[string]string{"nConns": strconv.FormatUint(uint64(NumberOfParallelConnections), 10)})
@@ -331,4 +343,38 @@ func (connector *GRPCConnector) Close() {
 			break
 		}
 	}
+}
+
+func (connector *GRPCConnector) CreateCertificates() {
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatalf("failed to generate private key: %v", err)
+	}
+
+	// Define a self-signed certificate.
+	template := x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "example.com"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{"example.com", "localhost"},
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	cert, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		utils.LavaFormatFatal("failed to create self-signed certificate", err, nil)
+	}
+
+	connector.creds = credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{{
+			Certificate: [][]byte{cert},
+			PrivateKey:  key,
+		}},
+		InsecureSkipVerify: true,
+	})
+
 }

@@ -2,7 +2,13 @@ package chainproxy
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -12,6 +18,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -98,4 +105,52 @@ func TestConnectorGrpc(t *testing.T) {
 	}
 	require.Equal(t, conn.usedClients, 0)                     // checking we dont have clients used
 	require.Equal(t, len(conn.freeClients), increasedClients) // checking we cleaned clients
+}
+
+func TestConnectorGrpcTest(t *testing.T) {
+	ctx := context.Background()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatalf("failed to generate private key: %v", err)
+	}
+
+	// Define a self-signed certificate.
+	template := x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "example.com"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{"example.com", "localhost"},
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	cert, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		log.Fatalf("failed to create self-signed certificate: %v", err)
+	}
+
+	creds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{{
+			Certificate: [][]byte{cert},
+			PrivateKey:  key,
+		}},
+		InsecureSkipVerify: true,
+	})
+
+	nctx, cancel := context.WithTimeout(ctx, DialTimeout*3)
+	defer cancel()
+	grpcClient, err := grpc.DialContext(nctx, "secured-connection-ip", grpc.WithBlock(), grpc.WithInsecure())
+	require.Nil(t, err)
+	grpcClient.Close()
+	grpcClient, err = grpc.DialContext(nctx,
+		"secured-connection-ip",
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(creds))
+	require.Nil(t, err)
+
+	grpcClient.Close()
+
 }
