@@ -20,7 +20,7 @@ type ProviderSessionsEpochData struct {
 	UsedComputeUnits uint64
 	MaxComputeUnits  uint64
 	DataReliability  *pairingtypes.VRFData
-	VrfPk            utils.VrfPubKey
+	VrfPk            *utils.VrfPubKey
 }
 
 type RPCProviderEndpoint struct {
@@ -65,13 +65,13 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
-// reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer    = 1
-func (pswc *ProviderSessionsWithConsumer) atomicWriteBlockedEpoch(blockStatus uint32) { // rename to blocked consumer not blocked epoch
+// reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer = 1
+func (pswc *ProviderSessionsWithConsumer) atomicWriteConsumerBlocked(blockStatus uint32) { // rename to blocked consumer not blocked epoch
 	atomic.StoreUint32(&pswc.isBlockListed, blockStatus)
 }
 
-// reads cs.BlockedEpoch atomically
-func (pswc *ProviderSessionsWithConsumer) atomicReadBlockedEpoch() (blockStatus uint32) {
+// reads cs.BlockedEpoch atomically to determine if the consumer is blocked notBlockListedConsumer = 0, blockListedConsumer = 1
+func (pswc *ProviderSessionsWithConsumer) atomicReadConsumerBlocked() (blockStatus uint32) {
 	return atomic.LoadUint32(&pswc.isBlockListed)
 }
 
@@ -120,7 +120,7 @@ func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
 }
 
 // Verify the SingleProviderSession is locked when getting to this function, if its not locked throw an error
-func (sps *SingleProviderSession) verifyLock() error {
+func (sps *SingleProviderSession) VerifyLock() error {
 	if sps.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
 		defer sps.lock.Unlock()
@@ -130,7 +130,7 @@ func (sps *SingleProviderSession) verifyLock() error {
 }
 
 func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64) error {
-	err := sps.verifyLock() // sps is locked
+	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
 	}
@@ -154,7 +154,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relay
 	// finished validating, can add all info.
 	sps.LatestRelayCu = currentCU   // 1. update latest
 	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1
+	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 
 	return nil
 }
