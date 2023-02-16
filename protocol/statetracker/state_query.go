@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -159,6 +160,28 @@ func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, e
 
 }
 
+func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {
+	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
+	if err != nil {
+		return nil, err
+	}
+	transactionResults := blockResults.TxsResults
+	for _, tx := range transactionResults {
+		events := tx.Events
+		for _, event := range events {
+			if event.Type == "lava_relay_payment" {
+				payment, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
+				if err != nil {
+					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, &map[string]string{"event": fmt.Sprintf("%v", event)})
+				}
+				utils.LavaFormatDebug("relay_payment_event", &map[string]string{"payment": fmt.Sprintf("%+v", payment)})
+				payments = append(payments, payment)
+			}
+		}
+	}
+	return payments, nil
+}
+
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
 	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
 	if err != nil {
@@ -249,4 +272,12 @@ func (psq *ProviderStateQuery) GetEpochSize(ctx context.Context) (uint64, error)
 		return 0, err
 	}
 	return res.Params.EpochBlocks, nil
+}
+
+func (psq *ProviderStateQuery) EarliestBlockInMemory(ctx context.Context) (uint64, error) {
+	res, err := psq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+	if err != nil {
+		return 0, err
+	}
+	return res.EpochDetails.EarliestStart, nil
 }

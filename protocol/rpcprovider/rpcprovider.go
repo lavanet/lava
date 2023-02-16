@@ -37,7 +37,7 @@ type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 	LatestBlock() int64
@@ -45,6 +45,8 @@ type ProviderStateTrackerInf interface {
 	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error)
 	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 	GetEpochSize(ctx context.Context) (uint64, error)
+	EarliestBlockInMemory(ctx context.Context) (uint64, error)
+	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 }
 
 type RPCProvider struct {
@@ -65,6 +67,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
+	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err, nil)

@@ -10,10 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 const (
@@ -34,7 +36,37 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 	return ts, nil
 }
 
-func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg) error {
+func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasUsed uint64, txFactory tx.Factory) error {
+	txEvents := simResult.GetResult().Events
+	lavaReward := sdk.NewCoin("ulava", sdk.NewInt(0))
+	for _, txEvent := range txEvents {
+		if txEvent.Type == "lava_relay_payment" {
+			for _, attribute := range txEvent.Attributes {
+				if string(attribute.Key) == "BasePay" {
+					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
+					if err != nil {
+						return utils.LavaFormatError("failed parsing simulation result", nil, &map[string]string{"attribute": string(attribute.Value)})
+					}
+					lavaReward = lavaReward.Add(lavaRewardTemp)
+					break
+				}
+			}
+		}
+	}
+
+	txFactory = txFactory.WithGas(gasUsed)
+
+	gasFee := txFactory.GasPrices()[0]
+	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
+	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
+
+	if gasFee.IsGTE(lavaRewardDec) {
+		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, &map[string]string{"gasFee": gasFee.String(), "lava_reward:": lavaRewardDec.String()})
+	}
+	return nil
+}
+
+func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
 	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
@@ -46,9 +78,16 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg) er
 		return err
 	}
 
-	_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
+	simResult, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
 	if err != nil {
 		return err
+	}
+
+	if checkProfitability {
+		err := ts.checkProfitability(simResult, gasUsed, txfactory)
+		if err != nil {
+			return err
+		}
 	}
 
 	txfactory = txfactory.WithGas(gasUsed)
@@ -157,7 +196,7 @@ func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizatio
 	// TODO: retry logic for sequence number mismatch
 	// TODO: make sure we are not spamming the same conflicts, previous code only detecs relay by relay, it has no state tracking wether it reported already
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg)
+	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err, nil)
 	}
@@ -177,9 +216,18 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
+func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error {
+	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
+	if err != nil {
+		return utils.LavaFormatError("relay_payment - sending Tx Failed", err, nil)
+	}
+	return nil
+}
+
 func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
 	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err, nil)
 	}
@@ -188,7 +236,7 @@ func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymana
 
 func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
 	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg)
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err, nil)
 	}

@@ -65,8 +65,19 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest) {
-	// TODO: implement
+func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
+	payemntUpdater := NewPaymentUpdater(pst.stateQuery)
+	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
+	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", payemntUpdaterRaw)})
+	}
+
+	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+}
+
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error {
+	return pst.txSender.TxRelayPayment(ctx, relayRequests, description)
 }
 
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
@@ -94,4 +105,8 @@ func (pst *ProviderStateTracker) GetProvidersCountForConsumer(ctx context.Contex
 
 func (pst *ProviderStateTracker) GetEpochSize(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.GetEpochSize(ctx)
+}
+
+func (pst *ProviderStateTracker) EarliestBlockInMemory(ctx context.Context) (uint64, error) {
+	return pst.stateQuery.EarliestBlockInMemory(ctx)
 }
