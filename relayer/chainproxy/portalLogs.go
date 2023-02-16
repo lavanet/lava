@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -122,8 +121,8 @@ func (pl *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *PortalLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, c *fiber.Ctx) {
-	if pl.StoreMetricData && pl.shouldCountMetricForHttp(c) {
+func (pl *PortalLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
+	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
 		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
@@ -143,8 +142,8 @@ func (pl *PortalLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, me
 	}
 }
 
-func (pl *PortalLogs) shouldCountMetricForHttp(c *fiber.Ctx) bool {
-	refererHeaderValue := c.Get(RefererHeaderKey, "")
+func (pl *PortalLogs) shouldCountMetricForHttp(headers map[string]string) bool {
+	refererHeaderValue, _ := headers[RefererHeaderKey]
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 

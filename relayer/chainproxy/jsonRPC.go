@@ -385,7 +385,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
-		go cp.portalLogs.AddMetricForHttp(metricsData, err, c)
+		go cp.portalLogs.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)

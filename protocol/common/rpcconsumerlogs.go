@@ -117,8 +117,8 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, c *fiber.Ctx) {
-	if pl.StoreMetricData && pl.shouldCountMetricForHttp(c) {
+func (pl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
+	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
 		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
@@ -138,8 +138,8 @@ func (pl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err erro
 	}
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForHttp(c *fiber.Ctx) bool {
-	refererHeaderValue := c.Get(RefererHeaderKey, "")
+func (pl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string) bool {
+	refererHeaderValue, _ := headers[RefererHeaderKey]
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
