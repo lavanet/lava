@@ -118,10 +118,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
 			if request.DataReliability == nil {
-				epoch := relaySession.PairingEpoch
-				storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
-				if !updatedWithProof {
-					rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+				err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+				if err != nil {
+					return nil, err
 				}
 				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
@@ -179,10 +178,9 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			epoch := relaySession.PairingEpoch
-			storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
-			if !updatedWithProof {
-				rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+			err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+			if err != nil {
+				return err
 			}
 			utils.LavaFormatDebug("Provider finished subscribing", &map[string]string{
 				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
@@ -202,6 +200,17 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		}
 	}
 	return rpcps.handleRelayErrorStatus(err)
+}
+
+func (rpcps *RPCProviderServer) SendProof(ctx context.Context, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
+	epoch := relaySession.PairingEpoch
+	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
+	if !updatedWithProof && storedCU > request.CuSum {
+		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, &map[string]string{"existing_proof_cu": strconv.FormatUint(storedCU, 10)})
+		return rpcps.handleRelayErrorStatus(err)
+	}
+	return nil
 }
 
 func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress) (subscribed bool, errRet error) {
