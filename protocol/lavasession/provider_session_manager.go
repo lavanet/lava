@@ -162,6 +162,32 @@ func (psm *ProviderSessionManager) ProcessUnsubscribeTendermint(apiName string, 
 	return fmt.Errorf("not implemented")
 }
 
+func (psm *ProviderSessionManager) NewSubscription(consumerAddress string, epoch uint64, subscription *RPCSubscription) error {
+	// return an error if subscriptionID exists
+	// original code:
+	// userSessions.Lock.Lock()
+	// if _, ok := userSessions.Subs[subscriptionID]; ok {
+	// 	return utils.LavaFormatError("SubscriptiodID: "+subscriptionID+"exists", nil, nil)
+	// }
+	// userSessions.Subs[subscriptionID] = &subscription{
+	// 	id:                   subscriptionID,
+	// 	sub:                  clientSub,
+	// 	subscribeRepliesChan: subscribeRepliesChan,
+	// }
+	// userSessions.Lock.Unlock()
+	return fmt.Errorf("not implemented")
+}
+
+func (psm *ProviderSessionManager) SubscriptionFailure(consumerAddress string, epoch uint64, subscriptionID string) {
+	// original code
+	// userSessions.Lock.Lock()
+	// 		if sub, ok := userSessions.Subs[subscriptionID]; ok {
+	// 			sub.disconnect()
+	// 			delete(userSessions.Subs, subscriptionID)
+	// 		}
+	// 		userSessions.Lock.Unlock()
+}
+
 // Returning a new provider session manager
 func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, stateQuery StateQuery) *ProviderSessionManager {
 	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, stateQuery: stateQuery}

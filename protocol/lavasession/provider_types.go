@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
@@ -29,6 +30,12 @@ type RPCProviderEndpoint struct {
 	ApiInterface   string   `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64   `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrl        []string `yaml:"node-url,omitempty" json:"node-url,omitempty" mapstructure:"node-url"`
+}
+
+type RPCSubscription struct {
+	Id                   string
+	Sub                  *rpcclient.ClientSubscription
+	SubscribeRepliesChan chan interface{}
 }
 
 func (rpcpe *RPCProviderEndpoint) Key() string {

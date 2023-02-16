@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -125,7 +126,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
 			if request.DataReliability == nil {
-				rpcps.rewardServer.SendNewProof(ctx, request, relaySession.PairingEpoch, consumerAddress.String())
+				rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
 				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -142,7 +143,87 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
-	return fmt.Errorf("not implemented")
+	utils.LavaFormatDebug("Provider got relay subscribe request", &map[string]string{
+		"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		"request.cu":          strconv.FormatUint(request.CuSum, 10),
+	})
+	ctx := context.Background()
+	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
+	if err != nil {
+		return rpcps.handleRelayErrorStatus(err)
+	}
+	// parse the message to extract the cu and chainMessage for sending it
+	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
+	if err != nil {
+		return rpcps.handleRelayErrorStatus(err)
+	}
+	relayCU := chainMessage.GetServiceApi().ComputeUnits
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	if err != nil {
+		return rpcps.handleRelayErrorStatus(err)
+	}
+	err = rpcps.TryRelaySubscribe(ctx, request, srv, chainMessage, consumerAddress) // this function does not return until subscription ends
+	return err
+}
+
+func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress) error {
+	var reply *pairingtypes.RelayReply
+	var clientSub *rpcclient.ClientSubscription
+	var subscriptionID string
+	subscribeRepliesChan := make(chan interface{})
+	reply, subscriptionID, clientSub, err := rpcps.chainProxy.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage)
+	if err != nil {
+		return utils.LavaFormatError("Subscription failed", err, nil)
+	}
+	subscription := &lavasession.RPCSubscription{
+		Id:                   subscriptionID,
+		Sub:                  clientSub,
+		SubscribeRepliesChan: subscribeRepliesChan,
+	}
+	err = rpcps.providerSessionManager.NewSubscription(consumerAddress.String(), uint64(request.BlockHeight), subscription)
+	if err != nil {
+		return err
+	}
+	err = srv.Send(reply) // this reply contains the RPC ID
+	if err != nil {
+		utils.LavaFormatError("Error getting RPC ID", err, nil)
+	}
+
+	for {
+		select {
+		case <-clientSub.Err():
+			utils.LavaFormatError("client sub", err, nil)
+			// delete this connection from the subs map
+			rpcps.providerSessionManager.SubscriptionFailure(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
+			return err
+		case subscribeReply := <-subscribeRepliesChan:
+			data, err := json.Marshal(subscribeReply)
+			if err != nil {
+				utils.LavaFormatError("client sub unmarshal", err, nil)
+				rpcps.providerSessionManager.SubscriptionFailure(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
+				return err
+			}
+
+			err = srv.Send(
+				&pairingtypes.RelayReply{
+					Data: data,
+				},
+			)
+			if err != nil {
+				// usually triggered when client closes connection
+				if strings.Contains(err.Error(), "Canceled desc = context canceled") {
+					err = utils.LavaFormatWarning("Client closed connection", err, nil)
+				} else {
+					err = utils.LavaFormatError("srv.Send", err, nil)
+				}
+				rpcps.providerSessionManager.SubscriptionFailure(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
+				return err
+			}
+
+			utils.LavaFormatDebug("Sending data", &map[string]string{"data": string(data)})
+		}
+	}
 }
 
 // verifies basic relay fields, and gets a provider session
