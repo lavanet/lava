@@ -120,7 +120,7 @@ func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
 }
 
 // Verify the SingleProviderSession is locked when getting to this function, if its not locked throw an error
-func (sps *SingleProviderSession) verifyLock() error {
+func (sps *SingleProviderSession) VerifyLock() error {
 	if sps.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
 		defer sps.lock.Unlock()
@@ -130,7 +130,7 @@ func (sps *SingleProviderSession) verifyLock() error {
 }
 
 func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64) error {
-	err := sps.verifyLock() // sps is locked
+	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
 	}

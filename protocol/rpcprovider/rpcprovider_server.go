@@ -104,7 +104,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			"request.userAddr":  consumerAddress.String(),
 		})
 	} else {
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request)
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
@@ -170,7 +170,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	subscribed, err := rpcps.TryRelaySubscribe(ctx, request, srv, chainMessage, consumerAddress) // this function does not return until subscription ends
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request) // TODO: when we pay as u go on subscription this will need to change
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession) // TODO: when we pay as u go on subscription this will need to change
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {

@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ProviderSessionManager struct {
@@ -167,9 +166,14 @@ func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *Singl
 	return nil
 }
 
-func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession, request *pairingtypes.RelayRequest) (err error) {
-	// need to handle dataReliability session separately
-	// store the request as proof
+// OnSessionDone unlocks the session gracefully, this happens when session finished successfully
+func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession) (err error) {
+	err = singleProviderSession.VerifyLock()
+	if err != nil {
+		return err
+	}
+	singleProviderSession.lock.Unlock()
+	// session finished successfully
 	return nil
 }
 
