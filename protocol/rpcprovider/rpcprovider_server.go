@@ -182,6 +182,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 				"request.cu":          strconv.FormatUint(request.CuSum, 10),
 				"termination":         err.Error(),
 			})
+			err = nil // we don't want to return an error here
 		}
 	} else {
 		// we didn't even manage to subscribe

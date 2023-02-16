@@ -290,13 +290,11 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
 	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
-		if lavasession.SubscriptionInitiationError.Is(err) {
-			errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
-			if errReport != nil {
-				return relayResult, utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, &map[string]string{"original error": err.Error()})
-			}
-			return relayResult, err
+		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
+		if errReport != nil {
+			return relayResult, utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, &map[string]string{"original error": err.Error()})
 		}
+		return relayResult, err
 	}
 	relayResult.ReplyServer = &replyServer
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseRelayAndCu(singleConsumerSession)
