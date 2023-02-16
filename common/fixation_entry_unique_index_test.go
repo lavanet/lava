@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// NOTE: all the tests here are using the packages module's keeper as an example keeper. Generally, we could've used any other keeper
+
 func createNUniqueIndex(ctx sdk.Context, storeKey sdk.StoreKey, cdc codec.BinaryCodec, entryKeyPrefix string, n int) []types.UniqueIndex {
 	items := make([]types.UniqueIndex, n)
 	for i := range items {
@@ -34,7 +36,7 @@ func TestUniqueIndexGet(t *testing.T) {
 	}
 }
 
-func TestPackageUniqueIndexRemove(t *testing.T) {
+func TestUniqueIndexRemove(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
 	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.Packages.GetStoreKey(), keepers.Packages.GetCdc(), packagestypes.UniqueIndexKeyPrefix(), 10)
 	for _, item := range items {
@@ -44,7 +46,7 @@ func TestPackageUniqueIndexRemove(t *testing.T) {
 	}
 }
 
-func TestPackageUniqueIndexGetAll(t *testing.T) {
+func TestUniqueIndexGetAll(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
 	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.Packages.GetStoreKey(), keepers.Packages.GetCdc(), packagestypes.UniqueIndexKeyPrefix(), 10)
 	require.ElementsMatch(t,
@@ -53,7 +55,7 @@ func TestPackageUniqueIndexGetAll(t *testing.T) {
 	)
 }
 
-func TestPackageUniqueIndexCount(t *testing.T) {
+func TestUniqueIndexCount(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
 	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.Packages.GetStoreKey(), keepers.Packages.GetCdc(), packagestypes.UniqueIndexKeyPrefix(), 10)
 	count := uint64(len(items))

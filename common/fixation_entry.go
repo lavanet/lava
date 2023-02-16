@@ -14,7 +14,7 @@ import (
 func SetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entry types.Entry) {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
 	b := cdc.MustMarshal(&entry)
-	store.Set(EntryKey(
+	store.Set(entryKey(
 		entry.Index,
 	), b)
 }
@@ -23,7 +23,7 @@ func SetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc
 func GetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string) (val types.Entry, found bool) {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
 
-	b := store.Get(EntryKey(
+	b := store.Get(entryKey(
 		entryIndex,
 	))
 	if b == nil {
@@ -37,7 +37,7 @@ func GetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc
 // Remove entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
 func RemoveEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, entryIndex string) {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
-	store.Delete(EntryKey(
+	store.Delete(entryKey(
 		entryIndex,
 	))
 }
@@ -58,7 +58,7 @@ func GetAllEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, 
 	return
 }
 
-func EntryKey(
+func entryKey(
 	entryIndex string,
 ) []byte {
 	var key []byte
@@ -71,9 +71,9 @@ func EntryKey(
 }
 
 // Function to create a new fixation entry, add it to the KVStore and update the entry's older versions indices. Note, the entryIndex should be without the version num suffix
-func AddFixatedEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, uniqueIndexEntryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, marshalledData []byte) error {
+func AddEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, uniqueIndexEntryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, marshalledData []byte) error {
 	// create a new fixated entry
-	entryToSet, err := CreateNewFixatedEntry(ctx, entryIndex, uint64(ctx.BlockHeight()), marshalledData)
+	entryToSet, err := CreateNewEntry(ctx, entryIndex, uint64(ctx.BlockHeight()), marshalledData)
 	if err != nil {
 		return utils.LavaError(ctx, ctx.Logger(), "AddFixatedEntry_create_new_fixated_entry_failed", map[string]string{"err": err.Error()}, "could not create new fixated entry")
 	}
@@ -82,7 +82,7 @@ func AddFixatedEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix stri
 	// check if there were more entries proposed in this block that have the same entryIndex as entryToSet
 	if !checkEntryProposedInThisBlock(ctx, storeKey, entryKeyPrefix, cdc, entryToSet) {
 		// update the older versions entries indices. Also return whether the entry is a first version entry (no older versions saved in the KVStore)
-		isFirstVersion, err = UpdateEntryIndices(ctx, storeKey, entryKeyPrefix, cdc, entryToSet.GetIndex())
+		isFirstVersion, err = updateEntryIndices(ctx, storeKey, entryKeyPrefix, cdc, entryToSet.GetIndex())
 		if err != nil {
 			return utils.LavaError(ctx, ctx.Logger(), "AddFixatedEntry_entry_indices_update_failed", map[string]string{"entryToSetIndex": entryToSet.Index}, "could not update entries indices")
 		}
@@ -113,7 +113,7 @@ func checkEntryProposedInThisBlock(ctx sdk.Context, storeKey sdk.StoreKey, entry
 }
 
 // Function to update the indices of older versions of some entry due to new entry version (number suffix is increased by 1)
-func UpdateEntryIndices(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string) (bool, error) {
+func updateEntryIndices(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string) (bool, error) {
 	// get all the entries for a given index (all its versions)
 	entries := GetAllEntriesForIndex(ctx, storeKey, entryKeyPrefix, cdc, entryIndex)
 
@@ -128,7 +128,7 @@ func UpdateEntryIndices(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix s
 		oldVersionEntry := *entries[i]
 
 		// construct an updated index for the old version entry (increase the number suffix by 1)
-		oldVersionEntry.Index = CreateOldVersionIndex(entryIndex, uint64(i))
+		oldVersionEntry.Index = createOldVersionIndex(entryIndex, uint64(i))
 
 		// set the old version entry with the updated index (overwrite)
 		SetEntry(ctx, storeKey, entryKeyPrefix, cdc, oldVersionEntry)
@@ -138,7 +138,7 @@ func UpdateEntryIndices(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix s
 }
 
 // Function to create a fixated entry from block and marshaled data
-func CreateNewFixatedEntry(ctx sdk.Context, index string, block uint64, marshaledData []byte) (*types.Entry, error) {
+func CreateNewEntry(ctx sdk.Context, index string, block uint64, marshaledData []byte) (*types.Entry, error) {
 	// check that marshaledData is not nil
 	if marshaledData == nil {
 		return nil, utils.LavaError(ctx, ctx.Logger(), "CreateNewFixatedEntry_failed", nil, "can't create new fixated entry, marshaled data is nil")
@@ -167,7 +167,7 @@ func GetEntryOlderVersionByBlock(ctx sdk.Context, storeKey sdk.StoreKey, entryKe
 	versionSuffixCounter := 0
 	for {
 		// construct the older version index
-		versionIndex := CreateOldVersionIndex(index, uint64(versionSuffixCounter))
+		versionIndex := createOldVersionIndex(index, uint64(versionSuffixCounter))
 
 		// get the older version entry
 		entry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, versionIndex)
@@ -189,7 +189,7 @@ func GetEntryOlderVersionByBlock(ctx sdk.Context, storeKey sdk.StoreKey, entryKe
 }
 
 // Function to create an old version index
-func CreateOldVersionIndex(index string, suffixNum uint64) string {
+func createOldVersionIndex(index string, suffixNum uint64) string {
 	return index + "_" + strconv.FormatUint(suffixNum, 10)
 }
 
@@ -210,7 +210,7 @@ func GetAllEntriesForIndex(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefi
 	versionSuffixCounter := 0
 	for {
 		// construct the older version index
-		versionIndex := CreateOldVersionIndex(index, uint64(versionSuffixCounter))
+		versionIndex := createOldVersionIndex(index, uint64(versionSuffixCounter))
 
 		// get the older version entry
 		oldVersionEntry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, versionIndex)

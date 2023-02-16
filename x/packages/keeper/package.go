@@ -42,7 +42,7 @@ func (k Keeper) AddPackage(ctx sdk.Context, packageToAdd types.Package) error {
 	b := k.cdc.MustMarshal(&packageToAdd)
 
 	// add a new fixated entry with the marshaled packageToAdd
-	err := common.AddFixatedEntry(ctx, k.storeKey, types.PackageKeyPrefix, types.UniqueIndexKeyPrefix(), k.cdc, packageToAdd.Index, b)
+	err := common.AddEntry(ctx, k.storeKey, types.PackageKeyPrefix, types.UniqueIndexKeyPrefix(), k.cdc, packageToAdd.Index, b)
 	if err != nil {
 		return utils.LavaError(ctx, k.Logger(ctx), "AddPackage_add_fixated_entry_failed", map[string]string{"packageToAdd": packageToAdd.String()}, "could not add new package fixated entry to storage")
 	}
