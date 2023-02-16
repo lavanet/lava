@@ -3,7 +3,7 @@ package mockproxy
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -51,7 +51,7 @@ func jsonFileToMap(jsonfile string) map[string]string {
 	defer jsonFile.Close()
 
 	// Json to mockMap
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 	if false { // display loaded file contents
 		println(" ::::::::::::::::: FILE CONTENTS :::::::::::::::::", jsonFile.Name())
 		println(string(byteValue))

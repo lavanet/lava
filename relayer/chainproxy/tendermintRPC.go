@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -617,7 +617,7 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, "", nil, err
 	}

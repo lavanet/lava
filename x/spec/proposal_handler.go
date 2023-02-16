@@ -75,30 +75,37 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 }
 
 func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
+	logger := k.Logger(ctx)
+
 	for _, spec := range p.Specs {
-		_, found := k.GetSpec(ctx, spec.Index)
+		bak, found := k.GetSpec(ctx, spec.Index)
 
-		logger := k.Logger(ctx)
-
-		details, err := spec.ValidateSpec(k.MaxCU(ctx))
+		details, err := k.ValidateSpec(ctx, spec)
 		if err != nil {
 			return utils.LavaError(ctx, logger, "invalid_spec", details, err.Error())
 		}
 
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
-
 		k.SetSpec(ctx, spec)
-		// TODO: add api types once its implemented to the event
 
-		var name string
+		name := types.SpecAddEventName
 		if found {
+			// re-validate all the specs, in case the modified spec is imported by
+			// other specs and the new version creates a conflict.
+			for _, spec := range k.GetAllSpec(ctx) {
+				if _, err = k.ValidateSpec(ctx, spec); err != nil {
+					k.SetSpec(ctx, bak)
+					details["invalidates"] = spec.Index
+					return utils.LavaError(ctx, logger, "invalidated_spec", details, err.Error())
+				}
+			}
 			name = types.SpecModifyEventName
-		} else {
-			name = types.SpecAddEventName
 		}
-		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 
 		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")
+
+		// TODO: add api types once its implemented to the event
 	}
+
 	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -74,9 +73,9 @@ func sendRequest(request *http.Request) (*http.Response, error) {
 }
 
 func getDataFromIORead(feed *io.ReadCloser, reset bool) (rawBody []byte) {
-	rawBody, err := ioutil.ReadAll(*feed)
+	rawBody, err := io.ReadAll(*feed)
 	if reset {
-		*feed = ioutil.NopCloser(bytes.NewBuffer(rawBody))
+		*feed = io.NopCloser(bytes.NewBuffer(rawBody))
 	}
 
 	if err != nil {

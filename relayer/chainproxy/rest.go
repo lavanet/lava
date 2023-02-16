@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -389,7 +389,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		defer res.Body.Close()
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

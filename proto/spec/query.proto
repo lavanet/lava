@@ -16,25 +16,36 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/spec/params";
   }
+
   // Queries a Spec by id.
-	rpc Spec(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/spec/{ChainID}";
-	}
+  rpc Spec(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/spec/{ChainID}";
+  }
 
-	// Queries a list of Spec items.
-	rpc SpecAll(QueryAllSpecRequest) returns (QueryAllSpecResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/spec";
-	}
+  // Queries a list of Spec items.
+  rpc SpecAll(QueryAllSpecRequest) returns (QueryAllSpecResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/spec";
+  }
 
-// Queries a list of ShowAllChains items.
-	rpc ShowAllChains(QueryShowAllChainsRequest) returns (QueryShowAllChainsResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/show_all_chains";
-	}
+  // Queries a Spec by id (raw form).
+  rpc SpecRaw(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/spec_raw/{ChainID}";
+  }
 
-// Queries a list of ShowChainInfo items.
-	rpc ShowChainInfo(QueryShowChainInfoRequest) returns (QueryShowChainInfoResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/show_chain_info/{chainName}";
-	}
+  // Queries a list of Spec items (raw form).
+  rpc SpecAllRaw(QueryAllSpecRequest) returns (QueryAllSpecResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/spec_raw";
+  }
+
+  // Queries a list of ShowAllChains items.
+  rpc ShowAllChains(QueryShowAllChainsRequest) returns (QueryShowAllChainsResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/show_all_chains";
+  }
+
+  // Queries a list of ShowChainInfo items.
+  rpc ShowChainInfo(QueryShowChainInfoRequest) returns (QueryShowChainInfoResponse) {
+    option (google.api.http).get = "/lavanet/lava/spec/show_chain_info/{chainName}";
+  }
 
 // this line is used by starport scaffolding # 2
 }

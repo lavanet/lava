@@ -14,7 +14,7 @@ func checkSpecProposal(spec Spec) error {
 	if len(strings.TrimSpace(spec.Index)) == 0 {
 		return sdkerrors.Wrap(ErrBlankSpecName, "spec index cannot be blank")
 	}
-	if len(spec.Apis) == 0 {
+	if len(spec.Apis) == 0 && len(spec.Imports) == 0 {
 		return sdkerrors.Wrap(ErrEmptyApis, "api list cannot be empty")
 	}
 
