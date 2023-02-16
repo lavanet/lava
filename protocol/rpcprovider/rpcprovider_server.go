@@ -304,7 +304,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 	// handle non data reliability relays
 	if request.DataReliability == nil {
-		singleProviderSession, err = rpcps.getSingleProviderSession(ctx, singleProviderSession, request, extractedConsumerAddress.String())
+		singleProviderSession, err = rpcps.getSingleProviderSession(ctx, request, extractedConsumerAddress.String())
 		return singleProviderSession, extractedConsumerAddress, err
 	}
 
@@ -320,7 +320,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	return dataReliabilitySingleProviderSession, extractedConsumerAddress, nil
 }
 
-func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, consumerAddressString string) (*lavasession.SingleProviderSession, error) {
+func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddressString string) (*lavasession.SingleProviderSession, error) {
 	// regular session, verifies pairing epoch and relay number
 	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum)
 	if err != nil {
