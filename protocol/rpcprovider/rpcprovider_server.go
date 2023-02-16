@@ -97,18 +97,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
-	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
+	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
-		return nil, rpcps.handleRelayErrorStatus(err)
-	}
-	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
-	if err != nil {
-		return nil, rpcps.handleRelayErrorStatus(err)
-	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
-	if err != nil { // TODO: any error here we need to convert to session out of sync error and return that to the user
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
@@ -144,6 +134,26 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
+
+func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
+	relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// parse the message to extract the cu and chainMessage for sending it
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	relayCU := chainMessage.GetServiceApi().ComputeUnits
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	if err != nil {
+		// TODO: any error here we need to convert to session out of sync error and return that to the user
+		return nil, nil, nil, err
+	}
+	return relaySession, consumerAddress, chainMessage, nil
+}
+
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
 	if request.DataReliability != nil {
 		return utils.LavaFormatError("subscribe data reliability not supported", nil, nil)
@@ -154,17 +164,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
 	ctx := context.Background()
-	relaySession, consumerAddress, err := rpcps.initRelay(ctx, request)
-	if err != nil {
-		return rpcps.handleRelayErrorStatus(err)
-	}
-	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err := rpcps.chainParser.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
-	if err != nil {
-		return rpcps.handleRelayErrorStatus(err)
-	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
@@ -264,7 +264,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *
 }
 
 // verifies basic relay fields, and gets a provider session
-func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (singleProviderSession *lavasession.SingleProviderSession, extractedConsumerAddress sdk.AccAddress, err error) {
+func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request *pairingtypes.RelayRequest) (singleProviderSession *lavasession.SingleProviderSession, extractedConsumerAddress sdk.AccAddress, err error) {
 	valid, thresholdEpoch := rpcps.providerSessionManager.IsValidEpoch(uint64(request.BlockHeight))
 	if !valid {
 		return nil, nil, utils.LavaFormatError("user reported invalid lava block height", nil, &map[string]string{
