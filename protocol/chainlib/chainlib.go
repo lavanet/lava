@@ -63,26 +63,6 @@ type ChainMessage interface {
 	GetRPCMessage() parser.RPCInput
 }
 
-type ParsableChainMessage interface {
-	GetServiceApi() *spectypes.ServiceApi
-	GetInterface() *spectypes.ApiInterface
-	GetRPCMessage() parser.RPCInput
-	SetParsingData(interface{})
-}
-
-// in case no parsing data is needed
-type DefaultParsableChainMessage struct {
-	ChainMessage
-}
-
-func (dpcm DefaultParsableChainMessage) SetParsingData(interface{}) {
-	// just to implement interface - do nothing
-}
-
-func NewDefaultParsableChainMessage(chainMessage ChainMessage) ParsableChainMessage {
-	return DefaultParsableChainMessage{ChainMessage: chainMessage}
-}
-
 type RelaySender interface {
 	SendRelay(
 		ctx context.Context,
@@ -102,42 +82,18 @@ type ChainProxy interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
-type DefaultChainProxy struct {
-	ParsableChainProxy
-}
-
-func (dcp *DefaultChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	return dcp.ParsableChainProxy.SendNodeMsg(ctx, ch, NewDefaultParsableChainMessage(chainMessage))
-}
-
-func DefaultChainProxyFromParsable(parsableChainProxy ParsableChainProxy) *DefaultChainProxy {
-	dcp := &DefaultChainProxy{ParsableChainProxy: parsableChainProxy}
-	return dcp
-}
-
-type ParsableChainProxy interface {
-	SendNodeMsg(ctx context.Context, ch chan interface{}, parsableChainMessage ParsableChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
-}
-
 func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
-	createParsableChainProxy := func() (ParsableChainProxy, error) {
-		switch rpcProviderEndpoint.ApiInterface {
-		case spectypes.APIInterfaceJsonRPC:
-			return NewJrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
-		case spectypes.APIInterfaceTendermintRPC:
-			return NewtendermintRpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
-		case spectypes.APIInterfaceRest:
-			return NewRestChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
-		case spectypes.APIInterfaceGrpc:
-			return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
-		}
-		return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
+	switch rpcProviderEndpoint.ApiInterface {
+	case spectypes.APIInterfaceJsonRPC:
+		return NewJrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+	case spectypes.APIInterfaceTendermintRPC:
+		return NewtendermintRpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+	case spectypes.APIInterfaceRest:
+		return NewRestChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+	case spectypes.APIInterfaceGrpc:
+		return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
 	}
-	parsableChainProxy, err := createParsableChainProxy()
-	if err != nil {
-		return nil, err
-	}
-	return DefaultChainProxyFromParsable(parsableChainProxy), nil
+	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
 }
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
