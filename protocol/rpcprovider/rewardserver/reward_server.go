@@ -30,3 +30,11 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 	rws.rewardsTxSender = rewardsTxSender
 	return rws
 }
+
+func SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
+	// hold off reward claims for subscription while this is still active
+}
+
+func SubscribeEnded(consumer string, epoch uint64, subscribeID string) {
+	// can collect now
+}
