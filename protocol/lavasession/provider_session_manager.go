@@ -43,7 +43,9 @@ func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string
 }
 
 func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64, relayNumber uint64) (*SingleProviderSession, error) {
-	// TODO:: we can validate here if consumer is blocked with atomicWriteBlockedEpoch
+	if providerSessionWithConsumer.atomicReadConsumerBlocked() != notBlockListedConsumer {
+		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "consumer": providerSessionWithConsumer.consumer})
+	}
 	// before getting any sessions.
 	singleProviderSession, err := psm.getSessionFromAnActiveConsumer(providerSessionWithConsumer, sessionId, epoch) // after getting session verify relayNum etc..
 	if err != nil {
@@ -128,7 +130,7 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 	}
 	if mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]; ok {
 		if providerSessionWithConsumer, ok := mapOfProviderSessionsWithConsumer[address]; ok {
-			if providerSessionWithConsumer.atomicReadBlockedEpoch() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
+			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
 				// consumer is blocked.
 				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "ConsumerAddress": address})
 				return nil, ConsumerIsBlockListed

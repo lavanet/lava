@@ -65,13 +65,13 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
-// reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer    = 1
-func (pswc *ProviderSessionsWithConsumer) atomicWriteBlockedEpoch(blockStatus uint32) { // rename to blocked consumer not blocked epoch
+// reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer = 1
+func (pswc *ProviderSessionsWithConsumer) atomicWriteConsumerBlocked(blockStatus uint32) { // rename to blocked consumer not blocked epoch
 	atomic.StoreUint32(&pswc.isBlockListed, blockStatus)
 }
 
-// reads cs.BlockedEpoch atomically
-func (pswc *ProviderSessionsWithConsumer) atomicReadBlockedEpoch() (blockStatus uint32) {
+// reads cs.BlockedEpoch atomically to determine if the consumer is blocked notBlockListedConsumer = 0, blockListedConsumer = 1
+func (pswc *ProviderSessionsWithConsumer) atomicReadConsumerBlocked() (blockStatus uint32) {
 	return atomic.LoadUint32(&pswc.isBlockListed)
 }
 
