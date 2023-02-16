@@ -5,6 +5,6 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	UniqueIndexKey      = "UniqueIndex-value-"
-	UniqueIndexCountKey = "UniqueIndex-count-"
+	UniqueIndexKey      = "UniqueIndex_value_"
+	UniqueIndexCountKey = "UniqueIndex_count_"
 )

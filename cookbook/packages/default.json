@@ -17,7 +17,7 @@
                 "servicers_to_pair": "2",
                 "overuse_rate": "1",
                 "subscriptions": "0",
-                "name": "dummyPackage",
+                "name": "defaultPackage",
                 "description": "Lorem Ipsum",
                 "type": "rpc",
                 "annual_discount_percentage": "20"

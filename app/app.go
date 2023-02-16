@@ -89,7 +89,6 @@ import (
 	"github.com/lavanet/lava/app/upgrades/v0_5_0"
 	"github.com/lavanet/lava/app/upgrades/v0_5_1"
 	"github.com/lavanet/lava/app/upgrades/v0_5_2"
-	"github.com/lavanet/lava/app/upgrades/v0_6_0"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -123,7 +122,7 @@ const (
 )
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
-var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_1.Upgrade, v0_5_2.Upgrade, v0_6_0.Upgrade}
+var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_1.Upgrade, v0_5_2.Upgrade, upgrades.Upgrade_0_6_0}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
@@ -363,9 +362,8 @@ func New(
 		keys[packagesmoduletypes.StoreKey],
 		keys[packagesmoduletypes.MemStoreKey],
 		app.GetSubspace(packagesmoduletypes.ModuleName),
-		&app.EpochstorageKeeper,
 	)
-	packagesModule := packages.NewAppModule(appCodec, app.PackagesKeeper, app.AccountKeeper, app.BankKeeper)
+	packagesModule := packages.NewAppModule(appCodec, app.PackagesKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()

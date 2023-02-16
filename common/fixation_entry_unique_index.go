@@ -9,6 +9,20 @@ import (
 	"github.com/lavanet/lava/common/types"
 )
 
+/*
+The fixationEntryUniqueIndex is a list which keeps all the latest version indices (e.g. indices without the version
+number suffix) of fixation entries of a particular module in the KVStore. To avoid a mix of indices between different
+kinds of fixation entries, the module that wishes to save a fixationEntryUniqueIndex must save it with a prefix that
+identifies it uniquely. For example, when the packages module want to add a new fixationEntryUniqueIndex to the store,
+it acesses the store using the key prefix: "packages_uniqueIndex_value".
+
+fixationEntryUniqueIndex structure:
+Entry {
+    uint64 id; 			    // a numerical index of the element (fixationEntryUniqueIndex[id] = unique_index)
+    string unique_index; 	// an entry unique index
+}
+*/
+
 // GetFixationEntryUniqueIndexCount get the total number of FixationEntryUniqueIndex
 func GetFixationEntryUniqueIndexCount(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string) uint64 {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte{})

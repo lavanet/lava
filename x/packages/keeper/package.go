@@ -30,10 +30,6 @@ func (k Keeper) AddPackage(ctx sdk.Context, packageToAdd types.Package) error {
 	packageToAdd.Block = uint64(ctx.BlockHeight())
 
 	// TODO: verify the CU per epoch field
-	// ok, err := k.verifyComputeUnitsPerEpoch(ctx, packageToAdd)
-	// if !ok || err != nil {
-	// 	return utils.LavaError(ctx, k.Logger(ctx), "AddPackage_verify_cu_per_epoch_failed", nil, "package's computeUnitsPerEpoch field is invalid")
-	// }
 
 	// make the package's subscriptions field zero (it's a new package, so no one is subscribed yet)
 	packageToAdd.Subscriptions = uint64(0)
@@ -102,40 +98,6 @@ func (k Keeper) GetPackageLatestVersion(ctx sdk.Context, packageIndex string) (*
 
 	return &latestPackage, nil
 }
-
-// TODO: verify CU per Epoch field
-// func (k Keeper) verifyComputeUnitsPerEpoch(ctx sdk.Context, packageToVerify types.Package) (bool, error) {
-// 	// get epoch blocks
-// 	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
-// 	if err != nil || epochBlocks == 0 {
-// 		return false, utils.LavaError(ctx, k.Logger(ctx), "verifyComputeUnitsPerEpoch_failed_getting_epochBlocks", map[string]string{"blockHeight": strconv.FormatUint(uint64(ctx.BlockHeight()), 10)}, "could not get current epochBlocks")
-// 	}
-
-// 	// convert the package's duration from months to epochs
-// 	packageDurationInEpochs := convertDurationFromMonthsToBlocks(ctx, packageToVerify.GetDuration()) / epochBlocks
-
-// 	// calculate the max CU per epoch
-// 	maxCuPerEpoch := packageToVerify.GetComputeUnits() / packageDurationInEpochs
-
-// 	// verify that the CU per epoch doesn't pass the calculated max CU per epoch
-// 	if maxCuPerEpoch >= packageToVerify.GetComputeUnitsPerEpoch() {
-// 		return true, nil
-// 	}
-
-// 	return false, nil
-// }
-
-// // Helper function to convert the package's duration field from months to blocks
-// func convertDurationFromMonthsToBlocks(ctx sdk.Context, duration uint64) uint64 {
-// 	// get min block creation time
-// 	minBlockTimeInSeconds := ctx.BlockTime().Second()
-
-// 	// calculate the package duration in seconds
-// 	monthInSeconds := (time.Hour * 24 * 30).Seconds()
-// 	packageDurationInSeconds := duration * uint64(monthInSeconds)
-
-// 	return packageDurationInSeconds / uint64(minBlockTimeInSeconds)
-// }
 
 func (k Keeper) AddSubscription(ctx sdk.Context, packageIndex string) error {
 	latestPackage, err := k.GetPackageLatestVersion(ctx, packageIndex)

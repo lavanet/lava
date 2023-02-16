@@ -66,3 +66,6 @@ jobs:
     - name: lava conflict unit Tests
       run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
 
+    - name: lava packages unit Tests
+      run: go test ./x/packages/ ./x/packages/keeper ./x/packages/types -v
+

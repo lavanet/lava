@@ -10,6 +10,35 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
+/*
+This library provides a standard set of API for managing parameters that are meant to be fixated.
+These API should enable users to easily set, modify, and delete fixated parameters.
+A fixated parameter is one whose value is retained on-chain with the block in which it was created when it is changed.
+By contrast, when a non-fixated parameter is altered, only its most recent value is stored.
+
+Fixated entry structure:
+Entry {
+    string index; 			// a unique entry index
+    uint64 block; 			// block the entry was created
+    bytes marshaled_data;   // marshaled data of the entry
+}
+
+How does it work?
+All the entries have one-of-a-kind indices that are in the following structure:
+	- Latest version: `entryIndex`
+	- Older versions: `entryIndex_0`, `entryIndex_1`, and so on.
+
+Entry Addition:
+When adding a new entry, we set it in the store and add a unique index to the uniqueIndex list.
+When adding an update to an entry, we update all the indices of past version (increase the version number suffix by 1) and
+set the updated entry as the latest version (its index is without a version number suffix).
+Note, if two entries with the same index are added in the same block, we only keep the latest one.
+
+Entry Removal:
+Entries can be removed with the RemoveEntry API. Currently, there is no deletion of the corresponding
+fixationEntryUniqueIndex (should be deleted when the deleted entry is the last remaining version).
+*/
+
 // Set entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
 func SetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entry types.Entry) {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
@@ -40,22 +69,6 @@ func RemoveEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, 
 	store.Delete(entryKey(
 		entryIndex,
 	))
-}
-
-// Get all entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
-func GetAllEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec) (list []types.Entry) {
-	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte(entryKeyPrefix))
-
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var val types.Entry
-		cdc.MustUnmarshal(iterator.Value(), &val)
-		list = append(list, val)
-	}
-
-	return
 }
 
 func entryKey(
