@@ -11,40 +11,57 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) SpecAll(c context.Context, req *types.QueryAllSpecRequest) (*types.QueryAllSpecResponse, error) {
+func (k Keeper) doSpecAll(c context.Context, req *types.QueryAllSpecRequest, raw bool) (*types.QueryAllSpecResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	var Specs []types.Spec
+	var specs []types.Spec
 	ctx := sdk.UnwrapSDKContext(c)
 
 	store := ctx.KVStore(k.storeKey)
-	SpecStore := prefix.NewStore(store, types.KeyPrefix(types.SpecKeyPrefix))
+	specStore := prefix.NewStore(store, types.KeyPrefix(types.SpecKeyPrefix))
 
-	pageRes, err := query.Paginate(SpecStore, req.Pagination, func(key []byte, value []byte) error {
-		var Spec types.Spec
-		if err := k.cdc.Unmarshal(value, &Spec); err != nil {
+	pageRes, err := query.Paginate(specStore, req.Pagination, func(key []byte, value []byte) error {
+		var spec types.Spec
+
+		if err := k.cdc.Unmarshal(value, &spec); err != nil {
 			return err
 		}
 
-		Specs = append(Specs, Spec)
+		if !raw {
+			var err error
+			spec, err = k.ExpandSpec(ctx, spec)
+			if err != nil { // should not happen! (all specs on chain must be valid)
+				return status.Error(codes.Internal, err.Error())
+			}
+		}
+
+		specs = append(specs, spec)
 		return nil
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.QueryAllSpecResponse{Spec: Specs, Pagination: pageRes}, nil
+	return &types.QueryAllSpecResponse{Spec: specs, Pagination: pageRes}, nil
 }
 
-func (k Keeper) Spec(c context.Context, req *types.QueryGetSpecRequest) (*types.QueryGetSpecResponse, error) {
+func (k Keeper) SpecAll(c context.Context, req *types.QueryAllSpecRequest) (*types.QueryAllSpecResponse, error) {
+	return k.doSpecAll(c, req, false)
+}
+
+func (k Keeper) SpecAllRaw(c context.Context, req *types.QueryAllSpecRequest) (*types.QueryAllSpecResponse, error) {
+	return k.doSpecAll(c, req, true)
+}
+
+func (k Keeper) doSpec(c context.Context, req *types.QueryGetSpecRequest, raw bool) (*types.QueryGetSpecResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	val, found := k.GetSpec(
+	spec, found := k.GetSpec(
 		ctx,
 		req.ChainID,
 	)
@@ -52,5 +69,21 @@ func (k Keeper) Spec(c context.Context, req *types.QueryGetSpecRequest) (*types.
 		return nil, status.Error(codes.InvalidArgument, "not found")
 	}
 
-	return &types.QueryGetSpecResponse{Spec: val}, nil
+	if !raw {
+		var err error
+		spec, err = k.ExpandSpec(ctx, spec)
+		if err != nil { // should not happen! (all specs on chain must be valid)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &types.QueryGetSpecResponse{Spec: spec}, nil
+}
+
+func (k Keeper) Spec(c context.Context, req *types.QueryGetSpecRequest) (*types.QueryGetSpecResponse, error) {
+	return k.doSpec(c, req, false)
+}
+
+func (k Keeper) SpecRaw(c context.Context, req *types.QueryGetSpecRequest) (*types.QueryGetSpecResponse, error) {
+	return k.doSpec(c, req, true)
 }

@@ -31286,6 +31286,10 @@ paths:
                       type: string
                     name:
                       type: string
+                    imports:
+                      type: array
+                      items:
+                        type: string
                     apis:
                       type: array
                       items:
@@ -31607,6 +31611,10 @@ paths:
                     type: string
                   name:
                     type: string
+                  imports:
+                    type: array
+                    items:
+                      type: string
                   apis:
                     type: array
                     items:
@@ -31807,6 +31815,436 @@ paths:
                       - dynamic
                       - static
                     default: dynamic
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: ChainID
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  /lavanet/lava/spec/spec_raw:
+    get:
+      summary: Queries a list of Spec items (raw form).
+      operationId: LavanetLavaSpecSpecAllRaw
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              Spec:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    name:
+                      type: string
+                    imports:
+                      type: array
+                      items:
+                        type: string
+                    apis:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          block_parsing:
+                            type: object
+                            properties:
+                              parser_arg:
+                                type: array
+                                items:
+                                  type: string
+                              parser_func:
+                                type: string
+                                enum:
+                                  - EMPTY
+                                  - PARSE_BY_ARG
+                                  - PARSE_CANONICAL
+                                  - PARSE_DICTIONARY
+                                  - PARSE_DICTIONARY_OR_ORDERED
+                                  - DEFAULT
+                                default: EMPTY
+                                title: >-
+                                  - PARSE_BY_ARG: means parameters are ordered
+                                  and flat expected areguments are: [param
+                                  index] (example: PARAMS:
+                                  [<#BlockNum>,"banana"])
+                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
+                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                   - DEFAULT: means parameters are non related to block, and should fetch latest block
+                          compute_units:
+                            type: string
+                            format: uint64
+                          enabled:
+                            type: boolean
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                interface:
+                                  type: string
+                                type:
+                                  type: string
+                                extra_compute_units:
+                                  type: string
+                                  format: uint64
+                                category:
+                                  type: object
+                                  properties:
+                                    deterministic:
+                                      type: boolean
+                                    local:
+                                      type: boolean
+                                    subscription:
+                                      type: boolean
+                                    stateful:
+                                      type: integer
+                                      format: int64
+                          reserved:
+                            type: object
+                            properties:
+                              deterministic:
+                                type: boolean
+                              local:
+                                type: boolean
+                              subscription:
+                                type: boolean
+                              stateful:
+                                type: integer
+                                format: int64
+                          parsing:
+                            type: object
+                            properties:
+                              function_tag:
+                                type: string
+                              function_template:
+                                type: string
+                              result_parsing:
+                                type: object
+                                properties:
+                                  parser_arg:
+                                    type: array
+                                    items:
+                                      type: string
+                                  parser_func:
+                                    type: string
+                                    enum:
+                                      - EMPTY
+                                      - PARSE_BY_ARG
+                                      - PARSE_CANONICAL
+                                      - PARSE_DICTIONARY
+                                      - PARSE_DICTIONARY_OR_ORDERED
+                                      - DEFAULT
+                                    default: EMPTY
+                                    title: >-
+                                      - PARSE_BY_ARG: means parameters are
+                                      ordered and flat expected areguments are:
+                                      [param index] (example: PARAMS:
+                                      [<#BlockNum>,"banana"])
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
+                    enabled:
+                      type: boolean
+                    reliability_threshold:
+                      type: integer
+                      format: int64
+                    data_reliability_enabled:
+                      type: boolean
+                    block_distance_for_finalized_data:
+                      type: integer
+                      format: int64
+                    blocks_in_finalization_proof:
+                      type: integer
+                      format: int64
+                    average_block_time:
+                      type: string
+                      format: int64
+                    allowed_block_lag_for_qos_sync:
+                      type: string
+                      format: int64
+                    block_last_updated:
+                      type: string
+                      format: uint64
+              pagination:
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/spec/spec_raw/{ChainID}':
+    get:
+      summary: Queries a Spec by id (raw form).
+      operationId: LavanetLavaSpecSpecRaw
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              Spec:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  name:
+                    type: string
+                  imports:
+                    type: array
+                    items:
+                      type: string
+                  apis:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        block_parsing:
+                          type: object
+                          properties:
+                            parser_arg:
+                              type: array
+                              items:
+                                type: string
+                            parser_func:
+                              type: string
+                              enum:
+                                - EMPTY
+                                - PARSE_BY_ARG
+                                - PARSE_CANONICAL
+                                - PARSE_DICTIONARY
+                                - PARSE_DICTIONARY_OR_ORDERED
+                                - DEFAULT
+                              default: EMPTY
+                              title: >-
+                                - PARSE_BY_ARG: means parameters are ordered and
+                                flat expected areguments are: [param index]
+                                (example: PARAMS: [<#BlockNum>,"banana"])
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
+                        compute_units:
+                          type: string
+                          format: uint64
+                        enabled:
+                          type: boolean
+                        api_interfaces:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              interface:
+                                type: string
+                              type:
+                                type: string
+                              extra_compute_units:
+                                type: string
+                                format: uint64
+                              category:
+                                type: object
+                                properties:
+                                  deterministic:
+                                    type: boolean
+                                  local:
+                                    type: boolean
+                                  subscription:
+                                    type: boolean
+                                  stateful:
+                                    type: integer
+                                    format: int64
+                        reserved:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                        parsing:
+                          type: object
+                          properties:
+                            function_tag:
+                              type: string
+                            function_template:
+                              type: string
+                            result_parsing:
+                              type: object
+                              properties:
+                                parser_arg:
+                                  type: array
+                                  items:
+                                    type: string
+                                parser_func:
+                                  type: string
+                                  enum:
+                                    - EMPTY
+                                    - PARSE_BY_ARG
+                                    - PARSE_CANONICAL
+                                    - PARSE_DICTIONARY
+                                    - PARSE_DICTIONARY_OR_ORDERED
+                                    - DEFAULT
+                                  default: EMPTY
+                                  title: >-
+                                    - PARSE_BY_ARG: means parameters are ordered
+                                    and flat expected areguments are: [param
+                                    index] (example: PARAMS:
+                                    [<#BlockNum>,"banana"])
+                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
+                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
+                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+                                     - DEFAULT: means parameters are non related to block, and should fetch latest block
+                  enabled:
+                    type: boolean
+                  reliability_threshold:
+                    type: integer
+                    format: int64
+                  data_reliability_enabled:
+                    type: boolean
+                  block_distance_for_finalized_data:
+                    type: integer
+                    format: int64
+                  blocks_in_finalization_proof:
+                    type: integer
+                    format: int64
+                  average_block_time:
+                    type: string
+                    format: int64
+                  allowed_block_lag_for_qos_sync:
+                    type: string
+                    format: int64
+                  block_last_updated:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -54285,6 +54723,10 @@ definitions:
               type: string
             name:
               type: string
+            imports:
+              type: array
+              items:
+                type: string
             apis:
               type: array
               items:
@@ -54518,6 +54960,10 @@ definitions:
             type: string
           name:
             type: string
+          imports:
+            type: array
+            items:
+              type: string
           apis:
             type: array
             items:
@@ -54911,6 +55357,10 @@ definitions:
         type: string
       name:
         type: string
+      imports:
+        type: array
+        items:
+          type: string
       apis:
         type: array
         items:
