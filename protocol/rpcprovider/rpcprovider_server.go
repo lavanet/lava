@@ -45,7 +45,7 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool)
 	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
@@ -118,7 +118,11 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
 			if request.DataReliability == nil {
-				rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
+				epoch := relaySession.PairingEpoch
+				storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
+				if !updatedWithProof {
+					rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+				}
 				utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 					"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 					"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -175,7 +179,11 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
+			epoch := relaySession.PairingEpoch
+			storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), epoch, consumerAddress.String())
+			if !updatedWithProof {
+				rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.SessionId, storedCU)
+			}
 			utils.LavaFormatDebug("Provider finished subscribing", &map[string]string{
 				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
