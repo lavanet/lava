@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -320,12 +318,14 @@ func SendRelay(
 	return reply, replyServer, err
 }
 
-func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
 		dappId := ExtractDappIDFromFiberContext(c)
 		c.Locals("dappId", dappId)
-		storeRefererHeaderIfNeeded(c)
+		if isMetricEnabled {
+			c.Locals(RefererHeaderKey, c.Get(RefererHeaderKey, ""))
+		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -377,12 +377,5 @@ func verifyRPCendpoint(endpoint string) {
 		return
 	default:
 		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
-	}
-}
-
-func storeRefererHeaderIfNeeded(c *fiber.Ctx) {
-	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
-	if isMetricEnabled {
-		c.Locals(refererHeaderKey, c.Get(refererHeaderKey, ""))
 	}
 }

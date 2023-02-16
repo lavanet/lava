@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/lavanet/lava/relayer/metrics"
@@ -24,7 +23,7 @@ var ReturnMaskedErrors = "false"
 
 const (
 	webSocketCloseMessage = "websocket: close 1005 (no status)"
-	refererHeaderKey      = "Referer"
+	RefererHeaderKey      = "Referer"
 )
 
 type PortalLogs struct {
@@ -123,44 +122,43 @@ func (pl *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (pl *PortalLogs) AddMetricForHttp(data *metrics.RelayMetrics, isSuccessful bool, c *fiber.Ctx) {
+func (pl *PortalLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, c *fiber.Ctx) {
 	if pl.StoreMetricData && pl.shouldCountMetricForHttp(c) {
-		data.Success = isSuccessful
+		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
-func (pl *PortalLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, isSuccessful bool, c *websocket.Conn) {
+func (pl *PortalLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, err error, c *websocket.Conn) {
 	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
-		data.Success = isSuccessful
+		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
-func (pl *PortalLogs) AddMetricForGrpc(data *metrics.RelayMetrics, isSuccessful bool, ctx context.Context) {
-	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(ctx) {
-		data.Success = isSuccessful
+func (pl *PortalLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, metadataValues *metadata.MD) {
+	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(metadataValues) {
+		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
 func (pl *PortalLogs) shouldCountMetricForHttp(c *fiber.Ctx) bool {
-	refererHeaderValue := c.Get(refererHeaderKey, "")
+	refererHeaderValue := c.Get(RefererHeaderKey, "")
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
 func (pl *PortalLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
-	refererHeaderValue, isHeaderFound := c.Locals(refererHeaderKey).(string)
+	refererHeaderValue, isHeaderFound := c.Locals(RefererHeaderKey).(string)
 	if !isHeaderFound {
 		return true
 	}
 	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
-func (pl *PortalLogs) shouldCountMetricForGrpc(ctx context.Context) bool {
-	headersValues, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		refererHeaderValue := headersValues.Get(refererHeaderKey)
+func (pl *PortalLogs) shouldCountMetricForGrpc(metadataValues *metadata.MD) bool {
+	if metadataValues != nil {
+		refererHeaderValue := metadataValues.Get(RefererHeaderKey)
 		result := len(refererHeaderValue) > 0 && pl.shouldCountMetrics(refererHeaderValue[0])
 		return !result
 	}

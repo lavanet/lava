@@ -258,7 +258,7 @@ func TestConstructFiberCallbackWithDappIDExtraction(t *testing.T) {
 		return nil
 	}
 
-	handler := constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled)
+	handler := constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled, false)
 	ctx := &fiber.Ctx{}
 
 	err := handler(ctx)
