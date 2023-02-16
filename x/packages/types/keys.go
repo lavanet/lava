@@ -24,6 +24,10 @@ func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
 
+func UniqueIndexKeyPrefix() string {
+	return ModuleName
+}
+
 const (
 	PackageUniqueIndexKey      = "PackageUniqueIndex-value-"
 	PackageUniqueIndexCountKey = "PackageUniqueIndex-count-"

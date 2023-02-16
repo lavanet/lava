@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/packages/types"
 	"google.golang.org/grpc/codes"
@@ -18,19 +20,20 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get all packages' unique indices
-	allPackageEntryUniqueIndices := k.GetAllPackageUniqueIndex(ctx)
-
+	allPackageEntryUniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, k.storeKey, k.cdc, types.UniqueIndexKeyPrefix())
+	fmt.Printf("allPackageEntryUniqueIndices: %v\n", allPackageEntryUniqueIndices)
 	// go over all the packages' unique indices
 	for _, packageEntryUniqueIndex := range allPackageEntryUniqueIndices {
 		packageInfoStruct := types.ShowAllPackagesInfoStruct{}
 
-		// get the latest version package TODO: packageUniqueIndex is empty string. Maybe make it a common proto (and not part of packages)?
-		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageEntryUniqueIndex.GetPackageUniqueIndex())
+		// get the latest version package
+		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageEntryUniqueIndex.GetUniqueIndex())
 		if err != nil {
-			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageEntryUniqueIndex.GetPackageUniqueIndex()}, "could not get the latest version of the package")
+			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageEntryUniqueIndex.GetUniqueIndex()}, "could not get the latest version of the package")
 		}
 
-		// get the name and price of the package
+		// set the packageInfoStruct
+		packageInfoStruct.Index = latestVersionPackage.GetIndex()
 		packageInfoStruct.Name = latestVersionPackage.GetName()
 		packageInfoStruct.Price = latestVersionPackage.GetPrice()
 

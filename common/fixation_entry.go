@@ -45,7 +45,7 @@ func RemoveEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, 
 // Get all entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
 func GetAllEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec) (list []types.Entry) {
 	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := sdk.KVStorePrefixIterator(store, []byte(entryKeyPrefix))
 
 	defer iterator.Close()
 
@@ -71,11 +71,11 @@ func EntryKey(
 }
 
 // Function to create a new fixation entry, add it to the KVStore and update the entry's older versions indices. Note, the entryIndex should be without the version num suffix
-func AddFixatedEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, marshalledData []byte) (bool, error) {
+func AddFixatedEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, uniqueIndexEntryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, marshalledData []byte) error {
 	// create a new fixated entry
 	entryToSet, err := CreateNewFixatedEntry(ctx, entryIndex, uint64(ctx.BlockHeight()), marshalledData)
 	if err != nil {
-		return false, err
+		return utils.LavaError(ctx, ctx.Logger(), "AddFixatedEntry_create_new_fixated_entry_failed", map[string]string{"err": err.Error()}, "could not create new fixated entry")
 	}
 
 	isFirstVersion := false
@@ -84,14 +84,19 @@ func AddFixatedEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix stri
 		// update the older versions entries indices. Also return whether the entry is a first version entry (no older versions saved in the KVStore)
 		isFirstVersion, err = UpdateEntryIndices(ctx, storeKey, entryKeyPrefix, cdc, entryToSet.GetIndex())
 		if err != nil {
-			return isFirstVersion, utils.LavaError(ctx, ctx.Logger(), "AddFixatedEntry_entry_indices_update_failed", map[string]string{"entryToSetIndex": entryToSet.Index}, "could not update entries indices")
+			return utils.LavaError(ctx, ctx.Logger(), "AddFixatedEntry_entry_indices_update_failed", map[string]string{"entryToSetIndex": entryToSet.Index}, "could not update entries indices")
 		}
 	}
 
 	// set the new entry as the latest version (by using the index without number suffix)
 	SetEntry(ctx, storeKey, entryKeyPrefix, cdc, *entryToSet)
 
-	return isFirstVersion, nil
+	// set a unique index if the entry is a first version entry
+	if isFirstVersion {
+		AppendFixationEntryUniqueIndex(ctx, storeKey, cdc, uniqueIndexEntryKeyPrefix, types.UniqueIndex{UniqueIndex: entryToSet.GetIndex()})
+	}
+
+	return nil
 }
 
 // Function to check whether two entries with the same index are added in the same block

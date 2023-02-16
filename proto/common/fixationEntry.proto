@@ -12,6 +12,6 @@ message Entry {
 
 message UniqueIndex {
     uint64 id = 1;
-    string package_unique_index = 2;
-  }
+    string unique_index = 2;
+}
   
