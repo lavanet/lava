@@ -130,19 +130,19 @@ func (sps *SingleProviderSession) verifyLock() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relayRequestTotalCU uint64) error {
 	err := sps.verifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
 	}
 
-	if sps.RelayNum+1 != relayNumber {
-		sps.lock.Unlock() // unlock on error
-		return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer, &map[string]string{
-			"relayNumber":  strconv.FormatUint(relayNumber, 10),
-			"sps.RelayNum": strconv.FormatUint(sps.RelayNum+1, 10),
-		})
-	}
+	// if sps.RelayNum+1 != relayNumber {
+	// 	sps.lock.Unlock() // unlock on error
+	// 	return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer, &map[string]string{
+	// 		"relayNumber":  strconv.FormatUint(relayNumber, 10),
+	// 		"sps.RelayNum": strconv.FormatUint(sps.RelayNum+1, 10),
+	// 	})
+	// }
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
 	if relayRequestTotalCU < sps.CuSum+currentCU {
@@ -163,7 +163,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relay
 	// finished validating, can add all info.
 	sps.LatestRelayCu = currentCU   // 1. update latest
 	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1
+	// sps.RelayNum = sps.RelayNum + 1
 
 	return nil
 }

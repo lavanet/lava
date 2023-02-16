@@ -54,7 +54,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 	return singleProviderSession, err
 }
 
-func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sessionId uint64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	valid, _ := psm.IsValidEpoch(epoch)
 	if valid { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
