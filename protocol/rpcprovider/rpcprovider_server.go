@@ -118,7 +118,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		if relayFailureError != nil {
 			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
 		}
-		utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
+		err = utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
 			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 			"request.userAddr":  consumerAddress.String(),
 		})
@@ -145,6 +145,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
+	if request.DataReliability != nil {
+		return utils.LavaFormatError("subscribe data reliability not supported", nil, nil)
+	}
 	utils.LavaFormatDebug("Provider got relay subscribe request", &map[string]string{
 		"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
@@ -171,6 +174,22 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request) // TODO: when we pay as u go on subscription this will need to change
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
+		} else {
+			rpcps.rewardServer.SendNewProof(ctx, request.ShallowCopy(), relaySession.PairingEpoch, consumerAddress.String())
+			utils.LavaFormatDebug("Provider finished subscribing", &map[string]string{
+				"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+				"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+				"request.cu":          strconv.FormatUint(request.CuSum, 10),
+				"termination":         err.Error(),
+			})
+		}
+	} else {
+		// we didn't even manage to subscribe
+		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession)
+		if relayFailureError != nil {
+			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, &map[string]string{"onSessionFailureError": relayFailureError.Error()})
+		} else {
+			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, nil)
 		}
 	}
 	return err
@@ -240,7 +259,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *
 	subscribed, errRet = processSubscribeMessages()
 	rpcps.providerSessionManager.SubscriptionFailure(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
 	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
-	return
+	return subscribed, errRet
 }
 
 // verifies basic relay fields, and gets a provider session

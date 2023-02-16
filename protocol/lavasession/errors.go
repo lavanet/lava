@@ -35,5 +35,6 @@ var ( // Provider Side Errors
 	SessionDoesNotExist             = sdkerrors.New("SessionDoesNotExist Error", 885, "This Session Id Does Not Exist.")
 	MaximumCULimitReachedByConsumer = sdkerrors.New("MaximumCULimitReachedByConsumer Error", 886, "Consumer reached maximum cu limit")
 	ProviderConsumerCuMisMatch      = sdkerrors.New("ProviderConsumerCuMisMatch Error", 887, "Provider and Consumer disagree on total cu for session")
-	RelayNumberMismatch             = sdkerrors.New("RelayNumberMismatch Error", 887, "Provider and Consumer disagree on relay number for session")
+	RelayNumberMismatch             = sdkerrors.New("RelayNumberMismatch Error", 888, "Provider and Consumer disagree on relay number for session")
+	SubscriptionInitiationError     = sdkerrors.New("SubscriptionInitiationError Error", 889, "provider failed initiating subscription")
 )
