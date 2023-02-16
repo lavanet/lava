@@ -19,7 +19,7 @@ type RelayAnalyticsDTO struct {
 	Timestamp    time.Time
 	ChainID      string
 	APIType      string
-	Latency      int64
+	Latency      uint64
 	SuccessCount int64
 	RelayCounts  int64
 }

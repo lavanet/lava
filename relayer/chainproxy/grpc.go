@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
@@ -293,10 +294,12 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
+		metadataValues, _ := metadata.FromIncomingContext(ctx)
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", cp.chainID, apiInterface)
-		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
-			go cp.portalLogs.AddMetric(metricsData, err != nil)
+		relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData)
+		go cp.portalLogs.AddMetricForGrpc(metricsData, err, &metadataValues)
+		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
