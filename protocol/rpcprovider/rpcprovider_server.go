@@ -193,7 +193,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, nil)
 		}
 	}
-	return err
+	return rpcps.handleRelayErrorStatus(err)
 }
 
 func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress) (subscribed bool, errRet error) {
