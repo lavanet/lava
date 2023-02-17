@@ -107,7 +107,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			AverageBlockTime:  averageBlockTime,
 			ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 		}
-		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy)
+		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 		chainTracker, err := chaintracker.New(ctx, chainFetcher, chainTrackerConfig)
 		if err != nil {
 			utils.LavaFormatFatal("failed creating chain tracker", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig)})

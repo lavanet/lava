@@ -5,6 +5,11 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/utils"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
@@ -12,20 +17,66 @@ const (
 )
 
 type ChainFetcher struct {
-	chainProxy ChainProxy
+	endpoint    *lavasession.RPCProviderEndpoint
+	chainProxy  ChainProxy
+	chainParser ChainParser
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+
+	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_BLOCKNUM)
+	if !ok {
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" tag function not found", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	CraftChainMessage(serviceApi, cf.endpoint)
 	return 0, fmt.Errorf("not implemented")
 }
 
 func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	return "", fmt.Errorf("not implemented")
+	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
+	if !ok {
+		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" tag function not found", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	if serviceApi.GetParsing().FunctionTemplate == "" {
+		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" missing function template", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	path := serviceApi.Name
+	data := []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum))
+	chainMessage, err := cf.chainParser.ParseMsg(path, data, "")
+	if err != nil {
+		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed parseMsg on function template", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+	if err != nil {
+		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed sending chainMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	var parserInput parser.RPCInput
+	respData := reply.Data
+	if customParsingMessage, ok := chainMessage.(chainproxy.CustomParsingMessage); ok {
+		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
+		if err != nil {
+			return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+		}
+	} else {
+		parserInput = chainproxy.DefaultParsableRPCInput(respData)
+	}
+
+	blockData, err := parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", err
+	}
+
+	// blockData is an interface array with the parsed result in index 0.
+	// we know to expect a string result for a hash.
+	ret, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, &map[string]string{"blockData": fmt.Sprintf("%v", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX])})
+	}
+	return ret, nil
 }
 
-func NewChainFetcher(ctx context.Context, chainProxy ChainProxy /*here needs some more params, maybe chainParser*/) *ChainFetcher {
-	// save here the information needed to fetch the latest block and it's hash
-	cf := &ChainFetcher{chainProxy: chainProxy}
+func NewChainFetcher(ctx context.Context, chainProxy ChainProxy, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
+	cf := &ChainFetcher{chainProxy: chainProxy, chainParser: chainParser, endpoint: endpoint}
 	return cf
 }
 

@@ -29,7 +29,7 @@ type RestChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewRestChainParser creates a new instance of RestChainParser
@@ -67,11 +67,12 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 
-	// TODO why we don't have requested block here?
+	// TODO fix requested block
 	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          restMessage,
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            restMessage,
+		requestedBlock: spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg, nil
 }
@@ -120,7 +121,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -287,7 +288,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return rcp, nil
 }
 
-func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}

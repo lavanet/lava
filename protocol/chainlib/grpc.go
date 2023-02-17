@@ -35,7 +35,7 @@ type GrpcChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewGrpcChainParser creates a new instance of GrpcChainParser
@@ -73,11 +73,12 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 
-	// TODO why we don't have requested block here?
+	// TODO: fix requested block
 	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          grpcMessage,
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            grpcMessage,
+		requestedBlock: spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg, nil
 }
@@ -126,7 +127,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -240,7 +241,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
@@ -289,9 +290,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		formatMessage = true
 	}
 
-	// nodeMessage.MethodDesc = methodDescriptor // TODO: this is useful for parsing the response
-	// rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
-	rp, _, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+	rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
 		EmitJSONDefaultFields: false,
 		IncludeTextSeparator:  false,
 		AllowUnknownFields:    true,
@@ -299,7 +298,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
 	}
-	// nm.formatter = formatter
+
+	// used when parsing the grpc result
+	nodeMessage.SetParsingData(methodDescriptor, formatter)
+
 	if formatMessage {
 		err = rp.Next(msg)
 		if err != nil {
