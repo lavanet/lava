@@ -891,7 +891,7 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
-	lt.checkStakeLava(2, 5, 1, "Staking Lava OK")
+	lt.checkStakeLava(5, 5, 1, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
