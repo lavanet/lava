@@ -47,6 +47,14 @@ type Keepers struct {
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
+	MockKeeper    MockKeeper
+}
+
+type MockKeeper struct {
+	Cdc        codec.BinaryCodec
+	StoreKey   sdk.StoreKey
+	MemKey     sdk.StoreKey
+	Paramstore paramstypes.Subspace
 }
 
 type Servers struct {
@@ -68,6 +76,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
+
+	mockStoreKey := sdk.NewKVStoreKey("mockkeeper")
+	mockMemStoreKey := storetypes.NewMemoryStoreKey("mem_mockkeeper")
+	stateStore.MountStoreWithDB(mockStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mockMemStoreKey, sdk.StoreTypeMemory, nil)
 
 	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
 	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
@@ -115,6 +128,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 		"ConflictParams",
 	)
 
+	mockparamsSubspace := paramstypes.NewSubspace(cdc,
+		codec.NewLegacyAmino(),
+		mockStoreKey,
+		mockMemStoreKey,
+		"MockParams",
+	)
+
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
@@ -124,6 +144,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
+	ks.MockKeeper = MockKeeper{Cdc: cdc, StoreKey: mockStoreKey, MemKey: mockMemStoreKey, Paramstore: mockparamsSubspace}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
