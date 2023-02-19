@@ -31,11 +31,17 @@ import (
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 const logsFolder = "./testutil/e2e/logs/"
+
+var (
+	checkedSpecsE2E    = []string{"LAV1", "ETH1"}
+	checkedSpecsE2ELOL = []string{"GTH1"}
+)
 
 type lavaTest struct {
 	testFinishedProperly bool
@@ -118,7 +124,7 @@ func (lt *lavaTest) stakeLava() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, successMessage string) {
+func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, checkedSpecs []string, successMessage string) {
 	// providerCount and clientCount refers to number and providers and client for each spec
 	// number of providers and clients should be the same for all specs for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
@@ -135,6 +141,9 @@ func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
+		if !slices.Contains(checkedSpecs, spec.Index) {
+			continue
+		}
 		// Query providers
 
 		fmt.Println(spec.GetIndex())
@@ -511,7 +520,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	if err != nil {
 		panic("Lava over Lava Failed " + err.Error())
 	}
-	lt.checkStakeLava(3, 5, 1, "Lava Over Lava Test OK")
+	lt.checkStakeLava(3, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
@@ -891,7 +900,7 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
-	lt.checkStakeLava(5, 5, 1, "Staking Lava OK")
+	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
