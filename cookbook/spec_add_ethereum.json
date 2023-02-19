@@ -1246,6 +1246,30 @@
                         ]
                     },
                     {
+                        "name": "eth_getProof",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "21",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "eth_estimateGas",
                         "block_parsing": {
                             "parser_arg": [
@@ -1294,6 +1318,26 @@
                         ]
                     }
                 ]
+            },
+            {
+                "index": "GTH1",
+                "name": "Goerli Testnet",
+                "enabled": true,
+                "imports": [ "ETH1" ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 7,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": "13000",
+                "allowed_block_lag_for_qos_sync": "5",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                }
             }
         ]
     },
