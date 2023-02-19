@@ -520,7 +520,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	if err != nil {
 		panic("Lava over Lava Failed " + err.Error())
 	}
-	lt.checkStakeLava(3, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
