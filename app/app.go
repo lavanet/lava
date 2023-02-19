@@ -118,7 +118,7 @@ const (
 )
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
-var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_1.Upgrade, v0_5_2.Upgrade}
+var Upgrades = []upgrades.Upgrade{upgrades.Upgrade_0_4_0, upgrades.Upgrade_0_4_3, upgrades.Upgrade_0_4_4, upgrades.Upgrade_0_4_5, v0_5_0.Upgrade, v0_5_1.Upgrade, v0_5_2.Upgrade, upgrades.Upgrade_0_6_0}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
