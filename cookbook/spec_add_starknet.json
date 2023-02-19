@@ -15,11 +15,11 @@
                 "allowed_block_lag_for_qos_sync": "1",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "1000"
+                    "amount": "500000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
-                    "amount": "100"
+                    "amount": "5000000000"
                 },
                 "apis": [
                     {
