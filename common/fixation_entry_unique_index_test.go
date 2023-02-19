@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/stretchr/testify/require"
 )
@@ -21,11 +20,11 @@ func createNUniqueIndex(ctx sdk.Context, storeKey sdk.StoreKey, cdc codec.Binary
 }
 
 func TestUniqueIndexGet(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	mockKeeper, ctx := initMockKeeper(t)
 
-	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", 10)
+	items := createNUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", 10)
 	for _, item := range items {
-		got, found := common.GetFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", item.Id)
+		got, found := common.GetFixationEntryUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", item.Id)
 		require.True(t, found)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -35,27 +34,27 @@ func TestUniqueIndexGet(t *testing.T) {
 }
 
 func TestUniqueIndexRemove(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
-	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", 10)
+	mockKeeper, ctx := initMockKeeper(t)
+	items := createNUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", 10)
 	for _, item := range items {
-		common.RemoveFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mockkeeper", item.Id)
-		_, found := common.GetFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", item.Id)
+		common.RemoveFixationEntryUniqueIndex(ctx, mockKeeper.StoreKey, "mockkeeper", item.Id)
+		_, found := common.GetFixationEntryUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", item.Id)
 		require.False(t, found)
 	}
 }
 
 func TestUniqueIndexGetAll(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
-	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", 10)
+	mockKeeper, ctx := initMockKeeper(t)
+	items := createNUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(common.GetAllFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper")),
+		nullify.Fill(common.GetAllFixationEntryUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper")),
 	)
 }
 
 func TestUniqueIndexCount(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
-	items := createNUniqueIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, keepers.MockKeeper.Cdc, "mockkeeper", 10)
+	mockKeeper, ctx := initMockKeeper(t)
+	items := createNUniqueIndex(ctx, mockKeeper.StoreKey, mockKeeper.Cdc, "mockkeeper", 10)
 	count := uint64(len(items))
-	require.Equal(t, count, common.GetFixationEntryUniqueIndexCount(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mockkeeper"))
+	require.Equal(t, count, common.GetFixationEntryUniqueIndexCount(ctx, mockKeeper.StoreKey, "mockkeeper"))
 }

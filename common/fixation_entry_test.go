@@ -4,11 +4,53 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/common"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmdb "github.com/tendermint/tm-db"
 )
+
+type MockKeeper struct {
+	Cdc        codec.BinaryCodec
+	StoreKey   sdk.StoreKey
+	MemKey     sdk.StoreKey
+	Paramstore paramstypes.Subspace
+}
+
+func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
+	db := tmdb.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db)
+
+	registry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(registry)
+
+	mockStoreKey := sdk.NewKVStoreKey("mockkeeper")
+	mockMemStoreKey := storetypes.NewMemoryStoreKey("mem_mockkeeper")
+	stateStore.MountStoreWithDB(mockStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mockMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	mockparamsSubspace := paramstypes.NewSubspace(cdc,
+		codec.NewLegacyAmino(),
+		mockStoreKey,
+		mockMemStoreKey,
+		"MockParams",
+	)
+
+	mockKeeper := MockKeeper{Cdc: cdc, StoreKey: mockStoreKey, MemKey: mockMemStoreKey, Paramstore: mockparamsSubspace}
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+
+	return mockKeeper, ctx
+}
 
 // Test addition and removal of a fixation entry
 func TestFixationEntryAdditionAndRemoval(t *testing.T) {
@@ -17,15 +59,15 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	binary.LittleEndian.PutUint64(marshaledData, 0)
 	dummyIndex := "index"
 
-	// init all keepers + context
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	// init mockkeeper + context
+	mockkeeper, ctx := initMockKeeper(t)
 
 	// add dummy entry
-	err := common.AddEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", "mockkeeper", keepers.MockKeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there is only one entry
-	entryListFromStorage := common.GetAllEntriesForIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", keepers.MockKeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 1, len(entryListFromStorage))
 
 	// make sure that one entry's data is the same data that was used to create it
@@ -33,10 +75,10 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	require.Equal(t, marshaledData, marshaledDataFromStorage)
 
 	// remove the entry
-	common.RemoveEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", dummyIndex)
+	common.RemoveEntry(ctx, mockkeeper.StoreKey, "mock", dummyIndex)
 
 	// make sure there are no more entries with that index
-	entryListFromStorage = common.GetAllEntriesForIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", keepers.MockKeeper.Cdc, dummyIndex)
+	entryListFromStorage = common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 0, len(entryListFromStorage))
 }
 
@@ -49,19 +91,19 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	binary.LittleEndian.PutUint64(marshaledData2, 1)
 	dummyIndex := "index"
 
-	// init all keepers + context
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	// init mockkeeper + context
+	mockkeeper, ctx := initMockKeeper(t)
 
 	// add the first dummy entry
-	err := common.AddEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", "mockkeeper", keepers.MockKeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// add the second dummy entry
-	err = common.AddEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", "mockkeeper", keepers.MockKeeper.Cdc, dummyIndex, marshaledData2)
+	err = common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData2)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there is only one entry
-	entryListFromStorage := common.GetAllEntriesForIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", keepers.MockKeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 1, len(entryListFromStorage))
 
 	// make sure that one entry's data is the same data of the second dummy entry
@@ -78,26 +120,26 @@ func TestEntryVersions(t *testing.T) {
 	binary.LittleEndian.PutUint64(marshaledData2, 1)
 	dummyIndex := "index"
 
-	// init all keepers + context
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	// init mockkeeper + context
+	mockkeeper, ctx := initMockKeeper(t)
 
 	// add the first dummy entry
-	err := common.AddEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", "mockkeeper", keepers.MockKeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// advance a block
-	ctx = keepertest.AdvanceBlock(ctx, keepers)
+	ctx = ctx.WithBlockHeight(1)
 
 	// add the second dummy entry
-	err = common.AddEntry(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", "mockkeeper", keepers.MockKeeper.Cdc, dummyIndex, marshaledData2)
+	err = common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData2)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there are two entry
-	entryListFromStorage := common.GetAllEntriesForIndex(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", keepers.MockKeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 2, len(entryListFromStorage))
 
 	// get the older version from block 0
-	oldEntry, found := common.GetEntryOlderVersionByBlock(sdk.UnwrapSDKContext(ctx), keepers.MockKeeper.StoreKey, "mock", keepers.MockKeeper.Cdc, dummyIndex, uint64(0))
+	oldEntry, found := common.GetEntryOlderVersionByBlock(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex, uint64(0))
 	require.True(t, found)
 
 	// verify the index and data matches the old entry from storage
