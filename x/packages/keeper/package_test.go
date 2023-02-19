@@ -263,6 +263,29 @@ func TestMultiplePackagesAdditions(t *testing.T) {
 	require.Equal(t, TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+TEST_PACKAGES_WITH_SAME_ID_AMOUNT, len(packages))
 }
 
+// Test that proposes two valid packages and an invalid one and checks that none have passed
+func TestProposeBadAndGoodPackages(t *testing.T) {
+	// setup the testStruct
+	ts := &testStruct{}
+	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// advance an epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// create packages
+	testPackages := CreateTestPackages(3, false)
+
+	// make one of the packages invalid
+	testPackages[2].ComputeUnits = 0
+
+	// simulate a package proposal of testPackages (note, inside SimulatePackageProposal it fails the test when a package is invalid. So we avoid checking the error to make sure later there are no packages in the storage)
+	_ = testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, testPackages)
+
+	// check there are enough packages in the storage (should not be TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+2*(TEST_PACKAGES_WITH_SAME_ID_AMOUNT)) since we propose the duplicate packages in a single epoch so only the latest are kept
+	packages := getAllEntriesFromStorage(t, ts)
+	require.Equal(t, 0, len(packages))
+}
+
 // Helper function to get all the entries of all indices using the uniqueIndex list
 func getAllEntriesFromStorage(t *testing.T, ts *testStruct) []types.Package {
 	uniqueIndices := common.GetAllFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages.GetStoreKey(), ts.keepers.Packages.GetCdc(), types.UniqueIndexKeyPrefix())
