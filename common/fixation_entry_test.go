@@ -18,10 +18,12 @@ import (
 )
 
 type MockKeeper struct {
-	Cdc        codec.BinaryCodec
-	StoreKey   sdk.StoreKey
-	MemKey     sdk.StoreKey
-	Paramstore paramstypes.Subspace
+	Cdc                  codec.BinaryCodec
+	StoreKey             sdk.StoreKey
+	MemKey               sdk.StoreKey
+	Paramstore           paramstypes.Subspace
+	entryKeyPrefix       string
+	uniqueEntryKeyPrefix string
 }
 
 func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
@@ -45,7 +47,14 @@ func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
 		"MockParams",
 	)
 
-	mockKeeper := MockKeeper{Cdc: cdc, StoreKey: mockStoreKey, MemKey: mockMemStoreKey, Paramstore: mockparamsSubspace}
+	mockKeeper := MockKeeper{
+		Cdc:                  cdc,
+		StoreKey:             mockStoreKey,
+		MemKey:               mockMemStoreKey,
+		Paramstore:           mockparamsSubspace,
+		entryKeyPrefix:       "mock",
+		uniqueEntryKeyPrefix: "MockKeeper",
+	}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
@@ -63,11 +72,11 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	mockkeeper, ctx := initMockKeeper(t)
 
 	// add dummy entry
-	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.uniqueEntryKeyPrefix, mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there is only one entry
-	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 1, len(entryListFromStorage))
 
 	// make sure that one entry's data is the same data that was used to create it
@@ -75,10 +84,10 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	require.Equal(t, marshaledData, marshaledDataFromStorage)
 
 	// remove the entry
-	common.RemoveEntry(ctx, mockkeeper.StoreKey, "mock", dummyIndex)
+	common.RemoveEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, dummyIndex)
 
 	// make sure there are no more entries with that index
-	entryListFromStorage = common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
+	entryListFromStorage = common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 0, len(entryListFromStorage))
 }
 
@@ -95,15 +104,15 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	mockkeeper, ctx := initMockKeeper(t)
 
 	// add the first dummy entry
-	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.uniqueEntryKeyPrefix, mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// add the second dummy entry
-	err = common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData2)
+	err = common.AddEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.uniqueEntryKeyPrefix, mockkeeper.Cdc, dummyIndex, marshaledData2)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there is only one entry
-	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 1, len(entryListFromStorage))
 
 	// make sure that one entry's data is the same data of the second dummy entry
@@ -124,22 +133,22 @@ func TestEntryVersions(t *testing.T) {
 	mockkeeper, ctx := initMockKeeper(t)
 
 	// add the first dummy entry
-	err := common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData)
+	err := common.AddEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.uniqueEntryKeyPrefix, mockkeeper.Cdc, dummyIndex, marshaledData)
 	require.Nil(t, err)
 
 	// advance a block
 	ctx = ctx.WithBlockHeight(1)
 
 	// add the second dummy entry
-	err = common.AddEntry(ctx, mockkeeper.StoreKey, "mock", "mockkeeper", mockkeeper.Cdc, dummyIndex, marshaledData2)
+	err = common.AddEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.uniqueEntryKeyPrefix, mockkeeper.Cdc, dummyIndex, marshaledData2)
 	require.Nil(t, err)
 
 	// get all entries with dummyIndex and make sure there are two entry
-	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex)
+	entryListFromStorage := common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 2, len(entryListFromStorage))
 
 	// get the older version from block 0
-	oldEntry, found := common.GetEntryOlderVersionByBlock(ctx, mockkeeper.StoreKey, "mock", mockkeeper.Cdc, dummyIndex, uint64(0))
+	oldEntry, found := common.GetEntryOlderVersionByBlock(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex, uint64(0))
 	require.True(t, found)
 
 	// verify the index and data matches the old entry from storage
