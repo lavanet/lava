@@ -16,9 +16,8 @@ message Package {
     uint64 servicers_to_pair = 7; // max providers to be paired in an epoch
     bool allow_overuse = 8; // allow CU overuse flag
     uint64 overuse_rate = 9; // price of CU overuse
-    uint64 subscriptions = 10; // the amount of users currently subscribed to this package
-    string name = 11; // package name (non-unique "human" name)
-    string description = 12; // package description (for humans)
-    string type = 13; // package type
-    uint64 annual_discount_percentage = 14; // discount for buying the package for a year
+    string name = 10; // package name (non-unique "human" name)
+    string description = 11; // package description (for humans)
+    string type = 12; // package type
+    uint64 annual_discount_percentage = 13; // discount for buying the package for a year
 }

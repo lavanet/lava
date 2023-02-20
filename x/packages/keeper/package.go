@@ -31,9 +31,6 @@ func (k Keeper) AddPackage(ctx sdk.Context, packageToAdd types.Package) error {
 
 	// TODO: verify the CU per epoch field
 
-	// make the package's subscriptions field zero (it's a new package, so no one is subscribed yet)
-	packageToAdd.Subscriptions = uint64(0)
-
 	// marshal the packageToAdd
 	b := k.cdc.MustMarshal(&packageToAdd)
 
@@ -97,30 +94,4 @@ func (k Keeper) GetPackageLatestVersion(ctx sdk.Context, packageIndex string) (*
 	}
 
 	return &latestPackage, nil
-}
-
-func (k Keeper) AddSubscription(ctx sdk.Context, packageIndex string) error {
-	latestPackage, err := k.GetPackageLatestVersion(ctx, packageIndex)
-	if err != nil {
-		return err
-	}
-
-	latestPackage.Subscriptions++
-
-	k.SetPackage(ctx, packageIndex, *latestPackage)
-
-	return nil
-}
-
-func (k Keeper) SubSubscription(ctx sdk.Context, packageIndex string) error {
-	latestPackage, err := k.GetPackageLatestVersion(ctx, packageIndex)
-	if err != nil {
-		return err
-	}
-
-	latestPackage.Subscriptions--
-
-	k.SetPackage(ctx, packageIndex, *latestPackage)
-
-	return nil
 }
