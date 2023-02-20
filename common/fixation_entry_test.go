@@ -26,6 +26,7 @@ type MockKeeper struct {
 	uniqueEntryKeyPrefix string
 }
 
+// Helper function to init a mock keeper and context
 func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -33,7 +34,7 @@ func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	mockStoreKey := sdk.NewKVStoreKey("mockkeeper")
+	mockStoreKey := sdk.NewKVStoreKey("store_mockkeeper")
 	mockMemStoreKey := storetypes.NewMemoryStoreKey("mem_mockkeeper")
 	stateStore.MountStoreWithDB(mockStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(mockMemStoreKey, sdk.StoreTypeMemory, nil)
@@ -52,8 +53,8 @@ func initMockKeeper(t *testing.T) (MockKeeper, sdk.Context) {
 		StoreKey:             mockStoreKey,
 		MemKey:               mockMemStoreKey,
 		Paramstore:           mockparamsSubspace,
-		entryKeyPrefix:       "mock",
-		uniqueEntryKeyPrefix: "MockKeeper",
+		entryKeyPrefix:       "prefix_mock",
+		uniqueEntryKeyPrefix: "unique_prefix_mock",
 	}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
@@ -84,11 +85,19 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	require.Equal(t, marshaledData, marshaledDataFromStorage)
 
 	// remove the entry
-	common.RemoveEntry(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, dummyIndex)
+	common.RemoveEntry(ctx, mockkeeper.StoreKey, mockkeeper.Cdc, mockkeeper.entryKeyPrefix, dummyIndex)
 
 	// make sure there are no more entries with that index
 	entryListFromStorage = common.GetAllEntriesForIndex(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix, mockkeeper.Cdc, dummyIndex)
 	require.Equal(t, 0, len(entryListFromStorage))
+
+	// make sure there is no uniqueIndex object with this index
+	uniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, mockkeeper.StoreKey, mockkeeper.Cdc, mockkeeper.entryKeyPrefix)
+	require.Equal(t, 0, len(uniqueIndices))
+
+	// make sure that the uniqueIndex count is zero
+	count := common.GetFixationEntryUniqueIndexCount(ctx, mockkeeper.StoreKey, mockkeeper.entryKeyPrefix)
+	require.Equal(t, uint64(0), count)
 }
 
 // Test that adds two entries in the same block and makes sure that only the latest one is kept
@@ -118,6 +127,14 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	// make sure that one entry's data is the same data of the second dummy entry
 	marshaledDataFromStorage := entryListFromStorage[0].MarshaledData
 	require.Equal(t, marshaledData2, marshaledDataFromStorage)
+
+	// make sure there is only one uniqueIndex object with this index
+	uniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, mockkeeper.StoreKey, mockkeeper.Cdc, mockkeeper.uniqueEntryKeyPrefix)
+	require.Equal(t, 1, len(uniqueIndices))
+
+	// make sure that the uniqueIndex count is one
+	count := common.GetFixationEntryUniqueIndexCount(ctx, mockkeeper.StoreKey, mockkeeper.uniqueEntryKeyPrefix)
+	require.Equal(t, uint64(1), count)
 }
 
 // Test adding entry versions and getting an older version
@@ -155,4 +172,12 @@ func TestEntryVersions(t *testing.T) {
 	oldEntryIndex := common.CreateOldVersionIndex(dummyIndex, uint64(0))
 	require.Equal(t, oldEntryIndex, oldEntry.Index)
 	require.Equal(t, marshaledData, oldEntry.MarshaledData)
+
+	// make sure there is only one uniqueIndex object with this index
+	uniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, mockkeeper.StoreKey, mockkeeper.Cdc, mockkeeper.uniqueEntryKeyPrefix)
+	require.Equal(t, 1, len(uniqueIndices))
+
+	// make sure that the uniqueIndex count is one
+	count := common.GetFixationEntryUniqueIndexCount(ctx, mockkeeper.StoreKey, mockkeeper.uniqueEntryKeyPrefix)
+	require.Equal(t, uint64(1), count)
 }

@@ -47,26 +47,26 @@ func SetFixationEntryUniqueIndexCount(ctx sdk.Context, storeKey sdk.StoreKey, en
 	store.Set(byteKey, bz)
 }
 
-// AppendFixationEntryUniqueIndex appends a FixationEntryUniqueIndex in the store with a new id and update the count
+// AppendFixationEntryUniqueIndex appends a FixationEntryUniqueIndex in the store with a new id and updates the count. It returns the index in the list of the added value (for example, if the first value of the list is added, it'll return 0 (the first index in the list))
 func AppendFixationEntryUniqueIndex(
 	ctx sdk.Context,
 	storeKey sdk.StoreKey,
 	cdc codec.BinaryCodec,
-	entryKeyPrefix string,
+	uniqueIndexEntryKeyPrefix string,
 	fixationEntryUniqueIndex types.UniqueIndex,
-) uint64 {
+) (lastAddedIndex uint64) {
 	// Create the FixationEntryUniqueIndex
-	count := GetFixationEntryUniqueIndexCount(ctx, storeKey, entryKeyPrefix)
+	count := GetFixationEntryUniqueIndexCount(ctx, storeKey, uniqueIndexEntryKeyPrefix)
 
 	// Set the ID of the appended value
 	fixationEntryUniqueIndex.Id = count
 
-	store := prefix.NewStore(ctx.KVStore(storeKey), types.KeyPrefix(entryKeyPrefix+types.UniqueIndexKey))
+	store := prefix.NewStore(ctx.KVStore(storeKey), types.KeyPrefix(uniqueIndexEntryKeyPrefix+types.UniqueIndexKey))
 	appendedValue := cdc.MustMarshal(&fixationEntryUniqueIndex)
 	store.Set(GetFixationEntryUniqueIndexIDBytes(fixationEntryUniqueIndex.Id), appendedValue)
 
 	// Update FixationEntryUniqueIndex count
-	SetFixationEntryUniqueIndexCount(ctx, storeKey, entryKeyPrefix, count+1)
+	SetFixationEntryUniqueIndexCount(ctx, storeKey, uniqueIndexEntryKeyPrefix, count+1)
 
 	return count
 }
@@ -91,8 +91,10 @@ func GetFixationEntryUniqueIndex(ctx sdk.Context, storeKey sdk.StoreKey, cdc cod
 
 // RemoveFixationEntryUniqueIndex removes a FixationEntryUniqueIndex from the store
 func RemoveFixationEntryUniqueIndex(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, id uint64) {
+	count := GetFixationEntryUniqueIndexCount(ctx, storeKey, entryKeyPrefix)
 	store := prefix.NewStore(ctx.KVStore(storeKey), types.KeyPrefix(entryKeyPrefix+types.UniqueIndexKey))
 	store.Delete(GetFixationEntryUniqueIndexIDBytes(id))
+	SetFixationEntryUniqueIndexCount(ctx, storeKey, entryKeyPrefix, count-1)
 }
 
 // GetAllFixationEntryUniqueIndex returns all FixationEntryUniqueIndex

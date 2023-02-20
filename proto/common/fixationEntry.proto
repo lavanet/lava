@@ -8,6 +8,7 @@ message Entry {
     string index = 1; // unique entry index
     uint64 block = 2; // block the entry was created
     bytes marshaled_data = 3; // marshaled data of the entry
+    uint64 references = 4; // number of references to this entry (number of entities using it)
 }
 
 message UniqueIndex {
