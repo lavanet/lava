@@ -36,5 +36,7 @@ var ( // Provider Side Errors
 	MaximumCULimitReachedByConsumer = sdkerrors.New("MaximumCULimitReachedByConsumer Error", 886, "Consumer reached maximum cu limit")
 	ProviderConsumerCuMisMatch      = sdkerrors.New("ProviderConsumerCuMisMatch Error", 887, "Provider and Consumer disagree on total cu for session")
 	RelayNumberMismatch             = sdkerrors.New("RelayNumberMismatch Error", 888, "Provider and Consumer disagree on relay number for session")
-	SubscriptionInitiationError     = sdkerrors.New("SubscriptionInitiationError Error", 889, "provider failed initiating subscription")
+	SubscriptionInitiationError     = sdkerrors.New("SubscriptionInitiationError Error", 889, "Provider failed initiating subscription")
+	EpochIsNotRegisteredError       = sdkerrors.New("EpochIsNotRegisteredError Error", 890, "Epoch is not registered in provider session manager")
+	ConsumerIsNotRegisteredError    = sdkerrors.New("ConsumerIsNotRegisteredError Error", 891, "Consumer is not registered in provider session manager")
 )

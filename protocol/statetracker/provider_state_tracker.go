@@ -110,3 +110,7 @@ func (pst *ProviderStateTracker) GetEpochSize(ctx context.Context) (uint64, erro
 func (pst *ProviderStateTracker) EarliestBlockInMemory(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.EarliestBlockInMemory(ctx)
 }
+
+func (pst *ProviderStateTracker) GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
+	return pst.stateQuery.GetRecommendedEpochNumToCollectPayment(ctx)
+}

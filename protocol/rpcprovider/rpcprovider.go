@@ -47,6 +47,7 @@ type ProviderStateTrackerInf interface {
 	GetEpochSize(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
+	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 }
 
 type RPCProvider struct {
@@ -85,8 +86,12 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
+	recommendedEpochNumToCollectPayment, err := rpcp.providerStateTracker.GetRecommendedEpochNumToCollectPayment(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("Failed fetching epoch size in RPCProvider Start", err, nil)
+	}
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint)
+		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, recommendedEpochNumToCollectPayment)
 		key := rpcProviderEndpoint.Key()
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)

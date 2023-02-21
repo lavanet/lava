@@ -281,3 +281,11 @@ func (psq *ProviderStateQuery) EarliestBlockInMemory(ctx context.Context) (uint6
 	}
 	return res.EpochDetails.EarliestStart, nil
 }
+
+func (psq *ProviderStateQuery) GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
+	res, err := psq.PairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return 0, err
+	}
+	return res.GetParams().RecommendedEpochNumToCollectPayment, nil
+}
