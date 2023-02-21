@@ -10,6 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
@@ -223,20 +224,21 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
-func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, current_epoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
+func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-	epochSizeWithRecommendedPaymentDelay, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
+	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err, nil)
 	}
 
-	if epochSizeWithRecommendedPaymentDelay > current_epoch {
-		return nil, utils.LavaFormatError("current epoch too low", nil, &map[string]string{"current epoch": strconv.FormatUint(current_epoch, 10)})
+	if blockDistanceForEpochValidity > currentEpoch {
+		return nil, utils.LavaFormatError("current epoch too low", nil, &map[string]string{"current epoch": strconv.FormatUint(currentEpoch, 10)})
 	}
-	target_epoch_to_claim_rewards := current_epoch - epochSizeWithRecommendedPaymentDelay
+	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 	for epoch, epochRewards := range rws.rewards {
-		if epoch >= uint64(target_epoch_to_claim_rewards) {
+		if lavasession.IsEpochValidForUse(epoch, uint64(activeEpochThreshold)) {
+			// Epoch is still active so we don't claim the rewards yet.
 			continue
 		}
 

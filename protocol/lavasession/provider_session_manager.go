@@ -11,11 +11,11 @@ import (
 )
 
 type ProviderSessionManager struct {
-	sessionsWithAllConsumers   map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
-	lock                       sync.RWMutex
-	blockedEpochHeight         uint64 // requests from this epoch are blocked
-	rpcProviderEndpoint        *RPCProviderEndpoint
-	numberOfBlocksKeptInMemory uint64 // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
+	sessionsWithAllConsumers      map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
+	lock                          sync.RWMutex
+	blockedEpochHeight            uint64 // requests from this epoch are blocked
+	rpcProviderEndpoint           *RPCProviderEndpoint
+	blockDistanceForEpochValidity uint64 // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 }
 
 // reads cs.BlockedEpoch atomically
@@ -179,12 +179,17 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	psm.blockedEpochHeight = epoch - psm.numberOfBlocksKeptInMemory
+	if epoch > psm.blockDistanceForEpochValidity {
+		psm.blockedEpochHeight = epoch - psm.blockDistanceForEpochValidity
+	} else {
+		psm.blockedEpochHeight = 0
+	}
 	newMap := make(map[uint64]map[string]*ProviderSessionsWithConsumer)
 	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
 	// which has better O(n) vs O(2n)
 	for epochStored, value := range psm.sessionsWithAllConsumers {
-		if epochStored < psm.blockedEpochHeight { // check if key is skipped.
+		if !IsEpochValidForUse(epochStored, psm.blockedEpochHeight) {
+			// epoch is not valid so we dont keep its key in the new map
 			continue
 		}
 		// if epochStored is ok, copy the value into the new map
@@ -232,11 +237,16 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	// load the session and update the CU inside
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	providerSessionWithConsumerList, ok := psm.sessionsWithAllConsumers[epoch]
+	valid, _ := psm.IsValidEpoch(epoch)
+	if valid { // checking again because we are now locked and epoch cant change now.
+		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
+	}
+
+	providerSessionsWithConsumerMap, ok := psm.sessionsWithAllConsumers[epoch]
 	if !ok {
 		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10)})
 	}
-	providerSessionWithConsumer, foundConsumer := providerSessionWithConsumerList[consumerAddress]
+	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap[consumerAddress]
 	if !foundConsumer {
 		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "consumer": consumerAddress})
 	}
@@ -251,5 +261,9 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 
 // Returning a new provider session manager
 func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberOfBlocksKeptInMemory uint64) *ProviderSessionManager {
-	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, numberOfBlocksKeptInMemory: numberOfBlocksKeptInMemory}
+	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, blockDistanceForEpochValidity: numberOfBlocksKeptInMemory}
+}
+
+func IsEpochValidForUse(targetEpoch uint64, blockedEpochHeight uint64) bool {
+	return targetEpoch > blockedEpochHeight
 }
