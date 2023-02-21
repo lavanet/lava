@@ -56,6 +56,18 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 }
 
+func (rpcp *RPCProvider) getEpochSizeForPSMBlockMemory(ctx context.Context) uint64 {
+	epochSize, err := rpcp.providerStateTracker.GetEpochSize(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("Failed fetching GetEpochSize in RPCProvider Start", err, nil)
+	}
+	recommendedEpochNumToCollectPayment, err := rpcp.providerStateTracker.GetRecommendedEpochNumToCollectPayment(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("Failed fetching GetRecommendedEpochNumToCollectPayment in RPCProvider Start", err, nil)
+	}
+	return recommendedEpochNumToCollectPayment * epochSize
+}
+
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -86,12 +98,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
-	recommendedEpochNumToCollectPayment, err := rpcp.providerStateTracker.GetRecommendedEpochNumToCollectPayment(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("Failed fetching epoch size in RPCProvider Start", err, nil)
-	}
+	blockMemorySize := rpcp.getEpochSizeForPSMBlockMemory(ctx) // get the number of blocks to keep in PSM.
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, recommendedEpochNumToCollectPayment)
+		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
 		key := rpcProviderEndpoint.Key()
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)

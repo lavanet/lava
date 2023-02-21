@@ -15,10 +15,6 @@ import (
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
-const (
-	StaleEpochDistance = 2
-)
-
 type PaymentRequest struct {
 	CU                  uint64
 	BlockHeightDeadline int64
@@ -71,6 +67,7 @@ type RewardServer struct {
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
 	GetEpochSize(ctx context.Context) (uint64, error)
+	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
@@ -227,17 +224,31 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
+// returns how long to wait until asking for payments for each epoch.
+func (rws *RewardServer) getEpochSizeWithRecommendedPaymentDelay(ctx context.Context) (uint64, error) {
+	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	if err != nil {
+		return 0, err
+	}
+	recommendedEpochNumToCollectPayment, err := rws.rewardsTxSender.GetRecommendedEpochNumToCollectPayment(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return recommendedEpochNumToCollectPayment * epochSize, nil
+}
+
 func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, current_epoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	epochSizeWithRecommendedPaymentDelay, err := rws.getEpochSizeWithRecommendedPaymentDelay(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if epochSize*StaleEpochDistance > current_epoch {
+
+	if epochSizeWithRecommendedPaymentDelay > current_epoch {
 		return nil, utils.LavaFormatError("current epoch too low", nil, &map[string]string{"current epoch": strconv.FormatUint(current_epoch, 10)})
 	}
-	target_epoch_to_claim_rewards := current_epoch - epochSize*StaleEpochDistance
+	target_epoch_to_claim_rewards := current_epoch - epochSizeWithRecommendedPaymentDelay
 	for epoch, epochRewards := range rws.rewards {
 		if epoch >= uint64(target_epoch_to_claim_rewards) {
 			continue
