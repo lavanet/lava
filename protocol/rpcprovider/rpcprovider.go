@@ -48,24 +48,13 @@ type ProviderStateTrackerInf interface {
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 }
 
 type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderServers   map[string]*RPCProviderServer
 	rpcProviderListeners map[string]*ProviderListener
-}
-
-func (rpcp *RPCProvider) getEpochSizeForPSMBlockMemory(ctx context.Context) uint64 {
-	epochSize, err := rpcp.providerStateTracker.GetEpochSize(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("Failed fetching GetEpochSize in RPCProvider Start", err, nil)
-	}
-	recommendedEpochNumToCollectPayment, err := rpcp.providerStateTracker.GetRecommendedEpochNumToCollectPayment(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("Failed fetching GetRecommendedEpochNumToCollectPayment in RPCProvider Start", err, nil)
-	}
-	return recommendedEpochNumToCollectPayment * epochSize
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
@@ -98,7 +87,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
-	blockMemorySize := rpcp.getEpochSizeForPSMBlockMemory(ctx) // get the number of blocks to keep in PSM.
+	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
+	if err != nil {
+		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err, nil)
+	}
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
 		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
 		key := rpcProviderEndpoint.Key()

@@ -289,3 +289,15 @@ func (psq *ProviderStateQuery) GetRecommendedEpochNumToCollectPayment(ctx contex
 	}
 	return res.GetParams().RecommendedEpochNumToCollectPayment, nil
 }
+
+func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
+	epochSize, err := psq.GetEpochSize(ctx)
+	if err != nil {
+		return 0, err
+	}
+	recommendedEpochNumToCollectPayment, err := psq.GetRecommendedEpochNumToCollectPayment(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return epochSize * recommendedEpochNumToCollectPayment, nil
+}

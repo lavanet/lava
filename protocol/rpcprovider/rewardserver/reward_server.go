@@ -66,8 +66,7 @@ type RewardServer struct {
 
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
-	GetEpochSize(ctx context.Context) (uint64, error)
-	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
@@ -224,23 +223,10 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
-// returns how long to wait until asking for payments for each epoch.
-func (rws *RewardServer) getEpochSizeWithRecommendedPaymentDelay(ctx context.Context) (uint64, error) {
-	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
-	if err != nil {
-		return 0, utils.LavaFormatError("Failed fetching rws.rewardsTxSender.GetEpochSize(ctx)", err, nil)
-	}
-	recommendedEpochNumToCollectPayment, err := rws.rewardsTxSender.GetRecommendedEpochNumToCollectPayment(ctx)
-	if err != nil {
-		return 0, utils.LavaFormatError("Failed fetching rws.rewardsTxSender.GetRecommendedEpochNumToCollectPayment(ctx)", err, nil)
-	}
-	return recommendedEpochNumToCollectPayment * epochSize, nil
-}
-
 func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, current_epoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-	epochSizeWithRecommendedPaymentDelay, err := rws.getEpochSizeWithRecommendedPaymentDelay(ctx)
+	epochSizeWithRecommendedPaymentDelay, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, err
 	}
