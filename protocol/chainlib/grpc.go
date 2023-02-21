@@ -43,6 +43,14 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
+func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+	grpcMessage := rpcInterfaceMessages.GrpcMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newMethod(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage)
+}
+
 // ParseMsg parses message data into chain message object
 func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the GrpcChainParser instance exists
@@ -74,13 +82,18 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// TODO: fix requested block
+	nodeMsg := apip.newMethod(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, grpcMessage)
+	return nodeMsg, nil
+}
+
+func (*GrpcChainParser) newMethod(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage rpcInterfaceMessages.GrpcMessage) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		msg:            grpcMessage,
-		requestedBlock: spectypes.NOT_APPLICABLE,
+		requestedBlock: requestedBlock,
 	}
-	return nodeMsg, nil
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name

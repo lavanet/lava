@@ -28,7 +28,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" tag function not found", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
-	CraftChainMessage(serviceApi, cf.endpoint)
+	CraftChainMessage(serviceApi, cf.chainParser)
 	return 0, fmt.Errorf("not implemented")
 }
 

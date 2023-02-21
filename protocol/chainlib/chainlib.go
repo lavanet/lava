@@ -55,6 +55,7 @@ type ChainParser interface {
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
 	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)
+	CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend
 }
 
 type ChainMessage interface {

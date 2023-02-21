@@ -37,6 +37,14 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
+func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+	restMessage := rpcInterfaceMessages.RestMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage)
+}
+
 // ParseMsg parses message data into chain message object
 func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
@@ -68,13 +76,18 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// TODO fix requested block
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, restMessage)
+	return nodeMsg, nil
+}
+
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestBlock int64, restMessage rpcInterfaceMessages.RestMessage) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		msg:            restMessage,
-		requestedBlock: spectypes.NOT_APPLICABLE,
+		requestedBlock: requestBlock,
 	}
-	return nodeMsg, nil
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name

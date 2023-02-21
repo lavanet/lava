@@ -37,6 +37,16 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
+func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+	msg := rpcInterfaceMessages.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  serviceApi.GetName(),
+		Params:  nil,
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
+}
+
 // ParseMsg parses message data into chain message object
 func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the TendermintChainParser instance exists
@@ -120,13 +130,18 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		return nil, err
 	}
 
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, msg)
+	return nodeMsg, nil
+}
+
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage) ChainMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
 		msg:            msg,
 	}
-	return nodeMsg, nil
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name
