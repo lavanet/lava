@@ -15,10 +15,6 @@ import (
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
-const (
-	StaleEpochDistance = 2
-)
-
 type PaymentRequest struct {
 	CU                  uint64
 	BlockHeightDeadline int64
@@ -70,7 +66,7 @@ type RewardServer struct {
 
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
-	GetEpochSize(ctx context.Context) (uint64, error)
+	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
@@ -230,14 +226,15 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, current_epoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	epochSizeWithRecommendedPaymentDelay, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err, nil)
 	}
-	if epochSize*StaleEpochDistance > current_epoch {
+
+	if epochSizeWithRecommendedPaymentDelay > current_epoch {
 		return nil, utils.LavaFormatError("current epoch too low", nil, &map[string]string{"current epoch": strconv.FormatUint(current_epoch, 10)})
 	}
-	target_epoch_to_claim_rewards := current_epoch - epochSize*StaleEpochDistance
+	target_epoch_to_claim_rewards := current_epoch - epochSizeWithRecommendedPaymentDelay
 	for epoch, epochRewards := range rws.rewards {
 		if epoch >= uint64(target_epoch_to_claim_rewards) {
 			continue
