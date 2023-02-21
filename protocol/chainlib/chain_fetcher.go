@@ -3,12 +3,14 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -23,13 +25,28 @@ type ChainFetcher struct {
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-
 	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" tag function not found", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
-	CraftChainMessage(serviceApi, cf.chainParser)
-	return 0, fmt.Errorf("not implemented")
+	chainMessage := CraftChainMessage(serviceApi, cf.chainParser)
+	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+	if err != nil {
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
+	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
+	if err != nil {
+		return spectypes.NOT_APPLICABLE, err
+	}
+	blockNum, err := parser.ParseBlockFromReply(parserInput, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  strings.Join(cf.endpoint.NodeUrl, ","),
+			"Method":   serviceApi.GetName(),
+			"Response": string(reply.Data),
+		})
+	}
+	return blockNum, nil
 }
 
 func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
@@ -50,15 +67,9 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed sending chainMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
-	var parserInput parser.RPCInput
-	respData := reply.Data
-	if customParsingMessage, ok := chainMessage.(chainproxy.CustomParsingMessage); ok {
-		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
-		if err != nil {
-			return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
-		}
-	} else {
-		parserInput = chainproxy.DefaultParsableRPCInput(respData)
+	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
+	if err != nil {
+		return "", err
 	}
 
 	blockData, err := parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
@@ -73,6 +84,20 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, &map[string]string{"blockData": fmt.Sprintf("%v", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX])})
 	}
 	return ret, nil
+}
+
+func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {
+	var parserInput parser.RPCInput
+	respData := reply.Data
+	if customParsingMessage, ok := chainMessage.(chainproxy.CustomParsingMessage); ok {
+		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
+		if err != nil {
+			return nil, utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+		}
+	} else {
+		parserInput = chainproxy.DefaultParsableRPCInput(respData)
+	}
+	return parserInput, nil
 }
 
 func NewChainFetcher(ctx context.Context, chainProxy ChainProxy, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
