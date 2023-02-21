@@ -2,9 +2,12 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -62,6 +65,111 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	return
 }
 
+// ExpandSpec takes a (raw) Spec and expands the "imports" field of the spec
+// -if needed, recursively- to add to the current Spec those additional APIs
+// from the imported Spec(s). It returns the expanded Spec.
+func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error) {
+	depends := map[string]bool{spec.Index: true}
+
+	details, err := k.doExpandSpec(ctx, &spec, depends, spec.Index)
+	if err != nil {
+		details := map[string]string{"imports": details}
+		return spec, utils.LavaError(ctx, k.Logger(ctx), "spec expand failed", details, err.Error())
+	}
+	return spec, nil
+}
+
+// doExpandSpec performs the actual work and recusion for ExpandSpec above.
+func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
+	if len(spec.Imports) == 0 {
+		return details, nil
+	}
+
+	var parents []types.Spec
+
+	// visual markers when import deepens
+	details += "->["
+
+	// recursion to get all parent specs (DFS)
+	comma := ""
+	for _, index := range spec.Imports {
+		imported, found := k.GetSpec(ctx, index)
+		// import of unknown Spec not allowed
+		if !found {
+			details += fmt.Sprintf("%s%s(unknown)", comma, index)
+			return details, fmt.Errorf("imported spec unknown: %s", index)
+		}
+
+		details += fmt.Sprintf("%s%s", comma, index)
+
+		// loop in the recursion not allowed
+		if _, found := depends[index]; found {
+			return details, fmt.Errorf("import loops not allowed for spec: %s", index)
+		}
+
+		depends[index] = true
+		details, err := k.doExpandSpec(ctx, &imported, depends, details)
+		if err != nil {
+			return details, err
+		}
+		delete(depends, index)
+
+		parents = append(parents, imported)
+		comma = ","
+	}
+
+	details += "]"
+
+	currentApis := make(map[string]bool)
+	for _, api := range spec.Apis {
+		currentApis[api.Name] = true
+	}
+
+	var mergedApis []types.ServiceApi
+	mergedApisMap := make(map[string]types.ServiceApi)
+
+	// collect all parents' Specs' APIs
+	for _, imported := range parents {
+		for _, api := range imported.Apis {
+			if api.Enabled {
+				// duplicate API(s) not allowed
+				// (unless current Spec has an override for same API)
+				if _, found := mergedApisMap[api.Name]; found {
+					if _, found := currentApis[api.Name]; !found {
+						return details, fmt.Errorf("duplicate imported api: %s (in spec: %s)", api.Name, imported.Index)
+					}
+				}
+				mergedApisMap[api.Name] = api
+				mergedApis = append(mergedApis, api)
+			}
+		}
+	}
+
+	// merge collected APIs into current spec's APIs (unless overridden)
+	for _, api := range mergedApis {
+		if _, found := currentApis[api.Name]; !found {
+			spec.Apis = append(spec.Apis, api)
+		}
+	}
+
+	return details, nil
+}
+
+func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]string, error) {
+	spec, err := k.ExpandSpec(ctx, spec)
+	if err != nil {
+		details := map[string]string{"imports": strings.Join(spec.Imports, ",")}
+		return details, err
+	}
+
+	details, err := spec.ValidateSpec(k.MaxCU(ctx))
+	if err != nil {
+		return details, err
+	}
+
+	return details, nil
+}
+
 // returns whether a spec name is a valid spec in the consensus
 // first return value is found and active, second argument is found only
 func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
@@ -98,6 +206,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 	expectedInterfaces = make(map[string]bool)
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
+		spec, err := k.ExpandSpec(ctx, spec)
+		if err != nil { // should not happen! (all specs on chain must be valid)
+			panic(err)
+		}
 		for _, api := range spec.Apis {
 			if api.Enabled {
 				for _, apiInterface := range api.ApiInterfaces {

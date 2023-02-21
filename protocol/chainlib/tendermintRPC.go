@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -286,7 +286,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodGet, dappID, metricsData)
-			go apil.logger.AddMetric(metricsData, err != nil)
+			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				continue
@@ -329,7 +329,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			}
 		}
 	})
-	websocketCallbackWithDappID := constructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws/:dappId", websocketCallbackWithDappID)
 	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
@@ -340,7 +340,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), http.MethodGet, dappID, metricsData)
-		go apil.logger.AddMetric(metricsData, err != nil)
+		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
+
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -374,7 +375,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", http.MethodGet, dappID, metricsData)
-		go apil.logger.AddMetric(metricsData, err != nil)
+		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
+
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -490,7 +492,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, "", nil, err
 	}

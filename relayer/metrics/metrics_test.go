@@ -82,7 +82,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			ChainID:      "testChain",
 			APIType:      "testApiType",
 			SuccessCount: 3,
-			Latency:      200,
+			Latency:      150,
 			RelayCounts:  4,
 		}
 		// arrange
@@ -176,7 +176,7 @@ func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 			ChainID:      "testChain",
 			APIType:      "testApiType",
 			SuccessCount: 1,
-			Latency:      50,
+			Latency:      100,
 			RelayCounts:  2,
 		}
 
@@ -227,7 +227,7 @@ func checkThatMetricDtoInAggregatedMetricMap(mapData map[string]map[string]map[s
 	if apiTypeData.RelaysCount != expectedData.RelayCounts {
 		return fmt.Errorf("Invalid relayCounts data. expected: '%d' got: '%d'! ", expectedData.RelayCounts, apiTypeData.RelaysCount)
 	}
-	if apiTypeData.TotalLatency != expectedData.Latency {
+	if apiTypeData.TotalLatency != uint64(expectedData.Latency) {
 		return fmt.Errorf("Invalid latency data. expected: '%d' got: '%d'! ", expectedData.Latency, apiTypeData.TotalLatency)
 	}
 	if apiTypeData.SuccessCount != expectedData.SuccessCount {

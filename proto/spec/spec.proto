@@ -12,6 +12,7 @@ import "cosmos/base/v1beta1/coin.proto";
 message Spec {
   string index = 1; 
   string name = 2; 
+  repeated string imports = 15;
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
   bool enabled = 4;
   uint32 reliability_threshold = 5;
@@ -31,4 +32,3 @@ message Spec {
 
   ProvidersTypes providers_types = 14;
 }
-

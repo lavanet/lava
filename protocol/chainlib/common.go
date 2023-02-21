@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -76,9 +77,12 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
-func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
+		if isMetricEnabled {
+			c.Locals(common.RefererHeaderKey, c.Get(common.RefererHeaderKey, ""))
+		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler

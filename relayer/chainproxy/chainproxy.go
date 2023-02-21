@@ -318,11 +318,14 @@ func SendRelay(
 	return reply, replyServer, err
 }
 
-func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
 		dappId := ExtractDappIDFromFiberContext(c)
 		c.Locals("dappId", dappId)
+		if isMetricEnabled {
+			c.Locals(RefererHeaderKey, c.Get(RefererHeaderKey, ""))
+		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler

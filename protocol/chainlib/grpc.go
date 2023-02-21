@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"io"
 	"net"
 	"net/http"
@@ -210,11 +211,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		msgSeed := apil.logger.GetMessageSeed()
+		metadataValues, _ := metadata.FromIncomingContext(ctx)
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		if relayReply, _, err = apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
-			go apil.logger.AddMetric(metricsData, err != nil)
+		relayReply, _, err = apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
+		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
+
+		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)

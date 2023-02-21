@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -326,7 +326,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
-			go cp.portalLogs.AddMetric(metricsData, err != nil)
+			go cp.portalLogs.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				continue
@@ -369,7 +369,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 		}
 	})
-	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, cp.portalLogs.StoreMetricData)
 	app.Get("/ws/:dappId", websocketCallbackWithDappID)
 	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
@@ -380,7 +380,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
-		go cp.portalLogs.AddMetric(metricsData, err != nil)
+		go cp.portalLogs.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
@@ -414,7 +414,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID, metricsData)
-		go cp.portalLogs.AddMetric(metricsData, err != nil)
+		go cp.portalLogs.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
@@ -617,7 +617,7 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, "", nil, err
 	}
