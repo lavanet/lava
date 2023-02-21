@@ -42,7 +42,7 @@ type parsedMessage struct {
 	serviceApi     *spectypes.ServiceApi
 	apiInterface   *spectypes.ApiInterface
 	requestedBlock int64
-	msg            interface{}
+	msg            parser.RPCInput
 }
 
 type BaseChainProxy struct {
@@ -62,11 +62,7 @@ func (pm parsedMessage) RequestedBlock() int64 {
 }
 
 func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
-	rpcInput, ok := pm.msg.(parser.RPCInput)
-	if !ok {
-		return nil
-	}
-	return rpcInput
+	return pm.msg
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
@@ -197,6 +193,17 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
 	}
 	return websocketEndpoint, httpEndpoint
+}
+
+func GetApiInterfaceFromServiceApi(serviceApi *spectypes.ServiceApi, connectionType string) *spectypes.ApiInterface {
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	return apiInterface
 }
 
 func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser) ChainMessageForSend {

@@ -2,15 +2,12 @@ package rpcprovider
 
 import (
 	"context"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
 
 	"errors"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 
@@ -26,6 +23,7 @@ import (
 type ProviderListener struct {
 	networkAddress string
 	relayServer    *relayServer
+	httpServer     http.Server
 }
 
 func (pl *ProviderListener) Key() string {
@@ -46,15 +44,16 @@ func (pl *ProviderListener) RegisterReceiver(existingReceiver RelayReceiver, end
 	return nil
 }
 
+func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
+	if err := pl.httpServer.Shutdown(shutdownCtx); err != nil {
+		utils.LavaFormatFatal("Provider failed to shutdown", err, nil)
+	}
+	return nil
+}
+
 func NewProviderListener(ctx context.Context, networkAddress string) *ProviderListener {
 	pl := &ProviderListener{networkAddress: networkAddress}
-	ctx, cancel := context.WithCancel(ctx)
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	defer func() {
-		signal.Stop(signalChan)
-		cancel()
-	}()
+
 	// GRPC
 	lis, err := net.Listen("tcp", networkAddress)
 	if err != nil {
@@ -74,34 +73,17 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	httpServer := http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
-
-	go func() {
-		select {
-		case <-ctx.Done():
-			utils.LavaFormatInfo("Provider Server ctx.Done", nil)
-		case <-signalChan:
-			utils.LavaFormatInfo("Provider Server signalChan", nil)
-		}
-
-		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
-		defer shutdownRelease()
-
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			utils.LavaFormatFatal("Provider failed to shutdown", err, &map[string]string{})
-		}
-	}()
-
+	pl.httpServer = httpServer
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
+	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
-		pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
-
+		utils.LavaFormatInfo("New provider listener active", &map[string]string{"address": networkAddress})
 		if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 			utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
 		}
-
+		utils.LavaFormatInfo("listener closed server", &map[string]string{"address": networkAddress})
 	}()
-
 	return pl
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -22,13 +23,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	EndpointsConfigName = "endpoints"
-)
-
 var (
 	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
-	NumFieldsInConfig      = len(Yaml_config_properties)
 )
 
 type ConsumerStateTrackerInf interface {
@@ -86,7 +82,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": lavasession.PrintRPCEndpoint(rpcEndpoint)})
+		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": rpcEndpoint.String()})
 		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, cache)
 	}
 
@@ -96,26 +92,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	return nil
 }
 
-func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
-	numFieldsInConfig := len(yaml_config_properties)
-	viper_endpoints = viper.New()
-	if len(endpoint_strings)%numFieldsInConfig != 0 {
-		return nil, fmt.Errorf("invalid endpoint_strings length %d, needs to divide by %d without residue", len(endpoint_strings), NumFieldsInConfig)
-	}
-	endpoints := []map[string]string{}
-	for idx := 0; idx < len(endpoint_strings); idx += numFieldsInConfig {
-		toAdd := map[string]string{}
-		for inner_idx := 0; inner_idx < numFieldsInConfig; inner_idx++ {
-			toAdd[yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
-		}
-		endpoints = append(endpoints, toAdd)
-	}
-	viper_endpoints.Set(endpointsConfigName, endpoints)
-	return
-}
-
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(EndpointsConfigName, &endpoints)
+	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, &map[string]string{"viper_endpoints": fmt.Sprintf("%v", viper_endpoints.AllSettings())})
 	}

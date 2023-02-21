@@ -1,8 +1,6 @@
 package lavasession
 
 import (
-	"strconv"
-	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,13 +27,3 @@ const (
 	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded
 
 )
-
-func PrintRPCEndpoint(endpoint *RPCEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
-}
-
-func PrintRPCProviderEndpoint(endpoint *RPCProviderEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
-}

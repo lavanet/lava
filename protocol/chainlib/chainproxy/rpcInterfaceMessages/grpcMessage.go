@@ -122,19 +122,3 @@ func ParseSymbol(svcAndMethod string) (string, string) {
 	}
 	return svcAndMethod[:pos], svcAndMethod[pos+1:]
 }
-
-type ParsableRPCInput struct {
-	Result json.RawMessage
-}
-
-func (pri ParsableRPCInput) ParseBlock(inp string) (int64, error) {
-	return parser.ParseDefaultBlockParameter(inp)
-}
-
-func (pri ParsableRPCInput) GetParams() interface{} {
-	return nil
-}
-
-func (pri ParsableRPCInput) GetResult() json.RawMessage {
-	return pri.Result
-}

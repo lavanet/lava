@@ -9,6 +9,7 @@ import (
 	"time"
 
 	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,10 @@ type MockChainFetcher struct {
 	blockHashes []*chaintracker.BlockStore
 	mutex       sync.Mutex
 	fork        string
+}
+
+func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return lavasession.RPCProviderEndpoint{}
 }
 
 func (mcf *MockChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {

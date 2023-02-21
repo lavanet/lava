@@ -58,13 +58,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, err
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}

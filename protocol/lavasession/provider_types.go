@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -29,6 +30,10 @@ type RPCProviderEndpoint struct {
 	ApiInterface   string   `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64   `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrl        []string `yaml:"node-url,omitempty" json:"node-url,omitempty" mapstructure:"node-url"`
+}
+
+func (endpoint *RPCProviderEndpoint) String() (retStr string) {
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 }
 
 type RPCSubscription struct {

@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -199,16 +200,16 @@ func main() {
 		if one argument is passed, its assumed the config file name
 		`,
 		Example: `required flags: --geolocation 1 --from alice
-		rpcconsumer <flags>
-		rpcconsumer rpcconsumer_conf <flags>
-		rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
+rpcconsumer <flags>
+rpcconsumer rpcconsumer_conf <flags>
+rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
 				// zero or one argument is allowed
 				return nil
 			}
-			if len(args)%rpcconsumer.NumFieldsInConfig != 0 {
+			if len(args)%len(rpcconsumer.Yaml_config_properties) != 0 {
 				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 3 IP:PORT chain-id api-interface")
 			}
 			return nil
@@ -232,7 +233,7 @@ func main() {
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
-				viper_endpoints, err = rpcconsumer.ParseEndpointArgs(args, rpcconsumer.Yaml_config_properties, rpcconsumer.EndpointsConfigName)
+				viper_endpoints, err = common.ParseEndpointArgs(args, rpcconsumer.Yaml_config_properties, common.EndpointsConfigName)
 				if err != nil {
 					return utils.LavaFormatError("invalid endpoints arguments", err, &map[string]string{"endpoint_strings": strings.Join(args, "")})
 				}
@@ -320,17 +321,18 @@ func main() {
 		if one argument is passed, its assumed the config file name
 		`,
 		Example: `required flags: --geolocation 1 --from alice
-		rpcprovider <flags>
-		rpcprovider rpcprovider_conf <flags>
-		rpcprovider 127.0.0.1:3333 COS3 tendermintrpc https://www.node-path.com:80 127.0.0.1:3334 COS3 rest https://www.node-path.com:1317 <flags>`,
+optional: --save-conf
+rpcprovider <flags>
+rpcprovider rpcprovider_conf <flags>
+rpcprovider 127.0.0.1:3333 COS3 tendermintrpc https://www.node-path.com:80 127.0.0.1:3334 COS3 rest https://www.node-path.com:1317 <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
 				// zero or one argument is allowed
 				return nil
 			}
-			if len(args)%rpcprovider.NumFieldsInConfig != 0 {
-				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 3 IP:PORT chain-id api-interface")
+			if len(args)%len(rpcprovider.Yaml_config_properties) != 0 {
+				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 4 IP:PORT chain-id api-interface [node_url,node_url_2]")
 			}
 			return nil
 		},
@@ -352,16 +354,22 @@ func main() {
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
-				viper_endpoints, err = rpcconsumer.ParseEndpointArgs(args, rpcprovider.Yaml_config_properties, rpcprovider.EndpointsConfigName)
+				viper_endpoints, err = common.ParseEndpointArgs(args, rpcprovider.Yaml_config_properties, common.EndpointsConfigName)
 				if err != nil {
 					return utils.LavaFormatError("invalid endpoints arguments", err, &map[string]string{"endpoint_strings": strings.Join(args, "")})
 				}
-				viper.MergeConfigMap(viper_endpoints.AllSettings())
-				err := viper.SafeWriteConfigAs(DefaultRPCProviderFileName)
+				save_config, err := cmd.Flags().GetBool(common.SaveConfigFlagName)
 				if err != nil {
-					utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", &map[string]string{"file_name": viper.ConfigFileUsed()})
-				} else {
-					utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCProviderFileName + ".yml"})
+					return utils.LavaFormatError("failed reading flag", err, &map[string]string{"flag_name": common.SaveConfigFlagName})
+				}
+				if save_config {
+					viper.MergeConfigMap(viper_endpoints.AllSettings())
+					err := viper.SafeWriteConfigAs(DefaultRPCProviderFileName)
+					if err != nil {
+						utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", &map[string]string{"file_name": DefaultRPCProviderFileName, "error": err.Error()})
+					} else {
+						utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCProviderFileName + ".yml"})
+					}
 				}
 			} else {
 				err = viper.ReadInConfig()
@@ -406,7 +414,7 @@ func main() {
 					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
 				}
 			}
-			rpcProvider := rpcprovider.RPCProvider{}
+
 			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 			rand.Seed(time.Now().UnixNano())
 			var cache *performance.Cache = nil
@@ -425,6 +433,7 @@ func main() {
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
 			}
+			rpcProvider := rpcprovider.RPCProvider{}
 			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
 			return err
 		},
@@ -475,13 +484,14 @@ func main() {
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
 	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdRPCProvider.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(sentry.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
-	// rootCmd.AddCommand(cmdRPCProvider) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
+	rootCmd.AddCommand(cmdRPCProvider) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		os.Exit(1)

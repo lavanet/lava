@@ -106,14 +106,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// Extract default block parser
 	blockParser := serviceApi.BlockParsing
 
-	// Find matched api interface by connection type
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}

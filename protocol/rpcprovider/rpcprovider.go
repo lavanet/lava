@@ -6,12 +6,14 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -24,13 +26,11 @@ import (
 )
 
 const (
-	EndpointsConfigName       = "endpoints"
 	ChainTrackerDefaultMemory = 100
 )
 
 var (
 	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface", "node-url"}
-	NumFieldsInConfig      = len(Yaml_config_properties)
 )
 
 type ProviderStateTrackerInf interface {
@@ -58,6 +58,15 @@ type RPCProvider struct {
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	defer func() {
+		signal.Stop(signalChan)
+		cancel()
+	}()
+	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer)
+	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
@@ -135,7 +144,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			// handle case only one network address was defined
 			for _, listener_p := range rpcp.rpcProviderListeners {
 				listener = listener_p
-				listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 				break
 			}
 		} else {
@@ -145,18 +153,31 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
 				rpcp.rpcProviderListeners[listener.Key()] = listener
 			}
-			listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 		}
+		if listener == nil {
+			utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, &map[string]string{"RPCProviderEndpoint": rpcProviderEndpoint.String()})
+		}
+		listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
+	select {
+	case <-ctx.Done():
+		utils.LavaFormatInfo("Provider Server ctx.Done", nil)
+	case <-signalChan:
+		utils.LavaFormatInfo("Provider Server signalChan", nil)
+	}
+
+	for _, listener := range rpcp.rpcProviderListeners {
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		listener.Shutdown(shutdownCtx)
+		defer shutdownRelease()
+	}
+
 	return nil
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(EndpointsConfigName, &endpoints)
+	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, &map[string]string{"viper_endpoints": fmt.Sprintf("%v", viper_endpoints.AllSettings())})
 	}

@@ -299,11 +299,6 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 		msg: rpcInput,
 	}
 	assert.Equal(t, rpcInput, pm.GetRPCMessage())
-
-	pm = parsedMessage{
-		msg: 123,
-	}
-	assert.Nil(t, pm.GetRPCMessage())
 }
 
 type mockRPCInput struct{}

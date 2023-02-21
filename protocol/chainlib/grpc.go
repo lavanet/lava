@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -49,7 +50,7 @@ func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi) Chain
 		Msg:  nil,
 		Path: serviceApi.GetName(),
 	}
-	return apip.newMethod(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage)
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage)
 }
 
 // ParseMsg parses message data into chain message object
@@ -65,13 +66,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
@@ -83,11 +78,11 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// TODO: fix requested block
-	nodeMsg := apip.newMethod(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, grpcMessage)
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, grpcMessage)
 	return nodeMsg, nil
 }
 
-func (*GrpcChainParser) newMethod(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage rpcInterfaceMessages.GrpcMessage) *parsedMessage {
+func (*GrpcChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage rpcInterfaceMessages.GrpcMessage) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,

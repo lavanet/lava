@@ -39,7 +39,7 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 }
 
 func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
-	msg := &rpcInterfaceMessages.JsonrpcMessage{
+	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  serviceApi.GetName(),
@@ -48,7 +48,7 @@ func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi) Ch
 	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
 }
 
-// ParseMsg parses message data into chain message object
+// this func parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
@@ -68,13 +68,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
@@ -84,11 +78,11 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		return nil, err
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, msg)
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, *msg)
 	return nodeMsg, nil
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage) *parsedMessage {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,

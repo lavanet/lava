@@ -66,6 +66,11 @@ type RPCEndpoint struct {
 	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 }
 
+func (endpoint *RPCEndpoint) String() (retStr string) {
+	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return
+}
+
 func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
 	// TODO: validate correct url address
 	rpce.NetworkAddress = address

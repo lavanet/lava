@@ -24,6 +24,10 @@ type ChainFetcher struct {
 	chainParser ChainParser
 }
 
+func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return *cf.endpoint
+}
+
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
@@ -59,7 +63,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	path := serviceApi.Name
 	data := []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum))
-	chainMessage, err := cf.chainParser.ParseMsg(path, data, "")
+	chainMessage, err := cf.chainParser.ParseMsg(path, data, serviceApi.ApiInterfaces[0].Type)
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed parseMsg on function template", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
@@ -89,7 +93,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {
 	var parserInput parser.RPCInput
 	respData := reply.Data
-	if customParsingMessage, ok := chainMessage.(chainproxy.CustomParsingMessage); ok {
+	rpcMessage := chainMessage.GetRPCMessage()
+	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {
 		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
 		if err != nil {
 			return nil, utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
@@ -107,6 +112,10 @@ func NewChainFetcher(ctx context.Context, chainProxy ChainProxy, chainParser Cha
 
 type LavaChainFetcher struct {
 	clientCtx client.Context
+}
+
+func (lcf *LavaChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return lavasession.RPCProviderEndpoint{NodeUrl: []string{lcf.clientCtx.NodeURI}, ChainID: "Lava-node", ApiInterface: "tendermintrpc"}
 }
 
 func (lcf *LavaChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {

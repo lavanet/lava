@@ -149,9 +149,13 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		rws.addExpectedPayment(expectedPay)
 		rws.updateCUServiced(relay.CuSum)
 	}
-	err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10))
-	if err != nil {
-		return utils.LavaFormatError("failed sending rewards claim", err, nil)
+	if len(rewardsToClaim) > 0 {
+		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10))
+		if err != nil {
+			return utils.LavaFormatError("failed sending rewards claim", err, nil)
+		}
+	} else {
+		utils.LavaFormatDebug("no rewards to claim", nil)
 	}
 	return nil
 }
