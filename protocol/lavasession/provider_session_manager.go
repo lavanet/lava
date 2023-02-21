@@ -11,25 +11,26 @@ import (
 )
 
 type ProviderSessionManager struct {
-	sessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
-	lock                     sync.RWMutex
-	blockedEpoch             uint64 // requests from this epoch are blocked
-	rpcProviderEndpoint      *RPCProviderEndpoint
+	sessionsWithAllConsumers   map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
+	lock                       sync.RWMutex
+	blockedEpochHeight         uint64 // requests from this epoch are blocked
+	rpcProviderEndpoint        *RPCProviderEndpoint
+	numberOfBlocksKeptInMemory uint64 // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 }
 
 // reads cs.BlockedEpoch atomically
 func (psm *ProviderSessionManager) atomicWriteBlockedEpoch(epoch uint64) {
-	atomic.StoreUint64(&psm.blockedEpoch, epoch)
+	atomic.StoreUint64(&psm.blockedEpochHeight, epoch)
 }
 
 // reads cs.BlockedEpoch atomically
 func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
-	return atomic.LoadUint64(&psm.blockedEpoch)
+	return atomic.LoadUint64(&psm.blockedEpochHeight)
 }
 
-func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool, thresholdEpoch uint64) {
-	threshold := psm.atomicReadBlockedEpoch()
-	return epoch > threshold, threshold
+func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool, blockedEpochHeight uint64) {
+	blockedEpochHeight = psm.atomicReadBlockedEpoch()
+	return epoch > blockedEpochHeight, blockedEpochHeight
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
@@ -154,27 +155,21 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(providerSessio
 }
 
 func (psm *ProviderSessionManager) ReportConsumer() (address string, epoch uint64, err error) {
-	return "", 0, nil
+	return "", 0, nil // TBD
 }
 
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64) (*SingleProviderSession, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+// OnSessionDone unlocks the session gracefully, this happens when session finished with an error
 func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession) (err error) {
-	// need to handle dataReliability session failure separately
-	return nil
+	return singleProviderSession.onSessionFailure()
 }
 
 // OnSessionDone unlocks the session gracefully, this happens when session finished successfully
 func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession) (err error) {
-	err = singleProviderSession.VerifyLock()
-	if err != nil {
-		return err
-	}
-	singleProviderSession.lock.Unlock()
-	// session finished successfully
-	return nil
+	return singleProviderSession.onSessionDone()
 }
 
 func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
@@ -182,8 +177,20 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 }
 
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
-	// update the epoch to limit consumer usage
-	// when updating the blocked epoch, we also need to clean old epochs from the map. sessionsWithAllConsumers
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	psm.blockedEpochHeight = epoch - psm.numberOfBlocksKeptInMemory
+	newMap := make(map[uint64]map[string]*ProviderSessionsWithConsumer)
+	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
+	// which has better O(n) vs O(2n)
+	for epochStored, value := range psm.sessionsWithAllConsumers {
+		if epochStored < psm.blockedEpochHeight { // check if key is skipped.
+			continue
+		}
+		// if epochStored is ok, copy the value into the new map
+		newMap[epochStored] = value
+	}
+	psm.sessionsWithAllConsumers = newMap
 }
 
 func (psm *ProviderSessionManager) ProcessUnsubscribeEthereum(subscriptionID string, consumerAddress sdk.AccAddress) error {
@@ -220,13 +227,29 @@ func (psm *ProviderSessionManager) SubscriptionFailure(consumerAddress string, e
 	// 		userSessions.Lock.Unlock()
 }
 
-// called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
-func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, storedCU uint64) error {
+// Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
+func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, newCU uint64) error {
 	// load the session and update the CU inside
-	return fmt.Errorf("not implemented")
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	providerSessionWithConsumerList, ok := psm.sessionsWithAllConsumers[epoch]
+	if !ok {
+		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10)})
+	}
+	providerSessionWithConsumer, foundConsumer := providerSessionWithConsumerList[consumerAddress]
+	if !foundConsumer {
+		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "consumer": consumerAddress})
+	}
+
+	usedCu := providerSessionWithConsumer.atomicReadUsedComputeUnits() // check used cu now
+	if usedCu < newCU {
+		// if newCU proof is higher than current state, update.
+		providerSessionWithConsumer.atomicWriteUsedComputeUnits(newCU)
+	}
+	return nil
 }
 
 // Returning a new provider session manager
-func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint) *ProviderSessionManager {
-	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint}
+func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberOfBlocksKeptInMemory uint64) *ProviderSessionManager {
+	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, numberOfBlocksKeptInMemory: numberOfBlocksKeptInMemory}
 }

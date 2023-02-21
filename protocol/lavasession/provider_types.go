@@ -83,6 +83,10 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComp
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
 
+func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64) {
+	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicWriteMaxComputeUnits(maxComputeUnits uint64) {
 	atomic.StoreUint64(&pswc.epochData.MaxComputeUnits, maxComputeUnits)
 }
@@ -176,4 +180,36 @@ func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu u
 			return nil
 		}
 	}
+}
+
+func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
+	for {
+		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits()                               // check used cu now
+		if sps.userSessionsParent.atomicCompareAndWriteUsedComputeUnits(usedCu-currentCU, usedCu) { // decrease the amount of used cu from the known value
+			return nil
+		}
+	}
+}
+
+func (sps *SingleProviderSession) onSessionFailure() error {
+	err := sps.VerifyLock() // sps is locked
+	if err != nil {
+		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, nil)
+	}
+	sps.CuSum = sps.CuSum - sps.LatestRelayCu
+	sps.RelayNum = sps.RelayNum - 1
+	sps.validateAndSubUsedCU(sps.LatestRelayCu)
+	sps.LatestRelayCu = 0
+	sps.lock.Unlock()
+	return nil
+}
+
+func (sps *SingleProviderSession) onSessionDone() error {
+	err := sps.VerifyLock() // sps is locked
+	if err != nil {
+		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err, nil)
+	}
+	sps.LatestRelayCu = 0 // reset the cu, we can also verify its 0 when loading.
+	sps.lock.Unlock()
+	return nil
 }
