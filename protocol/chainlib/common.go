@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -19,12 +21,28 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 )
 
+type BaseChainParser struct {
+	taggedApis map[string]spectypes.ServiceApi
+	rwLock     sync.RWMutex
+}
+
+func (bcp *BaseChainParser) SetTaggedApis(taggedApis map[string]spectypes.ServiceApi) {
+	bcp.taggedApis = taggedApis
+}
+
+func (bcp *BaseChainParser) GetSpecApiByTag(tag string) (spectypes.ServiceApi, bool) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+
+	val, ok := bcp.taggedApis[tag]
+	return val, ok
+}
+
 type parsedMessage struct {
-	serviceApi       *spectypes.ServiceApi
-	apiInterface     *spectypes.ApiInterface
-	averageBlockTime int64
-	requestedBlock   int64
-	msg              interface{}
+	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
+	requestedBlock int64
+	msg            interface{}
 }
 
 type BaseChainProxy struct {
@@ -176,4 +194,9 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
 	}
 	return websocketEndpoint, httpEndpoint
+}
+
+func CraftChainMessage(serviceApi spectypes.ServiceApi, endpoint *lavasession.RPCProviderEndpoint) ChainMessageForSend {
+	// TODO: implement
+	return nil
 }
