@@ -228,11 +228,11 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 func (rws *RewardServer) getEpochSizeWithRecommendedPaymentDelay(ctx context.Context) (uint64, error) {
 	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
 	if err != nil {
-		return 0, err
+		return 0, utils.LavaFormatError("Failed fetching rws.rewardsTxSender.GetEpochSize(ctx)", err, nil)
 	}
 	recommendedEpochNumToCollectPayment, err := rws.rewardsTxSender.GetRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
-		return 0, err
+		return 0, utils.LavaFormatError("Failed fetching rws.rewardsTxSender.GetRecommendedEpochNumToCollectPayment(ctx)", err, nil)
 	}
 	return recommendedEpochNumToCollectPayment * epochSize, nil
 }
