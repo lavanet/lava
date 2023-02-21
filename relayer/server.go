@@ -567,6 +567,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	// client blockheight can only be at at prev epoch but not earlier
 	if request.BlockHeight < int64(g_sentry.GetPrevEpochHeight()) {
 		return nil, nil, nil, nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
+			"current epoch block":  strconv.FormatUint(g_sentry.GetCurrentEpochHeight(), 10),
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
 		})
