@@ -228,7 +228,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, current_epoc
 	defer rws.lock.Unlock()
 	epochSizeWithRecommendedPaymentDelay, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err, nil)
 	}
 
 	if epochSizeWithRecommendedPaymentDelay > current_epoch {
