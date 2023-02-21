@@ -38,6 +38,16 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
+func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+	msg := &rpcInterfaceMessages.JsonrpcMessage{
+		Version: "2.0",
+		ID:      []byte("1"),
+		Method:  serviceApi.GetName(),
+		Params:  nil,
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
+}
+
 // ParseMsg parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the JsonRPCChainParser instance exists
@@ -74,13 +84,18 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		return nil, err
 	}
 
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, msg)
+	return nodeMsg, nil
+}
+
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
 		msg:            msg,
 	}
-	return nodeMsg, nil
+	return nodeMsg
 }
 
 // SetSpec sets the spec for the JsonRPCChainParser

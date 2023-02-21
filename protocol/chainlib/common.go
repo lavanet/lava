@@ -11,7 +11,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -196,7 +195,6 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 	return websocketEndpoint, httpEndpoint
 }
 
-func CraftChainMessage(serviceApi spectypes.ServiceApi, endpoint *lavasession.RPCProviderEndpoint) ChainMessageForSend {
-	// TODO: implement
-	return nil
+func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser) ChainMessageForSend {
+	return chainParser.CraftMessage(serviceApi)
 }
