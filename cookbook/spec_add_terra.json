@@ -5,14 +5,14 @@
         "specs": [
             {
                 "index": "COS1",
-                "name": "Terra Columbus-5 mainnet",
+                "name": "terra columbus-5 mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "average_block_time": "6000",
                 "allowed_block_lag_for_qos_sync": "5",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "500000000000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
@@ -5783,10 +5783,20 @@
             },
             {
                 "index": "COS2",
-                "name": "Terra Bombay-12 testnet",
-                "enabled": true,
+                "name": "terra bombay-12 testnet",
                 "imports": [ "COS1" ],
-                "reliability_threshold": 268435455
+                "enabled": true,
+                "reliability_threshold": 268435455,
+                "average_block_time": "6000",
+                "allowed_block_lag_for_qos_sync": "5",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
             }
         ]
     },

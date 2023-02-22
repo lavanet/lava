@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "ETH1",
-                "name": "Ethereum Mainnet",
+                "name": "ethereum mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -15,7 +15,7 @@
                 "allowed_block_lag_for_qos_sync": "5",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "500000000000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
@@ -1321,7 +1321,7 @@
             },
             {
                 "index": "GTH1",
-                "name": "Goerli Testnet",
+                "name": "goerli testnet",
                 "enabled": true,
                 "imports": [ "ETH1" ],
                 "reliability_threshold": 268435455,
@@ -1332,11 +1332,11 @@
                 "allowed_block_lag_for_qos_sync": "5",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "1000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
-                    "amount": "100"
+                    "amount": "5000000000"
                 }
             }
         ]

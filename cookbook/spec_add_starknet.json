@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "STRK",
-                "name": "StarkNet mainnet",
+                "name": "starkNet mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -15,7 +15,7 @@
                 "allowed_block_lag_for_qos_sync": "1",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "500000000000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
@@ -527,7 +527,7 @@
             },
             {
                 "index": "STRKT",
-                "name": "StarkNet testnet",
+                "name": "starkNet testnet",
                 "enabled": true,
                 "imports": [ "STRK" ],
                 "reliability_threshold": 268435455,
@@ -538,11 +538,11 @@
                 "allowed_block_lag_for_qos_sync": "1",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "1000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
-                    "amount": "100"
+                    "amount": "5000000000"
                 }
 			}
         ]
