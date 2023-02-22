@@ -115,7 +115,8 @@ func TestChainTracker(t *testing.T) {
 		specificBlock    int64
 	}{
 		{name: "one block memory + fetch", mockBlocks: 20, requestBlocks: 1, fetcherBlocks: 1, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.NOT_APPLICABLE, requestBlockTo: spectypes.NOT_APPLICABLE, specificBlock: spectypes.LATEST_BLOCK},
-		{name: "ten block memory 4 block fetch", mockBlocks: 20, requestBlocks: 4, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 9, requestBlockTo: spectypes.LATEST_BLOCK - 6, specificBlock: spectypes.LATEST_BLOCK},
+		{name: "ten block memory 4 block fetch", mockBlocks: 20, requestBlocks: 4, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 9, requestBlockTo: spectypes.LATEST_BLOCK - 6, specificBlock: spectypes.NOT_APPLICABLE},
+		{name: "ten block memory one block fetch", mockBlocks: 20, requestBlocks: 1, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK, requestBlockTo: spectypes.LATEST_BLOCK, specificBlock: spectypes.NOT_APPLICABLE},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -173,7 +174,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 		requestBlockTo   int64
 		specificBlock    int64
 	}{
-		{name: "ten block memory + 3 block fetch", mockBlocks: 100, requestBlocks: 3, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 6, requestBlockTo: spectypes.LATEST_BLOCK - 3, specificBlock: spectypes.NOT_APPLICABLE},
+		{name: "ten block memory + 3 block fetch", mockBlocks: 100, requestBlocks: 3, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 6, requestBlockTo: spectypes.LATEST_BLOCK - 4, specificBlock: spectypes.NOT_APPLICABLE},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -219,7 +220,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	requestBlocks := 3
 	fetcherBlocks := 10
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
-	requestBlockTo := spectypes.LATEST_BLOCK - 3
+	requestBlockTo := spectypes.LATEST_BLOCK - 4
 	specificBlock := spectypes.NOT_APPLICABLE
 	tests := []struct {
 		name        string
@@ -313,7 +314,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	requestBlocks := 4
 	fetcherBlocks := 50
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
-	requestBlockTo := spectypes.LATEST_BLOCK - 3
+	requestBlockTo := spectypes.LATEST_BLOCK - 4
 	specificBlock := spectypes.LATEST_BLOCK - 30 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
 	tests := []struct {
 		name        string

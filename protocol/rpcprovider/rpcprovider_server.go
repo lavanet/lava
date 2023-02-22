@@ -487,11 +487,19 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// Add latest block and finalization data
 		var err error
 		_, _, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
-		fromBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization) - int64(blocksInFinalizationData)
 		toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
+		fromBlock := toBlock - int64(blocksInFinalizationData) + 1
 		latestBlock, requestedHashes, err := rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, request.RequestBlock)
 		if err != nil {
-			return nil, utils.LavaFormatError("Could not guarantee data reliability", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+			if chaintracker.InvalidRequestedSpecificBlock.Is(err) {
+				// specific block is invalid, try again without specific block
+				latestBlock, requestedHashes, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
+				if err != nil {
+					return nil, utils.LavaFormatError("error getting range even without specific block", err, &map[string]string{"fromBlock": strconv.FormatInt(fromBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10)})
+				}
+			} else {
+				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10)})
+			}
 		}
 		request.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
 		for _, block := range requestedHashes {

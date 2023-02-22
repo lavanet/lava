@@ -40,7 +40,7 @@ type ChainTracker struct {
 	endpoint          lavasession.RPCProviderEndpoint
 }
 
-// this function returns block hashes of the blocks: [from block - to block) non inclusive. an additional specific block hash can be provided. order is sorted ascending
+// this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
 // it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
 // spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
 // if specific block is spectypes.NOT_APPLICABLE it is ignored
