@@ -62,6 +62,11 @@ screen -d -m -S polygon_providers bash -c "source ~/.bashrc; lavad server 127.0.
 screen -S polygon_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4345 $POLYGON_MAINNET_RPC POLYGON1 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/POLYGON_4345.log"
 screen -S polygon_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4346 $POLYGON_MAINNET_RPC POLYGON1 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/POLYGON_4346.log"
 
+# Base providers
+screen -d -m -S base_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 6000 $BASE_GOERLI_RPC BASET jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/BASET_6000.log"
+screen -S base_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6001 $BASE_GOERLI_RPC BASET jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/BASET_6001.log"
+screen -S base_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6002 $BASE_GOERLI_RPC BASET jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/BASET_6002.log"
+
 # Cosmos-SDK Chains
 
 # Osmosis providers
@@ -143,6 +148,7 @@ screen -S portals -X screen -t win13 -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win14 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3347 STRK jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3347.log"
 screen -S portals -X screen -t win15 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3348 APT1 rest $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3348.log"
 screen -S portals -X screen -t win18 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3351 POLYGON1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3351.log"
+screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3361 BASET jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BASET.log"
 # Cosmos-SDK based chains
 screen -S portals -X screen -t win1  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3334 COS3 rest 127.0.0.1:3335 COS3 tendermintrpc 127.0.0.1:3353 COS3 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS3_3334.log"
 screen -S portals -X screen -t win4  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3337 COS4 rest 127.0.0.1:3338 COS4 tendermintrpc 127.0.0.1:3354 COS4 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS4_3337.log"
