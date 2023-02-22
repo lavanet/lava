@@ -1,17 +1,19 @@
 endpoints:
-    - chain-id: COS3
-      api-interface: tendermintrpc
-      network-address: 127.0.0.1:2241
-      node-url: ["wss://tendermint-websocket.xyz","https://tendermint-https.xyz"]
-    - chain-id: COS3
-      api-interface: grpc
-      network-address: 127.0.0.1:2234
-      node-url: ["https://cosmos-grpc.xyz"]
-    - chain-id: COS3
-      api-interface: rest
-      network-address: 127.0.0.1:2231
-      node-url: ["https://tendermint-rest.xyz"]
-    - chain-id: ETH1
-      api-interface: jsonrpc
+    - api-interface: tendermintrpc
+      chain-id: LAV1
       network-address: 127.0.0.1:2221
-      node-url: ["wss://ethereum-websocket.xyz"]
+      node-url:
+        - ws://127.0.0.1:26657/websocket
+        - http://127.0.0.1:26657
+    - api-interface: grpc
+      chain-id: LAV1
+      network-address: 127.0.0.1:2222
+      node-url: 127.0.0.1:9090
+    - api-interface: rest
+      chain-id: LAV1
+      network-address: 127.0.0.1:2221
+      node-url: http://127.0.0.1:1317
+    # - api-interface: jsonrpc
+    #   chain-id: ETH1
+    #   network-address: 127.0.0.1:2221
+    #   node-url: wss://ethereum-rpc.com/ws/
