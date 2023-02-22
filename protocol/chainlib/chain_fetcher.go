@@ -61,9 +61,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if serviceApi.GetParsing().FunctionTemplate == "" {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" missing function template", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
-	path := serviceApi.Name
 	data := []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum))
-	chainMessage, err := cf.chainParser.ParseMsg(path, data, serviceApi.ApiInterfaces[0].Type)
+	chainMessage, err := cf.chainParser.ParseMsg(string(data), data, serviceApi.ApiInterfaces[0].Type)
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed parseMsg on function template", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}

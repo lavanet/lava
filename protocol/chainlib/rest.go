@@ -68,6 +68,19 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		Msg:  data,
 		Path: url,
 	}
+	if connectionType == http.MethodGet {
+		if string(data) == url { // happens on chain fetcher where we send the formatted string on both data and msg for cross api interface compatibility
+			restMessage = rpcInterfaceMessages.RestMessage{
+				Msg:  nil,
+				Path: url,
+			}
+		} else { // support for optional params, our listener puts them inside Msg data
+			restMessage = rpcInterfaceMessages.RestMessage{
+				Msg:  nil,
+				Path: url + string(data),
+			}
+		}
+	}
 
 	// TODO fix requested block
 	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, restMessage)
@@ -318,10 +331,6 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.nodeUrl + nodeMessage.Path
-	// Only get calls uses query params the rest uses the body
-	if connectionTypeSlected == http.MethodGet {
-		url += string(nodeMessage.Msg)
-	}
 
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)

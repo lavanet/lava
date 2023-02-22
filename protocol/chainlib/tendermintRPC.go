@@ -58,7 +58,8 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msg rpcInterfaceMessages.JsonrpcMessage
-	if string(data) != "" {
+	isJsonrpc := string(data) != ""
+	if isJsonrpc {
 		// Fetch pointer to message and error
 		msgPtr, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
@@ -114,7 +115,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	// Check if custom block parser exists in the api interface
 	// Use custom block parser only for URI calls
-	if apiInterface.GetOverwriteBlockParsing() != nil && url != "" {
+	if apiInterface.GetOverwriteBlockParsing() != nil && !isJsonrpc {
 		blockParser = *apiInterface.GetOverwriteBlockParsing()
 	}
 
@@ -123,7 +124,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if err != nil {
 		return nil, err
 	}
-	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: url}
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
+	if !isJsonrpc {
+		tenderMsg.Path = url // add path
+	}
 	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, tenderMsg)
 	return nodeMsg, nil
 }
