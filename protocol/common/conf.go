@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -17,14 +18,19 @@ func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []strin
 	if len(endpoint_strings)%numFieldsInConfig != 0 {
 		return nil, fmt.Errorf("invalid endpoint_strings length %d, needs to divide by %d without residue", len(endpoint_strings), numFieldsInConfig)
 	}
-	endpoints := []map[string]string{}
+	endpoints := []map[string]interface{}{}
 	for idx := 0; idx < len(endpoint_strings); idx += numFieldsInConfig {
-		toAdd := map[string]string{}
+		toAdd := map[string]interface{}{}
 		for inner_idx := 0; inner_idx < numFieldsInConfig; inner_idx++ {
-			toAdd[yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
+			if strings.Contains(endpoint_strings[idx+inner_idx], ",") {
+				toAdd[yaml_config_properties[inner_idx]] = strings.Split(endpoint_strings[idx+inner_idx], ",")
+			} else {
+				toAdd[yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
+			}
 		}
 		endpoints = append(endpoints, toAdd)
 	}
+
 	viper_endpoints.Set(endpointsConfigName, endpoints)
 	return
 }

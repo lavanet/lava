@@ -313,7 +313,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	}
 
 	cmdRPCProvider := &cobra.Command{
-		Use:   "rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface node-url} ... }",
+		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... }`,
 		Short: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply`,
 		Long: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply
 		all configs should be located in` + app.DefaultNodeHome + "/config or the local running directory" + ` 
@@ -323,8 +323,9 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 		Example: `required flags: --geolocation 1 --from alice
 optional: --save-conf
 rpcprovider <flags>
-rpcprovider rpcprovider_conf <flags>
-rpcprovider 127.0.0.1:3333 COS3 tendermintrpc https://www.node-path.com:80 127.0.0.1:3334 COS3 rest https://www.node-path.com:1317 <flags>`,
+rpcprovider rpcprovider_conf.yml <flags>
+rpcprovider 127.0.0.1:3333 ETH1 jsonrpc wss://www.eth-node.com:80 <flags>
+rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https://www.node-path.com:80" 127.0.0.1:3333 COS3 rest https://www.node-path.com:1317 <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
@@ -362,13 +363,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc https://www.node-path.com:80 127.0
 				if err != nil {
 					return utils.LavaFormatError("failed reading flag", err, &map[string]string{"flag_name": common.SaveConfigFlagName})
 				}
+				viper.MergeConfigMap(viper_endpoints.AllSettings())
 				if save_config {
-					viper.MergeConfigMap(viper_endpoints.AllSettings())
 					err := viper.SafeWriteConfigAs(DefaultRPCProviderFileName)
 					if err != nil {
 						utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", &map[string]string{"file_name": DefaultRPCProviderFileName, "error": err.Error()})
 					} else {
-						utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCProviderFileName + ".yml"})
+						utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCProviderFileName})
 					}
 				}
 			} else {

@@ -26,3 +26,4 @@ testutil/debugging/
 
 # Misc
 scripts/vars/
+rpcprovider.yml
