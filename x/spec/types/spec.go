@@ -50,6 +50,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			return details, fmt.Errorf("compute units out or range")
 		}
 
+		if len(api.ApiInterfaces) == 0 {
+			return details, fmt.Errorf("api interface list empty for %v", api.Name)
+		}
+
 		for _, apiInterface := range api.ApiInterfaces {
 			if _, ok := availableAPIInterface[apiInterface.Interface]; !ok {
 				return details, fmt.Errorf("unsupported api interface %v", apiInterface.Interface)

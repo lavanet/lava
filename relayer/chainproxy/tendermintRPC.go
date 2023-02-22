@@ -139,14 +139,15 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 func verifyTendermintNodeURL(nodeUrl string, flagSet *pflag.FlagSet) string {
 	var httpUrl string
 	if nodeUrl != "" { // provider process
-		verifyRPCendpoint(nodeUrl) // verify websocket
+		// verifyRPCendpoint(nodeUrl) // verify websocket
 		var err error
 		httpUrl, err = flagSet.GetString(TendermintProviderHttpEndpoint)
 		if err != nil {
 			utils.LavaFormatFatal("Error fetching rpc provider flag.", err, nil)
 		}
 		if httpUrl == "" {
-			utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+TendermintProviderHttpEndpoint, err, nil)
+			httpUrl = nodeUrl
+			// utils.LavaFormatFatal("http endpoint was not set for tendermint provider, please add the following flag: --"+TendermintProviderHttpEndpoint, err, nil)
 		}
 	}
 	return httpUrl
