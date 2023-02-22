@@ -62,7 +62,7 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", voteUpdaterRaw)})
 	}
 	endpoint := lavasession.RPCEndpoint{ChainID: endpointP.ChainID, ApiInterface: endpointP.ApiInterface}
-	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
+	voteUpdater.RegisterVoteUpdatable(ctx, voteUpdatable, endpoint)
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
@@ -73,7 +73,7 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", payemntUpdaterRaw)})
 	}
 
-	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+	payemntUpdater.RegisterPaymentUpdatable(ctx, paymentUpdatable)
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error {

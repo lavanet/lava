@@ -263,6 +263,7 @@ func (psq *ProviderStateQuery) GetProvidersCountForConsumer(ctx context.Context,
 	if err != nil {
 		return 0, err
 	}
+
 	return uint32(res.GetParams().ServicersToPairCount), nil
 }
 

@@ -14,16 +14,20 @@ type VoteUpdatable interface {
 	VoteHandler(*reliabilitymanager.VoteParams, uint64)
 }
 
+type VoteProviderStateQueryInterface interface {
+	VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error)
+}
+
 type VoteUpdater struct {
-	voteUpdatables map[string]*VoteUpdatable
-	stateQuery     *ProviderStateQuery
+	voteUpdatables map[string]VoteUpdatable
+	stateQuery     VoteProviderStateQueryInterface
 }
 
-func NewVoteUpdater(stateQuery *ProviderStateQuery) *VoteUpdater {
-	return &VoteUpdater{voteUpdatables: map[string]*VoteUpdatable{}, stateQuery: stateQuery}
+func NewVoteUpdater(stateQuery VoteProviderStateQueryInterface) *VoteUpdater {
+	return &VoteUpdater{voteUpdatables: map[string]VoteUpdatable{}, stateQuery: stateQuery}
 }
 
-func (vu *VoteUpdater) RegisterVoteUpdatable(ctx context.Context, voteUpdatable *VoteUpdatable, endpoint lavasession.RPCEndpoint) {
+func (vu *VoteUpdater) RegisterVoteUpdatable(ctx context.Context, voteUpdatable VoteUpdatable, endpoint lavasession.RPCEndpoint) {
 	vu.voteUpdatables[endpoint.Key()] = voteUpdatable
 }
 
@@ -40,6 +44,6 @@ func (vu *VoteUpdater) Update(latestBlock int64) {
 	for _, vote := range votes {
 		endpoint := lavasession.RPCEndpoint{ChainID: vote.ChainID, ApiInterface: vote.ApiInterface}
 		updatable := vu.voteUpdatables[endpoint.Key()]
-		(*updatable).VoteHandler(vote, uint64(latestBlock))
+		updatable.VoteHandler(vote, uint64(latestBlock))
 	}
 }

@@ -14,13 +14,18 @@ const (
 	CallbackKeyForPairingUpdate = "pairing-update"
 )
 
+type PairingStateQueryInterface interface {
+	GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, errRet error)
+	GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error)
+}
+
 type PairingUpdater struct {
 	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
-	stateQuery                 *ConsumerStateQuery
+	stateQuery                 PairingStateQueryInterface
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
+func NewPairingUpdater(stateQuery PairingStateQueryInterface) *PairingUpdater {
 	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
 }
 

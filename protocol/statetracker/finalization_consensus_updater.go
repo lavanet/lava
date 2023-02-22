@@ -6,19 +6,24 @@ import (
 
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const (
 	CallbackKeyForFinalizationConsensusUpdate = "finalization-consensus-update"
 )
 
+type ConsumerStateQueryInterface interface {
+	GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, errRet error)
+}
+
 type FinalizationConsensusUpdater struct {
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
-	stateQuery                        *ConsumerStateQuery
+	stateQuery                        ConsumerStateQueryInterface
 }
 
-func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
+func NewFinalizationConsensusUpdater(stateQuery ConsumerStateQueryInterface) *FinalizationConsensusUpdater {
 	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 
@@ -33,6 +38,7 @@ func (fcu *FinalizationConsensusUpdater) UpdaterKey() string {
 
 func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
 	ctx := context.Background()
+
 	if int64(fcu.nextBlockForUpdate) > latestBlock {
 		return
 	}

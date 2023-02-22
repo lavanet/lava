@@ -8,6 +8,10 @@ const (
 	CallbackKeyForEpochUpdate = "epoch-update"
 )
 
+type ProviderStateQueryInterface interface {
+	CurrentEpochStart(ctx context.Context) (uint64, error)
+}
+
 type EpochUpdatable interface {
 	UpdateEpoch(epoch uint64)
 }
@@ -15,10 +19,10 @@ type EpochUpdatable interface {
 type EpochUpdater struct {
 	epochUpdatables []*EpochUpdatable
 	currentEpoch    uint64
-	stateQuery      *ProviderStateQuery
+	stateQuery      ProviderStateQueryInterface
 }
 
-func NewEpochUpdater(stateQuery *ProviderStateQuery) *EpochUpdater {
+func NewEpochUpdater(stateQuery ProviderStateQueryInterface) *EpochUpdater {
 	return &EpochUpdater{epochUpdatables: []*EpochUpdatable{}, stateQuery: stateQuery}
 }
 
