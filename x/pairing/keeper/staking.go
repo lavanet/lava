@@ -90,7 +90,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		}
 		details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String()}
 		details["moniker"] = moniker
-		if existingEntry.Stake.IsLT(amount) {
+		if amount.IsGTE(existingEntry.Stake) {
 			// increasing stake is allowed
 			err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
 			if err != nil {
