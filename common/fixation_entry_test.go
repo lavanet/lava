@@ -95,10 +95,6 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	// init VersionedStore + context
 	vs, ctx := initCtxAndVersionedStore(t)
 
-	byteCoin := vs.GetCdc().MustMarshal(&dummyObj)
-	var tempCoin sdk.Coin
-	vs.GetCdc().MustUnmarshal(byteCoin, &tempCoin)
-
 	// add the first dummy entry
 	blockToAddEntry := uint64(0)
 	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj)
@@ -113,12 +109,12 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	require.Equal(t, 1, len(indexList))
 
 	// get the entry from the storage
-	var tempEntry types.Entry
+	var tempEntry sdk.Coin
 	err = vs.GetEntryForBlock(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &tempEntry, types.DO_NOTHING)
 	require.Nil(t, err)
 
 	// make sure that one entry's data is the same data of the second dummy entry
-	require.Equal(t, []byte{0xb}, tempEntry.GetData())
+	require.True(t, tempEntry.IsEqual(dummyObj2))
 
 	// make sure dummy index is still in the entry index list
 	indexList = vs.GetAllEntryIndices(ctx, dummyFixationKey)

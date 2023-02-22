@@ -102,8 +102,6 @@ func (vs VersionedStore) AppendEntry(ctx sdk.Context, fixationKey string, index 
 
 	// marshal the new entry's data
 	b := vs.cdc.MustMarshal(entryData)
-	b[len(b)-1] = 0x49
-	vs.cdc.MustUnmarshal(b, entryData)
 	// create a new entry and marshal it
 	entry := types.Entry{Index: index, Block: block, Data: b, References: 0}
 	bz := vs.cdc.MustMarshal(&entry)
@@ -164,9 +162,8 @@ func (vs VersionedStore) SetEntry(ctx sdk.Context, fixationKey string, index str
 	b := vs.cdc.MustMarshal(entryData)
 
 	// get the entry from the store
-	var entry types.Entry
-	found := vs.GetEntry(ctx, fixationKey, index, block, &entry, types.DO_NOTHING)
-	if !found {
+	entry := vs.getUnmarshaledEntryForBlock(ctx, fixationKey, index, block, types.DO_NOTHING)
+	if entry == nil {
 		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", map[string]string{"fixationKey": fixationKey, "index": index, "block": strconv.FormatUint(block, 10)}, "can't set non-existent entry")
 	}
 
@@ -174,7 +171,7 @@ func (vs VersionedStore) SetEntry(ctx sdk.Context, fixationKey string, index str
 	entry.Data = b
 
 	// marshal the entry
-	bz := vs.cdc.MustMarshal(&entry)
+	bz := vs.cdc.MustMarshal(entry)
 
 	// set the entry
 	store.Set(byteKey, bz)
