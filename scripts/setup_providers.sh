@@ -119,6 +119,20 @@ screen -S jun1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad s
 screen -S jun1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2375 $JUNO_GRPC JUN1 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2375.log"
 screen -S jun1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2376 $JUNO_GRPC JUN1 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2376.log"
 
+# Evmos providers
+screen -d -m -S cos6_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 4347 $EVMOS_RPC COS6 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS6_4347.log"
+screen -S cos6_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4351 $EVMOS_RPC COS6 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_4351.log"
+screen -S cos6_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4355 $EVMOS_RPC COS6 jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_4355.log"
+screen -S cos6_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4348 $EVMOS_TENDERMINTRPC COS6 tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --tendermint-http-endpoint $EVMOS_TENDERMINTRPC 2>&1 | tee $LOGS_DIR/COS6_4348.log"
+screen -S cos6_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4352 $EVMOS_TENDERMINTRPC COS6 tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --tendermint-http-endpoint $EVMOS_TENDERMINTRPC 2>&1 | tee $LOGS_DIR/COS6_4352.log"
+screen -S cos6_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4356 $EVMOS_TENDERMINTRPC COS6 tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --tendermint-http-endpoint $EVMOS_TENDERMINTRPC 2>&1 | tee $LOGS_DIR/COS6_4356.log"
+screen -S cos6_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4349 $EVMOS_REST COS6 rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS6_4349.log"
+screen -S cos6_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4353 $EVMOS_REST COS6 rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS6_4353.log"
+screen -S cos6_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4357 $EVMOS_REST COS6 rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS6_4357.log"
+screen -S cos6_providers -X screen -t win09 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4350 $EVMOS_GRPC COS6 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS6_grpc0.log"
+screen -S cos6_providers -X screen -t win10 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4354 $EVMOS_GRPC COS6 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS6_grpc1.log"
+screen -S cos6_providers -X screen -t win11 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4358 $EVMOS_GRPC COS6 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS6_grpc2.log"
+
 # Setup Portals
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_ETH_3333.log" && sleep 0.25
 screen -S portals -X screen -t win3  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3336 FTM250 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_FTM250_3336.log"
@@ -135,6 +149,7 @@ screen -S portals -X screen -t win4  -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win7  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3340 LAV1 rest 127.0.0.1:3341 LAV1 tendermintrpc 127.0.0.1:3352 LAV1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_LAV1_3340.log"
 screen -S portals -X screen -t win10 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3343 COS5 rest 127.0.0.1:3344 COS5 tendermintrpc 127.0.0.1:3356 COS5 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
 screen -S portals -X screen -t win16 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3349 JUN1 rest 127.0.0.1:3350 JUN1 tendermintrpc 127.0.0.1:3355 JUN1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3349.log"
+screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3360 COS6 jsonrpc 127.0.0.1:3357 COS6 rest 127.0.0.1:3358 COS6 tendermintrpc 127.0.0.1:3359 COS6 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS6.log"
 
 echo "--- setting up screens done ---"
 screen -ls
