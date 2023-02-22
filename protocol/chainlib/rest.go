@@ -37,12 +37,17 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		// chain fetcher sends the replaced request inside data
+		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType)
+	}
+
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  nil,
 		Path: serviceApi.GetName(),
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage)
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -69,17 +74,12 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 	if connectionType == http.MethodGet {
-		if string(data) == url { // happens on chain fetcher where we send the formatted string on both data and msg for cross api interface compatibility
-			restMessage = rpcInterfaceMessages.RestMessage{
-				Msg:  nil,
-				Path: url,
-			}
-		} else { // support for optional params, our listener puts them inside Msg data
-			restMessage = rpcInterfaceMessages.RestMessage{
-				Msg:  nil,
-				Path: url + string(data),
-			}
+		// support for optional params, our listener puts them inside Msg data
+		restMessage = rpcInterfaceMessages.RestMessage{
+			Msg:  nil,
+			Path: url + string(data),
 		}
+
 	}
 
 	// TODO fix requested block
