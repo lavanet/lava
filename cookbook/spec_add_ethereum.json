@@ -1321,7 +1321,7 @@
             },
             {
                 "index": "GTH1",
-                "name": "goerli testnet",
+                "name": "ethereum testnet goerli",
                 "enabled": true,
                 "imports": [ "ETH1" ],
                 "reliability_threshold": 268435455,

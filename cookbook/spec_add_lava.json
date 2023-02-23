@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "LAV1",
-                "name": "lava testnet-1",
+                "name": "lava testnet",
                 "enabled": true,
                 "imports": [ "COS5" ],
                 "reliability_threshold": 268435455,

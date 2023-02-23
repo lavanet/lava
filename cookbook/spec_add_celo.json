@@ -25,7 +25,7 @@
             },
             {
                 "index": "ALFAJORES",
-                "name": "celo alfajores aestnet",
+                "name": "celo alfajores testnet",
                 "enabled": true,
                 "imports": [ "CELO" ],
                 "reliability_threshold": 268435455,

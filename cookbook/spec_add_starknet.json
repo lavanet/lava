@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "STRK",
-                "name": "starkNet mainnet",
+                "name": "starknet mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -527,7 +527,7 @@
             },
             {
                 "index": "STRKT",
-                "name": "starkNet testnet",
+                "name": "starknet testnet",
                 "enabled": true,
                 "imports": [ "STRK" ],
                 "reliability_threshold": 268435455,
