@@ -8,7 +8,6 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type voteData struct {
@@ -20,8 +19,6 @@ type voteData struct {
 type ProviderSessionsEpochData struct {
 	UsedComputeUnits uint64
 	MaxComputeUnits  uint64
-	DataReliability  *pairingtypes.VRFData
-	VrfPk            *utils.VrfPubKey
 }
 
 type RPCProviderEndpoint struct {

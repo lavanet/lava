@@ -313,7 +313,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("failed data reliability validation", err, nil)
 	}
-	dataReliabilitySingleProviderSession, err := rpcps.providerSessionManager.GetDataReliabilitySession(extractedConsumerAddress.String(), uint64(request.BlockHeight))
+	dataReliabilitySingleProviderSession, err := rpcps.providerSessionManager.GetDataReliabilitySession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId, request.RelayNum)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("failed to get a provider data reliability session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "epoch": strconv.FormatInt(request.BlockHeight, 10)})
 	}
@@ -332,12 +332,12 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			if !valid {
 				return nil, utils.LavaFormatError("VerifyPairing, this consumer address is not valid with this provider", nil, &map[string]string{"epoch": strconv.FormatInt(request.BlockHeight, 10), "sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
 			}
-			vrfPk, maxCuForConsumer, getVrfAndMaxCuError := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddressString, request.ChainID, uint64(request.BlockHeight))
+			_, maxCuForConsumer, getVrfAndMaxCuError := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddressString, request.ChainID, uint64(request.BlockHeight))
 			if getVrfAndMaxCuError != nil {
 				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetVrfPkAndMaxCuForUser failed", getVrfAndMaxCuError, &map[string]string{"epoch": strconv.FormatInt(request.BlockHeight, 10), "sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
 			}
 			// After validating the consumer we can register it with provider session manager.
-			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum, vrfPk, maxCuForConsumer)
+			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum, maxCuForConsumer)
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "relayNum": strconv.FormatUint(request.RelayNum, 10)})
 			}
@@ -360,10 +360,6 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) verifyDataReliabilityRelayRequest(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
-
-	if request.RelayNum > lavasession.DataReliabilitySessionId {
-		return utils.LavaFormatError("request's relay num is larger than the data reliability session ID", nil, &map[string]string{"relayNum": strconv.FormatUint(request.RelayNum, 10), "DataReliabilitySessionId": strconv.Itoa(lavasession.DataReliabilitySessionId)})
-	}
 	if request.CuSum != lavasession.DataReliabilityCuSum {
 		return utils.LavaFormatError("request's CU sum is not equal to the data reliability CU sum", nil, &map[string]string{"cuSum": strconv.FormatUint(request.CuSum, 10), "DataReliabilityCuSum": strconv.Itoa(lavasession.DataReliabilityCuSum)})
 	}
