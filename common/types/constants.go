@@ -5,8 +5,10 @@ const (
 )
 
 // References action enum
+type ReferenceAction int32
+
 const (
-	ADD_REFERENCE = 0
-	SUB_REFERENCE = 1
-	DO_NOTHING    = 2
+	ADD_REFERENCE ReferenceAction = 0
+	SUB_REFERENCE ReferenceAction = 1
+	DO_NOTHING    ReferenceAction = 2
 )

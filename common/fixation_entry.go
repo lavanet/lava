@@ -2,7 +2,6 @@ package common
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -12,300 +11,317 @@ import (
 )
 
 /*
-This library provides a standard set of API for managing parameters that are meant to be fixated.
-These API should enable users to easily set, modify, and delete fixated parameters.
-A fixated parameter is one whose value is retained on-chain with the block in which it was created when it is changed.
-By contrast, when a non-fixated parameter is altered, only its most recent value is stored.
+	This library provides a standard set of API for managing entries that are meant to be fixated.
+	This API set should enable users to easily set, modify, and delete fixated entries.
+	A fixated entry is one whose value is retained on-chain with the block in which it was created when it is changed.
+	By contrast, when a non-fixated entry is altered, only its most recent value is stored.
 
-Fixated entry structure:
-Entry {
-    string index; 			// a unique entry index
-    uint64 block; 			// block the entry was created
-    bytes marshaled_data;   // marshaled data of the entry
-}
+	Fixated entry structure:
+	Entry {
+		EntryVersion entry_version;  // Struct that holds the entry's index and block.
+		bytes data; 				 // The data saved in the entry. Can be any type.
+		uint64 references; 			 // Number of references to this entry (number of entities using it).
+	}
 
-How does it work?
-All the entries have one-of-a-kind indices that are in the following structure:
-	- Latest version: `entryIndex`
-	- Older versions: `entryIndex_0`, `entryIndex_1`, and so on.
+	EntryVersion {
+		string index;  // Unique entry index (unique "name").
+		uint64 block;  // Block height the entry was created.
+	}
 
-Entry Addition:
-When adding a new entry, we set it in the store and add a unique index to the uniqueIndex list.
-When adding an update to an entry, we update all the indices of past version (increase the version number suffix by 1) and
-set the updated entry as the latest version (its index is without a version number suffix).
-Note, if two entries with the same index are added in the same block, we only keep the latest one.
+	How does it work?
+	To help with the explanation, we'll use a reference example. Assume you created a custom module
+	named "packages". This module keeps package objects as fixated entries (i.e., the module keeps track
+	of every package AND it's older versions). Each package has an "index" field which acts as a unique name
+	for the package.
 
-Entry Removal:
-Entries can be removed with the RemoveEntry API. Currently, there is no deletion of the corresponding
-fixationEntryUniqueIndex (should be deleted when the deleted entry is the last remaining version).
+	In general, each object that uses this library will have a versioned store field of type VersionedStore.
+	The versioned store (from now on: "vs") holds a unique store key, a codec and a map of unique indices.
+	Using our reference example, the store key of the module "packages" will be "packages". If another module,
+	say module "projects", also uses fixated entries, its store key will be "projects". This way we get a clear
+	separation between the fixated entries of "packages" and of "projects". In other words, the store key acts as
+	a namespace. The codec is used to determine how the packages should be marshaled, and the unique indices map
+	helps to track which packages do we have (not including older versions packages).
+
+	In each store (or namespace), there are two types of saved objects: Entry and EntryVersion. Note that Entry also
+	contains an EntryVersion object.
+		To access an EntryVersion object you use the following key: "EntryVersionKey_<index>".
+		To access an Entry object you use the following key: "EntryKey_<index>_<block>".
+	Wait, why are we keeping duplicates of EntryVersion objects? Entry contains EntryVersion! (you may ask).
+	The EntryVersion objects that are saved separately are only of the latest version of the entry. So, we do save
+	duplicates of EntryVersion objects, but only of a single version.
+
+	Going back to the reference example, let's say I have a package named "myGreatPackage" that was created in block
+	101 (it also has additional fields). The package's entry holds the marshaled package object (in the data field)
+	and has 33 references.
+		To access its EntryVersion object you use the following key: "EntryVersionKey_myGreatPackage". The EntryVersion
+		object will be: EntryVersion{index: "myGreatPackage", block: 101}
+
+		To access its Entry object you use the following key: "EntryKey_myGreatPackage_101". The Entry object will be:
+		Entry{EntryVersion: EntryVersion{index: "myGreatPackage", block: 101}, Data: marshaledPackageData, References:
+		33}
+
+	Why do we need two (similar looking) objects?
+	EntryVersion objects are used when you want to get a set of all of the distinct entries saved in the store.
+	Assume you're a user that wants to know what packages are available in the "packages" store. Just use the
+	"EntryVersionKey" prefix and you'll get them.
+	Now Let's say you want all the version of a specific package. Go to the "packages" store (with its store key) and
+	use the prefix "EntryKey_<index>".
+	Finally, if you want to get the actual entry of a specific version, you need to get all the versions. Then, consturct
+	the entry key ("EntryKey_<index>_<block>") and get your desired entry. Remember, the entry holds the (marshaled)
+	package object. This is the only way to get the actual package.
 */
 
-// Set entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
-func SetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entry types.Entry) {
-	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
-	b := cdc.MustMarshal(&entry)
-	store.Set(entryKey(
-		entry.Index,
-	), b)
+type VersionedStore struct {
+	storeKey sdk.StoreKey
+	cdc      codec.BinaryCodec
 }
 
-// Get entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
-func GetEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, referenceAction int) (val types.Entry, found bool) {
-	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
+// AppendEntry adds a new entry to the store
+func (vs VersionedStore) AppendEntry(ctx sdk.Context, fixationKey string, index string, block uint64, entryData codec.ProtoMarshaler) error {
+	// delete old entries
+	vs.deleteStaleEntries(ctx, fixationKey)
 
-	b := store.Get(entryKey(
-		entryIndex,
-	))
-	if b == nil {
-		return val, false
+	// get the latest entry for this index
+	latestEntry := vs.getUnmarshaledEntryForBlock(ctx, fixationKey, index, block, types.DO_NOTHING)
+
+	// if latest entry is not found, this is a first version entry
+	firstVersion := false
+	if latestEntry == nil {
+		firstVersion = true
 	}
 
-	cdc.MustUnmarshal(b, &val)
-
-	switch referenceAction {
-	case types.ADD_REFERENCE:
-		val.References += 1
-		SetEntry(ctx, storeKey, entryKeyPrefix, cdc, val)
-	case types.SUB_REFERENCE:
-		if val.GetReferences() > 0 {
-			val.References -= 1
-			SetEntry(ctx, storeKey, entryKeyPrefix, cdc, val)
-		}
-	case types.DO_NOTHING:
+	// make sure the new entry's block is not smaller than the latest entry's block
+	if !firstVersion && block < latestEntry.GetBlock() {
+		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(block, 10), "index": index, "fixationKey": fixationKey}, "can't append entry, earlier than the latest entry")
 	}
 
-	return val, true
-}
-
-// Helper function to extract the original index from an older version index (for example: myIndex_2 -> myIndex)
-func extractOriginalIndexFromOlderVersionIndex(index string) (originalIndexWithoutVersionNumSuffix string) {
-	// check that the index's length is non-zero
-	if len(index) == 0 {
-		return ""
+	// if the new entry's block is equal to the latest entry, overwrite the latest entry
+	if !firstVersion && block == latestEntry.GetBlock() {
+		return vs.SetEntry(ctx, fixationKey, index, block, entryData)
 	}
 
-	// if the index doesn't contain "_", it's not an older version index (as defined in this code) so there's nothing to do
-	if !strings.Contains(index, "_") {
-		return index
-	}
+	// marshal the new entry's data
+	b := vs.cdc.MustMarshal(entryData)
+	b[len(b)-1] = 0x49
+	vs.cdc.MustUnmarshal(b, entryData)
+	// create a new entry and marshal it
+	entry := types.Entry{Index: index, Block: block, Data: b, References: 0}
+	bz := vs.cdc.MustMarshal(&entry)
 
-	// trim the index string from the start to the last "_"
-	if i := strings.LastIndex(index, "_"); i > 0 {
-		index = index[:i]
-	}
+	// get the relevant store
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+index))
+	byteKey := types.KeyPrefix(createEntryKey(index, fixationKey, block))
 
-	return index
-}
+	// set the new entry to the store
+	store.Set(byteKey, bz)
 
-// Remove entry with full index. Full index is the entry index + version num suffix (like "bundle1_0")
-func RemoveEntry(ctx sdk.Context, storeKey sdk.StoreKey, cdc codec.BinaryCodec, entryKeyPrefix string, entryIndex string) {
-	store := prefix.NewStore(ctx.KVStore(storeKey), []byte(entryKeyPrefix))
-	store.Delete(entryKey(
-		entryIndex,
-	))
-
-	originalIndex := extractOriginalIndexFromOlderVersionIndex(entryIndex)
-
-	entryList := GetAllEntriesForIndex(ctx, storeKey, entryKeyPrefix, cdc, originalIndex)
-	if len(entryList) == 0 {
-		uniqueIndices := GetAllFixationEntryUniqueIndex(ctx, storeKey, cdc, entryKeyPrefix)
-		for _, uniqueIndex := range uniqueIndices {
-			if originalIndex == uniqueIndex.GetUniqueIndex() {
-				RemoveFixationEntryUniqueIndex(ctx, storeKey, entryKeyPrefix, uniqueIndex.GetId())
-			}
-		}
-	}
-}
-
-func entryKey(
-	entryIndex string,
-) []byte {
-	var key []byte
-
-	entryIndexBytes := []byte(entryIndex)
-	key = append(key, entryIndexBytes...)
-	key = append(key, []byte("/")...)
-
-	return key
-}
-
-func deleteStaleEntries(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, index string) {
-	// get current block
-	currentBlock := ctx.BlockHeight()
-
-	// get all the entries of the entry's index
-	entryList := GetAllEntriesForIndex(ctx, storeKey, entryKeyPrefix, cdc, index)
-
-	// iterate over the entries
-	for _, entry := range entryList {
-		// if the entry's references is zero and the entry's block + STALE_ENTRY_TIME (the time it takes for an entry to be stale) is smaller than the current block, remove it
-		if entry.GetReferences() == 0 && int64(entry.GetBlock())+types.STALE_ENTRY_TIME < currentBlock {
-			RemoveEntry(ctx, storeKey, cdc, entryKeyPrefix, index)
-		}
-	}
-}
-
-// Function to create a new fixation entry, add it to the KVStore and update the entry's older versions indices. Note, the entryIndex should be without the version num suffix
-func AddEntry(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, uniqueIndexEntryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string, marshalledData []byte) error {
-	// delete stale entries
-	deleteStaleEntries(ctx, storeKey, entryKeyPrefix, cdc, entryIndex)
-
-	// since we're keeping versions with a "_<num>" suffix, to avoid trouble we forbid that the last character would be "_"
-	if entryIndex[len(entryIndex)-1:] == "_" {
-		return utils.LavaError(ctx, ctx.Logger(), "AddEntry_invalid_entryIndex", map[string]string{"entryIndex": entryIndex}, "entry index must not end with \"_\"")
-	}
-
-	// create a new fixated entry
-	entryToSet, err := CreateNewEntry(ctx, entryIndex, uint64(ctx.BlockHeight()), marshalledData)
-	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "AddEntry_create_new_fixated_entry_failed", map[string]string{"err": err.Error()}, "could not create new fixated entry")
-	}
-
-	isFirstVersion := false
-	// check if there were more entries proposed in this block that have the same entryIndex as entryToSet
-	if !checkEntryProposedInThisBlock(ctx, storeKey, entryKeyPrefix, cdc, entryToSet) {
-		// update the older versions entries indices. Also return whether the entry is a first version entry (no older versions saved in the KVStore)
-		isFirstVersion, err = updateEntryIndices(ctx, storeKey, entryKeyPrefix, cdc, entryToSet.GetIndex())
-		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddEntry_entry_indices_update_failed", map[string]string{"entryToSetIndex": entryToSet.Index}, "could not update entries indices")
-		}
-	}
-
-	// set the new entry as the latest version (by using the index without number suffix)
-	SetEntry(ctx, storeKey, entryKeyPrefix, cdc, *entryToSet)
-
-	// set a unique index if the entry is a first version entry
-	if isFirstVersion {
-		AppendFixationEntryUniqueIndex(ctx, storeKey, cdc, uniqueIndexEntryKeyPrefix, types.UniqueIndex{UniqueIndex: entryToSet.GetIndex()})
+	// if it's a first version entry, add a new key in the uniqueIndices map
+	if firstVersion {
+		vs.AppendEntryIndex(ctx, fixationKey, index)
 	}
 
 	return nil
 }
 
-// Function to check whether two entries with the same index are added in the same block
-func checkEntryProposedInThisBlock(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, newEntryToPropose *types.Entry) bool {
-	// try getting an entry with the same index as newEntryToPropose
-	oldEntry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, newEntryToPropose.GetIndex(), types.DO_NOTHING)
-	if found {
-		// if found, check if the new entry has the same block field
-		if newEntryToPropose.GetBlock() == oldEntry.GetBlock() {
-			return true
-		}
-	}
-	return false
-}
+func (vs VersionedStore) deleteStaleEntries(ctx sdk.Context, fixationKey string) {
+	entries := vs.getAllEntries(ctx, fixationKey)
+	for _, entry := range entries {
+		// get the relevant store and init an iterator
+		store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+entry.GetIndex()))
+		iterator := sdk.KVStorePrefixIterator(store, []byte{})
+		defer iterator.Close()
 
-// Function to update the indices of older versions of some entry due to new entry version (number suffix is increased by 1)
-func updateEntryIndices(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, entryIndex string) (bool, error) {
-	// get all the entries for a given index (all its versions)
-	entries := GetAllEntriesForIndex(ctx, storeKey, entryKeyPrefix, cdc, entryIndex)
+		// iterate over entries
+		for ; iterator.Valid(); iterator.Next() {
+			// umarshal the old entry version
+			var oldEntry types.Entry
+			vs.cdc.MustUnmarshal(iterator.Value(), &oldEntry)
 
-	// if there are no older versions of this entry -> there is no need to update indices, return that it's a first version entry
-	if len(entries) == 0 {
-		return true, nil
-	}
-
-	// go over all the older entries and update their indices
-	for i := len(entries) - 1; i >= 0; i-- {
-		// get the old version entry
-		oldVersionEntry := *entries[i]
-
-		// construct an updated index for the old version entry (increase the number suffix by 1)
-		oldVersionEntry.Index = CreateOldVersionIndex(entryIndex, uint64(i))
-
-		// set the old version entry with the updated index (overwrite)
-		SetEntry(ctx, storeKey, entryKeyPrefix, cdc, oldVersionEntry)
-	}
-
-	return false, nil
-}
-
-// Function to create a fixated entry from block and marshaled data
-func CreateNewEntry(ctx sdk.Context, index string, block uint64, marshaledData []byte) (*types.Entry, error) {
-	// check that marshaledData is not nil
-	if len(marshaledData) == 0 {
-		return nil, utils.LavaError(ctx, ctx.Logger(), "CreateNewFixatedEntry_failed", nil, "can't create new fixated entry, marshaled data is nil")
-	}
-
-	// create new entry
-	newEntry := types.Entry{Index: index, Block: block, MarshaledData: marshaledData, References: 0}
-
-	return &newEntry, nil
-}
-
-// Function to search for an entry in the storage (latest version's index is index, older versions' index is index_0, index_1, ...)
-func GetEntryOlderVersionByBlock(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, index string, block uint64) (*types.Entry, bool) {
-	// try getting the entry with the original index. return only if the requested block is larger than the entry's block
-	entry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, index, types.DO_NOTHING)
-	if found {
-		if block >= entry.GetBlock() {
-			return &entry, true
-		}
-	} else {
-		// couldn't find the entry
-		return nil, false
-	}
-
-	// couldn't find the entry for requested block (block too small) -> may be an older version. older version indices are "index_0" (or other numbers)
-	versionSuffixCounter := 0
-	for {
-		// construct the older version index
-		versionIndex := CreateOldVersionIndex(index, uint64(versionSuffixCounter))
-
-		// get the older version entry
-		entry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, versionIndex, types.DO_NOTHING)
-		if found {
-			if block >= entry.GetBlock() {
-				// entry old version found and the requested block is larger than the entry's block -> found the right entry
-				return &entry, true
+			// if the entry's refs is equal to 0 and it has been longer than STALE_ENTRY_TIME from its creation, delete it
+			if oldEntry.GetReferences() == 0 && int64(oldEntry.GetBlock())+types.STALE_ENTRY_TIME < ctx.BlockHeight() {
+				vs.removeEntry(ctx, fixationKey, oldEntry.GetIndex(), oldEntry.GetBlock())
 			} else {
-				// entry old version found and the requested block is smaller than the entry's block -> not the right entry version, update suffix to check older versions
-				versionSuffixCounter += 1
+				// else, break (avoiding removal of entries in the middle of the list)
+				break
 			}
-		} else {
-			// entry wasn't found, break
-			break
+		}
+
+		// try getting this entry's latest version. If it doesn't exist, remove its index for the entry index list
+		latestVersionEntry := vs.getUnmarshaledEntryForBlock(ctx, fixationKey, entry.GetIndex(), uint64(ctx.BlockHeight()), types.DO_NOTHING)
+		if latestVersionEntry == nil {
+			vs.RemoveEntryIndex(ctx, fixationKey, entry.GetIndex())
+		}
+	}
+}
+
+// SetEntry sets a specific entry in the store
+func (vs VersionedStore) SetEntry(ctx sdk.Context, fixationKey string, index string, block uint64, entryData codec.ProtoMarshaler) error {
+	// get the relevant store
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+index))
+	byteKey := types.KeyPrefix(createEntryKey(index, fixationKey, block))
+
+	// marshal the new entry data
+	b := vs.cdc.MustMarshal(entryData)
+
+	// get the entry from the store
+	var entry types.Entry
+	found := vs.GetEntry(ctx, fixationKey, index, block, &entry, types.DO_NOTHING)
+	if !found {
+		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", map[string]string{"fixationKey": fixationKey, "index": index, "block": strconv.FormatUint(block, 10)}, "can't set non-existent entry")
+	}
+
+	// update the entry's data
+	entry.Data = b
+
+	// marshal the entry
+	bz := vs.cdc.MustMarshal(&entry)
+
+	// set the entry
+	store.Set(byteKey, bz)
+
+	return nil
+}
+
+// handleRefAction handles ref actions: increase refs, decrease refs or do nothing
+func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.ReferenceAction) error {
+	// check if entry is nil
+	if entry == nil {
+		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_nil_entry", map[string]string{}, "can't handle reference action, entry is nil")
+	}
+
+	// handle the ref action
+	switch refAction {
+	case types.ADD_REFERENCE:
+		entry.References += 1
+	case types.SUB_REFERENCE:
+		if entry.GetReferences() > 0 {
+			entry.References -= 1
+		}
+	case types.DO_NOTHING:
+	}
+
+	return nil
+}
+
+// GetEntry gets the exact entry with index and block (block has to be precise). The user should pass an empty pointer of the desired type (e.g. package, subsciption, etc.).
+func (vs VersionedStore) GetEntry(ctx sdk.Context, fixationKey string, index string, block uint64, entryData codec.ProtoMarshaler, refAction types.ReferenceAction) bool {
+	// create entry key
+	entryKey := createEntryKey(index, fixationKey, block)
+
+	// get the relevant store
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+index))
+
+	// get the marshled entry
+	bz := store.Get(types.KeyPrefix(entryKey))
+
+	// couldn't find entry
+	if bz == nil {
+		return false
+	}
+
+	// unmarshal the entry
+	var entry types.Entry
+	vs.cdc.MustUnmarshal(bz, &entry)
+
+	// handle ref action
+	err := handleRefAction(ctx, &entry, refAction)
+	if err != nil {
+		return false
+	}
+
+	// unmarshal the entry's data
+	vs.cdc.MustUnmarshal(entry.GetData(), entryData)
+
+	return true
+}
+
+// GetStoreKey returns the versioned store's store key
+func (vs VersionedStore) GetStoreKey() sdk.StoreKey {
+	return vs.storeKey
+}
+
+// GetCdc returns the versioned store's codec
+func (vs VersionedStore) GetCdc() codec.BinaryCodec {
+	return vs.cdc
+}
+
+// getUnmarshaledEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
+func (vs VersionedStore) getUnmarshaledEntryForBlock(ctx sdk.Context, fixationKey string, index string, block uint64, refAction types.ReferenceAction) *types.Entry {
+	// get the relevant store using index
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+index))
+
+	// init a reverse iterator
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	// iterate over entries
+	for ; iterator.Valid(); iterator.Next() {
+		// unmarshal the entry
+		var val types.Entry
+		vs.cdc.MustUnmarshal(iterator.Value(), &val)
+
+		// if the entry's block is smaller than or equal to the requested block, unmarshal the entry's data
+		if val.GetBlock() <= block {
+			err := handleRefAction(ctx, &val, refAction)
+			if err != nil {
+				return nil
+			}
+
+			return &val
 		}
 	}
 
-	return nil, false
+	return nil
 }
 
-// Function to create an old version index
-func CreateOldVersionIndex(index string, suffixNum uint64) string {
-	return index + "_" + strconv.FormatUint(suffixNum, 10)
+// GetEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
+func (vs VersionedStore) GetEntryForBlock(ctx sdk.Context, fixationKey string, index string, block uint64, entryData codec.ProtoMarshaler, refAction types.ReferenceAction) error {
+	// get the unmarshaled entry for block
+	entry := vs.getUnmarshaledEntryForBlock(ctx, fixationKey, index, block, refAction)
+	if entry == nil {
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntryForBlock_cant_get_entry", map[string]string{}, "can't get entry")
+	}
+
+	// unmarshal the entry's data
+	err := vs.cdc.Unmarshal(entry.GetData(), entryData)
+	if err != nil {
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntryForBlock_cant_unmarshal", map[string]string{}, "can't unmarshal entry data")
+	}
+
+	return nil
 }
 
-// Function that gets an index for storage and returns all the entries and their corresponding indices (i.e., the latest version entry and all of its older versions)
-func GetAllEntriesForIndex(ctx sdk.Context, storeKey sdk.StoreKey, entryKeyPrefix string, cdc codec.BinaryCodec, index string) []*types.Entry {
-	entryList := []*types.Entry{}
+// RemoveEntry removes an entry from the store
+func (vs VersionedStore) removeEntry(ctx sdk.Context, fixationKey string, index string, block uint64) {
+	// get the relevant store
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+fixationKey+index))
 
-	// try getting the entry with the original index
-	entry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, index, types.DO_NOTHING)
-	if found {
-		entryList = append(entryList, &entry)
-	} else {
-		// couldn't find the entry
-		return nil
+	// create entry's key
+	entryKey := createEntryKey(index, fixationKey, block)
+
+	// delete the entry
+	store.Delete(types.KeyPrefix(entryKey))
+}
+
+// getAllUnmarshaledEntries gets all the unmarshaled entries from the store (without entries' old versions)
+func (vs VersionedStore) getAllEntries(ctx sdk.Context, fixationKey string) []*types.Entry {
+	latestVersionEntryList := []*types.Entry{}
+
+	uniqueIndices := vs.GetAllEntryIndices(ctx, fixationKey)
+	for _, uniqueIndex := range uniqueIndices {
+		latestVersionEntry := vs.getUnmarshaledEntryForBlock(ctx, fixationKey, uniqueIndex, uint64(ctx.BlockHeight()), types.DO_NOTHING)
+		latestVersionEntryList = append(latestVersionEntryList, latestVersionEntry)
 	}
 
-	// get the older versions of this entry
-	versionSuffixCounter := 0
-	for {
-		// construct the older version index
-		versionIndex := CreateOldVersionIndex(index, uint64(versionSuffixCounter))
+	return latestVersionEntryList
+}
 
-		// get the older version entry
-		oldVersionEntry, found := GetEntry(ctx, storeKey, entryKeyPrefix, cdc, versionIndex, types.DO_NOTHING)
-		if found {
-			// entry old version found -> append to entry list and increase suffix counter to look for older versions
-			entryList = append(entryList, &oldVersionEntry)
-			versionSuffixCounter += 1
-		} else {
-			// entry old version wasn't found -> break
-			break
-		}
-	}
+// createEntryKey creates an entry key for the KVStore
+func createEntryKey(index string, fixationKey string, block uint64) string {
+	return types.EntryKey + fixationKey + index + "_" + strconv.FormatUint(block, 10)
+}
 
-	return entryList
+// NewVersionedStore returns a new versionedStore object
+func NewVersionedStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec) *VersionedStore {
+	return &VersionedStore{storeKey: storeKey, cdc: cdc}
 }
