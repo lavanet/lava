@@ -44,7 +44,8 @@ func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi)
 		Method:  serviceApi.GetName(),
 		Params:  nil,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: serviceApi.GetName()}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, tenderMsg)
 }
 
 // ParseMsg parses message data into chain message object
@@ -122,12 +123,12 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if err != nil {
 		return nil, err
 	}
-
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, msg)
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: url}
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, tenderMsg)
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage) ChainMessage {
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.TendermintrpcMessage) ChainMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
@@ -433,7 +434,8 @@ func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan inte
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		_, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
+		return nil, "", nil, utils.LavaFormatError("invalid message type in tendermintrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage), "ptrCast": fmt.Sprintf("%t", ok)})
 	}
 	if nodeMessage.Path != "" {
 		return cp.SendURI(ctx, &nodeMessage, ch, chainMessage)
