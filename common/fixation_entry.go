@@ -18,20 +18,16 @@ import (
 
 	Fixated entry structure:
 	Entry {
-		EntryVersion entry_version;  // Struct that holds the entry's index and block.
-		bytes data; 				 // The data saved in the entry. Can be any type.
-		uint64 references; 			 // Number of references to this entry (number of entities using it).
-	}
-
-	EntryVersion {
-		string index;  // Unique entry index (unique "name").
-		uint64 block;  // Block height the entry was created.
+		string index;			// a unique entry name.
+		uint64 block;			// the block the entry was created in.
+		uint64 references; 		// Number of references to this entry (number of entities using it).
+		bytes data; 			// The data saved in the entry. Can be any type.
 	}
 
 	How does it work?
 	To help with the explanation, we'll use a reference example. Assume you created a custom module
 	named "packages". This module keeps package objects as fixated entries (i.e., the module keeps track
-	of every package AND it's older versions). Each package has an "index" field which acts as a unique name
+	of every package AND its older versions). Each package has an "index" field which acts as a unique name
 	for the package.
 
 	In general, each object that uses this library will have a versioned store field of type VersionedStore.
@@ -42,33 +38,24 @@ import (
 	a namespace. The codec is used to determine how the packages should be marshaled, and the unique indices map
 	helps to track which packages do we have (not including older versions packages).
 
-	In each store (or namespace), there are two types of saved objects: Entry and EntryVersion. Note that Entry also
-	contains an EntryVersion object.
-		To access an EntryVersion object you use the following key: "EntryVersionKey_<index>".
-		To access an Entry object you use the following key: "EntryKey_<index>_<block>".
-	Wait, why are we keeping duplicates of EntryVersion objects? Entry contains EntryVersion! (you may ask).
-	The EntryVersion objects that are saved separately are only of the latest version of the entry. So, we do save
-	duplicates of EntryVersion objects, but only of a single version.
+	In each store (or namespace), marshaled objects of type Entry are saved. Note that a module can have different
+	kind of fixated entries. They are separate between them, we use a fixationKey (a unique key for each type of
+	fixated entry).
 
 	Going back to the reference example, let's say I have a package named "myGreatPackage" that was created in block
 	101 (it also has additional fields). The package's entry holds the marshaled package object (in the data field)
-	and has 33 references.
-		To access its EntryVersion object you use the following key: "EntryVersionKey_myGreatPackage". The EntryVersion
-		object will be: EntryVersion{index: "myGreatPackage", block: 101}
+	and has 33 references. Also, let's say the packages module can hold fixated price objects. An example for a
+	price object can be with price of 2ulava which was created on block 203. The price's entry holds the marshaled
+	price object and has 12 references.
+		The store key to access the package object will be "Entry_<packageFixationKey>". The package entry's key will
+		be "Entry_<packageFixationKey>_myGreatPackage_101"
 
-		To access its Entry object you use the following key: "EntryKey_myGreatPackage_101". The Entry object will be:
-		Entry{EntryVersion: EntryVersion{index: "myGreatPackage", block: 101}, Data: marshaledPackageData, References:
-		33}
+		The store key to access the price object will be "Entry_<priceFixationKey>". The package entry's key will
+		be "Entry_<priceFixationKey>_2ulava_203"
 
-	Why do we need two (similar looking) objects?
-	EntryVersion objects are used when you want to get a set of all of the distinct entries saved in the store.
-	Assume you're a user that wants to know what packages are available in the "packages" store. Just use the
-	"EntryVersionKey" prefix and you'll get them.
-	Now Let's say you want all the version of a specific package. Go to the "packages" store (with its store key) and
-	use the prefix "EntryKey_<index>".
-	Finally, if you want to get the actual entry of a specific version, you need to get all the versions. Then, consturct
-	the entry key ("EntryKey_<index>_<block>") and get your desired entry. Remember, the entry holds the (marshaled)
-	package object. This is the only way to get the actual package.
+	Moreover, to track the indices of fixated objects more easily (without regarding the indices of older versions
+	of entries), we keep an EntryIndex list. See fixation_entry_index.go for more details.
+
 */
 
 type VersionedStore struct {
