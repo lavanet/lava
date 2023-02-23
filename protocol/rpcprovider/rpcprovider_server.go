@@ -167,7 +167,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
-	subscribed, err := rpcps.TryRelaySubscribe(ctx, request, srv, chainMessage, consumerAddress) // this function does not return until subscription ends
+	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.BlockHeight), srv, chainMessage, consumerAddress, relaySession) // this function does not return until subscription ends
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession) // TODO: when we pay as u go on subscription this will need to change
@@ -209,7 +209,7 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, relaySession *lav
 	return nil
 }
 
-func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress) (subscribed bool, errRet error) {
+func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBlockHeight uint64, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress, relaySession *lavasession.SingleProviderSession) (subscribed bool, errRet error) {
 	var reply *pairingtypes.RelayReply
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
@@ -223,11 +223,11 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *
 		Sub:                  clientSub,
 		SubscribeRepliesChan: subscribeRepliesChan,
 	}
-	err = rpcps.providerSessionManager.NewSubscription(consumerAddress.String(), uint64(request.BlockHeight), subscription)
+	err = rpcps.providerSessionManager.ReleaseSessionAndCreateSubscription(relaySession, subscription, consumerAddress.String(), requestBlockHeight)
 	if err != nil {
 		return false, err
 	}
-	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
+	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionID)
 	processSubscribeMessages := func() (subscribed bool, errRet error) {
 		err = srv.Send(reply) // this reply contains the RPC ID
 		if err != nil {
@@ -271,8 +271,8 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, request *
 		}
 	}
 	subscribed, errRet = processSubscribeMessages()
-	rpcps.providerSessionManager.SubscriptionFailure(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
-	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), uint64(request.BlockHeight), subscriptionID)
+	rpcps.providerSessionManager.SubscriptionEnded(consumerAddress.String(), requestBlockHeight, subscriptionID)
+	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionID)
 	return subscribed, errRet
 }
 
@@ -539,7 +539,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 	apiName := chainMsg.GetServiceApi().Name
 	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
-		err := rpcps.processUnsubscribe(apiName, consumerAddr, reqParams)
+		err := rpcps.processUnsubscribe(apiName, consumerAddr, reqParams, uint64(request.RequestBlock))
 		if err != nil {
 			return nil, err
 		}
@@ -564,24 +564,23 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	return reply, nil
 }
 
-func (rpcps *RPCProviderServer) processUnsubscribe(apiName string, consumerAddr sdk.AccAddress, reqParams interface{}) error {
+func (rpcps *RPCProviderServer) processUnsubscribe(apiName string, consumerAddr sdk.AccAddress, reqParams interface{}, epoch uint64) error {
+	var subscriptionID string
 	switch p := reqParams.(type) {
 	case []interface{}:
-		subscriptionID, ok := p[0].(string)
+		var ok bool
+		subscriptionID, ok = p[0].(string)
 		if !ok {
-			return fmt.Errorf("processUnsubscribe - p[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p[0]))
+			return utils.LavaFormatError("processUnsubscribe - p[0].(string) - type assertion failed", nil, &map[string]string{"type": fmt.Sprintf("%s", p[0])})
 		}
-		return rpcps.providerSessionManager.ProcessUnsubscribeEthereum(subscriptionID, consumerAddr)
 	case map[string]interface{}:
-		subscriptionID := ""
 		if apiName == "unsubscribe" {
 			var ok bool
 			subscriptionID, ok = p["query"].(string)
 			if !ok {
-				return fmt.Errorf("processUnsubscribe - p['query'].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p["query"]))
+				return utils.LavaFormatError("processUnsubscribe - p['query'].(string) - type assertion failed", nil, &map[string]string{"type": fmt.Sprintf("%s", p["query"])})
 			}
 		}
-		return rpcps.providerSessionManager.ProcessUnsubscribeTendermint(apiName, subscriptionID, consumerAddr)
 	}
-	return nil
+	return rpcps.providerSessionManager.ProcessUnsubscribe(apiName, subscriptionID, consumerAddr.String(), epoch)
 }

@@ -1,18 +1,17 @@
 package lavasession
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 )
 
 type ProviderSessionManager struct {
 	sessionsWithAllConsumers                map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
 	dataReliabilitySessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
+	subscriptionSessionsWithAllConsumers    map[uint64]map[string]map[string]*RPCSubscription   // first key is an epoch, second key is a consumer address, third key is subscriptionId
 	lock                                    sync.RWMutex
 	blockedEpochHeight                      uint64 // requests from this epoch are blocked
 	rpcProviderEndpoint                     *RPCProviderEndpoint
@@ -242,38 +241,63 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.sessionsWithAllConsumers = newMap
 }
 
-func (psm *ProviderSessionManager) ProcessUnsubscribeEthereum(subscriptionID string, consumerAddress sdk.AccAddress) error {
-	return fmt.Errorf("not implemented")
+func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscriptionID string, consumerAddress string, epoch uint64) error {
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	mapOfConsumers, foundMapOfConsumers := psm.subscriptionSessionsWithAllConsumers[epoch]
+	if !foundMapOfConsumers {
+		return utils.LavaFormatError("Couldn't find epoch in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
+	}
+	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers[consumerAddress]
+	if !foundMapOfSubscriptionId {
+		return utils.LavaFormatError("Couldn't find consumer address in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
+	}
+
+	if apiName == TendermintUnsubscribeAll {
+		// unsubscribe all subscriptions
+		for _, v := range mapOfSubscriptionId {
+			v.Sub.Unsubscribe()
+		}
+		return nil
+	}
+
+	subscription, foundSubscription := mapOfSubscriptionId[subscriptionID]
+	if !foundSubscription {
+		return utils.LavaFormatError("Couldn't find subscription Id in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress, "subscriptionId": subscriptionID})
+	}
+	subscription.Sub.Unsubscribe()
+	delete(mapOfSubscriptionId, subscriptionID) // delete subscription after finished with it
+	return nil
 }
 
-func (psm *ProviderSessionManager) ProcessUnsubscribeTendermint(apiName string, subscriptionID string, consumerAddress sdk.AccAddress) error {
-	return fmt.Errorf("not implemented")
+func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
+	err := psm.OnSessionDone(session)
+	if err != nil {
+		return utils.LavaFormatError("Failed ReleaseSessionAndCreateSubscription", err, nil)
+	}
+	return nil
 }
 
-func (psm *ProviderSessionManager) NewSubscription(consumerAddress string, epoch uint64, subscription *RPCSubscription) error {
-	// return an error if subscriptionID exists
-	// original code:
-	// userSessions.Lock.Lock()
-	// if _, ok := userSessions.Subs[subscriptionID]; ok {
-	// 	return utils.LavaFormatError("SubscriptiodID: "+subscriptionID+"exists", nil, nil)
-	// }
-	// userSessions.Subs[subscriptionID] = &subscription{
-	// 	id:                   subscriptionID,
-	// 	sub:                  clientSub,
-	// 	subscribeRepliesChan: subscribeRepliesChan,
-	// }
-	// userSessions.Lock.Unlock()
-	return fmt.Errorf("not implemented")
-}
+// try to disconnect the subscription incase we got an error.
+// if fails to find assumes it was unsubscribed normally
+func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epoch uint64, subscriptionID string) {
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	mapOfConsumers, foundMapOfConsumers := psm.subscriptionSessionsWithAllConsumers[epoch]
+	if !foundMapOfConsumers {
+		return
+	}
+	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers[consumerAddress]
+	if !foundMapOfSubscriptionId {
+		return
+	}
 
-func (psm *ProviderSessionManager) SubscriptionFailure(consumerAddress string, epoch uint64, subscriptionID string) {
-	// original code
-	// userSessions.Lock.Lock()
-	// 		if sub, ok := userSessions.Subs[subscriptionID]; ok {
-	// 			sub.disconnect()
-	// 			delete(userSessions.Subs, subscriptionID)
-	// 		}
-	// 		userSessions.Lock.Unlock()
+	subscription, foundSubscription := mapOfSubscriptionId[subscriptionID]
+	if !foundSubscription {
+		return
+	}
+	subscription.Sub.Unsubscribe()
+	delete(mapOfSubscriptionId, subscriptionID) // delete subscription after finished with it
 }
 
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
