@@ -142,6 +142,20 @@ screen -S evmos_providers -X screen -t win09 -X bash -c "source ~/.bashrc; lavad
 screen -S evmos_providers -X screen -t win10 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4354 $EVMOS_GRPC EVMOS grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/EVMOS_grpc1.log"
 screen -S evmos_providers -X screen -t win11 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4358 $EVMOS_GRPC EVMOS grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/EVMOS_grpc2.log"
 
+# Canto Providers
+screen -d -m -S canto_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 6006 $CANTO_RPC CANTO jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/CANTO_jsonrpc1.log"
+screen -S canto_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6007 $CANTO_RPC CANTO jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/CANTO_jsonrpc2.log"
+screen -S canto_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6008 $CANTO_RPC CANTO jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/CANTO_jsonrpc3.log"
+screen -S canto_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6009 $CANTO_TENDERMINT CANTO tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --tendermint-http-endpoint $CANTO_TENDERMINT 2>&1 | tee $LOGS_DIR/CANTO_tender1.log"
+screen -S canto_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6010 $CANTO_TENDERMINT CANTO tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --tendermint-http-endpoint $CANTO_TENDERMINT 2>&1 | tee $LOGS_DIR/CANTO_tender2.log"
+screen -S canto_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6011 $CANTO_TENDERMINT CANTO tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --tendermint-http-endpoint $CANTO_TENDERMINT 2>&1 | tee $LOGS_DIR/CANTO_tender3.log"
+screen -S canto_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6012 $CANTO_REST CANTO rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/CANTO_rest1.log"
+screen -S canto_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6013 $CANTO_REST CANTO rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/CANTO_rest2.log"
+screen -S canto_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6014 $CANTO_REST CANTO rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/CANTO_rest3.log"
+screen -S canto_providers -X screen -t win09 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6015 $CANTO_GRPC CANTO grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/CANTO_grpc1.log"
+screen -S canto_providers -X screen -t win10 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6016 $CANTO_GRPC CANTO grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/CANTO_grpc2.log"
+screen -S canto_providers -X screen -t win11 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6017 $CANTO_GRPC CANTO grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/CANTO_grpc3.log"
+
 # Setup Portals
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_ETH_3333.log" && sleep 0.25
 screen -S portals -X screen -t win3  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3336 FTM250 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_FTM250_3336.log"
@@ -161,6 +175,8 @@ screen -S portals -X screen -t win7  -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win10 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3343 COS5 rest 127.0.0.1:3344 COS5 tendermintrpc 127.0.0.1:3356 COS5 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
 screen -S portals -X screen -t win16 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3349 JUN1 rest 127.0.0.1:3350 JUN1 tendermintrpc 127.0.0.1:3355 JUN1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3349.log"
 screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3360 EVMOS jsonrpc 127.0.0.1:3357 EVMOS rest 127.0.0.1:3358 EVMOS tendermintrpc 127.0.0.1:3359 EVMOS grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_EVMOS.log"
+screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3363 CANTO jsonrpc 127.0.0.1:3364 CANTO rest 127.0.0.1:3365 CANTO tendermintrpc 127.0.0.1:3366 CANTO grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_CANTO.log"
+
 
 echo "--- setting up screens done ---"
 screen -ls
