@@ -28,9 +28,12 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&psm.blockedEpochHeight)
 }
 
-func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool, blockedEpochHeight uint64) {
-	blockedEpochHeight = psm.atomicReadBlockedEpoch()
-	return epoch > blockedEpochHeight, blockedEpochHeight
+func (psm *ProviderSessionManager) GetBlockedEpochHeight() uint64 {
+	return psm.atomicReadBlockedEpoch()
+}
+
+func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool) {
+	return epoch > psm.atomicReadBlockedEpoch()
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
@@ -85,8 +88,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 // GetDataReliabilitySession fetches a data reliability session, and assumes the user
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	// validate Epoch
-	valid, _ := psm.IsValidEpoch(epoch)
-	if valid { // fast checking to see if epoch is even relevant
+	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
 		return nil, InvalidEpochError
 	}
@@ -109,9 +111,8 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 }
 
 func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
-	valid, _ := psm.IsValidEpoch(epoch)
-	if valid { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
+	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
+		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "blockedEpochHeight": strconv.FormatUint(psm.blockedEpochHeight, 10), "blockDistanceForEpochValidity": strconv.FormatUint(psm.blockDistanceForEpochValidity, 10)})
 		return nil, InvalidEpochError
 	}
 
@@ -126,9 +127,7 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sess
 func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint64, sessionId uint64, maxCuForConsumer uint64) (*ProviderSessionsWithConsumer, error) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-
-	valid, _ := psm.IsValidEpoch(epoch)
-	if valid { // checking again because we are now locked and epoch cant change now.
+	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
 		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
 		return nil, InvalidEpochError
 	}
@@ -170,8 +169,7 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(address s
 func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address string) (providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
 	psm.lock.RLock()
 	defer psm.lock.RUnlock()
-	valid, _ := psm.IsValidEpoch(epoch)
-	if valid { // checking again because we are now locked and epoch cant change now.
+	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
 		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
 		return nil, InvalidEpochError
 	}
@@ -305,8 +303,7 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	// load the session and update the CU inside
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	valid, _ := psm.IsValidEpoch(epoch)
-	if valid { // checking again because we are now locked and epoch cant change now.
+	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
 		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
 	}
 

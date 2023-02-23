@@ -278,12 +278,12 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 
 // verifies basic relay fields, and gets a provider session
 func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request *pairingtypes.RelayRequest) (singleProviderSession *lavasession.SingleProviderSession, extractedConsumerAddress sdk.AccAddress, err error) {
-	valid, thresholdEpoch := rpcps.providerSessionManager.IsValidEpoch(uint64(request.BlockHeight))
+	valid := rpcps.providerSessionManager.IsValidEpoch(uint64(request.BlockHeight))
 	if !valid {
 		return nil, nil, utils.LavaFormatError("user reported invalid lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(rpcps.stateTracker.LatestBlock(), 10),
 			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
-			"threshold":            strconv.FormatUint(thresholdEpoch, 10),
+			"threshold":            strconv.FormatUint(rpcps.providerSessionManager.GetBlockedEpochHeight(), 10),
 		})
 	}
 

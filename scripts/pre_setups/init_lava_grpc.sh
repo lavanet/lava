@@ -7,8 +7,11 @@ killall screen
 screen -wipe
 LOGS_DIR=${__dir}/../../testutil/debugging/logs
 GASPRICE="0.000000001ulava"
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json  -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_cosmoshub.json,./cookbook/spec_add_ethereum.json --from alice -y --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+sleep 3 
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json --from alice -y --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4 
 
@@ -25,18 +28,19 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2263,tendermintrpc,1 12
 sleep_until_next_epoch
 
 # Lava providers
-screen -d -m -S lav1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2271.log"; sleep 0.3
-screen -S lav1_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2272.log"
-screen -S lav1_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2273.log"
-screen -S lav1_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
-screen -S lav1_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
-screen -S lav1_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
-screen -S lav1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2281 $LAVA_GRPC LAV1 grpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2281.log"
-screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2282 $LAVA_GRPC LAV1 grpc --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2282.log"
-screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2283 $LAVA_GRPC LAV1 grpc --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2283.log"
+# screen -d -m -S lav1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2271.log"; sleep 0.3
+# screen -S lav1_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2272.log"
+# screen -S lav1_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2273.log"
+# screen -S lav1_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
+# screen -S lav1_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
+# screen -S lav1_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $LAVA_RPC_HTTP 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
+# screen -S lav1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2281 $LAVA_GRPC LAV1 grpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2281.log"
+# screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2282 $LAVA_GRPC LAV1 grpc --from servicer2 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2282.log"
+# screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2283 $LAVA_GRPC LAV1 grpc --from servicer3 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/LAV1_2283.log"
 
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3340 LAV1 rest 127.0.0.1:3341 LAV1 tendermintrpc 127.0.0.1:3342 LAV1 grpc --from user1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug | tee $LOGS_DIR/LAV1_tendermint_portal.log"; sleep 0.3
-screen -r portals
+lavad rpcprovider 127.0.0.1:2272 LAV1 rest http://0.0.0.0:1317 --from servicer2 --geolocation 1
+# screen -r portals
 # Lava Over Lava ETH
 
 sleep 3 # wait for the portal to start.
