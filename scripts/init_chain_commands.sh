@@ -33,7 +33,7 @@ lavad tx pairing stake-client "STRK"   $CLIENTSTAKE 1 -y --from user1 --gas-adju
 lavad tx pairing stake-client "JUN1"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "COS5"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "POLYGON1"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "COS6"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "EVMOS"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 
 
@@ -116,9 +116,9 @@ lavad tx pairing stake-provider "COS5" $PROVIDERSTAKE "127.0.0.1:2342,tendermint
 lavad tx pairing stake-provider "COS5" $PROVIDERSTAKE "127.0.0.1:2343,tendermintrpc,1 127.0.0.1:2333,rest,1 127.0.0.1:2336,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Evmos providers
-lavad tx pairing stake-provider "COS6" $PROVIDERSTAKE "127.0.0.1:4347,jsonrpc,1 127.0.0.1:4348,tendermintrpc,1 127.0.0.1:4349,rest,1 127.0.0.1:4350,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "COS6" $PROVIDERSTAKE "127.0.0.1:4351,jsonrpc,1 127.0.0.1:4352,tendermintrpc,1 127.0.0.1:4353,rest,1 127.0.0.1:4354,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "COS6" $PROVIDERSTAKE "127.0.0.1:4355,jsonrpc,1 127.0.0.1:4356,tendermintrpc,1 127.0.0.1:4357,rest,1 127.0.0.1:4358,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "127.0.0.1:4347,jsonrpc,1 127.0.0.1:4348,tendermintrpc,1 127.0.0.1:4349,rest,1 127.0.0.1:4350,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "127.0.0.1:4351,jsonrpc,1 127.0.0.1:4352,tendermintrpc,1 127.0.0.1:4353,rest,1 127.0.0.1:4354,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "127.0.0.1:4355,jsonrpc,1 127.0.0.1:4356,tendermintrpc,1 127.0.0.1:4357,rest,1 127.0.0.1:4358,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 
 echo "---------------Queries------------------"

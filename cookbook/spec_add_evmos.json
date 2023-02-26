@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Evmos data on Lava",
         "specs": [
             {
-                "index": "COS6",
+                "index": "EVMOS",
                 "name": "evmos mainnet",
                 "enabled": true,
                 "imports": [ "COS5","ETH1" ],
@@ -2498,10 +2498,10 @@
                 ]
             },
             {
-                "index": "COS6T",
+                "index": "EVMOST",
                 "name": "evmos testnet",
                 "enabled": true,
-                "imports": [ "COS6" ],
+                "imports": [ "EVMOS" ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,

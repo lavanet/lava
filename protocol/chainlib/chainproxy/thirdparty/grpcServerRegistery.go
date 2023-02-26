@@ -52,7 +52,7 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		ibc_thirdparty.RegisterJunoProtobufs(s, cb)
 		juno_thirdparty.RegisterJunoProtobufs(s, cb)
 		cosmwasm.RegisterJunoProtobufs(s, cb)
-	case "COS6", "COS6T":
+	case "EVMOS", "EVMOST":
 		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
 		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
 		//TODO: add other evmos protobufs missing
