@@ -1,7 +1,6 @@
 package common_test
 
 import (
-	"encoding/binary"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -33,7 +32,9 @@ func initCtxAndVersionedStore(t *testing.T) (*common.VersionedStore, sdk.Context
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	vs := common.NewVersionedStore(mockStoreKey, cdc)
+	fixationKey := "mock_fix"
+
+	vs := common.NewVersionedStore(mockStoreKey, cdc, fixationKey)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
@@ -43,9 +44,6 @@ func initCtxAndVersionedStore(t *testing.T) (*common.VersionedStore, sdk.Context
 // Test addition and removal of a fixation entry
 func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	// create dummy data for dummy entry
-	marshaledData := make([]byte, 8)
-	binary.LittleEndian.PutUint64(marshaledData, 1)
-	dummyFixationKey := "dummyFix_"
 	dummyIndex := "index"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 
@@ -54,16 +52,16 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 
 	// add dummy entry
 	blockToAddEntry := uint64(ctx.BlockHeight())
-	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// get all entry indices and make sure there is only one index
-	indexList := vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	indexList := vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 
 	// get the entry from the storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntryForBlock(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyCoin, types.SUB_REFERENCE)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
 	require.Nil(t, err)
 
 	// make sure that one entry's data is the same data that was used to create it
@@ -73,20 +71,20 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	ctx = ctx.WithBlockHeight(types.STALE_ENTRY_TIME + int64(blockToAddEntry) + 1)
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	blockToAddEntryAfterStale := uint64(ctx.BlockHeight())
-	err = vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntryAfterStale, &dummyObj2)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyObj2)
 	require.Nil(t, err)
 
-	// make sure there the old entry was deleted (check block)
-	err = vs.GetEntryForBlock(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	// make sure the old entry was deleted (check block)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
 	require.NotNil(t, err)
 
 	// get the latest version and make sure it's equal to dummyObj2
-	err = vs.GetEntryForBlock(ctx, dummyFixationKey, dummyIndex, blockToAddEntryAfterStale, &dummyCoin, types.DO_NOTHING)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyCoin, types.DO_NOTHING)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj2))
 
 	// make sure dummy index is still in the entry index list
-	indexList = vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	indexList = vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 }
 
@@ -94,7 +92,6 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	// create dummy data for two dummy entries
 	dummyIndex := "index"
-	dummyFixationKey := "dummyFix_"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 
@@ -103,27 +100,27 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 
 	// add the first dummy entry
 	blockToAddEntry := uint64(0)
-	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// add the second dummy entry
-	err = vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj2)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj2)
 	require.Nil(t, err)
 
 	// get all entry indices and make sure there is only one index
-	indexList := vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	indexList := vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 
 	// get the entry from the storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntryForBlock(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
 	require.Nil(t, err)
 
 	// make sure that one entry's data is the same data of the second dummy entry
 	require.True(t, dummyCoin.IsEqual(dummyObj2))
 
 	// make sure dummy index is still in the entry index list
-	indexList = vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	indexList = vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 }
 
@@ -131,7 +128,6 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 func TestEntryVersions(t *testing.T) {
 	// create dummy data for two dummy entries
 	dummyIndex := "index"
-	dummyFixationKey := "dummyFix_"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 
@@ -140,24 +136,24 @@ func TestEntryVersions(t *testing.T) {
 
 	// add the first dummy entry
 	blockToAddFirstEntry := uint64(10)
-	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddFirstEntry, &dummyObj)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// add the second dummy entry
 	blockToAddSecondEntry := uint64(20)
-	err = vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddSecondEntry, &dummyObj2)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddSecondEntry, &dummyObj2)
 	require.Nil(t, err)
 
 	// get the older version from block blockToAddFirstEntry
 	var dummyCoin sdk.Coin
-	found := vs.GetEntry(ctx, dummyFixationKey, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
-	require.True(t, found)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry+1, &dummyCoin, types.DO_NOTHING)
+	require.Nil(t, err)
 
 	// verify the data matches the old entry from storage
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 
 	// make sure dummy index is still in the entry index list
-	indexList := vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	indexList := vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 }
 
@@ -165,47 +161,47 @@ func TestEntryVersions(t *testing.T) {
 func TestDifferentFixationKeys(t *testing.T) {
 	// create dummy data for two dummy entries
 	dummyIndex := "index"
-	dummyFixationKey := "dummyFix_"
-	dummyFixationKey2 := "dummyFix2_"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	blockToAddEntry := uint64(10)
 	// init VersionedStore + context
 	vs, ctx := initCtxAndVersionedStore(t)
+	vs2 := vs.SetPrefix("fix2")
 
 	// add the first dummy entry
-	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// add the second dummy entry
-	err = vs.AppendEntry(ctx, dummyFixationKey2, dummyIndex, blockToAddEntry, &dummyObj2)
+	err = vs2.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj2)
 	require.Nil(t, err)
 
-	// get all indices with dummyFixationKey and dummyIndex. make sure there is one entry
-	indexList := vs.GetAllEntryIndices(ctx, dummyFixationKey)
+	// get all indices with original fixation key and dummyIndex. make sure there is one entry
+	indexList := vs.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 
-	// verify the data matches the entry from dummyFixationKey storage
+	// verify the data matches the entry from original fixation key storage
 	var dummyCoin sdk.Coin
-	found := vs.GetEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
-	require.True(t, found)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj))
+	require.False(t, dummyCoin.Equal(dummyObj2))
 
-	// get all indices with dummyFixationKey2 and dummyIndex. make sure there is one entry
-	indexList = vs.GetAllEntryIndices(ctx, dummyFixationKey2)
+	// get all indices with fix2 and dummyIndex. make sure there is one entry
+	indexList = vs2.GetAllEntryIndices(ctx)
 	require.Equal(t, 1, len(indexList))
 
-	// verify the data matches the entry from dummyFixationKey storage
-	found = vs.GetEntry(ctx, dummyFixationKey2, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
-	require.True(t, found)
+	// verify the data matches the entry from original fixation key storage
+	err = vs2.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj2))
+	require.False(t, dummyCoin.Equal(dummyObj))
 }
 
 // Test that the appended entries are sorted (first element is oldest)
 func TestEntriesSort(t *testing.T) {
 	// create dummy data for two dummy entries
 	dummyIndex := "index"
-	dummyFixationKey := "dummyFix_"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Mul(sdk.NewIntFromUint64(2))}
@@ -215,21 +211,21 @@ func TestEntriesSort(t *testing.T) {
 
 	// add the first dummy entry
 	blockToAddEntry := uint64(10)
-	err := vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// add the second dummy entry
 	blockToAddEntry += 10
-	err = vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj2)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj2)
 	require.Nil(t, err)
 
 	// add the third dummy entry
 	blockToAddEntry += 10
-	err = vs.AppendEntry(ctx, dummyFixationKey, dummyIndex, blockToAddEntry, &dummyObj3)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj3)
 	require.Nil(t, err)
 
 	// get the relevant store and init an iterator and verify the entries are organized from oldest to latest (first element is oldest)
-	store := prefix.NewStore(ctx.KVStore(vs.GetStoreKey()), types.KeyPrefix(types.EntryKey+dummyFixationKey+dummyIndex))
+	store := prefix.NewStore(ctx.KVStore(vs.GetStoreKey()), types.KeyPrefix(types.EntryKey+vs.GetPrefix()+dummyIndex))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
