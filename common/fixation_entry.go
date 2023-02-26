@@ -87,8 +87,8 @@ func (vs VersionedStore) AppendEntry(ctx sdk.Context, index string, block uint64
 	bz := vs.cdc.MustMarshal(&entry)
 
 	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+vs.prefix+index))
-	byteKey := types.KeyPrefix(vs.createEntryKey(block))
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(vs.createStoreKey(index)))
+	byteKey := types.KeyPrefix(createEntryKey(block))
 
 	// set the new entry to the store
 	store.Set(byteKey, bz)
@@ -101,7 +101,7 @@ func (vs VersionedStore) AppendEntry(ctx sdk.Context, index string, block uint64
 
 func (vs VersionedStore) deleteStaleEntries(ctx sdk.Context, index string) {
 	// get the relevant store and init an iterator
-	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+vs.prefix+index))
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(vs.createStoreKey(index)))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
@@ -131,8 +131,8 @@ func (vs VersionedStore) deleteStaleEntries(ctx sdk.Context, index string) {
 // SetEntry sets a specific entry in the store
 func (vs VersionedStore) SetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
 	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+vs.prefix+index))
-	byteKey := types.KeyPrefix(vs.createEntryKey(block))
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(vs.createStoreKey(index)))
+	byteKey := types.KeyPrefix(createEntryKey(block))
 
 	// marshal the new entry data
 	b := vs.cdc.MustMarshal(entryData)
@@ -200,7 +200,7 @@ func (vs VersionedStore) SetPrefix(prefix string) VersionedStore {
 // getUnmarshaledEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
 func (vs VersionedStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index string, block uint64, refAction types.ReferenceAction) *types.Entry {
 	// get the relevant store using index
-	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+vs.prefix+index))
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(vs.createStoreKey(index)))
 
 	// init a reverse iterator
 	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
@@ -246,10 +246,10 @@ func (vs VersionedStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 // RemoveEntry removes an entry from the store
 func (vs VersionedStore) removeEntry(ctx sdk.Context, index string, block uint64) {
 	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(types.EntryKey+vs.prefix+index))
+	store := prefix.NewStore(ctx.KVStore(vs.storeKey), types.KeyPrefix(vs.createStoreKey(index)))
 
 	// create entry's key
-	entryKey := vs.createEntryKey(block)
+	entryKey := createEntryKey(block)
 
 	// delete the entry
 	store.Delete(types.KeyPrefix(entryKey))
@@ -269,8 +269,12 @@ func (vs VersionedStore) getAllEntries(ctx sdk.Context) []*types.Entry {
 }
 
 // createEntryKey creates an entry key for the KVStore
-func (vs VersionedStore) createEntryKey(block uint64) string {
+func createEntryKey(block uint64) string {
 	return strconv.FormatUint(block, 10)
+}
+
+func (vs VersionedStore) createStoreKey(index string) string {
+	return types.EntryKey + vs.prefix + index
 }
 
 // NewVersionedStore returns a new versionedStore object
