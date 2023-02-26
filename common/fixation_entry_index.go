@@ -19,7 +19,7 @@ entry index of a package object to the store, it acceses the store using the key
 // SetEntryIndex appends an entry index in the store with a new id and updates the count. It returns the index in the list of the added value (for example, if the first value of the list is added, it'll return 0 (the first index in the list))
 func (fs FixationStore) SetEntryIndex(ctx sdk.Context, index string) {
 	// get the index store with the fixation key
-	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(types.EntryIndexKey+fs.prefix))
+	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(fs.createEntryIndexStoreKey()))
 
 	// convert the index value to a byte array
 	appendedValue := []byte(index)
@@ -31,16 +31,16 @@ func (fs FixationStore) SetEntryIndex(ctx sdk.Context, index string) {
 // RemoveEntryIndex removes an EntryIndex from the store
 func (fs FixationStore) removeEntryIndex(ctx sdk.Context, index string) {
 	// get the index store with the fixation key
-	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(types.EntryIndexKey+fs.prefix))
+	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(fs.createEntryIndexStoreKey()))
 
 	// remove the index from the store
-	store.Delete(types.KeyPrefix(types.EntryIndexKey + fs.prefix + index))
+	store.Delete(types.KeyPrefix(fs.createEntryIndexKey(index)))
 }
 
 // GetAllEntryIndex returns all EntryIndex
 func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	// get the index store with the fixation key and init an iterator
-	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(types.EntryIndexKey+fs.prefix))
+	store := prefix.NewStore(ctx.KVStore(fs.GetStoreKey()), types.KeyPrefix(fs.createEntryIndexStoreKey()))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
@@ -52,4 +52,12 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	}
 
 	return indexList
+}
+
+func (fs FixationStore) createEntryIndexStoreKey() string {
+	return types.EntryIndexKey + fs.prefix
+}
+
+func (fs FixationStore) createEntryIndexKey(index string) string {
+	return types.EntryIndexKey + fs.prefix + index
 }
