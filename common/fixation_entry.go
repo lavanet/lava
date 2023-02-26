@@ -158,7 +158,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 }
 
 // handleRefAction handles ref actions: increase refs, decrease refs or do nothing
-func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.ReferenceAction) error {
+func (fs *FixationStore) handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.ReferenceAction) error {
 	// check if entry is nil
 	if entry == nil {
 		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_nil_entry", map[string]string{}, "can't handle reference action, entry is nil")
@@ -176,6 +176,16 @@ func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.Refere
 		}
 	case types.DO_NOTHING:
 	}
+
+	// get the relevant store
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(entry.GetIndex())))
+	byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
+
+	// marshal the entry
+	marshaledEntry := fs.cdc.MustMarshal(entry)
+
+	// set the entry
+	store.Set(byteKey, marshaledEntry)
 
 	return nil
 }
@@ -222,7 +232,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 		// entry in block 100 and block 200 and the user asks for the version of block 199. Since the block 200's
 		// didn't exist yet, we get the entry from block 100)
 		if entry.GetBlock() <= block {
-			err := handleRefAction(ctx, &entry, refAction)
+			err := fs.handleRefAction(ctx, &entry, refAction)
 			if err != nil {
 				return nil, err
 			}
