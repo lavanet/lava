@@ -18,7 +18,7 @@ import (
 )
 
 // Helper function to init a mock keeper and context
-func initCtxAndVersionedStore(t *testing.T) (*common.VersionedStore, sdk.Context) {
+func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 
@@ -34,7 +34,7 @@ func initCtxAndVersionedStore(t *testing.T) (*common.VersionedStore, sdk.Context
 
 	fixationKey := "mock_fix"
 
-	vs := common.NewVersionedStore(mockStoreKey, cdc, fixationKey)
+	vs := common.NewFixationStore(mockStoreKey, cdc, fixationKey)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
@@ -47,8 +47,8 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	dummyIndex := "index"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 
-	// init VersionedStore + context
-	vs, ctx := initCtxAndVersionedStore(t)
+	// init FixationStore + context
+	vs, ctx := initCtxAndFixationStore(t)
 
 	// add dummy entry
 	blockToAddEntry := uint64(ctx.BlockHeight())
@@ -95,8 +95,8 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 
-	// init VersionedStore + context
-	vs, ctx := initCtxAndVersionedStore(t)
+	// init FixationStore + context
+	vs, ctx := initCtxAndFixationStore(t)
 
 	// add the first dummy entry
 	blockToAddEntry := uint64(0)
@@ -131,8 +131,8 @@ func TestEntryVersions(t *testing.T) {
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 
-	// init VersionedStore + context
-	vs, ctx := initCtxAndVersionedStore(t)
+	// init FixationStore + context
+	vs, ctx := initCtxAndFixationStore(t)
 
 	// add the first dummy entry
 	blockToAddFirstEntry := uint64(10)
@@ -164,8 +164,8 @@ func TestDifferentFixationKeys(t *testing.T) {
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	blockToAddEntry := uint64(10)
-	// init VersionedStore + context
-	vs, ctx := initCtxAndVersionedStore(t)
+	// init FixationStore + context
+	vs, ctx := initCtxAndFixationStore(t)
 	vs2 := vs.SetPrefix("fix2")
 
 	// add the first dummy entry
@@ -206,8 +206,8 @@ func TestEntriesSort(t *testing.T) {
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Mul(sdk.NewIntFromUint64(2))}
 
-	// init VersionedStore + context
-	vs, ctx := initCtxAndVersionedStore(t)
+	// init FixationStore + context
+	vs, ctx := initCtxAndFixationStore(t)
 
 	// add the first dummy entry
 	blockToAddEntry := uint64(10)
