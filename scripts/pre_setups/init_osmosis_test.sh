@@ -11,10 +11,11 @@ lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/s
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4 
-lavad tx pairing stake-client "COS4" 200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+STAKE="500000000000ulava"
+lavad tx pairing stake-client "COS4" $STAKE 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Lava Providers
-lavad tx pairing stake-provider "COS4" 2010ulava "127.0.0.1:2261,tendermintrpc,1 127.0.0.1:2271,rest,1 127.0.0.1:2281,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "COS4" $STAKE "127.0.0.1:2261,tendermintrpc,1 127.0.0.1:2271,rest,1 127.0.0.1:2281,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
@@ -23,7 +24,7 @@ screen -d -m -S cos4_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1
 # screen -S cos4_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2261 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug 2>&1 | tee $LOGS_DIR/COS4_2261.log"
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3340 COS4 rest 127.0.0.1:3341 COS4 tendermintrpc --from user4 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug | tee $LOGS_DIR/COS4_tendermint_portal.log"; sleep 0.3
 
-lavad server 127.0.0.1 2261 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug
+lavad server 127.0.0.1 2261 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --tendermint-http-endpoint $OSMO_TEST_RPC_HTTP
 # Lava Over Lava ETH
 
 sleep 3 # wait for the portal to start.

@@ -31,11 +31,17 @@ import (
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 const logsFolder = "./testutil/e2e/logs/"
+
+var (
+	checkedSpecsE2E    = []string{"LAV1", "ETH1"}
+	checkedSpecsE2ELOL = []string{"GTH1"}
+)
 
 type lavaTest struct {
 	testFinishedProperly bool
@@ -118,7 +124,7 @@ func (lt *lavaTest) stakeLava() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, successMessage string) {
+func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, checkedSpecs []string, successMessage string) {
 	// providerCount and clientCount refers to number and providers and client for each spec
 	// number of providers and clients should be the same for all specs for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
@@ -135,6 +141,9 @@ func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
+		if !slices.Contains(checkedSpecs, spec.Index) {
+			continue
+		}
 		// Query providers
 
 		fmt.Println(spec.GetIndex())
@@ -370,13 +379,13 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) {
+func (lt *lavaTest) startTendermintProvider(rpcURL string, httpUrl string, ctx context.Context) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
 	}
 
 	for idx, providerCommand := range providerCommands {
@@ -511,7 +520,9 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	if err != nil {
 		panic("Lava over Lava Failed " + err.Error())
 	}
-	lt.checkStakeLava(3, 5, 1, "Lava Over Lava Test OK")
+	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
+	// produce 5 specs: ETH1, GTH1, COS5, COS5T, LAV1
+	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
@@ -891,7 +902,9 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
-	lt.checkStakeLava(2, 5, 1, "Staking Lava OK")
+	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
+	// produce 5 specs: ETH1, GTH1, COS5, COS5T, LAV1
+	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
@@ -903,7 +916,7 @@ func runE2E() {
 	lt.checkJSONRPCConsumer("http://127.0.0.1:3333/1", time.Minute*2, "JSONRPCConsumer OK")
 
 	tendermintCTX := context.Background()
-	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
+	lt.startTendermintProvider("ws://0.0.0.0:26657/websocket", "http://0.0.0.0:26657", tendermintCTX)
 
 	restCTX := context.Background()
 	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)

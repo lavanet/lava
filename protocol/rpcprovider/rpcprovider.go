@@ -103,7 +103,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
-
+		if _, ok := rpcp.rpcProviderServers[key]; ok {
+			utils.LavaFormatFatal("Trying to add the same key twice to rpcProviderServers check config file.", nil,
+				&map[string]string{"key": key})
+		}
 		rpcp.rpcProviderServers[key] = &RPCProviderServer{}
 		utils.LavaFormatInfo("RPCProvider Listening", &map[string]string{"endpoints": lavasession.PrintRPCProviderEndpoint(rpcProviderEndpoint)})
 		rpcp.rpcProviderServers[key].ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy)

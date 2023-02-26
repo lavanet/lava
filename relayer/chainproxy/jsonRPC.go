@@ -88,6 +88,9 @@ type JrpcChainProxy struct {
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
+	if nodeUrl != "" { // provider process
+		verifyRPCendpoint(nodeUrl)
+	}
 	return &JrpcChainProxy{
 		nodeUrl:    nodeUrl,
 		nConns:     nConns,
@@ -326,7 +329,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
-			go cp.portalLogs.AddMetric(metricsData, err != nil)
+			go cp.portalLogs.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				continue
@@ -370,7 +373,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			}
 		}
 	})
-	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, cp.portalLogs.StoreMetricData)
 	app.Get("/ws/:dappId", websocketCallbackWithDappID)
 	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
@@ -382,7 +385,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
-		go cp.portalLogs.AddMetric(metricsData, err != nil)
+		go cp.portalLogs.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)

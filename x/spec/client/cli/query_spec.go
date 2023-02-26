@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const FlagRaw = "raw"
+
 func CmdListSpec() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-spec",
@@ -27,7 +29,15 @@ func CmdListSpec() *cobra.Command {
 				Pagination: pageReq,
 			}
 
-			res, err := queryClient.SpecAll(context.Background(), params)
+			raw, _ := cmd.Flags().GetBool(FlagRaw)
+			var res *types.QueryAllSpecResponse
+
+			if raw {
+				res, err = queryClient.SpecAllRaw(context.Background(), params)
+			} else {
+				res, err = queryClient.SpecAll(context.Background(), params)
+			}
+
 			if err != nil {
 				return err
 			}
@@ -36,6 +46,7 @@ func CmdListSpec() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().Bool(FlagRaw, false, "Show the Spec in raw format (before imports)")
 	flags.AddPaginationFlagsToCmd(cmd, cmd.Use)
 	flags.AddQueryFlagsToCmd(cmd)
 
@@ -58,7 +69,15 @@ func CmdShowSpec() *cobra.Command {
 				ChainID: argIndex,
 			}
 
-			res, err := queryClient.Spec(context.Background(), params)
+			raw, _ := cmd.Flags().GetBool(FlagRaw)
+			var res *types.QueryGetSpecResponse
+
+			if raw {
+				res, err = queryClient.SpecRaw(context.Background(), params)
+			} else {
+				res, err = queryClient.Spec(context.Background(), params)
+			}
+
 			if err != nil {
 				return err
 			}
@@ -67,6 +86,7 @@ func CmdShowSpec() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().Bool(FlagRaw, false, "Show the Spec in raw format (before imports)")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

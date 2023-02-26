@@ -24,9 +24,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Entry struct {
-	Index         string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
-	Block         uint64 `protobuf:"varint,2,opt,name=block,proto3" json:"block,omitempty"`
-	MarshaledData []byte `protobuf:"bytes,3,opt,name=marshaled_data,json=marshaledData,proto3" json:"marshaled_data,omitempty"`
+	Index    string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+	Block    uint64 `protobuf:"varint,2,opt,name=block,proto3" json:"block,omitempty"`
+	Refcount uint64 `protobuf:"varint,3,opt,name=refcount,proto3" json:"refcount,omitempty"`
+	Data     []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (m *Entry) Reset()         { *m = Entry{} }
@@ -76,90 +77,42 @@ func (m *Entry) GetBlock() uint64 {
 	return 0
 }
 
-func (m *Entry) GetMarshaledData() []byte {
+func (m *Entry) GetRefcount() uint64 {
 	if m != nil {
-		return m.MarshaledData
-	}
-	return nil
-}
-
-type UniqueIndex struct {
-	Id          uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	UniqueIndex string `protobuf:"bytes,2,opt,name=unique_index,json=uniqueIndex,proto3" json:"unique_index,omitempty"`
-}
-
-func (m *UniqueIndex) Reset()         { *m = UniqueIndex{} }
-func (m *UniqueIndex) String() string { return proto.CompactTextString(m) }
-func (*UniqueIndex) ProtoMessage()    {}
-func (*UniqueIndex) Descriptor() ([]byte, []int) {
-	return fileDescriptor_702478ef0512c95d, []int{1}
-}
-func (m *UniqueIndex) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *UniqueIndex) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UniqueIndex.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *UniqueIndex) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UniqueIndex.Merge(m, src)
-}
-func (m *UniqueIndex) XXX_Size() int {
-	return m.Size()
-}
-func (m *UniqueIndex) XXX_DiscardUnknown() {
-	xxx_messageInfo_UniqueIndex.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UniqueIndex proto.InternalMessageInfo
-
-func (m *UniqueIndex) GetId() uint64 {
-	if m != nil {
-		return m.Id
+		return m.Refcount
 	}
 	return 0
 }
 
-func (m *UniqueIndex) GetUniqueIndex() string {
+func (m *Entry) GetData() []byte {
 	if m != nil {
-		return m.UniqueIndex
+		return m.Data
 	}
-	return ""
+	return nil
 }
 
 func init() {
 	proto.RegisterType((*Entry)(nil), "lavanet.lava.common.Entry")
-	proto.RegisterType((*UniqueIndex)(nil), "lavanet.lava.common.UniqueIndex")
 }
 
 func init() { proto.RegisterFile("common/fixationEntry.proto", fileDescriptor_702478ef0512c95d) }
 
 var fileDescriptor_702478ef0512c95d = []byte{
-	// 249 bytes of a gzipped FileDescriptorProto
+	// 209 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4a, 0xce, 0xcf, 0xcd,
 	0xcd, 0xcf, 0xd3, 0x4f, 0xcb, 0xac, 0x48, 0x2c, 0xc9, 0xcc, 0xcf, 0x73, 0xcd, 0x2b, 0x29, 0xaa,
 	0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xce, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1,
 	0x03, 0xd1, 0x7a, 0x10, 0x85, 0x52, 0x22, 0xe9, 0xf9, 0xe9, 0xf9, 0x60, 0x79, 0x7d, 0x10, 0x0b,
-	0xa2, 0x54, 0x29, 0x8a, 0x8b, 0x15, 0xac, 0x53, 0x48, 0x84, 0x8b, 0x35, 0x33, 0x2f, 0x25, 0xb5,
+	0xa2, 0x54, 0x29, 0x99, 0x8b, 0x15, 0xac, 0x53, 0x48, 0x84, 0x8b, 0x35, 0x33, 0x2f, 0x25, 0xb5,
 	0x42, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc2, 0x01, 0x89, 0x26, 0xe5, 0xe4, 0x27, 0x67,
-	0x4b, 0x30, 0x29, 0x30, 0x6a, 0xb0, 0x04, 0x41, 0x38, 0x42, 0xaa, 0x5c, 0x7c, 0xb9, 0x89, 0x45,
-	0xc5, 0x19, 0x89, 0x39, 0xa9, 0x29, 0xf1, 0x29, 0x89, 0x25, 0x89, 0x12, 0xcc, 0x0a, 0x8c, 0x1a,
-	0x3c, 0x41, 0xbc, 0x70, 0x51, 0x97, 0xc4, 0x92, 0x44, 0x25, 0x07, 0x2e, 0xee, 0xd0, 0xbc, 0xcc,
-	0xc2, 0xd2, 0x54, 0x4f, 0xb0, 0x59, 0x7c, 0x5c, 0x4c, 0x99, 0x29, 0x60, 0xe3, 0x59, 0x82, 0x98,
-	0x32, 0x53, 0x84, 0x14, 0xb9, 0x78, 0x4a, 0xc1, 0xd2, 0xf1, 0x10, 0x8b, 0x99, 0xc0, 0x16, 0x73,
-	0x97, 0x22, 0xb4, 0x38, 0xd9, 0x9d, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47,
-	0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94,
-	0x4a, 0x7a, 0x66, 0x49, 0x46, 0x69, 0x12, 0xc8, 0x73, 0xfa, 0x50, 0xdf, 0x82, 0x69, 0x7d, 0x68,
-	0xb0, 0x94, 0x54, 0x16, 0xa4, 0x16, 0x27, 0xb1, 0x81, 0x3d, 0x69, 0x0c, 0x08, 0x00, 0x00, 0xff,
-	0xff, 0xc1, 0x7b, 0xfd, 0x2b, 0x2d, 0x01, 0x00, 0x00,
+	0x4b, 0x30, 0x29, 0x30, 0x6a, 0xb0, 0x04, 0x41, 0x38, 0x42, 0x52, 0x5c, 0x1c, 0x45, 0xa9, 0x69,
+	0xc9, 0xf9, 0xa5, 0x79, 0x25, 0x12, 0xcc, 0x60, 0x09, 0x38, 0x5f, 0x48, 0x88, 0x8b, 0x25, 0x25,
+	0xb1, 0x24, 0x51, 0x82, 0x45, 0x81, 0x51, 0x83, 0x27, 0x08, 0xcc, 0x76, 0xb2, 0x3b, 0xf1, 0x48,
+	0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0,
+	0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x28, 0x95, 0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0x90,
+	0x1b, 0xf5, 0xa1, 0x8e, 0x06, 0xd3, 0xfa, 0x50, 0xdf, 0x95, 0x54, 0x16, 0xa4, 0x16, 0x27, 0xb1,
+	0x81, 0xdd, 0x6a, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x9e, 0x89, 0x88, 0x7b, 0xf4, 0x00, 0x00,
+	0x00,
 }
 
 func (m *Entry) Marshal() (dAtA []byte, err error) {
@@ -182,12 +135,17 @@ func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.MarshaledData) > 0 {
-		i -= len(m.MarshaledData)
-		copy(dAtA[i:], m.MarshaledData)
-		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.MarshaledData)))
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Data)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
+	}
+	if m.Refcount != 0 {
+		i = encodeVarintFixationEntry(dAtA, i, uint64(m.Refcount))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Block != 0 {
 		i = encodeVarintFixationEntry(dAtA, i, uint64(m.Block))
@@ -200,41 +158,6 @@ func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Index)))
 		i--
 		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *UniqueIndex) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UniqueIndex) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UniqueIndex) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.UniqueIndex) > 0 {
-		i -= len(m.UniqueIndex)
-		copy(dAtA[i:], m.UniqueIndex)
-		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.UniqueIndex)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Id != 0 {
-		i = encodeVarintFixationEntry(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -263,23 +186,10 @@ func (m *Entry) Size() (n int) {
 	if m.Block != 0 {
 		n += 1 + sovFixationEntry(uint64(m.Block))
 	}
-	l = len(m.MarshaledData)
-	if l > 0 {
-		n += 1 + l + sovFixationEntry(uint64(l))
+	if m.Refcount != 0 {
+		n += 1 + sovFixationEntry(uint64(m.Refcount))
 	}
-	return n
-}
-
-func (m *UniqueIndex) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Id != 0 {
-		n += 1 + sovFixationEntry(uint64(m.Id))
-	}
-	l = len(m.UniqueIndex)
+	l = len(m.Data)
 	if l > 0 {
 		n += 1 + l + sovFixationEntry(uint64(l))
 	}
@@ -373,8 +283,27 @@ func (m *Entry) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Refcount", wireType)
+			}
+			m.Refcount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Refcount |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MarshaledData", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -401,111 +330,10 @@ func (m *Entry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MarshaledData = append(m.MarshaledData[:0], dAtA[iNdEx:postIndex]...)
-			if m.MarshaledData == nil {
-				m.MarshaledData = []byte{}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
+			if m.Data == nil {
+				m.Data = []byte{}
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipFixationEntry(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthFixationEntry
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UniqueIndex) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowFixationEntry
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UniqueIndex: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UniqueIndex: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFixationEntry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UniqueIndex", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFixationEntry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthFixationEntry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthFixationEntry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UniqueIndex = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -3,12 +3,14 @@ package chainlib
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -58,19 +60,20 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
-func constructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappId := extractDappIDFromFiberContext(c)
-		c.Locals("dappId", dappId)
+		if isMetricEnabled {
+			c.Locals(common.RefererHeaderKey, c.Get(common.RefererHeaderKey, ""))
+		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
 
 func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappId, ok := c.Locals("dappId").(string)
-	if !ok {
+	dappId := c.Params("dappId")
+	if dappId == "" {
 		dappId = "NoDappID"
 	}
 	return dappId
@@ -88,7 +91,7 @@ func convertToJsonError(errorMsg string) string {
 }
 
 func addAttributeToError(key string, value string, errorMessage string) string {
-	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
 func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
@@ -125,6 +128,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	return serverApis, taggedApis
 }
 
+// matchSpecApiByName returns service api which match given name
 func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
@@ -138,4 +142,42 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 		}
 	}
 	return spectypes.ServiceApi{}, false
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCEndpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+	}
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+	}
+}
+
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, httpEndpoint string) {
+	for _, endpoint := range endpoints {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+		}
+		switch u.Scheme {
+		case "http", "https":
+			httpEndpoint = endpoint
+		case "ws", "wss":
+			websocketEndpoint = endpoint
+		default:
+			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil, nil)
+		}
+	}
+
+	if websocketEndpoint == "" || httpEndpoint == "" {
+		utils.LavaFormatFatal("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
+			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
+	}
+	return websocketEndpoint, httpEndpoint
 }
