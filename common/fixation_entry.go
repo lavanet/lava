@@ -249,13 +249,13 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 	// get the unmarshaled entry for block
 	entry, err := fs.getUnmarshaledEntryForBlock(ctx, index, block, refAction)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_get_entry", map[string]string{}, "can't get entry")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_get_entry", map[string]string{"err": err.Error()}, "can't get entry")
 	}
 
 	// unmarshal the entry's data
 	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{}, "can't unmarshal entry data")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data")
 	}
 
 	return nil

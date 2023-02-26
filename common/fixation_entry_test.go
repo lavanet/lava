@@ -239,6 +239,10 @@ func TestDifferentFixationKeys(t *testing.T) {
 	// make sure the old entry was deleted (check block)
 	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
 	require.NotNil(t, err)
+
+	// make sure you cant subtract refs from entry with 0 refCount
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyCoin, types.SUB_REFERENCE)
+	require.NotNil(t, err)
 }
 
 // Test that the appended entries are sorted (first element is oldest)
