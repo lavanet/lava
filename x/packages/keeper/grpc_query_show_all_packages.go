@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/common"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/packages/types"
 	"google.golang.org/grpc/codes"
@@ -19,16 +19,17 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get all packages' unique indices
-	allPackageEntryUniqueIndices := common.GetAllFixationEntryUniqueIndex(ctx, k.storeKey, k.cdc, types.UniqueIndexKeyPrefix())
+	packageIndices := k.packagesFs.GetAllEntryIndices(ctx)
 
 	// go over all the packages' unique indices
-	for _, packageEntryUniqueIndex := range allPackageEntryUniqueIndices {
+	for _, packageIndex := range packageIndices {
 		packageInfoStruct := types.ShowAllPackagesInfoStruct{}
 
 		// get the latest version package
-		latestVersionPackage, err := k.GetPackageLatestVersion(ctx, packageEntryUniqueIndex.GetUniqueIndex())
+		var latestVersionPackage types.Package
+		err := k.packagesFs.GetEntry(ctx, packageIndex, uint64(ctx.BlockHeight()), &latestVersionPackage, commontypes.DO_NOTHING)
 		if err != nil {
-			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageEntryUniqueIndex.GetUniqueIndex()}, "could not get the latest version of the package")
+			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageIndex}, "could not get the latest version of the package")
 		}
 
 		// set the packageInfoStruct

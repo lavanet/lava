@@ -18,6 +18,8 @@ const (
 
 	// Proposals router keys
 	ProposalsRouterKey = "packagesproposals"
+
+	PackagesFixationStorePrefix = "packages"
 )
 
 func KeyPrefix(p string) []byte {

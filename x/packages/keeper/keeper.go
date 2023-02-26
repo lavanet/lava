@@ -8,15 +8,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/packages/types"
 )
 
 type (
 	Keeper struct {
-		cdc        codec.BinaryCodec
-		storeKey   sdk.StoreKey
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
+		packagesFs common.FixationStore
 	}
 )
 
@@ -32,10 +32,9 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
+		packagesFs: *common.NewFixationStore(storeKey, cdc, types.PackagesFixationStorePrefix),
 	}
 }
 
@@ -43,10 +42,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) GetStoreKey() sdk.StoreKey {
-	return k.storeKey
-}
-
-func (k Keeper) GetCdc() codec.BinaryCodec {
-	return k.cdc
+func (k Keeper) GetPackagesFixationStore() common.FixationStore {
+	return k.packagesFs
 }

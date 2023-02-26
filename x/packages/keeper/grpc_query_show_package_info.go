@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/packages/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,10 +17,11 @@ func (k Keeper) ShowPackageInfo(goCtx context.Context, req *types.QueryShowPacka
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	packageToPrint, err := k.GetPackageLatestVersion(ctx, req.GetPackageIndex())
+	var packageToPrint types.Package
+	err := k.packagesFs.GetEntry(ctx, req.GetPackageIndex(), uint64(ctx.BlockHeight()), &packageToPrint, commontypes.DO_NOTHING)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "package not found")
 	}
 
-	return &types.QueryShowPackageInfoResponse{PackageInfo: packageToPrint}, nil
+	return &types.QueryShowPackageInfoResponse{PackageInfo: &packageToPrint}, nil
 }

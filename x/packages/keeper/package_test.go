@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/common"
+	commontypes "github.com/lavanet/lava/common/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -38,37 +38,22 @@ func TestPackageEntryGet(t *testing.T) {
 	keeper, ctx := testkeeper.PackagesKeeper(t)
 	items := createNPackageEntry(keeper, ctx, 10)
 	for _, item := range items {
-		rst, found, _ := keeper.GetPackageForBlock(ctx,
-			item.GetIndex(), uint64(ctx.BlockHeight()),
-		)
-		require.True(t, found)
+		var tempPackage types.Package
+		err := keeper.GetPackagesFixationStore().GetEntry(ctx, item.GetIndex(), uint64(ctx.BlockHeight()), &tempPackage, commontypes.DO_NOTHING)
+		require.Nil(t, err)
 		require.Equal(t,
 			nullify.Fill(&item),
-			nullify.Fill(&rst),
+			nullify.Fill(&tempPackage),
 		)
-	}
-}
-
-func TestPackageEntryRemove(t *testing.T) {
-	keeper, ctx := testkeeper.PackagesKeeper(t)
-	items := createNPackageEntry(keeper, ctx, 10)
-	for _, item := range items {
-		keeper.RemovePackage(ctx,
-			item.GetIndex(),
-		)
-		_, found, _ := keeper.GetPackageForBlock(ctx,
-			item.GetIndex(), uint64(ctx.BlockHeight()),
-		)
-		require.False(t, found)
 	}
 }
 
 // Function to create an array of test packages. Can output an array with packages with the same ID
-func CreateTestPackages(packageAmount uint64, withSameIndex bool) []types.Package {
+func CreateTestPackages(packageAmount uint64, withSameIndex bool, startIndex uint64) []types.Package {
 	testPackages := []types.Package{}
 
 	// create dummy packages in a loop according to packageAmount
-	for i := uint64(0); i < packageAmount; i++ {
+	for i := startIndex; i < startIndex+packageAmount; i++ {
 		// create distinct package index by the loop counter
 		packageIndex := "mockPackage" + strconv.FormatUint(i, 10)
 		overuseRate := uint64(10)
@@ -113,7 +98,7 @@ func TestPackageAdditionDifferentEpoch(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// create packages (both packages have the same ID. They only differ in the overuseRate field)
-	testPackages := CreateTestPackages(1, true)
+	testPackages := CreateTestPackages(1, true, uint64(0))
 
 	// simulate a package proposal of the first package
 	err := testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, []types.Package{testPackages[0]})
@@ -127,11 +112,17 @@ func TestPackageAdditionDifferentEpoch(t *testing.T) {
 	require.Nil(t, err)
 
 	// get the package storage and verify that there are two packages in the package storage
-	packages := getAllEntriesFromStorage(t, ts)
-	require.Equal(t, 2, len(packages))
+	packagesIndices := ts.keepers.Packages.GetPackagesFixationStore().GetAllEntryIndices(sdk.UnwrapSDKContext(ts.ctx))
+	require.Equal(t, 1, len(packagesIndices))
 
 	// verify that testPackages[1] is the latest package version (its index should be first in storageIndexList)
-	packageLatestVersion, err := ts.keepers.Packages.GetPackageLatestVersion(sdk.UnwrapSDKContext(ts.ctx), packages[0].GetIndex())
+	var packageLatestVersion types.Package
+	err = ts.keepers.Packages.GetPackagesFixationStore().GetEntry(
+		sdk.UnwrapSDKContext(ts.ctx),
+		packagesIndices[0],
+		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
+		&packageLatestVersion,
+		commontypes.DO_NOTHING)
 	require.Equal(t, testPackages[1].OveruseRate, packageLatestVersion.GetOveruseRate())
 }
 
@@ -145,20 +136,22 @@ func TestUpdatePackageInSameEpoch(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// create packages (both packages have the same ID. They only differ in the overuseRate field)
-	testPackages := CreateTestPackages(1, true)
+	testPackages := CreateTestPackages(1, true, uint64(0))
 
 	// simulate a proposal of the packages
 	err := testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, testPackages)
 	require.Nil(t, err)
 
-	// test that there's a single package in the storage
-	packages := ts.keepers.Packages.GetAllPackageVersions(sdk.UnwrapSDKContext(ts.ctx), testPackages[0].GetIndex())
-	require.Equal(t, 1, len(packages))
-
-	// verify it's the latest one (testPackages[1] that is the last element in the testPackages array)
-	packageLeft, err := ts.keepers.Packages.GetPackageLatestVersion(sdk.UnwrapSDKContext(ts.ctx), testPackages[0].GetIndex())
+	// verify the latest one is kept (testPackages[1] that is the last element in the testPackages array)
+	var packageLatestVersion types.Package
+	err = ts.keepers.Packages.GetPackagesFixationStore().GetEntry(
+		sdk.UnwrapSDKContext(ts.ctx),
+		testPackages[0].GetIndex(),
+		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
+		&packageLatestVersion,
+		commontypes.DO_NOTHING)
 	require.Nil(t, err)
-	require.Equal(t, testPackages[1].GetOveruseRate(), packageLeft.GetOveruseRate())
+	require.Equal(t, testPackages[1].GetOveruseRate(), packageLatestVersion.GetOveruseRate())
 }
 
 const (
@@ -199,7 +192,7 @@ func TestInvalidPackageAddition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create a test package
-			packageToTest := CreateTestPackages(1, false)
+			packageToTest := CreateTestPackages(1, false, uint64(0))
 
 			// each test, change one field to an invalid value
 			switch tt.fieldIndex {
@@ -244,8 +237,8 @@ func TestMultiplePackagesAdditions(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// create packages (both packages which have the same ID and different ID)
-	testPackagesWithDifferentIDs := CreateTestPackages(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT, false)
-	testPackagesWithSameIDs := CreateTestPackages(TEST_PACKAGES_WITH_SAME_ID_AMOUNT, true)
+	testPackagesWithDifferentIDs := CreateTestPackages(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT, false, uint64(0))
+	testPackagesWithSameIDs := CreateTestPackages(TEST_PACKAGES_WITH_SAME_ID_AMOUNT, true, uint64(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+1))
 
 	// simulate a package proposal of testPackagesWithDifferentIDs
 	err := testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, testPackagesWithDifferentIDs)
@@ -258,9 +251,9 @@ func TestMultiplePackagesAdditions(t *testing.T) {
 	err = testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, testPackagesWithSameIDs)
 	require.Nil(t, err)
 
-	// check there are enough packages in the storage (should not be TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+2*(TEST_PACKAGES_WITH_SAME_ID_AMOUNT)) since we propose the duplicate packages in a single epoch so only the latest are kept
-	packages := getAllEntriesFromStorage(t, ts)
-	require.Equal(t, TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+TEST_PACKAGES_WITH_SAME_ID_AMOUNT, len(packages))
+	// check there are enough packages in the storage (should not be TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+2*TEST_PACKAGES_WITH_SAME_ID_AMOUNT) since we propose the duplicate packages in a single block so only the latest are kept
+	packagesIndices := ts.keepers.Packages.GetPackagesFixationStore().GetAllEntryIndices(sdk.UnwrapSDKContext(ts.ctx))
+	require.Equal(t, TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+TEST_PACKAGES_WITH_SAME_ID_AMOUNT, len(packagesIndices))
 }
 
 // Test that proposes two valid packages and an invalid one and checks that none have passed
@@ -273,7 +266,7 @@ func TestProposeBadAndGoodPackages(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// create packages
-	testPackages := CreateTestPackages(3, false)
+	testPackages := CreateTestPackages(3, false, uint64(0))
 
 	// make one of the packages invalid
 	testPackages[2].ComputeUnits = 0
@@ -281,19 +274,7 @@ func TestProposeBadAndGoodPackages(t *testing.T) {
 	// simulate a package proposal of testPackages (note, inside SimulatePackageProposal it fails the test when a package is invalid. So we avoid checking the error to make sure later there are no packages in the storage)
 	_ = testkeeper.SimulatePackageProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages, testPackages)
 
-	// check there are enough packages in the storage (should not be TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+2*(TEST_PACKAGES_WITH_SAME_ID_AMOUNT)) since we propose the duplicate packages in a single epoch so only the latest are kept
-	packages := getAllEntriesFromStorage(t, ts)
-	require.Equal(t, 0, len(packages))
-}
-
-// Helper function to get all the entries of all indices using the uniqueIndex list
-func getAllEntriesFromStorage(t *testing.T, ts *testStruct) []types.Package {
-	uniqueIndices := common.GetAllFixationEntryUniqueIndex(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Packages.GetStoreKey(), ts.keepers.Packages.GetCdc(), types.UniqueIndexKeyPrefix())
-	packages := []types.Package{}
-	for _, uniqueIndex := range uniqueIndices {
-		uniqueIndexAllVersionsPackages := ts.keepers.Packages.GetAllPackageVersions(sdk.UnwrapSDKContext(ts.ctx), uniqueIndex.GetUniqueIndex())
-		packages = append(packages, uniqueIndexAllVersionsPackages...)
-	}
-
-	return packages
+	// check there are no packages in the storage
+	packagesIndices := ts.keepers.Packages.GetPackagesFixationStore().GetAllEntryIndices(sdk.UnwrapSDKContext(ts.ctx))
+	require.Equal(t, 0, len(packagesIndices))
 }

@@ -48,5 +48,10 @@ func (p Package) ValidatePackage() error {
 		return sdkerrors.Wrap(ErrInvalidPackageType, "package's type is too long")
 	}
 
+	// check that the package's annual discount is valid
+	if p.GetAnnualDiscountPercentage() < uint64(0) || p.GetAnnualDiscountPercentage() > uint64(100) {
+		return sdkerrors.Wrap(ErrInvalidPackageAnnualDiscount, "package's annual discount is invalid (not between 0-100)")
+	}
+
 	return nil
 }
