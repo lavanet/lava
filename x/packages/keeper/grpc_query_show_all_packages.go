@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/packages/types"
 	"google.golang.org/grpc/codes"
@@ -27,7 +26,7 @@ func (k Keeper) ShowAllPackages(goCtx context.Context, req *types.QueryShowAllPa
 
 		// get the latest version package
 		var latestVersionPackage types.Package
-		err := k.packagesFs.GetEntry(ctx, packageIndex, uint64(ctx.BlockHeight()), &latestVersionPackage, commontypes.DO_NOTHING)
+		err := k.packagesFs.FindEntry(ctx, packageIndex, uint64(ctx.BlockHeight()), &latestVersionPackage)
 		if err != nil {
 			return nil, utils.LavaError(ctx, ctx.Logger(), "get_package_latest_version", map[string]string{"err": err.Error(), "packageIndex": packageIndex}, "could not get the latest version of the package")
 		}

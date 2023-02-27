@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -40,7 +39,7 @@ func TestPackageEntryGet(t *testing.T) {
 	for _, item := range items {
 		var tempPackage types.Package
 		fs := keeper.GetPackagesFixationStore()
-		err := fs.GetEntry(ctx, item.GetIndex(), uint64(ctx.BlockHeight()), &tempPackage, commontypes.DO_NOTHING)
+		err := fs.FindEntry(ctx, item.GetIndex(), uint64(ctx.BlockHeight()), &tempPackage)
 		require.Nil(t, err)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -119,12 +118,11 @@ func TestPackageAdditionDifferentEpoch(t *testing.T) {
 	// verify that testPackages[1] is the latest package version (its index should be first in storageIndexList)
 	var packageLatestVersion types.Package
 	fs := ts.keepers.Packages.GetPackagesFixationStore()
-	err = fs.GetEntry(
+	err = fs.FindEntry(
 		sdk.UnwrapSDKContext(ts.ctx),
 		packagesIndices[0],
 		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
-		&packageLatestVersion,
-		commontypes.DO_NOTHING)
+		&packageLatestVersion)
 	require.Equal(t, testPackages[1].OveruseRate, packageLatestVersion.GetOveruseRate())
 }
 
@@ -147,12 +145,11 @@ func TestUpdatePackageInSameEpoch(t *testing.T) {
 	// verify the latest one is kept (testPackages[1] that is the last element in the testPackages array)
 	var packageLatestVersion types.Package
 	fs := ts.keepers.Packages.GetPackagesFixationStore()
-	err = fs.GetEntry(
+	err = fs.FindEntry(
 		sdk.UnwrapSDKContext(ts.ctx),
 		testPackages[0].GetIndex(),
 		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
-		&packageLatestVersion,
-		commontypes.DO_NOTHING)
+		&packageLatestVersion)
 	require.Nil(t, err)
 	require.Equal(t, testPackages[1].GetOveruseRate(), packageLatestVersion.GetOveruseRate())
 }
