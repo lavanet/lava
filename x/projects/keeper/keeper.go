@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	common "github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -17,6 +18,8 @@ type (
 		storeKey   sdk.StoreKey
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
+
+		projectsFS common.FixationStore
 	}
 )
 
@@ -32,12 +35,14 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	fs := common.NewFixationStore(storeKey, cdc, types.FixationPrefix)
 
+	return &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
+		projectsFS: *fs,
 	}
 }
 

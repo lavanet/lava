@@ -15,6 +15,9 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_projects"
+
+	// prefix for the projects fixation store
+	FixationPrefix = "projects-fixation"
 )
 
 func KeyPrefix(p string) []byte {
