@@ -61,13 +61,15 @@ type FixationStore struct {
 }
 
 // AppendEntry adds a new entry to the store
-func (fs FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
 	// get the latest entry for this index
-	latestEntry := fs.getUnmarshaledEntryForBlock(ctx, index, block, types.DO_NOTHING)
+	latestEntry, err := fs.getUnmarshaledEntryForBlock(ctx, index, block, types.DO_NOTHING)
 
 	// if latest entry is not found, this is a first version entry
-	if latestEntry == nil {
+	if latestEntry == nil && types.ErrEntryNotFound.Is(err) {
 		fs.SetEntryIndex(ctx, index)
+	} else if err != nil {
+		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_get_entry_err", map[string]string{"err": err.Error(), "index": index, "block": strconv.FormatUint(block, 10)}, "error getting entry")
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.GetBlock() {
@@ -76,22 +78,22 @@ func (fs FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64,
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
 		if block == latestEntry.GetBlock() {
-			return fs.SetEntry(ctx, index, block, entryData)
+			return fs.ModifyEntry(ctx, index, block, entryData)
 		}
 	}
 
 	// marshal the new entry's data
-	b := fs.cdc.MustMarshal(entryData)
+	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 	// create a new entry and marshal it
-	entry := types.Entry{Index: index, Block: block, Data: b, Refcount: 0}
-	bz := fs.cdc.MustMarshal(&entry)
+	entry := types.Entry{Index: index, Block: block, Data: marshaledEntryData, Refcount: 0}
+	marshaledEntry := fs.cdc.MustMarshal(&entry)
 
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 	byteKey := types.KeyPrefix(createEntryKey(block))
 
 	// set the new entry to the store
-	store.Set(byteKey, bz)
+	store.Set(byteKey, marshaledEntry)
 
 	// delete old entries
 	fs.deleteStaleEntries(ctx, index)
@@ -99,7 +101,7 @@ func (fs FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64,
 	return nil
 }
 
-func (fs FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
+func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
 	// get the relevant store and init an iterator
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -128,35 +130,35 @@ func (fs FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
 	}
 }
 
-// SetEntry sets a specific entry in the store
-func (fs FixationStore) SetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+// ModifyEntry modifies an exisiting entry in the store
+func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 	byteKey := types.KeyPrefix(createEntryKey(block))
 
 	// marshal the new entry data
-	b := fs.cdc.MustMarshal(entryData)
+	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 
 	// get the entry from the store
-	entry := fs.getUnmarshaledEntryForBlock(ctx, index, block, types.DO_NOTHING)
-	if entry == nil {
+	entry, err := fs.getUnmarshaledEntryForBlock(ctx, index, block, types.DO_NOTHING)
+	if err != nil {
 		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", map[string]string{"fs.prefix": fs.prefix, "index": index, "block": strconv.FormatUint(block, 10)}, "can't set non-existent entry")
 	}
 
 	// update the entry's data
-	entry.Data = b
+	entry.Data = marshaledEntryData
 
 	// marshal the entry
-	bz := fs.cdc.MustMarshal(entry)
+	marshaledEntry := fs.cdc.MustMarshal(entry)
 
 	// set the entry
-	store.Set(byteKey, bz)
+	store.Set(byteKey, marshaledEntry)
 
 	return nil
 }
 
 // handleRefAction handles ref actions: increase refs, decrease refs or do nothing
-func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.ReferenceAction) error {
+func (fs *FixationStore) handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.ReferenceAction) error {
 	// check if entry is nil
 	if entry == nil {
 		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_nil_entry", map[string]string{}, "can't handle reference action, entry is nil")
@@ -169,6 +171,8 @@ func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.Refere
 	case types.SUB_REFERENCE:
 		if entry.GetRefcount() > 0 {
 			entry.Refcount -= 1
+		} else {
+			return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_sub_ref_from_non_positive_count", map[string]string{"refCount": strconv.FormatUint(entry.GetRefcount(), 10)}, "refCount is not larger than zero. Can't subtract refcount")
 		}
 	case types.DO_NOTHING:
 	}
@@ -177,28 +181,22 @@ func handleRefAction(ctx sdk.Context, entry *types.Entry, refAction types.Refere
 }
 
 // GetStoreKey returns the Fixation store's store key
-func (fs FixationStore) GetStoreKey() sdk.StoreKey {
+func (fs *FixationStore) GetStoreKey() sdk.StoreKey {
 	return fs.storeKey
 }
 
 // GetCdc returns the Fixation store's codec
-func (fs FixationStore) GetCdc() codec.BinaryCodec {
+func (fs *FixationStore) GetCdc() codec.BinaryCodec {
 	return fs.cdc
 }
 
 // Getprefix returns the Fixation store's fixation key
-func (fs FixationStore) GetPrefix() string {
+func (fs *FixationStore) GetPrefix() string {
 	return fs.prefix
 }
 
-// Setprefix sets the Fixation store's fixation key
-func (fs FixationStore) SetPrefix(prefix string) FixationStore {
-	fs.prefix = prefix
-	return fs
-}
-
 // getUnmarshaledEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
-func (fs FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index string, block uint64, refAction types.ReferenceAction) *types.Entry {
+func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index string, block uint64, refAction types.ReferenceAction) (*types.Entry, error) {
 	// get the relevant store using index
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 
@@ -209,42 +207,55 @@ func (fs FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index strin
 	// iterate over entries
 	for ; iterator.Valid(); iterator.Next() {
 		// unmarshal the entry
-		var val types.Entry
-		fs.cdc.MustUnmarshal(iterator.Value(), &val)
+		var entry types.Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
 		// if the entry's block is smaller than or equal to the requested block, unmarshal the entry's data
-		if val.GetBlock() <= block {
-			err := handleRefAction(ctx, &val, refAction)
+		// since the user might not know the precise block that the entry was created on, we get the closest one
+		// we get from the past since this was the entry that was valid in the requested block (assume there's an
+		// entry in block 100 and block 200 and the user asks for the version of block 199. Since the block 200's
+		// didn't exist yet, we get the entry from block 100)
+		if entry.GetBlock() <= block {
+			err := fs.handleRefAction(ctx, &entry, refAction)
 			if err != nil {
-				return nil
+				return nil, err
 			}
 
-			return &val
+			return &entry, nil
 		}
+
+		// get the relevant byte
+		byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
+
+		// marshal the entry
+		marshaledEntry := fs.cdc.MustMarshal(&entry)
+
+		// set the entry
+		store.Set(byteKey, marshaledEntry)
 	}
 
-	return nil
+	return nil, types.ErrEntryNotFound
 }
 
-// GetEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
-func (fs FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler, refAction types.ReferenceAction) error {
+// GetEntryForBlock gets an entry by block. The entry is returned by reference on the entryData argument. Block doesn't have to be precise, it gets the closest entry version
+func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler, refAction types.ReferenceAction) error {
 	// get the unmarshaled entry for block
-	entry := fs.getUnmarshaledEntryForBlock(ctx, index, block, refAction)
-	if entry == nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_get_entry", map[string]string{}, "can't get entry")
+	entry, err := fs.getUnmarshaledEntryForBlock(ctx, index, block, refAction)
+	if err != nil {
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_get_entry", map[string]string{"err": err.Error()}, "can't get entry")
 	}
 
 	// unmarshal the entry's data
-	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
+	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{}, "can't unmarshal entry data")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data")
 	}
 
 	return nil
 }
 
 // RemoveEntry removes an entry from the store
-func (fs FixationStore) removeEntry(ctx sdk.Context, index string, block uint64) {
+func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64) {
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 
@@ -255,29 +266,17 @@ func (fs FixationStore) removeEntry(ctx sdk.Context, index string, block uint64)
 	store.Delete(types.KeyPrefix(entryKey))
 }
 
-// getAllUnmarshaledEntries gets all the unmarshaled entries from the store (without entries' old versions)
-func (fs FixationStore) getAllEntries(ctx sdk.Context) []*types.Entry {
-	latestVersionEntryList := []*types.Entry{}
-
-	uniqueIndices := fs.GetAllEntryIndices(ctx)
-	for _, uniqueIndex := range uniqueIndices {
-		latestVersionEntry := fs.getUnmarshaledEntryForBlock(ctx, uniqueIndex, uint64(ctx.BlockHeight()), types.DO_NOTHING)
-		latestVersionEntryList = append(latestVersionEntryList, latestVersionEntry)
-	}
-
-	return latestVersionEntryList
-}
-
 // createEntryKey creates an entry key for the KVStore
 func createEntryKey(block uint64) string {
 	return strconv.FormatUint(block, 10)
 }
 
-func (fs FixationStore) createStoreKey(index string) string {
+func (fs *FixationStore) createStoreKey(index string) string {
 	return types.EntryKey + fs.prefix + index
 }
 
 // NewFixationStore returns a new FixationStore object
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
-	return &FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
+	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
+	return &fs
 }

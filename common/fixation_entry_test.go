@@ -67,21 +67,32 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	// make sure that one entry's data is the same data that was used to create it
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 
+	// advance the block height to +STALE_ENTRY_TIME (the entry should not be deleted yet)
+	ctx = ctx.WithBlockHeight(types.STALE_ENTRY_TIME + int64(blockToAddEntry))
+	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
+	blockToAddEntryBeforeStale := uint64(ctx.BlockHeight())
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryBeforeStale, &dummyObj2)
+	require.Nil(t, err)
+
+	// make sure the old entry was not deleted (check block)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	require.Nil(t, err)
+
 	// remove the entry by advancing over the STALE_ENTRY_TIME and appending a new one (append triggers the removal func)
 	ctx = ctx.WithBlockHeight(types.STALE_ENTRY_TIME + int64(blockToAddEntry) + 1)
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
+	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
 	blockToAddEntryAfterStale := uint64(ctx.BlockHeight())
-	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyObj2)
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyObj3)
 	require.Nil(t, err)
 
 	// make sure the old entry was deleted (check block)
 	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
 	require.NotNil(t, err)
 
-	// get the latest version and make sure it's equal to dummyObj2
+	// get the latest version and make sure it's equal to dummyObj3
 	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyCoin, types.DO_NOTHING)
 	require.Nil(t, err)
-	require.True(t, dummyCoin.IsEqual(dummyObj2))
+	require.True(t, dummyCoin.IsEqual(dummyObj3))
 
 	// make sure dummy index is still in the entry index list
 	indexList = vs.GetAllEntryIndices(ctx)
@@ -163,17 +174,19 @@ func TestDifferentFixationKeys(t *testing.T) {
 	dummyIndex := "index"
 	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
 	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
-	blockToAddEntry := uint64(10)
+
 	// init FixationStore + context
 	vs, ctx := initCtxAndFixationStore(t)
-	vs2 := vs.SetPrefix("fix2")
+	vs2 := common.NewFixationStore(vs.GetStoreKey(), vs.GetCdc(), "fix2")
 
 	// add the first dummy entry
-	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
+	blockToAddFirstEntry := uint64(10)
+	err := vs.AppendEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyObj)
 	require.Nil(t, err)
 
 	// add the second dummy entry
-	err = vs2.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj2)
+	blockToAddSecondEntry := uint64(20)
+	err = vs2.AppendEntry(ctx, dummyIndex, blockToAddSecondEntry, &dummyObj2)
 	require.Nil(t, err)
 
 	// get all indices with original fixation key and dummyIndex. make sure there is one entry
@@ -182,7 +195,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 	// verify the data matches the entry from original fixation key storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.ADD_REFERENCE)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 	require.False(t, dummyCoin.Equal(dummyObj2))
@@ -192,10 +205,44 @@ func TestDifferentFixationKeys(t *testing.T) {
 	require.Equal(t, 1, len(indexList))
 
 	// verify the data matches the entry from original fixation key storage
-	err = vs2.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs2.GetEntry(ctx, dummyIndex, blockToAddSecondEntry, &dummyCoin, types.DO_NOTHING)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj2))
 	require.False(t, dummyCoin.Equal(dummyObj))
+
+	// advance enough blocks so the entry with the regular fixation key will be deleted with a new append, but the second entry (with "fix2" key) won't be deleted
+	ctx = ctx.WithBlockHeight(int64(blockToAddFirstEntry) + types.STALE_ENTRY_TIME + 1)
+
+	// append to trigger delete function and verify it's not deleted yet since RefCount = 1 (see L198)
+	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Add(sdk.OneInt())}
+	blockToAddEntryForRemoval := uint64(ctx.BlockHeight())
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryForRemoval, &dummyObj3)
+	require.Nil(t, err)
+
+	// make sure the old entry was not deleted (check block)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
+	require.Nil(t, err)
+	require.True(t, dummyCoin.IsEqual(dummyObj))
+
+	// zero the refcount and advance one block
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.SUB_REFERENCE)
+	require.Nil(t, err)
+	require.True(t, dummyCoin.IsEqual(dummyObj))
+	ctx = ctx.WithBlockHeight(int64(blockToAddFirstEntry) + types.STALE_ENTRY_TIME + 2)
+
+	// append object to remove the first entry
+	dummyObj4 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Add(sdk.OneInt().Add(sdk.OneInt()))}
+	blockToAddEntryForRemovalZeroRefCount := uint64(ctx.BlockHeight())
+	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyObj4)
+	require.Nil(t, err)
+
+	// make sure the old entry was deleted (check block)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
+	require.NotNil(t, err)
+
+	// make sure you cant subtract refs from entry with 0 refCount
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyCoin, types.SUB_REFERENCE)
+	require.NotNil(t, err)
 }
 
 // Test that the appended entries are sorted (first element is oldest)
