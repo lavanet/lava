@@ -39,7 +39,8 @@ func TestPackageEntryGet(t *testing.T) {
 	items := createNPackageEntry(keeper, ctx, 10)
 	for _, item := range items {
 		var tempPackage types.Package
-		err := keeper.GetPackagesFixationStore().GetEntry(ctx, item.GetIndex(), uint64(ctx.BlockHeight()), &tempPackage, commontypes.DO_NOTHING)
+		fs := keeper.GetPackagesFixationStore()
+		err := fs.GetEntry(ctx, item.GetIndex(), uint64(ctx.BlockHeight()), &tempPackage, commontypes.DO_NOTHING)
 		require.Nil(t, err)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -117,7 +118,8 @@ func TestPackageAdditionDifferentEpoch(t *testing.T) {
 
 	// verify that testPackages[1] is the latest package version (its index should be first in storageIndexList)
 	var packageLatestVersion types.Package
-	err = ts.keepers.Packages.GetPackagesFixationStore().GetEntry(
+	fs := ts.keepers.Packages.GetPackagesFixationStore()
+	err = fs.GetEntry(
 		sdk.UnwrapSDKContext(ts.ctx),
 		packagesIndices[0],
 		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
@@ -144,7 +146,8 @@ func TestUpdatePackageInSameEpoch(t *testing.T) {
 
 	// verify the latest one is kept (testPackages[1] that is the last element in the testPackages array)
 	var packageLatestVersion types.Package
-	err = ts.keepers.Packages.GetPackagesFixationStore().GetEntry(
+	fs := ts.keepers.Packages.GetPackagesFixationStore()
+	err = fs.GetEntry(
 		sdk.UnwrapSDKContext(ts.ctx),
 		testPackages[0].GetIndex(),
 		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
