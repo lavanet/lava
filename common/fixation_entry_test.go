@@ -61,7 +61,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 
 	// get the entry from the storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin)
 	require.Nil(t, err)
 
 	// make sure that one entry's data is the same data that was used to create it
@@ -75,7 +75,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	require.Nil(t, err)
 
 	// make sure the old entry was not deleted (check block)
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin)
 	require.Nil(t, err)
 
 	// remove the entry by advancing over the STALE_ENTRY_TIME and appending a new one (append triggers the removal func)
@@ -86,11 +86,11 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	require.Nil(t, err)
 
 	// make sure the old entry was deleted (check block)
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin)
 	require.NotNil(t, err)
 
 	// get the latest version and make sure it's equal to dummyObj3
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddEntryAfterStale, &dummyCoin)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj3))
 
@@ -124,7 +124,7 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 
 	// get the entry from the storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin)
 	require.Nil(t, err)
 
 	// make sure that one entry's data is the same data of the second dummy entry
@@ -157,7 +157,7 @@ func TestEntryVersions(t *testing.T) {
 
 	// get the older version from block blockToAddFirstEntry
 	var dummyCoin sdk.Coin
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry+1, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddFirstEntry+1, &dummyCoin)
 	require.Nil(t, err)
 
 	// verify the data matches the old entry from storage
@@ -195,7 +195,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 	// verify the data matches the entry from original fixation key storage
 	var dummyCoin sdk.Coin
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.ADD_REFERENCE)
+	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 	require.False(t, dummyCoin.Equal(dummyObj2))
@@ -205,7 +205,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 	require.Equal(t, 1, len(indexList))
 
 	// verify the data matches the entry from original fixation key storage
-	err = vs2.GetEntry(ctx, dummyIndex, blockToAddSecondEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs2.FindEntry(ctx, dummyIndex, blockToAddSecondEntry, &dummyCoin)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj2))
 	require.False(t, dummyCoin.Equal(dummyObj))
@@ -220,12 +220,12 @@ func TestDifferentFixationKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// make sure the old entry was not deleted (check block)
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 
 	// zero the refcount and advance one block
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.SUB_REFERENCE)
+	err = vs.PutEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin)
 	require.Nil(t, err)
 	require.True(t, dummyCoin.IsEqual(dummyObj))
 	ctx = ctx.WithBlockHeight(int64(blockToAddFirstEntry) + types.STALE_ENTRY_TIME + 2)
@@ -237,11 +237,11 @@ func TestDifferentFixationKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// make sure the old entry was deleted (check block)
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin, types.DO_NOTHING)
+	err = vs.FindEntry(ctx, dummyIndex, blockToAddFirstEntry, &dummyCoin)
 	require.NotNil(t, err)
 
 	// make sure you cant subtract refs from entry with 0 refCount
-	err = vs.GetEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyCoin, types.SUB_REFERENCE)
+	err = vs.PutEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyCoin)
 	require.NotNil(t, err)
 }
 
