@@ -7,7 +7,18 @@ option go_package = "github.com/lavanet/lava/x/subscription/types";
 
 // Msg defines the Msg service.
 service Msg {
-    // this line is used by starport scaffolding # proto/tx/rpc
+      rpc Subscribe(MsgSubscribe) returns (MsgSubscribeResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgSubscribe {
+  string creator = 1;
+  string consumer = 2;
+  string index = 3;
+  bool isYearly = 4;
+}
+
+message MsgSubscribeResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

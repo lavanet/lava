@@ -78,8 +78,8 @@ func endOfMonth(date time.Time) time.Time {
 // (https://stackoverflow.com/questions/725098/leap-year-calculation)
 func isLeapYear(date time.Time) bool {
 	year := date.Year()
-    // Leap year occurs every 4 years; but every 100 years it is skipped;
-    // except that every every 400 years it is kept.
+	// Leap year occurs every 4 years; but every 100 years it is skipped;
+	// except that every every 400 years it is kept.
 	return year%400 == 0 || (year%4 == 0 && year%100 != 0)
 }
 

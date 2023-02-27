@@ -16,7 +16,7 @@ func (sub Subscription) IsExpired(date time.Time) bool {
 func (sub Subscription) ValidateSubscription() error {
 	// PlanIndex may not be blank
 	if len(strings.TrimSpace(sub.PlanIndex)) == 0 {
-		return sdkerrors.Wrap(ErrBlankParameter, "subscription package cannot be blank")
+		return sdkerrors.Wrap(ErrBlankParameter, "subscription plan cannot be blank")
 	}
 
 	// Creator may not be blank
