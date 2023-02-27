@@ -27,5 +27,5 @@ lavad tx gov submit-proposal software-upgrade $UPRADE_NAME --title upgrade --des
 lavad tx gov deposit 1 10000000ulava --from alice --yes --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes --from alice --yes --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 echo "chosen block for upgrade: $BLOCK_HEIGHT_CHOSEN"
-lavad q upgrade plan
+lavad q upgrade plans
 # wait for upgrade.

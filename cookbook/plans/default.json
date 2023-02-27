@@ -1,0 +1,28 @@
+{
+    "proposal": {
+        "title": "Test Plan Proposal",
+        "description": "A proposal of test plan",
+        "plans": [
+            {
+                "duration": "1",
+                "price": {
+                    "denom": "ulava",
+                    "amount": "2"
+                },
+                "allow_overuse": true,
+                "block": "10",
+                "index": "TestPlan",
+                "compute_units": "25920",
+                "compute_units_per_epoch": "1",
+                "servicers_to_pair": "2",
+                "overuse_rate": "1",
+                "subscriptions": "0",
+                "name": "defaultPlan",
+                "description": "Lorem Ipsum",
+                "type": "rpc",
+                "annual_discount_percentage": "20"
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}
