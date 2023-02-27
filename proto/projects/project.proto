@@ -22,7 +22,7 @@ message ProjectKey {
         DEVELOPER = 1; 
     }    
 
-    KEY_TYPE type = 2; // the key type, determines the privilages of the key
+    repeated KEY_TYPE type = 2; // the key type, determines the privilages of the key
 }
 
 message Policy {
@@ -35,4 +35,8 @@ message Policy {
 message ChainPolicy {
     string chain_id = 1;
     repeated string apis = 2;
+}
+
+message ProtoString {
+    string string = 1;
 }

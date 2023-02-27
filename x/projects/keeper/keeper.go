@@ -19,7 +19,8 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		projectsFS common.FixationStore
+		projectsFS      common.FixationStore
+		developerKeysFS common.FixationStore
 	}
 )
 
@@ -35,14 +36,16 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	fs := common.NewFixationStore(storeKey, cdc, types.FixationPrefix)
+	projectsfs := common.NewFixationStore(storeKey, cdc, types.ProjectsFixationPrefix)
+	developerKeysfs := common.NewFixationStore(storeKey, cdc, types.DeveloperKeysFixationPrefix)
 
 	return &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
-		projectsFS: *fs,
+		cdc:             cdc,
+		storeKey:        storeKey,
+		memKey:          memKey,
+		paramstore:      ps,
+		projectsFS:      *projectsfs,
+		developerKeysFS: *developerKeysfs,
 	}
 }
 
