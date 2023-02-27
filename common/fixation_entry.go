@@ -220,18 +220,16 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 			if err != nil {
 				return nil, err
 			}
+			// get the relevant byte
+			byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
 
+			// marshal the entry
+			marshaledEntry := fs.cdc.MustMarshal(&entry)
+
+			// set the entry
+			store.Set(byteKey, marshaledEntry)
 			return &entry, nil
 		}
-
-		// get the relevant byte
-		byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
-
-		// marshal the entry
-		marshaledEntry := fs.cdc.MustMarshal(&entry)
-
-		// set the entry
-		store.Set(byteKey, marshaledEntry)
 	}
 
 	return nil, types.ErrEntryNotFound
