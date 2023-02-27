@@ -7,9 +7,9 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
-	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types1 "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -262,7 +262,7 @@ func init() {
 	//proto.RegisterType((*IdentifiedPacketFees)(nil), "ibc.applications.fee.v1.IdentifiedPacketFees")
 }
 
-func init() { }//proto.RegisterFile("ibc/applications/fee/v1/fee.proto", fileDescriptor_cb3319f1af2a53e5) }
+func init() {} //proto.RegisterFile("ibc/applications/fee/v1/fee.proto", fileDescriptor_cb3319f1af2a53e5) }
 
 var fileDescriptor_cb3319f1af2a53e5 = []byte{
 	// 526 bytes of a gzipped FileDescriptorProto

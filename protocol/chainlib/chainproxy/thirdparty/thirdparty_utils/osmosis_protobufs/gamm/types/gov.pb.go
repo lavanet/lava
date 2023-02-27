@@ -34,9 +34,9 @@ type ReplaceMigrationRecordsProposal struct {
 	Records     []BalancerToConcentratedPoolLink `protobuf:"bytes,3,rep,name=records,proto3" json:"records"`
 }
 
-func (m *ReplaceMigrationRecordsProposal) Reset()      { *m = ReplaceMigrationRecordsProposal{} }
+func (m *ReplaceMigrationRecordsProposal) Reset()         { *m = ReplaceMigrationRecordsProposal{} }
 func (m *ReplaceMigrationRecordsProposal) String() string { return proto.CompactTextString(m) }
-func (*ReplaceMigrationRecordsProposal) ProtoMessage() {}
+func (*ReplaceMigrationRecordsProposal) ProtoMessage()    {}
 func (*ReplaceMigrationRecordsProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f31b9a6c0dbbdfa3, []int{0}
 }
@@ -81,9 +81,9 @@ type UpdateMigrationRecordsProposal struct {
 	Records     []BalancerToConcentratedPoolLink `protobuf:"bytes,3,rep,name=records,proto3" json:"records"`
 }
 
-func (m *UpdateMigrationRecordsProposal) Reset()      { *m = UpdateMigrationRecordsProposal{} }
+func (m *UpdateMigrationRecordsProposal) Reset()         { *m = UpdateMigrationRecordsProposal{} }
 func (m *UpdateMigrationRecordsProposal) String() string { return proto.CompactTextString(m) }
-func (*UpdateMigrationRecordsProposal) ProtoMessage() {}
+func (*UpdateMigrationRecordsProposal) ProtoMessage()    {}
 func (*UpdateMigrationRecordsProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f31b9a6c0dbbdfa3, []int{1}
 }

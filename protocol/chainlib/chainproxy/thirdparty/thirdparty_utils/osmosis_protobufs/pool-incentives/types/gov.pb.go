@@ -36,9 +36,9 @@ type ReplacePoolIncentivesProposal struct {
 	Records     []DistrRecord `protobuf:"bytes,3,rep,name=records,proto3" json:"records"`
 }
 
-func (m *ReplacePoolIncentivesProposal) Reset()      { *m = ReplacePoolIncentivesProposal{} }
+func (m *ReplacePoolIncentivesProposal) Reset()         { *m = ReplacePoolIncentivesProposal{} }
 func (m *ReplacePoolIncentivesProposal) String() string { return proto.CompactTextString(m) }
-func (*ReplacePoolIncentivesProposal) ProtoMessage() {}
+func (*ReplacePoolIncentivesProposal) ProtoMessage()    {}
 func (*ReplacePoolIncentivesProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96caede426ba9516, []int{0}
 }
@@ -82,9 +82,9 @@ type UpdatePoolIncentivesProposal struct {
 	Records     []DistrRecord `protobuf:"bytes,3,rep,name=records,proto3" json:"records"`
 }
 
-func (m *UpdatePoolIncentivesProposal) Reset()      { *m = UpdatePoolIncentivesProposal{} }
+func (m *UpdatePoolIncentivesProposal) Reset()         { *m = UpdatePoolIncentivesProposal{} }
 func (m *UpdatePoolIncentivesProposal) String() string { return proto.CompactTextString(m) }
-func (*UpdatePoolIncentivesProposal) ProtoMessage() {}
+func (*UpdatePoolIncentivesProposal) ProtoMessage()    {}
 func (*UpdatePoolIncentivesProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96caede426ba9516, []int{1}
 }
