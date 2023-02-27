@@ -91,7 +91,7 @@ func init() {
 	//proto.RegisterType((*IncentivizedAcknowledgement)(nil), "ibc.applications.fee.v1.IncentivizedAcknowledgement")
 }
 
-func init() { }//proto.RegisterFile("ibc/applications/fee/v1/ack.proto", fileDescriptor_ab2834946fb65ea4) }
+func init() {} //proto.RegisterFile("ibc/applications/fee/v1/ack.proto", fileDescriptor_ab2834946fb65ea4) }
 
 var fileDescriptor_ab2834946fb65ea4 = []byte{
 	// 330 bytes of a gzipped FileDescriptorProto

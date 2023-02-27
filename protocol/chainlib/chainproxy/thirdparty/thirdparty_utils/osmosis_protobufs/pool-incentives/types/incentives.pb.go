@@ -36,9 +36,9 @@ type Params struct {
 	MintedDenom string `protobuf:"bytes,1,opt,name=minted_denom,json=mintedDenom,proto3" json:"minted_denom,omitempty" yaml:"minted_denom"`
 }
 
-func (m *Params) Reset()      { *m = Params{} }
+func (m *Params) Reset()         { *m = Params{} }
 func (m *Params) String() string { return proto.CompactTextString(m) }
-func (*Params) ProtoMessage() {}
+func (*Params) ProtoMessage()    {}
 func (*Params) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a8153bad03e553d1, []int{0}
 }

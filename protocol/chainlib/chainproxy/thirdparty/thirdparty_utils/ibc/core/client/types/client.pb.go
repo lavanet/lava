@@ -258,9 +258,9 @@ type UpgradeProposal struct {
 	UpgradedClientState *types.Any `protobuf:"bytes,4,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty" yaml:"upgraded_client_state"`
 }
 
-func (m *UpgradeProposal) Reset()      { *m = UpgradeProposal{} }
+func (m *UpgradeProposal) Reset()         { *m = UpgradeProposal{} }
 func (m *UpgradeProposal) String() string { return proto.CompactTextString(m) }
-func (*UpgradeProposal) ProtoMessage() {}
+func (*UpgradeProposal) ProtoMessage()    {}
 func (*UpgradeProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b6bc4c8185546947, []int{4}
 }
@@ -271,12 +271,12 @@ func (m *UpgradeProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 	// if deterministic {
 	// 	return xxx_messageInfo_UpgradeProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *UpgradeProposal) XXX_Merge(src proto.Message) {
@@ -308,9 +308,9 @@ type Height struct {
 	RevisionHeight uint64 `protobuf:"varint,2,opt,name=revision_height,json=revisionHeight,proto3" json:"revision_height,omitempty" yaml:"revision_height"`
 }
 
-func (m *Height) Reset()      { *m = Height{} }
+func (m *Height) Reset()         { *m = Height{} }
 func (m *Height) String() string { return proto.CompactTextString(m) }
-func (*Height) ProtoMessage() {}
+func (*Height) ProtoMessage()    {}
 func (*Height) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b6bc4c8185546947, []int{5}
 }
@@ -321,12 +321,12 @@ func (m *Height) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	// if deterministic {
 	// 	return xxx_messageInfo_Height.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *Height) XXX_Merge(src proto.Message) {
