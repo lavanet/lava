@@ -16,6 +16,10 @@ func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string
 		return utils.LavaError(ctx, ctx.Logger(), "CreateDefaultProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "default project already exist for the current subscription")
 	}
 
+	// add subscription key as developer key to the default project
+	projectID := types.ProtoString{String_: project.Index}
+	k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectID)
+
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
