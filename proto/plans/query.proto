@@ -18,12 +18,12 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/plan/params";
   }	
 
-// Queries a list of ShowAllPlans items.
+  // Queries a list of ShowAllPlans items.
 	rpc ShowAllPlans(QueryShowAllPlansRequest) returns (QueryShowAllPlansResponse) {
 		option (google.api.http).get = "/lavanet/lava/plan/show_all_plans";
 	}
 
-// Queries a list of ShowPlanInfo items.
+  // Queries a list of ShowPlanInfo items.
 	rpc ShowPlanInfo(QueryShowPlanInfoRequest) returns (QueryShowPlanInfoResponse) {
 		option (google.api.http).get = "/lavanet/lava/plan/show_plan_info/{plan_index}";
 	}

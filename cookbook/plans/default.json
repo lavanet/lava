@@ -1,7 +1,7 @@
 {
     "proposal": {
-        "title": "Test Plan Proposal",
-        "description": "A proposal of test plan",
+        "title": "Add defualt plan proposal",
+        "description": "A proposal of a default plan",
         "plans": [
             {
                 "duration": "1",
@@ -11,14 +11,14 @@
                 },
                 "allow_overuse": true,
                 "block": "10",
-                "index": "TestPlan",
+                "index": "DefaultPlanID",
                 "compute_units": "25920",
                 "compute_units_per_epoch": "1",
                 "servicers_to_pair": "2",
                 "overuse_rate": "1",
                 "subscriptions": "0",
-                "name": "defaultPlan",
-                "description": "Lorem Ipsum",
+                "name": "DefaultPlan",
+                "description": "This plan has no restrictions",
                 "type": "rpc",
                 "annual_discount_percentage": "20"
             }
