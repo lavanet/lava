@@ -177,16 +177,6 @@ func (fs *FixationStore) handleRefAction(ctx sdk.Context, entry *types.Entry, re
 	case types.DO_NOTHING:
 	}
 
-	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(entry.GetIndex())))
-	byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
-
-	// marshal the entry
-	marshaledEntry := fs.cdc.MustMarshal(entry)
-
-	// set the entry
-	store.Set(byteKey, marshaledEntry)
-
 	return nil
 }
 
@@ -203,12 +193,6 @@ func (fs *FixationStore) GetCdc() codec.BinaryCodec {
 // Getprefix returns the Fixation store's fixation key
 func (fs *FixationStore) GetPrefix() string {
 	return fs.prefix
-}
-
-// Setprefix sets the Fixation store's fixation key
-func (fs *FixationStore) WithPrefix(prefix string) *FixationStore {
-	editedFs := FixationStore{storeKey: fs.storeKey, cdc: fs.cdc, prefix: prefix}
-	return &editedFs
 }
 
 // getUnmarshaledEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
@@ -239,6 +223,15 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 
 			return &entry, nil
 		}
+
+		// get the relevant byte
+		byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
+
+		// marshal the entry
+		marshaledEntry := fs.cdc.MustMarshal(&entry)
+
+		// set the entry
+		store.Set(byteKey, marshaledEntry)
 	}
 
 	return nil, types.ErrEntryNotFound

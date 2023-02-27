@@ -177,7 +177,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 	// init FixationStore + context
 	vs, ctx := initCtxAndFixationStore(t)
-	vs2 := vs.WithPrefix("fix2")
+	vs2 := common.NewFixationStore(vs.GetStoreKey(), vs.GetCdc(), "fix2")
 
 	// add the first dummy entry
 	blockToAddFirstEntry := uint64(10)
