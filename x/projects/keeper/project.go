@@ -29,7 +29,7 @@ func (k Keeper) AddProjectKeys(ctx sdk.Context, projectID string, adminKey strin
 	}
 
 	// check if the admin key is valid
-	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) {
+	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
 		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
