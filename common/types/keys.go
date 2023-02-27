@@ -6,5 +6,5 @@ func KeyPrefix(p string) []byte {
 
 const (
 	EntryIndexKey string = "Entry_Index_"
-	EntryKey      string = "Entry_"
+	EntryKey      string = "Entry_Value_"
 )
