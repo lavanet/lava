@@ -1,0 +1,38 @@
+syntax = "proto3";
+package lavanet.lava.projects;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/projects/types";
+
+message Project {
+    string index = 1; // unique id that will be the combination of subscription address and project name, cannot be changed once created
+    string subscription = 2; // the subscription address that owns the project
+    string description = 3; // the description of the project for the users convinient
+    repeated ProjectKey project_keys = 4; // list of the projects keys
+    Policy policy = 5;
+    uint64 used_cu = 6;
+}
+
+message ProjectKey {
+    string  key = 1; // the address of the project key
+    
+    enum KEY_TYPE{
+        ADMIN = 0;
+        DEVELOPER = 1; 
+    }    
+
+    KEY_TYPE type = 2; // the key type, determines the privilages of the key
+}
+
+message Policy {
+    repeated ChainPolicy chain_policies = 1;
+    uint64 geolocation_progile = 2;
+    uint64 total_cu_limit = 3;
+    uint64 epoch_cu_limit = 4;
+}
+
+message ChainPolicy {
+    string chain_id = 1;
+    repeated string apis = 2;
+}
