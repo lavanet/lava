@@ -10,8 +10,7 @@ import (
 func (k msgServer) Subscribe(goCtx context.Context, msg *types.MsgSubscribe) (*types.MsgSubscribeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Handling the message
-	_ = ctx
+	err := k.Keeper.CreateSubscription(ctx, msg.Creator, msg.Consumer, msg.Index, msg.IsYearly)
 
-	return &types.MsgSubscribeResponse{}, nil
+	return &types.MsgSubscribeResponse{}, err
 }

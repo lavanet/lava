@@ -15,16 +15,35 @@ func TestMsgSubscribe_ValidateBasic(t *testing.T) {
 		err  error
 	}{
 		{
-			name: "invalid address",
+			name: "invalid creator address",
 			msg: MsgSubscribe{
-				Creator: "invalid_address",
+				Creator:  "invalid_address",
+				Consumer: sample.AccAddress(),
+				Index:    "plan-name",
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "invalid consumer addresses",
 			msg: MsgSubscribe{
-				Creator: sample.AccAddress(),
+				Creator:  sample.AccAddress(),
+				Consumer: "invalid_address",
+				Index:    "plan-name",
 			},
+			err: sdkerrors.ErrInvalidAddress,
+		}, {
+			name: "valid addresses",
+			msg: MsgSubscribe{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Index:    "plan-name",
+			},
+		}, {
+			name: "blank plan index",
+			msg: MsgSubscribe{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+			},
+			err: ErrBlankParameter,
 		},
 	}
 	for _, tt := range tests {
