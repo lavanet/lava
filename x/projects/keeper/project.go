@@ -49,5 +49,28 @@ func (k Keeper) AddProjectKeys(ctx sdk.Context, projectID string, adminKey strin
 		}
 	}
 
-	return nil
+	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+}
+
+func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectID string, adminKey string, policy types.Policy) error {
+	var project types.Project
+
+	err := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil {
+		return utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
+	}
+
+	// check if the admin key is valid
+	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
+		return utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+	}
+
+	project.Policy = policy
+
+	if project.UsedCu > project.Policy.TotalCuLimit {
+		policy.TotalCuLimit = project.UsedCu
+	}
+
+	// TODO this needs to be applied in the next epoch
+	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
