@@ -32599,6 +32599,67 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/subscription/current_subscription/{consumer}':
+    get:
+      summary: Queries a list of CurrentSubscription items.
+      operationId: LavanetLavaSubscriptionCurrentSubscription
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              sub:
+                type: object
+                properties:
+                  creator:
+                    type: string
+                  consumer:
+                    type: string
+                  block:
+                    type: string
+                    format: int64
+                  packageIndex:
+                    type: string
+                  packageBlock:
+                    type: string
+                    format: int64
+                  isYearly:
+                    type: boolean
+                  expiryTime:
+                    type: string
+                    format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
+                  remainingCU:
+                    type: string
+                    format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: consumer
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/subscription/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -56141,6 +56202,35 @@ definitions:
   lavanet.lava.subscription.Params:
     type: object
     description: Params defines the parameters for the module.
+  lavanet.lava.subscription.QueryCurrentSubscriptionResponse:
+    type: object
+    properties:
+      sub:
+        type: object
+        properties:
+          creator:
+            type: string
+          consumer:
+            type: string
+          block:
+            type: string
+            format: int64
+          packageIndex:
+            type: string
+          packageBlock:
+            type: string
+            format: int64
+          isYearly:
+            type: boolean
+          expiryTime:
+            type: string
+            format: uint64
+          usedCU:
+            type: string
+            format: uint64
+          remainingCU:
+            type: string
+            format: uint64
   lavanet.lava.subscription.QueryParamsResponse:
     type: object
     properties:
@@ -56148,3 +56238,29 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.subscription.Subscription:
+    type: object
+    properties:
+      creator:
+        type: string
+      consumer:
+        type: string
+      block:
+        type: string
+        format: int64
+      packageIndex:
+        type: string
+      packageBlock:
+        type: string
+        format: int64
+      isYearly:
+        type: boolean
+      expiryTime:
+        type: string
+        format: uint64
+      usedCU:
+        type: string
+        format: uint64
+      remainingCU:
+        type: string
+        format: uint64
