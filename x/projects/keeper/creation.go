@@ -16,6 +16,7 @@ func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string
 		return utils.LavaError(ctx, ctx.Logger(), "CreateDefaultProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "default project already exist for the current subscription")
 	}
 
+	project.Enabled = true
 	// add subscription key as developer key to the default project
 	projectID := types.ProtoString{String_: project.Index}
 	k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectID)
@@ -24,7 +25,7 @@ func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string) error {
+func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
 	project := types.CreateEmptyProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
@@ -47,6 +48,7 @@ func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, 
 		}
 	}
 
+	project.Enabled = true
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
@@ -59,6 +61,19 @@ func (k Keeper) SnapshotProject(ctx sdk.Context, projectID string) error {
 	}
 
 	project.UsedCu = 0
+
+	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+}
+
+func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
+	var project types.Project
+	err := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil {
+		return utils.LavaError(ctx, ctx.Logger(), "DeleteProject_project_not_found", map[string]string{"projectID": projectID}, "snapshot of project failed, oriject does not exist")
+	}
+
+	project.Enabled = false
+	// TODO: delete all developer keys from the fixation
 
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }

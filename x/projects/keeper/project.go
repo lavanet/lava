@@ -74,3 +74,37 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectID string, adminKey str
 	// TODO this needs to be applied in the next epoch
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
+
+func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (types.Project, error) {
+	var projectIDstring types.ProtoString
+	var project types.Project
+	err := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectIDstring)
+	if err != nil {
+		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not admin key")
+	}
+
+	return project, k.projectsFS.FindEntry(ctx, projectIDstring.String_, blockHeight, &project)
+}
+
+func (k Keeper) GetPolicy(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {
+	project, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
+	if err != nil {
+		return false, types.Policy{}, err
+	}
+
+	if project.UsedCu >= project.Policy.TotalCuLimit {
+		return false, project.Policy, nil
+	}
+
+	for _, chain := range project.Policy.ChainPolicies {
+		if chain.ChainId == chainID {
+			for _, api := range chain.Apis {
+				if api == apiName {
+					return true, project.Policy, nil
+				}
+			}
+		}
+	}
+
+	return false, project.Policy, nil
+}
