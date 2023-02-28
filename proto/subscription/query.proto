@@ -38,7 +38,7 @@ message QueryCurrentSubscriptionRequest {
 }
 
 message QueryCurrentSubscriptionResponse {
-  Subscription sub = 1;
+  Subscription sub = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

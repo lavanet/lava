@@ -27,7 +27,6 @@ func CmdCurrentSubscription() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryCurrentSubscriptionRequest{
-
 				Consumer: reqConsumer,
 			}
 
