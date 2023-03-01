@@ -47,6 +47,16 @@ func (projectKey *ProjectKey) AppendType(typesToAdd []ProjectKey_KEY_TYPE) {
 	}
 }
 
+func (project *Project) AppendKey(keyToAdd ProjectKey) {
+	for i := 0; i < len(project.ProjectKeys); i++ {
+		if project.ProjectKeys[i].Key == keyToAdd.Key {
+			project.ProjectKeys[i].AppendType(keyToAdd.Types)
+			return
+		}
+	}
+	project.ProjectKeys = append(project.ProjectKeys, keyToAdd)
+}
+
 func (project *Project) IsKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
 }

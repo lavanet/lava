@@ -35,14 +35,14 @@ func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, 
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	project.ProjectKeys = append(project.ProjectKeys, types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
+	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
 
 	var projectID types.ProtoString
 	err = k.developerKeysFS.FindEntry(ctx, adminAddress, uint64(ctx.BlockHeight()), &projectID)
 	// a developer key with this address is not registered, add it to the developer keys list
-	if err == nil {
+	if err != nil {
 		projectID.String_ = project.Index
-		err = k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectID)
+		err = k.developerKeysFS.AppendEntry(ctx, adminAddress, uint64(ctx.BlockHeight()), &projectID)
 		if err != nil {
 			return err
 		}
