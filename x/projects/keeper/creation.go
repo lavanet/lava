@@ -8,7 +8,7 @@ import (
 
 // add a default project to a subscription
 func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string) error {
-	project := types.DefualtProject(subscriptionAddress)
+	project := types.DefualtProject(subscriptionAddress) // TODO add the CU per epoch here
 	var emptyProject types.Project
 
 	err := k.projectsFS.FindEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &emptyProject)
