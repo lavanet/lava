@@ -3,8 +3,8 @@ package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "projects/params.proto";
+import "projects/project.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/lavanet/lava/x/projects/types";
@@ -17,12 +17,12 @@ service Query {
   }
   // Queries a list of ShowProject items.
 	rpc ShowProject(QueryShowProjectRequest) returns (QueryShowProjectResponse) {
-		option (google.api.http).get = "/lavanet/lava/projects/show_project";
+		option (google.api.http).get = "/lavanet/lava/projects/show_project/{project}";
 	}
 
 // Queries a list of ShowDevelopersProject items.
 	rpc ShowDevelopersProject(QueryShowDevelopersProjectRequest) returns (QueryShowDevelopersProjectResponse) {
-		option (google.api.http).get = "/lavanet/lava/projects/show_developers_project";
+		option (google.api.http).get = "/lavanet/lava/projects/show_developers_project/{developer}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -38,15 +38,19 @@ message QueryParamsResponse {
 }
 
 message QueryShowProjectRequest {
+  string project = 1;
 }
 
 message QueryShowProjectResponse {
+  Project project = 1;
 }
 
 message QueryShowDevelopersProjectRequest {
+  string developer = 1;
 }
 
 message QueryShowDevelopersProjectResponse {
+  Project project = 1;
 }
 
 // this line is used by starport scaffolding # 3

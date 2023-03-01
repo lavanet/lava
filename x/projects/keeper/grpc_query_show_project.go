@@ -16,8 +16,10 @@ func (k Keeper) ShowProject(goCtx context.Context, req *types.QueryShowProjectRe
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Process the query
-	_ = ctx
+	project, err := k.GetProjectForBlock(ctx, req.Project, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
 
-	return &types.QueryShowProjectResponse{}, nil
+	return &types.QueryShowProjectResponse{Project: &project}, nil
 }

@@ -10,7 +10,7 @@ message Project {
     string subscription = 2; // the subscription address that owns the project
     string description = 3; // the description of the project for the users convinient
     bool enabled = 4; // enabled flag
-    repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false];; // list of the projects keys
+    repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
     Policy policy = 6 [(gogoproto.nullable) = false];;
     uint64 used_cu = 7;
 }
