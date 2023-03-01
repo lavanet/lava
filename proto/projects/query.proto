@@ -15,7 +15,17 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/projects/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a list of ShowProject items.
+	rpc ShowProject(QueryShowProjectRequest) returns (QueryShowProjectResponse) {
+		option (google.api.http).get = "/lavanet/lava/projects/show_project";
+	}
+
+// Queries a list of ShowDevelopersProject items.
+	rpc ShowDevelopersProject(QueryShowDevelopersProjectRequest) returns (QueryShowDevelopersProjectResponse) {
+		option (google.api.http).get = "/lavanet/lava/projects/show_developers_project";
+	}
+
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -25,6 +35,18 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryShowProjectRequest {
+}
+
+message QueryShowProjectResponse {
+}
+
+message QueryShowDevelopersProjectRequest {
+}
+
+message QueryShowDevelopersProjectResponse {
 }
 
 // this line is used by starport scaffolding # 3

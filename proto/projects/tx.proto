@@ -7,7 +7,23 @@ option go_package = "github.com/lavanet/lava/x/projects/types";
 
 // Msg defines the Msg service.
 service Msg {
-    // this line is used by starport scaffolding # proto/tx/rpc
+      rpc AddProjectKeys(MsgAddProjectKeys) returns (MsgAddProjectKeysResponse);
+  rpc SetProjectPolicy(MsgSetProjectPolicy) returns (MsgSetProjectPolicyResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgAddProjectKeys {
+  string creator = 1;
+}
+
+message MsgAddProjectKeysResponse {
+}
+
+message MsgSetProjectPolicy {
+  string creator = 1;
+}
+
+message MsgSetProjectPolicyResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

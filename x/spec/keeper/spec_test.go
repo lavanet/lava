@@ -25,14 +25,14 @@ func prepareMockApis() []types.ServiceApi {
 		mockApis[2*i] = api
 
 		api.Enabled = false
-		mockApis[2*i + 1] = api
+		mockApis[2*i+1] = api
 	}
 
 	return mockApis
 }
 
 // selectMockApis returns a slice of ServiceApi corresponding to the given ids
-func selectMockApis(apis []types.ServiceApi, ids []int) ([]types.ServiceApi) {
+func selectMockApis(apis []types.ServiceApi, ids []int) []types.ServiceApi {
 	var res []types.ServiceApi
 
 	for _, i := range ids {
@@ -95,7 +95,7 @@ func TestSpecGetAll(t *testing.T) {
 func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []types.ServiceApi) map[string]types.Spec {
 	currentSpecs := make(map[string]types.Spec)
 
-	template := []struct{
+	template := []struct {
 		name    string
 		enabled bool
 		imports []string
@@ -124,7 +124,7 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []type
 
 // Note: the API identifiers below refer to the APIs from the
 // function prepareMockCurrentApis() above
-var	specTemplates = []struct{
+var specTemplates = []struct {
 	desc    string
 	name    string
 	imports []string
