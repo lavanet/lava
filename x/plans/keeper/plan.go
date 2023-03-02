@@ -13,7 +13,7 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 
 	// TODO: verify the CU per epoch field
 
-	err := k.plansFs.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.GetBlock(), &planToAdd)
+	err := k.plansFs.AppendEntry(ctx, planToAdd.GetIndex(), &planToAdd)
 	if err != nil {
 		details := map[string]string{"planToAdd": planToAdd.String()}
 		return utils.LavaError(ctx, k.Logger(ctx), "AddPlan_add_fixated_entry_failed", details, "could not add new plan fixated entry to storage")
@@ -25,7 +25,7 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 // GetPlan gets a plan from the KVStore. It increases the plan's refCount by 1
 func (k Keeper) GetPlan(ctx sdk.Context, index string, block uint64) (val types.Plan, found bool) {
 	var plan types.Plan
-	err := k.plansFs.GetEntry(ctx, index, block, &plan)
+	err, _ := k.plansFs.GetEntry(ctx, index, block, &plan)
 	if err != nil {
 		return types.Plan{}, false
 	}
@@ -35,7 +35,7 @@ func (k Keeper) GetPlan(ctx sdk.Context, index string, block uint64) (val types.
 // FindPlan gets a plan from the KVStore. It does nothing to the plan's refCount
 func (k Keeper) FindPlan(ctx sdk.Context, index string, block uint64) (val types.Plan, found bool) {
 	var plan types.Plan
-	err := k.plansFs.FindEntry(ctx, index, block, &plan)
+	err, _ := k.plansFs.FindEntry(ctx, index, block, &plan)
 	if err != nil {
 		return types.Plan{}, false
 	}
@@ -45,7 +45,7 @@ func (k Keeper) FindPlan(ctx sdk.Context, index string, block uint64) (val types
 // PutPlan gets a plan from the KVStore. It decreases the plan's refCount by 1
 func (k Keeper) PutPlan(ctx sdk.Context, index string, block uint64) (val types.Plan, found bool) {
 	var plan types.Plan
-	err := k.plansFs.PutEntry(ctx, index, block, &plan)
+	err, _ := k.plansFs.PutEntry(ctx, index, block, &plan)
 	if err != nil {
 		return types.Plan{}, false
 	}
