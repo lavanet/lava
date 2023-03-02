@@ -62,36 +62,34 @@ type FixationStore struct {
 }
 
 // AppendEntry adds a new entry to the store
-func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) error {
-	currentBlock := uint64(ctx.BlockHeight())
-
+func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
 	// get the latest entry for this index
-	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, index, currentBlock)
+	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
 		fs.SetEntryIndex(ctx, index)
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
-		if currentBlock < latestEntry.GetBlock() {
-			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(currentBlock, 10), "index": index, "fs.prefix": fs.prefix}, "can't append entry, earlier than the latest entry")
+		if block < latestEntry.GetBlock() {
+			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(block, 10), "index": index, "fs.prefix": fs.prefix}, "can't append entry, earlier than the latest entry")
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
-		if currentBlock == latestEntry.GetBlock() {
-			return fs.ModifyEntry(ctx, index, currentBlock, entryData)
+		if block == latestEntry.GetBlock() {
+			return fs.ModifyEntry(ctx, index, block, entryData)
 		}
 	}
 
 	// marshal the new entry's data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 	// create a new entry and marshal it
-	entry := types.Entry{Index: index, Block: currentBlock, Data: marshaledEntryData, Refcount: 0}
+	entry := types.Entry{Index: index, Block: block, Data: marshaledEntryData, Refcount: 0}
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.EncodeKey(currentBlock)
+	byteKey := types.EncodeKey(block)
 
 	// set the new entry to the store
 	store.Set(byteKey, marshaledEntry)
