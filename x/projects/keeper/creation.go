@@ -8,24 +8,11 @@ import (
 
 // add a default project to a subscription, add the subscription key as
 func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string) error {
-	project := types.DefaultProject(subscriptionAddress) // TODO add the CU per epoch here
-	var emptyProject types.Project
-
-	_, found := k.projectsFS.FindEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &emptyProject)
-	if found {
-		return utils.LavaError(ctx, ctx.Logger(), "CreateDefaultProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "default project already exist for the current subscription")
-	}
-
-	project.Enabled = true
-	// add subscription key as developer key to the default project
-	projectID := types.ProtoString{String_: project.Index}
-	k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectID)
-
-	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	return k.CreateProject(ctx, subscriptionAddress, types.DEFAULT_PROJECT_NAME, subscriptionAddress, true)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
 	project := types.CreateEmptyProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
