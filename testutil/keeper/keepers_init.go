@@ -24,6 +24,8 @@ import (
 	"github.com/lavanet/lava/x/plans"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
