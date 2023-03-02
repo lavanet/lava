@@ -31129,6 +31129,192 @@ paths:
           format: uint64
       tags:
         - Query
+  /lavanet/lava/plan/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaPlansParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/plan/show_all_plans:
+    get:
+      summary: Queries a list of ShowAllPlans items.
+      operationId: LavanetLavaPlansShowAllPlans
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              plans_info:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    name:
+                      type: string
+                    price:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  '/lavanet/lava/plan/show_plan_info/{plan_index}':
+    get:
+      summary: Queries a list of ShowPlanInfo items.
+      operationId: LavanetLavaPlansShowPlanInfo
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              plan_info:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  duration:
+                    type: string
+                    format: uint64
+                    title: duration of the plan's subscription in months
+                  block:
+                    type: string
+                    format: uint64
+                    title: the epoch that this plan was created
+                  price:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                    title: plan price (in ulava)
+                  compute_units:
+                    type: string
+                    format: uint64
+                    title: max CU for the whole plan duration
+                  compute_units_per_epoch:
+                    type: string
+                    format: uint64
+                    title: max CU per epoch for the whole plan duration
+                  servicers_to_pair:
+                    type: string
+                    format: uint64
+                    title: max providers to be paired in an epoch
+                  allow_overuse:
+                    type: boolean
+                    title: allow CU overuse flag
+                  overuse_rate:
+                    type: string
+                    format: uint64
+                    title: price of CU overuse
+                  name:
+                    type: string
+                    title: plan name (non-unique "human" name)
+                  description:
+                    type: string
+                    title: plan description (for humans)
+                  type:
+                    type: string
+                    title: plan type
+                  annual_discount_percentage:
+                    type: string
+                    format: uint64
+                    title: discount for buying the plan for a year
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: plan_index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/spec/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -54714,6 +54900,184 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.plans.Params:
+    type: object
+    description: Params defines the parameters for the module.
+  lavanet.lava.plans.Plan:
+    type: object
+    properties:
+      index:
+        type: string
+      duration:
+        type: string
+        format: uint64
+        title: duration of the plan's subscription in months
+      block:
+        type: string
+        format: uint64
+        title: the epoch that this plan was created
+      price:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+        title: plan price (in ulava)
+      compute_units:
+        type: string
+        format: uint64
+        title: max CU for the whole plan duration
+      compute_units_per_epoch:
+        type: string
+        format: uint64
+        title: max CU per epoch for the whole plan duration
+      servicers_to_pair:
+        type: string
+        format: uint64
+        title: max providers to be paired in an epoch
+      allow_overuse:
+        type: boolean
+        title: allow CU overuse flag
+      overuse_rate:
+        type: string
+        format: uint64
+        title: price of CU overuse
+      name:
+        type: string
+        title: plan name (non-unique "human" name)
+      description:
+        type: string
+        title: plan description (for humans)
+      type:
+        type: string
+        title: plan type
+      annual_discount_percentage:
+        type: string
+        format: uint64
+        title: discount for buying the plan for a year
+  lavanet.lava.plans.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.plans.QueryShowAllPlansResponse:
+    type: object
+    properties:
+      plans_info:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            name:
+              type: string
+            price:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+  lavanet.lava.plans.QueryShowPlanInfoResponse:
+    type: object
+    properties:
+      plan_info:
+        type: object
+        properties:
+          index:
+            type: string
+          duration:
+            type: string
+            format: uint64
+            title: duration of the plan's subscription in months
+          block:
+            type: string
+            format: uint64
+            title: the epoch that this plan was created
+          price:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+            title: plan price (in ulava)
+          compute_units:
+            type: string
+            format: uint64
+            title: max CU for the whole plan duration
+          compute_units_per_epoch:
+            type: string
+            format: uint64
+            title: max CU per epoch for the whole plan duration
+          servicers_to_pair:
+            type: string
+            format: uint64
+            title: max providers to be paired in an epoch
+          allow_overuse:
+            type: boolean
+            title: allow CU overuse flag
+          overuse_rate:
+            type: string
+            format: uint64
+            title: price of CU overuse
+          name:
+            type: string
+            title: plan name (non-unique "human" name)
+          description:
+            type: string
+            title: plan description (for humans)
+          type:
+            type: string
+            title: plan type
+          annual_discount_percentage:
+            type: string
+            format: uint64
+            title: discount for buying the plan for a year
+  lavanet.lava.plans.showAllPlansInfoStruct:
+    type: object
+    properties:
+      index:
+        type: string
+      name:
+        type: string
+      price:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
   lavanet.lava.spec.ApiInterface:
     type: object
     properties:
