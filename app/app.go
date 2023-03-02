@@ -99,6 +99,10 @@ import (
 	pairingmodule "github.com/lavanet/lava/x/pairing"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
+	plans "github.com/lavanet/lava/x/plans"
+	plansmoduleclient "github.com/lavanet/lava/x/plans/client"
+	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
+	plansmoduletypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -146,6 +150,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
 		specmoduleclient.SpecAddProposalHandler,
+		plansmoduleclient.PlansAddProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -181,6 +186,7 @@ var (
 		epochstoragemodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
+		plans.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -277,6 +283,7 @@ func New(
 		epochstoragemoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
 		conflictmoduletypes.StoreKey,
+		plansmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -361,6 +368,15 @@ func New(
 	)
 	specModule := spec.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
+	// Initialize PackagesKeeper prior to govRouter (order is critical)
+	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
+		appCodec,
+		keys[plansmoduletypes.StoreKey],
+		keys[plansmoduletypes.MemStoreKey],
+		app.GetSubspace(plansmoduletypes.ModuleName),
+	)
+	plansModule := plans.NewAppModule(appCodec, app.PlansKeeper)
+
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
@@ -369,6 +385,8 @@ func New(
 		AddRoute(specmoduletypes.ProposalsRouterKey, spec.NewSpecProposalsHandler(app.SpecKeeper)).
 		// copied the code from param and changed the handler to enable functionality
 		AddRoute(paramproposal.RouterKey, spec.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		// user defined
+		AddRoute(plansmoduletypes.ProposalsRouterKey, plans.NewPlansProposalsHandler(app.PlansKeeper)).
 
 		//
 		// default
@@ -479,6 +497,7 @@ func New(
 		epochstorageModule,
 		pairingModule,
 		conflictModule,
+		plansModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -504,6 +523,7 @@ func New(
 		epochstoragemoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		pairingmoduletypes.ModuleName,
+		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
@@ -527,6 +547,7 @@ func New(
 		epochstoragemoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
+		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
@@ -554,6 +575,7 @@ func New(
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		pairingmoduletypes.ModuleName,
+		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
@@ -589,6 +611,7 @@ func New(
 		epochstorageModule,
 		pairingModule,
 		conflictModule,
+		plansModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -807,6 +830,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
+	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

@@ -11,31 +11,32 @@ message Project {
     string description = 3; // the description of the project for the users convinient
     bool enabled = 4; // enabled flag
     repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
-    Policy policy = 6 [(gogoproto.nullable) = false];;
+    Policy policy = 6 [(gogoproto.nullable) = false];
     uint64 used_cu = 7;
 }
 
 message ProjectKey {
     string  key = 1; // the address of the project key
     
-    enum KEY_TYPE{
-        ADMIN = 0;
-        DEVELOPER = 1; 
+    enum KEY_TYPE{ // bitmap, must only be power of 2
+        NONE = 0;
+        ADMIN = 1;
+        DEVELOPER = 2; 
     }    
 
-    repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false];; // the key type, determines the privilages of the key
+    repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
 }
 
 message Policy {
-    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false];;
-    uint64 geolocation_progile = 2;
+    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false];
+    uint64 geolocation_profile = 2;
     uint64 total_cu_limit = 3;
     uint64 epoch_cu_limit = 4;
 }
 
 message ChainPolicy {
     string chain_id = 1;
-    repeated string apis = 2 [(gogoproto.nullable) = false];;
+    repeated string apis = 2 [(gogoproto.nullable) = false];
 }
 
 message ProtoString {

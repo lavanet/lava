@@ -10,14 +10,14 @@ func CreateEmptyProject(subscriptionAddress string, projectName string) Project 
 	return Project{
 		Index:        ProjectIndex(subscriptionAddress, projectName),
 		Subscription: subscriptionAddress,
-		Description:  "Default project that has all the available resources of the subscription",
+		Description:  "Permissive default project",
 		ProjectKeys:  []ProjectKey{},
 		Policy:       Policy{},
 		UsedCu:       0,
 	}
 }
 
-func DefualtProject(subscriptionAddress string) Project {
+func DefaultProject(subscriptionAddress string) Project {
 	return CreateEmptyProject(subscriptionAddress, DEFAULT_PROJECT_NAME)
 }
 
@@ -39,7 +39,7 @@ func (projectKey ProjectKey) IsKeyType(keyTypeToCheck ProjectKey_KEY_TYPE) bool 
 	return false
 }
 
-func (projectKey *ProjectKey) AppendType(typesToAdd []ProjectKey_KEY_TYPE) {
+func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KEY_TYPE) {
 	for _, keytype := range typesToAdd {
 		if !projectKey.IsKeyType(keytype) {
 			projectKey.Types = append(projectKey.Types, keytype)

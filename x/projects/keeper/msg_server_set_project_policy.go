@@ -14,8 +14,8 @@ func (k msgServer) SetProjectPolicy(goCtx context.Context, msg *types.MsgSetProj
 	adminKey := msg.Creator
 	var project types.Project
 
-	err := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil {
+	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil || !found {
 		return nil, utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
