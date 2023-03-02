@@ -15,8 +15,8 @@ func (k msgServer) AddProjectKeys(goCtx context.Context, msg *types.MsgAddProjec
 	projectKeys := msg.ProjectKeys
 
 	var project types.Project
-	err := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil {
+	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil || !found {
 		return nil, utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
@@ -30,8 +30,8 @@ func (k msgServer) AddProjectKeys(goCtx context.Context, msg *types.MsgAddProjec
 		if projectKey.IsKeyType(types.ProjectKey_DEVELOPER) {
 			// if the key is a developer key add it to the map of developer keys
 			var projectIDstring types.ProtoString
-			err = k.developerKeysFS.FindEntry(ctx, projectKey.Key, uint64(ctx.BlockHeight()), &projectIDstring)
-			if err == nil {
+			_, found := k.developerKeysFS.FindEntry(ctx, projectKey.Key, uint64(ctx.BlockHeight()), &projectIDstring)
+			if !found {
 				projectIDstring.String_ = project.Index
 				err = k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectIDstring)
 				if err != nil {
