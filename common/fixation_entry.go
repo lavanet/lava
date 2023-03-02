@@ -89,7 +89,7 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.KeyPrefix(createEntryKey(block))
+	byteKey := types.EncodeKey(block)
 
 	// set the new entry to the store
 	store.Set(byteKey, marshaledEntry)
@@ -134,7 +134,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
 func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.KeyPrefix(createEntryKey(block))
+	byteKey := types.EncodeKey(block)
 
 	// marshal the new entry data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
@@ -234,7 +234,7 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 
 	// get the relevant byte
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
+	byteKey := types.EncodeKey(block)
 
 	// marshal the entry
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
@@ -267,7 +267,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 
 	// get the relevant byte
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.KeyPrefix(createEntryKey(entry.GetBlock()))
+	byteKey := types.EncodeKey(block)
 
 	// marshal the entry
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
@@ -283,16 +283,8 @@ func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 
-	// create entry's key
-	entryKey := createEntryKey(block)
-
 	// delete the entry
-	store.Delete(types.KeyPrefix(entryKey))
-}
-
-// createEntryKey creates an entry key for the KVStore
-func createEntryKey(block uint64) string {
-	return strconv.FormatUint(block, 10)
+	store.Delete(types.EncodeKey(block))
 }
 
 func (fs *FixationStore) createStoreKey(index string) string {
