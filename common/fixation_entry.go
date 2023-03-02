@@ -62,34 +62,36 @@ type FixationStore struct {
 }
 
 // AppendEntry adds a new entry to the store
-func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) error {
+	currentBlock := uint64(ctx.BlockHeight())
+
 	// get the latest entry for this index
-	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, index, currentBlock)
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
 		fs.SetEntryIndex(ctx, index)
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
-		if block < latestEntry.GetBlock() {
-			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(block, 10), "index": index, "fs.prefix": fs.prefix}, "can't append entry, earlier than the latest entry")
+		if currentBlock < latestEntry.GetBlock() {
+			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(currentBlock, 10), "index": index, "fs.prefix": fs.prefix}, "can't append entry, earlier than the latest entry")
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
-		if block == latestEntry.GetBlock() {
-			return fs.ModifyEntry(ctx, index, block, entryData)
+		if currentBlock == latestEntry.GetBlock() {
+			return fs.ModifyEntry(ctx, index, currentBlock, entryData)
 		}
 	}
 
 	// marshal the new entry's data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 	// create a new entry and marshal it
-	entry := types.Entry{Index: index, Block: block, Data: marshaledEntryData, Refcount: 0}
+	entry := types.Entry{Index: index, Block: currentBlock, Data: marshaledEntryData, Refcount: 0}
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 
 	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-	byteKey := types.EncodeKey(block)
+	byteKey := types.EncodeKey(currentBlock)
 
 	// set the new entry to the store
 	store.Set(byteKey, marshaledEntry)
@@ -200,34 +202,34 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 }
 
 // get entry with index and block without influencing the entry's refs
-func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
 	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
 	if !found {
-		return types.ErrEntryNotFound
+		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
 	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
-	return nil
+	return nil, true
 }
 
 // get entry with index and block with ref increase
-func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
 	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
 	if !found {
-		return types.ErrEntryNotFound
+		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
 	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
 	entry.Refcount += 1
@@ -242,27 +244,27 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 	// set the entry
 	store.Set(byteKey, marshaledEntry)
 
-	return nil
+	return nil, true
 }
 
 // get entry with index and block with ref decrease
-func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
 	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
 	if !found {
-		return types.ErrEntryNotFound
+		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
 	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data")
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
 	if entry.GetRefcount() > 0 {
 		entry.Refcount -= 1
 	} else {
-		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_sub_ref_from_non_positive_count", map[string]string{"refCount": strconv.FormatUint(entry.GetRefcount(), 10)}, "refCount is not larger than zero. Can't subtract refcount")
+		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_sub_ref_from_non_positive_count", map[string]string{"refCount": strconv.FormatUint(entry.GetRefcount(), 10)}, "refCount is not larger than zero. Can't subtract refcount"), false
 	}
 
 	// get the relevant byte
@@ -275,7 +277,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 	// set the entry
 	store.Set(byteKey, marshaledEntry)
 
-	return nil
+	return nil, true
 }
 
 // RemoveEntry removes an entry from the store
