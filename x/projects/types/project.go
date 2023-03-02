@@ -50,7 +50,7 @@ func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KEY_TYPE) {
 func (project *Project) AppendKey(keyToAdd ProjectKey) {
 	for i := 0; i < len(project.ProjectKeys); i++ {
 		if project.ProjectKeys[i].Key == keyToAdd.Key {
-			project.ProjectKeys[i].AppendType(keyToAdd.Types)
+			project.ProjectKeys[i].AppendKeyType(keyToAdd.Types)
 			return
 		}
 	}
