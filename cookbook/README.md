@@ -1,10 +1,10 @@
-# Specifications
+# Specifications ("Specs")
 
 ### Links
 
-`Spec` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/spec.proto](https://github.com/lavanet/lava/blob/main/proto/spec/spec.proto)
+`Spec` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/spec.proto](../proto/spec/spec.proto)
 
-`ServiceApi` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/service_api.proto](https://github.com/lavanet/lava/blob/main/proto/spec/service_api.proto)
+`ServiceApi` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/service_api.proto](../proto/spec/service_api.proto)
 
 ### Overview
 
@@ -76,6 +76,9 @@ Lava has many specs and participants can add and modify specs using governance p
 ```
 lavad tx gov submit-proposal spec-add "{JSON_FILE_PATH}" -y --from "{ACCOUNT_NAME}" --gas-adjustment "1.5" --gas "auto" --node "{LAVA_RPC_NODE}"
 ```
+
+To ensure collaborative efforts and proper versioning, kindly submit a pull request (PR) to add the Specification (Spec) to this Cookbook before any further updates.
+
 #### Param description (and examples)
 
 `JSON_FILE_PATH` - The path to the proposal JSON file. 
@@ -85,6 +88,9 @@ lavad tx gov submit-proposal spec-add "{JSON_FILE_PATH}" -y --from "{ACCOUNT_NAM
 `LAVA_RPC_NODE` - A RPC node for Lava (can be omitted if the current node has joined the Lava network). For example: `https://public-rpc.lavanet.xyz:443/rpc/`
 
 ### Spec proposal JSON file example
+
+The following example is a spec proposal of Optimism mainnet and testnet. Note that Optimism imports `ETH1` since it supports all of the Ethereum API. Additional APIs are explicitly defined (like `eth_getBlockRange` and more).
+
 ```json
 {
     "proposal": {
