@@ -50,7 +50,7 @@ func (k Keeper) CreateEmptyProject(ctx sdk.Context, subscriptionAddress string, 
 		}
 	}
 
-	project.Enabled = true
+	project.Enabled = enable
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
