@@ -44,7 +44,7 @@ message QueryShowAllPlansRequest {
 }
 
 message QueryShowAllPlansResponse {
-  repeated showAllPlansInfoStruct plans_info = 1;
+  repeated showAllPlansInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
 }
 
 message showAllPlansInfoStruct {
@@ -58,7 +58,7 @@ message QueryShowPlanInfoRequest {
 }
 
 message QueryShowPlanInfoResponse {
-  Plan plan_info = 1;
+  Plan plan_info = 1 [(gogoproto.nullable) = false];
 }
 
 

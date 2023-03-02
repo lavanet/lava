@@ -1,6 +1,6 @@
 {
     "proposal": {
-        "title": "Add defualt plan proposal",
+        "title": "Add default plan proposal",
         "description": "A proposal of a default plan",
         "plans": [
             {
@@ -16,7 +16,6 @@
                 "compute_units_per_epoch": "1",
                 "servicers_to_pair": "2",
                 "overuse_rate": "1",
-                "subscriptions": "0",
                 "name": "DefaultPlan",
                 "description": "This plan has no restrictions",
                 "type": "rpc",

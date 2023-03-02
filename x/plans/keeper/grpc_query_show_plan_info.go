@@ -16,11 +16,10 @@ func (k Keeper) ShowPlanInfo(goCtx context.Context, req *types.QueryShowPlanInfo
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var planToPrint types.Plan
-	err := k.plansFs.FindEntry(ctx, req.GetPlanIndex(), uint64(ctx.BlockHeight()), &planToPrint)
-	if err != nil {
+	planToPrint, found := k.FindPlan(ctx, req.GetPlanIndex(), uint64(ctx.BlockHeight()))
+	if !found {
 		return nil, status.Error(codes.NotFound, "plan not found")
 	}
 
-	return &types.QueryShowPlanInfoResponse{PlanInfo: &planToPrint}, nil
+	return &types.QueryShowPlanInfoResponse{PlanInfo: planToPrint}, nil
 }

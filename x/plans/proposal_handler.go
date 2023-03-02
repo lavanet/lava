@@ -31,10 +31,15 @@ func handlePlansProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddProp
 		logger := k.Logger(ctx)
 		err := k.AddPlan(ctx, planElem)
 		if err != nil {
-			return utils.LavaError(ctx, logger, "add_new_plan_to_storage", map[string]string{"err": err.Error(), "planIndex": planElem.GetIndex()}, "could not add new plan")
+			details := map[string]string{
+				"planIndex": planElem.GetIndex(),
+				"err":       err.Error(),
+			}
+			return utils.LavaError(ctx, logger, "add_new_plan_to_storage", details, "could not add new plan")
 		}
 
-		utils.LogLavaEvent(ctx, logger, "add_new_plan_to_storage", map[string]string{"planDetails": planElem.String()}, "Gov Proposal Accepted Package")
+		details := map[string]string{"planDetails": planElem.String()}
+		utils.LogLavaEvent(ctx, logger, "add_new_plan_to_storage", details, "Gov Proposal Accepted Package")
 	}
 	return nil
 }

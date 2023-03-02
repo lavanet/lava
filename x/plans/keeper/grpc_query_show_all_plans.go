@@ -14,32 +14,30 @@ func (k Keeper) ShowAllPlans(goCtx context.Context, req *types.QueryShowAllPlans
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-	var allPlansInfo []*types.ShowAllPlansInfoStruct
+	var allPlansInfo []types.ShowAllPlansInfoStruct
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get all plan' unique indices
-	planIndices := k.plansFs.GetAllEntryIndices(ctx)
+	planIndices := k.GetAllPlanIndices(ctx)
 
 	// go over all the plan' unique indices
 	for _, planIndex := range planIndices {
-		planInfoStruct := types.ShowAllPlansInfoStruct{}
-
 		// get the latest version plans
-		var latestVersionPlan types.Plan
-		err := k.plansFs.FindEntry(ctx, planIndex, uint64(ctx.BlockHeight()), &latestVersionPlan)
-		if err != nil {
-			return nil, utils.LavaError(ctx, ctx.Logger(), "get_plan_latest_version", map[string]string{"err": err.Error(), "planIndex": planIndex}, "could not get the latest version of the plan")
+		latestVersionPlan, found := k.FindPlan(ctx, planIndex, uint64(ctx.BlockHeight()))
+		if !found {
+			details := map[string]string{"planIndex": planIndex}
+			return nil, utils.LavaError(ctx, ctx.Logger(), "get_plan_latest_version", details, "could not get the latest version of the plan")
 		}
 
 		// set the planInfoStruct
+		planInfoStruct := types.ShowAllPlansInfoStruct{}
 		planInfoStruct.Index = latestVersionPlan.GetIndex()
 		planInfoStruct.Name = latestVersionPlan.GetName()
 		planInfoStruct.Price = latestVersionPlan.GetPrice()
 
 		// append the planInfoStruct to the allPlansInfo list
-		allPlansInfo = append(allPlansInfo, &planInfoStruct)
+		allPlansInfo = append(allPlansInfo, planInfoStruct)
 	}
-	_ = ctx
 
 	return &types.QueryShowAllPlansResponse{PlansInfo: allPlansInfo}, nil
 }
