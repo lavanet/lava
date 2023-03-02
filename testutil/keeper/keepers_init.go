@@ -57,7 +57,7 @@ type Servers struct {
 	SpecServer     spectypes.MsgServer
 	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
-	ProjecttServer projectstypes.MsgServer
+	ProjectServer  projectstypes.MsgServer
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
@@ -153,7 +153,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
-	ss.ProjecttServer = projectskeeper.NewMsgServerImpl(ks.Projects)
+	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
