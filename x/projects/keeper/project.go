@@ -20,72 +20,33 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 	return project, nil
 }
 
-func (k Keeper) AddProjectKeys(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
-	var project types.Project
-
-	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+func (k Keeper) GetProjectIDForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (string, error) {
+	var projectIDstring types.ProtoString
+	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectIDstring)
 	if err != nil || !found {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		return "", utils.LavaError(ctx, ctx.Logger(), "GetProjectIDForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not registered to a project")
 	}
 
-	// check if the admin key is valid
-	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
-	}
-
-	// check that those keys are unique for developers
-	for _, projectKey := range projectKeys {
-		if projectKey.IsKeyType(types.ProjectKey_DEVELOPER) {
-			// if the key is a developer key add it to the map of developer keys
-			var projectIDstring types.ProtoString
-			_, found = k.developerKeysFS.FindEntry(ctx, projectKey.Key, uint64(ctx.BlockHeight()), &projectIDstring)
-			if !found {
-				projectIDstring.String_ = project.Index
-				err = k.developerKeysFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &projectIDstring)
-				if err != nil {
-					return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_used_key", map[string]string{"project": projectID, "developerKey": projectKey.Key, "err": err.Error()}, "the requesting key is not admin key")
-				}
-			}
-		}
-	}
-
-	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-}
-
-func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectID string, adminKey string, policy types.Policy) error {
-	var project types.Project
-
-	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil || !found {
-		return utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
-	}
-
-	// check if the admin key is valid
-	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
-		return utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
-	}
-
-	project.Policy = policy
-
-	if project.UsedCu > project.Policy.TotalCuLimit {
-		return utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_low_cu", map[string]string{"project": projectID}, "the requested total cu is lower than the used cu")
-	}
-
-	// TODO this needs to be applied in the next epoch
-	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	return projectIDstring.String_, nil
 }
 
 func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (types.Project, error) {
-	var projectIDstring types.ProtoString
 	var project types.Project
-	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectIDstring)
-	if err != nil || !found {
-		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not admin key")
+	projectID, err := k.GetProjectIDForDeveloper(ctx, developerKey, blockHeight)
+	if err != nil {
+		return project, err
 	}
 
-	err, _ = k.projectsFS.FindEntry(ctx, projectIDstring.String_, blockHeight, &project)
+	err, found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project)
+	if err != nil {
+		return project, err
+	}
 
-	return project, err
+	if !found {
+		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectID}, "the developers project was not found")
+	}
+
+	return project, nil
 }
 
 func (k Keeper) ValidateDeveloperRequest(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {

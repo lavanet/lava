@@ -54750,6 +54750,10 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.projects.MsgAddProjectKeysResponse:
+    type: object
+  lavanet.lava.projects.MsgSetProjectPolicyResponse:
+    type: object
   lavanet.lava.projects.Params:
     type: object
     description: Params defines the parameters for the module.
