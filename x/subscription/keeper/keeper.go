@@ -21,6 +21,7 @@ type (
 		bankKeeper         types.BankKeeper
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
+		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
 	}
 )
@@ -34,6 +35,7 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
+	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -50,6 +52,7 @@ func NewKeeper(
 		bankKeeper:         bankKeeper,
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
+		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 	}
 }

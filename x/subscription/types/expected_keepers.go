@@ -24,6 +24,12 @@ type EpochstorageKeeper interface {
 	// Methods imported from epochstorage should be defined here
 }
 
+type ProjectsKeeper interface {
+	CreateDefaultProject(ctx sdk.Context, consumer string) error
+	DeleteProject(ctx sdk.Context, index string) error
+	// Methods imported from projectskeeper should be defined here
+}
+
 type PlansKeeper interface {
 	GetPlan(ctx sdk.Context, index string) (planstypes.Plan, bool)
 	PutPlan(ctx sdk.Context, index string, block uint64) bool
