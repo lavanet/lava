@@ -70,11 +70,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 		project.AppendKey(projectKey)
 	}
 
-	err = k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil {
-		return err
-	}
-	return nil
+	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
 func (k Keeper) ValidateDeveloperRequest(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {
