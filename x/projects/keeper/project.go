@@ -8,7 +8,6 @@ import (
 	"github.com/lavanet/lava/x/projects/types"
 )
 
-// add a default project to a subscription
 func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeight uint64) (types.Project, error) {
 	var project types.Project
 
@@ -47,6 +46,35 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 	}
 
 	return project, nil
+}
+
+func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
+	var project types.Project
+	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil || !found {
+		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
+	}
+
+	// check if the admin key is valid
+	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) && project.Subscription != adminKey {
+		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+	}
+
+	// check that those keys are unique for developers
+	for _, projectKey := range projectKeys {
+		err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return err
+		}
+
+		project.AppendKey(projectKey)
+	}
+
+	err = k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (k Keeper) ValidateDeveloperRequest(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {

@@ -6,11 +6,11 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateEmptyProject(subscriptionAddress string, projectName string) Project {
+func CreateProject(subscriptionAddress string, projectName string) Project {
 	return Project{
 		Index:        ProjectIndex(subscriptionAddress, projectName),
 		Subscription: subscriptionAddress,
-		Description:  "Permissive default project",
+		Description:  "",
 		ProjectKeys:  []ProjectKey{},
 		Policy:       Policy{},
 		UsedCu:       0,
@@ -18,7 +18,7 @@ func CreateEmptyProject(subscriptionAddress string, projectName string) Project 
 }
 
 func DefaultProject(subscriptionAddress string) Project {
-	return CreateEmptyProject(subscriptionAddress, DEFAULT_PROJECT_NAME)
+	return CreateProject(subscriptionAddress, DEFAULT_PROJECT_NAME)
 }
 
 func (project *Project) GetKey(projectKey string) ProjectKey {

@@ -13,10 +13,11 @@ func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
-	project := types.CreateEmptyProject(subscriptionAddress, projectName)
+	project := types.CreateProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
-	_, found := k.projectsFS.FindEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &emptyProject)
+	blockHeight := uint64(ctx.BlockHeight())
+	_, found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject)
 	// the project with the same name already exists if no error has returned
 	if found {
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
@@ -26,19 +27,28 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
 	}
 
+	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight)
+	if err != nil {
+		return err
+	}
+
+	project.Enabled = enable
+	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
+}
+
+func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, projectIndex string, blockHeight uint64) error {
 	var projectID types.ProtoString
-	_, found = k.developerKeysFS.FindEntry(ctx, adminAddress, uint64(ctx.BlockHeight()), &projectID)
+	_, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectID)
 	// a developer key with this address is not registered, add it to the developer keys list
 	if !found {
-		projectID.String_ = project.Index
-		err := k.developerKeysFS.AppendEntry(ctx, adminAddress, uint64(ctx.BlockHeight()), &projectID)
+		projectID.String_ = projectIndex
+		err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &projectID)
 		if err != nil {
 			return err
 		}
 	}
 
-	project.Enabled = enable
-	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	return nil
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
