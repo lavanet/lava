@@ -20,7 +20,7 @@ func (k msgServer) SetProjectPolicy(goCtx context.Context, msg *types.MsgSetProj
 	}
 
 	// check if the admin key is valid
-	if !project.IsKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
+	if !project.HasKeyType(adminKey, types.ProjectKey_ADMIN) || project.Subscription != adminKey {
 		return nil, utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 

@@ -6,19 +6,15 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateEmptyProject(subscriptionAddress string, projectName string) Project {
+func CreateProject(subscriptionAddress string, projectName string) Project {
 	return Project{
 		Index:        ProjectIndex(subscriptionAddress, projectName),
 		Subscription: subscriptionAddress,
-		Description:  "Permissive default project",
+		Description:  "",
 		ProjectKeys:  []ProjectKey{},
 		Policy:       Policy{},
 		UsedCu:       0,
 	}
-}
-
-func DefaultProject(subscriptionAddress string) Project {
-	return CreateEmptyProject(subscriptionAddress, DEFAULT_PROJECT_NAME)
 }
 
 func (project *Project) GetKey(projectKey string) ProjectKey {
@@ -47,6 +43,16 @@ func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KEY_TYPE) {
 	}
 }
 
-func (project *Project) IsKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
+func (project *Project) AppendKey(keyToAdd ProjectKey) {
+	for i := 0; i < len(project.ProjectKeys); i++ {
+		if project.ProjectKeys[i].Key == keyToAdd.Key {
+			project.ProjectKeys[i].AppendKeyType(keyToAdd.Types)
+			return
+		}
+	}
+	project.ProjectKeys = append(project.ProjectKeys, keyToAdd)
+}
+
+func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
 }
