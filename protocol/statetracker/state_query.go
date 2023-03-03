@@ -83,9 +83,9 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryGetPairingResponse); ok {
 			if cachedResp.BlockOfNextPairing > uint64(latestBlock) {
 				return cachedResp.Providers, cachedResp.CurrentEpoch, cachedResp.BlockOfNextPairing, nil
-			} else {
-				utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryGetPairingResponse", "type": fmt.Sprintf("%t", cachedInterface)})
 			}
+		} else {
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryGetPairingResponse", "type": fmt.Sprintf("%T", cachedInterface)})
 		}
 	}
 
@@ -128,7 +128,7 @@ func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, cons
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
 			userEntryRes = cachedResp
 		} else {
-			utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryUserEntryResponse", "type": fmt.Sprintf("%t", cachedInterface)})
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryUserEntryResponse", "type": fmt.Sprintf("%T", cachedInterface)})
 		}
 	}
 	if userEntryRes == nil {
@@ -236,7 +236,7 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryVerifyPairingResponse); ok {
 			verifyResponse = cachedResp
 		} else {
-			utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryVerifyPairingResponse", "type": fmt.Sprintf("%t", cachedInterface)})
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, &map[string]string{"castingType": "*pairingtypes.QueryVerifyPairingResponse", "type": fmt.Sprintf("%T", cachedInterface)})
 		}
 	}
 	if verifyResponse == nil {

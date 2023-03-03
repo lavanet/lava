@@ -8,7 +8,6 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type voteData struct {
@@ -20,8 +19,6 @@ type voteData struct {
 type ProviderSessionsEpochData struct {
 	UsedComputeUnits uint64
 	MaxComputeUnits  uint64
-	DataReliability  *pairingtypes.VRFData
-	VrfPk            *utils.VrfPubKey
 }
 
 type RPCProviderEndpoint struct {
@@ -114,7 +111,11 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {
-		session.lock.Lock()
+		locked := session.lock.TryLock()
+		if locked {
+			defer session.lock.Unlock()
+			return nil, utils.LavaFormatError("GetExistingSession failed", LockMisUseDetectedError, nil)
+		}
 		return session, nil
 	}
 	return nil, SessionDoesNotExist

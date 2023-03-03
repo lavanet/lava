@@ -14,8 +14,10 @@ const (
 	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
 	RelayNumberIncrement                             = 1
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
+	DataReliabilityRelayNumber                       = 1
 	DataReliabilityCuSum                             = 0
 	GeolocationFlag                                  = "geolocation"
+	TendermintUnsubscribeAll                         = "unsubscribe_all"
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing

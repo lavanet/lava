@@ -37,12 +37,17 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		// chain fetcher sends the replaced request inside data
+		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType)
+	}
+
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  nil,
 		Path: serviceApi.GetName(),
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage)
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -67,6 +72,14 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  data,
 		Path: url,
+	}
+	if connectionType == http.MethodGet {
+		// support for optional params, our listener puts them inside Msg data
+		restMessage = rpcInterfaceMessages.RestMessage{
+			Msg:  nil,
+			Path: url + string(data),
+		}
+
 	}
 
 	// TODO fix requested block
@@ -318,10 +331,6 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.nodeUrl + nodeMessage.Path
-	// Only get calls uses query params the rest uses the body
-	if connectionTypeSlected == http.MethodGet {
-		url += string(nodeMessage.Msg)
-	}
 
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)

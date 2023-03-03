@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "ARB1",
-                "name": "Arbitrum mainnet",
+                "name": "arbitrum mainnet",
                 "enabled": true,
                 "imports": [ "ETH1" ],
                 "reliability_threshold": 268435455,
@@ -16,7 +16,7 @@
                 "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "500000000000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",
@@ -25,7 +25,7 @@
             },
             {
                 "index": "ARBN",
-                "name": "Arbitrum Nova testnet",
+                "name": "arbitrum nova testnet",
                 "enabled": true,
                 "imports": [ "ARB1" ],
                 "reliability_threshold": 268435455,
@@ -36,7 +36,7 @@
                 "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "500000000000"
+                    "amount": "50000000000"
                 },
                 "min_stake_client": {
                     "denom": "ulava",

@@ -38,14 +38,18 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
-func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
+	}
+
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  serviceApi.GetName(),
 		Params:  nil,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg), nil
 }
 
 // this func parses message data into chain message object

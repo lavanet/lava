@@ -13,7 +13,3 @@ endpoints:
       chain-id: LAV1
       network-address: 127.0.0.1:2221
       node-url: http://127.0.0.1:1317
-    # - api-interface: jsonrpc
-    #   chain-id: ETH1
-    #   network-address: 127.0.0.1:2221
-    #   node-url: wss://ethereum-rpc.com/ws/

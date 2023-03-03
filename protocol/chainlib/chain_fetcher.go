@@ -33,7 +33,10 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" tag function not found", nil, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
-	chainMessage := CraftChainMessage(serviceApi, cf.chainParser)
+	chainMessage, err := CraftChainMessage(serviceApi, cf.chainParser, nil)
+	if err != nil {
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed creating chainMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
 	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
@@ -63,9 +66,10 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	path := serviceApi.Name
 	data := []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum))
-	chainMessage, err := cf.chainParser.ParseMsg(path, data, serviceApi.ApiInterfaces[0].Type)
+
+	chainMessage, err := CraftChainMessage(serviceApi, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: serviceApi.ApiInterfaces[0].Type})
 	if err != nil {
-		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed parseMsg on function template", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed CraftChainMessage on function template", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 	}
 	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 	if err != nil {

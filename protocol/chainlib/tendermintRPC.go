@@ -37,14 +37,19 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
-func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi) ChainMessageForSend {
+func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
+	}
+
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  serviceApi.GetName(),
 		Params:  nil,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg)
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: serviceApi.GetName()}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, tenderMsg), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -57,7 +62,8 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msg rpcInterfaceMessages.JsonrpcMessage
-	if string(data) != "" {
+	isJsonrpc := string(data) != ""
+	if isJsonrpc {
 		// Fetch pointer to message and error
 		msgPtr, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
@@ -113,7 +119,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	// Check if custom block parser exists in the api interface
 	// Use custom block parser only for URI calls
-	if apiInterface.GetOverwriteBlockParsing() != nil && url != "" {
+	if apiInterface.GetOverwriteBlockParsing() != nil && !isJsonrpc {
 		blockParser = *apiInterface.GetOverwriteBlockParsing()
 	}
 
@@ -122,12 +128,15 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if err != nil {
 		return nil, err
 	}
-
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, msg)
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
+	if !isJsonrpc {
+		tenderMsg.Path = url // add path
+	}
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, tenderMsg)
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage) ChainMessage {
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.TendermintrpcMessage) ChainMessage {
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
@@ -433,7 +442,8 @@ func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan inte
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		_, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
+		return nil, "", nil, utils.LavaFormatError("invalid message type in tendermintrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage), "ptrCast": fmt.Sprintf("%t", ok)})
 	}
 	if nodeMessage.Path != "" {
 		return cp.SendURI(ctx, &nodeMessage, ch, chainMessage)

@@ -206,6 +206,12 @@ func GetApiInterfaceFromServiceApi(serviceApi *spectypes.ServiceApi, connectionT
 	return apiInterface
 }
 
-func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser) ChainMessageForSend {
-	return chainParser.CraftMessage(serviceApi)
+type CraftData struct {
+	Path           string
+	Data           []byte
+	ConnectionType string
+}
+
+func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(serviceApi, craftData)
 }

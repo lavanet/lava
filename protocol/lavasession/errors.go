@@ -39,4 +39,5 @@ var ( // Provider Side Errors
 	SubscriptionInitiationError     = sdkerrors.New("SubscriptionInitiationError Error", 889, "Provider failed initiating subscription")
 	EpochIsNotRegisteredError       = sdkerrors.New("EpochIsNotRegisteredError Error", 890, "Epoch is not registered in provider session manager")
 	ConsumerIsNotRegisteredError    = sdkerrors.New("ConsumerIsNotRegisteredError Error", 891, "Consumer is not registered in provider session manager")
+	SubscriptionAlreadyExistsError  = sdkerrors.New("SubscriptionAlreadyExists Error", 892, "Subscription already exists in single provider session")
 )
