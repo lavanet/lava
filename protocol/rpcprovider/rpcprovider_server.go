@@ -360,7 +360,6 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) verifyDataReliabilityRelayRequest(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
-
 	if request.RelayNum > lavasession.DataReliabilitySessionId {
 		return utils.LavaFormatError("request's relay num is larger than the data reliability session ID", nil, &map[string]string{"relayNum": strconv.FormatUint(request.RelayNum, 10), "DataReliabilitySessionId": strconv.Itoa(lavasession.DataReliabilitySessionId)})
 	}

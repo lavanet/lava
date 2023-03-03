@@ -2,12 +2,11 @@ package rpcprovider
 
 import (
 	"context"
-	"strings"
-	"sync"
-
 	"errors"
 	"net"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 

@@ -23,9 +23,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
-)
+var Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)

@@ -29,9 +29,7 @@ const (
 	ChainTrackerDefaultMemory = 100
 )
 
-var (
-	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface", "node-url"}
-)
+var Yaml_config_properties = []string{"network-address", "chain-id", "api-interface", "node-url"}
 
 type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error

@@ -2,8 +2,7 @@ package mock
 
 import "github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 
-type MockPaymentUpdatable struct {
-}
+type MockPaymentUpdatable struct{}
 
 func (m MockPaymentUpdatable) Description() string {
 	return "paymentDescription"

@@ -10,8 +10,7 @@ import (
 // In the mock this number is considered invalid block number
 const InvalidBlockNumber = int64(1000000)
 
-type MockConsumerStateQuery struct {
-}
+type MockConsumerStateQuery struct{}
 
 func (m MockConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error) {
 	if latestBlock == InvalidBlockNumber {

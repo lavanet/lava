@@ -157,7 +157,6 @@ func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, e
 	}
 	details := epochDetails.GetEpochDetails()
 	return details.StartBlock, nil
-
 }
 
 func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {

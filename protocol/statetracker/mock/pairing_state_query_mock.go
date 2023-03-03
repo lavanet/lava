@@ -12,8 +12,7 @@ const (
 	EmptyPairingListBlock = 1000001
 )
 
-type MockPairingStateQuery struct {
-}
+type MockPairingStateQuery struct{}
 
 func (m MockPairingStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error) {
 	if latestBlock == EmptyPairingListBlock {
@@ -24,11 +23,11 @@ func (m MockPairingStateQuery) GetPairing(ctx context.Context, chainID string, l
 		return []epochstoragetypes.StakeEntry{}, 50, uint64(latestBlock), errors.New("Error")
 	}
 	return []epochstoragetypes.StakeEntry{
-		epochstoragetypes.StakeEntry{
+		{
 			Address: "0x1234",
 			Chain:   "eth",
 			Endpoints: []epochstoragetypes.Endpoint{
-				epochstoragetypes.Endpoint{
+				{
 					UseType:     "rest",
 					IPPORT:      "127.0.0.1:8545",
 					Geolocation: 1,

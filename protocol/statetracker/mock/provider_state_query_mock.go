@@ -8,8 +8,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 )
 
-type MockProviderStateQuery struct {
-}
+type MockProviderStateQuery struct{}
 
 func (m MockProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
 	return 10, nil
@@ -27,8 +26,7 @@ func (m MockProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int6
 	}, nil
 }
 
-type MockErrorProviderStateQuery struct {
-}
+type MockErrorProviderStateQuery struct{}
 
 func (m MockErrorProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
 	return 10, errors.New("ERROR")

@@ -22,9 +22,11 @@ type DefaultRPCInput struct {
 func (dri DefaultRPCInput) GetParams() interface{} {
 	return nil
 }
+
 func (dri DefaultRPCInput) GetResult() json.RawMessage {
 	return dri.Result
 }
+
 func (dri DefaultRPCInput) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
