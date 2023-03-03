@@ -17,10 +17,6 @@ func CreateProject(subscriptionAddress string, projectName string) Project {
 	}
 }
 
-func DefaultProject(subscriptionAddress string) Project {
-	return CreateProject(subscriptionAddress, DEFAULT_PROJECT_NAME)
-}
-
 func (project *Project) GetKey(projectKey string) ProjectKey {
 	for _, key := range project.ProjectKeys {
 		if key.Key == projectKey {
