@@ -378,7 +378,7 @@ func New(
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
-	// Initialize PackagesKeeper prior to govRouter (order is critical)
+	// Initialize PlansKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
 		appCodec,
 		keys[plansmoduletypes.StoreKey],

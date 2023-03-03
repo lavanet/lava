@@ -136,7 +136,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
 	paramsKeeper.Subspace(spectypes.ModuleName)
-	paramsKeeper.Subspace(subscriptiontypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
