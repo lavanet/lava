@@ -19,6 +19,7 @@ import (
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
+	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
@@ -53,5 +54,6 @@ type LavaKeepers struct {
 	EpochstorageKeeper epochstoragemodulekeeper.Keeper
 	PairingKeeper      pairingmodulekeeper.Keeper
 	ConflictKeeper     conflictmodulekeeper.Keeper
+	ProjectsKeeper     projectsmodulekeeper.Keeper
 	PlansKeeper        plansmodulekeeper.Keeper
 }

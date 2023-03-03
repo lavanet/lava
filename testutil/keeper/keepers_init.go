@@ -49,10 +49,10 @@ type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
 	Spec          speckeeper.Keeper
 	Plans         planskeeper.Keeper
+	Projects      projectskeeper.Keeper
 	Subscription  subscriptionkeeper.Keeper
 	Pairing       pairingkeeper.Keeper
 	Conflict      conflictkeeper.Keeper
-	Projects      projectskeeper.Keeper
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
@@ -107,6 +107,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(plansStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(plansMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	projectsStoreKey := sdk.NewKVStoreKey(projectstypes.StoreKey)
+	projectsMemStoreKey := storetypes.NewMemoryStoreKey(projectstypes.MemStoreKey)
+	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	subscriptionStoreKey := sdk.NewKVStoreKey(subscriptiontypes.StoreKey)
 	subscriptionMemStoreKey := storetypes.NewMemoryStoreKey(subscriptiontypes.MemStoreKey)
 	stateStore.MountStoreWithDB(subscriptionStoreKey, sdk.StoreTypeIAVL, db)
@@ -126,11 +131,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
 	stateStore.MountStoreWithDB(conflictStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(conflictMemStoreKey, sdk.StoreTypeMemory, nil)
-
-	projectsStoreKey := sdk.NewKVStoreKey(projectstypes.StoreKey)
-	projectsMemStoreKey := storetypes.NewMemoryStoreKey(projectstypes.MemStoreKey)
-	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
@@ -167,7 +167,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
-	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Plans)
+	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
+	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
