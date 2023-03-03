@@ -192,9 +192,9 @@ type Params struct {
 	MintingRewardsDistributionStartEpoch int64 `protobuf:"varint,8,opt,name=minting_rewards_distribution_start_epoch,json=mintingRewardsDistributionStartEpoch,proto3" json:"minting_rewards_distribution_start_epoch,omitempty" yaml:"minting_rewards_distribution_start_epoch"`
 }
 
-func (m *Params) Reset()      { *m = Params{} }
+func (m *Params) Reset()         { *m = Params{} }
 func (m *Params) String() string { return proto.CompactTextString(m) }
-func (*Params) ProtoMessage() {}
+func (*Params) ProtoMessage()    {}
 func (*Params) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ccb38f8335e0f45b, []int{3}
 }

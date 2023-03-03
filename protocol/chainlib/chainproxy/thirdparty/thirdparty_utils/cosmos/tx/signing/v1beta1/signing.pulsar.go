@@ -3183,7 +3183,7 @@ var file_cosmos_tx_signing_v1beta1_signing_proto_depIdxs = []int32{
 	0, // [0:8] is the sub-list for field type_name
 }
 
-func init() { }//file_cosmos_tx_signing_v1beta1_signing_proto_init() }
+func init() {} //file_cosmos_tx_signing_v1beta1_signing_proto_init() }
 func file_cosmos_tx_signing_v1beta1_signing_proto_init() {
 	if File_cosmos_tx_signing_v1beta1_signing_proto != nil {
 		return
