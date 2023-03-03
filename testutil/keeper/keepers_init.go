@@ -24,6 +24,8 @@ import (
 	"github.com/lavanet/lava/x/plans"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -50,6 +52,7 @@ type Keepers struct {
 	Subscription  subscriptionkeeper.Keeper
 	Pairing       pairingkeeper.Keeper
 	Conflict      conflictkeeper.Keeper
+	Projects      projectskeeper.Keeper
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
@@ -61,6 +64,7 @@ type Servers struct {
 	SpecServer     spectypes.MsgServer
 	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
+	ProjectServer  projectstypes.MsgServer
 	PlansServer    planstypes.MsgServer
 }
 
@@ -123,6 +127,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(conflictStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(conflictMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	projectsStoreKey := sdk.NewKVStoreKey(projectstypes.StoreKey)
+	projectsMemStoreKey := storetypes.NewMemoryStoreKey(projectstypes.MemStoreKey)
+	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
@@ -137,6 +146,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	pairingparamsSubspace, _ := paramsKeeper.GetSubspace(pairingtypes.ModuleName)
 
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
+
+	projectsparamsSubspace, _ := paramsKeeper.GetSubspace(projectstypes.ModuleName)
 
 	plansparamsSubspace, _ := paramsKeeper.GetSubspace(planstypes.ModuleName)
 
@@ -153,6 +164,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
+	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Plans)
@@ -169,6 +181,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
+	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
@@ -179,6 +192,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PlansServer = planskeeper.NewMsgServerImpl(ks.Plans)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
+	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
