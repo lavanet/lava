@@ -17,10 +17,10 @@ const (
 	MemStoreKey = "mem_projects"
 
 	// prefix for the projects fixation store
-	ProjectsFixationPrefix = "projects-fixation"
+	ProjectsFixationPrefix = "prj-fs"
 
 	// prefix for the projects fixation store
-	DeveloperKeysFixationPrefix = "developers-fixation"
+	DeveloperKeysFixationPrefix = "dev-fs"
 )
 
 func KeyPrefix(p string) []byte {

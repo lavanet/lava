@@ -53,6 +53,6 @@ func (project *Project) AppendKey(keyToAdd ProjectKey) {
 	project.ProjectKeys = append(project.ProjectKeys, keyToAdd)
 }
 
-func (project *Project) IsKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
+func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
 }
