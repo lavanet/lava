@@ -99,14 +99,17 @@ import (
 	pairingmodule "github.com/lavanet/lava/x/pairing"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
-	plans "github.com/lavanet/lava/x/plans"
+	plansmodule "github.com/lavanet/lava/x/plans"
 	plansmoduleclient "github.com/lavanet/lava/x/plans/client"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	plansmoduletypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/lavanet/lava/x/spec"
+	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
+	subscriptionmodule "github.com/lavanet/lava/x/subscription"
+	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
+	subscriptionmoduletypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -182,11 +185,12 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		spec.AppModuleBasic{},
+		specmodule.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
+		subscriptionmodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
-		plans.AppModuleBasic{},
+		plansmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -200,6 +204,7 @@ var (
 		govtypes.ModuleName:                {authtypes.Burner},
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		subscriptionmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		conflictmoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
@@ -281,6 +286,7 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
+		subscriptionmoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
 		conflictmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
@@ -358,7 +364,6 @@ func New(
 		appCodec, keys[ibchost.StoreKey], app.GetSubspace(ibchost.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
 	)
 
-	//
 	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
 		appCodec,
@@ -366,7 +371,7 @@ func New(
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
 	)
-	specModule := spec.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
+	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// Initialize PackagesKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
@@ -375,18 +380,18 @@ func New(
 		keys[plansmoduletypes.MemStoreKey],
 		app.GetSubspace(plansmoduletypes.ModuleName),
 	)
-	plansModule := plans.NewAppModule(appCodec, app.PlansKeeper)
+	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		//
 		// user defined
-		AddRoute(specmoduletypes.ProposalsRouterKey, spec.NewSpecProposalsHandler(app.SpecKeeper)).
+		AddRoute(specmoduletypes.ProposalsRouterKey, specmodule.NewSpecProposalsHandler(app.SpecKeeper)).
 		// copied the code from param and changed the handler to enable functionality
-		AddRoute(paramproposal.RouterKey, spec.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(paramproposal.RouterKey, specmodule.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		// user defined
-		AddRoute(plansmoduletypes.ProposalsRouterKey, plans.NewPlansProposalsHandler(app.PlansKeeper)).
+		AddRoute(plansmoduletypes.ProposalsRouterKey, plansmodule.NewPlansProposalsHandler(app.PlansKeeper)).
 
 		//
 		// default
@@ -439,6 +444,19 @@ func New(
 		&app.EpochstorageKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
+		appCodec,
+		keys[subscriptionmoduletypes.StoreKey],
+		keys[subscriptionmoduletypes.MemStoreKey],
+		app.GetSubspace(subscriptionmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.EpochstorageKeeper,
+		app.PlansKeeper,
+	)
+	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
 		appCodec,
@@ -495,6 +513,7 @@ func New(
 		transferModule,
 		specModule,
 		epochstorageModule,
+		subscriptionModule,
 		pairingModule,
 		conflictModule,
 		plansModule,
@@ -521,6 +540,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		pairingmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
@@ -545,6 +565,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
@@ -574,6 +595,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
+		subscriptionmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -609,6 +631,7 @@ func New(
 		transferModule,
 		specModule,
 		epochstorageModule,
+		subscriptionModule,
 		pairingModule,
 		conflictModule,
 		plansModule,
@@ -828,6 +851,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
+	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)

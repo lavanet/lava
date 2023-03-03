@@ -300,6 +300,11 @@ func TestPlansDeletion(t *testing.T) {
 	testPlans[0].Block = firstPlanBlockHeight
 	require.Nil(t, err)
 
+	// increase the first plans' refCount
+	firstPlanFromStore, found := ts.keepers.Plans.GetPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex())
+	require.True(t, found)
+	require.Equal(t, testPlans[0], firstPlanFromStore)
+
 	// advance an epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
@@ -309,11 +314,8 @@ func TestPlansDeletion(t *testing.T) {
 	testPlans[1].Block = secondPlanBlockHeight
 	require.Nil(t, err)
 
-	// increase the plans' refCount
-	firstPlanFromStore, found := ts.keepers.Plans.GetPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
-	require.True(t, found)
-	require.Equal(t, testPlans[0], firstPlanFromStore)
-	secondPlanFromStore, found := ts.keepers.Plans.GetPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
+	// increase the second plans' refCount
+	secondPlanFromStore, found := ts.keepers.Plans.GetPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex())
 	require.True(t, found)
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
@@ -342,12 +344,10 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// decrease the old plans' refCount
-	firstPlanFromStore, found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
+	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
 	require.True(t, found)
-	require.Equal(t, testPlans[0], firstPlanFromStore)
-	secondPlanFromStore, found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
+	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
 	require.True(t, found)
-	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)

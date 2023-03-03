@@ -17,6 +17,11 @@ type (
 		storeKey   sdk.StoreKey
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
+
+		bankKeeper         types.BankKeeper
+		accountKeeper      types.AccountKeeper
+		epochstorageKeeper types.EpochstorageKeeper
+		plansKeeper        types.PlansKeeper
 	}
 )
 
@@ -25,6 +30,11 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
+
+	bankKeeper types.BankKeeper,
+	accountKeeper types.AccountKeeper,
+	epochstorageKeeper types.EpochstorageKeeper,
+	plansKeeper types.PlansKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -36,9 +46,18 @@ func NewKeeper(
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
+
+		bankKeeper:         bankKeeper,
+		accountKeeper:      accountKeeper,
+		epochstorageKeeper: epochstorageKeeper,
+		plansKeeper:        plansKeeper,
 	}
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) IsEpochStart(ctx sdk.Context) bool {
+	return k.epochstorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
 }

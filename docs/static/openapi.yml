@@ -56136,6 +56136,8 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.subscription.MsgSubscribeResponse:
+    type: object
   lavanet.lava.subscription.Params:
     type: object
     description: Params defines the parameters for the module.

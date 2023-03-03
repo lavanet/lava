@@ -27,6 +27,8 @@ import (
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -45,6 +47,7 @@ type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
 	Spec          speckeeper.Keeper
 	Plans         planskeeper.Keeper
+	Subscription  subscriptionkeeper.Keeper
 	Pairing       pairingkeeper.Keeper
 	Conflict      conflictkeeper.Keeper
 	BankKeeper    mockBankKeeper
@@ -100,6 +103,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(plansStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(plansMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	subscriptionStoreKey := sdk.NewKVStoreKey(subscriptiontypes.StoreKey)
+	subscriptionMemStoreKey := storetypes.NewMemoryStoreKey(subscriptiontypes.MemStoreKey)
+	stateStore.MountStoreWithDB(subscriptionStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(subscriptionMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
 	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
 	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
@@ -119,6 +127,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
 	paramsKeeper.Subspace(spectypes.ModuleName)
+	paramsKeeper.Subspace(subscriptiontypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
@@ -130,6 +139,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
 
 	plansparamsSubspace, _ := paramsKeeper.GetSubspace(planstypes.ModuleName)
+
+	subscriptionparamsSubspace, _ := paramsKeeper.GetSubspace(subscriptiontypes.ModuleName)
 
 	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
 		conflicttypes.Amino,
@@ -144,6 +155,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
+	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Plans)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
@@ -154,6 +166,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	// Initialize params
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
+	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())

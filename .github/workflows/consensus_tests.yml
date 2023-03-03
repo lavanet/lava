@@ -69,3 +69,5 @@ jobs:
     - name: lava plans unit Tests
       run: go test ./x/plans/ ./x/plans/keeper ./x/plans/types -v
 
+    - name: lava subscription unit Tests
+      run: go test ./x/subscription/... -v
