@@ -183,6 +183,24 @@ func (k Keeper) CreateSubscription(
 		}
 	}()
 
+	err = k.projectsKeeper.CreateDefaultProject(ctx, consumer)
+	if err != nil {
+		details := map[string]string{
+			"err": err.Error(),
+		}
+		err = utils.LavaError(ctx, logger, "subscribe", details, "failed to create default project")
+		return err
+	}
+
+	// delete default Project in case of error
+	defer func() {
+		if err != nil {
+			// TODO: delete all projects of the subscription
+			// k.projectsKeeper.DeleteAllProject(ctx, consumer)
+			_ = err
+		}
+	}()
+
 	price := plan.GetPrice()
 	expiry := time.Now().UTC()
 

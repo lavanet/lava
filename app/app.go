@@ -103,6 +103,9 @@ import (
 	plansmoduleclient "github.com/lavanet/lava/x/plans/client"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	plansmoduletypes "github.com/lavanet/lava/x/plans/types"
+	projectsmodule "github.com/lavanet/lava/x/projects"
+	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
+	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -190,6 +193,7 @@ var (
 		subscriptionmodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
+		projectsmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
@@ -289,6 +293,7 @@ func New(
 		subscriptionmoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
 		conflictmoduletypes.StoreKey,
+		projectsmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
@@ -373,7 +378,7 @@ func New(
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
-	// Initialize PackagesKeeper prior to govRouter (order is critical)
+	// Initialize PlansKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
 		appCodec,
 		keys[plansmoduletypes.StoreKey],
@@ -445,6 +450,14 @@ func New(
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[projectsmoduletypes.StoreKey],
+		keys[projectsmoduletypes.MemStoreKey],
+		app.GetSubspace(projectsmoduletypes.ModuleName),
+	)
+	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
+
 	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
 		appCodec,
 		keys[subscriptionmoduletypes.StoreKey],
@@ -454,6 +467,7 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
 		app.PlansKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
@@ -516,6 +530,7 @@ func New(
 		subscriptionModule,
 		pairingModule,
 		conflictModule,
+		projectsModule,
 		plansModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
@@ -543,6 +558,7 @@ func New(
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		pairingmoduletypes.ModuleName,
+		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -568,6 +584,7 @@ func New(
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
+		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -597,6 +614,7 @@ func New(
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		subscriptionmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
+		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -634,6 +652,7 @@ func New(
 		subscriptionModule,
 		pairingModule,
 		conflictModule,
+		projectsModule,
 		plansModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
@@ -854,6 +873,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
+	paramsKeeper.Subspace(projectsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 

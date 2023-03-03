@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -75,7 +74,6 @@ func TestCreateSubscription(t *testing. T) {
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
 	keeper := keepers.Subscription
-	bankKeeper := keepers.BankKeeper
 	plansKeeper := keepers.Plans
 
 	plan := common.CreateMockPlan()
@@ -101,20 +99,15 @@ func TestCreateSubscription(t *testing. T) {
 
 	for i := range creators {
 		if creators[i].address == "FILL" {
-			_, addr := sigs.GenerateFloatingKey()
-			creators[i].address = addr.String()
-			coins := sdk.NewCoins(sdk.NewCoin(
-				epochstoragetypes.TokenDenom,
-				sdk.NewInt(creators[i].amount),
-			))
-			bankKeeper.SetBalance(ctx, addr, coins)
+			account := common.CreateNewAccount(_ctx, *keepers, creators[i].amount)
+			creators[i].address = account.Addr.String()
 		}
 	}
 
 	consumers := make([]string, 4)
 	for i := range consumers {
-		_, addr := sigs.GenerateFloatingKey()
-		consumers[i] = addr.String()
+		account := common.CreateNewAccount(_ctx, *keepers, 1)
+		consumers[i] = account.Addr.String()
 	}
 	consumers[3] = "invalid consumer"
 
@@ -197,4 +190,25 @@ func TestCreateSubscription(t *testing. T) {
 			})
 		}
 	}
+}
+
+func TestSubscriptionDefaultProject(t *testing. T) {
+	_, keepers, _ctx := keepertest.InitAllKeepers(t)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	keeper := keepers.Subscription
+	keepers.Plans.AddPlan(ctx, common.CreateMockPlan())
+
+	account := common.CreateNewAccount(_ctx, *keepers, 10000)
+	creator := account.Addr.String()
+
+	err := keeper.CreateSubscription(ctx, creator, creator, "mockPlan", true)
+	require.Nil(t, err)
+
+	block := uint64(ctx.BlockHeight())
+
+	// a newly created subscription is expected to have one default project,
+	// with the subscription address as its developer key
+	_, err = keepers.Projects.GetProjectIDForDeveloper(ctx, creator, block)
+	require.Nil(t, err)
 }
