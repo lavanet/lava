@@ -9,9 +9,11 @@ const TypeMsgAddProjectKeys = "add_project_keys"
 
 var _ sdk.Msg = &MsgAddProjectKeys{}
 
-func NewMsgAddProjectKeys(creator string) *MsgAddProjectKeys {
+func NewMsgAddProjectKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgAddProjectKeys {
 	return &MsgAddProjectKeys{
-		Creator: creator,
+		Creator:     creator,
+		Project:     projectID,
+		ProjectKeys: projectKeys,
 	}
 }
 

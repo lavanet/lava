@@ -23,8 +23,13 @@ func CmdAddProjectKeys() *cobra.Command {
 				return err
 			}
 
+			projectID := args[0]
+
+			// TODO extract keys from CMD, look at stake provider
 			msg := types.NewMsgAddProjectKeys(
 				clientCtx.GetFromAddress().String(),
+				projectID,
+				[]types.ProjectKey{},
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
