@@ -21,8 +21,8 @@ import (
 // Once instantiated with NewFixationStore(), it offers the following methods:
 //    - AppendEntry(index, block, *entry): add a new "block" version of an entry "index".
 //    - ModifyEntry(index, block, *entry): modify existing entry with "index" and "block"
-//    - GetEntry(index, block, *entry): get a copy (and reference) of a version of an entry
 //    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry
+//    - GetEntry(index, *entry): get a copy (and reference) of the latest version of an entry
 //    - PutEntry(index, block): drop a reference of a version of an entry
 //    - [TBD] RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls
 //    - GetAllEntryIndex(): get all the entries indices (without versions)
@@ -273,13 +273,15 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 	return nil, true
 }
 
-// GetEntry returns the entry with index and block and increments the refcount
-func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+// GetEntry returns the latest entry with index and increments the refcount
+func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) (error, bool) {
 	safeIndex, err := sanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry"), false
 	}
+
+	block := uint64(ctx.BlockHeight())
 
 	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -297,7 +299,7 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 
 	// save the entry after changing the refcount
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
-	byteKey := types.EncodeKey(block)
+	byteKey := types.EncodeKey(entry.Block)
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 	store.Set(byteKey, marshaledEntry)
 
