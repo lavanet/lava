@@ -11,19 +11,28 @@ import (
 )
 
 // FixationStore manages lists of entries with versions in the store.
+// (See also documentation in common/fixation_entry_index.go)
 //
 // Its primary use it to implemented "fixated entries": entries that may change over
 // time, and whose versions must be retained on-chain as long as they are referenced.
 // For examples, an older version of a package is needed as long as the subscription
 // that uses it lives.
 //
-// Once instantiated, FixationStore offers 4 methods:
+// Once instantiated with NewFixationStore(), it offers the following methods:
 //    - AppendEntry(index, block, *entry): add a new "block" version of an entry "index".
 //    - ModifyEntry(index, block, *entry): modify existing entry with "index" and "block"
-//    - GetEntry(index, block, *entry, refAction): get a copy (and reference) an version of an entry. Also, apply refAction (add/sub refCount)
-//    - RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls.
-//    - GetAllEntryIndex(index): get all the entries indices (without versions).
-//    - SetEntryIndex(index): add a new index to the index list (indices without versions).
+//    - GetEntry(index, block, *entry): get a copy (and reference) of a version of an entry
+//    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry
+//    - PutEntry(index, block): drop a reference of a version of an entry
+//    - [TBD] RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls
+//    - GetAllEntryIndex(): get all the entries indices (without versions)
+//
+// Entry names (index) must contain only visible ascii characters (ascii values 32-125).
+// The ascii 'DEL' invisible character is used internally to terminate the index values
+// when stored, to ensure that no two indices can ever overlap, i.e. one being the prefix
+// of the other.
+// (Note that this properly supports Bech32 addresses, which are limited to use only
+// visible ascii characters as per https://en.bitcoin.it/wiki/BIP_0173#Specification).
 //
 // How does it work? The explanation below illustrates how the data is stored, assuming the
 // user is the module "packages":
@@ -61,14 +70,44 @@ type FixationStore struct {
 	prefix   string
 }
 
+// sanitizeIdnex checks that a string contains only visible ascii characters
+// (i.e. Ascii 32-126), and appends a (ascii) DEL to the index; this ensures
+// that an index can never be a prefix of another index.
+func sanitizeIndex(index string) (string, error) {
+	const (
+		ASCII_MIN = 32  // min visible ascii
+		ASCII_MAX = 126 // max visible ascii
+		ASCII_DEL = 127 // ascii for DEL
+	)
+
+	for i := 0; i < len(index); i++ {
+		if index[i] < ASCII_MIN || index[i] > ASCII_MAX {
+			return index, types.ErrInvalidIndex
+		}
+	}
+	return index + string([]byte{ASCII_DEL}), nil
+}
+
+// desantizeIndex reverts the effect of sanitizeIndex - removes the trailing
+// (ascii) DEL terminator.
+func desanitizeIndex(safeIndex string) string {
+	return safeIndex[0 : len(safeIndex)-1]
+}
+
 // AppendEntry adds a new entry to the store
 func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_invalid_index", details, "invalid non-ascii entry")
+	}
+
 	// get the latest entry for this index
-	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
-		fs.SetEntryIndex(ctx, index)
+		fs.SetEntryIndex(ctx, safeIndex)
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.GetBlock() {
@@ -84,25 +123,30 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 	// marshal the new entry's data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 	// create a new entry and marshal it
-	entry := types.Entry{Index: index, Block: block, Data: marshaledEntryData, Refcount: 0}
+	entry := types.Entry{
+		Index:    safeIndex,
+		Block:    block,
+		Data:     marshaledEntryData,
+		Refcount: 0,
+	}
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 
 	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
 	byteKey := types.EncodeKey(block)
 
 	// set the new entry to the store
 	store.Set(byteKey, marshaledEntry)
 
 	// delete old entries
-	fs.deleteStaleEntries(ctx, index)
+	fs.deleteStaleEntries(ctx, safeIndex)
 
 	return nil
 }
 
-func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
+func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 	// get the relevant store and init an iterator
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
@@ -119,12 +163,12 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
 			break
 		}
 
-		// if the entry's refs is equal to 0 and it has been longer than STALE_ENTRY_TIME from its creation, delete it
+		// delete entries with refcount 0 and older than STALE_ENTRY_TIME (from creation)
 		if oldEntry.GetRefcount() == 0 && int64(oldEntry.GetBlock())+types.STALE_ENTRY_TIME < ctx.BlockHeight() {
 			fs.removeEntry(ctx, oldEntry.GetIndex(), oldEntry.GetBlock())
 		} else {
-			// else, break (avoiding removal of entries in the middle of the list. because it would
-			// break future lookup that may involve that (stale) entry.)
+			// avoid removal of entries in the middle of the list, because it would
+			// break future lookup that may involve that (stale) entry.
 			break
 		}
 	}
@@ -132,15 +176,21 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, index string) {
 
 // ModifyEntry modifies an exisiting entry in the store
 func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		return utils.LavaError(ctx, ctx.Logger(), "ModifyEntry_invalid_index", details, "invalid non-ascii entry")
+	}
+
 	// get the relevant store
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
 	byteKey := types.EncodeKey(block)
 
 	// marshal the new entry data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
 
 	// get the entry from the store
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
 		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", map[string]string{"fs.prefix": fs.prefix, "index": index, "block": strconv.FormatUint(block, 10)}, "can't set non-existent entry")
 	}
@@ -172,7 +222,8 @@ func (fs *FixationStore) GetPrefix() string {
 	return fs.prefix
 }
 
-// getUnmarshaledEntryForBlock gets an entry by block. Block doesn't have to be precise, it gets the closest entry version
+// getUnmarshaledEntryForBlock gets an entry version for an index that has
+// nearest-smaller block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index string, block uint64) (types.Entry, bool) {
 	// get the relevant store using index
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
@@ -181,17 +232,17 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	// iterate over entries
+	// iterate over entries in reverse order of version (block), and return the
+	// first version that is smaller-or-equal to the requested block. Thus, the
+	// caller gets the latest version at the time of the block (arg).
+	// For example, assuming two entries for blocks 100 and 200, asking for the
+	// entry with block 199 would return the entry with block 100, which was in
+	// effect at the time of block 199.
+
 	for ; iterator.Valid(); iterator.Next() {
-		// unmarshal the entry
 		var entry types.Entry
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
-		// if the entry's block is smaller than or equal to the requested block, unmarshal the entry's data
-		// since the user might not know the precise block that the entry was created on, we get the closest one
-		// we get from the past since this was the entry that was valid in the requested block (assume there's an
-		// entry in block 100 and block 200 and the user asks for the version of block 199. Since the block 200's
-		// didn't exist yet, we get the entry from block 100)
 		if entry.GetBlock() <= block {
 			return entry, true
 		}
@@ -199,47 +250,55 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 	return types.Entry{}, false
 }
 
-// get entry with index and block without influencing the entry's refs
+// FindEntry returns the entry with index and block without changing the refcount
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		return utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry"), false
+	}
+
 	// get the unmarshaled entry for block
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
 		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
-	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
+	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
+		return utils.LavaError(ctx, ctx.Logger(), "FindEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
 	return nil, true
 }
 
-// get entry with index and block with ref increase
+// GetEntry returns the entry with index and block and increments the refcount
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry"), false
+	}
+
 	// get the unmarshaled entry for block
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
 		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
-	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
+	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
 		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
 	entry.Refcount += 1
 
-	// get the relevant byte
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
+	// save the entry after changing the refcount
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
 	byteKey := types.EncodeKey(block)
-
-	// marshal the entry
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
-
-	// set the entry
 	store.Set(byteKey, marshaledEntry)
 
 	return nil, true
@@ -247,14 +306,19 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, block uint64, e
 
 // get entry with index and block with ref decrease
 func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		return utils.LavaError(ctx, ctx.Logger(), "PutEntry_invalid_index", details, "invalid non-ascii entry"), false
+	}
 	// get the unmarshaled entry for block
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, index, block)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
 		return types.ErrEntryNotFound, false
 	}
 
 	// unmarshal the entry's data
-	err := fs.cdc.Unmarshal(entry.GetData(), entryData)
+	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
 	if err != nil {
 		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
@@ -265,14 +329,10 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_sub_ref_from_non_positive_count", map[string]string{"refCount": strconv.FormatUint(entry.GetRefcount(), 10)}, "refCount is not larger than zero. Can't subtract refcount"), false
 	}
 
-	// get the relevant byte
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
+	// save the entry after changing the refcount
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(safeIndex)))
 	byteKey := types.EncodeKey(block)
-
-	// marshal the entry
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
-
-	// set the entry
 	store.Set(byteKey, marshaledEntry)
 
 	return nil, true
@@ -280,10 +340,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 
 // RemoveEntry removes an entry from the store
 func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64) {
-	// get the relevant store
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
-
-	// delete the entry
 	store.Delete(types.EncodeKey(block))
 }
 

@@ -41,6 +41,28 @@ func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) 
 	return vs, ctx
 }
 
+// Test API calls with invalid entry index
+func TestEntryInvalidIndex(t *testing.T) {
+	dummyIndex := "index" + string('\001')
+	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
+
+	vs, ctx := initCtxAndFixationStore(t)
+
+	err := vs.AppendEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj)
+	require.NotNil(t, err)
+
+	err = vs.ModifyEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj)
+	require.NotNil(t, err)
+
+	err, found := vs.GetEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj)
+	require.NotNil(t, err)
+	require.False(t, found)
+
+	err, found = vs.FindEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj)
+	require.NotNil(t, err)
+	require.False(t, found)
+}
+
 // Test addition and removal of a fixation entry
 func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	// create dummy data for dummy entry
