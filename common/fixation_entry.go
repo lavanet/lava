@@ -107,11 +107,17 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
-		fs.SetEntryIndex(ctx, safeIndex)
+		fs.setEntryIndex(ctx, safeIndex)
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.GetBlock() {
-			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", map[string]string{"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10), "block": strconv.FormatUint(block, 10), "index": index, "fs.prefix": fs.prefix}, "can't append entry, earlier than the latest entry")
+			details := map[string]string{
+				"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
+				"block":            strconv.FormatUint(block, 10),
+				"index":            index,
+				"fs.prefix":        fs.prefix,
+			}
+			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", details, "entry block earlier than latest entry")
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
@@ -192,7 +198,12 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 	// get the entry from the store
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
-		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", map[string]string{"fs.prefix": fs.prefix, "index": index, "block": strconv.FormatUint(block, 10)}, "can't set non-existent entry")
+		details := map[string]string{
+			"fs.prefix": fs.prefix,
+			"index":     index,
+			"block":     strconv.FormatUint(block, 10),
+		}
+		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", details, "entry does not exist")
 	}
 
 	// update the entry's data
@@ -205,21 +216,6 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 	store.Set(byteKey, marshaledEntry)
 
 	return nil
-}
-
-// GetStoreKey returns the Fixation store's store key
-func (fs *FixationStore) GetStoreKey() sdk.StoreKey {
-	return fs.storeKey
-}
-
-// GetCdc returns the Fixation store's codec
-func (fs *FixationStore) GetCdc() codec.BinaryCodec {
-	return fs.cdc
-}
-
-// Getprefix returns the Fixation store's fixation key
-func (fs *FixationStore) GetPrefix() string {
-	return fs.prefix
 }
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
@@ -344,7 +340,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 	return nil, true
 }
 
-// RemoveEntry removes an entry from the store
+// removeEntry removes an entry from the store
 func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64) {
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createStoreKey(index)))
 	store.Delete(types.EncodeKey(block))
