@@ -196,6 +196,59 @@ func TestEntryVersions(t *testing.T) {
 	require.Equal(t, 1, len(indexList))
 }
 
+// Test adding non-visibility of a stale entry
+func TestEntryStale(t *testing.T) {
+	dummyIndex := "index"
+	dummyObj1 := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(0)}
+	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
+	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(2)}
+
+	vs, ctx := initCtxAndFixationStore(t)
+
+	block1 := int64(10)
+	ctx = ctx.WithBlockHeight(block1)
+	err := vs.AppendEntry(ctx, dummyIndex, uint64(block1), &dummyObj1)
+	require.Nil(t, err)
+
+	// bump refcount to avoid deletion later
+	var dummyCoin sdk.Coin
+	err, found := vs.GetEntry(ctx, dummyIndex, &dummyCoin)
+	require.Nil(t, err)
+	require.True(t, found)
+
+	block2 := int64(20)
+	ctx = ctx.WithBlockHeight(block2)
+	err = vs.AppendEntry(ctx, dummyIndex, uint64(block2), &dummyObj2)
+	require.Nil(t, err)
+
+	block3 := int64(30 + types.STALE_ENTRY_TIME + 1)
+	ctx = ctx.WithBlockHeight(block3)
+	err = vs.AppendEntry(ctx, dummyIndex, uint64(block3), &dummyObj3)
+	require.Nil(t, err)
+
+	// the last AppendEntry should not have deleted the first entry (because
+	// it has refcount != zero), and hence also not the second entry (though
+	// it has refcount zero).
+
+	err, found = vs.FindEntry(ctx, dummyIndex, uint64(block1+1), &dummyCoin)
+	require.Nil(t, err)
+	require.True(t, found)
+	require.Equal(t, dummyCoin, dummyObj1)
+
+	// But the second entry is now stale and therefore should not be visible
+
+	err, found = vs.FindEntry(ctx, dummyIndex, uint64(block2+1), &dummyCoin)
+	require.NotNil(t, err)
+	require.False(t, found)
+
+	// the third entry also has refcount = 0 and is old, but being the latest
+	// it should also be visible always despite of refcount and age.
+
+	err, found = vs.FindEntry(ctx, dummyIndex, uint64(block3+1), &dummyCoin)
+	require.Nil(t, err)
+	require.True(t, found)
+}
+
 // Test adding entry versions with different fixation keys
 func TestDifferentFixationKeys(t *testing.T) {
 	// create dummy data for two dummy entries

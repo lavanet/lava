@@ -164,7 +164,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 		}
 
 		// delete entries with refcount 0 and older than STALE_ENTRY_TIME (from creation)
-		if oldEntry.GetRefcount() == 0 && int64(oldEntry.GetBlock())+types.STALE_ENTRY_TIME < ctx.BlockHeight() {
+		if oldEntry.IsStale(ctx) {
 			fs.removeEntry(ctx, oldEntry.GetIndex(), oldEntry.GetBlock())
 		} else {
 			// avoid removal of entries in the middle of the list, because it would
@@ -244,6 +244,10 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index stri
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
 		if entry.GetBlock() <= block {
+			if entry.IsStale(ctx) {
+				break
+			}
+
 			return entry, true
 		}
 	}
