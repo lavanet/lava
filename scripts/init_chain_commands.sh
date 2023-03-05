@@ -25,6 +25,7 @@ lavad tx gov vote 4 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
+
 PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
@@ -140,8 +141,8 @@ lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "$PROVIDER3_LISTENER,json
 
 # canto Providers
 lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1 $PROVIDER1_LISTENER,tendermintrpc,1 $PROVIDER1_LISTENER,rest,1 $PROVIDER1_LISTENER,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1 $PROVIDER1_LISTENER,tendermintrpc,1 $PROVIDER1_LISTENER,rest,1 $PROVIDER1_LISTENER,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1 $PROVIDER1_LISTENER,tendermintrpc,1 $PROVIDER1_LISTENER,rest,1 $PROVIDER1_LISTENER,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER2_LISTENER,jsonrpc,1 $PROVIDER2_LISTENER,tendermintrpc,1 $PROVIDER2_LISTENER,rest,1 $PROVIDER2_LISTENER,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER3_LISTENER,jsonrpc,1 $PROVIDER3_LISTENER,tendermintrpc,1 $PROVIDER3_LISTENER,rest,1 $PROVIDER3_LISTENER,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"

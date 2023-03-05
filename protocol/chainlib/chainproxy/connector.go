@@ -106,6 +106,7 @@ func (connector *Connector) createConnection(ctx context.Context, addr string, c
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, &map[string]string{
 				"Current Number Of Connections": strconv.FormatUint(uint64(currentNumberOfConnections), 10),
 				"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
+				"Network Address":               addr,
 			})
 			cancel()
 			continue
@@ -151,7 +152,7 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 		rpcClient, err = rpcclient.DialContext(nctx, connector.addr)
 		if err != nil {
 			utils.LavaFormatDebug(
-				"increaseNumberOfClients, Could not connect to the node, retrying",
+				"could no increase number of connections to the node jsonrpc connector, retrying",
 				&map[string]string{"err": err.Error(), "Number Of Attempts": strconv.Itoa(connectionAttempt)})
 			cancel()
 			continue

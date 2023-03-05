@@ -261,7 +261,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
-		utils.LavaFormatFatal("could not fetchLatestBlockNum in ChainTracker", err, nil)
+		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, &map[string]string{"endpoint": cs.endpoint.String()})
 	}
 	cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	// Polls blocks and keeps a queue of them
@@ -341,7 +341,7 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
-func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
 	err = config.validate()
 	if err != nil {
 		return nil, err
