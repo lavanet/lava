@@ -13,9 +13,9 @@ var _ = strconv.Itoa(0)
 
 func CmdShowProject() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-project",
+		Use:   "show-project [projectID]",
 		Short: "Query ShowProject",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -24,7 +24,7 @@ func CmdShowProject() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowProjectRequest{}
+			params := &types.QueryShowProjectRequest{Project: args[0]}
 
 			res, err := queryClient.ShowProject(cmd.Context(), params)
 			if err != nil {
