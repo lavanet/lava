@@ -52,7 +52,7 @@ const (
 type ProviderSessionsWithConsumer struct {
 	Sessions      map[uint64]*SingleProviderSession
 	isBlockListed uint32
-	consumer      string
+	consumerAddr  string
 	epochData     *ProviderSessionsEpochData
 	Lock          sync.RWMutex
 }
@@ -65,6 +65,16 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
+}
+
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData) *ProviderSessionsWithConsumer {
+	pswc := &ProviderSessionsWithConsumer{
+		Sessions:      map[uint64]*SingleProviderSession{},
+		isBlockListed: 0,
+		consumerAddr:  consumerAddr,
+		epochData:     epochData,
+	}
+	return pswc
 }
 
 // reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer = 1
@@ -97,16 +107,24 @@ func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
+// create a new session with a consumer, and store it inside it's providerSessions parent
 func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+	utils.LavaFormatDebug("Provider creating new sessionID", &map[string]string{"SessionID": strconv.FormatUint(sessionId, 10), "epoch": strconv.FormatUint(epoch, 10)})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
 		SessionID:          sessionId,
 		PairingEpoch:       epoch,
 	}
+	pswc.Lock.Lock()
+	defer pswc.Lock.Unlock()
+	// this is a double lock and risky but we just created session and nobody has reference to it yet
 	session.lock.Lock()
+	pswc.Sessions[sessionId] = session
+	// session is still locked when we return it
 	return session, nil
 }
 
+// this function returns the session locked to be used
 func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
@@ -165,7 +183,6 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(currentCU uint64, relay
 	sps.LatestRelayCu = currentCU   // 1. update latest
 	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
-
 	return nil
 }
 

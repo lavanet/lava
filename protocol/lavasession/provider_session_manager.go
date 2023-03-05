@@ -47,14 +47,13 @@ func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string
 
 func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	if providerSessionWithConsumer.atomicReadConsumerBlocked() != notBlockListedConsumer {
-		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "consumer": providerSessionWithConsumer.consumer})
+		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "consumer": providerSessionWithConsumer.consumerAddr})
 	}
 	// before getting any sessions.
 	singleProviderSession, err := psm.getSessionFromAnActiveConsumer(providerSessionWithConsumer, sessionId, epoch) // after getting session verify relayNum etc..
 	if err != nil {
 		return nil, utils.LavaFormatError("getSessionFromAnActiveConsumer Failure", err, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "sessionId": strconv.FormatUint(sessionId, 10)})
 	}
-
 	if singleProviderSession.RelayNum+1 < relayNumber { // validate relay number here, but add only in PrepareSessionForUsage
 		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, &map[string]string{"singleProviderSession.RelayNum": strconv.FormatUint(singleProviderSession.RelayNum+1, 10), "request.relayNumber": strconv.FormatUint(relayNumber, 10)})
 	}
@@ -78,9 +77,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 	}
 
 	// If we got here, we need to create a new instance for this consumer address.
-	providerSessionWithConsumer = &ProviderSessionsWithConsumer{
-		consumer: address,
-	}
+	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil)
 	psm.dataReliabilitySessionsWithAllConsumers[epoch][address] = providerSessionWithConsumer
 	return providerSessionWithConsumer, nil
 }
@@ -140,12 +137,7 @@ func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint
 
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[address]
 	if !foundAddressInMap {
-		providerSessionWithConsumer = &ProviderSessionsWithConsumer{
-			consumer: address,
-			epochData: &ProviderSessionsEpochData{
-				MaxComputeUnits: maxCuForConsumer,
-			},
-		}
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer})
 		mapOfProviderSessionsWithConsumer[address] = providerSessionWithConsumer
 	}
 	return providerSessionWithConsumer, nil
