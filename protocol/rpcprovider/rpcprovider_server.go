@@ -325,6 +325,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.BlockHeight), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
+
 			valid, _, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.BlockHeight), request.ChainID)
 			if verifyPairingError != nil {
 				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})
@@ -510,7 +511,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				finalizedBlockHashes[block.Block] = block.Hash
 			}
 		}
-		if requestedBlockHash == nil {
+		if requestedBlockHash == nil && request.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
 			utils.LavaFormatWarning("no hash data for requested block", nil, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
 		}
@@ -540,7 +541,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 		if requestedBlockHash != nil || finalized {
 			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
-			if err != nil && !performance.NotInitialisedError.Is(err) {
+			if err != nil && !performance.NotInitialisedError.Is(err) && request.BlockHeight != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
 			}
 		}

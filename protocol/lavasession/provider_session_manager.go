@@ -121,7 +121,7 @@ func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sess
 	return psm.getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer, sessionId, epoch, relayNumber)
 }
 
-func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint64, sessionId uint64, maxCuForConsumer uint64) (*ProviderSessionsWithConsumer, error) {
+func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, maxCuForConsumer uint64) (*ProviderSessionsWithConsumer, error) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
@@ -135,25 +135,26 @@ func (psm *ProviderSessionManager) registerNewSession(address string, epoch uint
 		psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 	}
 
-	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[address]
+	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[consumerAddr]
 	if !foundAddressInMap {
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer})
-		mapOfProviderSessionsWithConsumer[address] = providerSessionWithConsumer
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer})
+		mapOfProviderSessionsWithConsumer[consumerAddr] = providerSessionWithConsumer
 	}
 	return providerSessionWithConsumer, nil
 }
 
-func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(address string, epoch uint64, sessionId uint64, relayNumber uint64, maxCuForConsumer uint64) (*SingleProviderSession, error) {
-	providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, address)
+func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(consumerAddress string, epoch uint64, sessionId uint64, relayNumber uint64, maxCuForConsumer uint64) (*SingleProviderSession, error) {
+	providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, consumerAddress)
 	if err != nil {
 		if ConsumerNotRegisteredYet.Is(err) {
-			providerSessionWithConsumer, err = psm.registerNewSession(address, epoch, sessionId, maxCuForConsumer)
+			providerSessionWithConsumer, err = psm.registerNewConsumer(consumerAddress, epoch, maxCuForConsumer)
 			if err != nil {
 				return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to registerNewSession", err, nil)
 			}
 		} else {
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err, nil)
 		}
+		utils.LavaFormatDebug("provider registered consumer", &map[string]string{"consumer": consumerAddress, "epoch": strconv.FormatUint(epoch, 10)})
 	}
 	return psm.getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer, sessionId, epoch, relayNumber)
 }
@@ -186,8 +187,7 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(providerSessio
 		// if we don't have a session we need to create a new one.
 		return providerSessionWithConsumer.createNewSingleProviderSession(sessionId, epoch)
 	} else {
-		utils.LavaFormatFatal("GetExistingSession Unexpected Error", err, nil)
-		return nil, err
+		return nil, utils.LavaFormatError("could not get existing session", err, nil)
 	}
 }
 
