@@ -10,7 +10,7 @@ import (
 
 type ProviderSessionManager struct {
 	sessionsWithAllConsumers                map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
-	dataReliabilitySessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
+	dataReliabilitySessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // separate handling of data reliability so later on we can use it outside of pairing, first key is epochs, second key is a consumer address
 	subscriptionSessionsWithAllConsumers    map[uint64]map[string]map[string]*RPCSubscription   // first key is an epoch, second key is a consumer address, third key is subscriptionId
 	lock                                    sync.RWMutex
 	blockedEpochHeight                      uint64 // requests from this epoch are blocked
@@ -217,6 +217,7 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 	return psm.rpcProviderEndpoint
 }
 
+// on a new epoch we are cleaning stale provider data, also we are making sure consumers who are trying to use past data are not capable to
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
@@ -225,18 +226,24 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	} else {
 		psm.blockedEpochHeight = 0
 	}
-	newMap := make(map[uint64]map[string]*ProviderSessionsWithConsumer)
+	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
+	psm.dataReliabilitySessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.dataReliabilitySessionsWithAllConsumers)
+	psm.subscriptionSessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
+}
+
+func filterOldEpochEntries[T any](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
 	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
 	// which has better O(n) vs O(2n)
-	for epochStored, value := range psm.sessionsWithAllConsumers {
-		if !IsEpochValidForUse(epochStored, psm.blockedEpochHeight) {
-			// epoch is not valid so we dont keep its key in the new map
+	validEpochsMap = map[uint64]T{}
+	for epochStored, value := range allEpochsMap {
+		if !IsEpochValidForUse(epochStored, blockedEpochHeight) {
+			// epoch is not valid so we don't keep its key in the new map
 			continue
 		}
 		// if epochStored is ok, copy the value into the new map
-		newMap[epochStored] = value
+		validEpochsMap[epochStored] = value
 	}
-	psm.sessionsWithAllConsumers = newMap
+	return
 }
 
 func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscriptionID string, consumerAddress string, epoch uint64) error {
@@ -326,7 +333,13 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 
 // Returning a new provider session manager
 func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberOfBlocksKeptInMemory uint64) *ProviderSessionManager {
-	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, blockDistanceForEpochValidity: numberOfBlocksKeptInMemory}
+	return &ProviderSessionManager{
+		rpcProviderEndpoint:                     rpcProviderEndpoint,
+		blockDistanceForEpochValidity:           numberOfBlocksKeptInMemory,
+		sessionsWithAllConsumers:                map[uint64]map[string]*ProviderSessionsWithConsumer{},
+		dataReliabilitySessionsWithAllConsumers: map[uint64]map[string]*ProviderSessionsWithConsumer{},
+		subscriptionSessionsWithAllConsumers:    map[uint64]map[string]map[string]*RPCSubscription{},
+	}
 }
 
 func IsEpochValidForUse(targetEpoch uint64, blockedEpochHeight uint64) bool {
