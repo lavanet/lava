@@ -1,0 +1,36 @@
+syntax = "proto3";
+package lavanet.lava.projects;
+
+import "projects/project.proto";
+import "gogoproto/gogo.proto";
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/lavanet/lava/x/projects/types";
+
+// Msg defines the Msg service.
+service Msg {
+      rpc AddProjectKeys(MsgAddProjectKeys) returns (MsgAddProjectKeysResponse);
+  rpc SetProjectPolicy(MsgSetProjectPolicy) returns (MsgSetProjectPolicyResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgAddProjectKeys {
+  string creator = 1;
+  string project = 2;
+  repeated ProjectKey project_keys = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgAddProjectKeysResponse {
+}
+
+message MsgSetProjectPolicy {
+  string creator = 1;
+  string project = 2;
+  Policy policy = 3;
+}
+
+message MsgSetProjectPolicyResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message

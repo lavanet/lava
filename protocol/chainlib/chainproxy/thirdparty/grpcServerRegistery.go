@@ -52,6 +52,14 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		ibc_thirdparty.RegisterJunoProtobufs(s, cb)
 		juno_thirdparty.RegisterJunoProtobufs(s, cb)
 		cosmwasm.RegisterJunoProtobufs(s, cb)
+	case "EVMOS", "EVMOST":
+		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
+		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
+		//TODO: add other evmos protobufs missing
+	case "CANTO", "CANTOT":
+		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
+		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
+		//TODO: add other canto protobufs missing
 	default:
 		utils.LavaFormatFatal("Unsupported Chain Server: "+chain, nil, nil)
 	}

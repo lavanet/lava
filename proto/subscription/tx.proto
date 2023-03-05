@@ -1,0 +1,24 @@
+syntax = "proto3";
+package lavanet.lava.subscription;
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/lavanet/lava/x/subscription/types";
+
+// Msg defines the Msg service.
+service Msg {
+      rpc Subscribe(MsgSubscribe) returns (MsgSubscribeResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgSubscribe {
+  string creator = 1;
+  string consumer = 2;
+  string index = 3;
+  bool isYearly = 4;
+}
+
+message MsgSubscribeResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message

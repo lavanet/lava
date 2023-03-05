@@ -117,9 +117,9 @@ type MerklePath struct {
 	KeyPath []string `protobuf:"bytes,1,rep,name=key_path,json=keyPath,proto3" json:"key_path,omitempty" yaml:"key_path"`
 }
 
-func (m *MerklePath) Reset()      { *m = MerklePath{} }
+func (m *MerklePath) Reset()         { *m = MerklePath{} }
 func (m *MerklePath) String() string { return proto.CompactTextString(m) }
-func (*MerklePath) ProtoMessage() {}
+func (*MerklePath) ProtoMessage()    {}
 func (*MerklePath) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7921d88972a41469, []int{2}
 }

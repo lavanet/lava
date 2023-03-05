@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.common;
+
+option go_package = "github.com/lavanet/lava/common/types";
+import "gogoproto/gogo.proto"; 
+
+message Entry {
+    string index = 1; // unique entry index. Can also be viewed as a list key. General structure: <moduleName>_<listIndex>. For example: packages_package1
+    uint64 block = 2; // block the entry was created
+    uint64 refcount = 3; // number of references to this entry (number of entities using it). Used to determine if the entry should be deleted
+    bytes data = 4; // the data saved in the entry. Can be any type
+}

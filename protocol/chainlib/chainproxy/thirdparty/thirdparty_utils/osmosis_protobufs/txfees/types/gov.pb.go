@@ -34,9 +34,9 @@ type UpdateFeeTokenProposal struct {
 	Feetoken    FeeToken `protobuf:"bytes,3,opt,name=feetoken,proto3" json:"feetoken" yaml:"fee_token"`
 }
 
-func (m *UpdateFeeTokenProposal) Reset()      { *m = UpdateFeeTokenProposal{} }
+func (m *UpdateFeeTokenProposal) Reset()         { *m = UpdateFeeTokenProposal{} }
 func (m *UpdateFeeTokenProposal) String() string { return proto.CompactTextString(m) }
-func (*UpdateFeeTokenProposal) ProtoMessage() {}
+func (*UpdateFeeTokenProposal) ProtoMessage()    {}
 func (*UpdateFeeTokenProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2c4a51bafc82863d, []int{0}
 }

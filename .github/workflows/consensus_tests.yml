@@ -66,3 +66,11 @@ jobs:
     - name: lava conflict unit Tests
       run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
 
+    - name: lava plans unit Tests
+      run: go test ./x/plans/ ./x/plans/keeper ./x/plans/types -v
+
+    - name: lava projects unit Tests
+      run: go test ./x/projects/... -v
+
+    - name: lava subscription unit Tests
+      run: go test ./x/subscription/... -v

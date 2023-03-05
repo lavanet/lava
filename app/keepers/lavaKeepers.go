@@ -19,7 +19,10 @@ import (
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
+	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
+	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
+	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -47,7 +50,10 @@ type LavaKeepers struct {
 
 	// Special Keepers
 	SpecKeeper         specmodulekeeper.Keeper
+	SubscriptionKeeper subscriptionmodulekeeper.Keeper
 	EpochstorageKeeper epochstoragemodulekeeper.Keeper
 	PairingKeeper      pairingmodulekeeper.Keeper
 	ConflictKeeper     conflictmodulekeeper.Keeper
+	ProjectsKeeper     projectsmodulekeeper.Keeper
+	PlansKeeper        plansmodulekeeper.Keeper
 }
