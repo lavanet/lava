@@ -53,6 +53,9 @@ func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayReq
 		// TODO: try to connect again once in a while
 		return NotInitialisedError
 	}
+	if cache.client == nil {
+		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
+	}
 	// TODO: handle disconnections and SetRelay error types here
 	_, err := cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Response: reply, Finalized: finalized, BucketID: bucketID})
 	return err
