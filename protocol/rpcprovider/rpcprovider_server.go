@@ -489,7 +489,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		_, _, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 		toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
 		fromBlock := toBlock - int64(blocksInFinalizationData) + 1
-		latestBlock, requestedHashes, err := rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, request.RequestBlock)
+		var requestedHashes []*chaintracker.BlockStore
+		latestBlock, requestedHashes, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, request.RequestBlock)
 		if err != nil {
 			if chaintracker.InvalidRequestedSpecificBlock.Is(err) {
 				// specific block is invalid, try again without specific block
