@@ -189,8 +189,11 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 	}
 
 	if websocketEndpoint == "" || httpEndpoint == "" {
-		utils.LavaFormatFatal("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
+		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
+		if httpEndpoint != "" {
+			return httpEndpoint, httpEndpoint
+		}
 	}
 	return websocketEndpoint, httpEndpoint
 }
