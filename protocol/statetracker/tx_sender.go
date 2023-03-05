@@ -121,6 +121,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			})
 		}
 		var transactionResult string
+		clientCtx.Output = &myWriter
 		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
 		if err != nil {
 			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
@@ -132,7 +133,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		}
 		var returnCode int
 		summarizedTransactionResult, returnCode = common.ParseTransactionResult(transactionResult)
-
+		// utils.LavaFormatDebug("parsed transaction code", &map[string]string{"code": strconv.Itoa(returnCode), "transactionResult": transactionResult})
 		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
 			success = true
 		} else if strings.Contains(transactionResult, "account sequence") {
