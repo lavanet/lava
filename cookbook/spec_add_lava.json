@@ -264,6 +264,54 @@
                         ]
                     },
                     {
+                        "name": "/lavanet/lava/plans/show_all_plans",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "/lavanet/lava/epochstorage/fixated_params/{index}",
                         "block_parsing": {
                             "parser_arg": [
