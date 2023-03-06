@@ -2,6 +2,7 @@ package common
 
 import (
 	"net/url"
+	"strings"
 
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -26,8 +27,8 @@ func ValidateEndpoint(endpoint string, apiInterface string) error {
 		parsedUrl, err := url.Parse(endpoint)
 		if err == nil {
 			// user provided a valid url with a scheme
-			if parsedUrl.Scheme != "" {
-				return utils.LavaFormatError("grpc URL scheme should be empty and it is not, usage example: 127.0.0.1:9090 or my-node.com/grpc", nil, &map[string]string{"apiInterface": apiInterface, "scheme": parsedUrl.Scheme})
+			if parsedUrl.Scheme != "" && strings.Contains(endpoint, "/") {
+				return utils.LavaFormatError("grpc URL scheme should be empty and it is not, endpoint definition example: 127.0.0.1:9090 -or- my-node.com/grpc", nil, &map[string]string{"apiInterface": apiInterface, "scheme": parsedUrl.Scheme})
 			}
 			return nil
 		} else {
