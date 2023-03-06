@@ -118,30 +118,6 @@
                                 "extra_compute_units": "0"
                             }
                         ]
-                    },
-                    {
-                        "name": "eth_sendTransaction",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
                     }
                 ]
             },

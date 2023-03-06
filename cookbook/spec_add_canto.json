@@ -888,30 +888,6 @@
                         ]
                     },
 					{
-                        "name": "/cosmos/slashing/v1beta1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-					{
                         "name": "/cosmos/tx/v1beta1/txs/block/{height}",
                         "block_parsing": {
                             "parser_arg": [
