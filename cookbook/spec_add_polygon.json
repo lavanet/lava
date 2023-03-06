@@ -7,7 +7,9 @@
                 "index": "POLYGON1",
                 "name": "polygon mainnet",
                 "enabled": true,
-                "imports": [ "ETH1" ],
+                "imports": [
+                    "ETH1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
@@ -72,7 +74,7 @@
                         ]
                     },
                     {
-                        "name": "bor_getSignersAtHash",
+                        "name": "bor_getRootHash",
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -96,7 +98,7 @@
                         ]
                     },
                     {
-                        "name": "bor_getRootHash",
+                        "name": "bor_getSignersAtHash",
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -125,7 +127,9 @@
                 "index": "POLYGON1T",
                 "name": "polygon testnet",
                 "enabled": true,
-                "imports": [ "POLYGON1" ],
+                "imports": [
+                    "POLYGON1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
