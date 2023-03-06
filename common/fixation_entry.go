@@ -1,6 +1,7 @@
 package common
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -117,7 +118,6 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_invalid_index", details, "invalid non-ascii entry")
 	}
 
-	// get the latest entry for this index
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
 	// if latest entry is not found, this is a first version entry
@@ -127,10 +127,10 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.GetBlock() {
 			details := map[string]string{
-				"latestEntryBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
-				"block":            strconv.FormatUint(block, 10),
-				"index":            index,
-				"fs.prefix":        fs.prefix,
+				"latestBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
+				"block":       strconv.FormatUint(block, 10),
+				"index":       index,
+				"fs.prefix":   fs.prefix,
 			}
 			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", details, "entry block earlier than latest entry")
 		}
@@ -139,14 +139,24 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 		if block == latestEntry.GetBlock() {
 			return fs.ModifyEntry(ctx, index, block, entryData)
 		}
+
+		// if the old latest entry has refcount of 0, then update its "stale_at" time
+		// TODO: remove this when the latest entry gets its own refcount.
+		if latestEntry.Refcount == 0 {
+			// never overflows because because ctx.BlockHeight is int64
+			latestEntry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
+			fs.setEntry(ctx, latestEntry)
+		}
 	}
 
 	// marshal the new entry's data
 	marshaledEntryData := fs.cdc.MustMarshal(entryData)
+
 	// create a new entry and marshal it
 	entry := types.Entry{
 		Index:    safeIndex,
 		Block:    block,
+		StaleAt:  math.MaxUint64,
 		Data:     marshaledEntryData,
 		Refcount: 0,
 	}
@@ -177,7 +187,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 			break
 		}
 
-		// delete entries with refcount 0 and older than STALE_ENTRY_TIME (from creation)
+		// delete stale entries (if they are at the end of the list)
 		if oldEntry.IsStale(ctx) {
 			fs.removeEntry(ctx, oldEntry.GetIndex(), oldEntry.GetBlock())
 		} else {
@@ -316,12 +326,20 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
 	}
 
-	if entry.GetRefcount() > 0 {
-		entry.Refcount -= 1
-	} else {
-		return utils.LavaError(ctx, ctx.Logger(), "handleRefAction_sub_ref_from_non_positive_count", map[string]string{"refCount": strconv.FormatUint(entry.GetRefcount(), 10)}, "refCount is not larger than zero. Can't subtract refcount"), false
+	if entry.Refcount == 0 {
+		details := map[string]string{
+			"index":    index,
+			"refcount": strconv.FormatUint(entry.Refcount, 10),
+		}
+		return utils.LavaError(ctx, ctx.Logger(), "PutEntry_zero_count", details, "refcount already reached zero"), false
 	}
 
+	entry.Refcount -= 1
+
+	if entry.Refcount == 0 {
+		// never overflows because because ctx.BlockHeight is int64
+		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME) - 1
+	}
 
 	fs.setEntry(ctx, entry)
 	return nil, true
