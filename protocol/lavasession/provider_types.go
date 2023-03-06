@@ -170,32 +170,32 @@ func (sps *SingleProviderSession) VerifyLock() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(currentRelayCU uint64, relayRequestTotalCU uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
 	}
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
-	if relayRequestTotalCU < sps.CuSum+currentRelayCU {
+	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
 		sps.lock.Unlock() // unlock on error
 		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch, &map[string]string{
 			"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
 			"sps.CuSum":           strconv.FormatUint(sps.CuSum, 10),
-			"currentCU":           strconv.FormatUint(currentRelayCU, 10),
+			"currentCU":           strconv.FormatUint(cuFromSpec, 10),
 		})
 	}
 
 	// this must happen first, as we also validate and add the used cu to parent here
-	err = sps.validateAndAddUsedCU(currentRelayCU, maxCu)
+	err = sps.validateAndAddUsedCU(cuFromSpec, maxCu)
 	if err != nil {
 		sps.lock.Unlock() // unlock on error
 		return err
 	}
 	// finished validating, can add all info.
-	sps.LatestRelayCu = currentRelayCU // 1. update latest
-	sps.CuSum = relayRequestTotalCU    // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1    // 3. update RelayNum, we already verified relayNum is valid in GetSession.
+	sps.LatestRelayCu = cuFromSpec  // 1. update latest
+	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
+	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 	return nil
 }
 

@@ -14,6 +14,7 @@ const (
 	relayNumber                    = uint64(1)
 	maxCu                          = uint64(150)
 	epoch2                         = testNumberOfBlocksKeptInMemory + epoch1
+	consumerOneAddress             = "consumer1"
 )
 
 func initProviderSessionManager() *ProviderSessionManager {
@@ -31,7 +32,7 @@ func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSessi
 	psm := initProviderSessionManager()
 
 	// get session for the first time
-	sps, err := psm.GetSession("consumer1", epoch1, sessionId, relayNumber)
+	sps, err := psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber)
 
 	// validate expected results
 	require.Empty(t, psm.sessionsWithAllConsumers)
@@ -40,7 +41,7 @@ func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSessi
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer("consumer1", epoch1, sessionId, relayNumber, maxCu)
+	sps, err = psm.RegisterProviderSessionWithConsumer(consumerOneAddress, epoch1, sessionId, relayNumber, maxCu)
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
@@ -101,7 +102,7 @@ func TestHappyFlowPSMWithEpochChange(t *testing.T) {
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// try to verify we cannot get a session from epoch1 after we blocked it
-	sps, err = psm.GetSession("consumer1", epoch1, sessionId, relayNumber)
+	sps, err = psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber)
 
 	// expect an error as we tried to get a session from a blocked epoch
 	require.Error(t, err)
@@ -123,4 +124,60 @@ func TestHappyFlowPSMOnSessionFailure(t *testing.T) {
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, uint64(0))
 	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+func TestPSMUpdateCu(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps)
+
+	// validate session done data
+	require.Nil(t, err)
+
+	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
+	require.Nil(t, err)
+	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, maxCu)
+}
+
+func TestPSMUpdateCuMaxCuReached(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps)
+
+	// Update the session CU to reach the limit of the cu allowed
+	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
+	require.Nil(t, err)
+	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, maxCu)
+
+	// get another session, this time sps is not nil as the session ID is already registered
+	sps, err = psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// prepare session with max cu overflow. expect an error
+	err = sps.PrepareSessionForUsage(relayCu, maxCu+relayCu)
+	require.Error(t, err)
+	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
+}
+
+func TestPSMCUMisMatch(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps)
+
+	// get another session
+	sps, err = psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
+	err = sps.PrepareSessionForUsage(relayCu+1, relayCu)
+	require.Error(t, err)
+	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
