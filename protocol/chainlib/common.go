@@ -193,6 +193,8 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
 		if httpEndpoint != "" {
 			return httpEndpoint, httpEndpoint
+		} else {
+			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil, nil)
 		}
 	}
 	return websocketEndpoint, httpEndpoint

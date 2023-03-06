@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	DefaultTimeout           = 5 * time.Second
-	TimePerCU                = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay = time.Second
-	AverageWorldLatency      = 200 * time.Millisecond
+	TimePerCU                      = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay       = time.Second
+	AverageWorldLatency            = 300 * time.Millisecond
+	DataReliabilityTimeoutIncrease = 5 * time.Second
 )
 
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
@@ -103,5 +103,5 @@ func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavase
 }
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
-	return time.Duration(cu * TimePerCU)
+	return time.Duration(cu*TimePerCU) + AverageWorldLatency // TODO: remove average world latency once our providers run locally, or allow a flag that says local to make it tight, tighter timeouts are better
 }
