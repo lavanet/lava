@@ -6,7 +6,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testNumberOfBlocksKeptInMemory = 100
+const (
+	testNumberOfBlocksKeptInMemory = 100
+	relayCu                        = uint64(10)
+	epoch1                         = uint64(10)
+	sessionId                      = uint64(123)
+	relayNumber                    = uint64(1)
+	maxCu                          = uint64(150)
+	epoch2                         = testNumberOfBlocksKeptInMemory + epoch1
+)
 
 func initProviderSessionManager() *ProviderSessionManager {
 	return NewProviderSessionManager(&RPCProviderEndpoint{
@@ -18,16 +26,7 @@ func initProviderSessionManager() *ProviderSessionManager {
 	}, testNumberOfBlocksKeptInMemory)
 }
 
-// Test the basic functionality of the ProviderSessionsManager
-func TestHappyFlowPSMWithEpochChange(t *testing.T) {
-	// parameters for the test
-	relayCu := uint64(10)
-	epoch1 := uint64(10)
-	sessionId := uint64(123)
-	relayNumber := uint64(1)
-	maxCu := uint64(150)
-	epoch2 := testNumberOfBlocksKeptInMemory + epoch1
-
+func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSession) {
 	// initialize the struct
 	psm := initProviderSessionManager()
 
@@ -57,9 +56,32 @@ func TestHappyFlowPSMWithEpochChange(t *testing.T) {
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, relayNumber)
 	require.Equal(t, sps.PairingEpoch, epoch1)
+	return psm, sps
+}
+
+func TestHappyFlowPSM(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
 
 	// on session done successfully
-	err = psm.OnSessionDone(sps)
+	err := psm.OnSessionDone(sps)
+
+	// validate session done data
+	require.Nil(t, err)
+	require.Equal(t, sps.LatestRelayCu, uint64(0))
+	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumber)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+// Test the basic functionality of the ProviderSessionsManager
+func TestHappyFlowPSMWithEpochChange(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps)
 
 	// validate session done data
 	require.Nil(t, err)
@@ -85,4 +107,20 @@ func TestHappyFlowPSMWithEpochChange(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, InvalidEpochError.Is(err))
 	require.Nil(t, sps)
+}
+
+func TestHappyFlowPSMOnSessionFailure(t *testing.T) {
+	// init test
+	psm, sps := prepareSession(t)
+
+	// on session done successfully
+	err := psm.OnSessionFailure(sps)
+
+	// validate session done data
+	require.Nil(t, err)
+	require.Equal(t, sps.LatestRelayCu, uint64(0))
+	require.Equal(t, sps.CuSum, uint64(0))
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, uint64(0))
+	require.Equal(t, sps.PairingEpoch, epoch1)
 }
