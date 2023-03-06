@@ -23,6 +23,12 @@ type testStruct struct {
 	ctx     context.Context
 	keepers *testkeeper.Keepers
 }
+func (ts *testStruct) advanceEpochUntilStale() {
+	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + int64(commontypes.STALE_ENTRY_TIME+1)
+	for block > sdk.UnwrapSDKContext(ts.ctx).BlockHeight() {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+}
 
 func createNPlanEntry(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Plan {
 	items := make([]types.Plan, n)
@@ -320,12 +326,7 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// advance enough epochs so the first two packages will be stale
-	for {
-		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-		if uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()) > uint64(commontypes.STALE_ENTRY_TIME)+secondPlanBlockHeight {
-			break
-		}
-	}
+	ts.advanceEpochUntilStale()
 
 	// create an additional plan and add it to the store to trigger plan deletion code
 	newPlan := testPlans[1]
@@ -350,7 +351,8 @@ func TestPlansDeletion(t *testing.T) {
 	require.True(t, found)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.advanceEpochUntilStale()
+
 	newerPlanBlockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 	newerPlan := newPlan
 	newerPlan.OveruseRate += 20
