@@ -77,7 +77,7 @@ func TestHappyFlowPSM(t *testing.T) {
 }
 
 // Test the basic functionality of the ProviderSessionsManager
-func TestHappyFlowPSMWithEpochChange(t *testing.T) {
+func TestPSMEpochChange(t *testing.T) {
 	// init test
 	psm, sps := prepareSession(t)
 
@@ -110,7 +110,7 @@ func TestHappyFlowPSMWithEpochChange(t *testing.T) {
 	require.Nil(t, sps)
 }
 
-func TestHappyFlowPSMOnSessionFailure(t *testing.T) {
+func TestPSMOnSessionFailure(t *testing.T) {
 	// init test
 	psm, sps := prepareSession(t)
 
