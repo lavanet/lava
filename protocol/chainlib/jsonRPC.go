@@ -394,6 +394,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	var replyMsg rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
+		utils.LavaFormatDebug("received an error from SendNodeMsg", &map[string]string{"error": err.Error()})
 		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
 			Version: nodeMessage.Version,
 			ID:      nodeMessage.ID,

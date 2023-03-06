@@ -18,11 +18,7 @@ import (
 )
 
 const (
-	TimePerCU                      = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay       = time.Second
-	AverageWorldLatency            = 200 * time.Millisecond
-	DataReliabilityTimeoutIncrease = 5 * time.Second
-	SupportedNumberOfVRFs          = 2
+	SupportedNumberOfVRFs = 2
 )
 
 type RelayRequestCommonData struct {
@@ -79,7 +75,7 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, chain
 }
 
 func GetTimePerCu(cu uint64) time.Duration {
-	return chainlib.LocalNodeTimePerCu(cu) + MinimumTimePerRelayDelay
+	return chainlib.LocalNodeTimePerCu(cu) + chainlib.MinimumTimePerRelayDelay
 }
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {

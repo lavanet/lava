@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -30,7 +31,20 @@ type RPCProviderEndpoint struct {
 }
 
 func (endpoint *RPCProviderEndpoint) String() (retStr string) {
-	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+}
+
+func (endpoint *RPCProviderEndpoint) Validate() error {
+	if len(endpoint.NodeUrl) == 0 {
+		return utils.LavaFormatError("Empty URL list for endpoint", nil, &map[string]string{"endpoint": endpoint.String()})
+	}
+	for _, url := range endpoint.NodeUrl {
+		err := common.ValidateEndpoint(url, endpoint.ApiInterface)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type RPCSubscription struct {

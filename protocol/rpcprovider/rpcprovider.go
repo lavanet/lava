@@ -55,6 +55,7 @@ type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderServers   map[string]*RPCProviderServer
 	rpcProviderListeners map[string]*ProviderListener
+	disabledEndpoints    []*lavasession.RPCProviderEndpoint
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
@@ -67,6 +68,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}()
 	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
+	rpcp.disabledEndpoints = []*lavasession.RPCProviderEndpoint{}
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
@@ -101,6 +103,12 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err, nil)
 	}
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		err := rpcProviderEndpoint.Validate()
+		if err != nil {
+			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, &map[string]string{"endpoint": rpcProviderEndpoint.String()})
+			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
+			continue
+		}
 		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
 		key := rpcProviderEndpoint.Key()
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
@@ -112,7 +120,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
 		if err != nil {
-			utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others", err, &map[string]string{"parallelConnections": strconv.FormatUint(uint64(parallelConnections), 10), "rpcProviderEndpoint": fmt.Sprintf("%+v", rpcProviderEndpoint)})
+			utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, &map[string]string{"parallelConnections": strconv.FormatUint(uint64(parallelConnections), 10), "rpcProviderEndpoint": fmt.Sprintf("%+v", rpcProviderEndpoint)})
+			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
 			continue
 		}
 
@@ -126,7 +135,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 		chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 		if err != nil {
-			utils.LavaFormatError("panic severity critical error, aborting support for chain due to node access, continuing with others", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig), "endpoint": rpcProviderEndpoint.String()})
+			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, &map[string]string{"chainTrackerConfig": fmt.Sprintf("%+v", chainTrackerConfig), "endpoint": rpcProviderEndpoint.String()})
+			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
 			continue
 		}
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
@@ -161,7 +171,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 		listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	}
-
+	if len(rpcp.disabledEndpoints) > 0 {
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", rpcp.disabledEndpoints), nil, nil)
+	}
 	select {
 	case <-ctx.Done():
 		utils.LavaFormatInfo("Provider Server ctx.Done", nil)

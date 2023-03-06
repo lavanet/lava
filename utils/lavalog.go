@@ -133,3 +133,12 @@ func LavaFormatInfo(description string, extraAttributes *map[string]string) erro
 func LavaFormatDebug(description string, extraAttributes *map[string]string) error {
 	return LavaFormatLog(description, nil, extraAttributes, 0)
 }
+
+func FormatStringerList[T fmt.Stringer](description string, listToPrint []T) string {
+	st := ""
+	for _, printable := range listToPrint {
+		st = st + printable.String() + "\n"
+	}
+	st = fmt.Sprintf(description+"\n%s", st)
+	return st
+}

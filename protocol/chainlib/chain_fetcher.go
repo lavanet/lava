@@ -97,11 +97,14 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {
 	var parserInput parser.RPCInput
 	respData := reply.Data
+	if len(respData) == 0 {
+		return nil, utils.LavaFormatError("result (reply.Data) is empty, can't be formatted for parsing", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+	}
 	rpcMessage := chainMessage.GetRPCMessage()
 	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {
 		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
 		if err != nil {
-			return nil, utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
+			return nil, utils.LavaFormatError("failed creating NewParsableRPCInput from CustomParsingMessage", err, &map[string]string{"chainID": cf.endpoint.ChainID, "APIInterface": cf.endpoint.ApiInterface})
 		}
 	} else {
 		parserInput = chainproxy.DefaultParsableRPCInput(respData)
