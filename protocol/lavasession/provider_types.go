@@ -60,15 +60,18 @@ func (rpcpe *RPCProviderEndpoint) Key() string {
 const (
 	notBlockListedConsumer = 0
 	blockListedConsumer    = 1
+	notDataReliabilityPSWC = 0
+	isDataReliabilityPSWC  = 1
 )
 
 // holds all of the data for a consumer for a certain epoch
 type ProviderSessionsWithConsumer struct {
-	Sessions      map[uint64]*SingleProviderSession
-	isBlockListed uint32
-	consumerAddr  string
-	epochData     *ProviderSessionsEpochData
-	Lock          sync.RWMutex
+	Sessions          map[uint64]*SingleProviderSession
+	isBlockListed     uint32
+	consumerAddr      string
+	epochData         *ProviderSessionsEpochData
+	Lock              sync.RWMutex
+	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 }
 
 type SingleProviderSession struct {
@@ -81,14 +84,20 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
-		Sessions:      map[uint64]*SingleProviderSession{},
-		isBlockListed: 0,
-		consumerAddr:  consumerAddr,
-		epochData:     epochData,
+		Sessions:          map[uint64]*SingleProviderSession{},
+		isBlockListed:     0,
+		consumerAddr:      consumerAddr,
+		epochData:         epochData,
+		isDataReliability: isDataReliability,
 	}
 	return pswc
+}
+
+// reads the isDataReliability data atomically
+func (pswc *ProviderSessionsWithConsumer) atomicReadIsDataReliability() uint32 { // rename to blocked consumer not blocked epoch
+	return atomic.LoadUint32(&pswc.isDataReliability)
 }
 
 // reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer = 1
@@ -152,6 +161,29 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 	return nil, SessionDoesNotExist
 }
 
+// this function verifies the provider can create a data reliability session and returns one if valid
+func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", &map[string]string{"SessionID": strconv.FormatUint(sessionId, 10), "epoch": strconv.FormatUint(epoch, 10)})
+	_, foundDataReliabilitySession := pswc.Sessions[sessionId]
+	if foundDataReliabilitySession {
+		// consumer already used his data reliability session.
+		return nil, utils.LavaFormatWarning("Data Reliability Session was already used", DataReliabilitySessionAlreadyUsedError, nil)
+	}
+
+	session = &SingleProviderSession{
+		userSessionsParent: pswc,
+		SessionID:          sessionId,
+		PairingEpoch:       epoch,
+	}
+	pswc.Lock.Lock()
+	defer pswc.Lock.Unlock()
+	// this is a double lock and risky but we just created session and nobody has reference to it yet
+	session.lock.Lock()
+	pswc.Sessions[sessionId] = session
+	// session is still locked when we return it
+	return session, nil
+}
+
 func (sps *SingleProviderSession) GetPairingEpoch() uint64 {
 	return atomic.LoadUint64(&sps.PairingEpoch)
 }
@@ -170,10 +202,26 @@ func (sps *SingleProviderSession) VerifyLock() error {
 	return nil
 }
 
+// In case the user session is a data reliability we just need to verify that the cusum is the amount agreed between the consumer and the provider
+func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayRequestTotalCU uint64) error {
+	if relayRequestTotalCU != DataReliabilityCuSum {
+		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10)})
+	}
+	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
+	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
+	sps.RelayNum = sps.RelayNum + 1          // 3. update RelayNum, we already verified relayNum is valid in GetDataReliabilitySession.
+	return nil
+}
+
 func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
+	}
+
+	// checking if this user session is a data reliability user session.
+	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
+		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
 	}
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()

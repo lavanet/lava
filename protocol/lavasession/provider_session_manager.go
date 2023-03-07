@@ -77,12 +77,12 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 	}
 
 	// If we got here, we need to create a new instance for this consumer address.
-	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil)
+	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil, isDataReliabilityPSWC)
 	psm.dataReliabilitySessionsWithAllConsumers[epoch][address] = providerSessionWithConsumer
 	return providerSessionWithConsumer, nil
 }
 
-// GetDataReliabilitySession fetches a data reliability session, and assumes the user
+// GetDataReliabilitySession fetches a data reliability session
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	// validate Epoch
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
@@ -97,13 +97,26 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 
 	// validate RelayNumber
 	if relayNumber > DataReliabilityRelayNumber {
-		return nil, utils.LavaFormatError("request's relayNumber is larger than the DataReliabilityRelayNumber allowed relay number", nil, &map[string]string{"relayNumber": strconv.FormatUint(relayNumber, 10), "DataReliabilityRelayNumber": strconv.Itoa(DataReliabilityRelayNumber)})
+		return nil, utils.LavaFormatError("request's relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", nil, &map[string]string{"relayNumber": strconv.FormatUint(relayNumber, 10), "DataReliabilityRelayNumber": strconv.Itoa(DataReliabilityRelayNumber)})
 	}
 
 	// validate active consumer.
-	psm.getOrCreateDataReliabilitySessionWithConsumer(address, epoch, sessionId)
+	providerSessionWithConsumer, err := psm.getOrCreateDataReliabilitySessionWithConsumer(address, epoch, sessionId)
+	if err != nil {
+		return nil, utils.LavaFormatError("getOrCreateDataReliabilitySessionWithConsumer Failed", err, &map[string]string{"relayNumber": strconv.FormatUint(relayNumber, 10), "DataReliabilityRelayNumber": strconv.Itoa(DataReliabilityRelayNumber)})
+	}
 
-	return nil, nil
+	singleProviderSession, err := providerSessionWithConsumer.getDataReliabilitySingleSession(sessionId, epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate relay number in the session stored
+	if singleProviderSession.RelayNum+1 > DataReliabilityRelayNumber { // validate relay number fits
+		return nil, utils.LavaFormatError("GetDataReliabilitySession singleProviderSession.RelayNum relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", DataReliabilityRelayNumberMisMatchError, &map[string]string{"singleProviderSession.RelayNum": strconv.FormatUint(singleProviderSession.RelayNum+1, 10), "request.relayNumber": strconv.FormatUint(relayNumber, 10)})
+	}
+
+	return singleProviderSession, nil
 
 }
 
@@ -137,7 +150,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[consumerAddr]
 	if !foundAddressInMap {
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer})
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}, notDataReliabilityPSWC)
 		mapOfProviderSessionsWithConsumer[consumerAddr] = providerSessionWithConsumer
 	}
 	return providerSessionWithConsumer, nil

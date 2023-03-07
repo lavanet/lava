@@ -315,6 +315,9 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	}
 	dataReliabilitySingleProviderSession, err := rpcps.providerSessionManager.GetDataReliabilitySession(extractedConsumerAddress.String(), uint64(request.BlockHeight), request.SessionId, request.RelayNum)
 	if err != nil {
+		if lavasession.DataReliabilityAlreadySentThisEpochError.Is(err) {
+			return nil, nil, err
+		}
 		return nil, nil, utils.LavaFormatError("failed to get a provider data reliability session", err, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": extractedConsumerAddress.String(), "epoch": strconv.FormatInt(request.BlockHeight, 10)})
 	}
 	return dataReliabilitySingleProviderSession, extractedConsumerAddress, nil

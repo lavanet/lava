@@ -11,6 +11,7 @@ const (
 	relayCu                        = uint64(10)
 	epoch1                         = uint64(10)
 	sessionId                      = uint64(123)
+	dataReliabilitySessionId       = uint64(0)
 	relayNumber                    = uint64(1)
 	maxCu                          = uint64(150)
 	epoch2                         = testNumberOfBlocksKeptInMemory + epoch1
@@ -180,4 +181,31 @@ func TestPSMCUMisMatch(t *testing.T) {
 	err = sps.PrepareSessionForUsage(relayCu+1, relayCu)
 	require.Error(t, err)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
+}
+
+func TestPSMDataReliabilityHappyFlow(t *testing.T) {
+	// initialize the struct
+	psm := initProviderSessionManager()
+
+	// get data reliability session
+	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber)
+
+	// validate results
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// validate expected results
+	require.Empty(t, psm.sessionsWithAllConsumers)
+	require.NotEmpty(t, psm.dataReliabilitySessionsWithAllConsumers)
+	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+
+	// // prepare session for usage
+	sps.PrepareSessionForUsage(relayCu, relayCu)
+
+	// validate session was prepared successfully
+	require.Equal(t, relayCu, sps.LatestRelayCu)
+	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumber)
+	require.Equal(t, sps.PairingEpoch, epoch1)
 }
