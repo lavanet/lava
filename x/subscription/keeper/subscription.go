@@ -218,7 +218,10 @@ func (k Keeper) CreateSubscription(
 	}()
 
 	price := plan.GetPrice()
-	expiry := time.Now().UTC()
+
+	// use current block's timestamp for subscription start-time
+	timestamp := ctx.BlockTime()
+	expiry := timestamp
 
 	duration := int(plan.GetDuration())
 	for i := 0; i < duration; i++ {
@@ -227,7 +230,7 @@ func (k Keeper) CreateSubscription(
 
 	if isYearly && duration < 12 {
 		// extend the duration to 1 year, and price pro-rata
-		expiry = nextYear(time.Now().UTC())
+		expiry = nextYear(timestamp)
 		price.Amount = price.Amount.MulRaw(12).QuoRaw(int64(duration))
 
 		// adjust cost if discount given
