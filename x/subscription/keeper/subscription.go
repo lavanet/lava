@@ -109,6 +109,22 @@ func nextMonth(date time.Time) time.Time {
 		return endOfMonth(next)
 	}
 
+	// If we are reaching end of January, stll need to "manually" select end of
+	// next month, otherwise will overrun into March.
+
+	if date.Month() == 1 && date.Day() >= 29 {
+		next = time.Date(
+			date.Year(),
+			time.February,
+			1,
+			date.Hour(),
+			date.Minute(),
+			date.Second(),
+			date.Nanosecond(),
+			time.UTC)
+		return endOfMonth(next)
+	}
+
 	return next
 }
 
