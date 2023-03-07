@@ -3,12 +3,15 @@ package keeper_test
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -146,13 +149,13 @@ func TestCreateSubscription(t *testing. T) {
 			consumers: []int{2},
 			success:   false,
 		},
-//		{
-//			name:      "invalid plan",
-//			index:     "",
-//			creator:   0,
-//			consumers: []int{2},
-//			success:   false,
-//		},
+		{
+			name:      "invalid plan",
+			index:     "",
+			creator:   0,
+			consumers: []int{2},
+			success:   false,
+		},
 		{
 			name:      "unknown plan",
 			index:     "no-such-plan",
@@ -211,4 +214,128 @@ func TestSubscriptionDefaultProject(t *testing. T) {
 	// with the subscription address as its developer key
 	_, err = keepers.Projects.GetProjectIDForDeveloper(ctx, creator, block)
 	require.Nil(t, err)
+}
+
+func TestExpiryTime(t *testing. T) {
+	_, keepers, _ctx := keepertest.InitAllKeepers(t)
+
+	// AdvanceBlock() always users the current time for the first block (and
+	// (ignores the time delta arg if given); So call it here first to avoid
+	// the call below being the first and having the delta are ignored.
+	_ctx = keepertest.AdvanceBlock(_ctx, keepers)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	keeper := keepers.Subscription
+	plansKeeper := keepers.Plans
+	projsKeeper := keepers.Projects
+
+	plan := common.CreateMockPlan()
+	plan.Duration = 1 // month
+	plansKeeper.AddPlan(ctx, plan)
+
+	template := []struct {
+		now    [3]int // year, month, day
+		res    [3]int // year, month, day
+		yearly bool
+	}{
+		// monthly
+		{ [3]int{2000, 3, 1}, [3]int{2000, 4, 1}, false },
+		{ [3]int{2000, 3, 30}, [3]int{2000, 4, 30}, false },
+		{ [3]int{2000, 3, 31}, [3]int{2000, 4, 30}, false },
+		{ [3]int{2000, 2, 1}, [3]int{2000, 3, 1}, false },
+		{ [3]int{2000, 2, 28}, [3]int{2000, 3, 28}, false },
+		{ [3]int{2001, 2, 28}, [3]int{2001, 3, 31}, false },
+		{ [3]int{2000, 2, 29}, [3]int{2000, 3, 31}, false },
+		{ [3]int{2000, 1, 28}, [3]int{2000, 2, 28}, false },
+		{ [3]int{2001, 1, 28}, [3]int{2001, 2, 28}, false },
+		{ [3]int{2000, 1, 29}, [3]int{2000, 2, 29}, false },
+		{ [3]int{2001, 1, 29}, [3]int{2001, 2, 28}, false },
+		{ [3]int{2000, 1, 30}, [3]int{2000, 2, 29}, false },
+		{ [3]int{2001, 1, 30}, [3]int{2001, 2, 28}, false },
+		{ [3]int{2000, 1, 31}, [3]int{2000, 2, 29}, false },
+		{ [3]int{2001, 1, 31}, [3]int{2001, 2, 28}, false },
+		{ [3]int{2001, 12, 31}, [3]int{2002, 1, 31}, false },
+		// yearly
+		{ [3]int{2000, 3, 1}, [3]int{2001, 3, 1}, true },
+		{ [3]int{2000, 2, 28}, [3]int{2001, 2, 28}, true },
+		{ [3]int{2000, 2, 29}, [3]int{2001, 2, 28}, true },
+		{ [3]int{2001, 2, 28}, [3]int{2002, 2, 28}, true },
+		{ [3]int{2003, 2, 28}, [3]int{2004, 2, 29}, true },
+	}
+
+	for _, tt := range template {
+		now := time.Date(tt.now[0], time.Month(tt.now[1]), tt.now[2], 12, 0, 0, 0, time.UTC)
+		res := time.Date(tt.res[0], time.Month(tt.res[1]), tt.res[2], 12, 0, 0, 0, time.UTC)
+
+		t.Run(now.Format("2006-01-02"), func(t *testing.T) {
+			// TODO: need new creator because Projects doesn't really delete projects
+			creator := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+
+			delta := now.Sub(ctx.BlockTime())
+			_ctx = keepertest.AdvanceBlock(_ctx, keepers, delta)
+			ctx = sdk.UnwrapSDKContext(_ctx)
+
+			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.yearly)
+			require.Nil(t, err)
+
+			sub, found := keeper.GetSubscription(ctx, creator)
+			require.True(t, found)
+			require.Equal(t, res, time.Unix(int64(sub.ExpiryTime), 0).UTC())
+
+			keeper.RemoveSubscription(ctx, creator)
+			// TODO: remove when RemoveSubscriptions properly removes projects
+			projsKeeper.DeleteProject(ctx, projectstypes.ProjectIndex(creator, "default"))
+		})
+	}
+}
+
+func TestYearlyPrice(t *testing. T) {
+	_, keepers, _ctx := keepertest.InitAllKeepers(t)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	keeper := keepers.Subscription
+	plansKeeper := keepers.Plans
+	projsKeeper := keepers.Projects
+
+	plan := common.CreateMockPlan()
+
+	template := []struct {
+		name     string
+		duration uint64
+		discount uint64
+		price    int64
+		cost     int64
+	}{
+		{ "yearly from 1 month", 1, 0, 100, 1200 },
+		{ "yearly from 2 months", 2, 0, 100, 600 },
+		{ "yearly from 4 months", 4, 0, 100, 300 },
+		{ "yearly from 1 month with discount", 1, 25, 100, 900 },
+		{ "yearly from 1 months with discount", 2, 25, 100, 450 },
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			// NOTE: need new creator because Projects doesn't really delete projects
+			address := common.CreateNewAccount(_ctx, *keepers, 10000).Addr
+			creator := address.String()
+
+			plan.Duration = tt.duration
+			plan.AnnualDiscountPercentage = tt.discount
+			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
+			plansKeeper.AddPlan(ctx, plan)
+
+			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, true)
+			require.Nil(t, err)
+
+			_, found := keeper.GetSubscription(ctx, creator)
+			require.True(t, found)
+
+			balance := keepers.BankKeeper.GetBalance(ctx, address, epochstoragetypes.TokenDenom)
+			require.Equal(t, balance.Amount.Int64(), int64(10000 - tt.cost))
+
+			keeper.RemoveSubscription(ctx, creator)
+			// TODO: remove when RemoveSubscriptions properly removes projects
+			projsKeeper.DeleteProject(ctx, projectstypes.ProjectIndex(creator, "default"))
+		})
+	}
 }
