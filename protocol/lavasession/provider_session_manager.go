@@ -9,9 +9,9 @@ import (
 )
 
 type ProviderSessionManager struct {
-	sessionsWithAllConsumers                map[uint64]map[string]*ProviderSessionsWithConsumer // first key is epochs, second key is a consumer address
-	dataReliabilitySessionsWithAllConsumers map[uint64]map[string]*ProviderSessionsWithConsumer // separate handling of data reliability so later on we can use it outside of pairing, first key is epochs, second key is a consumer address
-	subscriptionSessionsWithAllConsumers    map[uint64]map[string]map[string]*RPCSubscription   // first key is an epoch, second key is a consumer address, third key is subscriptionId
+	sessionsWithAllConsumers                map[uint64]sessionData      // first key is epochs, second key is a consumer address
+	dataReliabilitySessionsWithAllConsumers map[uint64]sessionData      // separate handling of data reliability so later on we can use it outside of pairing, first key is epochs, second key is a consumer address
+	subscriptionSessionsWithAllConsumers    map[uint64]subscriptionData // first key is an epoch, second key is a consumer address, third key is subscriptionId
 	lock                                    sync.RWMutex
 	blockedEpochHeight                      uint64 // requests from this epoch are blocked
 	rpcProviderEndpoint                     *RPCProviderEndpoint
@@ -63,7 +63,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 
 func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer(address string, epoch uint64, sessionId uint64) (providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
 	if mapOfDataReliabilitySessionsWithConsumer, consumerFoundInEpoch := psm.dataReliabilitySessionsWithAllConsumers[epoch]; consumerFoundInEpoch {
-		if providerSessionWithConsumer, consumerAddressFound := mapOfDataReliabilitySessionsWithConsumer[address]; consumerAddressFound {
+		if providerSessionWithConsumer, consumerAddressFound := mapOfDataReliabilitySessionsWithConsumer.sessionMap[address]; consumerAddressFound {
 			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
 				// consumer is blocked.
 				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "ConsumerAddress": address})
@@ -73,12 +73,12 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 		}
 	} else {
 		// If Epoch is missing from map, create a new instance
-		psm.dataReliabilitySessionsWithAllConsumers[epoch] = make(map[string]*ProviderSessionsWithConsumer)
+		psm.dataReliabilitySessionsWithAllConsumers[epoch] = sessionData{sessionMap: make(map[string]*ProviderSessionsWithConsumer)}
 	}
 
 	// If we got here, we need to create a new instance for this consumer address.
 	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil, isDataReliabilityPSWC)
-	psm.dataReliabilitySessionsWithAllConsumers[epoch][address] = providerSessionWithConsumer
+	psm.dataReliabilitySessionsWithAllConsumers[epoch].sessionMap[address] = providerSessionWithConsumer
 	return providerSessionWithConsumer, nil
 }
 
@@ -145,14 +145,14 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 
 	mapOfProviderSessionsWithConsumer, foundEpochInMap := psm.sessionsWithAllConsumers[epoch]
 	if !foundEpochInMap {
-		mapOfProviderSessionsWithConsumer = make(map[string]*ProviderSessionsWithConsumer)
+		mapOfProviderSessionsWithConsumer = sessionData{sessionMap: make(map[string]*ProviderSessionsWithConsumer)}
 		psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 	}
 
-	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer[consumerAddr]
+	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer.sessionMap[consumerAddr]
 	if !foundAddressInMap {
 		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}, notDataReliabilityPSWC)
-		mapOfProviderSessionsWithConsumer[consumerAddr] = providerSessionWithConsumer
+		mapOfProviderSessionsWithConsumer.sessionMap[consumerAddr] = providerSessionWithConsumer
 	}
 	return providerSessionWithConsumer, nil
 }
@@ -181,7 +181,7 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 		return nil, InvalidEpochError
 	}
 	if mapOfProviderSessionsWithConsumer, consumerFoundInEpoch := psm.sessionsWithAllConsumers[epoch]; consumerFoundInEpoch {
-		if providerSessionWithConsumer, consumerAddressFound := mapOfProviderSessionsWithConsumer[address]; consumerAddressFound {
+		if providerSessionWithConsumer, consumerAddressFound := mapOfProviderSessionsWithConsumer.sessionMap[address]; consumerAddressFound {
 			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
 				// consumer is blocked.
 				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10), "ConsumerAddress": address})
@@ -234,39 +234,20 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	}
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 	psm.dataReliabilitySessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.dataReliabilitySessionsWithAllConsumers)
-	// in the case of subscribe, we need to unsubscribe before deleting the key from storage.
-	psm.subscriptionSessionsWithAllConsumers = psm.filterOldEpochEntriesSubscribe(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
+	psm.subscriptionSessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
 }
 
-func (psm *ProviderSessionManager) filterOldEpochEntriesSubscribe(blockedEpochHeight uint64, allEpochsMap map[uint64]map[string]map[string]*RPCSubscription) map[uint64]map[string]map[string]*RPCSubscription {
-	validEpochsMap := map[uint64]map[string]map[string]*RPCSubscription{}
-	for epochStored, value := range allEpochsMap {
-		if !IsEpochValidForUse(epochStored, blockedEpochHeight) {
-			// epoch is not valid so we don't keep its key in the new map
-			for _, consumers := range value { // unsubscribe
-				for _, subscription := range consumers {
-					if subscription.Sub == nil { // validate subscription not nil
-						utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscription.Id})
-					} else {
-						subscription.Sub.Unsubscribe()
-					}
-				}
-			}
-			continue
-		}
-		// if epochStored is ok, copy the value into the new map
-		validEpochsMap[epochStored] = value
-	}
-	return validEpochsMap
-}
-
-func filterOldEpochEntries[T any](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
+func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
 	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
 	// which has better O(n) vs O(2n)
 	validEpochsMap = map[uint64]T{}
 	for epochStored, value := range allEpochsMap {
 		if !IsEpochValidForUse(epochStored, blockedEpochHeight) {
 			// epoch is not valid so we don't keep its key in the new map
+
+			// in the case of subscribe, we need to unsubscribe before deleting the key from storage.
+			value.onDeleteEvent()
+
 			continue
 		}
 		// if epochStored is ok, copy the value into the new map
@@ -282,7 +263,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 	if !foundMapOfConsumers {
 		return utils.LavaFormatError("Couldn't find epoch in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
 	}
-	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers[consumerAddress]
+	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers.subscriptionMap[consumerAddress]
 	if !foundMapOfSubscriptionId {
 		return utils.LavaFormatError("Couldn't find consumer address in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
 	}
@@ -297,7 +278,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 				v.Sub.Unsubscribe()
 			}
 		}
-		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress] = make(map[string]*RPCSubscription) // delete the entire map.
+		psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress] = make(map[string]*RPCSubscription) // delete the entire map.
 		return err
 	}
 
@@ -311,7 +292,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 	} else {
 		subscription.Sub.Unsubscribe()
 	}
-	delete(psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress], subscriptionID) // delete subscription after finished with it
+	delete(psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress], subscriptionID) // delete subscription after finished with it
 	return err
 }
 
@@ -322,19 +303,19 @@ func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSub
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch]
 	if !foundEpoch {
 		// this is the first time we subscribe in this epoch
-		psm.subscriptionSessionsWithAllConsumers[epoch] = make(map[string]map[string]*RPCSubscription)
+		psm.subscriptionSessionsWithAllConsumers[epoch] = subscriptionData{subscriptionMap: make(map[string]map[string]*RPCSubscription)}
 	}
 
-	_, foundSubscriptions := psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress]
+	_, foundSubscriptions := psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress]
 	if !foundSubscriptions {
 		// this is the first subscription added in this epoch. we need to create the map
-		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress] = make(map[string]*RPCSubscription)
+		psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress] = make(map[string]*RPCSubscription)
 	}
 
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress][subscription.Id]
+	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress][subscription.Id]
 	if !foundSubscription {
 		// we shouldnt find a subscription already in the storage.
-		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress][subscription.Id] = subscription
+		psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress][subscription.Id] = subscription
 		return nil // successfully added subscription to storage
 	}
 
@@ -359,7 +340,7 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 	if !foundMapOfConsumers {
 		return
 	}
-	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers[consumerAddress]
+	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers.subscriptionMap[consumerAddress]
 	if !foundMapOfSubscriptionId {
 		return
 	}
@@ -374,7 +355,7 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 	} else {
 		subscription.Sub.Unsubscribe()
 	}
-	delete(psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress], subscriptionID) // delete subscription after finished with it
+	delete(psm.subscriptionSessionsWithAllConsumers[epoch].subscriptionMap[consumerAddress], subscriptionID) // delete subscription after finished with it
 }
 
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
@@ -390,7 +371,7 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	if !ok {
 		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10)})
 	}
-	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap[consumerAddress]
+	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap.sessionMap[consumerAddress]
 	if !foundConsumer {
 		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "consumer": consumerAddress})
 	}
@@ -408,9 +389,9 @@ func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberO
 	return &ProviderSessionManager{
 		rpcProviderEndpoint:                     rpcProviderEndpoint,
 		blockDistanceForEpochValidity:           numberOfBlocksKeptInMemory,
-		sessionsWithAllConsumers:                map[uint64]map[string]*ProviderSessionsWithConsumer{},
-		dataReliabilitySessionsWithAllConsumers: map[uint64]map[string]*ProviderSessionsWithConsumer{},
-		subscriptionSessionsWithAllConsumers:    map[uint64]map[string]map[string]*RPCSubscription{},
+		sessionsWithAllConsumers:                map[uint64]sessionData{},
+		dataReliabilitySessionsWithAllConsumers: map[uint64]sessionData{},
+		subscriptionSessionsWithAllConsumers:    map[uint64]subscriptionData{},
 	}
 }
 

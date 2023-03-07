@@ -47,6 +47,33 @@ func (endpoint *RPCProviderEndpoint) Validate() error {
 	return nil
 }
 
+type dataHandler interface {
+	onDeleteEvent()
+}
+
+type subscriptionData struct {
+	subscriptionMap map[string]map[string]*RPCSubscription
+}
+
+func (sm subscriptionData) onDeleteEvent() {
+	for _, consumer := range sm.subscriptionMap {
+		for _, subscription := range consumer {
+			if subscription.Sub == nil { // validate subscription not nil
+				utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscription.Id})
+			} else {
+				subscription.Sub.Unsubscribe()
+			}
+		}
+	}
+}
+
+type sessionData struct {
+	sessionMap map[string]*ProviderSessionsWithConsumer
+}
+
+func (sm sessionData) onDeleteEvent() { // do nothing
+}
+
 type RPCSubscription struct {
 	Id                   string
 	Sub                  *rpcclient.ClientSubscription

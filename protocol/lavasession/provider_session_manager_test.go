@@ -53,9 +53,10 @@ func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSessi
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, relayCu)
+	err = sps.PrepareSessionForUsage(relayCu, relayCu)
 
 	// validate session was prepared successfully
+	require.Nil(t, err)
 	require.Equal(t, relayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -107,6 +108,15 @@ func TestHappyFlowPSM(t *testing.T) {
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, relayNumber)
 	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+func TestPSMPrepareTwice(t *testing.T) {
+	// init test
+	_, sps := prepareSession(t)
+
+	// prepare session for usage
+	err := sps.PrepareSessionForUsage(relayCu, relayCu)
+	require.Error(t, err)
 }
 
 // Test the basic functionality of the ProviderSessionsManager
@@ -362,14 +372,14 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribe(t *testing.T) {
 	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
 	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress]
+	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
 	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
 	require.True(t, foundSubscription)
 
 	err := psm.ProcessUnsubscribe("unsubscribe", subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress])
+	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
 }
 
 func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
@@ -406,16 +416,16 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
 	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
 	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress]
+	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
 	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
 	require.True(t, foundSubscription)
-	_, foundSubscription2 := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID2]
+	_, foundSubscription2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
 	require.True(t, foundSubscription2)
 
 	err = psm.ProcessUnsubscribe(TendermintUnsubscribeAll, subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress])
+	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
 }
 func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testing.T) {
 	// init test
@@ -443,8 +453,8 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 
 	err = psm.ProcessUnsubscribe("unsubscribeOne", subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress])
-	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID2]
+	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
+	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
 	require.True(t, foundId2)
 }
 
@@ -470,13 +480,13 @@ func TestPSMSubscribeHappyFlowSubscriptionEnded(t *testing.T) {
 	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
 	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress]
+	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
 	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
 	require.True(t, foundSubscription)
 
 	psm.SubscriptionEnded(consumerOneAddress, epoch1, subscriptionID)
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress])
+	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
 }
 
 func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
@@ -505,8 +515,8 @@ func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1)
 
 	psm.SubscriptionEnded(consumerOneAddress, epoch1, subscriptionID)
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress])
-	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1][consumerOneAddress][subscriptionID2]
+	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
+	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
 	require.True(t, foundId2)
 }
 
