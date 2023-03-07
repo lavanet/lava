@@ -275,16 +275,29 @@ func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
 	}
 }
 
+func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
+	sps.CuSum = sps.CuSum - sps.LatestRelayCu
+	sps.RelayNum = sps.RelayNum - 1
+	sps.LatestRelayCu = 0
+	return nil
+}
+
 func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, nil)
 	}
+	defer sps.lock.Unlock()
+
+	// handle data reliability session failure
+	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
+		return sps.onDataReliabilitySessionFailure()
+	}
+
 	sps.CuSum = sps.CuSum - sps.LatestRelayCu
 	sps.RelayNum = sps.RelayNum - 1
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
 	sps.LatestRelayCu = 0
-	sps.lock.Unlock()
 	return nil
 }
 

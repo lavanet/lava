@@ -9,6 +9,7 @@ import (
 const (
 	testNumberOfBlocksKeptInMemory = 100
 	relayCu                        = uint64(10)
+	dataReliabilityRelayCu         = uint64(0)
 	epoch1                         = uint64(10)
 	sessionId                      = uint64(123)
 	dataReliabilitySessionId       = uint64(0)
@@ -200,12 +201,59 @@ func TestPSMDataReliabilityHappyFlow(t *testing.T) {
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, relayCu)
+	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
 
 	// validate session was prepared successfully
-	require.Equal(t, relayCu, sps.LatestRelayCu)
-	require.Equal(t, sps.CuSum, relayCu)
-	require.Equal(t, sps.SessionID, sessionId)
-	require.Equal(t, sps.RelayNum, relayNumber)
-	require.Equal(t, sps.PairingEpoch, epoch1)
+	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
+	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
+	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
+	require.Equal(t, relayNumber, sps.RelayNum)
+	require.Equal(t, epoch1, sps.PairingEpoch)
+
+	// perform session done
+	psm.OnSessionDone(sps)
+
+	// validate session done information is valid.
+	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
+	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
+	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
+	require.Equal(t, relayNumber, sps.RelayNum)
+	require.Equal(t, epoch1, sps.PairingEpoch)
+}
+
+func TestPSMDataReliabilitySessionFailure(t *testing.T) {
+	// initialize the struct
+	psm := initProviderSessionManager()
+
+	// get data reliability session
+	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber)
+
+	// validate results
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// validate expected results
+	require.Empty(t, psm.sessionsWithAllConsumers)
+	require.NotEmpty(t, psm.dataReliabilitySessionsWithAllConsumers)
+	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+
+	// // prepare session for usage
+	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
+
+	// validate session was prepared successfully
+	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
+	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
+	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
+	require.Equal(t, relayNumber, sps.RelayNum)
+	require.Equal(t, epoch1, sps.PairingEpoch)
+
+	// perform session failure.
+	psm.OnSessionFailure(sps)
+
+	// validate on session failure that the relay number was subtracted
+	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
+	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
+	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
+	require.Equal(t, relayNumber-1, sps.RelayNum)
+	require.Equal(t, epoch1, sps.PairingEpoch)
 }
