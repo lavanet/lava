@@ -106,18 +106,19 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 		return nil, utils.LavaFormatError("getOrCreateDataReliabilitySessionWithConsumer Failed", err, &map[string]string{"relayNumber": strconv.FormatUint(relayNumber, 10), "DataReliabilityRelayNumber": strconv.Itoa(DataReliabilityRelayNumber)})
 	}
 
+	// singleProviderSession is locked after this method is called unless we got an error
 	singleProviderSession, err := providerSessionWithConsumer.getDataReliabilitySingleSession(sessionId, epoch)
 	if err != nil {
 		return nil, err
 	}
 
 	// validate relay number in the session stored
-	if singleProviderSession.RelayNum+1 > DataReliabilityRelayNumber { // validate relay number fits
-		return nil, utils.LavaFormatError("GetDataReliabilitySession singleProviderSession.RelayNum relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", DataReliabilityRelayNumberMisMatchError, &map[string]string{"singleProviderSession.RelayNum": strconv.FormatUint(singleProviderSession.RelayNum+1, 10), "request.relayNumber": strconv.FormatUint(relayNumber, 10)})
+	if singleProviderSession.RelayNum+1 > DataReliabilityRelayNumber { // validate relay number fits if it has been used already raise a used error
+		defer singleProviderSession.lock.Unlock() // in case of an error we need to unlock the session as its currently locked.
+		return nil, utils.LavaFormatWarning("Data Reliability Session was already used", DataReliabilitySessionAlreadyUsedError, nil)
 	}
 
 	return singleProviderSession, nil
-
 }
 
 func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
@@ -233,7 +234,30 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	}
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 	psm.dataReliabilitySessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.dataReliabilitySessionsWithAllConsumers)
-	psm.subscriptionSessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
+	// in the case of subscribe, we need to unsubscribe before deleting the key from storage.
+	psm.subscriptionSessionsWithAllConsumers = psm.filterOldEpochEntriesSubscribe(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
+}
+
+func (psm *ProviderSessionManager) filterOldEpochEntriesSubscribe(blockedEpochHeight uint64, allEpochsMap map[uint64]map[string]map[string]*RPCSubscription) map[uint64]map[string]map[string]*RPCSubscription {
+	validEpochsMap := map[uint64]map[string]map[string]*RPCSubscription{}
+	for epochStored, value := range allEpochsMap {
+		if !IsEpochValidForUse(epochStored, blockedEpochHeight) {
+			// epoch is not valid so we don't keep its key in the new map
+			for _, consumers := range value { // unsubscribe
+				for _, subscription := range consumers {
+					if subscription.Sub == nil { // validate subscription not nil
+						utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscription.Id})
+					} else {
+						subscription.Sub.Unsubscribe()
+					}
+				}
+			}
+			continue
+		}
+		// if epochStored is ok, copy the value into the new map
+		validEpochsMap[epochStored] = value
+	}
+	return validEpochsMap
 }
 
 func filterOldEpochEntries[T any](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
@@ -263,21 +287,59 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 		return utils.LavaFormatError("Couldn't find consumer address in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
 	}
 
+	var err error
 	if apiName == TendermintUnsubscribeAll {
 		// unsubscribe all subscriptions
 		for _, v := range mapOfSubscriptionId {
-			v.Sub.Unsubscribe()
+			if v.Sub == nil {
+				err = utils.LavaFormatError("ProcessUnsubscribe TendermintUnsubscribeAll mapOfSubscriptionId Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscriptionID})
+			} else {
+				v.Sub.Unsubscribe()
+			}
 		}
-		return nil
+		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress] = make(map[string]*RPCSubscription) // delete the entire map.
+		return err
 	}
 
 	subscription, foundSubscription := mapOfSubscriptionId[subscriptionID]
 	if !foundSubscription {
 		return utils.LavaFormatError("Couldn't find subscription Id in psm.subscriptionSessionsWithAllConsumers", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress, "subscriptionId": subscriptionID})
 	}
-	subscription.Sub.Unsubscribe()
-	delete(mapOfSubscriptionId, subscriptionID) // delete subscription after finished with it
-	return nil
+
+	if subscription.Sub == nil {
+		err = utils.LavaFormatError("ProcessUnsubscribe Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscriptionID})
+	} else {
+		subscription.Sub.Unsubscribe()
+	}
+	delete(psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress], subscriptionID) // delete subscription after finished with it
+	return err
+}
+
+func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	// we already validated the epoch is valid in the GetSession no need to verify again.
+	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch]
+	if !foundEpoch {
+		// this is the first time we subscribe in this epoch
+		psm.subscriptionSessionsWithAllConsumers[epoch] = make(map[string]map[string]*RPCSubscription)
+	}
+
+	_, foundSubscriptions := psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress]
+	if !foundSubscriptions {
+		// this is the first subscription added in this epoch. we need to create the map
+		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress] = make(map[string]*RPCSubscription)
+	}
+
+	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress][subscription.Id]
+	if !foundSubscription {
+		// we shouldnt find a subscription already in the storage.
+		psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress][subscription.Id] = subscription
+		return nil // successfully added subscription to storage
+	}
+
+	// if we get here we found a subscription already in the storage and we need to return an error as we can't add two subscriptions with the same id
+	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, &map[string]string{"SubscriptionId": subscription.Id, "epoch": strconv.FormatUint(epoch, 10), "address": consumerAddress})
 }
 
 func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
@@ -285,7 +347,7 @@ func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *
 	if err != nil {
 		return utils.LavaFormatError("Failed ReleaseSessionAndCreateSubscription", err, nil)
 	}
-	return nil
+	return psm.addSubscriptionToStorage(subscription, consumerAddress, epoch)
 }
 
 // try to disconnect the subscription incase we got an error.
@@ -306,8 +368,13 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 	if !foundSubscription {
 		return
 	}
-	subscription.Sub.Unsubscribe()
-	delete(mapOfSubscriptionId, subscriptionID) // delete subscription after finished with it
+
+	if subscription.Sub == nil { // validate subscription not nil
+		utils.LavaFormatError("SubscriptionEnded Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscription.Id})
+	} else {
+		subscription.Sub.Unsubscribe()
+	}
+	delete(psm.subscriptionSessionsWithAllConsumers[epoch][consumerAddress], subscriptionID) // delete subscription after finished with it
 }
 
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it

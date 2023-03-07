@@ -164,12 +164,15 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 // this function verifies the provider can create a data reliability session and returns one if valid
 func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", &map[string]string{"SessionID": strconv.FormatUint(sessionId, 10), "epoch": strconv.FormatUint(epoch, 10)})
-	_, foundDataReliabilitySession := pswc.Sessions[sessionId]
+	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
 	if foundDataReliabilitySession {
-		// consumer already used his data reliability session.
-		return nil, utils.LavaFormatWarning("Data Reliability Session was already used", DataReliabilitySessionAlreadyUsedError, nil)
+		// if session exists, relay number should be 0 as it might had an error
+		// locking the session and returning for validation
+		session.lock.Lock()
+		return session, nil
 	}
 
+	// otherwise return a new session and add it to the sessions list
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
 		SessionID:          sessionId,
@@ -180,6 +183,7 @@ func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessio
 	// this is a double lock and risky but we just created session and nobody has reference to it yet
 	session.lock.Lock()
 	pswc.Sessions[sessionId] = session
+
 	// session is still locked when we return it
 	return session, nil
 }

@@ -42,5 +42,6 @@ var ( // Provider Side Errors
 	SubscriptionAlreadyExistsError          = sdkerrors.New("SubscriptionAlreadyExists Error", 892, "Subscription already exists in single provider session")
 	DataReliabilitySessionAlreadyUsedError  = sdkerrors.New("DataReliabilitySessionAlreadyUsed Error", 893, "Data Reliability Session already used by this consumer in this epoch")
 	DataReliabilityCuSumMisMatchError       = sdkerrors.New("DataReliabilityCuSumMisMatch Error", 894, "Data Reliability Cu sum mismatch error")
-	DataReliabilityRelayNumberMisMatchError = sdkerrors.New("DataReliabilityRelayNumberMisMatch Error", 894, "Data Reliability RelayNumber mismatch error")
+	DataReliabilityRelayNumberMisMatchError = sdkerrors.New("DataReliabilityRelayNumberMisMatch Error", 895, "Data Reliability RelayNumber mismatch error")
+	SubscriptionPointerIsNilError           = sdkerrors.New("SubscriptionPointerIsNil Error", 896, "Trying to unsubscribe a nil pointer.")
 )
