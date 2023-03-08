@@ -210,11 +210,18 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	headerHash := make([]byte, BLOCK_HEADER_LEN)
 	rand.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
+
+	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+
 	if len(customBlockTime) > 0 {
-		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks, customBlockTime...)
+		ks.BlockStore.AdvanceBlock(customBlockTime[0])
 	} else {
-		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+		ks.BlockStore.AdvanceBlock(BLOCK_TIME)
 	}
+
+	b := ks.BlockStore.LoadBlock(int64(block))
+	unwrapedCtx = unwrapedCtx.WithBlockTime(b.Header.Time)
+
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
@@ -268,7 +275,7 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 }
 
 // Make sure you save the new context
-func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
+func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 		ks.Epochstorage.EpochStart(unwrapedCtx)
@@ -276,10 +283,4 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
-
-	if len(customTime) > 0 {
-		ks.BlockStore.AdvanceBlock(customTime[0])
-	} else {
-		ks.BlockStore.AdvanceBlock(BLOCK_TIME)
-	}
 }
