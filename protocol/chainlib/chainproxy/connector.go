@@ -63,7 +63,7 @@ func addClientsAsynchronously(ctx context.Context, connector *Connector, nConns 
 	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
 		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, &map[string]string{"address": addr})
 	}
-	utils.LavaFormatInfo("Finished adding Clients Asynchronously"+strconv.Itoa(len(connector.freeClients)), nil)
+	utils.LavaFormatInfo("Finished adding Clients Asynchronously", nil)
 	utils.LavaFormatInfo("Number of parallel connections created: "+strconv.Itoa(len(connector.freeClients)), nil)
 	go connector.connectorLoop(ctx)
 }
