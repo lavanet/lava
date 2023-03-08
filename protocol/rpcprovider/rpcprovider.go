@@ -3,15 +3,21 @@ package rpcprovider
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -19,9 +25,11 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/relayer/performance"
+	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -30,7 +38,8 @@ const (
 )
 
 var (
-	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface", "node-url"}
+	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-url"}
+	DefaultRPCProviderFileName = "rpcprovider.yml"
 )
 
 type ProviderStateTrackerInf interface {
@@ -199,4 +208,147 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 		endpoint.Geolocation = geolocation
 	}
 	return
+}
+
+func CreateRPCProviderCobraCommand() *cobra.Command {
+	cmdRPCProvider := &cobra.Command{
+		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... }`,
+		Short: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply`,
+		Long: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply
+		all configs should be located in` + app.DefaultNodeHome + "/config or the local running directory" + ` 
+		if no arguments are passed, assumes default config file: ` + DefaultRPCProviderFileName + `
+		if one argument is passed, its assumed the config file name
+		`,
+		Example: `required flags: --geolocation 1 --from alice
+optional: --save-conf
+rpcprovider <flags>
+rpcprovider rpcprovider_conf.yml <flags>
+rpcprovider 127.0.0.1:3333 ETH1 jsonrpc wss://www.eth-node.com:80 <flags>
+rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https://www.node-path.com:80" 127.0.0.1:3333 COS3 rest https://www.node-path.com:1317 <flags>`,
+		Args: func(cmd *cobra.Command, args []string) error {
+			// Optionally run one of the validators provided by cobra
+			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
+				// zero or one argument is allowed
+				return nil
+			}
+			if len(args)%len(Yaml_config_properties) != 0 {
+				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 4 HOST:PORT chain-id api-interface [node_url,node_url_2], arg count: %d", len(args))
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo("RPCProvider started", &map[string]string{"args": strings.Join(args, ",")})
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			config_name := DefaultRPCProviderFileName
+			if len(args) == 1 {
+				config_name = args[0] // name of config file (without extension)
+			}
+			viper.SetConfigName(config_name)
+			viper.SetConfigType("yml")
+			viper.AddConfigPath(".")
+			viper.AddConfigPath("./config")
+			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
+			var endpoints_strings []string
+			var viper_endpoints *viper.Viper
+			if len(args) > 1 {
+				viper_endpoints, err = common.ParseEndpointArgs(args, Yaml_config_properties, common.EndpointsConfigName)
+				if err != nil {
+					return utils.LavaFormatError("invalid endpoints arguments", err, &map[string]string{"endpoint_strings": strings.Join(args, "")})
+				}
+				save_config, err := cmd.Flags().GetBool(common.SaveConfigFlagName)
+				if err != nil {
+					return utils.LavaFormatError("failed reading flag", err, &map[string]string{"flag_name": common.SaveConfigFlagName})
+				}
+				viper.MergeConfigMap(viper_endpoints.AllSettings())
+				if save_config {
+					err := viper.SafeWriteConfigAs(DefaultRPCProviderFileName)
+					if err != nil {
+						utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", &map[string]string{"file_name": DefaultRPCProviderFileName, "error": err.Error()})
+					} else {
+						utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCProviderFileName})
+					}
+				}
+			} else {
+				err = viper.ReadInConfig()
+				if err != nil {
+					utils.LavaFormatFatal("could not load config file", err, &map[string]string{"expected_config_name": viper.ConfigFileUsed()})
+				}
+				utils.LavaFormatInfo("read config file successfully", &map[string]string{"expected_config_name": viper.ConfigFileUsed()})
+			}
+			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read geolocation flag, required flag", err, nil)
+			}
+			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
+			if err != nil || len(rpcProviderEndpoints) == 0 {
+				return utils.LavaFormatError("invalid endpoints definition", err, &map[string]string{"endpoint_strings": strings.Join(endpoints_strings, "")})
+			}
+			// handle flags, pass necessary fields
+			ctx := context.Background()
+			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			if err != nil {
+				return err
+			}
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err, nil)
+			}
+			utils.LoggingLevel(logLevel)
+
+			// check if the command includes --pprof-address
+			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
+			if pprofAddressFlagUsed {
+				// get pprof server ip address (default value: "")
+				pprofServerAddress, err := cmd.Flags().GetString("pprof-address")
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pprof address flag", err, nil)
+				}
+
+				// start pprof HTTP server
+				err = performance.StartPprofServer(pprofServerAddress)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
+				}
+			}
+
+			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
+			rand.Seed(time.Now().UnixNano())
+			var cache *performance.Cache = nil
+			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
+			if err != nil {
+				utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", cmd.Flags())})
+			} else if cacheAddr != "" {
+				cache, err = performance.InitCache(ctx, cacheAddr)
+				if err != nil {
+					utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+				} else {
+					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+				}
+			}
+			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
+			if err != nil {
+				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
+			}
+			rpcProvider := RPCProvider{}
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
+			return err
+		},
+	}
+
+	// RPCProvider command flags
+	flags.AddTxFlagsToCmd(cmdRPCProvider)
+	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
+	cmdRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdRPCProvider.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCProvider.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+
+	return cmdRPCProvider
 }
