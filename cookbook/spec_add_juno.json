@@ -8,9 +8,7 @@
                 "name": "juno mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK",
-                    "COSMOSWASM",
-                    "IBC"
+                    "COSMOSSDKFULL"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

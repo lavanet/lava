@@ -26,9 +26,9 @@
                         "name": "starknet_blockHashAndNumber",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -53,16 +53,16 @@
                             "function_tag": "getBlockNumber",
                             "result_parsing": {
                                 "parser_arg": [
-                                    "0"
+                                    "latest"
                                 ],
-                                "parser_func": "PARSE_BY_ARG"
+                                "parser_func": "DEFAULT"
                             }
                         },
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -84,9 +84,9 @@
                         "name": "starknet_call",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "1"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -108,9 +108,9 @@
                         "name": "starknet_chainId",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -132,9 +132,9 @@
                         "name": "starknet_estimateFee",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "1"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -156,9 +156,9 @@
                         "name": "starknet_getBlockTransactionCount",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -191,9 +191,9 @@
                         },
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -215,9 +215,9 @@
                         "name": "starknet_getBlockWithTxs",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -239,9 +239,9 @@
                         "name": "starknet_getClass",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -263,9 +263,9 @@
                         "name": "starknet_getClassAt",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -287,9 +287,9 @@
                         "name": "starknet_getClassHashAt",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -311,9 +311,9 @@
                         "name": "starknet_getEvents",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -335,9 +335,9 @@
                         "name": "starknet_getNonce",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -359,9 +359,9 @@
                         "name": "starknet_getStateUpdate",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -383,9 +383,9 @@
                         "name": "starknet_getStorageAt",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "2"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -407,9 +407,9 @@
                         "name": "starknet_getTransactionByBlockIdAndIndex",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "0"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -431,9 +431,9 @@
                         "name": "starknet_getTransactionByHash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -455,9 +455,9 @@
                         "name": "starknet_getTransactionReceipt",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -479,9 +479,9 @@
                         "name": "starknet_pendingTransactions",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -503,9 +503,9 @@
                         "name": "starknet_syncing",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,

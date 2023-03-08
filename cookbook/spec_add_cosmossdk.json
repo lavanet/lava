@@ -7,6 +7,7 @@
                 "index": "COSMOSSDK",
                 "name": "Cosmos SDK",
                 "enabled": false,
+                "imports": [ "IBC" ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
@@ -744,6 +745,30 @@
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/node/v1beta1/config",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
