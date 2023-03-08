@@ -237,7 +237,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	}
 
 	if blockDistanceForEpochValidity > currentEpoch {
-		return nil, utils.LavaFormatError("current epoch too low", nil, &map[string]string{"current epoch": strconv.FormatUint(currentEpoch, 10)})
+		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, &map[string]string{"current epoch": strconv.FormatUint(currentEpoch, 10)})
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 	for epoch, epochRewards := range rws.rewards {

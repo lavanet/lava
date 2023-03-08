@@ -15,16 +15,16 @@ type PaymentUpdatable interface {
 }
 
 type PaymentUpdater struct {
-	paymentUpdatables map[string]*PaymentUpdatable
-	stateQuery        *ProviderStateQuery
+	paymentUpdatable map[string]*PaymentUpdatable
+	stateQuery       *ProviderStateQuery
 }
 
 func NewPaymentUpdater(stateQuery *ProviderStateQuery) *PaymentUpdater {
-	return &PaymentUpdater{paymentUpdatables: map[string]*PaymentUpdatable{}, stateQuery: stateQuery}
+	return &PaymentUpdater{paymentUpdatable: map[string]*PaymentUpdatable{}, stateQuery: stateQuery}
 }
 
 func (pu *PaymentUpdater) RegisterPaymentUpdatable(ctx context.Context, paymentUpdatable *PaymentUpdatable) {
-	pu.paymentUpdatables[(*paymentUpdatable).Description()] = paymentUpdatable
+	pu.paymentUpdatable[(*paymentUpdatable).Description()] = paymentUpdatable
 }
 
 func (pu *PaymentUpdater) UpdaterKey() string {
@@ -38,7 +38,9 @@ func (pu *PaymentUpdater) Update(latestBlock int64) {
 		return
 	}
 	for _, payment := range payments {
-		updatable := pu.paymentUpdatables[payment.Description]
-		(*updatable).PaymentHandler(payment)
+		updatable, foundUpdatable := pu.paymentUpdatable[payment.Description]
+		if foundUpdatable {
+			(*updatable).PaymentHandler(payment)
+		}
 	}
 }

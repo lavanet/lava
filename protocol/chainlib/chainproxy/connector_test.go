@@ -62,7 +62,8 @@ func TestConnector(t *testing.T) {
 	listener := createRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer listener.Close()
 	ctx := context.Background()
-	conn := NewConnector(ctx, numberOfClients, listenerAddressTcp)
+	conn, err := NewConnector(ctx, numberOfClients, listenerAddressTcp)
+	require.Nil(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break
@@ -88,7 +89,8 @@ func TestConnectorGrpc(t *testing.T) {
 	server := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer server.Stop()
 	ctx := context.Background()
-	conn := NewGRPCConnector(ctx, numberOfClients, listenerAddress)
+	conn, err := NewGRPCConnector(ctx, numberOfClients, listenerAddress)
+	require.Nil(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break

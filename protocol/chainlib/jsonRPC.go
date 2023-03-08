@@ -354,11 +354,14 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
-	cp.conn = chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		return err
+	}
+	cp.conn = conn
 	if cp.conn == nil {
 		return errors.New("g_conn == nil")
 	}
-
 	return nil
 }
 
