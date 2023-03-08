@@ -31129,7 +31129,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /lavanet/lava/plan/params:
+  /lavanet/lava/plans/params:
     get:
       summary: Parameters queries the parameters of the module.
       operationId: LavanetLavaPlansParams
@@ -31165,7 +31165,7 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
-  /lavanet/lava/plan/show_all_plans:
+  /lavanet/lava/plans/show_all_plans:
     get:
       summary: Queries a list of ShowAllPlans items.
       operationId: LavanetLavaPlansShowAllPlans
@@ -31219,7 +31219,7 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
-  '/lavanet/lava/plan/show_plan_info/{plan_index}':
+  '/lavanet/lava/plans/show_plan_info/{plan_index}':
     get:
       summary: Queries a list of ShowPlanInfo items.
       operationId: LavanetLavaPlansShowPlanInfo
