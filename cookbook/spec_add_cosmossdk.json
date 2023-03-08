@@ -976,54 +976,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/apps/interchain_accounts/controller/v1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/connection/v1/client_connections/{client_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/auth/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
@@ -1129,54 +1081,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/client/v1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1361,30 +1265,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/apps/transfer/v1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
                         "block_parsing": {
                             "parser_arg": [
@@ -1505,30 +1385,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
                         "block_parsing": {
                             "parser_arg": [
@@ -1538,30 +1394,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/upgraded_consensus_states",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1625,30 +1457,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/gov/v1beta1/params/{params_type}",
                         "block_parsing": {
                             "parser_arg": [
@@ -1682,30 +1490,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1805,54 +1589,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/connections/{connection}/channels",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
                         "block_parsing": {
                             "parser_arg": [
@@ -1886,30 +1622,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -2021,30 +1733,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
                         "block_parsing": {
                             "parser_arg": [
@@ -2102,30 +1790,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/connection/v1/connections/{connection_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -2237,30 +1901,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/client/v1/client_status/{client_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/auth/v1beta1/accounts",
                         "block_parsing": {
                             "parser_arg": [
@@ -2333,54 +1973,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/apps/interchain_accounts/host/v1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/auth/v1beta1/accounts/{address}",
                         "block_parsing": {
                             "parser_arg": [
@@ -2414,30 +2006,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/connection/v1/connections",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -2510,30 +2078,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -2645,30 +2189,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/tx/v1beta1/txs/{hash}",
                         "block_parsing": {
                             "parser_arg": [
@@ -2741,54 +2261,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
                         "block_parsing": {
                             "parser_arg": [
@@ -2822,30 +2294,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -2909,30 +2357,6 @@
                         ]
                     },
                     {
-                        "name": "/ibc/apps/transfer/v1/denom_traces",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/distribution/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
@@ -2942,126 +2366,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/client_states/{client_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/upgraded_client_states",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/client_states",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -3101,55 +2405,7 @@
                         ]
                     },
                     {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/apps/router/v1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3182,54 +2438,6 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/core/client/v1/consensus_states/{client_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -4988,775 +4196,1231 @@
                         ]
                     },
                     {
-                        "name": "ibc.applications.interchain_accounts.controller.v1.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.applications.transfer.v1.Query/DenomHash",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.applications.transfer.v1.Query/DenomTrace",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.applications.transfer.v1.Query/DenomTraces",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.applications.transfer.v1.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/Channel",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/ChannelClientState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/Channels",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/ConnectionChannels",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/PacketCommitment",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/PacketCommitments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/PacketReceipt",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ClientParams",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ClientState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ClientStates",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ClientStatus",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ConsensusState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/ConsensusStates",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/UpgradedClientState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.connection.v1.Query/ClientConnections",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.connection.v1.Query/Connection",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.connection.v1.Query/ConnectionClientState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "ibc.core.connection.v1.Query/Connections",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
                         "name": "router.v1.Query.Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/authz/v1beta1/grants/grantee/{grantee}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/authz/v1beta1/grants/granter/{granter}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/authn",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/chain",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/codec",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/configuration",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/query_services",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/tx_descriptor",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces/{interface_name}/implementations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/tx/v1beta1/txs/block/{height}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/account_info/{address}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/address_by_id/{id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/bech32",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/bech32/{address_bytes}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/bech32/{address_string}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/module_accounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/auth/v1beta1/module_accounts/{name}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/denom_owners/{denom}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/send_enabled",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}/by_denom",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/supply/by_denom",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/tendermint/v1beta1/abci_query",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/evidence/v1beta1/evidence/{hash}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/params/{params_type}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits/{depositor}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/tally",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes/{voter}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/tx/v1beta1/decode",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/tx/v1beta1/encode",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/tx/v1beta1/encode/amino",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.auth.v1beta1.Query/ModuleAccountByName",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.authz.v1beta1.Query/GranteeGrants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.authz.v1beta1.Query/GranterGrants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.bank.v1beta1.Query/SpendableBalances",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.feegrant.v1beta1.Query/AllowancesByGranter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/GetBlockWithTxs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/base_denom",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/supply_without_offset",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.bank.v1beta1.Query/BaseDenom",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"

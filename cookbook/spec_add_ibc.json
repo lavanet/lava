@@ -1,21 +1,18 @@
 {
     "proposal": {
-        "title": "Add Specs: Lava",
-        "description": "Adding new specification support for relaying Lava data on Lava",
+        "title": "Add Specs: IBC",
+        "description": "Adding default Inter Blockchain Communication (IBC) specification",
         "specs": [
             {
-                "index": "LAV1",
-                "name": "lava testnet",
-                "enabled": true,
-                "imports": [
-                    "COSMOSSDK"
-                ],
+                "index": "IBC",
+                "name": "IBC",
+                "enabled": false,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "60000",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": "6500",
+                "allowed_block_lag_for_qos_sync": "10",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -26,7 +23,7 @@
                 },
                 "apis": [
                     {
-                        "name": "/lavanet/lava/conflict/conflict_vote",
+                        "name": "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -50,7 +47,7 @@
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/conflict/conflict_vote/{index}",
+                        "name": "/ibc/core/client/v1/consensus_states/{client_id}/heights",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -74,7 +71,7 @@
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/conflict/params",
+                        "name": "/ibc/core/client/v1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -98,7 +95,7 @@
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/epochstorage/epoch_details",
+                        "name": "/ibc/core/connection/v1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -122,7 +119,7 @@
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/epochstorage/fixated_params",
+                        "name": "ibc.applications.transfer.v1.Query/EscrowAddress",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -139,14 +136,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
+                        "name": "ibc.core.client.v1.Query/ConsensusStateHeights",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -163,398 +160,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/plans/show_all_plans",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "3"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/stake_storage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/clients/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/epoch_payments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/epoch_payments/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/provider_payment_storage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/providers/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
+                        "name": "/ibc/apps/interchain_accounts/controller/v1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -562,7 +175,7 @@
                             "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -578,583 +191,7 @@
                         ]
                     },
                     {
-                        "name": "/lavanet/lava/spec/chain/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/show_all_chains",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/spec",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/spec/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/ConflictVote",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/EpochDetails",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/FixatedParams",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/StakeStorage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Clients",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/EpochPayments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/GetPairing",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Providers",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UserEntry",
+                        "name": "/ibc/core/connection/v1/client_connections/{client_id}",
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1162,7 +199,7 @@
                             "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1171,24 +208,22 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "lavanet.lava.pairing.Query/VerifyPairing",
+                        "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
                         "block_parsing": {
                             "parser_arg": [
-                                "block",
-                                "=",
-                                "0"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1197,14 +232,662 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/Chain",
+                        "name": "/ibc/client/v1/params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/transfer/v1/params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/upgraded_consensus_states",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/connections/{connection}/channels",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/connection/v1/connections/{connection_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/client_status/{client_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/interchain_accounts/host/v1/params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/connection/v1/connections",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/transfer/v1/denom_traces",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/client_states/{client_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/upgraded_client_states",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/client_states",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/router/v1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1221,22 +904,70 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/Params",
+                        "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/consensus_states/{client_id}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.applications.interchain_accounts.controller.v1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1252,15 +983,15 @@
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/ShowAllChains",
+                        "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1276,15 +1007,15 @@
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                        "name": "ibc.applications.transfer.v1.Query/DenomHash",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1300,15 +1031,15 @@
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/Spec",
+                        "name": "ibc.applications.transfer.v1.Query/DenomTrace",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -1324,15 +1055,663 @@
                         ]
                     },
                     {
-                        "name": "lavanet.lava.spec.Query/SpecAll",
+                        "name": "ibc.applications.transfer.v1.Query/DenomTraces",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.applications.transfer.v1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/Channel",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/ChannelClientState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/Channels",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/ConnectionChannels",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/PacketCommitment",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/PacketCommitments",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/PacketReceipt",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ClientParams",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ClientState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ClientStates",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ClientStatus",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ConsensusState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/ConsensusStates",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/UpgradedClientState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.connection.v1.Query/ClientConnections",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.connection.v1.Query/Connection",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.connection.v1.Query/ConnectionClientState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ibc.core.connection.v1.Query/Connections",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
