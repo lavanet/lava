@@ -78,7 +78,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "10",
+                        "compute_units": "30",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -95,7 +95,7 @@
                         ],
                         "parsing": {
                             "function_tag": "getBlockByNumber",
-                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d],\"id\":1}",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
                             "result_parsing": {
                                 "parser_arg": [
                                     "0",
