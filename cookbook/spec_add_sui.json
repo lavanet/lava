@@ -287,7 +287,7 @@
                         ],
                         "parsing": {
                             "function_tag": "getBlockByNumber",
-                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpointSummary\",\"params\":[\"%d\"],\"id\":1}",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpointSummary\",\"params\":[%d],\"id\":1}",
                             "result_parsing": {
                                 "parser_arg": [
                                     "0",
