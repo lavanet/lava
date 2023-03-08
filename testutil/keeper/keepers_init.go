@@ -197,7 +197,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
-	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+	ctx = sdk.UnwrapSDKContext(AdvanceBlock(sdk.WrapSDKContext(ctx), &ks))
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -215,6 +215,10 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	} else {
 		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
 	}
+
+	b := ks.BlockStore.LoadBlock(int64(block))
+	unwrapedCtx = unwrapedCtx.WithBlockTime(b.Header.Time)
+
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
