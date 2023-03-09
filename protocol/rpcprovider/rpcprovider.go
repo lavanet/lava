@@ -349,6 +349,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 
 	return cmdRPCProvider
 }

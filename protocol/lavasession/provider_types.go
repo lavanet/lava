@@ -241,6 +241,10 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
 	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = sps.RelayNum + 1          // 3. update RelayNum, we already verified relayNum is valid in GetDataReliabilitySession.
+	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
+		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
+	})
 	return nil
 }
 
@@ -254,6 +258,12 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
 		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
 	}
+
+	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
+		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
+		"sps.CuSum":         strconv.FormatUint(sps.CuSum, 10),
+	})
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
 	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
@@ -273,7 +283,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	}
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuFromSpec  // 1. update latest
-	sps.CuSum = relayRequestTotalCU // 2. update CuSum, if consumer wants to pay more, let it
+	sps.CuSum = sps.CuSum + sps.LatestRelayCu  // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 	return nil
 }
