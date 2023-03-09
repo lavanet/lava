@@ -16,7 +16,7 @@ lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 
 
 sleep 4
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_base.json,./cookbook/spec_add_canto.json,./cookbook/spec_add_sui.json,./cookbook/spec_add_solana.json,./cookbook/spec_add_bsc.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_base.json,./cookbook/spec_add_canto.json,./cookbook/spec_add_sui.json,./cookbook/spec_add_solana.json,./cookbook/spec_add_bsc.json,./cookbook/spec_add_axelar.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -48,6 +48,8 @@ lavad tx pairing stake-client "CANTO"  $CLIENTSTAKE 1 -y --from user1 --gas-adju
 lavad tx pairing stake-client "SUIT"  $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "SOLANA"  $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "BSC"  $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "AXELAR"  $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 
 
 # Ethereum providers
@@ -163,6 +165,11 @@ lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "127.0.0.1:4355,jsonrpc,1
 lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "127.0.0.1:6006,jsonrpc,1 127.0.0.1:6009,tendermintrpc,1 127.0.0.1:6012,rest,1 127.0.0.1:6015,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "127.0.0.1:6007,jsonrpc,1 127.0.0.1:6010,tendermintrpc,1 127.0.0.1:6013,rest,1 127.0.0.1:6016,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "127.0.0.1:6008,jsonrpc,1 127.0.0.1:6011,tendermintrpc,1 127.0.0.1:6014,rest,1 127.0.0.1:6017,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+# axelar Providers
+lavad tx pairing stake-provider "AXELAR" $PROVIDERSTAKE "127.0.0.1:4359,tendermintrpc,1 127.0.0.1:4362,rest,1 127.0.0.1:4365,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "AXELAR" $PROVIDERSTAKE "127.0.0.1:4360,tendermintrpc,1 127.0.0.1:4363,rest,1 127.0.0.1:4366,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "AXELAR" $PROVIDERSTAKE "127.0.0.1:4361,tendermintrpc,1 127.0.0.1:4364,rest,1 127.0.0.1:4367,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"
