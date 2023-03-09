@@ -74,6 +74,78 @@
                         ]
                     },
                     {
+                        "name": "/cosmos/authz/v1beta1/grants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/router/v1/params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "/lavanet/lava/conflict/conflict_vote",
                         "block_parsing": {
                             "parser_arg": [
@@ -746,6 +818,30 @@
                         ]
                     },
                     {
+                        "name": "cosmos.authz.v1beta1.Query/Grants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "lavanet.lava.conflict.Query/ConflictVote",
                         "block_parsing": {
                             "parser_arg": [
@@ -1381,6 +1477,30 @@
                         },
                         "compute_units": "10",
                         "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "router.v1.Query.Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
