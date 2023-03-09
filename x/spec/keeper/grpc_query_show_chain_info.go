@@ -24,6 +24,10 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
+		if !spec.Enabled {
+			continue
+		}
+
 		// get info by chain name
 		if spec.GetName() == req.GetChainName() {
 			foundChain = true

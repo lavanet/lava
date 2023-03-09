@@ -22,6 +22,10 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 
 	// iterate over specs and extract the chains' info
 	for _, spec := range allSpec {
+		if !spec.Enabled {
+			continue
+		}
+
 		// get the spec's name and chain ID
 		chainName := spec.GetName()
 		chainId := spec.GetIndex()
