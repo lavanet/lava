@@ -62,10 +62,13 @@ func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) (
 	return sig, nil
 }
 
-func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelayRequest) ([]byte, error) {
-	//
-	request.DataReliability = nil // its not a part of the signature, its a separate part
+func prepareRelaySessionForSignature(request *pairingtypes.RelaySession) {
+	request.Badge = nil // its not a part of the signature, its a separate part
 	request.Sig = []byte{}
+}
+
+func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelaySession) ([]byte, error) {
+	prepareRelaySessionForSignature(&request)
 	msgData := []byte(request.String())
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
@@ -85,7 +88,7 @@ func AllDataHash(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.
 
 func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
 	// sign the data hash+query hash+nonce
-	queryHash := utils.CalculateQueryHash(*relayReq)
+	queryHash := utils.CalculateQueryHash(*relayReq.RelayData)
 	data_hash := AllDataHash(relayResponse, relayReq)
 	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
 	dataToSign = HashMsg(dataToSign)
@@ -93,7 +96,7 @@ func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *p
 }
 
 func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byte) (dataToSign []byte) {
-	queryHash := utils.CalculateQueryHash(*request)
+	queryHash := utils.CalculateQueryHash(*request.RelayData)
 	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
 	dataToSign = HashMsg(dataToSign)
 	return
@@ -101,7 +104,7 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byt
 
 func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
 	// sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.SessionId, relayReq.BlockHeight, relayReq.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
+	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.RelaySession.SessionId, relayReq.RelaySession.BlockHeight, relayReq.RelaySession.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
 }
 
 func DataToSignResponseFinalizationDataInner(latestBlock int64, sessionID uint64, blockHeight int64, relayNum uint64, finalizedBlockHashes []byte, clientAddress sdk.AccAddress) (dataToSign []byte) {
@@ -206,11 +209,10 @@ func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest
 	return RecoverProviderPubKeyFromQueryAndAllDataHash(request, request.DataReliability.AllDataHash, request.DataReliability.ProviderSig)
 }
 
-func RecoverPubKeyFromRelay(in pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	signature := in.Sig
-	in.Sig = []byte{}
-	in.DataReliability = nil
-	hash := HashMsg([]byte(in.String()))
+func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, error) {
+	signature := relay.Sig // save sig
+	prepareRelaySessionForSignature(&relay)
+	hash := HashMsg([]byte(relay.String()))
 	pubKey, err := RecoverPubKey(signature, hash)
 	if err != nil {
 		return nil, err

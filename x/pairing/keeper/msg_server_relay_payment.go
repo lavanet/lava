@@ -31,7 +31,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	errorLogAndFormat := func(name string, attrs map[string]string, details string) (*types.MsgRelayPaymentResponse, error) {
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
-	for _, relay := range msg.Relays {
+	for relayIdx, relay := range msg.Relays {
 		if relay.BlockHeight > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}
@@ -80,15 +80,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
 		}
 
-		expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, relay.ChainID)
-		if !expectedInterfaces[relay.ApiInterface] {
-			details := map[string]string{"expectedInterfaces": fmt.Sprintf("%+v", expectedInterfaces), "apiInterface": relay.ApiInterface}
-			return errorLogAndFormat("relay_payment_apiInterface", details, "unexpected api interface")
-		}
-
 		payReliability := false
 		// validate data reliability
-		if relay.DataReliability != nil {
+		if msg.VRFs != nil && msg.VRFs[relayIdx] != nil {
+			vrfData := msg.VRFs[relayIdx]
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID
@@ -96,12 +91,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 
 			// verify user signed this data reliability
-			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
+			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *vrfData)
 			if err != nil || !valid {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
 			}
-			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(relay.DataReliability)
+			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(vrfData)
 			if err != nil {
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
 			}
@@ -134,7 +129,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			// signatures valid, validate VRF signing
-			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk, epochStart)
+			valid = utils.VerifyVrfProofFromVRFData(vrfData, *vrfPk, epochStart)
 			if !valid {
 				details["error"] = "vrf signing is invalid, proof result mismatch"
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
@@ -146,7 +141,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
 			}
 
-			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
+			index, vrfErr := utils.GetIndexForVrf(vrfData.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
 			if vrfErr != nil {
 				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
