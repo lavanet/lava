@@ -133,7 +133,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
 		if len(unmarshalled) == 0 {
-			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, nil)
+			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, &map[string]string{"data source": "PARSE_RESULT"})
 		}
 		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
