@@ -82,6 +82,12 @@ screen -d -m -S solana_providers bash -c "source ~/.bashrc; lavad server 127.0.0
 screen -S solana_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6511 $SOLANA_RPC SOLANA jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/SOLANA_6511.log"
 screen -S solana_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6512 $SOLANA_RPC SOLANA jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/SOLANA_6522.log"
 
+# BSC providers
+screen -d -m -S bsc_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 6520 $BSC_RPC BSC jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/BSC_6521.log"
+screen -S bsc_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6521 $BSC_RPC BSC jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/BSC_6222.log"
+screen -S bsc_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6522 $BSC_RPC BSC jsonrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/BSC_6523.log"
+
+
 # Cosmos-SDK Chains
 
 # Osmosis providers
@@ -181,6 +187,7 @@ screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3361 BASET jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BASET.log"
 screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3364 SUIT jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SUIT.log"
 screen -S portals -X screen -t win24 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3365 SOLANA jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SOLANA.log"
+screen -S portals -X screen -t win24 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3366 BSC jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BSC.log"
 # Cosmos-SDK based chains
 screen -S portals -X screen -t win1  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3334 COS3 rest 127.0.0.1:3335 COS3 tendermintrpc 127.0.0.1:3353 COS3 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS3_3334.log"
 screen -S portals -X screen -t win4  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3337 COS4 rest 127.0.0.1:3338 COS4 tendermintrpc 127.0.0.1:3354 COS4 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS4_3337.log"
