@@ -28,7 +28,7 @@ func CmdBuy() *cobra.Command {
 				argConsumer = args[1]
 			}
 
-			argDuration := uint64(0)
+			argDuration := uint64(1)
 			if len(args) == 3 {
 				argDuration = cast.ToUint64(args[2])
 			}

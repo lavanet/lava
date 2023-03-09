@@ -119,6 +119,7 @@ func TestCreateSubscription(t *testing. T) {
 		index     string
 		creator   int
 		consumers []int
+		duration  uint64
 		success   bool
 	}{
 		{
@@ -126,6 +127,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "mockPlan",
 			creator:   0,
 			consumers: []int{0, 1},
+			duration:  1,
 			success:   true,
 		},
 		{
@@ -133,6 +135,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "mockPlan",
 			creator:   2,
 			consumers: []int{2},
+			duration:  1,
 			success:   false,
 		},
 		{
@@ -140,6 +143,15 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "mockPlan",
 			creator:   0,
 			consumers: []int{3},
+			duration:  1,
+			success:   false,
+		},
+		{
+			name:      "duration too long",
+			index:     "mockPlan",
+			creator:   0,
+			consumers: []int{2},
+			duration:  13,
 			success:   false,
 		},
 		{
@@ -147,6 +159,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "mockPlan",
 			creator:   1,
 			consumers: []int{2},
+			duration:  1,
 			success:   false,
 		},
 		{
@@ -154,6 +167,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "",
 			creator:   0,
 			consumers: []int{2},
+			duration:  1,
 			success:   false,
 		},
 		{
@@ -161,6 +175,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "no-such-plan",
 			creator:   0,
 			consumers: []int{2},
+			duration:  1,
 			success:   false,
 		},
 		{
@@ -168,6 +183,7 @@ func TestCreateSubscription(t *testing. T) {
 			index:     "mockPlan",
 			creator:   0,
 			consumers: []int{0},
+			duration:  1,
 			success:   false,
 		},
 	}
@@ -182,7 +198,7 @@ func TestCreateSubscription(t *testing. T) {
 				}
 
 				err := keeper.CreateSubscription(
-					ctx, sub.Creator, sub.Consumer, sub.PlanIndex, 1)
+					ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration)
 				if tt.success {
 					require.Nil(t, err, tt.name)
 					_, found := keeper.GetSubscription(ctx, sub.Consumer)
@@ -230,7 +246,6 @@ func TestExpiryTime(t *testing. T) {
 	projsKeeper := keepers.Projects
 
 	plan := common.CreateMockPlan()
-	plan.Duration = 1 // month
 	plansKeeper.AddPlan(ctx, plan)
 
 	template := []struct {
@@ -289,7 +304,7 @@ func TestExpiryTime(t *testing. T) {
 	}
 }
 
-func TestYearlyPrice(t *testing. T) {
+func TestPrice(t *testing. T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
@@ -301,13 +316,16 @@ func TestYearlyPrice(t *testing. T) {
 
 	template := []struct {
 		name     string
-		duration uint64
+        duration uint64
 		discount uint64
 		price    int64
 		cost     int64
 	}{
-		{ "yearly without discount", 1, 0, 100, 1200 },
-		{ "yearly with discount", 1, 25, 100, 900 },
+		{ "1 month", 1, 0, 100, 100 },
+		{ "2 months", 2, 0, 100, 200 },
+		{ "11 months", 11, 0, 100, 1100 },
+		{ "yearly without discount", 12, 0, 100, 1200 },
+		{ "yearly with discount", 12, 25, 100, 900 },
 	}
 
 	for _, tt := range template {
@@ -316,12 +334,11 @@ func TestYearlyPrice(t *testing. T) {
 			address := common.CreateNewAccount(_ctx, *keepers, 10000).Addr
 			creator := address.String()
 
-			plan.Duration = tt.duration
 			plan.AnnualDiscountPercentage = tt.discount
 			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
 			plansKeeper.AddPlan(ctx, plan)
 
-			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, 12)
+			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.duration)
 			require.Nil(t, err)
 
 			_, found := keeper.GetSubscription(ctx, creator)

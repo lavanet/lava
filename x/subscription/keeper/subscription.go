@@ -205,8 +205,11 @@ func (k Keeper) CreateSubscription(
 	timestamp := ctx.BlockTime()
 	expiry := timestamp
 
-	for i := 0; i < int(duration); i++ {
-		expiry = nextMonth(expiry)
+	if duration < 12 {
+		price.Amount = price.Amount.MulRaw(int64(duration))
+		for i := 0; i < int(duration); i++ {
+			expiry = nextMonth(expiry)
+		}
 	}
 
 	if duration == 12 {
@@ -220,6 +223,22 @@ func (k Keeper) CreateSubscription(
 			factor := int64(100 - discount)
 			price.Amount = price.Amount.MulRaw(factor).QuoRaw(100)
 		}
+	}
+
+	sub := types.Subscription{
+		Creator:     creator,
+		Consumer:    consumer,
+		Block:       block,
+		PlanIndex:   planIndex,
+		PlanBlock:   plan.Block,
+		Duration:    duration,
+		ExpiryTime:  uint64(expiry.Unix()),
+		RemainingCU: plan.GetComputeUnits(),
+		UsedCU:      0,
+	}
+
+	if err := sub.ValidateSubscription(); err != nil {
+		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
 	}
 
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
@@ -239,18 +258,6 @@ func (k Keeper) CreateSubscription(
 			"error":   err.Error(),
 		}
 		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
-	}
-
-	sub := types.Subscription{
-		Creator:     creator,
-		Consumer:    consumer,
-		Block:       block,
-		PlanIndex:   planIndex,
-		PlanBlock:   plan.Block,
-		Duration:    duration,
-		ExpiryTime:  uint64(expiry.Unix()),
-		RemainingCU: plan.GetComputeUnits(),
-		UsedCU:      0,
 	}
 
 	k.SetSubscription(ctx, sub)

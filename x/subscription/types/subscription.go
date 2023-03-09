@@ -33,7 +33,7 @@ func (sub Subscription) ValidateSubscription() error {
 		return sdkerrors.Wrap(ErrInvalidParameter, "subscription consumer cannot be blank")
 	}
 
-	// Months must be between 1 and MAX_SUBSCRIPTION_DURATION
+	// Duration must be between 1 and MAX_SUBSCRIPTION_DURATION
 	if sub.Duration > MAX_SUBSCRIPTION_DURATION {
 		return sdkerrors.Wrap(ErrInvalidParameter, "subscription duration is out of range")
 	}
