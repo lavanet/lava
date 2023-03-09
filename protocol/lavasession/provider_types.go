@@ -275,15 +275,18 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 		})
 	}
 
+	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
+	cuToAdd := relayRequestTotalCU - sps.CuSum // how much consumer thinks he needs to pay - our current state
+
 	// this must happen first, as we also validate and add the used cu to parent here
-	err = sps.validateAndAddUsedCU(cuFromSpec, maxCu)
+	err = sps.validateAndAddUsedCU(cuToAdd, maxCu)
 	if err != nil {
 		sps.lock.Unlock() // unlock on error
 		return err
 	}
 	// finished validating, can add all info.
-	sps.LatestRelayCu = cuFromSpec  // 1. update latest
-	sps.CuSum = sps.CuSum + sps.LatestRelayCu  // 2. update CuSum, if consumer wants to pay more, let it
+	sps.LatestRelayCu = cuToAdd     // 1. update latest
+	sps.CuSum += cuToAdd            // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 	return nil
 }
