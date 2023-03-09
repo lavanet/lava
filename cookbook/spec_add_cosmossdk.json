@@ -1084,9 +1084,9 @@
                         "name": "/cosmos/base/tendermint/v1beta1/node_info",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1108,9 +1108,9 @@
                         "name": "/cosmos/base/tendermint/v1beta1/syncing",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1828,9 +1828,9 @@
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2500,9 +2500,9 @@
                         "name": "/cosmos/tx/v1beta1/simulate",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2524,9 +2524,9 @@
                         "name": "/cosmos/tx/v1beta1/txs",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2704,9 +2704,9 @@
                         "name": "/node_info",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2728,9 +2728,9 @@
                         "name": "/syncing",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2752,9 +2752,9 @@
                         "name": "/txs",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": false,
@@ -2825,9 +2825,9 @@
                         "name": "abci_info",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2913,9 +2913,9 @@
                         "name": "block_by_hash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3671,7 +3671,7 @@
                                 "=",
                                 "0"
                             ],
-                            "parser_func": "PARSE_DICTIONARY"
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                         },
                         "compute_units": "10",
                         "enabled": true,
