@@ -9,10 +9,10 @@
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "3000",
-                "allowed_block_lag_for_qos_sync": "4",
+                "block_distance_for_finalized_data": 31,
+                "blocks_in_finalization_proof": 10,
+                "average_block_time": "600",
+                "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
