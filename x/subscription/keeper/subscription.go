@@ -191,31 +191,13 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaError(ctx, logger, "subscribe", details, "invalid plan")
 	}
 
-	// drop Plan reference in case of error:
-	// NOTE! FROM HERE ONWARD MUST SET ERR IF AN ERROR OCCURS
-	defer func() {
-		if err != nil {
-			k.plansKeeper.PutPlan(ctx, planIndex, plan.Block)
-		}
-	}()
-
 	err = k.projectsKeeper.CreateDefaultProject(ctx, consumer)
 	if err != nil {
 		details := map[string]string{
 			"err": err.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "failed to create default project")
-		return err
+		return utils.LavaError(ctx, logger, "subscribe", details, "failed to create default project")
 	}
-
-	// delete default Project in case of error
-	defer func() {
-		if err != nil {
-			// TODO: delete all projects of the subscription
-			// k.projectsKeeper.DeleteAllProject(ctx, consumer)
-			_ = err
-		}
-	}()
 
 	price := plan.GetPrice()
 
@@ -247,8 +229,7 @@ func (k Keeper) CreateSubscription(
 			"price":   price.String(),
 			"error":   sdkerrors.ErrInsufficientFunds.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "insufficient funds")
-		return err
+		return utils.LavaError(ctx, logger, "subscribe", details, "insufficient funds")
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
@@ -258,8 +239,7 @@ func (k Keeper) CreateSubscription(
 			"price":   price.String(),
 			"error":   err.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "funds transfer failed")
-		return err
+		return utils.LavaError(ctx, logger, "subscribe", details, "funds transfer failed")
 	}
 
 	sub := types.Subscription{
