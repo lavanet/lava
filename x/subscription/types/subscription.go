@@ -7,6 +7,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+const (
+	MAX_SUBSCRIPTION_DURATION = 12 // max duration of subscription in months
+)
+
 func (sub Subscription) IsExpired(date time.Time) bool {
 	expiry := time.Unix(int64(sub.ExpiryTime), 0).UTC()
 	return expiry.Before(date)
@@ -26,7 +30,12 @@ func (sub Subscription) ValidateSubscription() error {
 
 	// Consumer may not be blank
 	if len(strings.TrimSpace(sub.Consumer)) == 0 {
-		return sdkerrors.Wrap(ErrBlankParameter, "subscription consumer cannot be blank")
+		return sdkerrors.Wrap(ErrInvalidParameter, "subscription consumer cannot be blank")
+	}
+
+	// Months must be between 1 and MAX_SUBSCRIPTION_DURATION
+	if sub.Duration > MAX_SUBSCRIPTION_DURATION {
+		return sdkerrors.Wrap(ErrInvalidParameter, "subscription duration is out of range")
 	}
 
 	return nil

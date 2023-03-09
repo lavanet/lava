@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdSubscribe() *cobra.Command {
+func CmdBuy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "subscribe [index] [consumer] [is-yearly]",
-		Short: "Subscribe to a service plan",
+		Use:   "buy [index] [consumer] [duration]",
+		Short: "buy to a service plan",
 		Args:  cobra.RangeArgs(1, 3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -28,19 +28,16 @@ func CmdSubscribe() *cobra.Command {
 				argConsumer = args[1]
 			}
 
-			argIsYearly := false
+			argDuration := uint64(0)
 			if len(args) == 3 {
-				argIsYearly, err = cast.ToBoolE(args[2])
-				if err != nil {
-					return err
-				}
+				argDuration = cast.ToUint64(args[2])
 			}
 
-			msg := types.NewMsgSubscribe(
+			msg := types.NewMsgBuy(
 				creator,
 				argConsumer,
 				argIndex,
-				argIsYearly,
+				argDuration,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

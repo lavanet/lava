@@ -4,13 +4,12 @@ package lavanet.lava.subscription;
 option go_package = "github.com/lavanet/lava/x/subscription/types";
 
 message Subscription {
-  
-  string creator = 1;
-  string consumer = 2;
+  string creator = 1; // creator pays for the subscription
+  string consumer = 2; // consumer uses the subscription
   uint64 block = 3;
   string plan_index = 4;
   uint64 plan_block = 5;
-  bool is_yearly = 6;
+  uint64 duration = 6; // duration in months
   uint64 expiry_time = 7;
   uint64 usedCU = 8;
   uint64 remainingCU = 9;
