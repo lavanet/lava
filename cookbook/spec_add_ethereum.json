@@ -266,9 +266,9 @@
                         "name": "eth_uninstallFilter",
                         "block_parsing": {
                             "parser_arg": [
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -348,9 +348,9 @@
                         "name": "eth_subscribe",
                         "block_parsing": {
                             "parser_arg": [
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -372,9 +372,9 @@
                         "name": "eth_unsubscribe",
                         "block_parsing": {
                             "parser_arg": [
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
