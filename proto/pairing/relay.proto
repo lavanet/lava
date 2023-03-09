@@ -9,24 +9,41 @@ service Relayer {
     rpc RelaySubscribe (RelayRequest) returns (stream RelayReply) {}
 }
 
-message RelayRequest {
+message RelaySession {
     string chainID = 1;
-    string connection_type = 2;
-    string api_url = 3; // some relays have associated urls that are filled with params ('/block/{height}')
-    uint64 session_id = 4;
-    uint64 cu_sum = 5; // total compute unit used including this relay
+    bytes content_hash = 2;
+    uint64 session_id = 3;
+    uint64 cu_sum = 4; // total compute unit used including this relay
+    string provider = 5;
+    uint64 relay_num = 6;
+    QualityOfServiceReport QoSReport = 7;
+    int64 block_height = 8;
+    bytes unresponsive_providers = 9;
+    string lava_chain_id = 10;
+    bytes sig = 11;
+    Badge badge = 12;
+}
 
-    bytes data = 6;
-    bytes sig = 7;
-    string provider = 8;
-    int64 block_height = 9;
-    uint64 relay_num = 10;
-    int64 request_block = 11;
+message RelayPrivateData {
+    string connection_type = 1;
+    string api_url = 2; // some relays have associated urls that are filled with params ('/block/{height}')
+    bytes data = 3;
+    int64 request_block = 4;
+    string apiInterface = 5;
+    bytes salt = 6;
+}
 
-    VRFData DataReliability = 12;
-    QualityOfServiceReport QoSReport = 13;
-    bytes unresponsive_providers = 14;
-    string apiInterface = 15;
+message RelayRequest {
+    RelaySession relay_session = 1;
+    RelayPrivateData relay_data= 2;
+    VRFData DataReliability = 3;
+}
+
+message Badge {
+    uint64 cu_allocation =1;
+    int64 epoch = 2;
+    bytes badge_pk = 3;
+    bytes project_sig = 4;
 }
 
 message RelayReply {
