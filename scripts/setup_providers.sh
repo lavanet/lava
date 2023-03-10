@@ -173,6 +173,17 @@ screen -S canto_providers -X screen -t win09 -X bash -c "source ~/.bashrc; lavad
 screen -S canto_providers -X screen -t win10 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6016 $CANTO_GRPC CANTO grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/CANTO_grpc2.log"
 screen -S canto_providers -X screen -t win11 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 6017 $CANTO_GRPC CANTO grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/CANTO_grpc3.log"
 
+# Axelar providers
+screen -d -m -S axelar_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 4362 $AXELAR_REST AXELAR rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/AXELAR_4362.log"
+screen -S axelar_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4363 $AXELAR_REST AXELAR rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/AXELAR_4363.log"
+screen -S axelar_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4364 $AXELAR_REST AXELAR rest $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/AXELAR_4364.log"
+screen -S axelar_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4359 $AXELAR_RPC AXELAR tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --tendermint-http-endpoint $AXELAR_RPC_HTTP 2>&1 | tee $LOGS_DIR/AXELAR_4359.log"
+screen -S axelar_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4360 $AXELAR_RPC AXELAR tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --tendermint-http-endpoint $AXELAR_RPC_HTTP 2>&1 | tee $LOGS_DIR/AXELAR_4360.log"
+screen -S axelar_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4361 $AXELAR_RPC AXELAR tendermintrpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --tendermint-http-endpoint $AXELAR_RPC_HTTP 2>&1 | tee $LOGS_DIR/AXELAR_4361.log"
+screen -S axelar_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4365 $AXELAR_GRPC AXELAR grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/AXELAR_grpc1.log"
+screen -S axelar_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4366 $AXELAR_GRPC AXELAR grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/AXELAR_grpc2.log"
+screen -S axelar_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4367 $AXELAR_GRPC AXELAR grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/AXELAR_grpc3.log"
+
 # Setup Portals
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_ETH_3333.log" && sleep 0.25
 screen -S portals -X screen -t win3  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3336 FTM250 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_FTM250_3336.log"
@@ -185,9 +196,9 @@ screen -S portals -X screen -t win15 -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win18 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3351 POLYGON1 jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3351.log"
 screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3362 OPTM jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_OPTM.log"
 screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3361 BASET jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BASET.log"
-screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3364 SUIT jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SUIT.log"
-screen -S portals -X screen -t win24 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3365 SOLANA jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SOLANA.log"
-screen -S portals -X screen -t win24 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3366 BSC jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BSC.log"
+screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3370 SUIT jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SUIT.log"
+screen -S portals -X screen -t win24 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3371 SOLANA jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_SOLANA.log"
+screen -S portals -X screen -t win25 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3372 BSC jsonrpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_BSC.log"
 # Cosmos-SDK based chains
 screen -S portals -X screen -t win1  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3334 COS3 rest 127.0.0.1:3335 COS3 tendermintrpc 127.0.0.1:3353 COS3 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS3_3334.log"
 screen -S portals -X screen -t win4  -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3337 COS4 rest 127.0.0.1:3338 COS4 tendermintrpc 127.0.0.1:3354 COS4 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_COS4_3337.log"
@@ -196,7 +207,7 @@ screen -S portals -X screen -t win10 -X bash -c "source ~/.bashrc; lavad rpccons
 screen -S portals -X screen -t win16 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3349 JUN1 rest 127.0.0.1:3350 JUN1 tendermintrpc 127.0.0.1:3355 JUN1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3349.log"
 screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3360 EVMOS jsonrpc 127.0.0.1:3357 EVMOS rest 127.0.0.1:3358 EVMOS tendermintrpc 127.0.0.1:3359 EVMOS grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_EVMOS.log"
 screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3363 CANTO jsonrpc 127.0.0.1:3364 CANTO rest 127.0.0.1:3365 CANTO tendermintrpc 127.0.0.1:3366 CANTO grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_CANTO.log"
-
+screen -S portals -X screen -t win26 -X bash -c "source ~/.bashrc; lavad rpcconsumer 127.0.0.1:3367 AXELAR rest 127.0.0.1:3368 AXELAR tendermintrpc 127.0.0.1:3369 AXELAR grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_AXELAR.log"
 
 echo "--- setting up screens done ---"
 screen -ls
