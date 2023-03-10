@@ -1,6 +1,9 @@
 package keeper
 
 import (
+	"strconv"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
@@ -8,15 +11,66 @@ import (
 // EpochStart runs the functions that are supposed to run in epoch start
 func (k Keeper) EpochStart(ctx sdk.Context) {
 	// On epoch start we need to iterate through all the subscriptions and
-	// check if they just expired. Those that expire get deleted.
+	// check those whose current month just expired:
+	//
+	// - record the actual epoch of expiry (for rewards validation)
+	// - save the month's remaining CU in prev (for rewards validation)
+	// - reset the month's remaining CU to the plan's allowance
+	// - reduce remaining duration, and delete if it reaches zero
+	//
+	// Note that actual deletion is deferred by EpochsToSave parameter
+	// (in Epochstorage) to allow payments for the last month of the
+	// subscription. (During this period, remaining CU of the new month
+	// is zero).
 
 	date := ctx.BlockTime().UTC()
+	block := uint64(ctx.BlockHeight())
+
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
+	if err != nil {
+		// critical: no recovery from this
+		panic("Subscription: EpochStart: failed to obtain BlocksToSave at block " + strconv.Itoa(int(block)))
+	}
+
 	subExpired := k.GetCondSubscription(ctx, func(sub types.Subscription) bool {
-		return sub.IsExpired(date)
+		return sub.IsMonthExpired(date) || sub.IsStale(block-blocksToSave)
 	})
 
-	// First collect, then remove (because removing may affect the iterator?)
 	for _, sub := range subExpired {
-		k.RemoveSubscription(ctx, sub.Consumer)
+		sub.PrevExpiryBlock = block
+		sub.PrevCuLeft = sub.MonthCuLeft
+
+		// subscription has been dead for EpochsToSave epochs: delete
+		// TODO: THIS WILL BE HANDLED AUTOMATICALLY BY FIXATION-STORE
+		// (WHICH WILL BE ADDED IN SUBSEQUENT PR)
+		if sub.IsStale(block - blocksToSave) {
+			k.RemoveSubscription(ctx, sub.Consumer)
+			continue
+		}
+
+		sub.DurationLeft -= 1
+
+		if sub.DurationLeft > 0 {
+			date = nextMonth(date)
+			sub.MonthExpiryTime = uint64(date.Unix())
+			sub.MonthCuLeft = sub.MonthCuTotal
+
+			// reset CU allowance for this coming month
+			sub.MonthCuLeft = sub.MonthCuTotal
+		} else {
+			// duration ended, but don't delete yet - keep around for another
+			// EpochsToSave epochs before removing, to allow for payments for
+			// the months the ends now to be validated.
+
+			// set expiry timeout far far in the future, so the test
+			// for sub.IsStale() above would kick in first.
+			date = date.Add(8760 * time.Hour) // 1 yr
+			sub.MonthExpiryTime = uint64(date.Unix())
+
+			// zero CU allowance for this coming month
+			sub.MonthCuLeft = 0
+		}
+
+		k.SetSubscription(ctx, sub)
 	}
 }

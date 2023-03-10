@@ -70,81 +70,29 @@ func (k Keeper) GetAllSubscription(ctx sdk.Context) []types.Subscription {
 	return k.GetCondSubscription(ctx, nil)
 }
 
-// endOfMonth returns the date of the last day of the month (assume UTC)
-// (https://yourbasic.org/golang/last-day-month-date/)
-func endOfMonth(date time.Time) time.Time {
-	return date.AddDate(0, 1, -date.Day())
-}
-
-// isLeapYear returns true if the year in the date is a leap year (assume UTC)
-// (https://stackoverflow.com/questions/725098/leap-year-calculation)
-func isLeapYear(date time.Time) bool {
-	year := date.Year()
-	// Leap year occurs every 4 years; but every 100 years it is skipped;
-	// except that every every 400 years it is kept.
-	return year%400 == 0 || (year%4 == 0 && year%100 != 0)
-}
-
 // nextMonth returns the date of the same day next month (assumes UTC),
 // adjusting for end-of-months differences if needed.
 func nextMonth(date time.Time) time.Time {
-	next := date.AddDate(0, 1, 0)
+	// End-of-month days are tricky because months differ in days counts.
+	// To avoid this complixity, we trim day-of-month greater than 28 back to
+	// day 28, which all months always have (at the cost of the user possibly
+	// losing 1 (and up to 3) days of subscription in the first month.
 
-	// https://golang.org/pkg/time/#Time.AddDate:
-	//   AddDate normalizes its result in the same way that Date does, so, for
-	//   example, adding one month to October 31 yields December 1, the normalized
-	//   form for November 31.
-	//
-	// If we are at end of this month, then "manually" select end of next month;
-	// This properly handles transitions from short to longer months.
-
-	if date.Day() == endOfMonth(date).Day() {
-		next = time.Date(
-			date.Year(),
-			date.Month()+1,
-			1,
-			date.Hour(),
-			date.Minute(),
-			date.Second(),
-			date.Nanosecond(),
-			time.UTC)
-		return endOfMonth(next)
+	dayOfMonth := date.Day()
+	if dayOfMonth > 28 {
+		dayOfMonth = 28
 	}
 
-	// If we are reaching end of January, stll need to "manually" select end of
-	// next month, otherwise will overrun into March.
-
-	if date.Month() == 1 && date.Day() >= 29 {
-		next = time.Date(
-			date.Year(),
-			time.February,
-			1,
-			date.Hour(),
-			date.Minute(),
-			date.Second(),
-			date.Nanosecond(),
-			time.UTC)
-		return endOfMonth(next)
-	}
-
-	return next
-}
-
-// nextYear returns the date of the same day next year (assumes UTC),
-// properly handling leap year variations on February.
-func nextYear(date time.Time) time.Time {
-	next := date.AddDate(1, 0, 0)
-
-	if date.Month() == 2 {
-		if date.Day() == 29 {
-			next = date.AddDate(1, 0, -1)
-		}
-		if date.Day() == 28 && isLeapYear(next) {
-			next = date.AddDate(1, 0, 1)
-		}
-	}
-
-	return next
+	return time.Date(
+		date.Year(),
+		date.Month()+1,
+		dayOfMonth,
+		date.Hour(),
+		date.Minute(),
+		date.Second(),
+		0,
+		time.UTC,
+	)
 }
 
 // CreateSubscription creates a subscription for a consumer
@@ -201,8 +149,15 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaError(ctx, logger, "CreateSubscription", details, "failed to create default project")
 	}
 
-	price := plan.GetPrice()
-	price.Amount = price.Amount.MulRaw(int64(duration))
+	sub := types.Subscription{
+		Creator:       creator,
+		Consumer:      consumer,
+		Block:         block,
+		PlanIndex:     planIndex,
+		PlanBlock:     plan.Block,
+		DurationTotal: duration,
+		MonthCuTotal:  plan.GetComputeUnits(),
+	}
 
 	// use current block's timestamp for subscription start-time
 	timestamp := ctx.BlockTime()
@@ -212,6 +167,18 @@ func (k Keeper) CreateSubscription(
 		expiry = nextMonth(expiry)
 	}
 
+	sub.MonthExpiryTime = uint64(expiry.Unix())
+
+	sub.MonthCuLeft = plan.GetComputeUnits()
+	sub.DurationLeft = duration
+
+	if err := sub.ValidateSubscription(); err != nil {
+		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
+	}
+
+	price := plan.GetPrice()
+	price.Amount = price.Amount.MulRaw(int64(duration))
+
 	if duration >= MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
@@ -219,22 +186,6 @@ func (k Keeper) CreateSubscription(
 			factor := int64(100 - discount)
 			price.Amount = price.Amount.MulRaw(factor).QuoRaw(100)
 		}
-	}
-
-	sub := types.Subscription{
-		Creator:     creator,
-		Consumer:    consumer,
-		Block:       block,
-		PlanIndex:   planIndex,
-		PlanBlock:   plan.Block,
-		Duration:    duration,
-		ExpiryTime:  uint64(expiry.Unix()),
-		RemainingCU: plan.GetComputeUnits(),
-		UsedCU:      0,
-	}
-
-	if err := sub.ValidateSubscription(); err != nil {
-		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
 	}
 
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
