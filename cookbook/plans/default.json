@@ -4,22 +4,20 @@
         "description": "A proposal of a default plan",
         "plans": [
             {
+                "index": "DefaultPlan",
+                "description": "This plan has no restrictions",
+                "type": "rpc",
                 "duration": "1",
                 "price": {
                     "denom": "ulava",
-                    "amount": "2"
+                    "amount": "100000"
                 },
-                "allow_overuse": true,
-                "block": "10",
-                "index": "DefaultPlanID",
-                "compute_units": "25920",
-                "compute_units_per_epoch": "1",
-                "servicers_to_pair": "2",
-                "overuse_rate": "1",
-                "name": "DefaultPlan",
-                "description": "This plan has no restrictions",
-                "type": "rpc",
-                "annual_discount_percentage": "20"
+                "annual_discount_percentage": "20",
+                "compute_units": "10000000000",
+                "compute_units_per_epoch": "1000",
+                "max_providers_to_pair": "5",
+                "allow_overuse": false,
+                "overuse_rate": "0"
             }
         ]
     },

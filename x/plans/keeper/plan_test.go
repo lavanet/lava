@@ -60,7 +60,6 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 		// create dummy plan and append to the testPlans array
 		dummyPlan := types.Plan{
 			Index:                    planIndex,
-			Name:                     "test plan",
 			Description:              "plan to test",
 			Type:                     "rpc",
 			Duration:                 200,
@@ -68,7 +67,7 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
 			ComputeUnits:             1000,
 			ComputeUnitsPerEpoch:     100,
-			ServicersToPair:          3,
+			MaxProvidersToPair:       3,
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
 			AnnualDiscountPercentage: 20,
@@ -159,7 +158,6 @@ const (
 	OVERUSE_FIELDS    = 3
 	CU_FIELD          = 4
 	SERVICERS_FIELD   = 5
-	NAME_FIELD        = 6
 	DESCRIPTION_FIELD = 7
 	TYPE_FIELD        = 8
 )
@@ -205,9 +203,7 @@ func TestInvalidPlanAddition(t *testing.T) {
 			case CU_FIELD:
 				planToTest[0].ComputeUnits = 0
 			case SERVICERS_FIELD:
-				planToTest[0].ServicersToPair = 1
-			case NAME_FIELD:
-				planToTest[0].Name = strings.Repeat("a", types.MAX_LEN_PACKAGE_NAME+1)
+				planToTest[0].MaxProvidersToPair = 1
 			case DESCRIPTION_FIELD:
 				planToTest[0].Description = strings.Repeat("a", types.MAX_LEN_PACKAGE_DESCRIPTION+1)
 			case TYPE_FIELD:

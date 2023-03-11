@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -73,25 +74,20 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) ValidateDeveloperRequest(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {
+func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy types.Policy, err error) {
 	project, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
 	if err != nil {
-		return false, types.Policy{}, err
+		return types.Policy{}, err
 	}
 
-	if project.UsedCu >= project.Policy.TotalCuLimit {
-		return false, project.Policy, nil
-	}
+	// if project.UsedCu >= project.Policy.TotalCuLimit {
+	// 	return false, project.Policy, nil
+	// }
 
-	for _, chain := range project.Policy.ChainPolicies {
-		if chain.ChainId == chainID {
-			for _, api := range chain.Apis {
-				if api == apiName {
-					return true, project.Policy, nil
-				}
-			}
-		}
-	}
+	return project.Policy, nil
+}
 
-	return false, project.Policy, nil
+func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64) (err error) {
+	// TODO
+	return errors.New("AddComputeUnitsToProject not implemented")
 }

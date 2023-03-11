@@ -183,7 +183,7 @@ func (k Keeper) CreateSubscription(
 		}
 	}()
 
-	err = k.projectsKeeper.CreateDefaultProject(ctx, consumer)
+	err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair)
 	if err != nil {
 		details := map[string]string{
 			"err": err.Error(),

@@ -31266,7 +31266,7 @@ paths:
                     type: string
                     format: uint64
                     title: max CU per epoch for the whole plan duration
-                  servicers_to_pair:
+                  max_providers_to_pair:
                     type: string
                     format: uint64
                     title: max providers to be paired in an epoch
@@ -31277,9 +31277,6 @@ paths:
                     type: string
                     format: uint64
                     title: price of CU overuse
-                  name:
-                    type: string
-                    title: plan name (non-unique "human" name)
                   description:
                     type: string
                     title: plan description (for humans)
@@ -31421,6 +31418,9 @@ paths:
                       epoch_cu_limit:
                         type: string
                         format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
                   used_cu:
                     type: string
                     format: uint64
@@ -31517,6 +31517,9 @@ paths:
                         type: string
                         format: uint64
                       epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
                         type: string
                         format: uint64
                   used_cu:
@@ -55266,7 +55269,7 @@ definitions:
         type: string
         format: uint64
         title: max CU per epoch for the whole plan duration
-      servicers_to_pair:
+      max_providers_to_pair:
         type: string
         format: uint64
         title: max providers to be paired in an epoch
@@ -55277,9 +55280,6 @@ definitions:
         type: string
         format: uint64
         title: price of CU overuse
-      name:
-        type: string
-        title: plan name (non-unique "human" name)
       description:
         type: string
         title: plan description (for humans)
@@ -55364,7 +55364,7 @@ definitions:
             type: string
             format: uint64
             title: max CU per epoch for the whole plan duration
-          servicers_to_pair:
+          max_providers_to_pair:
             type: string
             format: uint64
             title: max providers to be paired in an epoch
@@ -55375,9 +55375,6 @@ definitions:
             type: string
             format: uint64
             title: price of CU overuse
-          name:
-            type: string
-            title: plan name (non-unique "human" name)
           description:
             type: string
             title: plan description (for humans)
@@ -55446,6 +55443,9 @@ definitions:
       epoch_cu_limit:
         type: string
         format: uint64
+      max_providers_to_pair:
+        type: string
+        format: uint64
   lavanet.lava.projects.Project:
     type: object
     properties:
@@ -55504,6 +55504,9 @@ definitions:
             type: string
             format: uint64
           epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
             type: string
             format: uint64
       used_cu:
@@ -55604,6 +55607,9 @@ definitions:
               epoch_cu_limit:
                 type: string
                 format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
           used_cu:
             type: string
             format: uint64
@@ -55668,6 +55674,9 @@ definitions:
                 type: string
                 format: uint64
               epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
                 type: string
                 format: uint64
           used_cu:

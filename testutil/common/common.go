@@ -42,7 +42,6 @@ func CreateMockSpec() spectypes.Spec {
 func CreateMockPlan() plantypes.Plan {
 	plan := plantypes.Plan{
 		Index:                    "mockPlan",
-		Name:                     "mock plan",
 		Description:              "plan for testing",
 		Type:                     "rpc",
 		Duration:                 200,
@@ -50,7 +49,7 @@ func CreateMockPlan() plantypes.Plan {
 		Price:                    sdk.NewCoin("ulava", sdk.NewInt(100)),
 		ComputeUnits:             1000,
 		ComputeUnitsPerEpoch:     100,
-		ServicersToPair:          3,
+		MaxProvidersToPair:       3,
 		AllowOveruse:             true,
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,

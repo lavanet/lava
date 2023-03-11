@@ -34,13 +34,8 @@ func (p Plan) ValidatePlan() error {
 	}
 
 	// check that the plan's servicersToPair is larger than 1
-	if p.GetServicersToPair() <= 1 {
+	if p.GetMaxProvidersToPair() <= 1 {
 		return sdkerrors.Wrap(ErrInvalidPlanServicersToPair, "plan's servicersToPair field can't be one or lower")
-	}
-
-	// check that the plan's name length is below the max length
-	if len(p.GetName()) > MAX_LEN_PACKAGE_NAME {
-		return sdkerrors.Wrap(ErrInvalidPlanName, "plan's name is too long")
 	}
 
 	// check that the plan's description length is below the max length

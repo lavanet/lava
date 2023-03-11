@@ -1,18 +1,20 @@
 package keeper
 
 import (
+	"math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
 // add a default project to a subscription, add the subscription key as
-func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.DEFAULT_PROJECT_NAME, subscriptionAddress, true)
+func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64) error {
+	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64) error {
 	project := types.CreateProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
@@ -22,6 +24,11 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	if found {
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
+
+	project.Policy.EpochCuLimit = cuPerEpoch
+	project.Policy.TotalCuLimit = totalCU
+	project.Policy.MaxProvidersToPair = providers
+	project.Policy.GeolocationProfile = geolocation
 
 	if subscriptionAddress != adminAddress {
 		project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})

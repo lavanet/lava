@@ -32,6 +32,7 @@ message Policy {
     uint64 geolocation_profile = 2;
     uint64 total_cu_limit = 3;
     uint64 epoch_cu_limit = 4;
+    uint64 max_providers_to_pair = 5;
 }
 
 message ChainPolicy {

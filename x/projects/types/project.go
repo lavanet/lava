@@ -1,6 +1,6 @@
 package types
 
-const DEFAULT_PROJECT_NAME = "default"
+const ADMIN_PROJECT_NAME = "admin"
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
