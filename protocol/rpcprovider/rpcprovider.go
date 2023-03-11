@@ -46,7 +46,7 @@ type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 	LatestBlock() int64

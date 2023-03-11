@@ -101,17 +101,14 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
 
-	relayRequest := &pairingtypes.RelayRequest{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relayRequest := &pairingtypes.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
 	}
 
 	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
@@ -119,7 +116,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	require.Nil(t, err)
 
 	// make payment request
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
 	require.Nil(t, err)
 
 	// shorten memory
@@ -136,7 +133,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
 	require.Nil(t, err)
 
 	// check that both payments were deleted

@@ -31,7 +31,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	errorLogAndFormat := func(name string, attrs map[string]string, details string) (*types.MsgRelayPaymentResponse, error) {
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
-	for relayIdx, relay := range msg.Relays {
+
+	dataReliabilityByConsumer, err := sigs.DataReliabilityByConsumer(msg.VRFs)
+	if err != nil {
+		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
+	}
+
+	for _, relay := range msg.Relays {
 		if relay.BlockHeight > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}
@@ -82,8 +88,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		payReliability := false
 		// validate data reliability
-		if len(msg.VRFs) > relayIdx && msg.VRFs[relayIdx] != nil {
-			vrfData := msg.VRFs[relayIdx]
+		if vrfData, ok := dataReliabilityByConsumer[clientAddr.String()]; ok {
+			delete(dataReliabilityByConsumer, clientAddr.String())
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID

@@ -29,11 +29,11 @@ type PaymentRequest struct {
 type ConsumerRewards struct {
 	epoch                 uint64
 	consumer              string
-	proofs                map[uint64]*pairingtypes.RelayRequest // key is sessionID
+	proofs                map[uint64]*pairingtypes.RelaySession // key is sessionID
 	dataReliabilityProofs []*pairingtypes.VRFData
 }
 
-func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes.RelayRequest, errRet error) {
+func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes.RelaySession, retVRFs []*pairingtypes.VRFData, errRet error) {
 	for _, proof := range csrw.proofs {
 		retProofs = append(retProofs, proof)
 	}
@@ -44,7 +44,7 @@ func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes
 			if idx > dataReliabilityProofs-1 {
 				break
 			}
-			retProofs[idx].DataReliability = csrw.dataReliabilityProofs[idx]
+			retVRFs = append(retVRFs, csrw.dataReliabilityProofs[idx])
 		}
 	}
 	return
@@ -66,24 +66,24 @@ type RewardServer struct {
 }
 
 type RewardsTxSender interface {
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
-func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelayRequest, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
+func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
 	epochRewards, ok := rws.rewards[epoch]
 	if !ok {
-		proofs := map[uint64]*pairingtypes.RelayRequest{proof.SessionId: proof}
+		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
 		consumerRewardsMap := map[string]*ConsumerRewards{consumerAddr: {epoch: epoch, consumer: consumerAddr, proofs: proofs, dataReliabilityProofs: []*pairingtypes.VRFData{}}}
 		rws.rewards[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewardsMap}
 		return 0, true
 	}
 	consumerRewards, ok := epochRewards.consumerRewards[consumerAddr]
 	if !ok {
-		proofs := map[uint64]*pairingtypes.RelayRequest{proof.SessionId: proof}
+		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
 		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: proofs, dataReliabilityProofs: []*pairingtypes.VRFData{}}
 		epochRewards.consumerRewards[consumerAddr] = consumerRewards
 		return 0, true
@@ -106,13 +106,13 @@ func (rws *RewardServer) SendNewDataReliabilityProof(ctx context.Context, dataRe
 	defer rws.lock.Unlock()
 	epochRewards, ok := rws.rewards[epoch]
 	if !ok {
-		consumerRewardsMap := map[string]*ConsumerRewards{consumerAddr: {epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelayRequest{}, dataReliabilityProofs: []*pairingtypes.VRFData{dataReliability}}}
+		consumerRewardsMap := map[string]*ConsumerRewards{consumerAddr: {epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelaySession{}, dataReliabilityProofs: []*pairingtypes.VRFData{dataReliability}}}
 		rws.rewards[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewardsMap}
 		return true
 	}
 	consumerRewards, ok := epochRewards.consumerRewards[consumerAddr]
 	if !ok {
-		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelayRequest{}, dataReliabilityProofs: []*pairingtypes.VRFData{dataReliability}}
+		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelaySession{}, dataReliabilityProofs: []*pairingtypes.VRFData{dataReliability}}
 		epochRewards.consumerRewards[consumerAddr] = consumerRewards
 		return true
 	}
@@ -130,7 +130,7 @@ func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
-	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch)
+	rewardsToClaim, dataReliabilityProofs, err := rws.gatherRewardsForClaim(ctx, epoch)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		rws.updateCUServiced(relay.CuSum)
 	}
 	if len(rewardsToClaim) > 0 {
-		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10))
+		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, dataReliabilityProofs, strconv.FormatUint(rws.serverID, 10))
 		if err != nil {
 			return utils.LavaFormatError("failed sending rewards claim", err, nil)
 		}
@@ -228,16 +228,16 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
-func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelayRequest, errRet error) {
+func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, errRet error) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
 	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
-		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err, nil)
+		return nil, nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err, nil)
 	}
 
 	if blockDistanceForEpochValidity > currentEpoch {
-		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, &map[string]string{"current epoch": strconv.FormatUint(currentEpoch, 10)})
+		return nil, nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, &map[string]string{"current epoch": strconv.FormatUint(currentEpoch, 10)})
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 	for epoch, epochRewards := range rws.rewards {
@@ -247,12 +247,13 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		}
 
 		for consumerAddr, rewards := range epochRewards.consumerRewards {
-			claimables, err := rewards.PrepareRewardsForClaim()
+			claimables, dataReliabilities, err := rewards.PrepareRewardsForClaim()
 			if err != nil {
 				// can't claim this now
 				continue
 			}
 			rewardsForClaim = append(rewardsForClaim, claimables...)
+			dataReliabilityProofs = append(dataReliabilityProofs, dataReliabilities...)
 			delete(epochRewards.consumerRewards, consumerAddr)
 		}
 		if len(epochRewards.consumerRewards) == 0 {

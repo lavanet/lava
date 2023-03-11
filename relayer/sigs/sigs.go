@@ -167,14 +167,37 @@ func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, e
 	return pubKey, nil
 }
 
-func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes.VRFData) (valid bool, err error) {
+func DataReliabilityByConsumer(vrfs []*pairingtypes.VRFData) (dataReliabilityByConsumer map[string]*pairingtypes.VRFData, err error) {
+	dataReliabilityByConsumer = map[string]*pairingtypes.VRFData{}
+	if len(vrfs) == 0 {
+		return
+	}
+	for _, vrf := range vrfs {
+		signer, err := GetSignerForVRF(*vrf)
+		if err != nil {
+			return nil, err
+		}
+		dataReliabilityByConsumer[signer.String()] = vrf
+	}
+	return dataReliabilityByConsumer, nil
+}
+
+func GetSignerForVRF(dataReliability pairingtypes.VRFData) (signer sdk.AccAddress, err error) {
 	pubKey, err := RecoverPubKeyFromVRFData(dataReliability)
 	if err != nil {
-		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
+		return nil, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
 	}
 	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) // signer
 	if err != nil {
-		return false, fmt.Errorf("AccAddressFromHex : %w", err)
+		return nil, fmt.Errorf("AccAddressFromHex : %w", err)
+	}
+	return signerAccAddress, nil
+}
+
+func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes.VRFData) (valid bool, err error) {
+	signerAccAddress, err := GetSignerForVRF(dataReliability)
+	if err != nil {
+		return false, err
 	}
 	if !signerAccAddress.Equals(signer) {
 		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), signer.String())

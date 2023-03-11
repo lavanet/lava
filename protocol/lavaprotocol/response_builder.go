@@ -40,7 +40,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	return reply, nil
 }
 
-func ExtractSignerAddress(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
+func ExtractSignerAddress(in *pairingtypes.RelaySession) (tenderbytes.HexBytes, error) {
 	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
 	if err != nil {
 		return nil, err

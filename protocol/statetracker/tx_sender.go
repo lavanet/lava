@@ -217,8 +217,8 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error {
-	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description)
+func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error {
+	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, dataReliabilityProofs, description)
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err, nil)

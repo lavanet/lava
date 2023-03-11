@@ -46,7 +46,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	// create relay requests for that contain complaints about providers with indices 0-100
 	relayEpoch := sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		var Relays []*types.RelayRequest
+		var Relays []*types.RelaySession
 
 		// Get pairing for the client to pick a valid provider
 		providersStakeEntries, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[clientIndex].address)
@@ -56,17 +56,14 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		require.Nil(t, err)
 
 		// create relay request
-		relayRequest := &types.RelayRequest{
+		relayRequest := &types.RelaySession{
 			Provider:              providerAddress,
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
 			BlockHeight:           relayEpoch,
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveDataList[clientIndex%unresponsiveProviderAmount], // create the complaint
 		}
 
@@ -144,18 +141,15 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	// create relay requests for provider0 that contain complaints about provider1
 	relayEpoch := sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		var Relays []*types.RelayRequest
-		relayRequest := &types.RelayRequest{
+		var Relays []*types.RelaySession
+		relayRequest := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
 			BlockHeight:           relayEpoch,
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
@@ -246,18 +240,15 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	// create relay requests for provider0 that contain complaints about provider1
 	relayEpoch := sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		var Relays []*types.RelayRequest
-		relayRequest := &types.RelayRequest{
+		var Relays []*types.RelaySession
+		relayRequest := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           relayEpoch,
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
@@ -297,18 +288,15 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 
 	// create more relay requests for provider0 that contain complaints about provider1 (note, sessionID changed)
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		var RelaysAfter []*types.RelayRequest
-		relayRequest := &types.RelayRequest{
+		var RelaysAfter []*types.RelaySession
+		relayRequest := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(2),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)

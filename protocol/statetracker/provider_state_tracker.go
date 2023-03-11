@@ -76,8 +76,8 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest, description string) error {
-	return pst.txSender.TxRelayPayment(ctx, relayRequests, description)
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error {
+	return pst.txSender.TxRelayPayment(ctx, relayRequests, dataReliabilityProofs, description)
 }
 
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
