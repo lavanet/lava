@@ -39,6 +39,15 @@ type testStruct struct {
 	spec      spectypes.Spec
 }
 
+func createStubRequest(relaySession *types.RelaySession, dataReliability *types.VRFData) *types.RelayRequest {
+	req := &types.RelayRequest{
+		RelaySession:    relaySession,
+		RelayData:       &types.RelayPrivateData{Data: []byte("stub-data")},
+		DataReliability: dataReliability,
+	}
+	return req
+}
+
 func (ts *testStruct) addClient(amount int) error {
 	for i := 0; i < amount; i++ {
 		sk, address := sigs.GenerateFloatingKey()
@@ -136,7 +145,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			}
 
 			// Create relay request that was done in the first epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &types.RelaySession{
+			relaySession := &types.RelaySession{
 				Provider:    ts.providers[0].address.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   sessionCounter,
@@ -147,18 +156,18 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-			relayRequest.Sig = sig
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+			relaySession.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*types.RelaySession
-			Relays = append(Relays, relayRequest)
+			Relays = append(Relays, relaySession)
 			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
-			verifyRelayPaymentObjects(t, ts, relayRequest, tt.valid)
+			verifyRelayPaymentObjects(t, ts, relaySession, tt.valid)
 		})
 	}
 }
@@ -203,10 +212,9 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			require.Nil(t, err)
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-			relayRequest := &types.RelaySession{
-				Provider: ts.providers[0].address.String(),
-
-				Data:        []byte(ts.spec.Apis[0].Name),
+			relaySession := &types.RelaySession{
+				Provider:    ts.providers[0].address.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(1),
 				ChainID:     ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
@@ -214,12 +222,12 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				RelayNum:    0,
 			}
 
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-			relayRequest.Sig = sig
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+			relaySession.Sig = sig
 			require.Nil(t, err)
 
-			var Relays []*types.RelayRequest
-			Relays = append(Relays, relayRequest)
+			var Relays []*types.RelaySession
+			Relays = append(Relays, relaySession)
 
 			balanceProvider := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 			stakeClient, found, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
@@ -266,10 +274,9 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	maxcu, err := ts.keepers.Pairing.GetAllowedCUForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()), entry)
 	require.Nil(t, err)
 
-	relayRequest := &types.RelaySession{
+	relaySession := &types.RelaySession{
 		Provider:    ts.providers[0].address.String(),
-		ApiUrl:      "",
-		Data:        []byte(ts.spec.Apis[0].Name),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
 		SessionId:   uint64(1),
 		ChainID:     ts.spec.Name,
 		CuSum:       maxcu * 2,
@@ -277,12 +284,12 @@ func TestRelayPaymentOverUse(t *testing.T) {
 		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	relayRequest.Sig = sig
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	var Relays []*types.RelaySession
-	Relays = append(Relays, relayRequest)
+	Relays = append(Relays, relaySession)
 	// TODO: currently over use is returning an error and doesnt get to balance zero. we will fix it in the future so this can be uncommented.
 	// balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 
@@ -323,24 +330,21 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	var Relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 
-		relayRequest := &types.RelaySession{
+		relaySession := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(1),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
-		relayRequest.Sig = sig
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relaySession)
+		relaySession.Sig = sig
 		require.Nil(t, err)
-		Relays = append(Relays, relayRequest)
+		Relays = append(Relays, relaySession)
 	}
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
@@ -378,25 +382,22 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	var Relays []*types.RelaySession
 	var totalCu uint64
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		relayRequest := &types.RelaySession{
+		relaySession := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(1),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData[clientIndex], // create the complaint
 		}
-		totalCu += relayRequest.CuSum
+		totalCu += relaySession.CuSum
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
-		relayRequest.Sig = sig
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relaySession)
+		relaySession.Sig = sig
 		require.Nil(t, err)
-		Relays = append(Relays, relayRequest)
+		Relays = append(Relays, relaySession)
 	}
 
 	balanceProviderBeforePayment := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
@@ -415,25 +416,22 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch to stake
 
-	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelayRequest
+	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelaySession
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
-		relayRequest := &types.RelaySession{
-			Provider:        ts.providers[1].address.String(),
-			ApiUrl:          "",
-			Data:            []byte(ts.spec.Apis[0].Name),
-			SessionId:       uint64(1),
-			ChainID:         ts.spec.Name,
-			CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-			BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-			RelayNum:        0,
-			RequestBlock:    -1,
-			DataReliability: nil,
+		relaySession := &types.RelaySession{
+			Provider:    ts.providers[1].address.String(),
+			ContentHash: []byte(ts.spec.Apis[0].Name),
+			SessionId:   uint64(1),
+			ChainID:     ts.spec.Name,
+			CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:    0,
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[i].secretKey, *relayRequest)
-		relayRequest.Sig = sig
+		sig, err := sigs.SignRelay(ts.clients[i].secretKey, *relaySession)
+		relaySession.Sig = sig
 		require.Nil(t, err)
-		RelaysForUnresponsiveProviderInFirstTwoEpochs = []*types.RelaySession{relayRequest} // each epoch get one service
+		RelaysForUnresponsiveProviderInFirstTwoEpochs = []*types.RelaySession{relaySession} // each epoch get one service
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[1].address.String(), Relays: RelaysForUnresponsiveProviderInFirstTwoEpochs})
 		require.Nil(t, err)
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch
@@ -444,24 +442,21 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	var Relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 
-		relayRequest := &types.RelaySession{
+		relaySession := &types.RelaySession{
 			Provider:              ts.providers[0].address.String(),
-			ApiUrl:                "",
-			Data:                  []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(1),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
-			RequestBlock:          -1,
-			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
-		relayRequest.Sig = sig
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relaySession)
+		relaySession.Sig = sig
 		require.Nil(t, err)
-		Relays = append(Relays, relayRequest)
+		Relays = append(Relays, relaySession)
 	}
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
@@ -485,26 +480,23 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	cuSum := ts.spec.GetApis()[0].ComputeUnits * 10
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	relayRequest.Sig = sig
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	var Relays []*types.RelaySession
-	Relays = append(Relays, relayRequest)
-	relayRequest2 := *relayRequest
+	Relays = append(Relays, relaySession)
+	relayRequest2 := *relaySession
 	Relays = append(Relays, &relayRequest2)
 
 	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
@@ -533,21 +525,18 @@ func TestRelayPaymentDataModification(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	relayRequest.Sig = sig
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	tests := []struct {
@@ -563,12 +552,12 @@ func TestRelayPaymentDataModification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relayRequest.Provider = tt.provider
-			relayRequest.CuSum = tt.cu
-			relayRequest.SessionId = uint64(tt.id)
+			relaySession.Provider = tt.provider
+			relaySession.CuSum = tt.cu
+			relaySession.SessionId = uint64(tt.id)
 
 			var Relays []*types.RelaySession
-			Relays = append(Relays, relayRequest)
+			Relays = append(Relays, relaySession)
 
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 
@@ -588,25 +577,22 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	relayRequest.Sig = sig
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	var Relays []*types.RelaySession
-	relay := *relayRequest
+	relay := *relaySession
 	Relays = append(Relays, &relay)
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
@@ -631,8 +617,8 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 			}
 
-			var Relays []*types.RelayRequest
-			relay := *relayRequest
+			var Relays []*types.RelaySession
+			relay := *relaySession
 			Relays = append(Relays, &relay)
 
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
@@ -676,25 +662,22 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
-			relayRequest := &types.RelaySession{
-				Provider:        ts.providers[0].address.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       tt.sid,
-				ChainID:         ts.spec.Name,
-				CuSum:           cuSum,
-				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight() - int64(blocksInEpoch)*tt.epoch,
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relaySession := &types.RelaySession{
+				Provider:    ts.providers[0].address.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   tt.sid,
+				ChainID:     ts.spec.Name,
+				CuSum:       cuSum,
+				BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight() - int64(blocksInEpoch)*tt.epoch,
+				RelayNum:    0,
 			}
 
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-			relayRequest.Sig = sig
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+			relaySession.Sig = sig
 			require.Nil(t, err)
 
 			var Relays []*types.RelaySession
-			Relays = append(Relays, relayRequest)
+			Relays = append(Relays, relaySession)
 
 			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 			stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
@@ -748,26 +731,23 @@ func TestRelayPaymentQoS(t *testing.T) {
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availability, Sync: tt.sync}
 
-			relayRequest := &types.RelaySession{
-				Provider:        ts.providers[0].address.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(1),
-				ChainID:         ts.spec.Name,
-				CuSum:           cuSum,
-				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				QoSReport:       QoS,
-				DataReliability: nil,
+			relaySession := &types.RelaySession{
+				Provider:    ts.providers[0].address.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(1),
+				ChainID:     ts.spec.Name,
+				CuSum:       cuSum,
+				BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:    0,
+				QoSReport:   QoS,
 			}
 			QoS.ComputeQoS()
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-			relayRequest.Sig = sig
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+			relaySession.Sig = sig
 			require.Nil(t, err)
 
 			var Relays []*types.RelaySession
-			relay := *relayRequest
+			relay := *relaySession
 			Relays = append(Relays, &relay)
 
 			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
@@ -836,22 +816,19 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 
 			QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-			relayRequest := &types.RelaySession{
-				Provider:        ts.providers[0].address.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(1),
-				ChainID:         ts.spec.Name,
-				CuSum:           cuSum,
-				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				QoSReport:       QoS,
-				DataReliability: nil,
+			relaySession := &types.RelaySession{
+				Provider:    ts.providers[0].address.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(1),
+				ChainID:     ts.spec.Name,
+				CuSum:       cuSum,
+				BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:    0,
+				QoSReport:   QoS,
 			}
 			QoS.ComputeQoS()
 
-			relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			relaySession.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
 			require.Nil(t, err)
 
 			currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
@@ -860,20 +837,22 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			var relayReply *types.RelayReply
 			var nonce uint32
 			// increasing the nonce changes the hash of the reply which in turn produces a different vrfRes resulting to a different index
+			relayRequest := createStubRequest(relaySession, nil)
 			for {
 				relayReply = &types.RelayReply{
 					Nonce: nonce,
 				}
+
 				relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 				require.Nil(t, err)
 
-				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, currentEpoch)
 				require.Nil(t, err)
 
 				index0, err = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 				require.Nil(t, err)
 
-				providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+				providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relaySession.ChainID, ts.clients[0].address)
 				require.Nil(t, err)
 
 				if providers[index0].Address != ts.providers[0].address.String() {
@@ -882,14 +861,14 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 					nonce += 1
 				}
 			}
-			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
+			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 			dataReliability0 := &types.VRFData{
 				Differentiator: false,
 				VrfValue:       vrf_res0,
 				VrfProof:       vrf_proof0,
 				ProviderSig:    relayReply.Sig,
 				AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-				QueryHash:      utils.CalculateQueryHash(*relayRequest),
+				QueryHash:      utils.CalculateQueryHash(*relayRequest.RelayData),
 				Sig:            nil,
 			}
 			dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
@@ -923,28 +902,25 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			}
 
 			QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-			relayRequestWithDataReliability0 := &types.RelayRequest{
-				Provider:        providers[index0].Address,
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(1),
-				ChainID:         ts.spec.Name,
-				CuSum:           cuSum,
-				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: dataReliability0,
-				QoSReport:       QoSDR,
+			relayRequestWithDataReliability0 := &types.RelaySession{
+				Provider:    providers[index0].Address,
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(1),
+				ChainID:     ts.spec.Name,
+				CuSum:       cuSum,
+				BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:    0,
+				QoSReport:   QoSDR,
 			}
 			QoSDR.ComputeQoS()
 			relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 			require.Nil(t, err)
 
 			provider := ts.getProvider(providers[index0].Address)
-			relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
-
+			relaysRequests := []*types.RelaySession{relayRequestWithDataReliability0}
+			dataReliabilities := []*types.VRFData{dataReliability0}
 			balanceBefore := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), provider.address, epochstoragetypes.TokenDenom).Amount.Int64()
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 			if tt.valid {
 				require.Nil(t, err)
 
@@ -980,22 +956,19 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
 
 	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
-		QoSReport:       QoS,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoS,
 	}
 	QoS.ComputeQoS()
 
-	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
 	require.Nil(t, err)
 
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
@@ -1005,6 +978,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	var nonce uint32
 
 	wrongProviderIndex := 1
+	relayRequest := createStubRequest(relaySession, nil)
 GetWrongProvider:
 	for {
 		relayReply = &types.RelayReply{
@@ -1013,12 +987,12 @@ GetWrongProvider:
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
 		index0, _ = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 		index1, _ := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
-		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relaySession.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
 		// two providers returned by GetIndexForVrf and the provider getting tested need 1 more to perform this test properly
 		require.Greater(t, len(providers), 3)
@@ -1040,14 +1014,14 @@ GetWrongProvider:
 		}
 
 	}
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
 		ProviderSig:    relayReply.Sig,
 		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest.RelayData),
 		Sig:            nil,
 	}
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
@@ -1055,17 +1029,14 @@ GetWrongProvider:
 
 	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelaySession{
-		Provider:        providers[wrongProviderIndex].Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: dataReliability0,
-		QoSReport:       QoSDR,
+		Provider:    providers[wrongProviderIndex].Address,
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoSDR,
 	}
 	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
@@ -1073,8 +1044,8 @@ GetWrongProvider:
 
 	provider := ts.getProvider(providers[wrongProviderIndex].Address)
 	relaysRequests := []*types.RelaySession{relayRequestWithDataReliability0}
-
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	dataReliabilities := []*types.VRFData{dataReliability0}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 	require.NotNil(t, err)
 }
 
@@ -1097,22 +1068,21 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
 	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
-		QoSReport:       QoS,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoS,
 	}
 	QoS.ComputeQoS()
-	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
 	require.Nil(t, err)
+
+	relayRequest := createStubRequest(relaySession, nil)
 
 	var relayReply *types.RelayReply
 	var nonce uint32
@@ -1123,21 +1093,21 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	require.Nil(t, err)
 
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
 	index0, _ := utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 	index1, _ := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 	require.Equal(t, index0, int64(-1))
 	require.Equal(t, index1, int64(-1))
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
 		ProviderSig:    relayReply.Sig,
 		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest.RelayData),
 		Sig:            nil,
 	}
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
@@ -1147,25 +1117,22 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	for _, provider := range ts.providers {
 		QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 		relayRequestWithDataReliability0 := &types.RelaySession{
-			Provider:        provider.address.String(),
-			ApiUrl:          "",
-			Data:            []byte(ts.spec.Apis[0].Name),
-			SessionId:       uint64(1),
-			ChainID:         ts.spec.Name,
-			CuSum:           cuSum,
-			BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-			RelayNum:        0,
-			RequestBlock:    -1,
-			DataReliability: dataReliability0,
-			QoSReport:       QoSDR,
+			Provider:    provider.address.String(),
+			ContentHash: []byte(ts.spec.Apis[0].Name),
+			SessionId:   uint64(1),
+			ChainID:     ts.spec.Name,
+			CuSum:       cuSum,
+			BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:    0,
+			QoSReport:   QoSDR,
 		}
 		QoSDR.ComputeQoS()
 		relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 		require.Nil(t, err)
 
 		relaysRequests := []*types.RelaySession{relayRequestWithDataReliability0}
-
-		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+		dataReliabilities := []*types.VRFData{dataReliability0}
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 		require.NotNil(t, err)
 	}
 }
@@ -1188,21 +1155,18 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
 	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
-		QoSReport:       QoS,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoS,
 	}
 	QoS.ComputeQoS()
-	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
 	require.Nil(t, err)
 
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
@@ -1210,6 +1174,8 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
 	var nonce uint32
+	relayRequest := createStubRequest(relaySession, nil)
+
 	for {
 		relayReply = &types.RelayReply{
 			Nonce: nonce,
@@ -1217,11 +1183,11 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
 		index0, _ = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
-		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relaySession.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
 
 		if providers[index0].Address != ts.providers[0].address.String() {
@@ -1230,14 +1196,14 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 		nonce += 1
 	}
 
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
 		ProviderSig:    relayReply.Sig,
 		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest.RelayData),
 		Sig:            nil,
 	}
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[1].secretKey, dataReliability0)
@@ -1245,17 +1211,14 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 
 	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelaySession{
-		Provider:        providers[index0].Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: dataReliability0,
-		QoSReport:       QoSDR,
+		Provider:    providers[index0].Address,
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoSDR,
 	}
 	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[1].secretKey, *relayRequestWithDataReliability0)
@@ -1263,8 +1226,8 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 
 	provider := ts.getProvider(providers[index0].Address)
 	relaysRequests := []*types.RelaySession{relayRequestWithDataReliability0}
-
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	dataReliabilities := []*types.VRFData{dataReliability0}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 	require.NotNil(t, err)
 }
 
@@ -1286,22 +1249,19 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
 	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
-		QoSReport:       QoS,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoS,
 	}
 	QoS.ComputeQoS()
 
-	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
 	require.Nil(t, err)
 
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
@@ -1309,6 +1269,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
 	var nonce uint32
+	relayRequest := createStubRequest(relaySession, nil)
 	for {
 		relayReply = &types.RelayReply{
 			Nonce: nonce,
@@ -1316,11 +1277,11 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
 		index0, _ = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
-		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relaySession.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
 
 		if providers[index0].Address != ts.providers[0].address.String() {
@@ -1330,14 +1291,14 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		}
 	}
 
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
 		ProviderSig:    relayReply.Sig,
 		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest.RelayData),
 		Sig:            nil,
 	}
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
@@ -1345,17 +1306,14 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelaySession{
-		Provider:        providers[index0].Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: dataReliability0,
-		QoSReport:       QoSDR,
+		Provider:    providers[index0].Address,
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       cuSum,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoSDR,
 	}
 	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
@@ -1363,8 +1321,8 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 	provider := ts.getProvider(providers[index0].Address)
 	relaysRequests := []*types.RelaySession{relayRequestWithDataReliability0}
-
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	dataReliabilities := []*types.VRFData{dataReliability0}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 	require.Nil(t, err)
 
 	// Advance Epoch and set block height and resign the tx
@@ -1375,7 +1333,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests, VRFs: dataReliabilities})
 	require.NotNil(t, err)
 }
 
@@ -1417,25 +1375,22 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	relayRequest := &types.RelaySession{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relaySession := &types.RelaySession{
+		Provider:    ts.providers[0].address.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		ChainID:     ts.spec.Name,
+		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	relayRequest.Sig = sig
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relaySession)
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	var Relays []*types.RelaySession
-	Relays = append(Relays, relayRequest)
+	Relays = append(Relays, relaySession)
 
 	balanceProvider := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 	stakeClient, found, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)

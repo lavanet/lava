@@ -82,7 +82,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		payReliability := false
 		// validate data reliability
-		if msg.VRFs != nil && msg.VRFs[relayIdx] != nil {
+		if len(msg.VRFs) > relayIdx && msg.VRFs[relayIdx] != nil {
 			vrfData := msg.VRFs[relayIdx]
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
