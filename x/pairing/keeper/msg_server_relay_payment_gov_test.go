@@ -892,7 +892,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		require.Nil(t, err)
 
 		// Add the relay request to the Relays array (for relayPaymentMessage())
-		var Relays []*pairingtypes.RelayRequest
+		var Relays []*pairingtypes.RelaySession
 		Relays = append(Relays, relayRequest)
 
 		// get payment
