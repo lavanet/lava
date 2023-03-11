@@ -265,6 +265,40 @@ func TestCreateSubscription(t *testing.T) {
 	}
 }
 
+func TestRenewSubscription(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
+
+	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	creator := account.Addr.String()
+
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
+	require.Nil(t, err)
+
+	sub, found := keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
+
+	// fast-forward two months
+	sub = ts.expireSubscription(sub)
+	sub = ts.expireSubscription(sub)
+	sub = ts.expireSubscription(sub)
+	require.Equal(t, uint64(3), sub.DurationLeft)
+
+	// with 3 months duration left, asking for 12 more should fail
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12)
+	require.NotNil(t, err)
+
+	// but asking for additional 10 is fine
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10)
+	require.Nil(t, err)
+
+	sub, found = keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
+
+	require.Equal(t, uint64(13), sub.DurationLeft)
+	require.Equal(t, uint64(10), sub.DurationTotal)
+}
+
 func TestSubscriptionDefaultProject(t *testing.T) {
 	ts := setupTestStruct(t, 1)
 	keeper := ts.keepers.Subscription
