@@ -34,7 +34,7 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/ignite-hq/cli v0.22.1-0.20220610070456-1b33c09fceb7
 	github.com/jhump/protoreflect v1.14.0
 	github.com/joho/godotenv v1.3.0
