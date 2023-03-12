@@ -179,7 +179,7 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -203,7 +203,7 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
