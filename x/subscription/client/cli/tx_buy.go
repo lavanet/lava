@@ -11,8 +11,8 @@ import (
 
 func CmdBuy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "buy [index] [consumer] [duration]",
-		Short: "buy to a service plan",
+		Use:   "buy [index] [optional: consumer] [optional: duration]",
+		Short: "buy a service plan",
 		Args:  cobra.RangeArgs(1, 3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
