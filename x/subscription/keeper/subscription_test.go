@@ -69,7 +69,7 @@ func TestSubscriptionGetAll(t *testing.T) {
 	)
 }
 
-func TestCreateSubscription(t *testing. T) {
+func TestCreateSubscription(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
@@ -146,13 +146,13 @@ func TestCreateSubscription(t *testing. T) {
 			consumers: []int{2},
 			success:   false,
 		},
-//		{
-//			name:      "invalid plan",
-//			index:     "",
-//			creator:   0,
-//			consumers: []int{2},
-//			success:   false,
-//		},
+		//		{
+		//			name:      "invalid plan",
+		//			index:     "",
+		//			creator:   0,
+		//			consumers: []int{2},
+		//			success:   false,
+		//		},
 		{
 			name:      "unknown plan",
 			index:     "no-such-plan",
@@ -192,7 +192,7 @@ func TestCreateSubscription(t *testing. T) {
 	}
 }
 
-func TestSubscriptionDefaultProject(t *testing. T) {
+func TestSubscriptionDefaultProject(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
