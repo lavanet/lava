@@ -1,22 +1,21 @@
 {
     "proposal": {
-        "title": "Add Specs: Evmos",
-        "description": "Adding new specification support for relaying Evmos data on Lava",
+        "title": "Add Specs: Axelar",
+        "description": "Adding new specification support for relaying axelar data on Lava",
         "specs": [
             {
-                "index": "EVMOS",
-                "name": "evmos mainnet",
+                "index": "AXELAR",
+                "name": "axelar mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK",
-                    "ETH1"
+                    "COSMOSSDK"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "average_block_time": "5000",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -27,7 +26,7 @@
                 },
                 "apis": [
                     {
-                        "name": "/evmos/claims/v1/claims_records",
+                        "name": "/axelar/axelarnet/v1beta1/ibc_transfer_count",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -51,7 +50,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/claims_records/{address}",
+                        "name": "/axelar/evm/v1beta1/batched_commands/{chain}/{id}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -75,7 +74,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/params",
+                        "name": "/axelar/evm/v1beta1/burner_info",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -99,7 +98,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/total_unclaimed",
+                        "name": "/axelar/evm/v1beta1/bytecode/{chain}/{contract}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -123,7 +122,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/current_epoch",
+                        "name": "/axelar/evm/v1beta1/chains",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -147,7 +146,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/epochs",
+                        "name": "/axelar/evm/v1beta1/confirmation_height/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -171,7 +170,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/params",
+                        "name": "/axelar/evm/v1beta1/deposit_state",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -195,7 +194,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs",
+                        "name": "/axelar/evm/v1beta1/erc20_tokens/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -219,7 +218,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs/{token}",
+                        "name": "/axelar/evm/v1beta1/event/{chain}/{event_id}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -243,7 +242,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/account/{address}",
+                        "name": "/axelar/evm/v1beta1/gateway_address/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -267,7 +266,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/balances/{address}",
+                        "name": "/axelar/evm/v1beta1/key_address/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -291,7 +290,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/base_fee",
+                        "name": "/axelar/evm/v1beta1/pending_commands/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -315,7 +314,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/codes/{address}",
+                        "name": "/axelar/evm/v1beta1/token_info/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -339,7 +338,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/cosmos_account/{address}",
+                        "name": "/axelar/multisig/v1beta1/key",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -363,7 +362,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/estimate_gas",
+                        "name": "/axelar/multisig/v1beta1/key_id/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -387,7 +386,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/eth_call",
+                        "name": "/axelar/multisig/v1beta1/keygen_session",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -411,7 +410,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/params",
+                        "name": "/axelar/multisig/v1beta1/next_key_id/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -435,7 +434,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/storage/{address}/{key}",
+                        "name": "/axelar/nexus/v1beta1/assets/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -459,7 +458,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_block",
+                        "name": "/axelar/nexus/v1beta1/chain_maintainers/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -483,7 +482,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_tx",
+                        "name": "/axelar/nexus/v1beta1/chain_state/{chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -507,7 +506,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/validator_account/{cons_address}",
+                        "name": "/axelar/nexus/v1beta1/chains",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -531,7 +530,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/base_fee",
+                        "name": "/axelar/nexus/v1beta1/chains_by_asset/{asset}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -555,7 +554,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/block_gas",
+                        "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -579,7 +578,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/params",
+                        "name": "/axelar/nexus/v1beta1/fee",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -603,7 +602,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters",
+                        "name": "/axelar/nexus/v1beta1/latest_deposit_address/{recipient_addr}/{recipient_chain}/{deposit_chain}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -627,7 +626,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters/{denom}",
+                        "name": "/axelar/nexus/v1beta1/recipient_address/{deposit_chain}/{deposit_addr}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -651,7 +650,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}",
+                        "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -675,7 +674,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}/{participant}",
+                        "name": "/axelar/nexus/v1beta1/transfer_fee",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -699,7 +698,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives",
+                        "name": "/axelar/nexus/v1beta1/transfer_rate_limit/{chain}/{asset}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -723,7 +722,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives/{contract}",
+                        "name": "/axelar/nexus/v1beta1/transfers_for_chain/{chain}/{state}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -747,7 +746,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/params",
+                        "name": "/axelar/permission/v1beta1/governance_key",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -771,7 +770,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/circulating_supply",
+                        "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -795,7 +794,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/epoch_mint_provision",
+                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -819,7 +818,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/inflation_rate",
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -843,7 +842,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/params",
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces/{interface_name}/implementations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -867,7 +866,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/period",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/authn",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -891,7 +890,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/skipped_epochs",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/chain",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -915,7 +914,7 @@
                         ]
                     },
                     {
-                        "name": "/evmos/recovery/v1/params",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/codec",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -939,7 +938,151 @@
                         ]
                     },
                     {
-                        "name": "/evmos/vesting/v1/balances/{address}",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/configuration",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/query_services",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/tx_descriptor",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/cosmos/tx/v1beta1/txs/block/{height}",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "/ibc/core/client/v1/consensus_states/{client_id}/heights",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -965,18 +1108,18 @@
                 ]
             },
             {
-                "index": "EVMOST",
-                "name": "evmos testnet",
+                "index": "AXELART",
+                "name": "axelar mainnet",
                 "enabled": true,
                 "imports": [
-                    "EVMOS"
+                    "AXELAR"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "average_block_time": "5000",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

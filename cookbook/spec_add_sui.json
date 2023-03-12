@@ -1,22 +1,18 @@
 {
     "proposal": {
-        "title": "Add Specs: Evmos",
-        "description": "Adding new specification support for relaying Evmos data on Lava",
+        "title": "Add Specs: Sui",
+        "description": "Adding new specification support for relaying Sui data on Lava",
         "specs": [
             {
-                "index": "EVMOS",
-                "name": "evmos mainnet",
+                "index": "SUIT",
+                "name": "sui devnet",
                 "enabled": true,
-                "imports": [
-                    "COSMOSSDK",
-                    "ETH1"
-                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "average_block_time": "1000",
+                "allowed_block_lag_for_qos_sync": "5",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -27,14 +23,14 @@
                 },
                 "apis": [
                     {
-                        "name": "/evmos/claims/v1/claims_records",
+                        "name": "sui_batchTransaction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": "100",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -44,14 +40,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/claims_records/{address}",
+                        "name": "sui_devInspectTransaction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -68,14 +64,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/params",
+                        "name": "sui_dryRunTransaction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -92,14 +88,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/total_unclaimed",
+                        "name": "sui_executeTransaction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -116,14 +112,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/current_epoch",
+                        "name": "sui_executeTransactionSerializedSig",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -140,14 +136,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/epochs",
+                        "name": "sui_getAllBalances",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -164,14 +160,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/params",
+                        "name": "sui_getAllCoins",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -188,14 +184,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs",
+                        "name": "sui_getBalance",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -212,19 +208,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs/{token}",
+                        "name": "sui_getCheckpointContents",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -236,14 +232,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/account/{address}",
+                        "name": "sui_getCheckpointContentsByDigest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -260,14 +256,49 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/balances/{address}",
+                        "name": "sui_getCheckpointSummary",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_tag": "getBlockByNumber",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpointSummary\",\"params\":[%d],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "content_digest"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
+                    },
+                    {
+                        "name": "sui_getCheckpointSummaryByDigest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -284,14 +315,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/base_fee",
+                        "name": "sui_getCoinMetadata",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -308,14 +339,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/codes/{address}",
+                        "name": "sui_getCoins",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -332,14 +363,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/cosmos_account/{address}",
+                        "name": "sui_getCommitteeInfo",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -356,14 +387,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/estimate_gas",
+                        "name": "sui_getDelegatedStakes",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -380,14 +411,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/eth_call",
+                        "name": "sui_getDynamicFieldObject",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -404,14 +435,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/params",
+                        "name": "sui_getDynamicFields",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -428,14 +459,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/storage/{address}/{key}",
+                        "name": "sui_getEvents",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -452,14 +483,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_block",
+                        "name": "sui_getLatestCheckpointSequenceNumber",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -476,14 +507,48 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getLatestCheckpointSequenceNumber\",\"params\":[],\"id\":1}",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0"
+                                ],
+                                "parser_func": "PARSE_BY_ARG"
+                            }
+                        }
+                    },
+                    {
+                        "name": "sui_getMoveFunctionArgTypes",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_tx",
+                        "name": "sui_getNormalizedMoveFunction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -500,14 +565,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/validator_account/{cons_address}",
+                        "name": "sui_getNormalizedMoveModule",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -524,14 +589,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/base_fee",
+                        "name": "sui_getNormalizedMoveModulesByPackage",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -548,14 +613,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/block_gas",
+                        "name": "sui_getNormalizedMoveStruct",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -572,14 +637,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/params",
+                        "name": "sui_getObject",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -596,14 +661,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters",
+                        "name": "sui_getObjectsOwnedByAddress",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -620,14 +685,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters/{denom}",
+                        "name": "sui_getRawObject",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -644,14 +709,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}",
+                        "name": "sui_getReferenceGasPrice",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -668,14 +733,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}/{participant}",
+                        "name": "sui_getSuiSystemState",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -692,14 +757,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives",
+                        "name": "sui_getTotalSupply",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -716,14 +781,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives/{contract}",
+                        "name": "sui_getTotalTransactionNumber",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -740,14 +805,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/params",
+                        "name": "sui_getTransaction",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -764,14 +829,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/circulating_supply",
+                        "name": "sui_getTransactionAuthSigners",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -788,14 +853,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/epoch_mint_provision",
+                        "name": "sui_getTransactions",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -812,19 +877,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/inflation_rate",
+                        "name": "sui_getTransactionsInRange",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "1"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -836,14 +901,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/params",
+                        "name": "sui_getValidators",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -860,14 +925,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/period",
+                        "name": "sui_mergeCoins",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -884,14 +949,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/skipped_epochs",
+                        "name": "sui_moveCall",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -908,14 +973,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/recovery/v1/params",
+                        "name": "sui_pay",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -932,14 +997,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/vesting/v1/balances/{address}",
+                        "name": "sui_payAllSui",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -956,35 +1021,349 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_paySui",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_publish",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_requestAddDelegation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_requestSwitchDelegation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_requestWithdrawDelegation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_splitCoin",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_splitCoinEqual",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_submitTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_subscribeEvent",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_tblsSignRandomnessObject",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_transferObject",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_transferSui",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_object_id",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sui_tryGetPastObject",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     }
                 ]
-            },
-            {
-                "index": "EVMOST",
-                "name": "evmos testnet",
-                "enabled": true,
-                "imports": [
-                    "EVMOS"
-                ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                }
             }
         ]
     },

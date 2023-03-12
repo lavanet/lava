@@ -1,22 +1,18 @@
 {
     "proposal": {
-        "title": "Add Specs: Evmos",
-        "description": "Adding new specification support for relaying Evmos data on Lava",
+        "title": "Add Specs: Solana",
+        "description": "Adding new specification support for relaying Solana data on Lava",
         "specs": [
             {
-                "index": "EVMOS",
-                "name": "evmos mainnet",
+                "index": "SOLANA",
+                "name": "Solana main net",
                 "enabled": true,
-                "imports": [
-                    "COSMOSSDK",
-                    "ETH1"
-                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "block_distance_for_finalized_data": 31,
+                "blocks_in_finalization_proof": 10,
+                "average_block_time": "600",
+                "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -27,7 +23,7 @@
                 },
                 "apis": [
                     {
-                        "name": "/evmos/claims/v1/claims_records",
+                        "name": "getAccountInfo",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -44,14 +40,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/claims_records/{address}",
+                        "name": "getBalance",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -68,14 +64,49 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/params",
+                        "name": "getBlock",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "30",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_tag": "getBlockByNumber",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "blockhash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
+                    },
+                    {
+                        "name": "getBlockHeight",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -92,19 +123,53 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlockHeight\",\"params\":[],\"id\":1}",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0"
+                                ],
+                                "parser_func": "PARSE_BY_ARG"
+                            }
+                        }
+                    },
+                    {
+                        "name": "getBlockProduction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/claims/v1/total_unclaimed",
+                        "name": "getBlockCommitment",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -116,19 +181,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/current_epoch",
+                        "name": "getBlocks",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "1"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -140,14 +205,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/epochs/v1/epochs",
+                        "name": "getBlocksWithLimit",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -164,19 +229,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/params",
+                        "name": "getBlockTime",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -188,14 +253,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs",
+                        "name": "getClusterNodes",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -212,14 +277,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/erc20/v1/token_pairs/{token}",
+                        "name": "getEpochInfo",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -236,14 +301,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/account/{address}",
+                        "name": "getEpochSchedule",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -260,14 +325,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/balances/{address}",
+                        "name": "getFeeForMessage",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -284,14 +349,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/base_fee",
+                        "name": "getFirstAvailableBlock",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -308,14 +373,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/codes/{address}",
+                        "name": "getGenesisHash",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -332,14 +397,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/cosmos_account/{address}",
+                        "name": "getHealth",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -356,14 +421,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/estimate_gas",
+                        "name": "getHighestSnapshotSlot",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -380,14 +445,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/eth_call",
+                        "name": "getIdentity",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -404,14 +469,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/params",
+                        "name": "getInflationGovernor",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -428,14 +493,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/storage/{address}/{key}",
+                        "name": "getInflationRate",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -452,14 +517,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_block",
+                        "name": "getInflationReward",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -476,14 +541,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/trace_tx",
+                        "name": "getLargestAccounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -500,14 +565,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/evm/v1/validator_account/{cons_address}",
+                        "name": "getLatestBlockhash",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -524,14 +589,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/base_fee",
+                        "name": "getLeaderSchedule",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -548,14 +613,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/block_gas",
+                        "name": "getMaxRetransmitSlot",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -572,14 +637,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/feemarket/v1/params",
+                        "name": "getMinimumBalanceForRentExemption",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -596,14 +661,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters",
+                        "name": "getMultipleAccounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -620,14 +685,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/allocation_meters/{denom}",
+                        "name": "getProgramAccounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -644,14 +709,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}",
+                        "name": "getRecentPerformanceSamples",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -668,14 +733,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/gas_meters/{contract}/{participant}",
+                        "name": "getRecentPrioritizationFees",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -692,14 +757,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives",
+                        "name": "getSignaturesForAddress",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -716,14 +781,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/incentives/{contract}",
+                        "name": "getSignatureStatuses",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -740,14 +805,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/incentives/v1/params",
+                        "name": "getSlot",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -764,14 +829,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/circulating_supply",
+                        "name": "getSlotLeader",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -788,14 +853,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/epoch_mint_provision",
+                        "name": "getSlotLeaders",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -812,14 +877,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/inflation_rate",
+                        "name": "getStakeActivation",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -836,14 +901,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/params",
+                        "name": "getStakeMinimumDelegation",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -860,14 +925,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/period",
+                        "name": "getSupply",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -884,14 +949,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/inflation/v1/skipped_epochs",
+                        "name": "getTokenAccountBalance",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -908,14 +973,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/recovery/v1/params",
+                        "name": "getTokenAccountsByDelegate",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -932,14 +997,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/evmos/vesting/v1/balances/{address}",
+                        "name": "getTokenAccountsByOwner",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -956,7 +1021,511 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getTokenLargestAccounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getTokenSupply",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getTransactionCount",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getVersion",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getVoteAccounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "isBlockhashValid",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "minimumLedgerSlot",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "requestAirdrop",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "sendTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "simulateTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getConfirmedBlock",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getConfirmedBlocks",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getConfirmedBlocksWithLimit",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getConfirmedSignaturesForAddress2",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getConfirmedTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getFeeCalculatorForBlockhash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getFeeRateGovernor",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getFees",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getRecentBlockhash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "getSnapshotSlot",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
@@ -965,18 +1534,16 @@
                 ]
             },
             {
-                "index": "EVMOST",
-                "name": "evmos testnet",
+                "index": "SOLANAT",
+                "name": "Solana test net",
                 "enabled": true,
-                "imports": [
-                    "EVMOS"
-                ],
+                "imports": [ "SOLANA" ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "block_distance_for_finalized_data": 31,
+                "blocks_in_finalization_proof": 10,
+                "average_block_time": "600",
+                "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

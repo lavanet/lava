@@ -31129,7 +31129,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /lavanet/lava/plan/params:
+  /lavanet/lava/plans/params:
     get:
       summary: Parameters queries the parameters of the module.
       operationId: LavanetLavaPlansParams
@@ -31165,7 +31165,7 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
-  /lavanet/lava/plan/show_all_plans:
+  /lavanet/lava/plans/show_all_plans:
     get:
       summary: Queries a list of ShowAllPlans items.
       operationId: LavanetLavaPlansShowAllPlans
@@ -31219,7 +31219,7 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
-  '/lavanet/lava/plan/show_plan_info/{plan_index}':
+  '/lavanet/lava/plans/show_plan_info/{plan_index}':
     get:
       summary: Queries a list of ShowPlanInfo items.
       operationId: LavanetLavaPlansShowPlanInfo
@@ -31737,11 +31737,12 @@ paths:
                                   - PARSE_BY_ARG: means parameters are ordered
                                   and flat expected arguments are: [param index]
                                   (example: PARAMS: [<#BlockNum>,"banana"])
-                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                   - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                  args: 0
+                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                           compute_units:
                             type: string
                             format: uint64
@@ -31795,12 +31796,12 @@ paths:
                                         - PARSE_BY_ARG: means parameters are
                                         ordered and flat expected arguments are:
                                         [param index] (example: PARAMS:
-                                        [<#BlockNum>,"banana"])
-                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                         - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                        [<#BlockNum>,"banana"]) args: 0
+                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                           reserved:
                             type: object
                             properties:
@@ -31844,12 +31845,12 @@ paths:
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
                                       [param index] (example: PARAMS:
-                                      [<#BlockNum>,"banana"])
-                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                      [<#BlockNum>,"banana"]) args: 0
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32061,12 +32062,13 @@ paths:
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
-                                (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                (example: PARAMS: [<#BlockNum>,"banana"]) args:
+                                0
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                         compute_units:
                           type: string
                           format: uint64
@@ -32120,12 +32122,12 @@ paths:
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
                                       [param index] (example: PARAMS:
-                                      [<#BlockNum>,"banana"])
-                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                      [<#BlockNum>,"banana"]) args: 0
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                         reserved:
                           type: object
                           properties:
@@ -32169,12 +32171,12 @@ paths:
                                     - PARSE_BY_ARG: means parameters are ordered
                                     and flat expected arguments are: [param
                                     index] (example: PARAMS:
-                                    [<#BlockNum>,"banana"])
-                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                    [<#BlockNum>,"banana"]) args: 0
+                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -32310,11 +32312,12 @@ paths:
                                   - PARSE_BY_ARG: means parameters are ordered
                                   and flat expected arguments are: [param index]
                                   (example: PARAMS: [<#BlockNum>,"banana"])
-                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                   - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                  args: 0
+                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                           compute_units:
                             type: string
                             format: uint64
@@ -32368,12 +32371,12 @@ paths:
                                         - PARSE_BY_ARG: means parameters are
                                         ordered and flat expected arguments are:
                                         [param index] (example: PARAMS:
-                                        [<#BlockNum>,"banana"])
-                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                         - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                        [<#BlockNum>,"banana"]) args: 0
+                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                           reserved:
                             type: object
                             properties:
@@ -32417,12 +32420,12 @@ paths:
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
                                       [param index] (example: PARAMS:
-                                      [<#BlockNum>,"banana"])
-                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                      [<#BlockNum>,"banana"]) args: 0
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32634,12 +32637,13 @@ paths:
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
-                                (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                (example: PARAMS: [<#BlockNum>,"banana"]) args:
+                                0
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                         compute_units:
                           type: string
                           format: uint64
@@ -32693,12 +32697,12 @@ paths:
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
                                       [param index] (example: PARAMS:
-                                      [<#BlockNum>,"banana"])
-                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                      [<#BlockNum>,"banana"]) args: 0
+                                       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                         reserved:
                           type: object
                           properties:
@@ -32742,12 +32746,12 @@ paths:
                                     - PARSE_BY_ARG: means parameters are ordered
                                     and flat expected arguments are: [param
                                     index] (example: PARAMS:
-                                    [<#BlockNum>,"banana"])
-                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                    [<#BlockNum>,"banana"]) args: 0
+                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -55718,12 +55722,12 @@ definitions:
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
-              [<#BlockNum>,"banana"])
-               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-               - DEFAULT: means parameters are non related to block, and should fetch latest block
+              [<#BlockNum>,"banana"]) args: 0
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -55745,11 +55749,12 @@ definitions:
         title: >-
           - PARSE_BY_ARG: means parameters are ordered and flat expected
           arguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
-           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-           - DEFAULT: means parameters are non related to block, and should fetch latest block
+          args: 0
+           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -55763,12 +55768,12 @@ definitions:
     default: EMPTY
     title: >-
       - PARSE_BY_ARG: means parameters are ordered and flat expected arguments
-      are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
-       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-       - DEFAULT: means parameters are non related to block, and should fetch latest block
+      are: [param index] (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
+       - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+       - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+       - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
   lavanet.lava.spec.Params:
     type: object
     properties:
@@ -55807,12 +55812,12 @@ definitions:
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
-              [<#BlockNum>,"banana"])
-               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-               - DEFAULT: means parameters are non related to block, and should fetch latest block
+              [<#BlockNum>,"banana"]) args: 0
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
     properties:
@@ -55857,12 +55862,12 @@ definitions:
                         title: >-
                           - PARSE_BY_ARG: means parameters are ordered and flat
                           expected arguments are: [param index] (example:
-                          PARAMS: [<#BlockNum>,"banana"])
-                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                           - DEFAULT: means parameters are non related to block, and should fetch latest block
+                          PARAMS: [<#BlockNum>,"banana"]) args: 0
+                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                   compute_units:
                     type: string
                     format: uint64
@@ -55915,12 +55920,13 @@ definitions:
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
-                                (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
+                                (example: PARAMS: [<#BlockNum>,"banana"]) args:
+                                0
+                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                   reserved:
                     type: object
                     properties:
@@ -55963,12 +55969,12 @@ definitions:
                             title: >-
                               - PARSE_BY_ARG: means parameters are ordered and
                               flat expected arguments are: [param index]
-                              (example: PARAMS: [<#BlockNum>,"banana"])
-                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                               - DEFAULT: means parameters are non related to block, and should fetch latest block
+                              (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
+                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
             enabled:
               type: boolean
             reliability_threshold:
@@ -56094,12 +56100,12 @@ definitions:
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
                         expected arguments are: [param index] (example: PARAMS:
-                        [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block
+                        [<#BlockNum>,"banana"]) args: 0
+                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                 compute_units:
                   type: string
                   format: uint64
@@ -56152,12 +56158,12 @@ definitions:
                             title: >-
                               - PARSE_BY_ARG: means parameters are ordered and
                               flat expected arguments are: [param index]
-                              (example: PARAMS: [<#BlockNum>,"banana"])
-                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                               - DEFAULT: means parameters are non related to block, and should fetch latest block
+                              (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
+                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
                 reserved:
                   type: object
                   properties:
@@ -56200,12 +56206,12 @@ definitions:
                           title: >-
                             - PARSE_BY_ARG: means parameters are ordered and
                             flat expected arguments are: [param index] (example:
-                            PARAMS: [<#BlockNum>,"banana"])
-                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                             - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                             - DEFAULT: means parameters are non related to block, and should fetch latest block
+                            PARAMS: [<#BlockNum>,"banana"]) args: 0
+                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                             - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                             - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
           enabled:
             type: boolean
           reliability_threshold:
@@ -56340,12 +56346,12 @@ definitions:
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
-              [<#BlockNum>,"banana"])
-               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-               - DEFAULT: means parameters are non related to block, and should fetch latest block
+              [<#BlockNum>,"banana"]) args: 0
+               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
       compute_units:
         type: string
         format: uint64
@@ -56398,12 +56404,12 @@ definitions:
                   title: >-
                     - PARSE_BY_ARG: means parameters are ordered and flat
                     expected arguments are: [param index] (example: PARAMS:
-                    [<#BlockNum>,"banana"])
-                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                     - DEFAULT: means parameters are non related to block, and should fetch latest block
+                    [<#BlockNum>,"banana"]) args: 0
+                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
       reserved:
         type: object
         properties:
@@ -56446,12 +56452,12 @@ definitions:
                 title: >-
                   - PARSE_BY_ARG: means parameters are ordered and flat expected
                   arguments are: [param index] (example: PARAMS:
-                  [<#BlockNum>,"banana"])
-                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                   - DEFAULT: means parameters are non related to block, and should fetch latest block
+                  [<#BlockNum>,"banana"]) args: 0
+                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -56491,12 +56497,12 @@ definitions:
                   title: >-
                     - PARSE_BY_ARG: means parameters are ordered and flat
                     expected arguments are: [param index] (example: PARAMS:
-                    [<#BlockNum>,"banana"])
-                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                     - DEFAULT: means parameters are non related to block, and should fetch latest block
+                    [<#BlockNum>,"banana"]) args: 0
+                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
             compute_units:
               type: string
               format: uint64
@@ -56549,12 +56555,12 @@ definitions:
                         title: >-
                           - PARSE_BY_ARG: means parameters are ordered and flat
                           expected arguments are: [param index] (example:
-                          PARAMS: [<#BlockNum>,"banana"])
-                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                           - DEFAULT: means parameters are non related to block, and should fetch latest block
+                          PARAMS: [<#BlockNum>,"banana"]) args: 0
+                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
             reserved:
               type: object
               properties:
@@ -56597,12 +56603,12 @@ definitions:
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
                         expected arguments are: [param index] (example: PARAMS:
-                        [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block
+                        [<#BlockNum>,"banana"]) args: 0
+                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
       enabled:
         type: boolean
       reliability_threshold:

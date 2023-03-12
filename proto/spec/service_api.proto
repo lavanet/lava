@@ -36,12 +36,12 @@ message BlockParser {
 
 enum PARSER_FUNC{
   EMPTY = 0;
-  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected arguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
-  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}])
-  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"})
-  PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-  PARSE_DICTIONARY_OR_DEFAULT = 5; //means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum)
-  DEFAULT = 6; //means parameters are non related to block, and should fetch latest block
+  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected arguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
+  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+  PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+  PARSE_DICTIONARY_OR_DEFAULT = 5; //means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+  DEFAULT = 6; //means parameters are non related to block, and should fetch latest block args: "latest"
 }
 
 message SpecCategory{
