@@ -26,9 +26,9 @@
                         "name": "eth_accounts",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -108,9 +108,9 @@
                         "name": "eth_chainId",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -132,9 +132,9 @@
                         "name": "eth_coinbase",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -156,9 +156,9 @@
                         "name": "eth_compileLLL",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -180,9 +180,9 @@
                         "name": "eth_createAccessList",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -204,9 +204,9 @@
                         "name": "eth_estimateGas",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "87",
                         "enabled": true,
@@ -228,9 +228,9 @@
                         "name": "eth_feeHistory",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -252,9 +252,9 @@
                         "name": "eth_gasPrice",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "19",
                         "enabled": true,
@@ -300,9 +300,9 @@
                         "name": "eth_getBlockByHash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "21",
                         "enabled": true,
@@ -359,9 +359,9 @@
                         "name": "eth_getBlockTransactionCountByHash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "20",
                         "enabled": true,
@@ -416,7 +416,7 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -431,9 +431,9 @@
                         "name": "eth_getCompilers",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -455,9 +455,9 @@
                         "name": "eth_getFilterChanges",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "1"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "20",
                         "enabled": true,
@@ -479,9 +479,9 @@
                         "name": "eth_getFilterLogs",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "75",
                         "enabled": true,
@@ -528,9 +528,9 @@
                         "name": "eth_getProof",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "21",
                         "enabled": true,
@@ -576,9 +576,9 @@
                         "name": "eth_getTransactionByBlockHashAndIndex",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "15",
                         "enabled": true,
@@ -624,9 +624,9 @@
                         "name": "eth_getTransactionByHash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "17",
                         "enabled": true,
@@ -672,9 +672,9 @@
                         "name": "eth_getTransactionReceipt",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "15",
                         "enabled": true,
@@ -744,9 +744,9 @@
                         "name": "eth_getUncleCountByBlockHash",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "15",
                         "enabled": true,
@@ -816,9 +816,9 @@
                         "name": "eth_hashrate",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -840,16 +840,16 @@
                         "name": "eth_maxPriorityFeePerGas",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -937,9 +937,9 @@
                         "name": "eth_newPendingTransactionFilter",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "20",
                         "enabled": true,
@@ -961,9 +961,9 @@
                         "name": "eth_protocolVersion",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -985,9 +985,9 @@
                         "name": "eth_sendRawTransaction",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "250",
                         "enabled": true,
@@ -1009,9 +1009,9 @@
                         "name": "eth_sendTransaction",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1057,9 +1057,9 @@
                         "name": "eth_signTransaction",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1081,9 +1081,9 @@
                         "name": "eth_subscribe",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1129,9 +1129,9 @@
                         "name": "eth_uninstallFilter",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1201,9 +1201,9 @@
                         "name": "net_peerCount",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -1249,9 +1249,9 @@
                         "name": "rpc_modules",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -1273,9 +1273,9 @@
                         "name": "web3_clientVersion",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "15",
                         "enabled": true,
@@ -1297,9 +1297,9 @@
                         "name": "web3_sha3",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "15",
                         "enabled": true,
