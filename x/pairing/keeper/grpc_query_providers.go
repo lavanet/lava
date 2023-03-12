@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -22,12 +23,26 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
+
+	stakeEntries := stakeStorage.GetStakeEntries()
+
+	if !req.ShowFrozenProviders {
+		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
+		for _, stakeEntry := range stakeEntries {
+			// only frozen providers have stakeAppliedBlock = MaxUint64
+			if stakeEntry.GetStakeAppliedBlock() != math.MaxUint64 {
+				stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntry)
+			}
+		}
+		stakeEntries = stakeEntriesNoFrozen
+	}
+
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ProviderKey)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	outputStr := fmt.Sprintf("Staked Providers Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Providers:\n%v\nUnstaking Providers:\n%v\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeStorage.StakeEntries, unstakingStakeStorage.StakeEntries)
+	outputStr := fmt.Sprintf("Staked Providers Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Providers:\n%v\nUnstaking Providers:\n%v\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeEntries, unstakingStakeStorage.StakeEntries)
 
-	return &types.QueryProvidersResponse{StakeEntry: stakeStorage.StakeEntries, Output: outputStr}, nil
+	return &types.QueryProvidersResponse{StakeEntry: stakeEntries, Output: outputStr}, nil
 }
