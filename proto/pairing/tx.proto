@@ -17,6 +17,7 @@ service Msg {
   rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
   rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
   rpc Freeze(MsgFreeze) returns (MsgFreezeResponse);
+  rpc Unfreeze(MsgUnfreeze) returns (MsgUnfreezeResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -75,6 +76,14 @@ message MsgFreeze {
 }
 
 message MsgFreezeResponse {
+}
+
+message MsgUnfreeze {
+  string creator = 1;
+  repeated string chainIds = 2;
+}
+
+message MsgUnfreezeResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
