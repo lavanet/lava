@@ -44,6 +44,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgRelayPayment int = 100
 
+	opWeightMsgFreeze = "op_weight_msg_freeze"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgFreeze int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -153,6 +157,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgRelayPayment,
 		pairingsimulation.SimulateMsgRelayPayment(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgFreeze int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgFreeze, &weightMsgFreeze, nil,
+		func(_ *rand.Rand) {
+			weightMsgFreeze = defaultWeightMsgFreeze
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgFreeze,
+		pairingsimulation.SimulateMsgFreeze(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
