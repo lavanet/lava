@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -80,14 +79,20 @@ func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string,
 		return types.Policy{}, err
 	}
 
-	// if project.UsedCu >= project.Policy.TotalCuLimit {
-	// 	return false, project.Policy, nil
-	// }
-
 	return project.Policy, nil
 }
 
-func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64) (err error) {
-	// TODO
-	return errors.New("AddComputeUnitsToProject not implemented")
+func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {
+	project, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
+	if err != nil {
+		return err
+	}
+
+	if project.Policy.TotalCuLimit >= project.UsedCu {
+		return utils.LavaError(ctx, ctx.Logger(), "project_cu_limit", map[string]string{"project": project.Index}, "the project exceeded the total cu allocated")
+	}
+
+	project.UsedCu += cu
+
+	return k.projectsFS.ModifyEntry(ctx, project.Index, blockHeight, &project)
 }

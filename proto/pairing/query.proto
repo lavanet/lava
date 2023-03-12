@@ -132,6 +132,8 @@ message QueryVerifyPairingRequest {
 message QueryVerifyPairingResponse {
   bool valid = 1;
   int64 index = 2;
+  uint64 pairedProviders = 3;
+  uint64 cuPerEpoch = 4;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {

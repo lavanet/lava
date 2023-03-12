@@ -58,7 +58,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.ChainID,
 			clientAddr,
@@ -105,7 +105,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
 			}
 			// check this other provider is indeed legitimate
-			isValidPairing, _, _, err := k.Keeper.ValidatePairingForClient(
+			isValidPairing, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
 				relay.ChainID,
 				clientAddr,
@@ -121,10 +121,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing mismatch")
 			}
 			vrfPk := &utils.VrfPubKey{}
-			vrfPk, err = vrfPk.DecodeFromBech32(userStake.Vrfpk)
+			vrfPk, err = vrfPk.DecodeFromBech32(vrfk)
 			if err != nil {
 				details["error"] = err.Error()
-				details["vrf_bech32"] = userStake.Vrfpk
+				details["vrf_bech32"] = vrfk
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			// signatures valid, validate VRF signing
@@ -134,13 +134,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			providersCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
-			}
-
-			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
+			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersToPair), spec.ReliabilityThreshold)
 			if vrfErr != nil {
 				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
@@ -170,7 +164,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 
-		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, userStake, totalCUInEpochForUserProvider, epochStart)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, epochStart)
 		if err != nil {
 			// TODO: maybe give provider money but burn user, colluding?
 			// TODO: display correct totalCU and usedCU for provider

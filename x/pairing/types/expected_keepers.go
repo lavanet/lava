@@ -67,6 +67,6 @@ type BankKeeper interface {
 
 type ProjectsKeeper interface {
 	GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy projectstypes.Policy, err error)
-	AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64) (err error)
+	AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (projectstypes.Project, error)
 }
