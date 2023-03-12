@@ -8,15 +8,16 @@ import "cosmos/base/v1beta1/coin.proto";
 
 message Plan {
     string index = 1;
-    uint64 block = 2; // the epoch that this plan was created
-    cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false]; // plan price (in ulava)
-    uint64 compute_units = 4; // max CU for the whole plan duration
-    uint64 compute_units_per_epoch = 5; // max CU per epoch for the whole plan duration
-    uint64 servicers_to_pair = 6; // max providers to be paired in an epoch
-    bool allow_overuse = 7; // allow CU overuse flag
-    uint64 overuse_rate = 8; // price of CU overuse
-    string name = 9; // plan name (non-unique "human" name)
-    string description = 10; // plan description (for humans)
-    string type = 11; // plan type
-    uint64 annual_discount_percentage = 12; // discount for buying the plan for a year
+    reserved 2; // deprecated "duration"
+    uint64 block = 3; // the epoch that this plan was created
+    cosmos.base.v1beta1.Coin price = 4 [(gogoproto.nullable) = false]; // plan price (in ulava)
+    uint64 compute_units = 5; // max CU for the whole plan duration
+    uint64 compute_units_per_epoch = 6; // max CU per epoch for the whole plan duration
+    uint64 servicers_to_pair = 7; // max providers to be paired in an epoch
+    bool allow_overuse = 8; // allow CU overuse flag
+    uint64 overuse_rate = 9; // price of CU overuse
+    string name = 10; // plan name (non-unique "human" name)
+    string description = 11; // plan description (for humans)
+    string type = 12; // plan type
+    uint64 annual_discount_percentage = 13; // discount for buying the plan for a year
 }
