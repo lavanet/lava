@@ -10,7 +10,7 @@ message StakeEntry {
   
   cosmos.base.v1beta1.Coin stake = 1 [(gogoproto.nullable) = false]; 
   string address = 2; 
-  uint64 deadline = 3; 
+  uint64 stake_applied_block = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
   uint64 geolocation = 5; 
   string chain = 6;
