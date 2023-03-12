@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	TypeMsgFreeze  = "freeze"
-	ReasonFlagName = "reason"
+	TypeMsgFreeze   = "freeze"
+	ReasonFlagName  = "reason"
+	ReasonMaxLength = 50
 )
 
 var _ sdk.Msg = &MsgFreeze{}
@@ -45,6 +46,9 @@ func (msg *MsgFreeze) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if len(msg.GetReason()) > ReasonMaxLength {
+		return sdkerrors.Wrapf(FreezeReasonTooLongError, "invalid freeze reason error (%s) ", FreezeReasonTooLongError.Error())
 	}
 	return nil
 }
