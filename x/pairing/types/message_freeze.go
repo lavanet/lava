@@ -5,7 +5,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const TypeMsgFreeze = "freeze"
+const (
+	TypeMsgFreeze  = "freeze"
+	ReasonFlagName = "reason"
+)
 
 var _ sdk.Msg = &MsgFreeze{}
 
