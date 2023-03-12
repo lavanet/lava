@@ -1249,9 +1249,9 @@
                         "name": "eth_getProof",
                         "block_parsing": {
                             "parser_arg": [
-                                "2"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "21",
                         "enabled": true,
