@@ -2,7 +2,6 @@ package cli
 
 import (
 	"strconv"
-
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
