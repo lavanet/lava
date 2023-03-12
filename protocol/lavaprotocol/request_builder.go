@@ -145,6 +145,7 @@ func ConstructDataReliabilityRelayRequest(ctx context.Context, vrfData *pairingt
 		QoSReport:             nil,
 		DataReliability:       vrfData,
 		UnresponsiveProviders: reportedProviders,
+		ApiInterface:          relayRequestCommonData.ApiInterface,
 	}
 	sig, err := sigs.SignRelay(privKey, *relayRequest)
 	if err != nil {

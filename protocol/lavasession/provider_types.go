@@ -240,7 +240,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	}
 	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
 	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1          // 3. update RelayNum, we already verified relayNum is valid in GetDataReliabilitySession.
+	sps.RelayNum += 1
 	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
 		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
 		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
@@ -248,7 +248,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
@@ -259,19 +259,15 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
 	}
 
-	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
-		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
-		"sps.CuSum":         strconv.FormatUint(sps.CuSum, 10),
-	})
-
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
 	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
 		sps.lock.Unlock() // unlock on error
 		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch, &map[string]string{
-			"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-			"sps.CuSum":           strconv.FormatUint(sps.CuSum, 10),
-			"currentCU":           strconv.FormatUint(cuFromSpec, 10),
+			"request.CuSum":  strconv.FormatUint(relayRequestTotalCU, 10),
+			"provider.CuSum": strconv.FormatUint(sps.CuSum, 10),
+			"specCU":         strconv.FormatUint(cuFromSpec, 10),
+			"expected":       strconv.FormatUint(sps.CuSum+cuFromSpec, 10),
+			"relayNumber":    strconv.FormatUint(relayNumber, 10),
 		})
 	}
 
@@ -285,9 +281,15 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 		return err
 	}
 	// finished validating, can add all info.
-	sps.LatestRelayCu = cuToAdd     // 1. update latest
-	sps.CuSum += cuToAdd            // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = sps.RelayNum + 1 // 3. update RelayNum, we already verified relayNum is valid in GetSession.
+	sps.LatestRelayCu = cuToAdd // 1. update latest
+	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
+	sps.RelayNum = relayNumber  // 3. update RelayNum, we already verified relayNum is valid in GetSession.
+	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
+		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
+		"sps.CuSum":         strconv.FormatUint(sps.CuSum, 10),
+		"sps.sessionId":     strconv.FormatUint(sps.SessionID, 10),
+	})
 	return nil
 }
 

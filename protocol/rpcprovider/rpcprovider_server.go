@@ -143,7 +143,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum)
+	err = relaySession.PrepareSessionForUsage(relayCU, request.CuSum, request.RelayNum)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
@@ -515,6 +515,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		for _, block := range requestedHashes {
 			if block.Block == request.RequestBlock {
 				requestedBlockHash = []byte(block.Hash)
+				if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
+					finalizedBlockHashes[block.Block] = block.Hash
+				}
 			} else {
 				finalizedBlockHashes[block.Block] = block.Hash
 			}
@@ -569,7 +572,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err,
 			&map[string]string{"finalizedBlockHashes": fmt.Sprintf("%v", finalizedBlockHashes)})
 	}
-
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
 

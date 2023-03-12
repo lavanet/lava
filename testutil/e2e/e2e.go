@@ -217,7 +217,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "03_EthProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -416,7 +416,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "05_LavaProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -570,7 +570,7 @@ func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "08_restProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "08_restProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -661,7 +661,7 @@ func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "10_grpcProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "10_grpcProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -772,6 +772,7 @@ func (lt *lavaTest) saveLogs() {
 		writer := bufio.NewWriter(file)
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
+		utils.LavaFormatDebug("writing file", &map[string]string{"fileName": fileName, "lines": strconv.Itoa(len(logBuffer.Bytes()))})
 		file.Close()
 
 		lines := strings.Split(logBuffer.String(), "\n")

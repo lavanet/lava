@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -60,10 +61,10 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, speci
 	wantedBlocksData := WantedBlocksData{}
 	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
 	if err != nil {
-		return latestBlock, nil, utils.LavaFormatError("invalid input for GetLatestBlockData", err, &map[string]string{
+		return latestBlock, nil, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
 			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
-		})
+		}))
 	}
 
 	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
