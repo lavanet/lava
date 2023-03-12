@@ -255,6 +255,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
+		// if this returns an error it means this is legacy consumer
+		k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
+
 		// Get servicersToPair param
 		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
 		if err != nil {
