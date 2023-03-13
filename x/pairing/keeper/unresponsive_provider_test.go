@@ -60,9 +60,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 			Provider:              providerAddress,
 			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
-			ChainID:               ts.spec.Name,
+			SpecID:                ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
-			BlockHeight:           relayEpoch,
+			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveDataList[clientIndex%unresponsiveProviderAmount], // create the complaint
 		}
@@ -146,9 +146,9 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			Provider:              ts.providers[0].address.String(),
 			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
-			ChainID:               ts.spec.Name,
+			SpecID:                ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
-			BlockHeight:           relayEpoch,
+			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
@@ -245,9 +245,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			Provider:              ts.providers[0].address.String(),
 			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
-			ChainID:               ts.spec.Name,
+			SpecID:                ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
-			BlockHeight:           relayEpoch,
+			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
@@ -293,9 +293,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			Provider:              ts.providers[0].address.String(),
 			ContentHash:           []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(2),
-			ChainID:               ts.spec.Name,
+			SpecID:                ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
-			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			Epoch:                 sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}

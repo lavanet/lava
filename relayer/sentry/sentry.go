@@ -953,7 +953,7 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.RelaySession.SessionId,
 		RelayNum:              req.RelaySession.RelayNum,
-		BlockHeight:           req.RelaySession.BlockHeight,
+		BlockHeight:           req.RelaySession.Epoch,
 		LatestBlock:           latestBlock,
 	}
 	providerDataContainers := map[string]providerDataContainer{}
@@ -972,7 +972,7 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.RelaySession.SessionId,
 		RelayNum:              req.RelaySession.RelayNum,
-		BlockHeight:           req.RelaySession.BlockHeight,
+		BlockHeight:           req.RelaySession.Epoch,
 		LatestBlock:           latestBlock,
 	}
 	consensus.agreeingProviders[providerAcc] = newProviderDataContainer
@@ -1081,8 +1081,8 @@ func (s *Sentry) SendRelay(
 				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request.RelayData, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
 				dataReliability := &pairingtypes.VRFData{
-					ChainID:        request.RelaySession.ChainID,
-					Epoch:          request.RelaySession.BlockHeight,
+					ChainID:        request.RelaySession.SpecID,
+					Epoch:          request.RelaySession.Epoch,
 					Differentiator: differentiator,
 					VrfValue:       vrf_res,
 					VrfProof:       vrf_proof,

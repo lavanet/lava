@@ -50,7 +50,7 @@ func (fc *FinalizationConsensus) newProviderHashesConsensus(blockDistanceForFina
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
 		RelayNum:              req.RelayNum,
-		BlockHeight:           req.BlockHeight,
+		BlockHeight:           req.Epoch,
 		LatestBlock:           latestBlock,
 	}
 	providerDataContainers := map[string]providerDataContainer{}
@@ -69,7 +69,7 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
 		RelayNum:              req.RelayNum,
-		BlockHeight:           req.BlockHeight,
+		BlockHeight:           req.Epoch,
 		LatestBlock:           latestBlock,
 	}
 	consensus.agreeingProviders[providerAcc] = newProviderDataContainer

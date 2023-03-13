@@ -97,9 +97,9 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 		Provider:    provider0.Addr.String(),
 		ContentHash: sigs.CalculateContentHashForRelayData(msg.ResponseConflict.ConflictRelayData0.Request.RelayData),
 		SessionId:   uint64(1),
-		ChainID:     spec.Index,
+		SpecID:      spec.Index,
 		CuSum:       0,
-		BlockHeight: sdk.UnwrapSDKContext(ctx).BlockHeight(),
+		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
 		QoSReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}

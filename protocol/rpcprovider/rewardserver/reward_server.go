@@ -145,7 +145,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			utils.LavaFormatError("invalid consumer address extraction from relay", err, &map[string]string{"relay": fmt.Sprintf("%+v", relay), "consumerBytes": consumerBytes.String()})
 			continue
 		}
-		expectedPay := PaymentRequest{ChainID: relay.ChainID, CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: consumerAddr, UniqueIdentifier: relay.SessionId, Description: strconv.FormatUint(rws.serverID, 10)}
+		expectedPay := PaymentRequest{ChainID: relay.SpecID, CU: relay.CuSum, BlockHeightDeadline: relay.Epoch, Amount: sdk.Coin{}, Client: consumerAddr, UniqueIdentifier: relay.SessionId, Description: strconv.FormatUint(rws.serverID, 10)}
 		rws.addExpectedPayment(expectedPay)
 		rws.updateCUServiced(relay.CuSum)
 	}

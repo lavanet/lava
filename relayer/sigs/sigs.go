@@ -104,7 +104,7 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byt
 
 func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
 	// sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.RelaySession.SessionId, relayReq.RelaySession.BlockHeight, relayReq.RelaySession.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
+	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.RelaySession.SessionId, relayReq.RelaySession.Epoch, relayReq.RelaySession.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
 }
 
 func DataToSignResponseFinalizationDataInner(latestBlock int64, sessionID uint64, blockHeight int64, relayNum uint64, finalizedBlockHashes []byte, clientAddress sdk.AccAddress) (dataToSign []byte) {

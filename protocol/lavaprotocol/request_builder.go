@@ -55,14 +55,14 @@ func NewRelayData(connectionType string, apiUrl string, data []byte, requestBloc
 
 func ConstructRelaySession(relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
 	return &pairingtypes.RelaySession{
-		ChainID:               chainID,
+		SpecID:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
 		SessionId:             uint64(consumerSession.SessionId),
 		CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
 		RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
 		QoSReport:             consumerSession.QoSInfo.LastQoSReport,
-		BlockHeight:           epoch,
+		Epoch:                 epoch,
 		UnresponsiveProviders: reportedProviders,
 		LavaChainId:           "FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE IF IM HERE ITS A BUG",
 		Sig:                   nil,
@@ -71,14 +71,14 @@ func ConstructRelaySession(relayRequestData *pairingtypes.RelayPrivateData, chai
 
 func dataReliabilityRelaySession(relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64) *pairingtypes.RelaySession {
 	return &pairingtypes.RelaySession{
-		ChainID:               chainID,
+		SpecID:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
 		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 		CuSum:                 lavasession.DataReliabilityCuSum,     // consumerSession.CuSum == 0
 		Provider:              providerPublicAddress,
 		RelayNum:              0,
 		QoSReport:             nil,
-		BlockHeight:           epoch,
+		Epoch:                 epoch,
 		UnresponsiveProviders: nil,
 		LavaChainId:           "FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE IF IM HERE ITS A BUG",
 		Sig:                   nil,
@@ -140,8 +140,8 @@ func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, 
 
 func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
 	dataReliability := &pairingtypes.VRFData{
-		ChainID:        request.RelaySession.ChainID,
-		Epoch:          request.RelaySession.BlockHeight,
+		ChainID:        request.RelaySession.SpecID,
+		Epoch:          request.RelaySession.Epoch,
 		Differentiator: differentiator,
 		VrfValue:       vrf_res,
 		VrfProof:       vrf_proof,

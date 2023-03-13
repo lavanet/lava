@@ -100,8 +100,8 @@ func TestDetection(t *testing.T) {
 			//changes to request1 according to test
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ConnectionType += tt.ConnectionType
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ApiUrl += tt.ApiUrl
-			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.BlockHeight += tt.BlockHeight
-			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.ChainID += tt.ChainID
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Epoch += tt.BlockHeight
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SpecID += tt.ChainID
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data, tt.Data...)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.RequestBlock += tt.RequestBlock
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.CuSum += tt.Cusum

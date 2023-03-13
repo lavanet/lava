@@ -317,7 +317,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 	var dataReliabilitySessions []*lavasession.DataReliabilitySession
-	sessionEpoch := uint64(relayResult.Request.RelaySession.BlockHeight)
+	sessionEpoch := uint64(relayResult.Request.RelaySession.Epoch)
 	providerPubAddress := relayResult.ProviderAddress
 	// handle data reliability
 	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayResult.Request.RelayData, relayResult.Reply, rpccs.VrfSk, sessionEpoch)

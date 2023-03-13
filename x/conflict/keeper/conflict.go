@@ -16,13 +16,13 @@ func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *type
 
 func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.ResponseConflict, clientAddr sdk.AccAddress) error {
 	// 1. validate mismatching data
-	chainID := conflictData.ConflictRelayData0.Request.RelaySession.ChainID
-	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.ChainID {
-		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.ChainID)
+	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecID
+	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecID {
+		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.SpecID)
 	}
-	block := conflictData.ConflictRelayData0.Request.RelaySession.BlockHeight
-	if block != conflictData.ConflictRelayData1.Request.RelaySession.BlockHeight {
-		return fmt.Errorf("mismatching request parameters between providers %d, %d", block, conflictData.ConflictRelayData1.Request.RelaySession.BlockHeight)
+	block := conflictData.ConflictRelayData0.Request.RelaySession.Epoch
+	if block != conflictData.ConflictRelayData1.Request.RelaySession.Epoch {
+		return fmt.Errorf("mismatching request parameters between providers %d, %d", block, conflictData.ConflictRelayData1.Request.RelaySession.Epoch)
 	}
 	if conflictData.ConflictRelayData0.Request.RelayData.ConnectionType != conflictData.ConflictRelayData1.Request.RelayData.ConnectionType {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ConnectionType, conflictData.ConflictRelayData1.Request.RelayData.ConnectionType)

@@ -105,9 +105,9 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 		Provider:    ts.providers[0].address.String(),
 		ContentHash: []byte(ts.spec.Apis[0].Name),
 		SessionId:   uint64(1),
-		ChainID:     ts.spec.Name,
+		SpecID:      ts.spec.Name,
 		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight: sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		Epoch:       sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 		RelayNum:    0,
 	}
 

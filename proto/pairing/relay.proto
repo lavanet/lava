@@ -10,14 +10,14 @@ service Relayer {
 }
 
 message RelaySession {
-    string chainID = 1;
+    string specID = 1;
     bytes content_hash = 2;
     uint64 session_id = 3;
     uint64 cu_sum = 4; // total compute unit used including this relay
     string provider = 5;
     uint64 relay_num = 6;
     QualityOfServiceReport QoSReport = 7;
-    int64 block_height = 8;
+    int64 epoch = 8;
     bytes unresponsive_providers = 9;
     string lava_chain_id = 10;
     bytes sig = 11;

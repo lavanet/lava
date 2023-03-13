@@ -38,7 +38,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	for _, relay := range msg.Relays {
-		if relay.BlockHeight > ctx.BlockHeight() {
+		if relay.Epoch > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}
 
@@ -59,17 +59,17 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// TODO: add support for spec changes
-		spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecID)
 		if !found || !spec.Enabled {
-			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecID}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
 			ctx,
-			relay.ChainID,
+			relay.SpecID,
 			clientAddr,
 			providerAddr,
-			uint64(relay.BlockHeight),
+			uint64(relay.Epoch),
 		)
 		if err != nil {
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
@@ -80,20 +80,20 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_pairing", details, "invalid pairing claim on proof of relay")
 		}
 
-		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.Epoch))
 		if err != nil {
-			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
+			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.Epoch), 10), "error": err.Error()}
 			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
 		}
 
 		payReliability := false
 		// validate data reliability
-		vrfStoreKey := VRFKey{ChainID: relay.ChainID, Epoch: epochStart, Consumer: clientAddr.String()}
+		vrfStoreKey := VRFKey{ChainID: relay.SpecID, Epoch: epochStart, Consumer: clientAddr.String()}
 		if vrfData, ok := dataReliabilityStore[vrfStoreKey]; ok {
 			delete(dataReliabilityStore, vrfStoreKey)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
-				details["chainID"] = relay.ChainID
+				details["chainID"] = relay.SpecID
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}
 
@@ -115,10 +115,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			// check this other provider is indeed legitimate
 			isValidPairing, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
-				relay.ChainID,
+				relay.SpecID,
 				clientAddr,
 				otherProviderAddress,
-				uint64(relay.BlockHeight),
+				uint64(relay.Epoch),
 			)
 			if err != nil {
 				details["error"] = err.Error()
@@ -142,7 +142,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			providersCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
+			providersCount, err := k.ServicersToPairCount(ctx, uint64(relay.Epoch))
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
@@ -165,7 +165,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
 			details := map[string]string{
@@ -205,7 +205,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
 		if relay.QoSReport != nil {
 			QoS, err := relay.QoSReport.ComputeQoS()
@@ -224,7 +224,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 
 		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
+		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecID, clientAddr, burnAmount, false)
 
 		if err2 != nil {
 			details["amountToBurn"] = burnAmount.String()
@@ -276,7 +276,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.ChainID, relay.CuSum, servicersToPair, clientAddr)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecID, relay.CuSum, servicersToPair, clientAddr)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}

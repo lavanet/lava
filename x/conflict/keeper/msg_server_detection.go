@@ -45,7 +45,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		// 3. accept incoming commit transactions for this vote,
 		// 4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
 		// 5. majority wins, minority gets penalised
-		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.BlockHeight))
+		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch))
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get EpochStart for specific block")
 		}
@@ -57,7 +57,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit
-		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.BlockHeight)
+		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch)
 		epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get epochblocks")
@@ -70,7 +70,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VoteDeadline = voteDeadline
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiUrl
 		conflictVote.ClientAddress = msg.Creator
-		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.ChainID
+		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.SpecID
 		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.RequestBlock)
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Data
 

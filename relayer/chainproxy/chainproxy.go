@@ -142,8 +142,8 @@ func SendRelay(
 			RelaySession: &pairingtypes.RelaySession{
 				SessionId:             uint64(consumerSession.SessionId),
 				Provider:              providerPublicAddress,
-				ChainID:               cp.GetSentry().ChainID,
-				BlockHeight:           blockHeight,
+				SpecID:                cp.GetSentry().ChainID,
+				Epoch:                 blockHeight,
 				RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
 				QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 				UnresponsiveProviders: reportedProviders,
@@ -231,8 +231,8 @@ func SendRelay(
 			RelaySession: &pairingtypes.RelaySession{
 				SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 				Provider:              providerAddress,
-				ChainID:               sentry.ChainID,
-				BlockHeight:           blockHeight,
+				SpecID:                sentry.ChainID,
+				Epoch:                 blockHeight,
 				RelayNum:              0, // consumerSession.RelayNum == 0
 				QoSReport:             nil,
 				UnresponsiveProviders: reportedProviders,
