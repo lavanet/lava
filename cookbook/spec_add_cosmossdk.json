@@ -1,21 +1,19 @@
 {
     "proposal": {
-        "title": "Add Specs: Osmosis",
-        "description": "Adding new specification support for relaying Osmosis data on Lava",
+        "title": "Add Specs: Cosmos SDK",
+        "description": "Adding default Cosmos SDK specification",
         "specs": [
             {
-                "index": "COS3",
-                "name": "osmosis mainnet",
-                "enabled": true,
-                "imports": [
-                    "COSMOSSDKFULL"
-                ],
+                "index": "COSMOSSDK",
+                "name": "Cosmos SDK",
+                "enabled": false,
+                "imports": [ "IBC" ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
+                "allowed_block_lag_for_qos_sync": "10",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -26,7 +24,7 @@
                 },
                 "apis": [
                     {
-                        "name": "/osmosis/epochs/v1beta1/current_epoch",
+                        "name": "/blocks/latest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -34,7 +32,7 @@
                             "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -50,15 +48,15 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/epochs/v1beta1/epochs",
+                        "name": "/blocks/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
@@ -74,7 +72,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/num_pools",
+                        "name": "/cosmos/auth/v1beta1/account_info/{address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -98,7 +96,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pool_type/{pool_id}",
+                        "name": "/cosmos/auth/v1beta1/accounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -122,7 +120,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools",
+                        "name": "/cosmos/auth/v1beta1/accounts/{address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -146,7 +144,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools/{pool_id}",
+                        "name": "/cosmos/auth/v1beta1/address_by_id/{id}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -170,7 +168,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/params",
+                        "name": "/cosmos/auth/v1beta1/bech32",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -194,7 +192,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/prices",
+                        "name": "/cosmos/auth/v1beta1/bech32/{address_bytes}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -218,7 +216,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_pool_liquidity",
+                        "name": "/cosmos/auth/v1beta1/bech32/{address_string}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -242,7 +240,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_shares",
+                        "name": "/cosmos/auth/v1beta1/module_accounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -266,7 +264,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/total_liquidity",
+                        "name": "/cosmos/auth/v1beta1/module_accounts/{name}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -290,7 +288,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_in",
+                        "name": "/cosmos/auth/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -314,7 +312,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_out",
+                        "name": "/cosmos/authz/v1beta1/grants",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -338,7 +336,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/active_gauges",
+                        "name": "/cosmos/authz/v1beta1/grants/grantee/{grantee}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -362,7 +360,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/active_gauges_per_denom",
+                        "name": "/cosmos/authz/v1beta1/grants/granter/{granter}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -386,7 +384,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/gauge_by_id/{id}",
+                        "name": "/cosmos/bank/v1beta1/balances/{address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -410,7 +408,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/gauges",
+                        "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -434,7 +432,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/lockable_durations",
+                        "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -458,7 +456,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/module_distributed_coins",
+                        "name": "/cosmos/bank/v1beta1/base_denom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -482,7 +480,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/module_to_distribute_coins",
+                        "name": "/cosmos/bank/v1beta1/denom_owners/{denom}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -506,7 +504,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/rewards_est/{owner}",
+                        "name": "/cosmos/bank/v1beta1/denoms_metadata",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -530,7 +528,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/upcoming_gauges",
+                        "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -554,7 +552,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/incentives/v1beta1/upcoming_gauges_per_denom",
+                        "name": "/cosmos/bank/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -578,7 +576,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_coins/{owner}",
+                        "name": "/cosmos/bank/v1beta1/send_enabled",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -602,7 +600,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_duration/{owner}",
+                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -626,7 +624,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration/{owner}",
+                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}/by_denom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -650,7 +648,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
+                        "name": "/cosmos/bank/v1beta1/supply",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -674,7 +672,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
+                        "name": "/cosmos/bank/v1beta1/supply/by_denom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -698,7 +696,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_pasttime/{owner}",
+                        "name": "/cosmos/bank/v1beta1/supply/{denom}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -722,7 +720,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
+                        "name": "/cosmos/bank/v1beta1/supply_without_offset",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -746,7 +744,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
+                        "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -770,7 +768,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_unlockable_coins/{owner}",
+                        "name": "/cosmos/base/node/v1beta1/config",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -794,7 +792,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_unlocked_before_time/{owner}",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/authn",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -818,7 +816,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/account_unlocking_coins/{owner}",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/chain",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -842,7 +840,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/locked_by_id/{lock_id}",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/codec",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -866,7 +864,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/locked_denom",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/configuration",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -890,7 +888,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/module_balance",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/query_services",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -914,7 +912,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/module_locked_amount",
+                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/tx_descriptor",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -938,7 +936,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/lockup/v1beta1/synthetic_lockups_by_lock_id/{lock_id}",
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -962,7 +960,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/mint/v1beta1/epoch_provisions",
+                        "name": "/cosmos/base/reflection/v1beta1/interfaces/{interface_name}/implementations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -986,7 +984,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/mint/v1beta1/params",
+                        "name": "/cosmos/base/tendermint/v1beta1/abci_query",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1010,7 +1008,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/distr_info",
+                        "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1031,15 +1029,28 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/external_incentive_gauges",
+                        "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1055,10 +1066,22 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/gauge-ids/{pool_id}",
+                        "name": "/cosmos/base/tendermint/v1beta1/node_info",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1070,7 +1093,7 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -1082,7 +1105,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/incentivized_pools",
+                        "name": "/cosmos/base/tendermint/v1beta1/syncing",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1094,7 +1117,7 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -1106,7 +1129,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/lockable_durations",
+                        "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1130,12 +1153,12 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/pool-incentives/v1beta1/params",
+                        "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1154,7 +1177,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/all_assets",
+                        "name": "/cosmos/distribution/v1beta1/community_pool",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1178,7 +1201,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/all_intermediary_accounts",
+                        "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1202,7 +1225,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/all_superfluid_delegations",
+                        "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1226,7 +1249,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/asset_multiplier",
+                        "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1250,7 +1273,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/asset_type",
+                        "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1274,7 +1297,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/connected_intermediary_account/{lock_id}",
+                        "name": "/cosmos/distribution/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1298,7 +1321,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/estimate_superfluid_delegation_amount_by_validator_denom",
+                        "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1322,7 +1345,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/params",
+                        "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1346,7 +1369,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/superfluid_delegation_amount",
+                        "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1370,7 +1393,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/superfluid_delegations/{delegator_address}",
+                        "name": "/cosmos/evidence/v1beta1/evidence",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1394,7 +1417,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/superfluid_delegations_by_validator_denom",
+                        "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1418,7 +1441,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/superfluid_undelegations_by_delegator/{delegator_address}",
+                        "name": "/cosmos/evidence/v1beta1/evidence/{hash}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1442,7 +1465,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/superfluid/v1beta1/total_delegation_by_delegator/{delegator_address}",
+                        "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1466,7 +1489,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/tokenfactory/v1beta1/denoms/{denom}/authority_metadata",
+                        "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1490,7 +1513,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/tokenfactory/v1beta1/denoms_from_creator/{creator}",
+                        "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1514,7 +1537,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/tokenfactory/v1beta1/params",
+                        "name": "/cosmos/gov/v1/params/{params_type}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1538,7 +1561,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/twap/v1beta1/ArithmeticTwap",
+                        "name": "/cosmos/gov/v1/proposals",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1562,7 +1585,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/twap/v1beta1/ArithmeticTwapToNow",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1586,7 +1609,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/twap/v1beta1/Params",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1610,7 +1633,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/txfees/v1beta1/base_denom",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/deposits/{depositor}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1634,7 +1657,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/txfees/v1beta1/denom_pool_id/{denom}",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/tally",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1658,7 +1681,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/txfees/v1beta1/fee_tokens",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1682,7 +1705,7 @@
                         ]
                     },
                     {
-                        "name": "/osmosis/txfees/v1beta1/spot_price_by_denom",
+                        "name": "/cosmos/gov/v1/proposals/{proposal_id}/votes/{voter}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1706,7 +1729,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.epochs.v1beta1.Query/CurrentEpoch",
+                        "name": "/cosmos/gov/v1beta1/params/{params_type}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1723,14 +1746,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.epochs.v1beta1.Query/EpochInfos",
+                        "name": "/cosmos/gov/v1beta1/proposals",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1747,14 +1770,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1771,14 +1794,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1795,14 +1818,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/NumPools",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1819,14 +1842,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/Pool",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1843,14 +1866,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/PoolParams",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1867,14 +1890,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/PoolType",
+                        "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1891,14 +1914,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/Pools",
+                        "name": "/cosmos/mint/v1beta1/annual_provisions",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1915,14 +1938,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/SpotPrice",
+                        "name": "/cosmos/mint/v1beta1/inflation",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1939,14 +1962,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/TotalLiquidity",
+                        "name": "/cosmos/mint/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1963,14 +1986,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
+                        "name": "/cosmos/params/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1987,14 +2010,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.gamm.v1beta1.Query/TotalShares",
+                        "name": "/cosmos/slashing/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2011,14 +2034,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/ActiveGauges",
+                        "name": "/cosmos/slashing/v1beta1/signing_infos",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2035,14 +2058,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/ActiveGaugesPerDenom",
+                        "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2059,14 +2082,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/GaugeByID",
+                        "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2083,14 +2106,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/Gauges",
+                        "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2107,14 +2130,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/LockableDurations",
+                        "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2131,14 +2154,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/ModuleDistributedCoins",
+                        "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2155,14 +2178,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/ModuleToDistributeCoins",
+                        "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2179,19 +2202,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/RewardsEst",
+                        "name": "/cosmos/staking/v1beta1/historical_info/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2203,14 +2226,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/UpcomingGauges",
+                        "name": "/cosmos/staking/v1beta1/params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2227,14 +2250,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.incentives.Query/UpcomingGaugesPerDenom",
+                        "name": "/cosmos/staking/v1beta1/pool",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2251,14 +2274,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedCoins",
+                        "name": "/cosmos/staking/v1beta1/validators",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2275,14 +2298,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedDuration",
+                        "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2299,14 +2322,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedLongerDuration",
+                        "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2323,14 +2346,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedLongerDurationDenom",
+                        "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2347,14 +2370,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly",
+                        "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2371,14 +2394,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedPastTime",
+                        "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2395,14 +2418,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedPastTimeDenom",
+                        "name": "/cosmos/tx/v1beta1/decode",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2419,14 +2442,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly",
+                        "name": "/cosmos/tx/v1beta1/encode",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2443,14 +2466,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountUnlockableCoins",
+                        "name": "/cosmos/tx/v1beta1/encode/amino",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2467,14 +2490,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountUnlockedBeforeTime",
+                        "name": "/cosmos/tx/v1beta1/simulate",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2486,19 +2509,19 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/AccountUnlockingCoins",
+                        "name": "/cosmos/tx/v1beta1/txs",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2510,24 +2533,36 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/LockedByID",
+                        "name": "/cosmos/tx/v1beta1/txs/block/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2539,14 +2574,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/LockedDenom",
+                        "name": "/cosmos/tx/v1beta1/txs/{hash}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2563,14 +2598,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/ModuleBalance",
+                        "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2587,14 +2622,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/ModuleLockedAmount",
+                        "name": "/cosmos/upgrade/v1beta1/current_plan",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2611,14 +2646,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.lockup.Query/SyntheticLockupsByLockupID",
+                        "name": "/cosmos/upgrade/v1beta1/module_versions",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2635,19 +2670,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.mint.v1beta1.Query/EpochProvisions",
+                        "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2659,14 +2694,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.mint.v1beta1.Query/Params",
+                        "name": "/node_info",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2678,19 +2713,19 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/DistrInfo",
+                        "name": "/syncing",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2702,19 +2737,19 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges",
+                        "name": "/txs",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2722,23 +2757,24 @@
                             "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
-                        "enabled": true,
+                        "enabled": false,
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/GaugeIds",
+                        "name": "/validatorsets/latest",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2755,19 +2791,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
+                        "name": "/validatorsets/{height}",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2779,14 +2815,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "rest",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/LockableDurations",
+                        "name": "abci_info",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2798,24 +2834,26 @@
                         "api_interfaces": [
                             {
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.poolincentives.v1beta1.Query/Params",
+                        "name": "abci_query",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "height",
+                                "=",
+                                "2"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2827,19 +2865,21 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/AllAssets",
+                        "name": "block",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "height",
+                                "=",
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2851,14 +2891,26 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"%d\"]}",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_id",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
-                        "name": "osmosis.superfluid.Query/AllIntermediaryAccounts",
+                        "name": "block_by_hash",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2875,19 +2927,21 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/AssetMultiplier",
+                        "name": "block_results",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "height",
+                                "=",
+                                "0"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2899,19 +2953,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/AssetType",
+                        "name": "block_search",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2923,19 +2977,21 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/ConnectedIntermediaryAccount",
+                        "name": "blockchain",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                "maxHeight",
+                                "=",
+                                "1"
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2947,19 +3003,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom",
+                        "name": "broadcast_evidence",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2971,19 +3027,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/Params",
+                        "name": "broadcast_tx_async",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2995,19 +3051,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/SuperfluidDelegationAmount",
+                        "name": "broadcast_tx_commit",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3017,6 +3073,180 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "broadcast_tx_sync",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "check_tx",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "commit",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "height",
+                                "=",
+                                "0"
+                            ],
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "consensus_params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "height",
+                                "=",
+                                "0"
+                            ],
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "consensus_state",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.auth.v1beta1.Query/Account",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.auth.v1beta1.Query/Accounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "interface": "grpc",
@@ -3026,7 +3256,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator",
+                        "name": "cosmos.auth.v1beta1.Query/ModuleAccountByName",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3050,7 +3280,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom",
+                        "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3074,7 +3304,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator",
+                        "name": "cosmos.auth.v1beta1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3087,6 +3317,54 @@
                             {
                                 "category": {
                                     "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.authz.v1beta1.Query/GranteeGrants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.authz.v1beta1.Query/GranterGrants",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -3098,7 +3376,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/TotalDelegationByDelegator",
+                        "name": "cosmos.authz.v1beta1.Query/Grants",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3122,7 +3400,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom",
+                        "name": "cosmos.bank.v1beta1.Query/AllBalances",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3146,7 +3424,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.superfluid.Query/TotalSuperfluidDelegations",
+                        "name": "cosmos.bank.v1beta1.Query/Balance",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3170,7 +3448,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+                        "name": "cosmos.bank.v1beta1.Query/BaseDenom",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3194,7 +3472,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
+                        "name": "cosmos.bank.v1beta1.Query/DenomMetadata",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3218,7 +3496,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.tokenfactory.v1beta1.Query/Params",
+                        "name": "cosmos.bank.v1beta1.Query/DenomsMetadata",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3242,7 +3520,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.twap.v1beta1.Query/ArithmeticTwap",
+                        "name": "cosmos.bank.v1beta1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3266,7 +3544,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
+                        "name": "cosmos.bank.v1beta1.Query/SpendableBalances",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3290,7 +3568,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.twap.v1beta1.Query/Params",
+                        "name": "cosmos.bank.v1beta1.Query/SupplyOf",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3314,7 +3592,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.txfees.v1beta1.Query/BaseDenom",
+                        "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3338,7 +3616,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.txfees.v1beta1.Query/DenomPoolId",
+                        "name": "cosmos.bank.v1beta1.Query/TotalSupply",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3362,7 +3640,7 @@
                         ]
                     },
                     {
-                        "name": "osmosis.txfees.v1beta1.Query/DenomSpotPrice",
+                        "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3384,9 +3662,84 @@
                                 "extra_compute_units": "0"
                             }
                         ]
+                    },
+                    {
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "height",
+                                "=",
+                                "0"
+                            ],
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_template": "{\"height\":\"%d\"}",
+                            "function_tag": "getBlockByNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "blockId",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
+                    },
+                    {
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_template": "",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block",
+                                    "header",
+                                    "height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
-                        "name": "osmosis.txfees.v1beta1.Query/FeeTokens",
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3399,39 +3752,1723 @@
                             {
                                 "category": {
                                     "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
                                 "interface": "grpc",
                                 "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/CommunityPool",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/DelegationRewards",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/DelegationTotalRewards",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/DelegatorValidators",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/ValidatorCommission",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.distribution.v1beta1.Query/ValidatorSlashes",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.evidence.v1beta1.Query/AllEvidence",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.evidence.v1beta1.Query/Evidence",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.feegrant.v1beta1.Query/Allowance",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.feegrant.v1beta1.Query/Allowances",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.feegrant.v1beta1.Query/AllowancesByGranter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Deposit",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Deposits",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Proposal",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Proposals",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/TallyResult",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Vote",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.gov.v1beta1.Query/Votes",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.mint.v1beta1.Query/AnnualProvisions",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.mint.v1beta1.Query/Inflation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.mint.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.params.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.slashing.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.slashing.v1beta1.Query/SigningInfo",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.slashing.v1beta1.Query/SigningInfos",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Delegation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/DelegatorDelegations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/DelegatorValidator",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/DelegatorValidators",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/HistoricalInfo",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Pool",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Redelegations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/UnbondingDelegation",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Validator",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/ValidatorDelegations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.staking.v1beta1.Query/Validators",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/BroadcastTx",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/GetBlockWithTxs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/GetTx",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/GetTxsEvent",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.tx.v1beta1.Service/Simulate",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.upgrade.v1beta1.Query/AppliedPlan",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.upgrade.v1beta1.Query/CurrentPlan",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.upgrade.v1beta1.Query/ModuleVersions",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "dump_consensus_state",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "genesis",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "genesis_chunked",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "health",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "net_info",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "num_unconfirmed_txs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "router.v1.Query.Params",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "status",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_tag": "getBlockNumber",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "sync_info",
+                                    "latest_block_height"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
+                    },
+                    {
+                        "name": "subscribe",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "tx",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "tx_search",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "unconfirmed_txs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "unsubscribe",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "unsubscribe_all",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "validators",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "height",
+                                "=",
+                                "0"
+                            ],
+                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     }
                 ]
-            },
-            {
-                "index": "COS4",
-                "name": "osmosis testnet",
-                "enabled": true,
-                "imports": [
-                    "COS3"
-                ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "3",
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                }
             }
         ]
     },
