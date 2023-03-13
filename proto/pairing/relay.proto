@@ -43,7 +43,8 @@ message Badge {
     uint64 cu_allocation =1;
     int64 epoch = 2;
     bytes badge_pk = 3;
-    bytes project_sig = 4;
+    string spec_id = 4;
+    bytes project_sig = 5;
 }
 
 message RelayReply {
