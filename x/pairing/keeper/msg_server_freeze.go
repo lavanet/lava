@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"strconv"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -22,14 +23,15 @@ func (k msgServer) Freeze(goCtx context.Context, msg *types.MsgFreeze) (*types.M
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainId, providerAddr)
 		if !found {
-			continue
+			return nil, utils.LavaFormatError("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, &map[string]string{"chainID": chainId, "providerAddress": msg.GetCreator()})
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
 		stakeEntry.StakeAppliedBlock = math.MaxUint64
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainId, stakeEntry, index)
-		utils.LogLavaEvent(ctx, ctx.Logger(), "freeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainID": chainId, "freezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10), "freezeReason": msg.GetReason()}, "Provider Freeze")
 	}
+
+	utils.LogLavaEvent(ctx, ctx.Logger(), "freeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(msg.GetChainIds(), ","), "freezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10), "freezeReason": msg.GetReason()}, "Provider Freeze")
 
 	return &types.MsgFreezeResponse{}, nil
 }

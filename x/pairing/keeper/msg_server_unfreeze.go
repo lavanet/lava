@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -32,8 +33,9 @@ func (k msgServer) Unfreeze(goCtx context.Context, msg *types.MsgUnfreeze) (*typ
 		// unfreeze the provider by making the StakeAppliedBlock be the next epoch. This will let the provider be added to the pairing list in the next epoch
 		stakeEntry.StakeAppliedBlock = nextEpoch
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainId, stakeEntry, index)
-		utils.LogLavaEvent(ctx, ctx.Logger(), "unfreeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainID": chainId, "unfreezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10)}, "Provider Unfreeze")
 	}
+
+	utils.LogLavaEvent(ctx, ctx.Logger(), "unfreeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(msg.GetChainIds(), ","), "unfreezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10)}, "Provider Unfreeze")
 
 	return &types.MsgUnfreezeResponse{}, nil
 }

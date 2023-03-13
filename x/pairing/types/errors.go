@@ -14,4 +14,5 @@ var (
 	AverageBlockTimeIsLessOrEqualToZeroError           = sdkerrors.New("AverageBlockTimeIsLessOrEqualToZeroError Error", 687, "The calculated average block time is less or equal to zero")
 	NotEnoughBlocksToCalculateAverageBlockTimeError    = sdkerrors.New("NotEnoughBlocksToCalculateAverageBlockTimeError Error", 688, "There isn't enough blocks in the previous epoch to calculate average block time")
 	FreezeReasonTooLongError                           = sdkerrors.New("FreezeReasonTooLongError Error", 689, "The freeze reason is too long. Keep the freeze reason less than 50 characters")
+	FreezeStakeEntryNotFoundError                      = sdkerrors.New("FreezeStakeEntryNotFoundError Error", 690, "can't get stake entry to freeze")
 )

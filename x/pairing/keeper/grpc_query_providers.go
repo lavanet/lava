@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -29,8 +28,8 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 	if !req.ShowFrozenProviders {
 		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
 		for _, stakeEntry := range stakeEntries {
-			// only frozen providers have stakeAppliedBlock = MaxUint64
-			if stakeEntry.GetStakeAppliedBlock() != math.MaxUint64 {
+			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
+			if stakeEntry.GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
 				stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntry)
 			}
 		}
