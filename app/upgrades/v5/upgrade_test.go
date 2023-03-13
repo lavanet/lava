@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
+	"github.com/lavanet/lava/app"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/conflict/keeper"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -17,7 +17,7 @@ type UpgradeTestSuite struct {
 	suite.Suite
 
 	ctx sdk.Context
-	app cosmoscmd.App
+	app app.LavaApp
 }
 
 func (suite *UpgradeTestSuite) SetupTestApp() {
