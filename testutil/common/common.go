@@ -85,42 +85,49 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	msg.Creator = consumer.Addr.String()
 	// request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
-	msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType = ""
-	msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
-	msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight = sdk.UnwrapSDKContext(ctx).BlockHeight()
-	msg.ResponseConflict.ConflictRelayData0.Request.ChainID = spec.Index
-	msg.ResponseConflict.ConflictRelayData0.Request.CuSum = 0
-	msg.ResponseConflict.ConflictRelayData0.Request.Data = []byte("DUMMYREQUEST")
-	msg.ResponseConflict.ConflictRelayData0.Request.Provider = provider0.Addr.String()
-	msg.ResponseConflict.ConflictRelayData0.Request.QoSReport = &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
-	msg.ResponseConflict.ConflictRelayData0.Request.RelayNum = 1
-	msg.ResponseConflict.ConflictRelayData0.Request.SessionId = 1
-	msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock = 100
-	msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = nil
-	msg.ResponseConflict.ConflictRelayData0.Request.Sig = []byte{}
+	msg.ResponseConflict.ConflictRelayData0.Request.RelayData = &types.RelayPrivateData{
+		ConnectionType: "",
+		ApiUrl:         "",
+		Data:           []byte("DUMMYREQUEST"),
+		RequestBlock:   100,
+		ApiInterface:   "",
+		Salt:           []byte{1},
+	}
+	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession = &types.RelaySession{
+		Provider:    provider0.Addr.String(),
+		ContentHash: sigs.CalculateContentHashForRelayData(msg.ResponseConflict.ConflictRelayData0.Request.RelayData),
+		SessionId:   uint64(1),
+		ChainID:     spec.Index,
+		CuSum:       0,
+		BlockHeight: sdk.UnwrapSDKContext(ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
+	}
 
-	sig, err := sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request)
+	msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = nil
+
+	sig, err := sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
 	if err != nil {
 		return msg, err
 	}
 
-	msg.ResponseConflict.ConflictRelayData0.Request.Sig = sig
+	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Sig = sig
 
 	// request 1
 	temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
 	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
-	msg.ResponseConflict.ConflictRelayData1.Request.Provider = provider1.Addr.String()
-	msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
-	sig, err = sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
+	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = provider1.Addr.String()
+	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
+	sig, err = sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 	if err != nil {
 		return msg, err
 	}
-	msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
+	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 
 	// reply 0
 	msg.ResponseConflict.ConflictRelayData0.Reply.Nonce = 10
 	msg.ResponseConflict.ConflictRelayData0.Reply.FinalizedBlocksHashes = []byte{}
-	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(spec.BlockDistanceForFinalizedData)
+	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData)
 	msg.ResponseConflict.ConflictRelayData0.Reply.Data = []byte("DUMMYREPLY")
 	sig, err = sigs.SignRelayResponse(provider0.SK, msg.ResponseConflict.ConflictRelayData0.Reply, msg.ResponseConflict.ConflictRelayData0.Request)
 	if err != nil {

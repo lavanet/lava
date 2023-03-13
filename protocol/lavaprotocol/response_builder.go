@@ -19,7 +19,7 @@ import (
 func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
-	UpdateRequestedBlock(&request, reply)
+	UpdateRequestedBlock(request.RelayData, reply)
 	// Update signature,
 	sig, err := sigs.SignRelayResponse(pkey, reply, &request)
 	if err != nil {

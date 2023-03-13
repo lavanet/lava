@@ -547,7 +547,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 		if requestedBlockHash != nil || finalized {
 			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
-			if err != nil && !performance.NotInitialisedError.Is(err) && request.BlockHeight != spectypes.NOT_APPLICABLE {
+			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.BlockHeight != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
 			}
 		}
@@ -555,7 +555,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 	apiName := chainMsg.GetServiceApi().Name
 	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
-		err := rpcps.processUnsubscribe(apiName, consumerAddr, reqParams, uint64(request.RequestBlock))
+		err := rpcps.processUnsubscribe(apiName, consumerAddr, reqParams, uint64(request.RelayData.RequestBlock))
 		if err != nil {
 			return nil, err
 		}

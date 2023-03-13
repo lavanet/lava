@@ -863,6 +863,8 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			}
 			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 			dataReliability0 := &types.VRFData{
+				ChainID:        relayRequest.RelaySession.ChainID,
+				Epoch:          relayRequest.RelaySession.BlockHeight,
 				Differentiator: false,
 				VrfValue:       vrf_res0,
 				VrfProof:       vrf_proof0,
@@ -1016,6 +1018,8 @@ GetWrongProvider:
 	}
 	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
+		ChainID:        relayRequest.RelaySession.ChainID,
+		Epoch:          relayRequest.RelaySession.BlockHeight,
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
@@ -1102,6 +1106,8 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	require.Equal(t, index1, int64(-1))
 	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
+		ChainID:        relayRequest.RelaySession.ChainID,
+		Epoch:          relayRequest.RelaySession.BlockHeight,
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
@@ -1198,6 +1204,8 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 
 	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
+		ChainID:        relayRequest.RelaySession.ChainID,
+		Epoch:          relayRequest.RelaySession.BlockHeight,
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,
@@ -1293,6 +1301,8 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest.RelayData, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
+		ChainID:        relayRequest.RelaySession.ChainID,
+		Epoch:          relayRequest.RelaySession.BlockHeight,
 		Differentiator: false,
 		VrfValue:       vrf_res0,
 		VrfProof:       vrf_proof0,

@@ -139,26 +139,30 @@ func SendRelay(
 
 		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              providerPublicAddress,
-			ConnectionType:        connectionType,
-			ApiUrl:                url,
-			Data:                  []byte(req),
-			SessionId:             uint64(consumerSession.SessionId),
-			ChainID:               cp.GetSentry().ChainID,
-			CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly
-			BlockHeight:           blockHeight,
-			RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
-			RequestBlock:          nodeMsg.RequestedBlock(),
-			QoSReport:             consumerSession.QoSInfo.LastQoSReport,
-			DataReliability:       nil,
-			UnresponsiveProviders: reportedProviders,
+			RelaySession: &pairingtypes.RelaySession{
+				SessionId:             uint64(consumerSession.SessionId),
+				Provider:              providerPublicAddress,
+				ChainID:               cp.GetSentry().ChainID,
+				BlockHeight:           blockHeight,
+				RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
+				QoSReport:             consumerSession.QoSInfo.LastQoSReport,
+				UnresponsiveProviders: reportedProviders,
+				CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly
+			},
+			RelayData: &pairingtypes.RelayPrivateData{
+				ConnectionType: connectionType,
+				Data:           []byte(req),
+				RequestBlock:   nodeMsg.RequestedBlock(),
+				ApiUrl:         url,
+			},
+			DataReliability: nil,
 		}
 
-		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 		if err != nil {
 			return nil, nil, nil, 0, false, err
 		}
-		relayRequest.Sig = sig
+		relayRequest.RelaySession.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
 		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
@@ -188,7 +192,7 @@ func SendRelay(
 
 		if analytics != nil {
 			analytics.Latency = currentLatency.Milliseconds()
-			analytics.ComputeUnits = relayRequest.CuSum
+			analytics.ComputeUnits = relayRequest.RelaySession.CuSum
 		}
 
 		if err != nil {
@@ -198,12 +202,12 @@ func SendRelay(
 		if !isSubscription {
 			// update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
-			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
+			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 			if err != nil {
 				return nil, nil, nil, 0, false, err
 			}
-			requestedBlock = relayRequest.RequestBlock
+			requestedBlock = relayRequest.RelayData.RequestBlock
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
 			err := cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
@@ -224,26 +228,30 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              providerAddress,
-			ApiUrl:                url,
-			Data:                  []byte(req),
-			SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
-			ChainID:               sentry.ChainID,
-			CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
-			BlockHeight:           blockHeight,
-			RelayNum:              0, // consumerSession.RelayNum == 0
-			RequestBlock:          requestedBlock,
-			QoSReport:             nil,
-			DataReliability:       dataReliability,
-			ConnectionType:        connectionType,
-			UnresponsiveProviders: reportedProviders,
+			RelaySession: &pairingtypes.RelaySession{
+				SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
+				Provider:              providerAddress,
+				ChainID:               sentry.ChainID,
+				BlockHeight:           blockHeight,
+				RelayNum:              0, // consumerSession.RelayNum == 0
+				QoSReport:             nil,
+				UnresponsiveProviders: reportedProviders,
+				CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
+			},
+			RelayData: &pairingtypes.RelayPrivateData{
+				ConnectionType: connectionType,
+				Data:           []byte(req),
+				RequestBlock:   requestedBlock,
+				ApiUrl:         url,
+			},
+			DataReliability: dataReliability,
 		}
 
-		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 		if err != nil {
 			return nil, nil, 0, 0, err
 		}
-		relayRequest.Sig = sig
+		relayRequest.RelaySession.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {

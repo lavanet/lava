@@ -951,9 +951,9 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
-		SessionId:             req.SessionId,
-		RelayNum:              req.RelayNum,
-		BlockHeight:           req.BlockHeight,
+		SessionId:             req.RelaySession.SessionId,
+		RelayNum:              req.RelaySession.RelayNum,
+		BlockHeight:           req.RelaySession.BlockHeight,
 		LatestBlock:           latestBlock,
 	}
 	providerDataContainers := map[string]providerDataContainer{}
@@ -970,9 +970,9 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
-		SessionId:             req.SessionId,
-		RelayNum:              req.RelayNum,
-		BlockHeight:           req.BlockHeight,
+		SessionId:             req.RelaySession.SessionId,
+		RelayNum:              req.RelaySession.RelayNum,
+		BlockHeight:           req.RelaySession.BlockHeight,
 		LatestBlock:           latestBlock,
 	}
 	consensus.agreeingProviders[providerAcc] = newProviderDataContainer
@@ -1038,12 +1038,12 @@ func (s *Sentry) SendRelay(
 			return nil, nil, latency, fromCache, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 
-		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+		if specCategory.Deterministic && s.IsFinalizedBlock(request.RelayData.RequestBlock, reply.LatestBlock) {
 			var dataReliabilitySessions []*DataReliabilitySession
 
 			// handle data reliability
 			s.VrfSkMu.Lock()
-			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, sessionEpoch)
+			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request.RelayData, reply, s.VrfSk, sessionEpoch)
 			s.VrfSkMu.Unlock()
 			// get two indexesMap for data reliability.
 			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1}, []bool{false, true})
@@ -1078,16 +1078,18 @@ func (s *Sentry) SendRelay(
 				var dataReliabilityLatency time.Duration
 				var dataReliabilityTimeout time.Duration
 				s.VrfSkMu.Lock()
-				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, sessionEpoch)
+				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request.RelayData, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
 				dataReliability := &pairingtypes.VRFData{
+					ChainID:        request.RelaySession.ChainID,
+					Epoch:          request.RelaySession.BlockHeight,
 					Differentiator: differentiator,
 					VrfValue:       vrf_res,
 					VrfProof:       vrf_proof,
 					ProviderSig:    reply.Sig,
 					AllDataHash:    sigs.AllDataHash(reply, request),
-					QueryHash:      utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
-					Sig:            nil,                                // calculated in cb_send_reliability
+					QueryHash:      utils.CalculateQueryHash(*request.RelayData), // calculated from query body anyway, but we will use this on payment
+					Sig:            nil,                                          // calculated in cb_send_reliability
 				}
 				relay_rep, relay_req, dataReliabilityLatency, dataReliabilityTimeout, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
@@ -1537,7 +1539,7 @@ func NewSentry(
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
 	// since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
-	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
+	request.RelayData.RequestBlock = ReplaceRequestedBlock(request.RelayData.RequestBlock, response.LatestBlock)
 }
 
 func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {

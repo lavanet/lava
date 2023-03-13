@@ -98,21 +98,21 @@ func TestDetection(t *testing.T) {
 			msg.Creator = tt.Creator.Addr.String()
 
 			//changes to request1 according to test
-			msg.ResponseConflict.ConflictRelayData1.Request.ConnectionType += tt.ConnectionType
-			msg.ResponseConflict.ConflictRelayData1.Request.ApiUrl += tt.ApiUrl
-			msg.ResponseConflict.ConflictRelayData1.Request.BlockHeight += tt.BlockHeight
-			msg.ResponseConflict.ConflictRelayData1.Request.ChainID += tt.ChainID
-			msg.ResponseConflict.ConflictRelayData1.Request.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.Data, tt.Data...)
-			msg.ResponseConflict.ConflictRelayData1.Request.RequestBlock += tt.RequestBlock
-			msg.ResponseConflict.ConflictRelayData1.Request.CuSum += tt.Cusum
-			msg.ResponseConflict.ConflictRelayData1.Request.QoSReport = tt.QoSReport
-			msg.ResponseConflict.ConflictRelayData1.Request.RelayNum += tt.RelayNum
-			msg.ResponseConflict.ConflictRelayData1.Request.SessionId += tt.SeassionID
-			msg.ResponseConflict.ConflictRelayData1.Request.Provider = tt.Provider1.Addr.String()
-			msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
-			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ConnectionType += tt.ConnectionType
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ApiUrl += tt.ApiUrl
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.BlockHeight += tt.BlockHeight
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.ChainID += tt.ChainID
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data, tt.Data...)
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.RequestBlock += tt.RequestBlock
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.CuSum += tt.Cusum
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.QoSReport = tt.QoSReport
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.RelayNum += tt.RelayNum
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SessionId += tt.SeassionID
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
+			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 			require.Nil(t, err)
-			msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 
 			//changes to reply1 according to test
 			msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, tt.ReplyData...)

@@ -167,21 +167,6 @@ func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, e
 	return pubKey, nil
 }
 
-func DataReliabilityByConsumer(vrfs []*pairingtypes.VRFData) (dataReliabilityByConsumer map[string]*pairingtypes.VRFData, err error) {
-	dataReliabilityByConsumer = map[string]*pairingtypes.VRFData{}
-	if len(vrfs) == 0 {
-		return
-	}
-	for _, vrf := range vrfs {
-		signer, err := GetSignerForVRF(*vrf)
-		if err != nil {
-			return nil, err
-		}
-		dataReliabilityByConsumer[signer.String()] = vrf
-	}
-	return dataReliabilityByConsumer, nil
-}
-
 func GetSignerForVRF(dataReliability pairingtypes.VRFData) (signer sdk.AccAddress, err error) {
 	pubKey, err := RecoverPubKeyFromVRFData(dataReliability)
 	if err != nil {
@@ -266,4 +251,11 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
 	addr, _ = sdk.AccAddressFromHex(publicBytes.Address().String())
 	return
+}
+
+func CalculateContentHashForRelayData(relayRequestData *pairingtypes.RelayPrivateData) []byte {
+	requestBlockBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(relayRequestData.RequestBlock))
+	msgData := bytes.Join([][]byte{[]byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
+	return HashMsg(msgData)
 }

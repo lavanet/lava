@@ -3,7 +3,9 @@ package lavaprotocol
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -38,39 +40,62 @@ type RelayResult struct {
 	Finalized       bool
 }
 
-func NewRelayRequestCommonData(chainID string, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) RelayRequestCommonData {
-	return RelayRequestCommonData{
-		ChainID:        chainID,
+func NewRelayData(connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) *pairingtypes.RelayPrivateData {
+	nonceBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(nonceBytes, rand.Uint32())
+	return &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
 		Data:           data,
 		RequestBlock:   requestBlock,
 		ApiInterface:   apiInterface,
+		Salt:           nonceBytes,
 	}
 }
 
-func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, chainID string, relayRequestCommonData RelayRequestCommonData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
-	relayRequest := &pairingtypes.RelayRequest{
-		Provider:              providerPublicAddress,
-		ConnectionType:        relayRequestCommonData.ConnectionType,
-		ApiUrl:                relayRequestCommonData.ApiUrl,
-		Data:                  relayRequestCommonData.Data,
-		SessionId:             uint64(consumerSession.SessionId),
+func ConstructRelaySession(relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
+	return &pairingtypes.RelaySession{
 		ChainID:               chainID,
-		CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly
-		BlockHeight:           epoch,
+		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
+		SessionId:             uint64(consumerSession.SessionId),
+		CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
+		Provider:              providerPublicAddress,
 		RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
-		RequestBlock:          relayRequestCommonData.RequestBlock,
 		QoSReport:             consumerSession.QoSInfo.LastQoSReport,
-		DataReliability:       nil,
+		BlockHeight:           epoch,
 		UnresponsiveProviders: reportedProviders,
-		ApiInterface:          relayRequestCommonData.ApiInterface,
+		LavaChainId:           "FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE IF IM HERE ITS A BUG",
+		Sig:                   nil,
 	}
-	sig, err := sigs.SignRelay(privKey, *relayRequest)
+}
+
+func dataReliabilityRelaySession(relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64) *pairingtypes.RelaySession {
+	return &pairingtypes.RelaySession{
+		ChainID:               chainID,
+		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
+		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
+		CuSum:                 lavasession.DataReliabilityCuSum,     // consumerSession.CuSum == 0
+		Provider:              providerPublicAddress,
+		RelayNum:              0,
+		QoSReport:             nil,
+		BlockHeight:           epoch,
+		UnresponsiveProviders: nil,
+		LavaChainId:           "FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE IF IM HERE ITS A BUG",
+		Sig:                   nil,
+	}
+}
+
+func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
+	relayRequest := &pairingtypes.RelayRequest{
+		RelayData:       relayRequestData,
+		RelaySession:    ConstructRelaySession(relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
+		DataReliability: nil,
+	}
+	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 	if err != nil {
 		return nil, err
 	}
-	relayRequest.Sig = sig
+	relayRequest.RelaySession.Sig = sig
 	return relayRequest, nil
 }
 
@@ -78,7 +103,7 @@ func GetTimePerCu(cu uint64) time.Duration {
 	return chainlib.LocalNodeTimePerCu(cu) + chainlib.MinimumTimePerRelayDelay
 }
 
-func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
+func UpdateRequestedBlock(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply) {
 	// since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
 	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
@@ -115,42 +140,34 @@ func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, 
 
 func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
 	dataReliability := &pairingtypes.VRFData{
+		ChainID:        request.RelaySession.ChainID,
+		Epoch:          request.RelaySession.BlockHeight,
 		Differentiator: differentiator,
 		VrfValue:       vrf_res,
 		VrfProof:       vrf_proof,
 		ProviderSig:    reply.Sig,
 		AllDataHash:    sigs.AllDataHash(reply, request),
-		QueryHash:      utils.CalculateQueryHash(*request),
+		QueryHash:      utils.CalculateQueryHash(*request.RelayData),
 		Sig:            nil,
 	}
 	return dataReliability
 }
 
-func ConstructDataReliabilityRelayRequest(ctx context.Context, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestCommonData *RelayRequestCommonData, providerPublicAddress string, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
-	if relayRequestCommonData.RequestBlock < 0 {
+func ConstructDataReliabilityRelayRequest(ctx context.Context, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
+	if relayRequestData.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
-			&map[string]string{"requested_common_data": fmt.Sprintf("%+v", relayRequestCommonData), "epoch": strconv.FormatInt(epoch, 10), "chainID": chainID})
+			&map[string]string{"requested_common_data": fmt.Sprintf("%+v", relayRequestData), "epoch": strconv.FormatInt(epoch, 10), "chainID": chainID})
 	}
 	relayRequest := &pairingtypes.RelayRequest{
-		Provider:              providerPublicAddress,
-		ConnectionType:        relayRequestCommonData.ConnectionType,
-		ApiUrl:                relayRequestCommonData.ApiUrl,
-		Data:                  relayRequestCommonData.Data,
-		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
-		ChainID:               chainID,
-		CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
-		BlockHeight:           epoch,
-		RelayNum:              0, // consumerSession.RelayNum == 0
-		RequestBlock:          relayRequestCommonData.RequestBlock,
-		QoSReport:             nil,
-		DataReliability:       vrfData,
-		UnresponsiveProviders: reportedProviders,
+		RelayData:       relayRequestData,
+		RelaySession:    dataReliabilityRelaySession(relayRequestData, chainID, providerPublicAddress, epoch),
+		DataReliability: vrfData,
 	}
-	sig, err := sigs.SignRelay(privKey, *relayRequest)
+	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 	if err != nil {
 		return nil, err
 	}
-	relayRequest.Sig = sig
+	relayRequest.RelaySession.Sig = sig
 
 	sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 	if err != nil {

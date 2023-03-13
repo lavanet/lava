@@ -59,12 +59,12 @@ message VRFData {
     string chainID = 1;
     int64 epoch = 2;
     bool differentiator = 3;
-    bytes vrf_value =4;
-    bytes vrf_proof =5;
+    bytes vrf_value = 4;
+    bytes vrf_proof = 5;
     bytes provider_sig = 6;
     bytes allDataHash = 7;
     bytes queryHash = 8; //we only need it for payment later
-    bytes sig =9;
+    bytes sig = 9;
 }
 
 message QualityOfServiceReport{

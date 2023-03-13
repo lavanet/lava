@@ -32,7 +32,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
 
-	dataReliabilityByConsumer, err := sigs.DataReliabilityByConsumer(msg.VRFs)
+	dataReliabilityStore, err := dataReliabilityByConsumer(msg.VRFs)
 	if err != nil {
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
@@ -88,8 +88,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		payReliability := false
 		// validate data reliability
-		if vrfData, ok := dataReliabilityByConsumer[clientAddr.String()]; ok {
-			delete(dataReliabilityByConsumer, clientAddr.String())
+		vrfStoreKey := VRFKey{ChainID: relay.ChainID, Epoch: epochStart, Consumer: clientAddr.String()}
+		if vrfData, ok := dataReliabilityStore[vrfStoreKey]; ok {
+			delete(dataReliabilityStore, vrfStoreKey)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID
@@ -357,4 +358,29 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	}
 
 	return nil
+}
+
+type VRFKey struct {
+	Consumer string
+	Epoch    uint64
+	ChainID  string
+}
+
+func dataReliabilityByConsumer(vrfs []*types.VRFData) (dataReliabilityByConsumer map[VRFKey]*types.VRFData, err error) {
+	dataReliabilityByConsumer = map[VRFKey]*types.VRFData{}
+	if len(vrfs) == 0 {
+		return
+	}
+	for _, vrf := range vrfs {
+		signer, err := sigs.GetSignerForVRF(*vrf)
+		if err != nil {
+			return nil, err
+		}
+		dataReliabilityByConsumer[VRFKey{
+			Consumer: signer.String(),
+			Epoch:    uint64(vrf.Epoch),
+			ChainID:  vrf.ChainID,
+		}] = vrf
+	}
+	return dataReliabilityByConsumer, nil
 }
