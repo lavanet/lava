@@ -25,7 +25,7 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 
 	stakeEntries := stakeStorage.GetStakeEntries()
 
-	if !req.ShowFrozenProviders {
+	if !req.ShowFrozen {
 		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
 		for _, stakeEntry := range stakeEntries {
 			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)

@@ -34,8 +34,8 @@ func CmdProviders() *cobra.Command {
 			showFrozenProviders := cmd.Flags().Lookup(ShowFrozenProvidersFlagName).Changed
 
 			params := &types.QueryProvidersRequest{
-				ChainID:             reqChainID,
-				ShowFrozenProviders: showFrozenProviders,
+				ChainID:    reqChainID,
+				ShowFrozen: showFrozenProviders,
 			}
 
 			res, err := queryClient.Providers(cmd.Context(), params)

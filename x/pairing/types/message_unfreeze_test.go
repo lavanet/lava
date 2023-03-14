@@ -11,18 +11,18 @@ import (
 func TestMsgUnfreeze_ValidateBasic(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  MsgUnfreeze
+		msg  MsgUnfreezeProvider
 		err  error
 	}{
 		{
 			name: "invalid address",
-			msg: MsgUnfreeze{
+			msg: MsgUnfreezeProvider{
 				Creator: "invalid_address",
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
-			msg: MsgUnfreeze{
+			msg: MsgUnfreezeProvider{
 				Creator: sample.AccAddress(),
 			},
 		},

@@ -18,7 +18,7 @@ func SimulateMsgUnfreeze(
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
-		msg := &types.MsgUnfreeze{
+		msg := &types.MsgUnfreezeProvider{
 			Creator: simAccount.Address.String(),
 		}
 

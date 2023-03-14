@@ -93,7 +93,7 @@ message QueryParamsResponse {
 
 message QueryProvidersRequest {
   string chainID = 1;
-  bool showFrozenProviders = 2;
+  bool showFrozen = 2;
 }
 
 message QueryProvidersResponse {

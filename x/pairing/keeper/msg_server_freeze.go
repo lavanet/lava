@@ -12,7 +12,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k msgServer) Freeze(goCtx context.Context, msg *types.MsgFreeze) (*types.MsgFreezeResponse, error) {
+func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezeProvider) (*types.MsgFreezeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	providerAddr, err := sdk.AccAddressFromBech32(msg.GetCreator())
@@ -33,5 +33,5 @@ func (k msgServer) Freeze(goCtx context.Context, msg *types.MsgFreeze) (*types.M
 
 	utils.LogLavaEvent(ctx, ctx.Logger(), "freeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(msg.GetChainIds(), ","), "freezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10), "freezeReason": msg.GetReason()}, "Provider Freeze")
 
-	return &types.MsgFreezeResponse{}, nil
+	return &types.MsgFreezeProviderResponse{}, nil
 }

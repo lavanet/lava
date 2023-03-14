@@ -32,11 +32,11 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		case *types.MsgRelayPayment:
 			res, err := msgServer.RelayPayment(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgFreeze:
-			res, err := msgServer.Freeze(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgFreezeProvider:
+			res, err := msgServer.FreezeProvider(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgUnfreeze:
-			res, err := msgServer.Unfreeze(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgUnfreezeProvider:
+			res, err := msgServer.UnfreezeProvider(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 			// this line is used by starport scaffolding # 1
 		default:

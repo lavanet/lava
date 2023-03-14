@@ -7,24 +7,24 @@ import (
 
 const TypeMsgUnfreeze = "unfreeze"
 
-var _ sdk.Msg = &MsgUnfreeze{}
+var _ sdk.Msg = &MsgUnfreezeProvider{}
 
-func NewMsgUnfreeze(creator string, chainIds []string) *MsgUnfreeze {
-	return &MsgUnfreeze{
+func NewMsgUnfreeze(creator string, chainIds []string) *MsgUnfreezeProvider {
+	return &MsgUnfreezeProvider{
 		Creator:  creator,
 		ChainIds: chainIds,
 	}
 }
 
-func (msg *MsgUnfreeze) Route() string {
+func (msg *MsgUnfreezeProvider) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgUnfreeze) Type() string {
+func (msg *MsgUnfreezeProvider) Type() string {
 	return TypeMsgUnfreeze
 }
 
-func (msg *MsgUnfreeze) GetSigners() []sdk.AccAddress {
+func (msg *MsgUnfreezeProvider) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -32,12 +32,12 @@ func (msg *MsgUnfreeze) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgUnfreeze) GetSignBytes() []byte {
+func (msg *MsgUnfreezeProvider) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgUnfreeze) ValidateBasic() error {
+func (msg *MsgUnfreezeProvider) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)

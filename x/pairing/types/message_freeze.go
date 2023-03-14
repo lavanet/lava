@@ -11,25 +11,25 @@ const (
 	ReasonMaxLength = 50
 )
 
-var _ sdk.Msg = &MsgFreeze{}
+var _ sdk.Msg = &MsgFreezeProvider{}
 
-func NewMsgFreeze(creator string, chainIds []string, reason string) *MsgFreeze {
-	return &MsgFreeze{
+func NewMsgFreeze(creator string, chainIds []string, reason string) *MsgFreezeProvider {
+	return &MsgFreezeProvider{
 		Creator:  creator,
 		ChainIds: chainIds,
 		Reason:   reason,
 	}
 }
 
-func (msg *MsgFreeze) Route() string {
+func (msg *MsgFreezeProvider) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgFreeze) Type() string {
+func (msg *MsgFreezeProvider) Type() string {
 	return TypeMsgFreeze
 }
 
-func (msg *MsgFreeze) GetSigners() []sdk.AccAddress {
+func (msg *MsgFreezeProvider) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -37,12 +37,12 @@ func (msg *MsgFreeze) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgFreeze) GetSignBytes() []byte {
+func (msg *MsgFreezeProvider) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgFreeze) ValidateBasic() error {
+func (msg *MsgFreezeProvider) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)

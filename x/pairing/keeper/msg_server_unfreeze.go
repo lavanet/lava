@@ -11,7 +11,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k msgServer) Unfreeze(goCtx context.Context, msg *types.MsgUnfreeze) (*types.MsgUnfreezeResponse, error) {
+func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreezeProvider) (*types.MsgUnfreezeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	providerAddr, err := sdk.AccAddressFromBech32(msg.GetCreator())
@@ -22,7 +22,7 @@ func (k msgServer) Unfreeze(goCtx context.Context, msg *types.MsgUnfreeze) (*typ
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainId, providerAddr)
 		if !found {
-			continue
+			return nil, utils.LavaFormatError("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, &map[string]string{"chainID": chainId, "providerAddress": msg.GetCreator()})
 		}
 
 		nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
@@ -37,5 +37,5 @@ func (k msgServer) Unfreeze(goCtx context.Context, msg *types.MsgUnfreeze) (*typ
 
 	utils.LogLavaEvent(ctx, ctx.Logger(), "unfreeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(msg.GetChainIds(), ","), "unfreezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10)}, "Provider Unfreeze")
 
-	return &types.MsgUnfreezeResponse{}, nil
+	return &types.MsgUnfreezeProviderResponse{}, nil
 }

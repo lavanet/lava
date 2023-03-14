@@ -29824,7 +29824,7 @@ paths:
                               signatures required by gogoproto.
                           address:
                             type: string
-                          deadline:
+                          stake_applied_block:
                             type: string
                             format: uint64
                           endpoints:
@@ -29993,7 +29993,7 @@ paths:
                             signatures required by gogoproto.
                         address:
                           type: string
-                        deadline:
+                        stake_applied_block:
                           type: string
                           format: uint64
                         endpoints:
@@ -30077,7 +30077,7 @@ paths:
                         signatures required by gogoproto.
                     address:
                       type: string
-                    deadline:
+                    stake_applied_block:
                       type: string
                       format: uint64
                     endpoints:
@@ -30329,7 +30329,7 @@ paths:
                         signatures required by gogoproto.
                     address:
                       type: string
-                    deadline:
+                    stake_applied_block:
                       type: string
                       format: uint64
                     endpoints:
@@ -30680,7 +30680,7 @@ paths:
                         signatures required by gogoproto.
                     address:
                       type: string
-                    deadline:
+                    stake_applied_block:
                       type: string
                       format: uint64
                     endpoints:
@@ -30729,6 +30729,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: showFrozenProviders
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/static_providers_list/{chainID}':
@@ -30763,7 +30767,7 @@ paths:
                         signatures required by gogoproto.
                     address:
                       type: string
-                    deadline:
+                    stake_applied_block:
                       type: string
                       format: uint64
                     endpoints:
@@ -31015,7 +31019,7 @@ paths:
                       signatures required by gogoproto.
                   address:
                     type: string
-                  deadline:
+                  stake_applied_block:
                     type: string
                     format: uint64
                   endpoints:
@@ -54403,7 +54407,7 @@ definitions:
                       signatures required by gogoproto.
                   address:
                     type: string
-                  deadline:
+                  stake_applied_block:
                     type: string
                     format: uint64
                   endpoints:
@@ -54516,7 +54520,7 @@ definitions:
                     signatures required by gogoproto.
                 address:
                   type: string
-                deadline:
+                stake_applied_block:
                   type: string
                   format: uint64
                 endpoints:
@@ -54583,7 +54587,7 @@ definitions:
           signatures required by gogoproto.
       address:
         type: string
-      deadline:
+      stake_applied_block:
         type: string
         format: uint64
       endpoints:
@@ -54634,7 +54638,7 @@ definitions:
                 signatures required by gogoproto.
             address:
               type: string
-            deadline:
+            stake_applied_block:
               type: string
               format: uint64
             endpoints:
@@ -54679,11 +54683,15 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.pairing.MsgFreezeResponse:
+    type: object
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
   lavanet.lava.pairing.MsgStakeClientResponse:
     type: object
   lavanet.lava.pairing.MsgStakeProviderResponse:
+    type: object
+  lavanet.lava.pairing.MsgUnfreezeResponse:
     type: object
   lavanet.lava.pairing.MsgUnstakeClientResponse:
     type: object
@@ -54893,7 +54901,7 @@ definitions:
                 signatures required by gogoproto.
             address:
               type: string
-            deadline:
+            stake_applied_block:
               type: string
               format: uint64
             endpoints:
@@ -54956,7 +54964,7 @@ definitions:
                 signatures required by gogoproto.
             address:
               type: string
-            deadline:
+            stake_applied_block:
               type: string
               format: uint64
             endpoints:
@@ -55089,7 +55097,7 @@ definitions:
                 signatures required by gogoproto.
             address:
               type: string
-            deadline:
+            stake_applied_block:
               type: string
               format: uint64
             endpoints:
@@ -55140,7 +55148,7 @@ definitions:
                 signatures required by gogoproto.
             address:
               type: string
-            deadline:
+            stake_applied_block:
               type: string
               format: uint64
             endpoints:
@@ -55187,7 +55195,7 @@ definitions:
               signatures required by gogoproto.
           address:
             type: string
-          deadline:
+          stake_applied_block:
             type: string
             format: uint64
           endpoints:
