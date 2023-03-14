@@ -115,6 +115,8 @@ func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, 
 
 func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
 	dataReliability := &pairingtypes.VRFData{
+		ChainID:        request.ChainID,
+		Epoch:          request.BlockHeight,
 		Differentiator: differentiator,
 		VrfValue:       vrf_res,
 		VrfProof:       vrf_proof,

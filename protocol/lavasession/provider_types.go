@@ -99,6 +99,7 @@ type ProviderSessionsWithConsumer struct {
 	epochData         *ProviderSessionsEpochData
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
+	selfProviderIndex int64
 }
 
 type SingleProviderSession struct {
@@ -111,24 +112,30 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
 		isDataReliability: isDataReliability,
+		selfProviderIndex: selfProviderIndex,
 	}
 	return pswc
 }
 
+// reads the selfProviderIndex data atomically for DR
+func (pswc *ProviderSessionsWithConsumer) atomicReadProviderIndex() int64 {
+	return atomic.LoadInt64(&pswc.selfProviderIndex)
+}
+
 // reads the isDataReliability data atomically
-func (pswc *ProviderSessionsWithConsumer) atomicReadIsDataReliability() uint32 { // rename to blocked consumer not blocked epoch
+func (pswc *ProviderSessionsWithConsumer) atomicReadIsDataReliability() uint32 {
 	return atomic.LoadUint32(&pswc.isDataReliability)
 }
 
 // reads cs.BlockedEpoch atomically, notBlockListedConsumer = 0, blockListedConsumer = 1
-func (pswc *ProviderSessionsWithConsumer) atomicWriteConsumerBlocked(blockStatus uint32) { // rename to blocked consumer not blocked epoch
+func (pswc *ProviderSessionsWithConsumer) atomicWriteConsumerBlocked(blockStatus uint32) {
 	atomic.StoreUint32(&pswc.isBlockListed, blockStatus)
 }
 

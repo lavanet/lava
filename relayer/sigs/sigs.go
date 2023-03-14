@@ -206,6 +206,18 @@ func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest
 	return RecoverProviderPubKeyFromQueryAndAllDataHash(request, request.DataReliability.AllDataHash, request.DataReliability.ProviderSig)
 }
 
+func ExtractSignerAddress(in *pairingtypes.RelayRequest) (sdk.AccAddress, error) {
+	pubKey, err := RecoverPubKeyFromRelay(*in)
+	if err != nil {
+		return nil, err
+	}
+	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
+	if err != nil {
+		return nil, utils.LavaFormatError("get relay consumer address", err, nil)
+	}
+	return extractedConsumerAddress, nil
+}
+
 func RecoverPubKeyFromRelay(in pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
 	signature := in.Sig
 	in.Sig = []byte{}

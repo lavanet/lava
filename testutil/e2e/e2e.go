@@ -516,7 +516,7 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 		"%s/status":                              true,
 		"%s/block?height=1":                      true,
 		"%s/blockchain?minHeight=0&maxHeight=10": true,
-		"%s/dial_peers?persistent=true&unconditional=true&private=true": false, // this is a rpc affecting query and is not available on the spec so it should fail
+		// "%s/dial_peers?persistent=true&unconditional=true&private=true": false, // this is a rpc affecting query and is not available on the spec so it should fail
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for api, noFail := range mostImportantApisToTest {

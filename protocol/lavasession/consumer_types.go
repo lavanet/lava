@@ -22,7 +22,7 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type qoSInfo struct {
+type QoSReport struct {
 	LastQoSReport    *pairingtypes.QualityOfServiceReport
 	LatencyScoreList []sdk.Dec
 	SyncScoreSum     int64
@@ -34,7 +34,7 @@ type qoSInfo struct {
 type SingleConsumerSession struct {
 	CuSum                       uint64
 	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
-	QoSInfo                     qoSInfo
+	QoSInfo                     QoSReport
 	SessionId                   int64
 	Client                      *ConsumerSessionsWithProvider
 	lock                        utils.LavaMutex
