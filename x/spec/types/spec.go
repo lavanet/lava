@@ -77,7 +77,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.DataReliabilityEnabled {
+	if spec.DataReliabilityEnabled && spec.Enabled {
 		for _, tag := range []string{GET_BLOCKNUM, GET_BLOCK_BY_NUM} {
 			if found := functionTags[tag]; !found {
 				return details, fmt.Errorf("missing tagged functions for hash comparison: %s", tag)

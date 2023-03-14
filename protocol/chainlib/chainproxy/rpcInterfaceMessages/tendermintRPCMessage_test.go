@@ -254,6 +254,31 @@ func TestConvertTendermintMsg(t *testing.T) {
 			"",
 		},
 		{
+			"successful conversion no data in jsonrpc",
+			&rpcclient.JsonrpcMessage{
+				Version: "2.0",
+				ID:      json.RawMessage(`"abc"`),
+				Result:  json.RawMessage(`{"key":"value"}`),
+				Error: &rpcclient.JsonError{
+					Code:    0,
+					Message: "error message",
+					Data:    nil,
+				},
+			},
+			&RPCResponse{
+				JSONRPC: "2.0",
+				ID:      JSONRPCStringID("abc"),
+				Result:  json.RawMessage(`{"key":"value"}`),
+				Error: &tenderminttypes.RPCError{
+					Code:    0,
+					Message: "error message",
+					Data:    "",
+				},
+			},
+			false,
+			"",
+		},
+		{
 			"error in GetTendermintRPCError",
 			&rpcclient.JsonrpcMessage{
 				Version: "2.0",

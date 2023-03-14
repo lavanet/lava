@@ -556,7 +556,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 		panic("Lava over Lava Failed " + err.Error())
 	}
 	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
-	// produce 5 specs: ETH1, GTH1, COS5, COS5T, LAV1
+	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
@@ -895,7 +895,7 @@ func runE2E() {
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
 	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
-	// produce 5 specs: ETH1, GTH1, COS5, COS5T, LAV1
+	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
