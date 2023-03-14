@@ -34,7 +34,6 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	for counter := uint64(0); counter < largerEpochsNumConst+recommendedEpochNumToCollectPayment; counter++ {
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			utils.LavaFormatInfo("Epoch too early to punish unresponsive providers", &map[string]string{"epoch": fmt.Sprintf("%+v", currentEpoch)})
 			return nil
 		}
 		epochTemp = previousEpoch

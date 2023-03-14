@@ -262,7 +262,6 @@ func TestPaymentFrozen(t *testing.T) {
 	var Relays []*types.RelayRequest
 	Relays = append(Relays, relayRequest)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
-
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: providerToFreeze.Address, Relays: Relays})
 	require.Nil(t, err)
 }
