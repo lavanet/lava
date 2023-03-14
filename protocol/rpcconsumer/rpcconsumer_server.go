@@ -37,6 +37,7 @@ type RPCConsumerServer struct {
 	requiredResponses      int
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	VrfSk                  vrf.PrivateKey
+	lavaChainID            string
 }
 
 type ConsumerTxSender interface {
@@ -51,6 +52,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
 	vrfSk vrf.PrivateKey,
+	lavaChainID string,
 	cache *performance.Cache, // optional
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
@@ -63,6 +65,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err, nil)
 	}
+	rpccs.lavaChainID = lavaChainID
 	rpccs.rpcConsumerLogs = pLogs
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
@@ -179,7 +182,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	privKey := rpccs.privKey
 	chainID := rpccs.listenEndpoint.ChainID
-	relayRequest, err := lavaprotocol.ConstructRelayRequest(ctx, privKey, chainID, relayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
+	lavaChainID := rpccs.lavaChainID
+	relayRequest, err := lavaprotocol.ConstructRelayRequest(ctx, privKey, lavaChainID, chainID, relayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 	if err != nil {
 		return relayResult, err
 	}
@@ -361,7 +365,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			reportedProviders = nil
 			utils.LavaFormatError("failed reading reported providers for epoch", err, &map[string]string{"epoch": strconv.FormatInt(epoch, 10)})
 		}
-		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayResult.Request.RelayData, providerAddress, epoch, reportedProviders)
+		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, rpccs.lavaChainID, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayResult.Request.RelayData, providerAddress, epoch, reportedProviders)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed creating data reliability relay", err, &map[string]string{"relayRequestData": fmt.Sprintf("%+v", relayResult.Request.RelayData)})
 		}

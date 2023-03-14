@@ -23,7 +23,7 @@ const (
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
-
+	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return nil, err
@@ -38,6 +38,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	for _, relay := range msg.Relays {
+		if relay.LavaChainId != lavaChainID {
+			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
+		}
 		if relay.Epoch > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}

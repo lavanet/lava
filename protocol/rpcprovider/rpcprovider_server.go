@@ -37,6 +37,7 @@ type RPCProviderServer struct {
 	rpcProviderEndpoint    *lavasession.RPCProviderEndpoint
 	stateTracker           StateTrackerInf
 	providerAddress        sdk.AccAddress
+	lavaChainID            string
 }
 
 type ReliabilityManagerInf interface {
@@ -68,6 +69,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	cache *performance.Cache, chainProxy chainlib.ChainProxy,
 	stateTracker StateTrackerInf,
 	providerAddress sdk.AccAddress,
+	lavaChainID string,
 ) {
 	rpcps.cache = cache
 	rpcps.chainProxy = chainProxy
@@ -79,6 +81,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.rpcProviderEndpoint = rpcProviderEndpoint
 	rpcps.stateTracker = stateTracker
 	rpcps.providerAddress = providerAddress
+	rpcps.lavaChainID = lavaChainID
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
@@ -361,7 +364,10 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(requestSession *pairi
 		return utils.LavaFormatError("request had the wrong provider", nil, &map[string]string{"providerAddress": providerAddress, "request_provider": requestSession.Provider})
 	}
 	if requestSession.SpecID != rpcps.rpcProviderEndpoint.ChainID {
-		return utils.LavaFormatError("request had the wrong chainID", nil, &map[string]string{"request_chainID": requestSession.SpecID, "chainID": rpcps.rpcProviderEndpoint.ChainID})
+		return utils.LavaFormatError("request had the wrong specID", nil, &map[string]string{"request_specID": requestSession.SpecID, "chainID": rpcps.rpcProviderEndpoint.ChainID})
+	}
+	if requestSession.LavaChainId != rpcps.lavaChainID {
+		return utils.LavaFormatError("request had the wrong lava chain ID", nil, &map[string]string{"request_lavaChainID": requestSession.LavaChainId, "lava chain id": rpcps.lavaChainID})
 	}
 	return nil
 }

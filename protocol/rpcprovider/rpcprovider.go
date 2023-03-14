@@ -99,7 +99,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed getting private key from key name", err, &map[string]string{"keyName": keyName})
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
-
+	lavaChainID := clientCtx.ChainID
 	var addr sdk.AccAddress
 	err = addr.Unmarshal(clientKey.GetPubKey().Address())
 	if err != nil {
@@ -157,7 +157,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				&map[string]string{"key": key})
 		}
 		rpcp.rpcProviderServers[key] = rpcProviderServer
-		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr)
+		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID)
 
 		// set up grpc listener
 		var listener *ProviderListener
@@ -292,7 +292,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
+			clientCtx = clientCtx.WithChainID(networkChainId)
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err, nil)

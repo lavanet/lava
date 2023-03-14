@@ -58,7 +58,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
-
+	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err, nil)
@@ -92,7 +92,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
 		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": rpcEndpoint.String()})
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, cache)
+		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -208,7 +208,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
 				}
 			}
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
+			clientCtx = clientCtx.WithChainID(networkChainId)
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
