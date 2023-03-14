@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand"
 	"sort"
 	"strconv"
 	"sync/atomic"
@@ -213,10 +212,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 		return nil, 0, MaximumNumberOfSessionsExceededError
 	}
 
-	randomSessionId := int64(0)
-	for randomSessionId == 0 { // we don't allow 0
-		randomSessionId = rand.Int63()
-	}
+	randomSessionId := utils.SafeRand()
 
 	consumerSession := &SingleConsumerSession{
 		SessionId: randomSessionId,
