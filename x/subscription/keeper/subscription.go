@@ -12,6 +12,8 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
+const MONTHS_IN_YEAR = 12
+
 // SetSubscription sets a subscription (of a consumer) in the store
 func (k Keeper) SetSubscription(ctx sdk.Context, sub types.Subscription) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
@@ -200,23 +202,17 @@ func (k Keeper) CreateSubscription(
 	}
 
 	price := plan.GetPrice()
+	price.Amount = price.Amount.MulRaw(int64(duration))
 
 	// use current block's timestamp for subscription start-time
 	timestamp := ctx.BlockTime()
 	expiry := timestamp
 
-	if duration < 12 {
-		price.Amount = price.Amount.MulRaw(int64(duration))
-		for i := 0; i < int(duration); i++ {
-			expiry = nextMonth(expiry)
-		}
+	for i := 0; i < int(duration); i++ {
+		expiry = nextMonth(expiry)
 	}
 
-	if duration == 12 {
-		// extend the duration to 1 year, and price pro-rata
-		expiry = nextYear(timestamp)
-		price.Amount = price.Amount.MulRaw(12)
-
+	if duration >= MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
 		if discount > 0 {

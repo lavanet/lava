@@ -11,9 +11,13 @@ import (
 
 func CmdBuy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "buy [index] [optional: consumer] [optional: duration]",
+		Use:   "buy [plan-index] [optional: consumer] [optional: duration(months)]",
 		Short: "buy a service plan",
-		Args:  cobra.RangeArgs(1, 3),
+		Long:  `The buy command allows a user to buy a subscription to a service plan for another user, effective next epoch. The consumer is the beneficiary user (default: the creator). The duration is stated in number of months (default: 1).`,
+		Example: `required flags: --from <creator-address>
+		lavad tx subscription buy [plan-index] --from <creator_address>
+		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12`,
+		Args: cobra.RangeArgs(1, 3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
