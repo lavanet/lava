@@ -31,16 +31,13 @@ func CmdFreeze() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// check if the command includes --reason
-			reason := ""
-			reasonFlagUsed := cmd.Flags().Lookup(types.ReasonFlagName).Changed
-			if reasonFlagUsed {
-				// get the freeze reason (default value: "")
-				reason, err = cmd.Flags().GetString(types.ReasonFlagName)
-				if err != nil {
-					utils.LavaFormatFatal("failed to read freeze reason flag", err, nil)
-				}
+
+			// get the freeze reason (default value: "")
+			reason, err := cmd.Flags().GetString(types.ReasonFlagName)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read freeze reason flag", err, nil)
 			}
+
 			msg := types.NewMsgFreeze(
 				clientCtx.GetFromAddress().String(),
 				argChainIds,

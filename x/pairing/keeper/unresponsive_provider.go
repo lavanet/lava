@@ -51,6 +51,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	for counter := uint64(0); counter < recommendedEpochNumToCollectPayment; counter++ {
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
+			// it's too early in the chain life to do this calculation so bail, without an error
 			return nil
 		}
 		epochTemp = previousEpoch

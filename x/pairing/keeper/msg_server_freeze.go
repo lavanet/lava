@@ -27,7 +27,7 @@ func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezePro
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
-		stakeEntry.StakeAppliedBlock = math.MaxUint64
+		stakeEntry.StakeAppliedBlock = math.MaxInt64
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainId, stakeEntry, index)
 	}
 
