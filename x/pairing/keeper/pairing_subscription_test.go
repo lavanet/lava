@@ -81,24 +81,21 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			relayRequest := &types.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(i),
-				ChainID:         ts.spec.Name,
-				CuSum:           tt.cu,
-				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
-			}
+			relayRequest := common.CreateRelay(
+				t,
+				*ts.providers[0],
+				consumer,
+				[]byte(ts.spec.Apis[0].Name),
+				uint64(i),
+				ts.spec.Name,
+				tt.cu,
+				sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				0,
+				-1,
+				nil,
+			)
 
-			sig, err := sigs.SignRelay(consumer.SK, *relayRequest)
-			relayRequest.Sig = sig
-			require.Nil(t, err)
-
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*types.RelayRequest{relayRequest}})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{&relayRequest}})
 			require.Equal(t, tt.valid, err == nil)
 		})
 	}
@@ -129,24 +126,21 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	i := 0
 	for ; uint64(i) < ts.plan.ComputeUnits/ts.plan.ComputeUnitsPerEpoch; i++ {
 
-		relayRequest := &types.RelayRequest{
-			Provider:        ts.providers[0].address.String(),
-			ApiUrl:          "",
-			Data:            []byte(ts.spec.Apis[0].Name),
-			SessionId:       uint64(i),
-			ChainID:         ts.spec.Name,
-			CuSum:           ts.plan.ComputeUnitsPerEpoch,
-			BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-			RelayNum:        0,
-			RequestBlock:    -1,
-			DataReliability: nil,
-		}
+		relayRequest := common.CreateRelay(
+			t,
+			*ts.providers[0],
+			consumer,
+			[]byte(ts.spec.Apis[0].Name),
+			uint64(i),
+			ts.spec.Name,
+			ts.plan.ComputeUnitsPerEpoch,
+			sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			0,
+			-1,
+			nil,
+		)
 
-		sig, err := sigs.SignRelay(consumer.SK, *relayRequest)
-		relayRequest.Sig = sig
-		require.Nil(t, err)
-
-		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*types.RelayRequest{relayRequest}})
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{&relayRequest}})
 		require.Nil(t, err)
 
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -154,7 +148,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	//last iteration should finish the plan quota
 	relayRequest := &types.RelayRequest{
-		Provider:        ts.providers[0].address.String(),
+		Provider:        ts.providers[0].Addr.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(i + 1),
@@ -170,6 +164,6 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*types.RelayRequest{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{relayRequest}})
 	require.NotNil(t, err)
 }

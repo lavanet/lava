@@ -65,7 +65,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -79,7 +79,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			}
 
 			// Sign and send the payment requests for block 0 tx
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -88,16 +88,16 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 
 			// Get provider's and consumer's balance before payment
-			providerBalance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
-			stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
+			providerBalance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].Addr, epochstoragetypes.TokenDenom).Amount.Int64()
+			stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].Addr)
 
 			// Make the payment
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays})
 			require.Nil(t, err)
 
 			// Check that the consumer's balance decreased correctly
 			burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(relayRequest.CuSum))
-			newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
+			newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].Addr)
 			require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 			// Compute the relay request's QoS score
@@ -111,9 +111,9 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 			// if valid, what the provider wants and what it got should be equal
 			if tt.valid == true {
-				require.Equal(t, providerBalance+want.TruncateInt64(), ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
+				require.Equal(t, providerBalance+want.TruncateInt64(), ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].Addr, epochstoragetypes.TokenDenom).Amount.Int64())
 			} else {
-				require.NotEqual(t, providerBalance+want.TruncateInt64(), ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
+				require.NotEqual(t, providerBalance+want.TruncateInt64(), ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].Addr, epochstoragetypes.TokenDenom).Amount.Int64())
 			}
 		})
 	}
@@ -170,7 +170,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -183,15 +183,15 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -252,7 +252,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -265,15 +265,15 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -339,7 +339,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -352,15 +352,15 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -415,7 +415,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -428,15 +428,15 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -508,7 +508,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -521,7 +521,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests for block 20 (=epochBeforeChange)
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -529,8 +529,8 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -602,7 +602,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -615,7 +615,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests for block 20 (=epochBeforeChange)
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -623,8 +623,8 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -698,7 +698,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
+				Provider:        ts.providers[0].Addr.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(ti),
@@ -711,15 +711,15 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -827,7 +827,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
 	relayRequest := &pairingtypes.RelayRequest{
-		Provider:        ts.providers[0].address.String(),
+		Provider:        ts.providers[0].Addr.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -840,7 +840,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	}
 
 	// Sign and send the payment requests for block 20 (=epochBeforeChange)
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -849,12 +849,12 @@ func TestStakePaymentUnstake(t *testing.T) {
 	Relays = append(Relays, relayRequest)
 
 	// get payment
-	relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].address, ts.providers[0].address)
+	relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 	// advance another epoch and unstake the provider
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &pairingtypes.MsgUnstakeProvider{Creator: ts.providers[0].address.String(), ChainID: ts.spec.Index})
+	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &pairingtypes.MsgUnstakeProvider{Creator: ts.providers[0].Addr.String(), ChainID: ts.spec.Index})
 	require.Nil(t, err)
 
 	// advance enough epochs to make the provider get its money back, this will panic if there's something wrong in the unstake process
@@ -904,7 +904,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		epochAfterEpochBlocksChanged := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:        ts.providers[0].address.String(),
+			Provider:        ts.providers[0].Addr.String(),
 			ApiUrl:          "",
 			Data:            []byte(ts.spec.Apis[0].Name),
 			SessionId:       uint64(1),
@@ -917,7 +917,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		}
 
 		// Sign the payment request
-		sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+		sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 
@@ -926,15 +926,15 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		Relays = append(Relays, relayRequest)
 
 		// get payment
-		relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-		payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].address, ts.providers[0].address)
+		relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+		payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 		// Advance epoch and verify the relay payment objects
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 		verifyRelayPaymentObjects(t, ts, relayRequest, true)
 
 		// try to get payment again - shouldn't work because of double spend (that's why it's called with false)
-		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].address, ts.providers[0].address)
+		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
 
 		// Advance enough epochs so the chain will forget the relay payment object (the chain's memory is limited). Note, we already advanced one epoch since epochAfterEpochBlocksChanged (the relay payment object's creation epoch)
 		for i := 0; i < int(epochsToSave)-1; i++ {
@@ -945,7 +945,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		verifyRelayPaymentObjects(t, ts, relayRequest, true) // TODO: fix bug CNS-83 and turn to false (the real expected value).
 
 		// try to get payment again - shouldn't work (relay payment object should not exist and if it exists, the code shouldn't allow double spending)
-		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].address, ts.providers[0].address)
+		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
 
 	}
 }
@@ -963,7 +963,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	}
 
 	// Get the providerPaymentStorageKey
-	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayRequest.GetBlockHeight()), ts.providers[0].address)
+	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayRequest.GetBlockHeight()), ts.providers[0].Addr)
 
 	// Get the providerPaymentStorage struct from epochPayments
 	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
@@ -977,7 +977,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorageFromEpochPayments.GetEpoch())
 
 	// Get the UniquePaymentStorageClientProvider key
-	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].address, ts.providers[0].address, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
+	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
 
 	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
 	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}
@@ -992,7 +992,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
 
 	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
-	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetChainID(), ts.clients[0].address, uint64(relayRequest.GetBlockHeight()))
+	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetChainID(), ts.clients[0].Addr, uint64(relayRequest.GetBlockHeight()))
 	require.Nil(t, err)
 	clientMaxCU, err := ts.keepers.Pairing.ClientMaxCUProviderForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()), clientStakeEntry)
 	require.Nil(t, err)

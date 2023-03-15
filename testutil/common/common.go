@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -18,8 +19,10 @@ import (
 )
 
 type Account struct {
-	SK   *btcSecp256k1.PrivateKey
-	Addr sdk.AccAddress
+	SK    *btcSecp256k1.PrivateKey
+	Addr  sdk.AccAddress
+	VrfSk vrf.PrivateKey
+	VrfPk vrf.PublicKey
 }
 
 func CreateMockSpec() spectypes.Spec {
@@ -77,6 +80,27 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 		require.Nil(t, err)
 	}
+}
+
+func CreateRelay(t *testing.T, provider Account, consumer Account, data []byte, seassionID uint64, chainID string, cuSum uint64, blockHeight int64, relayNum uint64, requestBlock int64, dataReliability *types.VRFData) types.RelayRequest {
+	relayRequest := &types.RelayRequest{
+		Provider:        provider.Addr.String(),
+		ApiUrl:          "",
+		Data:            data,
+		SessionId:       seassionID,
+		ChainID:         chainID,
+		CuSum:           cuSum,
+		BlockHeight:     blockHeight,
+		RelayNum:        relayNum,
+		RequestBlock:    requestBlock,
+		DataReliability: nil,
+	}
+
+	sig, err := sigs.SignRelay(consumer.SK, *relayRequest)
+	relayRequest.Sig = sig
+	require.Nil(t, err)
+
+	return *relayRequest
 }
 
 func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account, provider1 Account, spec spectypes.Spec) (conflicttypes.MsgDetection, error) {
