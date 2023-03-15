@@ -32,7 +32,6 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 			unfrozen_chains = append(unfrozen_chains, chainId)
 		}
 		// else case does not throw an error because we don't want to fail unfreezing other chains
-
 	}
 	utils.LogLavaEvent(ctx, ctx.Logger(), "unfreeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(unfrozen_chains, ",")}, "Provider Unfreeze")
 	return &types.MsgUnfreezeProviderResponse{}, nil
