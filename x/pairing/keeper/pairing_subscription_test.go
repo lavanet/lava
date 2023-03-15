@@ -16,7 +16,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 	var balance int64 = 10000
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 
-	_, err := ts.servers.SubscriptionServer.Subscribe(ts.ctx, &subtypes.MsgSubscribe{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, IsYearly: false})
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, Duration: 1})
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -50,7 +50,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	var balance int64 = 10000
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 
-	_, err := ts.servers.SubscriptionServer.Subscribe(ts.ctx, &subtypes.MsgSubscribe{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, IsYearly: false})
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, Duration: 1})
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -104,7 +104,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	var balance int64 = 10000
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 
-	_, err := ts.servers.SubscriptionServer.Subscribe(ts.ctx, &subtypes.MsgSubscribe{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, IsYearly: false})
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, Duration: 1})
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
