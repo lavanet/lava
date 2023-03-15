@@ -9,7 +9,6 @@ import (
 // x/plan module sentinel errors
 var (
 	ErrEmptyPlans                 = sdkerrors.Register(ModuleName, 1, "plans list is empty")
-	ErrInvalidPlanDuration        = sdkerrors.Register(ModuleName, 2, "plan's duration field is invalid")
 	ErrInvalidPlanPrice           = sdkerrors.Register(ModuleName, 3, "plan's price field is invalid")
 	ErrInvalidPlanOveruse         = sdkerrors.Register(ModuleName, 4, "plan's CU overuse fields are invalid")
 	ErrInvalidPlanServicersToPair = sdkerrors.Register(ModuleName, 5, "plan's servicersToPair field is invalid")

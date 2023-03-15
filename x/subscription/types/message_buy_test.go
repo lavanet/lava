@@ -8,42 +8,64 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMsgSubscribe_ValidateBasic(t *testing.T) {
+func TestMsgBuy(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  MsgSubscribe
+		msg  MsgBuy
 		err  error
 	}{
 		{
 			name: "invalid creator address",
-			msg: MsgSubscribe{
+			msg: MsgBuy{
 				Creator:  "invalid_address",
 				Consumer: sample.AccAddress(),
 				Index:    "plan-name",
+				Duration: 1,
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "invalid consumer addresses",
-			msg: MsgSubscribe{
+			msg: MsgBuy{
 				Creator:  sample.AccAddress(),
 				Consumer: "invalid_address",
 				Index:    "plan-name",
+				Duration: 1,
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid addresses",
-			msg: MsgSubscribe{
+			msg: MsgBuy{
 				Creator:  sample.AccAddress(),
 				Consumer: sample.AccAddress(),
 				Index:    "plan-name",
+				Duration: 1,
 			},
 		}, {
 			name: "blank plan index",
-			msg: MsgSubscribe{
+			msg: MsgBuy{
 				Creator:  sample.AccAddress(),
 				Consumer: sample.AccAddress(),
+				Duration: 1,
 			},
 			err: ErrBlankParameter,
+		}, {
+			name: "invalid duration 0",
+			msg: MsgBuy{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Index:    "plan-name",
+				Duration: 0,
+			},
+			err: ErrInvalidParameter,
+		}, {
+			name: "invalid duration too long",
+			msg: MsgBuy{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Index:    "plan-name",
+				Duration: 13,
+			},
+			err: ErrInvalidParameter,
 		},
 	}
 	for _, tt := range tests {
