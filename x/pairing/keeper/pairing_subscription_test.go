@@ -159,6 +159,6 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		nil,
 	)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{&relayRequest}})
 	require.NotNil(t, err)
 }
