@@ -319,7 +319,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 
 	// validate relayResult is not nil
 	if relayResult == nil || relayResult.Reply == nil || relayResult.Request == nil {
-		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, &map[string]string{"relayResult": fmt.Sprintf("%#v", relayResult), "relayRequestCommonData": fmt.Sprintf("%#v", relayRequestCommonData)})
+		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, &map[string]string{"relayResult": fmt.Sprintf("%#v", relayResult)})
 	}
 
 	specCategory := chainMessage.GetInterface().Category
