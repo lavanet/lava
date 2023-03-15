@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -167,7 +168,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 	defer func() {
 		app.Shutdown()
 	}()
-
+	time.Sleep(time.Millisecond * 20) // let the server go up
 	for _, testCase := range testCases {
 		testCase := testCase
 
