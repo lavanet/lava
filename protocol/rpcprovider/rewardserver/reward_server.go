@@ -191,7 +191,7 @@ func (rws *RewardServer) identifyMissingPayments(ctx context.Context) (missingPa
 		"total CU serviced":      strconv.FormatUint(rws.cUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(rws.paidCU(), 10),
 	})
-	return
+	return missingPayments, err
 }
 
 func (rws *RewardServer) cUServiced() uint64 {
@@ -236,7 +236,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 	for epoch, epochRewards := range rws.rewards {
-		if lavasession.IsEpochValidForUse(epoch, uint64(activeEpochThreshold)) {
+		if lavasession.IsEpochValidForUse(epoch, activeEpochThreshold) {
 			// Epoch is still active so we don't claim the rewards yet.
 			continue
 		}
@@ -255,7 +255,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 			delete(rws.rewards, epoch)
 		}
 	}
-	return
+	return rewardsForClaim, dataReliabilityProofs, errRet
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {

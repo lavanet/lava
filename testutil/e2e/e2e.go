@@ -233,7 +233,6 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 		go func(idx int) {
 			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startJSONRPCProvider")
 		}(idx)
-
 	}
 	// validate all providers are up
 	for idx := 0; idx < len(providerCommands); idx++ {

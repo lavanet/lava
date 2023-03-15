@@ -157,7 +157,6 @@ func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, e
 	}
 	details := epochDetails.GetEpochDetails()
 	return details.StartBlock, nil
-
 }
 
 func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {
@@ -225,7 +224,7 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 			utils.LavaFormatDebug("conflict_vote_resolved_event", &map[string]string{"voteID": voteID})
 		}
 	}
-	return
+	return votes, err
 }
 
 func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error) {

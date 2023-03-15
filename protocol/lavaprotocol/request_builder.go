@@ -86,7 +86,6 @@ func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingty
 }
 
 func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID string, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
-
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:       relayRequestData,
 		RelaySession:    ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),

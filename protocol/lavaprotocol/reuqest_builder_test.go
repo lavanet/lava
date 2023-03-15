@@ -13,7 +13,7 @@ import (
 func TestSignAndExtract(t *testing.T) {
 	ctx := context.Background()
 	sk, address := sigs.GenerateFloatingKey()
-	chainId := "LAV1"
+	specId := "LAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:                       20,
@@ -27,12 +27,12 @@ func TestSignAndExtract(t *testing.T) {
 		BlockListed:                 false, // if session lost sync we blacklist it.
 		ConsecutiveNumberOfFailures: 0,     // number of times this session has failed
 	}
-	commonData := NewRelayRequestCommonData(chainId, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc")
-	relay, err := ConstructRelayRequest(ctx, sk, chainId, commonData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
+	relayRequestData := NewRelayData("GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc")
+	relay, err := ConstructRelayRequest(ctx, sk, "lava", specId, relayRequestData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
 	// check signature
-	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay)
+	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, address)
 }

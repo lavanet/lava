@@ -83,6 +83,7 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
 	return pst.txSender.SendVoteReveal(voteID, vote)
 }
+
 func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
 	return pst.txSender.SendVoteCommitment(voteID, vote)
 }

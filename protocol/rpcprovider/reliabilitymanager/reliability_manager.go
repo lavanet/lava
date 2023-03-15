@@ -39,7 +39,6 @@ type ReliabilityManager struct {
 }
 
 func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uint64) {
-
 	// got a vote event, handle the cases here
 	voteID := voteParams.VoteID
 	voteDeadline := voteParams.VoteDeadline
@@ -108,7 +107,6 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 			return
 		}
 		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
-
 		if err != nil {
 			utils.LavaFormatError("vote relay send has failed", err,
 				&map[string]string{"ApiURL": voteParams.ApiURL, "RequestData": string(voteParams.RequestData)})
@@ -233,7 +231,6 @@ func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams
 	requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 	if err != nil {
 		return nil, utils.LavaFormatError("vote requested block could not be parsed", err, &map[string]string{"requested block": num_str, "voteID": voteID})
-
 	}
 	num_str, ok = attributes["voteDeadline"]
 	if !ok {

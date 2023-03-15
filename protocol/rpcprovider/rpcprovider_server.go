@@ -114,7 +114,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			"request.userAddr":  consumerAddress.String(),
 		})
 	} else {
-
 		// On successful relay
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
 		if relayError != nil {
@@ -386,7 +385,6 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
-
 			valid, selfProviderIndex, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecID)
 			if verifyPairingError != nil {
 				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError, &map[string]string{"sessionID": strconv.FormatUint(request.SessionId, 10), "consumer": consumerAddressString, "provider": rpcps.providerAddress.String(), "relayNum": strconv.FormatUint(request.RelayNum, 10)})

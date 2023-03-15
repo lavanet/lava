@@ -5,6 +5,7 @@ run:
   skip-files:
     - "relayer/chainproxy/thirdparty/*"
     - "relayer/chainproxy/grpc.go"
+    - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
     - "protocol/chainlib/chainproxy/thirdparty/*"
     - "protocol/chainlib/grpc.go"
 

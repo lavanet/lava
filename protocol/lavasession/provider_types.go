@@ -248,9 +248,10 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
 	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum += 1
-	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
-		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
+	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage", &map[string]string{
+		"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+		"sps.LatestRelayCu":   strconv.FormatUint(sps.LatestRelayCu, 10),
+		"sps.RelayNum":        strconv.FormatUint(sps.RelayNum, 10),
 	})
 	return nil
 }
@@ -291,11 +292,12 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = relayNumber  // 3. update RelayNum, we already verified relayNum is valid in GetSession.
-	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-		"sps.LatestRelayCu": strconv.FormatUint(sps.LatestRelayCu, 10),
-		"sps.RelayNum":      strconv.FormatUint(sps.RelayNum, 10),
-		"sps.CuSum":         strconv.FormatUint(sps.CuSum, 10),
-		"sps.sessionId":     strconv.FormatUint(sps.SessionID, 10),
+	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{
+		"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
+		"sps.LatestRelayCu":   strconv.FormatUint(sps.LatestRelayCu, 10),
+		"sps.RelayNum":        strconv.FormatUint(sps.RelayNum, 10),
+		"sps.CuSum":           strconv.FormatUint(sps.CuSum, 10),
+		"sps.sessionId":       strconv.FormatUint(sps.SessionID, 10),
 	})
 	return nil
 }
@@ -329,8 +331,8 @@ func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
 }
 
 func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
-	sps.CuSum = sps.CuSum - sps.LatestRelayCu
-	sps.RelayNum = sps.RelayNum - 1
+	sps.CuSum -= sps.LatestRelayCu
+	sps.RelayNum -= 1
 	sps.LatestRelayCu = 0
 	return nil
 }
@@ -347,8 +349,8 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 		return sps.onDataReliabilitySessionFailure()
 	}
 
-	sps.CuSum = sps.CuSum - sps.LatestRelayCu
-	sps.RelayNum = sps.RelayNum - 1
+	sps.CuSum -= sps.LatestRelayCu
+	sps.RelayNum -= 1
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
 	sps.LatestRelayCu = 0
 	return nil

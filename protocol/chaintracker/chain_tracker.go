@@ -158,7 +158,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	if blocksQueueLen < cs.blocksToSave {
 		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, &map[string]string{"blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10)})
 	}
-	utils.LavaFormatDebug("Chain Tracker Updated block hashes", &map[string]string{"latest_block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(int64(int64(cs.blocksToSave)-blocksCopied), 10), "blocksKept": strconv.FormatInt(blocksCopied, 10), "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface})
+	utils.LavaFormatDebug("Chain Tracker Updated block hashes", &map[string]string{"latest_block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(int64(cs.blocksToSave)-blocksCopied, 10), "blocksKept": strconv.FormatInt(blocksCopied, 10), "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface})
 	return nil
 }
 
@@ -237,7 +237,6 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(newLatestBlock, 10), "endpoint": cs.endpoint.String()})
 	}
 	if gotNewBlock || forked {
-		// utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10), "currentBlock": strconv.FormatInt(cs.GetLatestBlockNum(), 10)})
 		prev_latest := cs.GetLatestBlockNum()
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {

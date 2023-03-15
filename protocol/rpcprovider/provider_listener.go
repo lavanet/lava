@@ -2,12 +2,11 @@ package rpcprovider
 
 import (
 	"context"
-	"strings"
-	"sync"
-
 	"errors"
 	"net"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 
@@ -70,16 +69,15 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
-	httpServer := http.Server{
+	pl.httpServer = http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
-	pl.httpServer = httpServer
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", &map[string]string{"address": networkAddress})
-		if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 			utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
 		}
 		utils.LavaFormatInfo("listener closed server", &map[string]string{"address": networkAddress})

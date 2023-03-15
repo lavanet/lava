@@ -79,7 +79,6 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 			Msg:  nil,
 			Path: url + string(data),
 		}
-
 	}
 
 	// TODO fix requested block
