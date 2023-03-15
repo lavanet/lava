@@ -88,8 +88,9 @@ func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, b
 		return err
 	}
 
-	if project.Policy.TotalCuLimit <= project.UsedCu {
-		return utils.LavaError(ctx, ctx.Logger(), "project_cu_limit", map[string]string{"project": project.Index}, "the project exceeded the total cu allocated")
+	err = project.VerifyCuUsage()
+	if err != nil {
+		return err
 	}
 
 	project.UsedCu += cu

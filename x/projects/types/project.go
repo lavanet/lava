@@ -70,9 +70,14 @@ func (project *Project) VerifyProject(chainID string) error {
 		return fmt.Errorf("the developers project policy does not include the chain")
 	}
 
+	err := project.VerifyCuUsage()
+	return err
+}
+
+func (project *Project) VerifyCuUsage() error {
+	// TODO: when overuse is added, change here to take that into account
 	if project.Policy.TotalCuLimit <= project.UsedCu {
 		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
 	}
-
 	return nil
 }
