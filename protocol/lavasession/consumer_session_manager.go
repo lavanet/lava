@@ -313,6 +313,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	if reportProvider { // Report provider flow
 		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
+			utils.LavaFormatInfo("Reporting Provider for unresponsiveness", &map[string]string{"Provider address": address})
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
