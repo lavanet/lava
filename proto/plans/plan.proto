@@ -9,7 +9,7 @@ import "cosmos/base/v1beta1/coin.proto";
 message Plan {
     reserved 10;
     string index = 1;
-    uint64 duration = 2; // duration of the plan's subscription in months
+    reserved 2; // deprecated "duration"
     uint64 block = 3; // the epoch that this plan was created
     cosmos.base.v1beta1.Coin price = 4 [(gogoproto.nullable) = false]; // plan price (in ulava)
     uint64 compute_units = 5; // max CU for the whole plan duration

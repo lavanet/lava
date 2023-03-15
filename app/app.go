@@ -82,9 +82,9 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/ignite-hq/cli/ignite/pkg/openapiconsole"
 	"github.com/lavanet/lava/app/keepers"
+	appparams "github.com/lavanet/lava/app/params"
 	"github.com/lavanet/lava/app/upgrades"
 	"github.com/lavanet/lava/app/upgrades/v0_5_0"
 	"github.com/lavanet/lava/app/upgrades/v0_5_1"
@@ -136,10 +136,11 @@ var Upgrades = []upgrades.Upgrade{
 	v0_5_0.Upgrade,
 	v0_5_1.Upgrade,
 	v0_5_2.Upgrade,
-	upgrades.Upgrade_0_6_0,
 	upgrades.Upgrade_0_6_0_RC3,
+	upgrades.Upgrade_0_6_0,
 	upgrades.Upgrade_0_6_1,
 	upgrades.Upgrade_0_7_0,
+	upgrades.Upgrade_0_7_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -216,7 +217,6 @@ var (
 )
 
 var (
-	_ cosmoscmd.App           = (*LavaApp)(nil)
 	_ servertypes.Application = (*LavaApp)(nil)
 	_ simapp.App              = (*LavaApp)(nil)
 )
@@ -270,10 +270,10 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) cosmoscmd.App {
+) *LavaApp {
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -726,9 +726,6 @@ func (app *LavaApp) setupUpgradeHandlers() {
 
 // Name returns the name of the App
 func (app *LavaApp) Name() string { return app.BaseApp.Name() }
-
-// GetBaseApp returns the base app of the application
-func (app LavaApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
 
 // BeginBlocker application updates every begin block
 func (app *LavaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {

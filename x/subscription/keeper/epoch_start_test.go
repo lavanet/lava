@@ -34,7 +34,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	_ctx = testkeeper.AdvanceBlock(_ctx, keepers, time.Minute)
 	ctx = sdk.UnwrapSDKContext(_ctx)
 
-	err := keeper.CreateSubscription(ctx, creator, consumer, "mockPlan", false)
+	err := keeper.CreateSubscription(ctx, creator, consumer, "mockPlan", 1)
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ctx, account.String())
@@ -44,7 +44,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	sub.ExpiryTime = uint64(ctx.BlockTime().Add(-time.Second).UTC().Unix())
 	keeper.SetSubscription(ctx, sub)
 
-	// trigger EpochStart() processing	
+	// trigger EpochStart() processing
 	keeper.EpochStart(ctx)
 
 	sub, found = keeper.GetSubscription(ctx, account.String())

@@ -24,6 +24,13 @@ type testStruct struct {
 	keepers *testkeeper.Keepers
 }
 
+func (ts *testStruct) advanceEpochUntilStale() {
+	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + int64(commontypes.STALE_ENTRY_TIME+1)
+	for block > sdk.UnwrapSDKContext(ts.ctx).BlockHeight() {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+}
+
 func createNPlanEntry(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Plan {
 	items := make([]types.Plan, n)
 	for i := range items {
@@ -62,7 +69,6 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 			Index:                    planIndex,
 			Description:              "plan to test",
 			Type:                     "rpc",
-			Duration:                 200,
 			Block:                    100,
 			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
 			ComputeUnits:             1000,
@@ -153,13 +159,13 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 }
 
 const (
-	DURATION_FIELD    = 1
-	PRICE_FIELD       = 2
-	OVERUSE_FIELDS    = 3
-	CU_FIELD          = 4
-	SERVICERS_FIELD   = 5
-	DESCRIPTION_FIELD = 7
-	TYPE_FIELD        = 8
+	PRICE_FIELD = iota + 1
+	OVERUSE_FIELDS
+	CU_FIELD
+	SERVICERS_FIELD
+	NAME_FIELD
+	DESCRIPTION_FIELD
+	TYPE_FIELD
 )
 
 // Test that the plan verification before adding it to the plan storage is working correctly
@@ -176,13 +182,13 @@ func TestInvalidPlanAddition(t *testing.T) {
 		name       string
 		fieldIndex int
 	}{
-		{"InvalidDurationTest", 1},
-		{"InvalidPriceTest", 2},
-		{"InvalidOveruseTest", 3},
-		{"InvalidCuTest", 4},
-		{"InvalidServicersToPairTest", 5},
-		{"InvalidDescriptionTest", 7},
-		{"InvalidTypeTest", 8},
+		{"InvalidPriceTest", 1},
+		{"InvalidOveruseTest", 2},
+		{"InvalidCuTest", 3},
+		{"InvalidServicersToPairTest", 4},
+		{"InvalidNameTest", 5},
+		{"InvalidDescriptionTest", 6},
+		{"InvalidTypeTest", 7},
 	}
 
 	for _, tt := range tests {
@@ -192,8 +198,6 @@ func TestInvalidPlanAddition(t *testing.T) {
 
 			// each test, change one field to an invalid value
 			switch tt.fieldIndex {
-			case DURATION_FIELD:
-				planToTest[0].Duration = 0
 			case PRICE_FIELD:
 				planToTest[0].Price = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
 			case OVERUSE_FIELDS:
@@ -315,12 +319,7 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// advance enough epochs so the first two packages will be stale
-	for {
-		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-		if uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()) > uint64(commontypes.STALE_ENTRY_TIME)+secondPlanBlockHeight {
-			break
-		}
-	}
+	ts.advanceEpochUntilStale()
 
 	// create an additional plan and add it to the store to trigger plan deletion code
 	newPlan := testPlans[1]
@@ -345,7 +344,8 @@ func TestPlansDeletion(t *testing.T) {
 	require.True(t, found)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.advanceEpochUntilStale()
+
 	newerPlanBlockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 	newerPlan := newPlan
 	newerPlan.OveruseRate += 20

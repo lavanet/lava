@@ -75,7 +75,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 
 	// new staking takes effect from the next block
-	blockDeadline := uint64(ctx.BlockHeight()) + 1
+	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 
 	if len(moniker) > 50 {
 		moniker = moniker[:50]
@@ -88,7 +88,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			details := map[string]string{"spec": specChainID, stake_type: senderAddr.String()}
 			utils.LavaError(ctx, logger, "stake_"+stake_type+"_panic", details, "returned stake entry by address doesn't match sender address!")
 		}
-		details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String()}
+		details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "stakeAppliedBlock": strconv.FormatUint(stakeAppliedBlock, 10), "stake": amount.String()}
 		details["moniker"] = moniker
 		if amount.IsGTE(existingEntry.Stake) {
 			// increasing stake is allowed
@@ -105,7 +105,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 			// paid the difference to module
 			existingEntry.Stake = amount
-			// we dont change vrfpk, deadlines and chain once they are set, if they need to change, unstake first
+			// we dont change vrfpk, stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
 			existingEntry.Moniker = moniker
@@ -118,14 +118,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 
 	// entry isn't staked so add him
-	details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String(), "geolocation": strconv.FormatUint(geolocation, 10)}
+	details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "stakeAppliedBlock": strconv.FormatUint(stakeAppliedBlock, 10), "stake": amount.String(), "geolocation": strconv.FormatUint(geolocation, 10)}
 	err = verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
 	if err != nil {
 		details["error"] = err.Error()
 		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_new_amount", details, "insufficient amount to pay for stake")
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type, chainID, stakeEntry)
 	appended := false
 	if !provider {

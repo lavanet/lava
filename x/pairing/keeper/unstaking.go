@@ -102,7 +102,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 	}
 	for _, unstakingEntry := range entriesToUnstake {
 		details := map[string]string{"spec": unstakingEntry.Chain, stake_type: unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
-		if unstakingEntry.Deadline <= uint64(ctx.BlockHeight()) {
+		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
 			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
 			if err != nil {
@@ -119,8 +119,8 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 				utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, "Unstaking Providers Commit")
 			}
 		} else {
-			// found an entry that isn't handled now, but later because its deadline isnt current block
-			utils.LavaError(ctx, logger, stake_type+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
+			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
+			utils.LavaError(ctx, logger, stake_type+"_unstaking", details, "trying to unstake while its stakeAppliedBlock wasn't reached")
 		}
 	}
 	return nil

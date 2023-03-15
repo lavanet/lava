@@ -27,25 +27,25 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type MsgSubscribe struct {
+type MsgBuy struct {
 	Creator  string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	Consumer string `protobuf:"bytes,2,opt,name=consumer,proto3" json:"consumer,omitempty"`
 	Index    string `protobuf:"bytes,3,opt,name=index,proto3" json:"index,omitempty"`
-	IsYearly bool   `protobuf:"varint,4,opt,name=isYearly,proto3" json:"isYearly,omitempty"`
+	Duration uint64 `protobuf:"varint,4,opt,name=duration,proto3" json:"duration,omitempty"`
 }
 
-func (m *MsgSubscribe) Reset()         { *m = MsgSubscribe{} }
-func (m *MsgSubscribe) String() string { return proto.CompactTextString(m) }
-func (*MsgSubscribe) ProtoMessage()    {}
-func (*MsgSubscribe) Descriptor() ([]byte, []int) {
+func (m *MsgBuy) Reset()         { *m = MsgBuy{} }
+func (m *MsgBuy) String() string { return proto.CompactTextString(m) }
+func (*MsgBuy) ProtoMessage()    {}
+func (*MsgBuy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_cc8b79a0f6744252, []int{0}
 }
-func (m *MsgSubscribe) XXX_Unmarshal(b []byte) error {
+func (m *MsgBuy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSubscribe) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgBuy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSubscribe.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgBuy.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -55,61 +55,61 @@ func (m *MsgSubscribe) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *MsgSubscribe) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSubscribe.Merge(m, src)
+func (m *MsgBuy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgBuy.Merge(m, src)
 }
-func (m *MsgSubscribe) XXX_Size() int {
+func (m *MsgBuy) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSubscribe) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSubscribe.DiscardUnknown(m)
+func (m *MsgBuy) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgBuy.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSubscribe proto.InternalMessageInfo
+var xxx_messageInfo_MsgBuy proto.InternalMessageInfo
 
-func (m *MsgSubscribe) GetCreator() string {
+func (m *MsgBuy) GetCreator() string {
 	if m != nil {
 		return m.Creator
 	}
 	return ""
 }
 
-func (m *MsgSubscribe) GetConsumer() string {
+func (m *MsgBuy) GetConsumer() string {
 	if m != nil {
 		return m.Consumer
 	}
 	return ""
 }
 
-func (m *MsgSubscribe) GetIndex() string {
+func (m *MsgBuy) GetIndex() string {
 	if m != nil {
 		return m.Index
 	}
 	return ""
 }
 
-func (m *MsgSubscribe) GetIsYearly() bool {
+func (m *MsgBuy) GetDuration() uint64 {
 	if m != nil {
-		return m.IsYearly
+		return m.Duration
 	}
-	return false
+	return 0
 }
 
-type MsgSubscribeResponse struct {
+type MsgBuyResponse struct {
 }
 
-func (m *MsgSubscribeResponse) Reset()         { *m = MsgSubscribeResponse{} }
-func (m *MsgSubscribeResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgSubscribeResponse) ProtoMessage()    {}
-func (*MsgSubscribeResponse) Descriptor() ([]byte, []int) {
+func (m *MsgBuyResponse) Reset()         { *m = MsgBuyResponse{} }
+func (m *MsgBuyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgBuyResponse) ProtoMessage()    {}
+func (*MsgBuyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_cc8b79a0f6744252, []int{1}
 }
-func (m *MsgSubscribeResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgBuyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSubscribeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgBuyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSubscribeResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgBuyResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -119,43 +119,43 @@ func (m *MsgSubscribeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *MsgSubscribeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSubscribeResponse.Merge(m, src)
+func (m *MsgBuyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgBuyResponse.Merge(m, src)
 }
-func (m *MsgSubscribeResponse) XXX_Size() int {
+func (m *MsgBuyResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSubscribeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSubscribeResponse.DiscardUnknown(m)
+func (m *MsgBuyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgBuyResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSubscribeResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgBuyResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgSubscribe)(nil), "lavanet.lava.subscription.MsgSubscribe")
-	proto.RegisterType((*MsgSubscribeResponse)(nil), "lavanet.lava.subscription.MsgSubscribeResponse")
+	proto.RegisterType((*MsgBuy)(nil), "lavanet.lava.subscription.MsgBuy")
+	proto.RegisterType((*MsgBuyResponse)(nil), "lavanet.lava.subscription.MsgBuyResponse")
 }
 
 func init() { proto.RegisterFile("subscription/tx.proto", fileDescriptor_cc8b79a0f6744252) }
 
 var fileDescriptor_cc8b79a0f6744252 = []byte{
-	// 245 bytes of a gzipped FileDescriptorProto
+	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2d, 0x2e, 0x4d, 0x2a,
 	0x4e, 0x2e, 0xca, 0x2c, 0x28, 0xc9, 0xcc, 0xcf, 0xd3, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f,
 	0xc9, 0x17, 0x92, 0xcc, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0xc8, 0x6a,
-	0x94, 0xca, 0xb8, 0x78, 0x7c, 0x8b, 0xd3, 0x83, 0x21, 0x42, 0x49, 0xa9, 0x42, 0x12, 0x5c, 0xec,
-	0xc9, 0x45, 0xa9, 0x89, 0x25, 0xf9, 0x45, 0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x9c, 0x41, 0x30, 0xae,
-	0x90, 0x14, 0x17, 0x47, 0x72, 0x7e, 0x5e, 0x71, 0x69, 0x6e, 0x6a, 0x91, 0x04, 0x13, 0x58, 0x0a,
-	0xce, 0x17, 0x12, 0xe1, 0x62, 0xcd, 0xcc, 0x4b, 0x49, 0xad, 0x90, 0x60, 0x06, 0x4b, 0x40, 0x38,
-	0x20, 0x1d, 0x99, 0xc5, 0x91, 0xa9, 0x89, 0x45, 0x39, 0x95, 0x12, 0x2c, 0x0a, 0x8c, 0x1a, 0x1c,
-	0x41, 0x70, 0xbe, 0x92, 0x18, 0x97, 0x08, 0xb2, 0xbd, 0x41, 0xa9, 0xc5, 0x05, 0xf9, 0x79, 0xc5,
-	0xa9, 0x46, 0x39, 0x5c, 0xcc, 0xbe, 0xc5, 0xe9, 0x42, 0xa9, 0x5c, 0x9c, 0x08, 0x37, 0xa9, 0xeb,
-	0xe1, 0x74, 0xbf, 0x1e, 0xb2, 0x21, 0x52, 0xfa, 0x44, 0x2a, 0x84, 0xd9, 0xe6, 0xe4, 0x76, 0xe2,
-	0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70,
-	0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72, 0x0c, 0x51, 0x3a, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49,
-	0x7a, 0xc9, 0xf9, 0xb9, 0xfa, 0x50, 0x43, 0xc1, 0xb4, 0x7e, 0x85, 0x3e, 0x6a, 0x18, 0x57, 0x16,
-	0xa4, 0x16, 0x27, 0xb1, 0x81, 0xc3, 0xd9, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x1b, 0x63, 0x7b,
-	0xf5, 0x80, 0x01, 0x00, 0x00,
+	0x94, 0x0a, 0xb8, 0xd8, 0x7c, 0x8b, 0xd3, 0x9d, 0x4a, 0x2b, 0x85, 0x24, 0xb8, 0xd8, 0x93, 0x8b,
+	0x52, 0x13, 0x4b, 0xf2, 0x8b, 0x24, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0x60, 0x5c, 0x21, 0x29,
+	0x2e, 0x8e, 0xe4, 0xfc, 0xbc, 0xe2, 0xd2, 0xdc, 0xd4, 0x22, 0x09, 0x26, 0xb0, 0x14, 0x9c, 0x2f,
+	0x24, 0xc2, 0xc5, 0x9a, 0x99, 0x97, 0x92, 0x5a, 0x21, 0xc1, 0x0c, 0x96, 0x80, 0x70, 0x40, 0x3a,
+	0x52, 0x4a, 0x8b, 0x12, 0x41, 0x36, 0x48, 0xb0, 0x28, 0x30, 0x6a, 0xb0, 0x04, 0xc1, 0xf9, 0x4a,
+	0x02, 0x5c, 0x7c, 0x10, 0x1b, 0x83, 0x52, 0x8b, 0x0b, 0xf2, 0xf3, 0x8a, 0x53, 0x8d, 0xa2, 0xb8,
+	0x98, 0x7d, 0x8b, 0xd3, 0x85, 0x82, 0xb9, 0x98, 0x41, 0xee, 0x50, 0xd4, 0xc3, 0xe9, 0x5a, 0x3d,
+	0x88, 0x46, 0x29, 0x4d, 0x82, 0x4a, 0x60, 0x66, 0x3b, 0xb9, 0x9d, 0x78, 0x24, 0xc7, 0x78, 0xe1,
+	0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70,
+	0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x4e, 0x7a, 0x66, 0x49, 0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae,
+	0x3e, 0xd4, 0x38, 0x30, 0xad, 0x5f, 0xa1, 0x8f, 0x1a, 0x8a, 0x95, 0x05, 0xa9, 0xc5, 0x49, 0x6c,
+	0xe0, 0x90, 0x34, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xde, 0x51, 0xaf, 0xa3, 0x62, 0x01, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -170,7 +170,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	Subscribe(ctx context.Context, in *MsgSubscribe, opts ...grpc.CallOption) (*MsgSubscribeResponse, error)
+	Buy(ctx context.Context, in *MsgBuy, opts ...grpc.CallOption) (*MsgBuyResponse, error)
 }
 
 type msgClient struct {
@@ -181,9 +181,9 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) Subscribe(ctx context.Context, in *MsgSubscribe, opts ...grpc.CallOption) (*MsgSubscribeResponse, error) {
-	out := new(MsgSubscribeResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.subscription.Msg/Subscribe", in, out, opts...)
+func (c *msgClient) Buy(ctx context.Context, in *MsgBuy, opts ...grpc.CallOption) (*MsgBuyResponse, error) {
+	out := new(MsgBuyResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.subscription.Msg/Buy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,35 +192,35 @@ func (c *msgClient) Subscribe(ctx context.Context, in *MsgSubscribe, opts ...grp
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	Subscribe(context.Context, *MsgSubscribe) (*MsgSubscribeResponse, error)
+	Buy(context.Context, *MsgBuy) (*MsgBuyResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) Subscribe(ctx context.Context, req *MsgSubscribe) (*MsgSubscribeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+func (*UnimplementedMsgServer) Buy(ctx context.Context, req *MsgBuy) (*MsgBuyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Buy not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_Subscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgSubscribe)
+func _Msg_Buy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgBuy)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).Subscribe(ctx, in)
+		return srv.(MsgServer).Buy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.subscription.Msg/Subscribe",
+		FullMethod: "/lavanet.lava.subscription.Msg/Buy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).Subscribe(ctx, req.(*MsgSubscribe))
+		return srv.(MsgServer).Buy(ctx, req.(*MsgBuy))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -230,15 +230,15 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Subscribe",
-			Handler:    _Msg_Subscribe_Handler,
+			MethodName: "Buy",
+			Handler:    _Msg_Buy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "subscription/tx.proto",
 }
 
-func (m *MsgSubscribe) Marshal() (dAtA []byte, err error) {
+func (m *MsgBuy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -248,23 +248,18 @@ func (m *MsgSubscribe) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSubscribe) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgBuy) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSubscribe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgBuy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.IsYearly {
-		i--
-		if m.IsYearly {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
+	if m.Duration != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Duration))
 		i--
 		dAtA[i] = 0x20
 	}
@@ -292,7 +287,7 @@ func (m *MsgSubscribe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSubscribeResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgBuyResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -302,12 +297,12 @@ func (m *MsgSubscribeResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSubscribeResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgBuyResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSubscribeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgBuyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -326,7 +321,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgSubscribe) Size() (n int) {
+func (m *MsgBuy) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -344,13 +339,13 @@ func (m *MsgSubscribe) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if m.IsYearly {
-		n += 2
+	if m.Duration != 0 {
+		n += 1 + sovTx(uint64(m.Duration))
 	}
 	return n
 }
 
-func (m *MsgSubscribeResponse) Size() (n int) {
+func (m *MsgBuyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -365,7 +360,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgSubscribe) Unmarshal(dAtA []byte) error {
+func (m *MsgBuy) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -388,10 +383,10 @@ func (m *MsgSubscribe) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSubscribe: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgBuy: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSubscribe: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgBuy: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -492,9 +487,9 @@ func (m *MsgSubscribe) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IsYearly", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
 			}
-			var v int
+			m.Duration = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -504,12 +499,11 @@ func (m *MsgSubscribe) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				m.Duration |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.IsYearly = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -531,7 +525,7 @@ func (m *MsgSubscribe) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSubscribeResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgBuyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -554,10 +548,10 @@ func (m *MsgSubscribeResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSubscribeResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgBuyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSubscribeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgBuyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

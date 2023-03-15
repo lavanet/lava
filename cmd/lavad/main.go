@@ -14,10 +14,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/cmd/lavad/cmd"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -36,15 +37,7 @@ const (
 )
 
 func main() {
-	rootCmd, _ := cosmoscmd.NewRootCmd(
-		app.Name,
-		app.AccountAddressPrefix,
-		app.DefaultNodeHome,
-		app.Name,
-		app.ModuleBasics,
-		app.New,
-		// this line is used by starport scaffolding # root/arguments
-	)
+	rootCmd, _ := cmd.NewRootCmd()
 
 	cmdServer := &cobra.Command{
 		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id] [api-interface]",
@@ -484,6 +477,12 @@ func main() {
 	// rootCmd.AddCommand(cmdRPCProvider) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
-		os.Exit(1)
+		switch e := err.(type) {
+		case server.ErrorCode:
+			os.Exit(e.Code)
+
+		default:
+			os.Exit(1)
+		}
 	}
 }

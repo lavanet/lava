@@ -16,13 +16,13 @@ func (stksto StakeStorage) Copy() (returnedStorage StakeStorage) {
 		endpoints := make([]Endpoint, len(stakeEntry.Endpoints))
 		copy(endpoints, stakeEntry.Endpoints)
 		newStakeEntry := StakeEntry{
-			Stake:       stakeEntry.Stake,
-			Address:     stakeEntry.Address,
-			Deadline:    stakeEntry.Deadline,
-			Endpoints:   endpoints,
-			Geolocation: stakeEntry.Geolocation,
-			Chain:       stakeEntry.Chain,
-			Vrfpk:       stakeEntry.Vrfpk,
+			Stake:             stakeEntry.Stake,
+			Address:           stakeEntry.Address,
+			StakeAppliedBlock: stakeEntry.StakeAppliedBlock,
+			Endpoints:         endpoints,
+			Geolocation:       stakeEntry.Geolocation,
+			Chain:             stakeEntry.Chain,
+			Vrfpk:             stakeEntry.Vrfpk,
 		}
 		returnedStorage.StakeEntries = append(returnedStorage.StakeEntries, newStakeEntry)
 	}

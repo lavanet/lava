@@ -12,6 +12,8 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
+const MONTHS_IN_YEAR = 12
+
 // SetSubscription sets a subscription (of a consumer) in the store
 func (k Keeper) SetSubscription(ctx sdk.Context, sub types.Subscription) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
@@ -109,6 +111,22 @@ func nextMonth(date time.Time) time.Time {
 		return endOfMonth(next)
 	}
 
+	// If we are reaching end of January, stll need to "manually" select end of
+	// next month, otherwise will overrun into March.
+
+	if date.Month() == 1 && date.Day() >= 29 {
+		next = time.Date(
+			date.Year(),
+			time.February,
+			1,
+			date.Hour(),
+			date.Minute(),
+			date.Second(),
+			date.Nanosecond(),
+			time.UTC)
+		return endOfMonth(next)
+	}
+
 	return next
 }
 
@@ -135,7 +153,7 @@ func (k Keeper) CreateSubscription(
 	creator string,
 	consumer string,
 	planIndex string,
-	isYearly bool,
+	duration uint64,
 ) error {
 	var err error
 
@@ -148,7 +166,7 @@ func (k Keeper) CreateSubscription(
 			"consumer": consumer,
 			"error":    err.Error(),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid consumer")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid consumer")
 	}
 
 	creatorAcct, err := sdk.AccAddressFromBech32(creator)
@@ -157,13 +175,13 @@ func (k Keeper) CreateSubscription(
 			"creator": creator,
 			"error":   err.Error(),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid creator")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid creator")
 	}
 
 	// only one subscription per consumer
 	if _, found := k.GetSubscription(ctx, consumer); found {
 		details := map[string]string{"consumer": consumer}
-		return utils.LavaError(ctx, logger, "subscribe", details, "consumer has existing subscription")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "consumer has existing subscription")
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
@@ -172,48 +190,29 @@ func (k Keeper) CreateSubscription(
 			"plan":  planIndex,
 			"block": strconv.FormatInt(ctx.BlockHeight(), 10),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid plan")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid plan")
 	}
-
-	// drop Plan reference in case of error:
-	// NOTE! FROM HERE ONWARD MUST SET ERR IF AN ERROR OCCURS
-	defer func() {
-		if err != nil {
-			k.plansKeeper.PutPlan(ctx, planIndex, plan.Block)
-		}
-	}()
 
 	err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair)
 	if err != nil {
 		details := map[string]string{
 			"err": err.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "failed to create default project")
-		return err
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "failed to create default project")
 	}
 
-	// delete default Project in case of error
-	defer func() {
-		if err != nil {
-			// TODO: delete all projects of the subscription
-			// k.projectsKeeper.DeleteAllProject(ctx, consumer)
-			_ = err
-		}
-	}()
-
 	price := plan.GetPrice()
-	expiry := time.Now().UTC()
+	price.Amount = price.Amount.MulRaw(int64(duration))
 
-	duration := int(plan.GetDuration())
-	for i := 0; i < duration; i++ {
+	// use current block's timestamp for subscription start-time
+	timestamp := ctx.BlockTime()
+	expiry := timestamp
+
+	for i := 0; i < int(duration); i++ {
 		expiry = nextMonth(expiry)
 	}
 
-	if isYearly && duration < 12 {
-		// extend the duration to 1 year, and price pro-rata
-		expiry = nextYear(time.Now().UTC())
-		price.Amount = price.Amount.MulRaw(12).QuoRaw(int64(duration))
-
+	if duration >= MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
 		if discount > 0 {
@@ -222,14 +221,29 @@ func (k Keeper) CreateSubscription(
 		}
 	}
 
+	sub := types.Subscription{
+		Creator:     creator,
+		Consumer:    consumer,
+		Block:       block,
+		PlanIndex:   planIndex,
+		PlanBlock:   plan.Block,
+		Duration:    duration,
+		ExpiryTime:  uint64(expiry.Unix()),
+		RemainingCU: plan.GetComputeUnits(),
+		UsedCU:      0,
+	}
+
+	if err := sub.ValidateSubscription(); err != nil {
+		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
+	}
+
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
 		details := map[string]string{
 			"creator": creator,
 			"price":   price.String(),
 			"error":   sdkerrors.ErrInsufficientFunds.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "insufficient funds")
-		return err
+		return utils.LavaError(ctx, logger, "CreateSub", details, "insufficient funds")
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
@@ -239,20 +253,7 @@ func (k Keeper) CreateSubscription(
 			"price":   price.String(),
 			"error":   err.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "funds transfer failed")
-		return err
-	}
-
-	sub := types.Subscription{
-		Creator:     creator,
-		Consumer:    consumer,
-		Block:       block,
-		PlanIndex:   planIndex,
-		PlanBlock:   plan.Block,
-		IsYearly:    isYearly,
-		ExpiryTime:  uint64(expiry.Unix()),
-		RemainingCU: plan.GetComputeUnits(),
-		UsedCU:      0,
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
 	}
 
 	k.SetSubscription(ctx, sub)

@@ -63,9 +63,9 @@ func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress
 			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
 		}
 		if clientAddr.Equals(clientAddress) {
-			if clientStakeEntry.Deadline > block {
+			if clientStakeEntry.StakeAppliedBlock > block {
 				// client is not valid for new pairings yet, or was jailed
-				return nil, fmt.Errorf("found staked user %+v, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
+				return nil, fmt.Errorf("found staked user %+v, but his stakeAppliedBlock %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.StakeAppliedBlock, block)
 			}
 			verifiedUser = true
 			clientStakeEntryRet = &userStakedEntries[i]
@@ -204,10 +204,10 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
 	validProviders := []epochstoragetypes.StakeEntry{}
-	// create a list of valid providers (deadline reached)
+	// create a list of valid providers (stakeAppliedBlock reached)
 	for _, stakeEntry := range providers {
-		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
-			// provider deadline wasn't reached yet
+		if stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight()) {
+			// provider stakeAppliedBlock wasn't reached yet
 			continue
 		}
 		geolocationSupported := stakeEntry.Geolocation & geolocation
