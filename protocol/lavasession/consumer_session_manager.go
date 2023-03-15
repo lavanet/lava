@@ -367,9 +367,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
+	var consumerSessionBlockListed bool
 	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || code == codes.Code(SessionOutOfSyncError.ABCICode()) {
 		utils.LavaFormatDebug("Blocking consumer session", &map[string]string{"id": strconv.FormatInt(consumerSession.SessionId, 10)})
 		consumerSession.BlockListed = true // block this session from future usages
+		consumerSessionBlockListed = true
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
@@ -391,6 +393,16 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	} else if BlockProviderError.Is(errorReceived) {
 		blockProvider = true
 	}
+
+	// if BlockListed is true here meaning we had a ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession or out of sync
+	// we will check the total number of cu for this provider and decide if we need to report it.
+	if consumerSessionBlockListed {
+		if parentConsumerSessionsWithProvider.atomicReadUsedComputeUnits() == 0 { // if we had 0 successful relays and we reached block session we need to report this provider
+			blockProvider = true
+			reportProvider = true
+		}
+	}
+
 	if blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
 		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch)
