@@ -1,12 +1,12 @@
 package common_test
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common"
@@ -18,7 +18,7 @@ import (
 )
 
 // Helper function to init a mock keeper and context
-func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) {
+func initCtxAndFixationStores(t *testing.T, count int) ([]*common.FixationStore, sdk.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 
@@ -32,284 +32,287 @@ func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) 
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	fixationKey := "mock_fix"
-
-	vs := common.NewFixationStore(mockStoreKey, cdc, fixationKey)
+	fs := make([]*common.FixationStore, count)
+	for i := 0; i < count; i++ {
+		fixationKey := "mock_fix_" + strconv.Itoa(i)
+		fs[i] = common.NewFixationStore(mockStoreKey, cdc, fixationKey)
+	}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
-	return vs, ctx
+	return fs, ctx
 }
 
-// Test addition and removal of a fixation entry
+func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) {
+	fs, ctx := initCtxAndFixationStores(t, 1)
+	return fs[0], ctx
+}
+
+type template struct {
+	op    string
+	name  string
+	store int
+	index string
+	coin  int
+	fail  bool
+	count int64
+}
+
+// helper to automate testing operations
+func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS int) {
+	vs, ctx := initCtxAndFixationStores(t, countVS)
+
+	var coins []sdk.Coin
+	var dummy sdk.Coin
+
+	for i := 0; i < countObj; i++ {
+		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i+1))})
+	}
+
+	for _, play := range playbook {
+		block := uint64(ctx.BlockHeight())
+		if play.count != 0 {
+			block = uint64(play.count)
+		}
+		index := "myindex"
+		if play.index != "" {
+			index = play.index
+		}
+		what := play.op + " " + play.name +
+			" index: " + index +
+			" block: " + strconv.Itoa(int(block))
+		switch play.op {
+		case "append":
+			if block > uint64(ctx.BlockHeight()) {
+				ctx = ctx.WithBlockHeight(int64(block))
+			}
+			err := vs[play.store].AppendEntry(ctx, play.index, block, &coins[play.coin])
+			if !play.fail {
+				require.Nil(t, err, what)
+			} else {
+				require.NotNil(t, err, what)
+			}
+		case "modify":
+			err := vs[play.store].ModifyEntry(ctx, play.index, block, &coins[play.coin])
+			if !play.fail {
+				require.Nil(t, err, what)
+			} else {
+				require.NotNil(t, err, what)
+			}
+		case "find":
+			err, found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
+			if !play.fail {
+				require.Nil(t, err, what)
+				require.True(t, found, what)
+				require.Equal(t, dummy, coins[play.coin], what)
+			} else {
+				require.NotNil(t, err, what)
+				require.False(t, found, what)
+			}
+		case "get":
+			err, found := vs[play.store].GetEntry(ctx, play.index, &dummy)
+			if !play.fail {
+				require.Nil(t, err, what)
+				require.True(t, found, what)
+				require.Equal(t, dummy, coins[play.coin], what)
+			} else {
+				require.NotNil(t, err, what)
+				require.False(t, found, what)
+			}
+		case "put":
+			err, found := vs[play.store].PutEntry(ctx, play.index, block, &dummy)
+			if !play.fail {
+				require.Nil(t, err, what)
+				require.True(t, found, what)
+				require.Equal(t, dummy, coins[play.coin], what)
+			} else {
+				require.NotNil(t, err, what)
+				require.False(t, found, what)
+			}
+		case "block":
+			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
+		case "getall":
+			indexList := vs[play.store].GetAllEntryIndices(ctx)
+			require.Equal(t, int(play.count), len(indexList), what)
+		}
+	}
+}
+
+// Test API calls with invalid entry index
+func TestEntryInvalidIndex(t *testing.T) {
+	invalid := "index" + string('\001')
+
+	playbook := []template{
+		{ op: "append", name: "with invalid index (fail)", index: invalid, fail: true },
+		{ op: "modify", name: "with invalid index (fail)", index: invalid, fail: true },
+		{ op: "find", name: "with invalid index (fail)", index: invalid, fail: true },
+		{ op: "get", name: "with invalid index (fail)", index: invalid, fail: true },
+	}
+
+	testWithTemplate(t, playbook, 3, 1)
+}
+
+// Test addition and auto-removal of a fixation entry
 func TestFixationEntryAdditionAndRemoval(t *testing.T) {
-	// create dummy data for dummy entry
-	dummyIndex := "index"
-	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
 
-	// init FixationStore + context
-	vs, ctx := initCtxAndFixationStore(t)
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "find", name: "entry #1", count: block0, coin: 0 },
+		{ op: "getall", name: "to check exactly one index", count: 1 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		// entry #1 not deleted because not enough time with refcount = zero
+		{ op: "find", name: "entry #1 (not stale yet)", count: block0 },
+		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
+		{ op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true },
+		{ op: "find", name: "latest entry", coin: 1 },
+		{ op: "getall", name: "to check again exactly one index", count: 1 },
+	}
 
-	// add dummy entry
-	firstEntryBlock := uint64(ctx.BlockHeight())
-	err := vs.AppendEntry(ctx, dummyIndex, firstEntryBlock, &dummyObj)
-	require.Nil(t, err)
-
-	// get all entry indices and make sure there is only one index
-	indexList := vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
-
-	// get the entry from the storage
-	var dummyCoin sdk.Coin
-	err, found := vs.FindEntry(ctx, dummyIndex, firstEntryBlock, &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
-
-	// make sure that one entry's data is the same data that was used to create it
-	require.True(t, dummyCoin.IsEqual(dummyObj))
-
-	// advance the block height to +STALE_ENTRY_TIME (the entry should not be deleted yet)
-	ctx = ctx.WithBlockHeight(types.STALE_ENTRY_TIME + ctx.BlockHeight())
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj2)
-	require.Nil(t, err)
-
-	// make sure the old entry was not deleted (check block)
-	err, found = vs.FindEntry(ctx, dummyIndex, firstEntryBlock, &dummyCoin)
-	require.True(t, found)
-	require.Nil(t, err)
-
-	// remove the entry by advancing over the STALE_ENTRY_TIME and appending a new one (append triggers the removal func)
-	ctx = ctx.WithBlockHeight(types.STALE_ENTRY_TIME + ctx.BlockHeight() + 1)
-	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj3)
-	require.Nil(t, err)
-
-	// make sure the old entry was deleted (check block)
-	err, found = vs.FindEntry(ctx, dummyIndex, firstEntryBlock, &dummyCoin)
-	require.False(t, found)
-	require.NotNil(t, err)
-
-	// get the latest version and make sure it's equal to dummyObj3
-	err, found = vs.FindEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyCoin)
-	require.True(t, found)
-	require.Nil(t, err)
-	require.True(t, dummyCoin.IsEqual(dummyObj3))
-
-	// make sure dummy index is still in the entry index list
-	indexList = vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
+	testWithTemplate(t, playbook, 2, 1)
 }
 
-// Test that when adds two entries with the same block and index and makes sure that only the latest one is kept
+// Test addition of same entry twice within the same block
 func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
-	// create dummy data for two dummy entries
-	dummyIndex := "index"
-	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
+	block0 := int64(10)
 
-	// init FixationStore + context
-	vs, ctx := initCtxAndFixationStore(t)
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #2", count: block0, coin: 1 },
+		{ op: "getall", name: "to check exactly one index", count: 1 },
+		{ op: "find", name: "entry #2", count: block0, coin: 1 },
+	}
 
-	// add the first dummy entry
-	blockToAddEntry := uint64(0)
-	err := vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj)
-	require.Nil(t, err)
-
-	// add the second dummy entry
-	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntry, &dummyObj2)
-	require.Nil(t, err)
-
-	// get all entry indices and make sure there is only one index
-	indexList := vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
-
-	// get the entry from the storage
-	var dummyCoin sdk.Coin
-	err, found := vs.FindEntry(ctx, dummyIndex, blockToAddEntry, &dummyCoin)
-	require.True(t, found)
-	require.Nil(t, err)
-
-	// make sure that one entry's data is the same data of the second dummy entry
-	require.True(t, dummyCoin.IsEqual(dummyObj2))
-
-	// make sure dummy index is still in the entry index list
-	indexList = vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
+	testWithTemplate(t, playbook, 2, 1)
 }
 
 // Test adding entry versions and getting an older version
 func TestEntryVersions(t *testing.T) {
-	// create dummy data for two dummy entries
-	dummyIndex := "index"
-	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
+	block0 := int64(10)
+	block1 := block0 + int64(10)
 
-	// init FixationStore + context
-	vs, ctx := initCtxAndFixationStore(t)
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{ op: "find", name: "entry #1", count: block0, coin: 0 },
+		{ op: "getall", name: "to check exactly one index", count: 1 },
+	}
 
-	// add the first dummy entry
-	blockToAddFirstEntry := int64(10)
-	ctx = ctx.WithBlockHeight(blockToAddFirstEntry)
-	err := vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyObj)
-	require.Nil(t, err)
+	testWithTemplate(t, playbook, 2, 1)
+}
 
-	// add the second dummy entry
-	blockToAddSecondEntry := int64(20)
-	ctx = ctx.WithBlockHeight(blockToAddSecondEntry)
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddSecondEntry), &dummyObj2)
-	require.Nil(t, err)
+// Test non-visibility of a stale entry
+func TestEntryStale(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME+1
 
-	// get the older version from block blockToAddFirstEntry
-	var dummyCoin sdk.Coin
-	err, found := vs.FindEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry+1), &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "get", name: "refcount entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		// entry #1 should not be deleted because it has refcount != zero);
+		// entry #2 (refcount = zero) also not deleted because it is not oldest
+		{ op: "find", name: "entry #1", count: block0+1, coin: 0 },
+		{ op: "find", name: "entry #2", count: block1+1, coin: 1 },
+		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		// entry #2 now stale and therefore should not be visible
+		{ op: "find", name: "entry #2", count: block1+1, fail: true },
+		// entry #3 (refcount = zero) is old, but being the latest it always
+		// remains visible (despite of refcount and age).
+		{ op: "find", name: "entry #3", count: block2+1, coin: 2 },
+	}
 
-	// verify the data matches the old entry from storage
-	require.True(t, dummyCoin.IsEqual(dummyObj))
-
-	// make sure dummy index is still in the entry index list
-	indexList := vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
+	testWithTemplate(t, playbook, 3, 1)
 }
 
 // Test adding entry versions with different fixation keys
 func TestDifferentFixationKeys(t *testing.T) {
-	// create dummy data for two dummy entries
-	dummyIndex := "index"
-	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + types.STALE_ENTRY_TIME+1
 
-	// init FixationStore + context
-	vs, ctx := initCtxAndFixationStore(t)
-	vs2 := common.NewFixationStore(vs.GetStoreKey(), vs.GetCdc(), "fix2")
+	playbook := []template{
+		{ op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
+		{ op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1 },
+		{ op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1 },
+		{ op: "getall", name: "for exactly one index (store #2)", store: 1, count: 1 },
+		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
+		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
+		{ op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2 },
+		// entry #1 not deleted because not enough time with refcount = zero
+		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
+		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
+		// entry #2 in store#2 remains unaffected
+		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true },
+		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
+	}
 
-	// add the first dummy entry
-	blockToAddFirstEntry := int64(10)
-	ctx = ctx.WithBlockHeight(blockToAddFirstEntry)
-	err := vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyObj)
-	require.Nil(t, err)
+	testWithTemplate(t, playbook, 3, 2)
+}
 
-	// add the second dummy entry
-	blockToAddSecondEntry := int64(20)
-	ctx = ctx.WithBlockHeight(blockToAddSecondEntry)
-	err = vs2.AppendEntry(ctx, dummyIndex, uint64(blockToAddSecondEntry), &dummyObj2)
-	require.Nil(t, err)
+func TestGetAndPutEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME+1
+	block2 := block1 + types.STALE_ENTRY_TIME+1
 
-	// get all indices with original fixation key and dummyIndex. make sure there is one entry
-	indexList := vs.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "get", name: "refcount entry #1", coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		// entry #1 should not be deleted because it has refcount != zero);
+		{ op: "find", name: "entry #1", count: block0, coin: 0 },
+		{ op: "put", name: "refcount entry #1", count: block0, coin: 0 },
+		// double put triggers error
+		{ op: "put", name: "refcount entry #1", count: block0, fail: true },
+		// entry #1 not deleted because not enough time with refcount = zero
+		{ op: "find", name: "entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
+		{ op: "find", name: "entry #1", count: block0, fail: true },
+	}
 
-	// verify the data matches the entry from original fixation key storage
-	var dummyCoin sdk.Coin
-	err, found := vs.GetEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
-	require.True(t, dummyCoin.IsEqual(dummyObj))
-	require.False(t, dummyCoin.Equal(dummyObj2))
+	testWithTemplate(t, playbook, 3, 1)
+}
 
-	// get all indices with fix2 and dummyIndex. make sure there is one entry
-	indexList = vs2.GetAllEntryIndices(ctx)
-	require.Equal(t, 1, len(indexList))
+func TestDeleteTwoEntries(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + int64(10)
+	block3 := block2 + types.STALE_ENTRY_TIME+1
 
-	// verify the data matches the entry from original fixation key storage
-	err, found = vs2.FindEntry(ctx, dummyIndex, uint64(blockToAddSecondEntry), &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
-	require.True(t, dummyCoin.IsEqual(dummyObj2))
-	require.False(t, dummyCoin.Equal(dummyObj))
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		// this update triggers deletion of entry #1, #2
+		{ op: "append", name: "entry #4", count: block3, coin: 3 },
+		{ op: "find", name: "entry #1", count: block0, fail: true },
+		{ op: "find", name: "entry #2", count: block1, fail: true },
+	}
 
-	// advance enough blocks so the entry with the regular fixation key will be deleted with a new append, but the second entry (with "fix2" key) won't be deleted
-	ctx = ctx.WithBlockHeight(int64(blockToAddFirstEntry) + types.STALE_ENTRY_TIME + 1)
-
-	// append to trigger delete function and verify it's not deleted yet since RefCount = 1 (see L198)
-	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Add(sdk.OneInt())}
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(ctx.BlockHeight()), &dummyObj3)
-	require.Nil(t, err)
-
-	// make sure the old entry was not deleted (check block)
-	err, found = vs.FindEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
-	require.True(t, dummyCoin.IsEqual(dummyObj))
-
-	// zero the refcount and advance one block
-	err, found = vs.PutEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyCoin)
-	require.Nil(t, err)
-	require.True(t, found)
-	require.True(t, dummyCoin.IsEqual(dummyObj))
-	ctx = ctx.WithBlockHeight(int64(blockToAddFirstEntry) + types.STALE_ENTRY_TIME + 2)
-
-	// append object to remove the first entry
-	dummyObj4 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Add(sdk.OneInt().Add(sdk.OneInt()))}
-	blockToAddEntryForRemovalZeroRefCount := uint64(ctx.BlockHeight())
-	err = vs.AppendEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyObj4)
-	require.Nil(t, err)
-
-	// make sure the old entry was deleted (check block)
-	err, found = vs.FindEntry(ctx, dummyIndex, uint64(blockToAddFirstEntry), &dummyCoin)
-	require.NotNil(t, err)
-	require.False(t, found)
-
-	// make sure you cant subtract refs from entry with 0 refCount
-	err, found = vs.PutEntry(ctx, dummyIndex, blockToAddEntryForRemovalZeroRefCount, &dummyCoin)
-	require.NotNil(t, err)
-	require.False(t, found)
+	testWithTemplate(t, playbook, 4, 1)
 }
 
 // Test that the appended entries are sorted (first element is oldest)
 func TestEntriesSort(t *testing.T) {
-	// create dummy data for two dummy entries
-	dummyIndex := "index"
-	dummyObj := sdk.Coin{Denom: "utest", Amount: sdk.ZeroInt()}
-	dummyObj2 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt()}
-	dummyObj3 := sdk.Coin{Denom: "utest", Amount: sdk.OneInt().Mul(sdk.NewIntFromUint64(2))}
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + int64(10)
 
-	// init FixationStore + context
-	vs, ctx := initCtxAndFixationStore(t)
-
-	// add the first dummy entry
-	blockToAddEntry := int64(10)
-	ctx = ctx.WithBlockHeight(blockToAddEntry)
-	err := vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddEntry), &dummyObj)
-	require.Nil(t, err)
-
-	// add the second dummy entry
-	blockToAddEntry += 10
-	ctx = ctx.WithBlockHeight(blockToAddEntry)
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddEntry), &dummyObj2)
-	require.Nil(t, err)
-
-	// add the third dummy entry
-	blockToAddEntry += 10
-	ctx = ctx.WithBlockHeight(blockToAddEntry)
-	err = vs.AppendEntry(ctx, dummyIndex, uint64(blockToAddEntry), &dummyObj3)
-	require.Nil(t, err)
-
-	// get the relevant store and init an iterator and verify the entries are organized from oldest to latest (first element is oldest)
-	store := prefix.NewStore(ctx.KVStore(vs.GetStoreKey()), types.KeyPrefix(types.EntryKey+vs.GetPrefix()+dummyIndex))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-	defer iterator.Close()
-
-	// iterate over entries
-	proposedBlock := uint64(0)
-	sorted := false
-	var oldEntry types.Entry
-	for ; iterator.Valid(); iterator.Next() {
-		// umarshal the old entry version
-		vs.GetCdc().MustUnmarshal(iterator.Value(), &oldEntry)
-
-		// proposedBlock should always be smaller than the next entry's block if the elements in the store are sorted
-		if proposedBlock < oldEntry.Block {
-			sorted = true
-		} else {
-			sorted = false
-		}
-		proposedBlock = oldEntry.Block
+	playbook := []template{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{ op: "find", name: "entry #3", count: block2+int64(5), coin: 2 },
+		{ op: "find", name: "entry #2", count: block1+int64(5), coin: 1 },
+		{ op: "find", name: "entry #1", count: block0+int64(5), coin: 0 },
+		{ op: "find", name: "no entry", count: block0-int64(5), fail: true },
 	}
-	require.True(t, sorted)
 
-	// verify the last element is the latest entry
-	require.Equal(t, oldEntry.Block, proposedBlock)
+	testWithTemplate(t, playbook, 3, 1)
 }
