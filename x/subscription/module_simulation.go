@@ -24,9 +24,9 @@ var (
 )
 
 const (
-	opWeightMsgSubscribe = "op_weight_msg_subscribe"
+	opWeightMsgBuy = "op_weight_msg_buy"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSubscribe int = 100
+	defaultWeightMsgBuy int = 100
 
 	// this line is used by starport scaffolding # simapp/module/const
 )
@@ -61,15 +61,15 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
 
-	var weightMsgSubscribe int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSubscribe, &weightMsgSubscribe, nil,
+	var weightMsgBuy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgBuy, &weightMsgBuy, nil,
 		func(_ *rand.Rand) {
-			weightMsgSubscribe = defaultWeightMsgSubscribe
+			weightMsgBuy = defaultWeightMsgBuy
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSubscribe,
-		subscriptionsimulation.SimulateMsgSubscribe(am.accountKeeper, am.bankKeeper, am.keeper),
+		weightMsgBuy,
+		subscriptionsimulation.SimulateMsgBuy(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

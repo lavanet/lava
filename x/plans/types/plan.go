@@ -8,11 +8,6 @@ import (
 
 // Function to validate a plan object fields
 func (p Plan) ValidatePlan() error {
-	// check that the plan's duration is non-zero
-	if p.GetDuration() == 0 {
-		return sdkerrors.Wrap(ErrInvalidPlanDuration, "plan's duration can't be zero")
-	}
-
 	// check that the plan's price is non-zero
 	if p.GetPrice().IsEqual(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())) {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price can't be zero")
