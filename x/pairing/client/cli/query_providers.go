@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -33,7 +34,7 @@ func CmdProviders() *cobra.Command {
 			// check if the command includes --show-frozen-providers
 			showFrozenProvidersFlag := cmd.Flags().Lookup(ShowFrozenProvidersFlagName)
 			if showFrozenProvidersFlag == nil {
-				return fmt.Errorf("%s flag wasn't found",ShowFrozenProvidersFlagName)
+				return fmt.Errorf("%s flag wasn't found", ShowFrozenProvidersFlagName)
 			}
 			showFrozenProviders := showFrozenProvidersFlag.Changed
 
