@@ -48,6 +48,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
 			return fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
 		}
+		if neededAmount.Amount == sdk.ZeroInt() {
+			return nil
+		}
 		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {
 			return fmt.Errorf("invalid transfer coins to module, %s", err)
