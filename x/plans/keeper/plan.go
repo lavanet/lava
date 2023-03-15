@@ -25,7 +25,7 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 // GetPlan gets a plan from the KVStore. It increases the plan's refCount by 1
 func (k Keeper) GetPlan(ctx sdk.Context, index string) (val types.Plan, found bool) {
 	var plan types.Plan
-	err, _ := k.plansFs.GetEntry(ctx, index, uint64(ctx.BlockHeight()), &plan)
+	err, _ := k.plansFs.GetEntry(ctx, index, &plan)
 	if err != nil {
 		return types.Plan{}, false
 	}

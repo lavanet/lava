@@ -9,4 +9,5 @@ import (
 // x/pairing module sentinel errors
 var (
 	ErrEntryNotFound = sdkerrors.Register(MODULE_NAME, 1, "entry not found")
+	ErrInvalidIndex  = sdkerrors.Register(MODULE_NAME, 2, "entry index is invalid")
 )
