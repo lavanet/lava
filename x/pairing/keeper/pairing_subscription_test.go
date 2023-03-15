@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -68,7 +67,6 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	_, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
 
-	// define tests - different epoch, valid tells if the payment request should work
 	tests := []struct {
 		name  string
 		cu    uint64
@@ -147,22 +145,19 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	}
 
 	//last iteration should finish the plan quota
-	relayRequest := &types.RelayRequest{
-		Provider:        ts.providers[0].Addr.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(i + 1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.plan.ComputeUnitsPerEpoch,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
-	}
-
-	sig, err := sigs.SignRelay(consumer.SK, *relayRequest)
-	relayRequest.Sig = sig
-	require.Nil(t, err)
+	relayRequest := common.CreateRelay(
+		t,
+		*ts.providers[0],
+		consumer,
+		[]byte(ts.spec.Apis[0].Name),
+		uint64(i+1),
+		ts.spec.Name,
+		ts.plan.ComputeUnitsPerEpoch,
+		sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		0,
+		-1,
+		nil,
+	)
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelayRequest{relayRequest}})
 	require.NotNil(t, err)
