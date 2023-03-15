@@ -71,16 +71,16 @@ type FixationStore struct {
 	prefix   string
 }
 
+const (
+	ASCII_MIN = 32  // min visible ascii
+	ASCII_MAX = 126 // max visible ascii
+	ASCII_DEL = 127 // ascii for DEL
+)
+
 // sanitizeIdnex checks that a string contains only visible ascii characters
 // (i.e. Ascii 32-126), and appends a (ascii) DEL to the index; this ensures
 // that an index can never be a prefix of another index.
 func sanitizeIndex(index string) (string, error) {
-	const (
-		ASCII_MIN = 32  // min visible ascii
-		ASCII_MAX = 126 // max visible ascii
-		ASCII_DEL = 127 // ascii for DEL
-	)
-
 	for i := 0; i < len(index); i++ {
 		if index[i] < ASCII_MIN || index[i] > ASCII_MAX {
 			return index, types.ErrInvalidIndex
@@ -93,6 +93,12 @@ func sanitizeIndex(index string) (string, error) {
 // (ascii) DEL terminator.
 func desanitizeIndex(safeIndex string) string {
 	return safeIndex[0 : len(safeIndex)-1]
+}
+
+func (fs *FixationStore) assertSanitizedIndex(safeIndex string) {
+	if []byte(safeIndex)[len(safeIndex)-1] != ASCII_DEL {
+		panic("Fixation: prefix " + fs.prefix + ": unsanitized safeIndex: " + safeIndex)
+	}
 }
 
 func (fs *FixationStore) getStore(ctx sdk.Context, index string) *prefix.Store {
@@ -169,12 +175,11 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 }
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
-	// get the relevant store and init an iterator
+	fs.assertSanitizedIndex(safeIndex)
 	store := fs.getStore(ctx, safeIndex)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	// iterate over entries
 	for iterator.Valid() {
 		// umarshal the old entry version
 		var oldEntry types.Entry
@@ -227,8 +232,9 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
 // nearest-smaller block version for the given block arg.
-func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, index string, block uint64) (types.Entry, bool) {
-	store := fs.getStore(ctx, index)
+func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex string, block uint64) (types.Entry, bool) {
+	fs.assertSanitizedIndex(safeIndex)
+	store := fs.getStore(ctx, safeIndex)
 
 	// init a reverse iterator
 	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})

@@ -18,22 +18,31 @@ import (
 // EntryIndex objects are stored with a distinct prefix to avoid confusion
 // when iterating over Entries. See example in `x/common/fixation_entry.go`.
 
+func (fs *FixationStore) getEntryIndexStore(ctx sdk.Context) *prefix.Store {
+	store := prefix.NewStore(
+		ctx.KVStore(fs.storeKey),
+		types.KeyPrefix(fs.createEntryIndexStoreKey()))
+	return &store
+}
+
 // setEntryIndex stores an Entry index in the store
 func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string) {
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createEntryIndexStoreKey()))
+	fs.assertSanitizedIndex(safeIndex)
+	store := fs.getEntryIndexStore(ctx)
 	appendedValue := []byte(safeIndex) // convert the index value to a byte array
 	store.Set(types.KeyPrefix(types.EntryIndexKey+fs.prefix+safeIndex), appendedValue)
 }
 
 // removeEntryIndex removes an Entry index from the store
 func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createEntryIndexStoreKey()))
+	fs.assertSanitizedIndex(safeIndex)
+	store := fs.getEntryIndexStore(ctx)
 	store.Delete(types.KeyPrefix(fs.createEntryIndexKey(safeIndex)))
 }
 
 // GetAllEntryIndex returns all Entry indices
 func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.createEntryIndexStoreKey()))
+	store := fs.getEntryIndexStore(ctx)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
@@ -41,6 +50,7 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	indexList := []string{}
 	for ; iterator.Valid(); iterator.Next() {
 		safeIndex := string(iterator.Value())
+		fs.assertSanitizedIndex(safeIndex)
 		indexList = append(indexList, desanitizeIndex(safeIndex))
 	}
 
