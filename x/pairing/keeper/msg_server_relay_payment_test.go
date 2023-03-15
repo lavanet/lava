@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +38,7 @@ type testStruct struct {
 	providers []*account
 	clients   []*account
 	spec      spectypes.Spec
+	plan      plantypes.Plan
 }
 
 func (ts *testStruct) addClient(amount int) error {
@@ -179,6 +181,10 @@ func setupForPaymentTest(t *testing.T) *testStruct {
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(1)
+	require.Nil(t, err)
+
+	ts.plan = common.CreateMockPlan()
+	err = ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
 	require.Nil(t, err)
 
 	return ts

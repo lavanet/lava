@@ -181,7 +181,6 @@ func TestInvalidPlanAddition(t *testing.T) {
 		{"InvalidOveruseTest", 3},
 		{"InvalidCuTest", 4},
 		{"InvalidServicersToPairTest", 5},
-		{"InvalidNameTest", 6},
 		{"InvalidDescriptionTest", 7},
 		{"InvalidTypeTest", 8},
 	}

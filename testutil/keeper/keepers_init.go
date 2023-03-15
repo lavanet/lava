@@ -60,12 +60,13 @@ type Keepers struct {
 }
 
 type Servers struct {
-	EpochServer    epochstoragetypes.MsgServer
-	SpecServer     spectypes.MsgServer
-	PairingServer  pairingtypes.MsgServer
-	ConflictServer conflicttypes.MsgServer
-	ProjectServer  projectstypes.MsgServer
-	PlansServer    planstypes.MsgServer
+	EpochServer        epochstoragetypes.MsgServer
+	SpecServer         spectypes.MsgServer
+	PairingServer      pairingtypes.MsgServer
+	ConflictServer     conflicttypes.MsgServer
+	ProjectServer      projectstypes.MsgServer
+	SubscriptionServer subscriptiontypes.MsgServer
+	PlansServer        planstypes.MsgServer
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
@@ -193,6 +194,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
+	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 

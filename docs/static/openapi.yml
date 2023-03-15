@@ -31091,6 +31091,12 @@ paths:
               index:
                 type: string
                 format: int64
+              pairedProviders:
+                type: string
+                format: uint64
+              cuPerEpoch:
+                type: string
+                format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -55221,6 +55227,12 @@ definitions:
       index:
         type: string
         format: int64
+      pairedProviders:
+        type: string
+        format: uint64
+      cuPerEpoch:
+        type: string
+        format: uint64
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:

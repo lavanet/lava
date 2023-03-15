@@ -58,7 +58,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.ChainID,
 			clientAddr,
@@ -105,7 +105,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
 			}
 			// check this other provider is indeed legitimate
-			isValidPairing, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
+			isValidPairing, _, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
 				relay.ChainID,
 				clientAddr,
@@ -209,18 +209,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 
-		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
+		if legacy {
+			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
+			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
 
-		if err2 != nil {
-			details["amountToBurn"] = burnAmount.String()
-			details["error"] = err2.Error()
-			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user")
-		}
-		if !burnSucceeded {
-			details["amountToBurn"] = burnAmount.String()
-			details["error"] = "insufficient funds or didn't find user"
-			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+			if err2 != nil {
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = err2.Error()
+				return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user")
+			}
+			if !burnSucceeded {
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = "insufficient funds or didn't find user"
+				return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+			}
+
+			details["clientFee"] = burnAmount.String()
 		}
 
 		if payReliability {
@@ -251,7 +255,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
 			}
 		}
-		details["clientFee"] = burnAmount.String()
+
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
