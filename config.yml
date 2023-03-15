@@ -24,16 +24,6 @@ accounts:
     coins: ["50000000000000ulava"]
   - name: servicer5
     coins: ["50000000000000ulava"]
-  - name: servicer6
-    coins: ["50000000000000ulava"]
-  - name: servicer7
-    coins: ["50000000000000ulava"]
-  - name: servicer8
-    coins: ["50000000000000ulava"]
-  - name: servicer9
-    coins: ["50000000000000ulava"]
-  - name: servicer10
-    coins: ["50000000000000ulava"]
 validator:
   name: alice
   staked: "100000000000ulava"
