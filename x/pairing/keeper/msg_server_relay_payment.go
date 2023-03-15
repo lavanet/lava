@@ -82,7 +82,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		payReliability := false
 		// validate data reliability
-		if relay.DataReliability != nil {
+		if legacy && relay.DataReliability != nil {
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID
@@ -260,8 +260,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
 		// if this returns an error it means this is legacy consumer
-		k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
-
+		if legacy {
+			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
+			}
+		}
 		// Get servicersToPair param
 		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
 		if err != nil {

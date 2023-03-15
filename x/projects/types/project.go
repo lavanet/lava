@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 const ADMIN_PROJECT_NAME = "admin"
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
@@ -55,4 +59,20 @@ func (project *Project) AppendKey(keyToAdd ProjectKey) {
 
 func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
+}
+
+func (project *Project) VerifyProject(chainID string) error {
+	if !project.Enabled {
+		return fmt.Errorf("the developers project is disabled")
+	}
+
+	if !project.Policy.ContainsChainID(chainID) {
+		return fmt.Errorf("the developers project policy does not include the chain")
+	}
+
+	if project.Policy.TotalCuLimit <= project.UsedCu {
+		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
+	}
+
+	return nil
 }
