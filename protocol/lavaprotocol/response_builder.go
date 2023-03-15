@@ -13,7 +13,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 )
 
 func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
@@ -38,14 +37,6 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 		reply.SigBlocks = sigBlocks
 	}
 	return reply, nil
-}
-
-func ExtractSignerAddress(in *pairingtypes.RelaySession) (tenderbytes.HexBytes, error) {
-	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
-	if err != nil {
-		return nil, err
-	}
-	return pubKey.Address(), nil
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {

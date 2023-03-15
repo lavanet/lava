@@ -60,6 +60,10 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
 		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
 		//TODO: add other canto protobufs missing
+	case "AXELAR", "AXELART":
+		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
+		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
+		//TODO: add other canto protobufs missing
 	default:
 		utils.LavaFormatFatal("Unsupported Chain Server: "+chain, nil, nil)
 	}

@@ -19,6 +19,7 @@ const (
 	maxCu                          = uint64(150)
 	epoch2                         = testNumberOfBlocksKeptInMemory + epoch1
 	consumerOneAddress             = "consumer1"
+	selfProviderIndex              = int64(1)
 )
 
 func initProviderSessionManager() *ProviderSessionManager {
@@ -45,7 +46,7 @@ func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSessi
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(consumerOneAddress, epoch1, sessionId, relayNumber, maxCu)
+	sps, err = psm.RegisterProviderSessionWithConsumer(consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, selfProviderIndex)
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
@@ -53,10 +54,11 @@ func prepareSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSessi
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(relayCu, relayCu)
+	err = sps.PrepareSessionForUsage(relayCu, relayCu, relayNumber)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
+	require.Equal(t, sps.userSessionsParent.atomicReadProviderIndex(), selfProviderIndex)
 	require.Equal(t, relayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -70,7 +72,7 @@ func prepareDRSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSes
 	psm := initProviderSessionManager()
 
 	// get data reliability session
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber)
+	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, selfProviderIndex)
 
 	// validate results
 	require.Nil(t, err)
@@ -82,7 +84,7 @@ func prepareDRSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSes
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
+	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu, relayNumber)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -115,7 +117,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	_, sps := prepareSession(t)
 
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(relayCu, relayCu)
+	err := sps.PrepareSessionForUsage(relayCu, relayCu, relayNumber)
 	require.Error(t, err)
 }
 
@@ -202,7 +204,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
-	err = sps.PrepareSessionForUsage(relayCu, maxCu+relayCu)
+	err = sps.PrepareSessionForUsage(relayCu, maxCu+relayCu, relayNumber)
 	require.Error(t, err)
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
 }
@@ -220,7 +222,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
-	err = sps.PrepareSessionForUsage(relayCu+1, relayCu)
+	err = sps.PrepareSessionForUsage(relayCu+1, relayCu, relayNumber)
 	require.Error(t, err)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
@@ -255,7 +257,7 @@ func TestPSMDataReliabilityTwicePerEpoch(t *testing.T) {
 	require.Equal(t, epoch1, sps.PairingEpoch)
 
 	// try to get a data reliability session again.
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber)
+	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, selfProviderIndex)
 
 	// validate we cant get more than one data reliability session per epoch (might change in the future)
 	require.Error(t, err)
@@ -293,14 +295,14 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 	require.Equal(t, epoch1, sps.PairingEpoch)
 
 	// try to get a data reliability session again.
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber)
+	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, selfProviderIndex)
 
 	// validate we can get a data reliability session if we failed before
 	require.Nil(t, err)
 	require.NotNil(t, sps)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
+	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu, relayNumber)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)

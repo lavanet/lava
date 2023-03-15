@@ -7,7 +7,9 @@
                 "index": "OPTM",
                 "name": "optimism mainnet",
                 "enabled": true,
-                "imports": [ "ETH1" ],
+                "imports": [
+                    "ETH1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
@@ -24,6 +26,30 @@
                 },
                 "apis": [
                     {
+                        "name": "eth_getAccounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "eth_getBlockRange",
                         "block_parsing": {
                             "parser_arg": [
@@ -32,6 +58,54 @@
                             "parser_func": "PARSE_BY_ARG"
                         },
                         "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_sendTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "rollup_gasPrices",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -70,78 +144,6 @@
                                 "extra_compute_units": "0"
                             }
                         ]
-                    },
-                    {
-                        "name": "rollup_gasPrices",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "eth_getAccounts",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "eth_sendTransaction",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
                     }
                 ]
             },
@@ -149,7 +151,9 @@
                 "index": "OPTMT",
                 "name": "optimism goerli testnet",
                 "enabled": true,
-                "imports": [ "OPTM" ],
+                "imports": [
+                    "OPTM"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,

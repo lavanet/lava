@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
@@ -135,14 +135,9 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		return err
 	}
 	for _, relay := range rewardsToClaim {
-		consumerBytes, err := lavaprotocol.ExtractSignerAddress(relay)
+		consumerAddr, err := sigs.ExtractSignerAddress(relay)
 		if err != nil {
 			utils.LavaFormatError("invalid consumer address extraction from relay", err, &map[string]string{"relay": fmt.Sprintf("%+v", relay)})
-			continue
-		}
-		consumerAddr, err := sdk.AccAddressFromHex(consumerBytes.String())
-		if err != nil {
-			utils.LavaFormatError("invalid consumer address extraction from relay", err, &map[string]string{"relay": fmt.Sprintf("%+v", relay), "consumerBytes": consumerBytes.String()})
 			continue
 		}
 		expectedPay := PaymentRequest{ChainID: relay.SpecID, CU: relay.CuSum, BlockHeightDeadline: relay.Epoch, Amount: sdk.Coin{}, Client: consumerAddr, UniqueIdentifier: relay.SessionId, Description: strconv.FormatUint(rws.serverID, 10)}

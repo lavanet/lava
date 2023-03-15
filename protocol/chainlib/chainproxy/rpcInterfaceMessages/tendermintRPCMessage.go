@@ -38,10 +38,17 @@ func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 
 	var rpcError *tenderminttypes.RPCError
 	if jsonError != nil {
-		errData, ok := (jsonError.Data).(string)
-		if !ok {
-			return nil, utils.LavaFormatError("(rpcMsg.Error.Data).(string) conversion failed", nil, &map[string]string{"data": fmt.Sprintf("%v", jsonError.Data)})
+		errData := ""
+		var ok bool
+
+		// Make sure jsonError.Data exists
+		if jsonError.Data != nil {
+			errData, ok = (jsonError.Data).(string)
+			if !ok {
+				return nil, utils.LavaFormatError("(rpcMsg.Error.Data).(string) conversion failed", nil, &map[string]string{"data": fmt.Sprintf("%v", jsonError.Data)})
+			}
 		}
+
 		rpcError = &tenderminttypes.RPCError{
 			Code:    jsonError.Code,
 			Message: jsonError.Message,

@@ -15,17 +15,17 @@ option go_package = "github.com/lavanet/lava/x/plans/types";
 service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/lavanet/lava/plan/params";
+    option (google.api.http).get = "/lavanet/lava/plans/params";
   }	
 
   // Queries a list of ShowAllPlans items.
 	rpc ShowAllPlans(QueryShowAllPlansRequest) returns (QueryShowAllPlansResponse) {
-		option (google.api.http).get = "/lavanet/lava/plan/show_all_plans";
+		option (google.api.http).get = "/lavanet/lava/plans/show_all_plans";
 	}
 
   // Queries a list of ShowPlanInfo items.
 	rpc ShowPlanInfo(QueryShowPlanInfoRequest) returns (QueryShowPlanInfoResponse) {
-		option (google.api.http).get = "/lavanet/lava/plan/show_plan_info/{plan_index}";
+		option (google.api.http).get = "/lavanet/lava/plans/show_plan_info/{plan_index}";
 	}
 
 // this line is used by starport scaffolding # 2

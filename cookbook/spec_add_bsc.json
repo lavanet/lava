@@ -1,0 +1,49 @@
+{
+    "proposal": {
+        "title": "Add Specs: Binance Smart Chain",
+        "description": "Adding new specification support for relaying BSC- binance smart chain data on Lava",
+        "specs": [
+            {
+                "index": "BSC",
+                "name": "BSC mainnet",
+                "enabled": true,
+                "imports": [ "ETH1" ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": "3000",
+                "allowed_block_lag_for_qos_sync": "4",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
+            },
+            {
+                "index": "BSCT",
+                "name": "BSC testnet",
+                "enabled": true,
+                "imports": [ "BSC" ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": "3000",
+                "allowed_block_lag_for_qos_sync": "4",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}

@@ -303,11 +303,11 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "plan", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "plans", "params"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ShowAllPlans_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "plan", "show_all_plans"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ShowAllPlans_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "plans", "show_all_plans"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ShowPlanInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "plan", "show_plan_info", "plan_index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ShowPlanInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "plans", "show_plan_info", "plan_index"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

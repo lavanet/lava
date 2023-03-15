@@ -18,6 +18,7 @@ const (
 	DataReliabilityCuSum                             = 0
 	GeolocationFlag                                  = "geolocation"
 	TendermintUnsubscribeAll                         = "unsubscribe_all"
+	IndexNotFound                                    = -15
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing

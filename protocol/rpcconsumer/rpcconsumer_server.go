@@ -316,6 +316,12 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	// send the data reliability relay message with the lavaprotocol grpc service
 	// check validity of the data reliability response with the lavaprotocol package
 	// compare results for both relays, if there is a difference send a detection tx with both requests and both responses
+
+	// validate relayResult is not nil
+	if relayResult == nil || relayResult.Reply == nil || relayResult.Request == nil {
+		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, &map[string]string{"relayResult": fmt.Sprintf("%#v", relayResult), "relayRequestCommonData": fmt.Sprintf("%#v", relayRequestCommonData)})
+	}
+
 	specCategory := chainMessage.GetInterface().Category
 	if !specCategory.Deterministic || !relayResult.Finalized {
 		return nil // disabled for this spec and requested block so no data reliability messages

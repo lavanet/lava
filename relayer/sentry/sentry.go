@@ -169,14 +169,14 @@ func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessio
 	utils.LavaFormatInfo("Setting up ConsumerSessionManager", nil)
 	s.consumerSessionManager = consumerSessionManager
 	// Get pairing for the first time, for clients
-	pairingList, err := s.getPairing(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
-	}
-	err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
-	if err != nil {
-		utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
-	}
+	// pairingList, err := s.getPairing(ctx)
+	// if err != nil {
+	// 	utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
+	// }
+	// err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
+	// if err != nil {
+	// 	utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
+	// }
 	return nil
 }
 
@@ -654,14 +654,14 @@ func (s *Sentry) Start(ctx context.Context) {
 				//
 				// Update pairing
 				if s.isUser {
-					pairingList, err := s.getPairing(ctx)
-					if err != nil {
-						utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
-					}
-					err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
-					if err != nil {
-						utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
-					}
+					// pairingList, err := s.getPairing(ctx)
+					// if err != nil {
+					// 	utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
+					// }
+					// err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
+					// if err != nil {
+					// 	utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
+					// }
 				}
 
 				s.clearAuthResponseCache(data.Block.Height) // TODO: Remove this after provider session manager is fully functional

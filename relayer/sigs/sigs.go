@@ -221,11 +221,24 @@ func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, 
 	signature := relay.Sig // save sig
 	prepareRelaySessionForSignature(&relay)
 	hash := HashMsg([]byte(relay.String()))
+
 	pubKey, err := RecoverPubKey(signature, hash)
 	if err != nil {
 		return nil, err
 	}
 	return pubKey, nil
+}
+
+func ExtractSignerAddress(in *pairingtypes.RelaySession) (sdk.AccAddress, error) {
+	pubKey, err := RecoverPubKeyFromRelay(*in)
+	if err != nil {
+		return nil, err
+	}
+	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
+	if err != nil {
+		return nil, utils.LavaFormatError("get relay consumer address", err, nil)
+	}
+	return extractedConsumerAddress, nil
 }
 
 func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
