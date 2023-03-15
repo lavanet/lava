@@ -12,6 +12,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -36,6 +37,26 @@ func CreateMockSpec() spectypes.Spec {
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: []spectypes.ApiInterface{apiInterface}})
 	spec.BlockDistanceForFinalizedData = 0
 	return spec
+}
+
+func CreateMockPlan() plantypes.Plan {
+	plan := plantypes.Plan{
+		Index:                    "mockPlan",
+		Name:                     "mock plan",
+		Description:              "plan for testing",
+		Type:                     "rpc",
+		Duration:                 200,
+		Block:                    100,
+		Price:                    sdk.NewCoin("ulava", sdk.NewInt(100)),
+		ComputeUnits:             1000,
+		ComputeUnitsPerEpoch:     100,
+		ServicersToPair:          3,
+		AllowOveruse:             true,
+		OveruseRate:              10,
+		AnnualDiscountPercentage: 20,
+	}
+
+	return plan
 }
 
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc Account) {

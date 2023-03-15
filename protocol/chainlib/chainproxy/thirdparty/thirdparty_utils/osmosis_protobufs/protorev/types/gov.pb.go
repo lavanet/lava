@@ -31,9 +31,9 @@ type SetProtoRevEnabledProposal struct {
 	Enabled     bool   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 
-func (m *SetProtoRevEnabledProposal) Reset()      { *m = SetProtoRevEnabledProposal{} }
+func (m *SetProtoRevEnabledProposal) Reset()         { *m = SetProtoRevEnabledProposal{} }
 func (m *SetProtoRevEnabledProposal) String() string { return proto.CompactTextString(m) }
-func (*SetProtoRevEnabledProposal) ProtoMessage() {}
+func (*SetProtoRevEnabledProposal) ProtoMessage()    {}
 func (*SetProtoRevEnabledProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e1f85ff7f3eaf8bb, []int{0}
 }
@@ -73,9 +73,9 @@ type SetProtoRevAdminAccountProposal struct {
 	Account     string `protobuf:"bytes,3,opt,name=account,proto3" json:"account,omitempty"`
 }
 
-func (m *SetProtoRevAdminAccountProposal) Reset()      { *m = SetProtoRevAdminAccountProposal{} }
+func (m *SetProtoRevAdminAccountProposal) Reset()         { *m = SetProtoRevAdminAccountProposal{} }
 func (m *SetProtoRevAdminAccountProposal) String() string { return proto.CompactTextString(m) }
-func (*SetProtoRevAdminAccountProposal) ProtoMessage() {}
+func (*SetProtoRevAdminAccountProposal) ProtoMessage()    {}
 func (*SetProtoRevAdminAccountProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e1f85ff7f3eaf8bb, []int{1}
 }

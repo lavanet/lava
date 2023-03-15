@@ -31,9 +31,9 @@ type SetSuperfluidAssetsProposal struct {
 	Assets      []SuperfluidAsset `protobuf:"bytes,3,rep,name=assets,proto3" json:"assets"`
 }
 
-func (m *SetSuperfluidAssetsProposal) Reset()      { *m = SetSuperfluidAssetsProposal{} }
+func (m *SetSuperfluidAssetsProposal) Reset()         { *m = SetSuperfluidAssetsProposal{} }
 func (m *SetSuperfluidAssetsProposal) String() string { return proto.CompactTextString(m) }
-func (*SetSuperfluidAssetsProposal) ProtoMessage() {}
+func (*SetSuperfluidAssetsProposal) ProtoMessage()    {}
 func (*SetSuperfluidAssetsProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2e37d6a8d0e42294, []int{0}
 }
@@ -72,9 +72,9 @@ type RemoveSuperfluidAssetsProposal struct {
 	SuperfluidAssetDenoms []string `protobuf:"bytes,3,rep,name=superfluid_asset_denoms,json=superfluidAssetDenoms,proto3" json:"superfluid_asset_denoms,omitempty"`
 }
 
-func (m *RemoveSuperfluidAssetsProposal) Reset()      { *m = RemoveSuperfluidAssetsProposal{} }
+func (m *RemoveSuperfluidAssetsProposal) Reset()         { *m = RemoveSuperfluidAssetsProposal{} }
 func (m *RemoveSuperfluidAssetsProposal) String() string { return proto.CompactTextString(m) }
-func (*RemoveSuperfluidAssetsProposal) ProtoMessage() {}
+func (*RemoveSuperfluidAssetsProposal) ProtoMessage()    {}
 func (*RemoveSuperfluidAssetsProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2e37d6a8d0e42294, []int{1}
 }
@@ -114,9 +114,9 @@ type UpdateUnpoolWhiteListProposal struct {
 	IsOverwrite bool     `protobuf:"varint,4,opt,name=is_overwrite,json=isOverwrite,proto3" json:"is_overwrite,omitempty"`
 }
 
-func (m *UpdateUnpoolWhiteListProposal) Reset()      { *m = UpdateUnpoolWhiteListProposal{} }
+func (m *UpdateUnpoolWhiteListProposal) Reset()         { *m = UpdateUnpoolWhiteListProposal{} }
 func (m *UpdateUnpoolWhiteListProposal) String() string { return proto.CompactTextString(m) }
-func (*UpdateUnpoolWhiteListProposal) ProtoMessage() {}
+func (*UpdateUnpoolWhiteListProposal) ProtoMessage()    {}
 func (*UpdateUnpoolWhiteListProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2e37d6a8d0e42294, []int{2}
 }

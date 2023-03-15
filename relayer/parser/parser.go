@@ -133,7 +133,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
 		if len(unmarshalled) == 0 {
-			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, nil)
+			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, &map[string]string{"data source": "PARSE_RESULT"})
 		}
 		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
@@ -146,6 +146,22 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		return interfaceArr, nil
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
+	}
+}
+
+func blockInterfaceToString(block interface{}) string {
+	switch castedBlock := block.(type) {
+	case string:
+		return castedBlock
+	case float64:
+		return strconv.FormatFloat(castedBlock, 'f', -1, 64)
+
+	case int64:
+		return strconv.FormatInt(castedBlock, 10)
+	case uint64:
+		return strconv.FormatUint(castedBlock, 10)
+	default:
+		return fmt.Sprintf("%s", block)
 	}
 }
 
@@ -173,7 +189,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		// TODO: turn this into type assertion instead
 
 		retArr := make([]interface{}, 0)
-		retArr = append(retArr, fmt.Sprintf("%s", block))
+		retArr = append(retArr, blockInterfaceToString(block))
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
@@ -224,7 +240,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			}
 		}
 		retArr := make([]interface{}, 0)
-		retArr = append(retArr, fmt.Sprintf("%s", blockContainer))
+		retArr = append(retArr, blockInterfaceToString(blockContainer))
 		return retArr, nil
 	case map[string]interface{}:
 		for idx, key := range input[1:] {
