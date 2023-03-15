@@ -16,7 +16,7 @@ func (k Keeper) ShowDevelopersProject(goCtx context.Context, req *types.QuerySho
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	project, err := k.GetProjectForDeveloper(ctx, req.Developer, uint64(ctx.BlockHeight()))
+	project, _, err := k.GetProjectForDeveloper(ctx, req.Developer, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}

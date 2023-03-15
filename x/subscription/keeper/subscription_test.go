@@ -198,7 +198,7 @@ func TestCreateSubscription(t *testing.T) {
 				}
 
 				err := keeper.CreateSubscription(
-					ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration)
+					ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration, "")
 				if tt.success {
 					require.Nil(t, err, tt.name)
 					_, found := keeper.GetSubscription(ctx, sub.Consumer)
@@ -221,14 +221,14 @@ func TestSubscriptionAdminProject(t *testing.T) {
 	account := common.CreateNewAccount(_ctx, *keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ctx, creator, creator, "mockPlan", 1)
+	err := keeper.CreateSubscription(ctx, creator, creator, "mockPlan", 1, "")
 	require.Nil(t, err)
 
 	block := uint64(ctx.BlockHeight())
 
 	// a newly created subscription is expected to have one default project,
 	// with the subscription address as its developer key
-	_, err = keepers.Projects.GetProjectIDForDeveloper(ctx, creator, block)
+	_, err = keepers.Projects.GetProjectDeveloperKey(ctx, creator, block)
 	require.Nil(t, err)
 }
 
@@ -290,7 +290,7 @@ func TestExpiryTime(t *testing.T) {
 			_ctx = keepertest.AdvanceBlock(_ctx, keepers, delta)
 			ctx = sdk.UnwrapSDKContext(_ctx)
 
-			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.months)
+			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.months, "")
 			require.Nil(t, err)
 
 			sub, found := keeper.GetSubscription(ctx, creator)
@@ -338,7 +338,7 @@ func TestPrice(t *testing.T) {
 			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
 			plansKeeper.AddPlan(ctx, plan)
 
-			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.duration)
+			err := keeper.CreateSubscription(ctx, creator, creator, plan.Index, tt.duration, "")
 			require.Nil(t, err)
 
 			_, found := keeper.GetSubscription(ctx, creator)

@@ -154,6 +154,7 @@ func (k Keeper) CreateSubscription(
 	consumer string,
 	planIndex string,
 	duration uint64,
+	vrfpk string,
 ) error {
 	var err error
 
@@ -193,7 +194,7 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid plan")
 	}
 
-	err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair)
+	err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
 	if err != nil {
 		details := map[string]string{
 			"err": err.Error(),

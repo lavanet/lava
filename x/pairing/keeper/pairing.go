@@ -78,18 +78,18 @@ func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress
 	return clientStakeEntryRet, nil
 }
 
-func (k Keeper) VerifyProject(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (projectstypes.Project, error) {
-	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, developerKey.String(), blockHeight)
+func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, vrfpk string, errRet error) {
+	project, vrfpk, err := k.projectsKeeper.GetProjectForDeveloper(ctx, developerKey.String(), blockHeight)
 	if err != nil {
-		return projectstypes.Project{}, err
+		return projectstypes.Project{}, "", err
 	}
 
 	err = project.VerifyProject(chainID)
 	if err != nil {
-		return projectstypes.Project{}, utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index, "error": err.Error()}, "the developers project is invalid")
+		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index, "error": err.Error()}, "the developers project is invalid")
 	}
 
-	return project, nil
+	return project, vrfpk, nil
 }
 
 func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
@@ -109,13 +109,13 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, "", 0, false, fmt.Errorf("invalid pairing data: %s", err)
 	}
 
-	project, err := k.VerifyProject(ctx, clientAddress, chainID, block)
+	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
 		geolocation = project.Policy.GeolocationProfile
 		providersToPair = project.Policy.MaxProvidersToPair
 		projectToPair = project.Index
 		allowedCU = project.Policy.EpochCuLimit
-		vrfk = ""
+		vrfk = vrfpk_proj
 		legacyStake = false
 	} else {
 		// legacy staked client

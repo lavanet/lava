@@ -10,7 +10,7 @@ import (
 func (k msgServer) Buy(goCtx context.Context, msg *types.MsgBuy) (*types.MsgBuyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.Keeper.CreateSubscription(ctx, msg.Creator, msg.Consumer, msg.Index, msg.Duration)
+	err := k.Keeper.CreateSubscription(ctx, msg.Creator, msg.Consumer, msg.Index, msg.Duration, msg.Vrfpk)
 
 	return &types.MsgBuyResponse{}, err
 }
