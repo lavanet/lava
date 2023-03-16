@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,7 +24,7 @@ func (k Keeper) GetProjectDeveloperData(ctx sdk.Context, developerKey string, bl
 	var projectDeveloperData types.ProtoDeveloperData
 	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectDeveloperData)
 	if err != nil || !found {
-		return types.ProtoDeveloperData{}, utils.LavaError(ctx, ctx.Logger(), "GetProjectIDForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not registered to a project")
+		return types.ProtoDeveloperData{}, fmt.Errorf("GetProjectIDForDeveloper_invalid_key, the requesting key is not registered to a project, developer: %s", developerKey)
 	}
 	return projectDeveloperData, nil
 }
