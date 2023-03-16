@@ -27,15 +27,10 @@ func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry 
 	return allowedCU, nil
 }
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, cuSum uint64, entry *epochstoragetypes.StakeEntry, totalCUInEpochForUserProvider uint64, epochStart uint64) error {
-	allowedCUConsumer, err := k.ClientMaxCUProviderForBlock(ctx, epochStart, entry)
-	if err != nil {
-		return err
-	}
-
-	if totalCUInEpochForUserProvider > allowedCUConsumer {
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, cuSum uint64, allowedCU uint64, totalCUInEpochForUserProvider uint64, epochStart uint64) error {
+	if totalCUInEpochForUserProvider > allowedCU {
 		// if cu limit reached we return an error.
-		return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), &map[string]string{"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "allowedCUProvider": strconv.FormatUint(allowedCUConsumer, 10)})
+		return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), &map[string]string{"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "allowedCUProvider": strconv.FormatUint(allowedCU, 10)})
 	}
 	return nil
 }

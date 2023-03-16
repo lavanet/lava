@@ -16,8 +16,8 @@ import (
 func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
@@ -49,10 +49,10 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	// Add a staked provider and client and get their address
 	err = ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].address
+	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
-	providerAddress := ts.providers[len(ts.providers)-1].address
+	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
 	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
@@ -96,8 +96,8 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
@@ -129,10 +129,10 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Add a staked provider/client and get their address
 	err = ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].address
+	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
-	providerAddress := ts.providers[len(ts.providers)-1].address
+	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
 	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
@@ -180,8 +180,8 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
@@ -192,10 +192,10 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	// Add a staked provider and client and get their address
 	err := ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].address
+	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
-	providerAddress := ts.providers[len(ts.providers)-1].address
+	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
 	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
@@ -262,8 +262,8 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
@@ -274,10 +274,10 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	// Add a staked provider and client and get their address
 	err := ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].address
+	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
-	providerAddress := ts.providers[len(ts.providers)-1].address
+	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
 	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)

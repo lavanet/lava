@@ -38,7 +38,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	var unresponsiveDataList [][]byte
 	unresponsiveProviderAmount := 1
 	for i := 0; i < unresponsiveProviderAmount; i++ {
-		unresponsiveData, err := json.Marshal([]string{ts.providers[i].address.String()})
+		unresponsiveData, err := json.Marshal([]string{ts.providers[i].Addr.String()})
 		require.Nil(t, err)
 		unresponsiveDataList = append(unresponsiveDataList, unresponsiveData)
 	}
@@ -49,7 +49,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		var Relays []*types.RelayRequest
 
 		// Get pairing for the client to pick a valid provider
-		providersStakeEntries, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[clientIndex].address)
+		providersStakeEntries, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[clientIndex].Addr)
 		providerIndex := rand.Intn(len(providersStakeEntries))
 		providerAddress := providersStakeEntries[providerIndex].Address
 		providerSdkAddress, err := sdk.AccAddressFromBech32(providerAddress)
@@ -70,13 +70,13 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 			UnresponsiveProviders: unresponsiveDataList[clientIndex%unresponsiveProviderAmount], // create the complaint
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relayRequest)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, ts.clients[clientIndex].address, providerSdkAddress)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, ts.clients[clientIndex].Addr, providerSdkAddress)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -90,13 +90,13 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	// go over unresponsive providers
 	for i := 0; i < unresponsiveProviderAmount; i++ {
 		// test the providers has been unstaked
-		_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[i].address)
+		_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[i].Addr)
 		require.True(t, unstakeStoragefound)
-		_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[i].address)
+		_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[i].Addr)
 		require.False(t, stakeStorageFound)
 
 		// validate the complainers CU field in the unresponsive provider's providerPaymentStorage has been reset after being punished (note we use the epoch from the relay because that is when it got reported)
-		providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[i].address)
+		providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[i].Addr)
 		providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
 		require.Equal(t, true, found)
 		require.Equal(t, uint64(0), providerPaymentStorage.GetComplainersTotalCu())
@@ -105,9 +105,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	// go over responsive providers - make sure they are still staked
 	for i := unresponsiveProviderAmount; i < testProviderAmount; i++ {
 		// test the providers hasn't been unstaked
-		_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[i].address)
+		_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[i].Addr)
 		require.False(t, unstakeStoragefound)
-		_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[i].address)
+		_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[i].Addr)
 		require.True(t, stakeStorageFound)
 	}
 }
@@ -134,11 +134,11 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	}
 
 	// get provider1's balance before the stake
-	staked_amount, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
-	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	staked_amount, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
+	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].Addr, epochstoragetypes.TokenDenom).Amount.Int64()
 
 	// create unresponsive data that includes provider1 being unresponsive
-	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].Addr.String()})
 	require.Nil(t, err)
 
 	// create relay requests for provider0 that contain complaints about provider1
@@ -146,7 +146,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 		var Relays []*types.RelayRequest
 		relayRequest := &types.RelayRequest{
-			Provider:              ts.providers[0].address.String(),
+			Provider:              ts.providers[0].Addr.String(),
 			ApiUrl:                "",
 			Data:                  []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
@@ -159,13 +159,13 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relayRequest)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}, true, ts.clients[clientIndex].address, ts.providers[0].address)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, ts.providers[0].Addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -177,21 +177,21 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	}
 
 	// test the unresponsive provider1 has been unstaked
-	_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	_, unstakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
 	require.True(t, unstakeStoragefound)
-	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
 	require.False(t, stakeStorageFound)
 
 	// validate the complainers CU field in provider1's providerPaymentStorage has been reset after being punished (note we use the epoch from the relay because that is when it got reported)
-	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[1].address)
+	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[1].Addr)
 	providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
 	require.Equal(t, true, found)
 	require.Equal(t, uint64(0), providerPaymentStorage.GetComplainersTotalCu())
 
 	// test the responsive provider0 hasn't been unstaked
-	_, unstakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[0].address)
+	_, unstakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[0].Addr)
 	require.False(t, unstakeStoragefound)
-	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[0].address)
+	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[0].Addr)
 	require.True(t, stakeStorageFound)
 
 	// advance enough epochs so the current block will be deleted (advance more than the chain's memory - blocksToSave)
@@ -207,15 +207,15 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	}
 
 	// validate that the provider is no longer unstaked
-	_, unstakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	_, unstakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
 	require.False(t, unstakeStoragefound)
 
 	// also validate that the provider hasn't returned to the stake pool
-	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
 	require.False(t, stakeStorageFound)
 
 	// validate that the provider's balance after the unstake is the same as before he staked
-	balanceProviderAfterUnstakeMoneyReturned := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	balanceProviderAfterUnstakeMoneyReturned := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].Addr, epochstoragetypes.TokenDenom).Amount.Int64()
 	require.Equal(t, balanceProvideratBeforeStake, balanceProviderAfterUnstakeMoneyReturned)
 }
 
@@ -240,7 +240,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	}
 
 	// create unresponsive data that includes provider1 being unresponsive
-	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].Addr.String()})
 	require.Nil(t, err)
 
 	// create relay requests for provider0 that contain complaints about provider1
@@ -248,7 +248,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 		var Relays []*types.RelayRequest
 		relayRequest := &types.RelayRequest{
-			Provider:              ts.providers[0].address.String(),
+			Provider:              ts.providers[0].Addr.String(),
 			ApiUrl:                "",
 			Data:                  []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(0),
@@ -261,13 +261,13 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relayRequest)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}, true, ts.clients[clientIndex].address, ts.providers[0].address)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, ts.providers[0].Addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -279,13 +279,13 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	}
 
 	// test the provider has been unstaked
-	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
 	require.True(t, unStakeStoragefound)
-	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
 	require.False(t, stakeStorageFound)
 
 	// validate the complainers CU field in provider1's providerPaymentStorage has been reset after being punished (note we use the epoch from the relay because that is when it got reported)
-	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[1].address)
+	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayEpoch), ts.providers[1].Addr)
 	providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
 	require.Equal(t, true, found)
 	require.Equal(t, uint64(0), providerPaymentStorage.GetComplainersTotalCu())
@@ -299,7 +299,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 		var RelaysAfter []*types.RelayRequest
 		relayRequest := &types.RelayRequest{
-			Provider:              ts.providers[0].address.String(),
+			Provider:              ts.providers[0].Addr.String(),
 			ApiUrl:                "",
 			Data:                  []byte(ts.spec.Apis[0].Name),
 			SessionId:             uint64(2),
@@ -311,19 +311,19 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
-		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relayRequest)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		RelaysAfter = append(RelaysAfter, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: RelaysAfter}, true, ts.clients[clientIndex].address, ts.providers[0].address)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: RelaysAfter}, true, ts.clients[clientIndex].Addr, ts.providers[0].Addr)
 	}
 
 	// test the provider is still unstaked
-	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
 	require.False(t, stakeStorageFound)
-	_, unStakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	_, unStakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
 	require.True(t, unStakeStoragefound)
 
 	// get the current unstake storage
@@ -333,7 +333,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	// validate the punished provider is not shown twice (or more) in the unstake storage
 	var numberOfAppearances int
 	for _, stored := range storage.StakeEntries {
-		if stored.Address == ts.providers[1].address.String() {
+		if stored.Address == ts.providers[1].Addr.String() {
 			numberOfAppearances += 1
 		}
 	}

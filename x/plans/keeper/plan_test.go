@@ -23,6 +23,7 @@ type testStruct struct {
 	ctx     context.Context
 	keepers *testkeeper.Keepers
 }
+
 func (ts *testStruct) advanceEpochUntilStale() {
 	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + int64(commontypes.STALE_ENTRY_TIME+1)
 	for block > sdk.UnwrapSDKContext(ts.ctx).BlockHeight() {
@@ -66,14 +67,13 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 		// create dummy plan and append to the testPlans array
 		dummyPlan := types.Plan{
 			Index:                    planIndex,
-			Name:                     "test plan",
 			Description:              "plan to test",
 			Type:                     "rpc",
 			Block:                    100,
 			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
 			ComputeUnits:             1000,
 			ComputeUnitsPerEpoch:     100,
-			ServicersToPair:          3,
+			MaxProvidersToPair:       3,
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
 			AnnualDiscountPercentage: 20,
@@ -159,11 +159,10 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 }
 
 const (
-	PRICE_FIELD = iota+1
+	PRICE_FIELD = iota + 1
 	OVERUSE_FIELDS
 	CU_FIELD
 	SERVICERS_FIELD
-	NAME_FIELD
 	DESCRIPTION_FIELD
 	TYPE_FIELD
 )
@@ -186,9 +185,8 @@ func TestInvalidPlanAddition(t *testing.T) {
 		{"InvalidOveruseTest", 2},
 		{"InvalidCuTest", 3},
 		{"InvalidServicersToPairTest", 4},
-		{"InvalidNameTest", 5},
-		{"InvalidDescriptionTest", 6},
-		{"InvalidTypeTest", 7},
+		{"InvalidDescriptionTest", 5},
+		{"InvalidTypeTest", 6},
 	}
 
 	for _, tt := range tests {
@@ -206,9 +204,7 @@ func TestInvalidPlanAddition(t *testing.T) {
 			case CU_FIELD:
 				planToTest[0].ComputeUnits = 0
 			case SERVICERS_FIELD:
-				planToTest[0].ServicersToPair = 1
-			case NAME_FIELD:
-				planToTest[0].Name = strings.Repeat("a", types.MAX_LEN_PACKAGE_NAME+1)
+				planToTest[0].MaxProvidersToPair = 1
 			case DESCRIPTION_FIELD:
 				planToTest[0].Description = strings.Repeat("a", types.MAX_LEN_PACKAGE_DESCRIPTION+1)
 			case TYPE_FIELD:

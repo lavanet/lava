@@ -42,7 +42,7 @@ func createNPlans(keeper *planskeeper.Keeper, ctx sdk.Context, n int) []planstyp
 
 	for i := range items {
 		items[i] = plan
-		items[i].Index += strconv.Itoa(i+1)
+		items[i].Index += strconv.Itoa(i + 1)
 		keeper.AddPlan(ctx, items[i])
 	}
 
@@ -91,11 +91,11 @@ func TestSubscriptionGetAll(t *testing.T) {
 type testStruct struct {
 	_ctx    context.Context
 	ctx     sdk.Context
-    keepers *keepertest.Keepers
+	keepers *keepertest.Keepers
 	plans   []planstypes.Plan
 }
 
-func (ts *testStruct) advanceBlock(delta... time.Duration) {
+func (ts *testStruct) advanceBlock(delta ...time.Duration) {
 	ts._ctx = keepertest.AdvanceBlock(ts._ctx, ts.keepers, delta...)
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 }
@@ -252,7 +252,7 @@ func TestCreateSubscription(t *testing.T) {
 				}
 
 				err := keeper.CreateSubscription(
-					ts.ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration)
+					ts.ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration, "")
 				if tt.success {
 					require.Nil(t, err, tt.name)
 					_, found := keeper.GetSubscription(ts.ctx, sub.Consumer)
@@ -272,7 +272,7 @@ func TestRenewSubscription(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6, "")
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -285,11 +285,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
 	// with 3 months duration left, asking for 12 more should fail
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12, "")
 	require.NotNil(t, err)
 
 	// but asking for additional 10 is fine
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10, "")
 	require.Nil(t, err)
 
 	sub, found = keeper.GetSubscription(ts.ctx, creator)
@@ -299,21 +299,21 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(10), sub.DurationTotal)
 }
 
-func TestSubscriptionDefaultProject(t *testing.T) {
+func TestSubscriptionAdminProject(t *testing.T) {
 	ts := setupTestStruct(t, 1)
 	keeper := ts.keepers.Subscription
 
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, "mockPlan1", 1)
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, "mockPlan1", 1, "")
 	require.Nil(t, err)
 
 	block := uint64(ts.ctx.BlockHeight())
 
 	// a newly created subscription is expected to have one default project,
 	// with the subscription address as its developer key
-	_, err = ts.keepers.Projects.GetProjectIDForDeveloper(ts.ctx, creator, block)
+	_, err = ts.keepers.Projects.GetProjectDeveloperData(ts.ctx, creator, block)
 	require.Nil(t, err)
 }
 
@@ -332,26 +332,26 @@ func TestExpiryTime(t *testing.T) {
 		months uint64
 	}{
 		// monthly
-		{ [3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 1 },
-		{ [3]int{2000, 3, 30}, [3]int{2000, 4, 28}, 1 },
-		{ [3]int{2000, 3, 31}, [3]int{2000, 4, 28}, 1 },
-		{ [3]int{2000, 2, 1}, [3]int{2000, 3, 1}, 1 },
-		{ [3]int{2000, 2, 28}, [3]int{2000, 3, 28}, 1 },
-		{ [3]int{2001, 2, 28}, [3]int{2001, 3, 28}, 1 },
-		{ [3]int{2000, 2, 29}, [3]int{2000, 3, 28}, 1 },
-		{ [3]int{2000, 1, 28}, [3]int{2000, 2, 28}, 1 },
-		{ [3]int{2001, 1, 28}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 29}, [3]int{2000, 2, 28}, 1 },
-		{ [3]int{2001, 1, 29}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 30}, [3]int{2000, 2, 28}, 1 },
-		{ [3]int{2001, 1, 30}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 31}, [3]int{2000, 2, 28}, 1 },
-		{ [3]int{2001, 1, 31}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2001, 12, 31}, [3]int{2002, 1, 28}, 1 },
+		{[3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 1},
+		{[3]int{2000, 3, 30}, [3]int{2000, 4, 28}, 1},
+		{[3]int{2000, 3, 31}, [3]int{2000, 4, 28}, 1},
+		{[3]int{2000, 2, 1}, [3]int{2000, 3, 1}, 1},
+		{[3]int{2000, 2, 28}, [3]int{2000, 3, 28}, 1},
+		{[3]int{2001, 2, 28}, [3]int{2001, 3, 28}, 1},
+		{[3]int{2000, 2, 29}, [3]int{2000, 3, 28}, 1},
+		{[3]int{2000, 1, 28}, [3]int{2000, 2, 28}, 1},
+		{[3]int{2001, 1, 28}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 29}, [3]int{2000, 2, 28}, 1},
+		{[3]int{2001, 1, 29}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 30}, [3]int{2000, 2, 28}, 1},
+		{[3]int{2001, 1, 30}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 31}, [3]int{2000, 2, 28}, 1},
+		{[3]int{2001, 1, 31}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2001, 12, 31}, [3]int{2002, 1, 28}, 1},
 		// duration > 1
-		{ [3]int{2000, 3, 1}, [3]int{2000, 5, 1}, 2 },
-		{ [3]int{2000, 3, 1}, [3]int{2000, 9, 1}, 6 },
-		{ [3]int{2000, 3, 1}, [3]int{2001, 3, 1}, 12 },
+		{[3]int{2000, 3, 1}, [3]int{2000, 5, 1}, 2},
+		{[3]int{2000, 3, 1}, [3]int{2000, 9, 1}, 6},
+		{[3]int{2000, 3, 1}, [3]int{2001, 3, 1}, 12},
 	}
 
 	plan := ts.plans[0]
@@ -367,7 +367,7 @@ func TestExpiryTime(t *testing.T) {
 			delta := now.Sub(ts.ctx.BlockTime())
 			ts.advanceBlock(delta)
 
-			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.months)
+			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.months, "")
 			require.Nil(t, err)
 
 			sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -411,7 +411,7 @@ func TestPrice(t *testing.T) {
 			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
 			ts.keepers.Plans.AddPlan(ts.ctx, plan)
 
-			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.duration)
+			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.duration, "")
 			require.Nil(t, err)
 
 			_, found := keeper.GetSubscription(ts.ctx, creator)
@@ -426,4 +426,3 @@ func TestPrice(t *testing.T) {
 		})
 	}
 }
-

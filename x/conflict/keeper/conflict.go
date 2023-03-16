@@ -58,11 +58,23 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("conflict was received outside of the allowed span, current: %d, span %d - %d", ctx.BlockHeight(), epochStart, epochStart+span)
 	}
 
-	k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
-	// 2. validate signer
-	_, err = k.epochstorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epochStart)
+	_, err = k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
 	if err != nil {
-		return fmt.Errorf("did not find a stake entry for consumer %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
+		return err
+	}
+
+	_, _, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
+	if err != nil {
+		// support legacy
+		_, err = k.pairingKeeper.VerifyClientStake(ctx, chainID, clientAddr, uint64(block), epochStart)
+		if err != nil {
+			return err
+		}
+		// 2. validate signer
+		_, err = k.epochstorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epochStart)
+		if err != nil {
+			return fmt.Errorf("did not find a stake entry for consumer %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
+		}
 	}
 	verifyClientAddrFromSignatureOnRequest := func(conflictRelayData types.ConflictRelayData) error {
 		pubKey, err := sigs.RecoverPubKeyFromRelay(*conflictRelayData.Request)

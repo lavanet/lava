@@ -93,7 +93,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, _, foundIndex, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, foundIndex, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
 			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
 				foundIndexMap[providers11[i].Address] = foundIndex
@@ -149,7 +149,7 @@ func TestGetPairing(t *testing.T) {
 			}
 
 			// construct get-pairing request
-			pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: ts.clients[0].address.String()}
+			pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: ts.clients[0].Addr.String()}
 
 			// get pairing for client (for epoch zero there is no pairing -> expect to fail)
 			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
@@ -159,7 +159,7 @@ func TestGetPairing(t *testing.T) {
 				require.Nil(t, err)
 
 				// verify the expected provider
-				require.Equal(t, ts.providers[0].address.String(), pairing.Providers[0].Address)
+				require.Equal(t, ts.providers[0].Addr.String(), pairing.Providers[0].Address)
 
 				// verify the current epoch
 				currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
