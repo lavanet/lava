@@ -52,10 +52,15 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 			// Set specific Config fields inside a custom ConfigOption.
 			sMaxSamplesStored, ok := os.LookupEnv("NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED")
 			if ok {
+				utils.LavaFormatDebug("Setting NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", &map[string]string{"sMaxSamplesStored": sMaxSamplesStored})
 				maxSamplesStored, err := strconv.Atoi(sMaxSamplesStored)
 				if err != nil {
+					utils.LavaFormatError("Failed converting sMaxSamplesStored to number", err, &map[string]string{"sMaxSamplesStored": sMaxSamplesStored})
+				} else {
 					cfg.TransactionEvents.MaxSamplesStored = maxSamplesStored
 				}
+			} else {
+				utils.LavaFormatDebug("Did not find NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED in env", nil)
 			}
 		},
 		newrelic.ConfigFromEnvironment(),
