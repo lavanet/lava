@@ -242,24 +242,20 @@ func TestPaymentFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	relayRequest := &types.RelayRequest{
-		Provider:        providerToFreeze.Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     blockForPaymentBeforeFreeze,
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relayRequest := &types.RelaySession{
+		Provider:  providerToFreeze.Address,
+		SessionId: uint64(1),
+		SpecID:    ts.spec.Name,
+		CuSum:     ts.spec.Apis[0].ComputeUnits * 10,
+		Epoch:     blockForPaymentBeforeFreeze,
+		RelayNum:  0,
 	}
 
 	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	var Relays []*types.RelayRequest
+	var Relays []*types.RelaySession
 	Relays = append(Relays, relayRequest)
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: providerToFreeze.Address, Relays: Relays})

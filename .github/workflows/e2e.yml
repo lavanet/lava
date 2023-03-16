@@ -87,12 +87,12 @@ jobs:
 
     - name: JSON Provider All Logs
       if: always()
-      run: grep "" testutil/e2e/logs/03_jsonProvider* --exclude="*errors*"
+      run: grep "" testutil/e2e/logs/03_EthProvider* --exclude="*errors*"
 
     - name: JSON Provider Error Only Logs
       if: always()
       continue-on-error: true
-      run: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
+      run: grep "" testutil/e2e/logs/03_EthProvider* --include="*errors*"
 
     - name: JSON Consumer All Logs
       if: always()
