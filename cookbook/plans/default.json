@@ -7,7 +7,6 @@
                 "index": "DefaultPlan",
                 "description": "This plan has no restrictions",
                 "type": "rpc",
-                "duration": "1",
                 "price": {
                     "denom": "ulava",
                     "amount": "100000"
