@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdShowAllPlans() *cobra.Command {
+func CmdList() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-all-plans",
-		Short: "Query to show all available plan",
+		Use:   "list",
+		Short: "Query to show the list of all available plan",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -24,9 +24,9 @@ func CmdShowAllPlans() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowAllPlansRequest{}
+			params := &types.QueryListRequest{}
 
-			res, err := queryClient.ShowAllPlans(cmd.Context(), params)
+			res, err := queryClient.List(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

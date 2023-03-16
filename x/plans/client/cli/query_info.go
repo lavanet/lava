@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdShowPlanInfo() *cobra.Command {
+func CmdInfo() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-plan-info [plan-index]",
-		Short: "Query to show plan info",
+		Use:   "info [plan-index]",
+		Short: "Query to show a plan info",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqPlanIndex := args[0]
@@ -26,11 +26,11 @@ func CmdShowPlanInfo() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowPlanInfoRequest{
+			params := &types.QueryInfoRequest{
 				PlanIndex: reqPlanIndex,
 			}
 
-			res, err := queryClient.ShowPlanInfo(cmd.Context(), params)
+			res, err := queryClient.Info(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

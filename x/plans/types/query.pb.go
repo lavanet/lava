@@ -114,21 +114,21 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
-type QueryShowAllPlansRequest struct {
+type QueryListRequest struct {
 }
 
-func (m *QueryShowAllPlansRequest) Reset()         { *m = QueryShowAllPlansRequest{} }
-func (m *QueryShowAllPlansRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryShowAllPlansRequest) ProtoMessage()    {}
-func (*QueryShowAllPlansRequest) Descriptor() ([]byte, []int) {
+func (m *QueryListRequest) Reset()         { *m = QueryListRequest{} }
+func (m *QueryListRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryListRequest) ProtoMessage()    {}
+func (*QueryListRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_076d0f778fb40d3e, []int{2}
 }
-func (m *QueryShowAllPlansRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowAllPlansRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowAllPlansRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryListRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -138,34 +138,34 @@ func (m *QueryShowAllPlansRequest) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *QueryShowAllPlansRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowAllPlansRequest.Merge(m, src)
+func (m *QueryListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryListRequest.Merge(m, src)
 }
-func (m *QueryShowAllPlansRequest) XXX_Size() int {
+func (m *QueryListRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowAllPlansRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowAllPlansRequest.DiscardUnknown(m)
+func (m *QueryListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryListRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowAllPlansRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryListRequest proto.InternalMessageInfo
 
-type QueryShowAllPlansResponse struct {
-	PlansInfo []ShowAllPlansInfoStruct `protobuf:"bytes,1,rep,name=plans_info,json=plansInfo,proto3" json:"plans_info"`
+type QueryListResponse struct {
+	PlansInfo []ListInfoStruct `protobuf:"bytes,1,rep,name=plans_info,json=plansInfo,proto3" json:"plans_info"`
 }
 
-func (m *QueryShowAllPlansResponse) Reset()         { *m = QueryShowAllPlansResponse{} }
-func (m *QueryShowAllPlansResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryShowAllPlansResponse) ProtoMessage()    {}
-func (*QueryShowAllPlansResponse) Descriptor() ([]byte, []int) {
+func (m *QueryListResponse) Reset()         { *m = QueryListResponse{} }
+func (m *QueryListResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryListResponse) ProtoMessage()    {}
+func (*QueryListResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_076d0f778fb40d3e, []int{3}
 }
-func (m *QueryShowAllPlansResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryListResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowAllPlansResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryListResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowAllPlansResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryListResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -175,43 +175,43 @@ func (m *QueryShowAllPlansResponse) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *QueryShowAllPlansResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowAllPlansResponse.Merge(m, src)
+func (m *QueryListResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryListResponse.Merge(m, src)
 }
-func (m *QueryShowAllPlansResponse) XXX_Size() int {
+func (m *QueryListResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowAllPlansResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowAllPlansResponse.DiscardUnknown(m)
+func (m *QueryListResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryListResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowAllPlansResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryListResponse proto.InternalMessageInfo
 
-func (m *QueryShowAllPlansResponse) GetPlansInfo() []ShowAllPlansInfoStruct {
+func (m *QueryListResponse) GetPlansInfo() []ListInfoStruct {
 	if m != nil {
 		return m.PlansInfo
 	}
 	return nil
 }
 
-type ShowAllPlansInfoStruct struct {
+type ListInfoStruct struct {
 	Index string     `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
 	Name  string     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Price types.Coin `protobuf:"bytes,3,opt,name=price,proto3" json:"price"`
 }
 
-func (m *ShowAllPlansInfoStruct) Reset()         { *m = ShowAllPlansInfoStruct{} }
-func (m *ShowAllPlansInfoStruct) String() string { return proto.CompactTextString(m) }
-func (*ShowAllPlansInfoStruct) ProtoMessage()    {}
-func (*ShowAllPlansInfoStruct) Descriptor() ([]byte, []int) {
+func (m *ListInfoStruct) Reset()         { *m = ListInfoStruct{} }
+func (m *ListInfoStruct) String() string { return proto.CompactTextString(m) }
+func (*ListInfoStruct) ProtoMessage()    {}
+func (*ListInfoStruct) Descriptor() ([]byte, []int) {
 	return fileDescriptor_076d0f778fb40d3e, []int{4}
 }
-func (m *ShowAllPlansInfoStruct) XXX_Unmarshal(b []byte) error {
+func (m *ListInfoStruct) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ShowAllPlansInfoStruct) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ListInfoStruct) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ShowAllPlansInfoStruct.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ListInfoStruct.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -221,55 +221,55 @@ func (m *ShowAllPlansInfoStruct) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *ShowAllPlansInfoStruct) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ShowAllPlansInfoStruct.Merge(m, src)
+func (m *ListInfoStruct) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListInfoStruct.Merge(m, src)
 }
-func (m *ShowAllPlansInfoStruct) XXX_Size() int {
+func (m *ListInfoStruct) XXX_Size() int {
 	return m.Size()
 }
-func (m *ShowAllPlansInfoStruct) XXX_DiscardUnknown() {
-	xxx_messageInfo_ShowAllPlansInfoStruct.DiscardUnknown(m)
+func (m *ListInfoStruct) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListInfoStruct.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ShowAllPlansInfoStruct proto.InternalMessageInfo
+var xxx_messageInfo_ListInfoStruct proto.InternalMessageInfo
 
-func (m *ShowAllPlansInfoStruct) GetIndex() string {
+func (m *ListInfoStruct) GetIndex() string {
 	if m != nil {
 		return m.Index
 	}
 	return ""
 }
 
-func (m *ShowAllPlansInfoStruct) GetName() string {
+func (m *ListInfoStruct) GetName() string {
 	if m != nil {
 		return m.Name
 	}
 	return ""
 }
 
-func (m *ShowAllPlansInfoStruct) GetPrice() types.Coin {
+func (m *ListInfoStruct) GetPrice() types.Coin {
 	if m != nil {
 		return m.Price
 	}
 	return types.Coin{}
 }
 
-type QueryShowPlanInfoRequest struct {
+type QueryInfoRequest struct {
 	PlanIndex string `protobuf:"bytes,1,opt,name=plan_index,json=planIndex,proto3" json:"plan_index,omitempty"`
 }
 
-func (m *QueryShowPlanInfoRequest) Reset()         { *m = QueryShowPlanInfoRequest{} }
-func (m *QueryShowPlanInfoRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryShowPlanInfoRequest) ProtoMessage()    {}
-func (*QueryShowPlanInfoRequest) Descriptor() ([]byte, []int) {
+func (m *QueryInfoRequest) Reset()         { *m = QueryInfoRequest{} }
+func (m *QueryInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInfoRequest) ProtoMessage()    {}
+func (*QueryInfoRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_076d0f778fb40d3e, []int{5}
 }
-func (m *QueryShowPlanInfoRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowPlanInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowPlanInfoRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryInfoRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -279,41 +279,41 @@ func (m *QueryShowPlanInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *QueryShowPlanInfoRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowPlanInfoRequest.Merge(m, src)
+func (m *QueryInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInfoRequest.Merge(m, src)
 }
-func (m *QueryShowPlanInfoRequest) XXX_Size() int {
+func (m *QueryInfoRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowPlanInfoRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowPlanInfoRequest.DiscardUnknown(m)
+func (m *QueryInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInfoRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowPlanInfoRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryInfoRequest proto.InternalMessageInfo
 
-func (m *QueryShowPlanInfoRequest) GetPlanIndex() string {
+func (m *QueryInfoRequest) GetPlanIndex() string {
 	if m != nil {
 		return m.PlanIndex
 	}
 	return ""
 }
 
-type QueryShowPlanInfoResponse struct {
+type QueryInfoResponse struct {
 	PlanInfo Plan `protobuf:"bytes,1,opt,name=plan_info,json=planInfo,proto3" json:"plan_info"`
 }
 
-func (m *QueryShowPlanInfoResponse) Reset()         { *m = QueryShowPlanInfoResponse{} }
-func (m *QueryShowPlanInfoResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryShowPlanInfoResponse) ProtoMessage()    {}
-func (*QueryShowPlanInfoResponse) Descriptor() ([]byte, []int) {
+func (m *QueryInfoResponse) Reset()         { *m = QueryInfoResponse{} }
+func (m *QueryInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInfoResponse) ProtoMessage()    {}
+func (*QueryInfoResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_076d0f778fb40d3e, []int{6}
 }
-func (m *QueryShowPlanInfoResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowPlanInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowPlanInfoResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -323,19 +323,19 @@ func (m *QueryShowPlanInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *QueryShowPlanInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowPlanInfoResponse.Merge(m, src)
+func (m *QueryInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInfoResponse.Merge(m, src)
 }
-func (m *QueryShowPlanInfoResponse) XXX_Size() int {
+func (m *QueryInfoResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowPlanInfoResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowPlanInfoResponse.DiscardUnknown(m)
+func (m *QueryInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInfoResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowPlanInfoResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryInfoResponse proto.InternalMessageInfo
 
-func (m *QueryShowPlanInfoResponse) GetPlanInfo() Plan {
+func (m *QueryInfoResponse) GetPlanInfo() Plan {
 	if m != nil {
 		return m.PlanInfo
 	}
@@ -345,52 +345,51 @@ func (m *QueryShowPlanInfoResponse) GetPlanInfo() Plan {
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.plans.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.plans.QueryParamsResponse")
-	proto.RegisterType((*QueryShowAllPlansRequest)(nil), "lavanet.lava.plans.QueryShowAllPlansRequest")
-	proto.RegisterType((*QueryShowAllPlansResponse)(nil), "lavanet.lava.plans.QueryShowAllPlansResponse")
-	proto.RegisterType((*ShowAllPlansInfoStruct)(nil), "lavanet.lava.plans.showAllPlansInfoStruct")
-	proto.RegisterType((*QueryShowPlanInfoRequest)(nil), "lavanet.lava.plans.QueryShowPlanInfoRequest")
-	proto.RegisterType((*QueryShowPlanInfoResponse)(nil), "lavanet.lava.plans.QueryShowPlanInfoResponse")
+	proto.RegisterType((*QueryListRequest)(nil), "lavanet.lava.plans.QueryListRequest")
+	proto.RegisterType((*QueryListResponse)(nil), "lavanet.lava.plans.QueryListResponse")
+	proto.RegisterType((*ListInfoStruct)(nil), "lavanet.lava.plans.listInfoStruct")
+	proto.RegisterType((*QueryInfoRequest)(nil), "lavanet.lava.plans.QueryInfoRequest")
+	proto.RegisterType((*QueryInfoResponse)(nil), "lavanet.lava.plans.QueryInfoResponse")
 }
 
 func init() { proto.RegisterFile("plans/query.proto", fileDescriptor_076d0f778fb40d3e) }
 
 var fileDescriptor_076d0f778fb40d3e = []byte{
-	// 554 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xcd, 0x6e, 0xd3, 0x4c,
-	0x14, 0x8d, 0x9b, 0x26, 0xfa, 0x32, 0xfd, 0x16, 0x30, 0x44, 0xc8, 0xb5, 0x8a, 0xa9, 0x2c, 0x7e,
-	0xaa, 0x08, 0x66, 0x94, 0x20, 0x04, 0x88, 0x05, 0xa2, 0xac, 0xba, 0x6a, 0x49, 0x37, 0x88, 0x4d,
-	0x34, 0x09, 0x53, 0xd7, 0xd2, 0x64, 0x66, 0xea, 0x99, 0x94, 0x46, 0xa8, 0x1b, 0x9e, 0x00, 0x89,
-	0x05, 0x2f, 0xc0, 0xbb, 0xd0, 0x65, 0x25, 0x36, 0xac, 0x10, 0x4a, 0x78, 0x10, 0x34, 0x3f, 0xa6,
-	0x6e, 0xeb, 0x2a, 0xac, 0x6c, 0xdf, 0x39, 0xe7, 0x9e, 0x33, 0xe7, 0x5e, 0x19, 0x5c, 0x97, 0x8c,
-	0x70, 0x85, 0x0f, 0x26, 0x34, 0x9f, 0x22, 0x99, 0x0b, 0x2d, 0x20, 0x64, 0xe4, 0x90, 0x70, 0xaa,
-	0x91, 0x79, 0x22, 0x7b, 0x1e, 0xb5, 0x53, 0x91, 0x0a, 0x7b, 0x8c, 0xcd, 0x9b, 0x43, 0x46, 0x6b,
-	0xa9, 0x10, 0x29, 0xa3, 0x98, 0xc8, 0x0c, 0x13, 0xce, 0x85, 0x26, 0x3a, 0x13, 0x5c, 0xf9, 0xd3,
-	0xce, 0x48, 0xa8, 0xb1, 0x50, 0x78, 0x48, 0x14, 0x75, 0x02, 0xf8, 0xb0, 0x3b, 0xa4, 0x9a, 0x74,
-	0xb1, 0x24, 0x69, 0xc6, 0x2d, 0xd8, 0x63, 0xa1, 0xb3, 0x21, 0x49, 0x4e, 0xc6, 0x05, 0x3f, 0x2e,
-	0xf3, 0x0b, 0xe6, 0x48, 0x64, 0x05, 0xe7, 0x9a, 0xe7, 0x30, 0xe2, 0x2b, 0x49, 0x1b, 0xc0, 0xd7,
-	0x46, 0x67, 0xc7, 0xb6, 0xe9, 0xd3, 0x83, 0x09, 0x55, 0x3a, 0xd9, 0x06, 0x37, 0xce, 0x55, 0x95,
-	0x14, 0x5c, 0x51, 0xf8, 0x14, 0x34, 0x9d, 0x5c, 0x18, 0xac, 0x07, 0x1b, 0x2b, 0xbd, 0x08, 0x5d,
-	0xbe, 0x37, 0x72, 0x9c, 0xcd, 0xe5, 0x93, 0x9f, 0xb7, 0x6b, 0x7d, 0x8f, 0x4f, 0x22, 0x10, 0xda,
-	0x86, 0xbb, 0xfb, 0xe2, 0xfd, 0x4b, 0xc6, 0x76, 0x0c, 0xb2, 0x10, 0x63, 0x60, 0xb5, 0xe2, 0xcc,
-	0x4b, 0x6e, 0x03, 0x60, 0xdb, 0x0e, 0x32, 0xbe, 0x27, 0xc2, 0x60, 0xbd, 0xbe, 0xb1, 0xd2, 0xeb,
-	0x54, 0xc9, 0xaa, 0x12, 0x7b, 0x8b, 0xef, 0x89, 0x5d, 0x9d, 0x4f, 0x46, 0xda, 0xdb, 0x68, 0xc9,
-	0xa2, 0x9c, 0x4c, 0xc1, 0xcd, 0x6a, 0x28, 0x6c, 0x83, 0x46, 0xc6, 0xdf, 0xd1, 0x23, 0x7b, 0xb9,
-	0x56, 0xdf, 0x7d, 0x40, 0x08, 0x96, 0x39, 0x19, 0xd3, 0x70, 0xc9, 0x16, 0xed, 0x3b, 0x7c, 0x0c,
-	0x1a, 0x32, 0xcf, 0x46, 0x34, 0xac, 0xdb, 0x18, 0x56, 0x91, 0x8b, 0x1d, 0x99, 0xd8, 0x91, 0x8f,
-	0x1d, 0xbd, 0x12, 0x19, 0xf7, 0xf2, 0x0e, 0x9d, 0x3c, 0x2b, 0x85, 0x60, 0xc4, 0x8d, 0xb6, 0x0f,
-	0x01, 0xde, 0x72, 0xf7, 0x1c, 0x94, 0x1d, 0x58, 0xd7, 0x5b, 0xa6, 0x90, 0xbc, 0x29, 0x65, 0x74,
-	0x46, 0xf5, 0x19, 0x3d, 0x07, 0x2d, 0xcf, 0xb5, 0x11, 0x19, 0x4b, 0x61, 0xe5, 0x64, 0x18, 0x29,
-	0x1c, 0xfd, 0x27, 0x7d, 0x93, 0xde, 0xb7, 0x3a, 0x68, 0xd8, 0xd6, 0xf0, 0x18, 0x34, 0xdd, 0xec,
-	0xe0, 0xbd, 0x2a, 0xf6, 0xe5, 0x35, 0x89, 0xee, 0x2f, 0xc4, 0x39, 0x87, 0x49, 0xf2, 0xf1, 0xfb,
-	0xef, 0xcf, 0x4b, 0x6b, 0x30, 0xc2, 0x9e, 0x60, 0x9f, 0xb8, 0xbc, 0xc1, 0xf0, 0x4b, 0x00, 0xfe,
-	0x2f, 0xaf, 0x00, 0x7c, 0x70, 0x65, 0xf7, 0x8a, 0x2d, 0x8a, 0x1e, 0xfe, 0x23, 0xda, 0x3b, 0xea,
-	0x58, 0x47, 0x77, 0x60, 0x52, 0xe5, 0xc8, 0x2c, 0xc8, 0x80, 0x30, 0x36, 0xb0, 0x9f, 0xf0, 0xab,
-	0x77, 0x56, 0x04, 0xbf, 0xc0, 0xd9, 0x85, 0xd1, 0x2e, 0x70, 0x76, 0x71, 0x9a, 0xc9, 0x13, 0xeb,
-	0xac, 0x0b, 0xf1, 0x95, 0xce, 0xfe, 0x0e, 0x1b, 0x7f, 0x38, 0xdb, 0x99, 0xe3, 0xcd, 0x17, 0x27,
-	0xb3, 0x38, 0x38, 0x9d, 0xc5, 0xc1, 0xaf, 0x59, 0x1c, 0x7c, 0x9a, 0xc7, 0xb5, 0xd3, 0x79, 0x5c,
-	0xfb, 0x31, 0x8f, 0x6b, 0x6f, 0xef, 0xa6, 0x99, 0xde, 0x9f, 0x0c, 0xd1, 0x48, 0x8c, 0xcf, 0x37,
-	0x3d, 0xf2, 0x6d, 0xf5, 0x54, 0x52, 0x35, 0x6c, 0xda, 0x5f, 0xc2, 0xa3, 0x3f, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x08, 0x6c, 0xea, 0x27, 0xe1, 0x04, 0x00, 0x00,
+	// 531 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x93, 0xcf, 0x6b, 0x13, 0x41,
+	0x14, 0xc7, 0xb3, 0xcd, 0x0f, 0xcc, 0x14, 0xa4, 0x1d, 0x73, 0x58, 0x97, 0xba, 0x86, 0xc1, 0xd8,
+	0x22, 0x38, 0x43, 0x22, 0x82, 0xe0, 0x41, 0xa8, 0x07, 0x29, 0x08, 0xd6, 0x78, 0x13, 0xa1, 0x4c,
+	0xe2, 0x64, 0x1d, 0xd8, 0xcc, 0x6c, 0x76, 0x66, 0x4b, 0x8b, 0xf4, 0x92, 0xbf, 0x40, 0xf0, 0x9f,
+	0xea, 0xb1, 0xe0, 0xc5, 0x93, 0x48, 0xe2, 0x1f, 0x22, 0xf3, 0x63, 0x71, 0x43, 0xd7, 0xf6, 0xb4,
+	0x9b, 0xf7, 0xde, 0xf7, 0x7d, 0xde, 0x7b, 0xdf, 0x0d, 0xd8, 0xcd, 0x52, 0x2a, 0x14, 0x59, 0x14,
+	0x2c, 0x3f, 0xc7, 0x59, 0x2e, 0xb5, 0x84, 0x30, 0xa5, 0xa7, 0x54, 0x30, 0x8d, 0xcd, 0x13, 0xdb,
+	0x7c, 0xd4, 0x4b, 0x64, 0x22, 0x6d, 0x9a, 0x98, 0x37, 0x57, 0x19, 0xed, 0x25, 0x52, 0x26, 0x29,
+	0x23, 0x34, 0xe3, 0x84, 0x0a, 0x21, 0x35, 0xd5, 0x5c, 0x0a, 0xe5, 0xb3, 0x4f, 0xa6, 0x52, 0xcd,
+	0xa5, 0x22, 0x13, 0xaa, 0x98, 0x03, 0x90, 0xd3, 0xe1, 0x84, 0x69, 0x3a, 0x24, 0x19, 0x4d, 0xb8,
+	0xb0, 0xc5, 0xbe, 0x16, 0xba, 0x31, 0x32, 0x9a, 0xd3, 0x79, 0xa9, 0x8f, 0xab, 0xfa, 0x52, 0x39,
+	0x95, 0xbc, 0xd4, 0xec, 0x78, 0x4d, 0x4a, 0x7d, 0x04, 0xf5, 0x00, 0x7c, 0x6f, 0x38, 0xc7, 0xb6,
+	0xcd, 0x98, 0x2d, 0x0a, 0xa6, 0x34, 0x7a, 0x07, 0xee, 0x6d, 0x44, 0x55, 0x26, 0x85, 0x62, 0xf0,
+	0x05, 0xe8, 0x38, 0x5c, 0x18, 0xf4, 0x83, 0x83, 0xed, 0x51, 0x84, 0xaf, 0xef, 0x8d, 0x9d, 0xe6,
+	0xb0, 0x75, 0xf9, 0xeb, 0x61, 0x63, 0xec, 0xeb, 0x11, 0x04, 0x3b, 0xb6, 0xe1, 0x5b, 0xae, 0x74,
+	0x09, 0xf9, 0x04, 0x76, 0x2b, 0x31, 0x8f, 0x78, 0x03, 0x80, 0x6d, 0x73, 0xc2, 0xc5, 0x4c, 0x86,
+	0x41, 0xbf, 0x79, 0xb0, 0x3d, 0x42, 0x75, 0x98, 0x94, 0x2b, 0x7d, 0x24, 0x66, 0xf2, 0x83, 0xce,
+	0x8b, 0xa9, 0xf6, 0xb8, 0xae, 0xcd, 0x99, 0x30, 0x5a, 0x80, 0xbb, 0x9b, 0x25, 0xb0, 0x07, 0xda,
+	0x5c, 0x7c, 0x66, 0x67, 0x76, 0xf8, 0xee, 0xd8, 0xfd, 0x80, 0x10, 0xb4, 0x04, 0x9d, 0xb3, 0x70,
+	0xcb, 0x06, 0xed, 0x3b, 0x7c, 0x0e, 0xda, 0x59, 0xce, 0xa7, 0x2c, 0x6c, 0xda, 0x35, 0xef, 0x63,
+	0x77, 0x56, 0x6c, 0xce, 0x8a, 0xfd, 0x59, 0xf1, 0x6b, 0xc9, 0x85, 0xc7, 0xba, 0x6a, 0x34, 0xf4,
+	0x4b, 0x1a, 0xa6, 0x5f, 0x12, 0x3e, 0x70, 0xfb, 0x9c, 0x54, 0xc9, 0x76, 0xca, 0x23, 0x13, 0x40,
+	0xc7, 0xfe, 0x06, 0x4e, 0xe2, 0x6f, 0xf0, 0x12, 0x74, 0xbd, 0xc6, 0x9e, 0xc0, 0x8c, 0x10, 0xd6,
+	0x5e, 0x3a, 0xa5, 0xe5, 0x04, 0x77, 0x5c, 0xcb, 0x99, 0x1c, 0x2d, 0x9b, 0xa0, 0x6d, 0x5b, 0xc2,
+	0x0b, 0xd0, 0x71, 0x5e, 0xc0, 0xc7, 0x75, 0xea, 0xeb, 0xb6, 0x47, 0xfb, 0xb7, 0xd6, 0xb9, 0x09,
+	0x11, 0x5a, 0xfe, 0xf8, 0xf3, 0x7d, 0x6b, 0x0f, 0x46, 0xc4, 0x0b, 0xec, 0x93, 0x54, 0xbf, 0x48,
+	0x58, 0x80, 0x96, 0x71, 0x16, 0x3e, 0xfa, 0x6f, 0xd3, 0xca, 0xc7, 0x10, 0x0d, 0x6e, 0xa9, 0xf2,
+	0xe0, 0xbe, 0x05, 0x47, 0x30, 0xac, 0x03, 0x1b, 0xbf, 0xe1, 0x32, 0x00, 0x2d, 0x73, 0x88, 0x1b,
+	0xb8, 0x15, 0x7f, 0x6e, 0xe0, 0x56, 0x2d, 0x41, 0x4f, 0x2d, 0x77, 0x1f, 0x0e, 0xea, 0xb8, 0xc6,
+	0x27, 0xf2, 0xf5, 0x9f, 0xcd, 0x17, 0x87, 0xaf, 0x2e, 0x57, 0x71, 0x70, 0xb5, 0x8a, 0x83, 0xdf,
+	0xab, 0x38, 0xf8, 0xb6, 0x8e, 0x1b, 0x57, 0xeb, 0xb8, 0xf1, 0x73, 0x1d, 0x37, 0x3e, 0x0e, 0x12,
+	0xae, 0xbf, 0x14, 0x13, 0x3c, 0x95, 0xf3, 0xcd, 0x56, 0x67, 0xbe, 0x99, 0x3e, 0xcf, 0x98, 0x9a,
+	0x74, 0xec, 0xbf, 0xf3, 0xd9, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x2e, 0x13, 0x24, 0xe6, 0x6c,
+	0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -407,10 +406,10 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// Queries a list of ShowAllPlans items.
-	ShowAllPlans(ctx context.Context, in *QueryShowAllPlansRequest, opts ...grpc.CallOption) (*QueryShowAllPlansResponse, error)
-	// Queries a list of ShowPlanInfo items.
-	ShowPlanInfo(ctx context.Context, in *QueryShowPlanInfoRequest, opts ...grpc.CallOption) (*QueryShowPlanInfoResponse, error)
+	// Queries a list of List items.
+	List(ctx context.Context, in *QueryListRequest, opts ...grpc.CallOption) (*QueryListResponse, error)
+	// Queries an Info item.
+	Info(ctx context.Context, in *QueryInfoRequest, opts ...grpc.CallOption) (*QueryInfoResponse, error)
 }
 
 type queryClient struct {
@@ -430,18 +429,18 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
-func (c *queryClient) ShowAllPlans(ctx context.Context, in *QueryShowAllPlansRequest, opts ...grpc.CallOption) (*QueryShowAllPlansResponse, error) {
-	out := new(QueryShowAllPlansResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.plans.Query/ShowAllPlans", in, out, opts...)
+func (c *queryClient) List(ctx context.Context, in *QueryListRequest, opts ...grpc.CallOption) (*QueryListResponse, error) {
+	out := new(QueryListResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.plans.Query/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ShowPlanInfo(ctx context.Context, in *QueryShowPlanInfoRequest, opts ...grpc.CallOption) (*QueryShowPlanInfoResponse, error) {
-	out := new(QueryShowPlanInfoResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.plans.Query/ShowPlanInfo", in, out, opts...)
+func (c *queryClient) Info(ctx context.Context, in *QueryInfoRequest, opts ...grpc.CallOption) (*QueryInfoResponse, error) {
+	out := new(QueryInfoResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.plans.Query/Info", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -452,10 +451,10 @@ func (c *queryClient) ShowPlanInfo(ctx context.Context, in *QueryShowPlanInfoReq
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// Queries a list of ShowAllPlans items.
-	ShowAllPlans(context.Context, *QueryShowAllPlansRequest) (*QueryShowAllPlansResponse, error)
-	// Queries a list of ShowPlanInfo items.
-	ShowPlanInfo(context.Context, *QueryShowPlanInfoRequest) (*QueryShowPlanInfoResponse, error)
+	// Queries a list of List items.
+	List(context.Context, *QueryListRequest) (*QueryListResponse, error)
+	// Queries an Info item.
+	Info(context.Context, *QueryInfoRequest) (*QueryInfoResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -465,11 +464,11 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
-func (*UnimplementedQueryServer) ShowAllPlans(ctx context.Context, req *QueryShowAllPlansRequest) (*QueryShowAllPlansResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowAllPlans not implemented")
+func (*UnimplementedQueryServer) List(ctx context.Context, req *QueryListRequest) (*QueryListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (*UnimplementedQueryServer) ShowPlanInfo(ctx context.Context, req *QueryShowPlanInfoRequest) (*QueryShowPlanInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowPlanInfo not implemented")
+func (*UnimplementedQueryServer) Info(ctx context.Context, req *QueryInfoRequest) (*QueryInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -494,38 +493,38 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ShowAllPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryShowAllPlansRequest)
+func _Query_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ShowAllPlans(ctx, in)
+		return srv.(QueryServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.plans.Query/ShowAllPlans",
+		FullMethod: "/lavanet.lava.plans.Query/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ShowAllPlans(ctx, req.(*QueryShowAllPlansRequest))
+		return srv.(QueryServer).List(ctx, req.(*QueryListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ShowPlanInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryShowPlanInfoRequest)
+func _Query_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ShowPlanInfo(ctx, in)
+		return srv.(QueryServer).Info(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.plans.Query/ShowPlanInfo",
+		FullMethod: "/lavanet.lava.plans.Query/Info",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ShowPlanInfo(ctx, req.(*QueryShowPlanInfoRequest))
+		return srv.(QueryServer).Info(ctx, req.(*QueryInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -539,12 +538,12 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Params_Handler,
 		},
 		{
-			MethodName: "ShowAllPlans",
-			Handler:    _Query_ShowAllPlans_Handler,
+			MethodName: "List",
+			Handler:    _Query_List_Handler,
 		},
 		{
-			MethodName: "ShowPlanInfo",
-			Handler:    _Query_ShowPlanInfo_Handler,
+			MethodName: "Info",
+			Handler:    _Query_Info_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -607,7 +606,7 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowAllPlansRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryListRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -617,12 +616,12 @@ func (m *QueryShowAllPlansRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowAllPlansRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryListRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowAllPlansRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -630,7 +629,7 @@ func (m *QueryShowAllPlansRequest) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowAllPlansResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryListResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -640,12 +639,12 @@ func (m *QueryShowAllPlansResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowAllPlansResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryListResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowAllPlansResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryListResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -667,7 +666,7 @@ func (m *QueryShowAllPlansResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *ShowAllPlansInfoStruct) Marshal() (dAtA []byte, err error) {
+func (m *ListInfoStruct) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -677,12 +676,12 @@ func (m *ShowAllPlansInfoStruct) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ShowAllPlansInfoStruct) MarshalTo(dAtA []byte) (int, error) {
+func (m *ListInfoStruct) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ShowAllPlansInfoStruct) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ListInfoStruct) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -714,7 +713,7 @@ func (m *ShowAllPlansInfoStruct) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowPlanInfoRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryInfoRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -724,12 +723,12 @@ func (m *QueryShowPlanInfoRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowPlanInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryInfoRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowPlanInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -744,7 +743,7 @@ func (m *QueryShowPlanInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowPlanInfoResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -754,12 +753,12 @@ func (m *QueryShowPlanInfoResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowPlanInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryInfoResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowPlanInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -808,7 +807,7 @@ func (m *QueryParamsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowAllPlansRequest) Size() (n int) {
+func (m *QueryListRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -817,7 +816,7 @@ func (m *QueryShowAllPlansRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowAllPlansResponse) Size() (n int) {
+func (m *QueryListResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -832,7 +831,7 @@ func (m *QueryShowAllPlansResponse) Size() (n int) {
 	return n
 }
 
-func (m *ShowAllPlansInfoStruct) Size() (n int) {
+func (m *ListInfoStruct) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -851,7 +850,7 @@ func (m *ShowAllPlansInfoStruct) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowPlanInfoRequest) Size() (n int) {
+func (m *QueryInfoRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -864,7 +863,7 @@ func (m *QueryShowPlanInfoRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowPlanInfoResponse) Size() (n int) {
+func (m *QueryInfoResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1014,7 +1013,7 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowAllPlansRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryListRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1037,10 +1036,10 @@ func (m *QueryShowAllPlansRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowAllPlansRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryListRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowAllPlansRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1064,7 +1063,7 @@ func (m *QueryShowAllPlansRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowAllPlansResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryListResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1087,10 +1086,10 @@ func (m *QueryShowAllPlansResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowAllPlansResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryListResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowAllPlansResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryListResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1122,7 +1121,7 @@ func (m *QueryShowAllPlansResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PlansInfo = append(m.PlansInfo, ShowAllPlansInfoStruct{})
+			m.PlansInfo = append(m.PlansInfo, ListInfoStruct{})
 			if err := m.PlansInfo[len(m.PlansInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1148,7 +1147,7 @@ func (m *QueryShowAllPlansResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ShowAllPlansInfoStruct) Unmarshal(dAtA []byte) error {
+func (m *ListInfoStruct) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1171,10 +1170,10 @@ func (m *ShowAllPlansInfoStruct) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: showAllPlansInfoStruct: wiretype end group for non-group")
+			return fmt.Errorf("proto: listInfoStruct: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: showAllPlansInfoStruct: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: listInfoStruct: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1295,7 +1294,7 @@ func (m *ShowAllPlansInfoStruct) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowPlanInfoRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryInfoRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1318,10 +1317,10 @@ func (m *QueryShowPlanInfoRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowPlanInfoRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryInfoRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowPlanInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1377,7 +1376,7 @@ func (m *QueryShowPlanInfoRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowPlanInfoResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryInfoResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1400,10 +1399,10 @@ func (m *QueryShowPlanInfoResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowPlanInfoResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryInfoResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowPlanInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

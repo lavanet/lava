@@ -10,11 +10,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ShowAllPlans(goCtx context.Context, req *types.QueryShowAllPlansRequest) (*types.QueryShowAllPlansResponse, error) {
+func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types.QueryListResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-	var allPlansInfo []types.ShowAllPlansInfoStruct
+	var allPlansInfo []types.ListInfoStruct
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get all plan' unique indices
@@ -30,7 +30,7 @@ func (k Keeper) ShowAllPlans(goCtx context.Context, req *types.QueryShowAllPlans
 		}
 
 		// set the planInfoStruct
-		planInfoStruct := types.ShowAllPlansInfoStruct{}
+		planInfoStruct := types.ListInfoStruct{}
 		planInfoStruct.Index = latestVersionPlan.GetIndex()
 		planInfoStruct.Name = latestVersionPlan.GetName()
 		planInfoStruct.Price = latestVersionPlan.GetPrice()
@@ -39,5 +39,5 @@ func (k Keeper) ShowAllPlans(goCtx context.Context, req *types.QueryShowAllPlans
 		allPlansInfo = append(allPlansInfo, planInfoStruct)
 	}
 
-	return &types.QueryShowAllPlansResponse{PlansInfo: allPlansInfo}, nil
+	return &types.QueryListResponse{PlansInfo: allPlansInfo}, nil
 }
