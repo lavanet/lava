@@ -163,7 +163,6 @@ const (
 	OVERUSE_FIELDS
 	CU_FIELD
 	SERVICERS_FIELD
-	NAME_FIELD
 	DESCRIPTION_FIELD
 	TYPE_FIELD
 )
@@ -186,9 +185,8 @@ func TestInvalidPlanAddition(t *testing.T) {
 		{"InvalidOveruseTest", 2},
 		{"InvalidCuTest", 3},
 		{"InvalidServicersToPairTest", 4},
-		{"InvalidNameTest", 5},
-		{"InvalidDescriptionTest", 6},
-		{"InvalidTypeTest", 7},
+		{"InvalidDescriptionTest", 5},
+		{"InvalidTypeTest", 6},
 	}
 
 	for _, tt := range tests {
