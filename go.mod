@@ -43,24 +43,12 @@ require (
 )
 
 require (
-	github.com/andrew-d/go-termutil v0.0.0-20150726205930-009166a695a2 // indirect
-	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
-	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
-	github.com/golang/glog v1.0.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
-	github.com/jpillora/ansi v1.0.2 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
-	github.com/jpillora/chisel v1.7.7 // indirect
-	github.com/jpillora/requestlog v1.0.0 // indirect
-	github.com/jpillora/sizestr v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
-	github.com/tendermint/fundraising v0.3.1-0.20220613014523-03b4a2d4481a // indirect
-	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 )

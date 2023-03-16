@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -10,6 +11,10 @@ import (
 )
 
 var _ = strconv.Itoa(0)
+
+const (
+	ShowFrozenProvidersFlagName = "show-frozen-providers"
+)
 
 func CmdProviders() *cobra.Command {
 	cmd := &cobra.Command{
@@ -26,8 +31,16 @@ func CmdProviders() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
+			// check if the command includes --show-frozen-providers
+			showFrozenProvidersFlag := cmd.Flags().Lookup(ShowFrozenProvidersFlagName)
+			if showFrozenProvidersFlag == nil {
+				return fmt.Errorf("%s flag wasn't found", ShowFrozenProvidersFlagName)
+			}
+			showFrozenProviders := showFrozenProvidersFlag.Changed
+
 			params := &types.QueryProvidersRequest{
-				ChainID: reqChainID,
+				ChainID:    reqChainID,
+				ShowFrozen: showFrozenProviders,
 			}
 
 			res, err := queryClient.Providers(cmd.Context(), params)
@@ -40,6 +53,7 @@ func CmdProviders() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Bool(ShowFrozenProvidersFlagName, false, "shows frozen providers")
 
 	return cmd
 }

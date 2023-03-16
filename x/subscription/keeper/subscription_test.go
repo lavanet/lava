@@ -72,7 +72,7 @@ func TestSubscriptionGetAll(t *testing.T) {
 	)
 }
 
-func TestCreateSubscription(t *testing. T) {
+func TestCreateSubscription(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
@@ -211,7 +211,7 @@ func TestCreateSubscription(t *testing. T) {
 	}
 }
 
-func TestSubscriptionDefaultProject(t *testing. T) {
+func TestSubscriptionDefaultProject(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
@@ -232,7 +232,7 @@ func TestSubscriptionDefaultProject(t *testing. T) {
 	require.Nil(t, err)
 }
 
-func TestExpiryTime(t *testing. T) {
+func TestExpiryTime(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 
 	// AdvanceBlock() always users the current time for the first block (and
@@ -254,28 +254,28 @@ func TestExpiryTime(t *testing. T) {
 		months uint64
 	}{
 		// monthly
-		{ [3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 1 },
-		{ [3]int{2000, 3, 30}, [3]int{2000, 4, 30}, 1 },
-		{ [3]int{2000, 3, 31}, [3]int{2000, 4, 30}, 1 },
-		{ [3]int{2000, 2, 1}, [3]int{2000, 3, 1}, 1 },
-		{ [3]int{2000, 2, 28}, [3]int{2000, 3, 28}, 1 },
-		{ [3]int{2001, 2, 28}, [3]int{2001, 3, 31}, 1 },
-		{ [3]int{2000, 2, 29}, [3]int{2000, 3, 31}, 1 },
-		{ [3]int{2000, 1, 28}, [3]int{2000, 2, 28}, 1 },
-		{ [3]int{2001, 1, 28}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 29}, [3]int{2000, 2, 29}, 1 },
-		{ [3]int{2001, 1, 29}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 30}, [3]int{2000, 2, 29}, 1 },
-		{ [3]int{2001, 1, 30}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2000, 1, 31}, [3]int{2000, 2, 29}, 1 },
-		{ [3]int{2001, 1, 31}, [3]int{2001, 2, 28}, 1 },
-		{ [3]int{2001, 12, 31}, [3]int{2002, 1, 31}, 1 },
+		{[3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 1},
+		{[3]int{2000, 3, 30}, [3]int{2000, 4, 30}, 1},
+		{[3]int{2000, 3, 31}, [3]int{2000, 4, 30}, 1},
+		{[3]int{2000, 2, 1}, [3]int{2000, 3, 1}, 1},
+		{[3]int{2000, 2, 28}, [3]int{2000, 3, 28}, 1},
+		{[3]int{2001, 2, 28}, [3]int{2001, 3, 31}, 1},
+		{[3]int{2000, 2, 29}, [3]int{2000, 3, 31}, 1},
+		{[3]int{2000, 1, 28}, [3]int{2000, 2, 28}, 1},
+		{[3]int{2001, 1, 28}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 29}, [3]int{2000, 2, 29}, 1},
+		{[3]int{2001, 1, 29}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 30}, [3]int{2000, 2, 29}, 1},
+		{[3]int{2001, 1, 30}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2000, 1, 31}, [3]int{2000, 2, 29}, 1},
+		{[3]int{2001, 1, 31}, [3]int{2001, 2, 28}, 1},
+		{[3]int{2001, 12, 31}, [3]int{2002, 1, 31}, 1},
 		// yearly
-		{ [3]int{2000, 3, 1}, [3]int{2001, 3, 1}, 12 },
-		{ [3]int{2000, 2, 28}, [3]int{2001, 2, 28}, 12 },
-		{ [3]int{2000, 2, 29}, [3]int{2001, 2, 28}, 12 },
-		{ [3]int{2001, 2, 28}, [3]int{2002, 2, 28}, 12 },
-		{ [3]int{2003, 2, 28}, [3]int{2004, 2, 29}, 12 },
+		{[3]int{2000, 3, 1}, [3]int{2001, 3, 1}, 12},
+		{[3]int{2000, 2, 28}, [3]int{2001, 2, 28}, 12},
+		{[3]int{2000, 2, 29}, [3]int{2001, 2, 28}, 12},
+		{[3]int{2001, 2, 28}, [3]int{2002, 2, 28}, 12},
+		{[3]int{2003, 2, 28}, [3]int{2004, 2, 29}, 12},
 	}
 
 	for _, tt := range template {
@@ -304,7 +304,7 @@ func TestExpiryTime(t *testing. T) {
 	}
 }
 
-func TestPrice(t *testing. T) {
+func TestPrice(t *testing.T) {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
@@ -316,16 +316,16 @@ func TestPrice(t *testing. T) {
 
 	template := []struct {
 		name     string
-        duration uint64
+		duration uint64
 		discount uint64
 		price    int64
 		cost     int64
 	}{
-		{ "1 month", 1, 0, 100, 100 },
-		{ "2 months", 2, 0, 100, 200 },
-		{ "11 months", 11, 0, 100, 1100 },
-		{ "yearly without discount", 12, 0, 100, 1200 },
-		{ "yearly with discount", 12, 25, 100, 900 },
+		{"1 month", 1, 0, 100, 100},
+		{"2 months", 2, 0, 100, 200},
+		{"11 months", 11, 0, 100, 1100},
+		{"yearly without discount", 12, 0, 100, 1200},
+		{"yearly with discount", 12, 25, 100, 900},
 	}
 
 	for _, tt := range template {
@@ -345,7 +345,7 @@ func TestPrice(t *testing. T) {
 			require.True(t, found)
 
 			balance := keepers.BankKeeper.GetBalance(ctx, address, epochstoragetypes.TokenDenom)
-			require.Equal(t, balance.Amount.Int64(), int64(10000 - tt.cost))
+			require.Equal(t, balance.Amount.Int64(), int64(10000-tt.cost))
 
 			keeper.RemoveSubscription(ctx, creator)
 			// TODO: remove when RemoveSubscriptions properly removes projects
