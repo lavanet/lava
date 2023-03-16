@@ -35,7 +35,7 @@ func CmdProviders() *cobra.Command {
 			if showFrozenProvidersFlag == nil {
 				return fmt.Errorf("%s flag wasn't found",ShowFrozenProvidersFlagName)
 			}
-			showFrozenProviders := showFrozenProviders.Changed
+			showFrozenProviders := showFrozenProvidersFlag.Changed
 
 			params := &types.QueryProvidersRequest{
 				ChainID:    reqChainID,
