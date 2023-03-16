@@ -32876,24 +32876,42 @@ paths:
                   block:
                     type: string
                     format: uint64
+                    title: when the subscription was created
                   plan_index:
                     type: string
+                    title: index (name) of plan
                   plan_block:
                     type: string
                     format: uint64
-                  duration:
+                    title: when the plan was created
+                  duration_total:
                     type: string
                     format: uint64
-                    title: duration in months
-                  expiry_time:
+                    title: total requested duration in months
+                  duration_left:
                     type: string
                     format: uint64
-                  usedCU:
+                    title: remaining duration in months
+                  month_expiry_time:
                     type: string
                     format: uint64
-                  remainingCU:
+                    title: expiry time of current month
+                  prev_expiry_block:
                     type: string
                     format: uint64
+                    title: when previous month expired
+                  month_cu_total:
+                    type: string
+                    format: uint64
+                    title: CU allowance during current month
+                  month_cu_left:
+                    type: string
+                    format: uint64
+                    title: CU remaining during current month
+                  prev_cu_left:
+                    type: string
+                    format: uint64
+                    title: CU remaining for previous month
         default:
           description: An unexpected error response.
           schema:
@@ -56764,24 +56782,42 @@ definitions:
           block:
             type: string
             format: uint64
+            title: when the subscription was created
           plan_index:
             type: string
+            title: index (name) of plan
           plan_block:
             type: string
             format: uint64
-          duration:
+            title: when the plan was created
+          duration_total:
             type: string
             format: uint64
-            title: duration in months
-          expiry_time:
+            title: total requested duration in months
+          duration_left:
             type: string
             format: uint64
-          usedCU:
+            title: remaining duration in months
+          month_expiry_time:
             type: string
             format: uint64
-          remainingCU:
+            title: expiry time of current month
+          prev_expiry_block:
             type: string
             format: uint64
+            title: when previous month expired
+          month_cu_total:
+            type: string
+            format: uint64
+            title: CU allowance during current month
+          month_cu_left:
+            type: string
+            format: uint64
+            title: CU remaining during current month
+          prev_cu_left:
+            type: string
+            format: uint64
+            title: CU remaining for previous month
   lavanet.lava.subscription.QueryParamsResponse:
     type: object
     properties:
@@ -56801,21 +56837,39 @@ definitions:
       block:
         type: string
         format: uint64
+        title: when the subscription was created
       plan_index:
         type: string
+        title: index (name) of plan
       plan_block:
         type: string
         format: uint64
-      duration:
+        title: when the plan was created
+      duration_total:
         type: string
         format: uint64
-        title: duration in months
-      expiry_time:
+        title: total requested duration in months
+      duration_left:
         type: string
         format: uint64
-      usedCU:
+        title: remaining duration in months
+      month_expiry_time:
         type: string
         format: uint64
-      remainingCU:
+        title: expiry time of current month
+      prev_expiry_block:
         type: string
         format: uint64
+        title: when previous month expired
+      month_cu_total:
+        type: string
+        format: uint64
+        title: CU allowance during current month
+      month_cu_left:
+        type: string
+        format: uint64
+        title: CU remaining during current month
+      prev_cu_left:
+        type: string
+        format: uint64
+        title: CU remaining for previous month
