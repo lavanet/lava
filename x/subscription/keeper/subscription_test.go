@@ -272,7 +272,7 @@ func TestRenewSubscription(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6, "")
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -285,11 +285,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
 	// with 3 months duration left, asking for 12 more should fail
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12, "")
 	require.NotNil(t, err)
 
 	// but asking for additional 10 is fine
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10, "")
 	require.Nil(t, err)
 
 	sub, found = keeper.GetSubscription(ts.ctx, creator)
