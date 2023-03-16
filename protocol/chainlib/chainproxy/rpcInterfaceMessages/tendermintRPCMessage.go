@@ -7,7 +7,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )

@@ -10,8 +10,8 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/exp/slices"

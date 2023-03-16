@@ -3,7 +3,7 @@ package chainproxy
 import (
 	"encoding/json"
 
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
 )
 
 const (

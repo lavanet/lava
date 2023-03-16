@@ -3,7 +3,7 @@ package rpcInterfaceMessages
 import (
 	"encoding/json"
 
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
 )
 
 type ParsableRPCInput struct {

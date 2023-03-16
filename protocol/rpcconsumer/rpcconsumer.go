@@ -21,11 +21,10 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/relayer/performance"
-	"github.com/lavanet/lava/relayer/sentry"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -239,8 +238,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdRPCConsumer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")

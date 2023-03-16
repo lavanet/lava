@@ -21,13 +21,12 @@ import (
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/relayer/performance"
-	"github.com/lavanet/lava/relayer/sentry"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -345,8 +344,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdRPCProvider.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCProvider.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")

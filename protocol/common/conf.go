@@ -10,6 +10,7 @@ import (
 const (
 	EndpointsConfigName = "endpoints"
 	SaveConfigFlagName  = "save-conf"
+	GeolocationFlag     = "geolocation"
 )
 
 func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
