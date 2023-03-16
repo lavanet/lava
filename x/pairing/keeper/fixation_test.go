@@ -102,7 +102,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	require.Nil(t, err)
 
 	relayRequest := &pairingtypes.RelaySession{
-		Provider:    ts.providers[0].address.String(),
+		Provider:    ts.providers[0].Addr.String(),
 		ContentHash: []byte(ts.spec.Apis[0].Name),
 		SessionId:   uint64(1),
 		SpecID:      ts.spec.Name,
@@ -111,12 +111,12 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
 	// make payment request
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
 	require.Nil(t, err)
 
 	// shorten memory
@@ -129,11 +129,11 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	// make another request
 	relayRequest.SessionId++
 
-	sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*pairingtypes.RelaySession{relayRequest}})
 	require.Nil(t, err)
 
 	// check that both payments were deleted

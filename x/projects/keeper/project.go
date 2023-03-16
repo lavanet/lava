@@ -19,33 +19,32 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 	return project, nil
 }
 
-func (k Keeper) GetProjectIDForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (string, error) {
-	var projectIDstring types.ProtoString
-	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectIDstring)
+func (k Keeper) GetProjectDeveloperData(ctx sdk.Context, developerKey string, blockHeight uint64) (types.ProtoDeveloperData, error) {
+	var projectDeveloperData types.ProtoDeveloperData
+	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectDeveloperData)
 	if err != nil || !found {
-		return "", utils.LavaError(ctx, ctx.Logger(), "GetProjectIDForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not registered to a project")
+		return types.ProtoDeveloperData{}, utils.LavaError(ctx, ctx.Logger(), "GetProjectIDForDeveloper_invalid_key", map[string]string{"developer": developerKey}, "the requesting key is not registered to a project")
 	}
-
-	return projectIDstring.String_, nil
+	return projectDeveloperData, nil
 }
 
-func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (types.Project, error) {
+func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj types.Project, vrfpk string, errRet error) {
 	var project types.Project
-	projectID, err := k.GetProjectIDForDeveloper(ctx, developerKey, blockHeight)
+	projectDeveloperData, err := k.GetProjectDeveloperData(ctx, developerKey, blockHeight)
 	if err != nil {
-		return project, err
+		return project, "", err
 	}
 
-	err, found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project)
+	err, found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project)
 	if err != nil {
-		return project, err
+		return project, "", err
 	}
 
 	if !found {
-		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectID}, "the developers project was not found")
+		return project, "", utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectDeveloperData.ProjectID}, "the developers project was not found")
 	}
 
-	return project, nil
+	return project, projectDeveloperData.Vrfpk, nil
 }
 
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
@@ -62,7 +61,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 
 	// check that those keys are unique for developers
 	for _, projectKey := range projectKeys {
-		err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()))
+		err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()), projectKey.Vrfpk)
 		if err != nil {
 			return err
 		}
@@ -73,25 +72,27 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) ValidateDeveloperRequest(ctx sdk.Context, developerKey string, chainID string, apiName string, blockHeight uint64) (valid bool, policy types.Policy, err error) {
-	project, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
+func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy types.Policy, err error) {
+	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
 	if err != nil {
-		return false, types.Policy{}, err
+		return types.Policy{}, err
 	}
 
-	if project.UsedCu >= project.Policy.TotalCuLimit {
-		return false, project.Policy, nil
+	return project.Policy, nil
+}
+
+func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {
+	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
+	if err != nil {
+		return err
 	}
 
-	for _, chain := range project.Policy.ChainPolicies {
-		if chain.ChainId == chainID {
-			for _, api := range chain.Apis {
-				if api == apiName {
-					return true, project.Policy, nil
-				}
-			}
-		}
+	err = project.VerifyCuUsage()
+	if err != nil {
+		return err
 	}
 
-	return false, project.Policy, nil
+	project.UsedCu += cu
+
+	return k.projectsFS.ModifyEntry(ctx, project.Index, blockHeight, &project)
 }

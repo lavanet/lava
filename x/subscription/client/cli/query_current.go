@@ -1,32 +1,32 @@
 package cli
 
 import (
-	"strconv"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
 )
 
-var _ = strconv.Itoa(0)
-
-func CmdShowAllPlans() *cobra.Command {
+func CmdCurrent() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-all-plans",
-		Short: "Query to show all available plan",
-		Args:  cobra.ExactArgs(0),
+		Use:   "current [consumer]",
+		Short: "Query the current subscription of a consumer to a service plan",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
+			reqConsumer := args[0]
+
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowAllPlansRequest{}
+			params := &types.QueryCurrentRequest{
+				Consumer: reqConsumer,
+			}
 
-			res, err := queryClient.ShowAllPlans(cmd.Context(), params)
+			res, err := queryClient.Current(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

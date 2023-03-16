@@ -20,7 +20,7 @@ func TestFreeze(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// get pairing list
-	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 
@@ -33,7 +33,7 @@ func TestFreeze(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 
@@ -45,14 +45,14 @@ func TestFreeze(t *testing.T) {
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
 
 	// advance epoch and verify the provider is not in the pairing list anymore
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -65,7 +65,7 @@ func TestFreeze(t *testing.T) {
 		ChainIds: []string{ts.spec.GetIndex()},
 	})
 	require.Nil(t, err)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -74,7 +74,7 @@ func TestFreeze(t *testing.T) {
 
 	// advance an epoch and verify the provider is in the pairing list
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 	foundUnfrozenProvider := false
@@ -146,7 +146,7 @@ func TestUnstakeFrozen(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// get pairing list
-	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 
@@ -159,14 +159,14 @@ func TestUnstakeFrozen(t *testing.T) {
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
 
 	// advance epoch and verify the provider is not in the pairing list anymore
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -182,7 +182,7 @@ func TestUnstakeFrozen(t *testing.T) {
 		ChainIds: []string{ts.spec.GetIndex()},
 	})
 	require.NotNil(t, err)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -191,7 +191,7 @@ func TestUnstakeFrozen(t *testing.T) {
 
 	// advance an epoch and verify the provider is in the pairing list
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	foundUnfrozenProvider := false
@@ -215,7 +215,7 @@ func TestPaymentFrozen(t *testing.T) {
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	// get pairing list
-	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 
@@ -228,14 +228,14 @@ func TestPaymentFrozen(t *testing.T) {
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
 
 	// advance epoch and verify the provider is not in the pairing list anymore
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].address)
+	pairingList, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, providersNum-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -251,7 +251,7 @@ func TestPaymentFrozen(t *testing.T) {
 		RelayNum:  0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 

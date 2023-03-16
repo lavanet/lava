@@ -16,9 +16,9 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/subscription/params";
   }
-  // Queries a list of CurrentSubscription items.
-	rpc CurrentSubscription(QueryCurrentSubscriptionRequest) returns (QueryCurrentSubscriptionResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/current_subscription/{consumer}";
+  // Queries a list of Current items.
+	rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -33,11 +33,11 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryCurrentSubscriptionRequest {
+message QueryCurrentRequest {
   string consumer = 1;
 }
 
-message QueryCurrentSubscriptionResponse {
+message QueryCurrentResponse {
   Subscription sub = 1 [(gogoproto.nullable) = false];
 }
 

@@ -1,18 +1,20 @@
 package keeper
 
 import (
+	"math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
 // add a default project to a subscription, add the subscription key as
-func (k Keeper) CreateDefaultProject(ctx sdk.Context, subscriptionAddress string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.DEFAULT_PROJECT_NAME, subscriptionAddress, true)
+func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error {
+	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool) error {
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
 	project := types.CreateProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
@@ -23,11 +25,14 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	if subscriptionAddress != adminAddress {
-		project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
-	}
+	project.Policy.EpochCuLimit = cuPerEpoch
+	project.Policy.TotalCuLimit = totalCU
+	project.Policy.MaxProvidersToPair = providers
+	project.Policy.GeolocationProfile = geolocation
 
-	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight)
+	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
+
+	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
 	if err != nil {
 		return err
 	}
@@ -36,13 +41,14 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
 }
 
-func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, projectIndex string, blockHeight uint64) error {
-	var projectID types.ProtoString
-	_, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectID)
+func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, projectIndex string, blockHeight uint64, vrfpk string) error {
+	var developerData types.ProtoDeveloperData
+	_, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &developerData)
 	// a developer key with this address is not registered, add it to the developer keys list
 	if !found {
-		projectID.String_ = projectIndex
-		err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &projectID)
+		developerData.ProjectID = projectIndex
+		developerData.Vrfpk = vrfpk
+		err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &developerData)
 		if err != nil {
 			return err
 		}

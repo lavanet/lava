@@ -141,6 +141,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_6_1,
 	upgrades.Upgrade_0_7_0,
 	upgrades.Upgrade_0_7_1,
+	upgrades.Upgrade_0_8_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -437,6 +438,14 @@ func New(
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[projectsmoduletypes.StoreKey],
+		keys[projectsmoduletypes.MemStoreKey],
+		app.GetSubspace(projectsmoduletypes.ModuleName),
+	)
+	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
+
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
 		appCodec,
 		keys[pairingmoduletypes.StoreKey],
@@ -447,16 +456,9 @@ func New(
 		app.AccountKeeper,
 		app.SpecKeeper,
 		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
-		appCodec,
-		keys[projectsmoduletypes.StoreKey],
-		keys[projectsmoduletypes.MemStoreKey],
-		app.GetSubspace(projectsmoduletypes.ModuleName),
-	)
-	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
 	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
 		appCodec,

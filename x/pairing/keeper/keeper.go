@@ -22,6 +22,7 @@ type (
 		accountKeeper      types.AccountKeeper
 		specKeeper         types.SpecKeeper
 		epochStorageKeeper types.EpochstorageKeeper
+		projectsKeeper     types.ProjectsKeeper
 	}
 )
 
@@ -31,7 +32,7 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, specKeeper types.SpecKeeper, epochStorageKeeper types.EpochstorageKeeper,
+	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, specKeeper types.SpecKeeper, epochStorageKeeper types.EpochstorageKeeper, projectsKeeper types.ProjectsKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -43,7 +44,7 @@ func NewKeeper(
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper, epochStorageKeeper: epochStorageKeeper,
+		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper, epochStorageKeeper: epochStorageKeeper, projectsKeeper: projectsKeeper,
 	}
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })

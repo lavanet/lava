@@ -102,6 +102,7 @@ func (k Keeper) CreateSubscription(
 	consumer string,
 	planIndex string,
 	duration uint64,
+	vrfpk string,
 ) error {
 	var err error
 
@@ -165,7 +166,8 @@ func (k Keeper) CreateSubscription(
 		sub.MonthCuLeft = plan.GetComputeUnits()
 
 		// new subscription needs a default project
-		if err = k.projectsKeeper.CreateDefaultProject(ctx, consumer); err != nil {
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		if err != nil {
 			details := map[string]string{
 				"err": err.Error(),
 			}

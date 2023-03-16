@@ -18,14 +18,14 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/plans/params";
   }	
 
-  // Queries a list of ShowAllPlans items.
-	rpc ShowAllPlans(QueryShowAllPlansRequest) returns (QueryShowAllPlansResponse) {
-		option (google.api.http).get = "/lavanet/lava/plans/show_all_plans";
+  // Queries a list of List items.
+	rpc List(QueryListRequest) returns (QueryListResponse) {
+		option (google.api.http).get = "/lavanet/lava/plans/list";
 	}
 
-  // Queries a list of ShowPlanInfo items.
-	rpc ShowPlanInfo(QueryShowPlanInfoRequest) returns (QueryShowPlanInfoResponse) {
-		option (google.api.http).get = "/lavanet/lava/plans/show_plan_info/{plan_index}";
+  // Queries an Info item.
+	rpc Info(QueryInfoRequest) returns (QueryInfoResponse) {
+		option (google.api.http).get = "/lavanet/lava/plans/info/{plan_index}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -40,24 +40,24 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryShowAllPlansRequest {
+message QueryListRequest {
 }
 
-message QueryShowAllPlansResponse {
-  repeated showAllPlansInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
+message QueryListResponse {
+  repeated listInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
 }
 
-message showAllPlansInfoStruct {
+message listInfoStruct {
 	string index = 1;
 	string name = 2;
 	cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false];
 }
 
-message QueryShowPlanInfoRequest {
+message QueryInfoRequest {
   string plan_index = 1;
 }
 
-message QueryShowPlanInfoResponse {
+message QueryInfoResponse {
   Plan plan_info = 1 [(gogoproto.nullable) = false];
 }
 

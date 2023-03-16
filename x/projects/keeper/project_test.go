@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"math"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,16 +15,16 @@ func TestCreateDefaultProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateDefaultProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String())
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), 100, 100, 5, "")
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
-	response1, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: subAccount.Addr.String()})
+	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	response2, err := keepers.Projects.ShowProject(ctx, &types.QueryShowProjectRequest{Project: response1.Project.Index})
+	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
@@ -35,23 +36,23 @@ func TestCreateProject(t *testing.T) {
 	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
 	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false)
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
-	response1, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: subAccount.Addr.String()})
+	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.NotNil(t, err)
 
-	response1, err = keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	response1, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 
-	response2, err := keepers.Projects.ShowProject(ctx, &types.QueryShowProjectRequest{Project: response1.Project.Index})
+	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
@@ -69,12 +70,12 @@ func TestAddKeys(t *testing.T) {
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	projectRes, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	projectRes, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 
 	project := projectRes.Project
@@ -105,7 +106,7 @@ func TestAddKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// fetch project with new developer
-	projectRes, err = keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: developerAcc2.Addr.String()})
+	projectRes, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc2.Addr.String()})
 	require.Nil(t, err)
 }
 
@@ -117,15 +118,15 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
 	require.Nil(t, err)
 
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false)
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	response, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), projectName1))
 }

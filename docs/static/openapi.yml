@@ -31075,6 +31075,12 @@ paths:
               index:
                 type: string
                 format: int64
+              pairedProviders:
+                type: string
+                format: uint64
+              cuPerEpoch:
+                type: string
+                format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -31246,7 +31252,7 @@ paths:
                     type: string
                     format: uint64
                     title: max CU per epoch for the whole plan duration
-                  servicers_to_pair:
+                  max_providers_to_pair:
                     type: string
                     format: uint64
                     title: max providers to be paired in an epoch
@@ -31257,9 +31263,6 @@ paths:
                     type: string
                     format: uint64
                     title: price of CU overuse
-                  name:
-                    type: string
-                    title: plan name (non-unique "human" name)
                   description:
                     type: string
                     title: plan description (for humans)
@@ -31377,6 +31380,11 @@ paths:
                             default: NONE
                             title: 'bitmap, must only be power of 2'
                           title: 'the key type, determines the privilages of the key'
+                        vrfpk:
+                          type: string
+                          title: >-
+                            the vrf public key used to calculate data
+                            reliability
                     title: list of the projects keys
                   policy:
                     type: object
@@ -31399,6 +31407,9 @@ paths:
                         type: string
                         format: uint64
                       epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
                         type: string
                         format: uint64
                   used_cu:
@@ -31475,6 +31486,11 @@ paths:
                             default: NONE
                             title: 'bitmap, must only be power of 2'
                           title: 'the key type, determines the privilages of the key'
+                        vrfpk:
+                          type: string
+                          title: >-
+                            the vrf public key used to calculate data
+                            reliability
                     title: list of the projects keys
                   policy:
                     type: object
@@ -31497,6 +31513,9 @@ paths:
                         type: string
                         format: uint64
                       epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
                         type: string
                         format: uint64
                   used_cu:
@@ -55333,84 +55352,12 @@ definitions:
       index:
         type: string
         format: int64
-  lavanet.lava.pairing.RelayPrivateData:
-    type: object
-    properties:
-      connection_type:
-        type: string
-      api_url:
-        type: string
-        title: >-
-          some relays have associated urls that are filled with params
-          ('/block/{height}')
-      data:
-        type: string
-        format: byte
-      request_block:
-        type: string
-        format: int64
-      apiInterface:
-        type: string
-      salt:
-        type: string
-        format: byte
-  lavanet.lava.pairing.RelaySession:
-    type: object
-    properties:
-      specID:
-        type: string
-      content_hash:
-        type: string
-        format: byte
-      session_id:
+      pairedProviders:
         type: string
         format: uint64
-      cu_sum:
+      cuPerEpoch:
         type: string
         format: uint64
-        title: total compute unit used including this relay
-      provider:
-        type: string
-      relay_num:
-        type: string
-        format: uint64
-      QoSReport:
-        type: object
-        properties:
-          latency:
-            type: string
-          availability:
-            type: string
-          sync:
-            type: string
-      epoch:
-        type: string
-        format: int64
-      unresponsive_providers:
-        type: string
-        format: byte
-      lava_chain_id:
-        type: string
-      sig:
-        type: string
-        format: byte
-      badge:
-        type: object
-        properties:
-          cu_allocation:
-            type: string
-            format: uint64
-          epoch:
-            type: string
-            format: int64
-          badge_pk:
-            type: string
-            format: byte
-          spec_id:
-            type: string
-          project_sig:
-            type: string
-            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -55455,7 +55402,7 @@ definitions:
         type: string
         format: uint64
         title: max CU per epoch for the whole plan duration
-      servicers_to_pair:
+      max_providers_to_pair:
         type: string
         format: uint64
         title: max providers to be paired in an epoch
@@ -55466,9 +55413,6 @@ definitions:
         type: string
         format: uint64
         title: price of CU overuse
-      name:
-        type: string
-        title: plan name (non-unique "human" name)
       description:
         type: string
         title: plan description (for humans)
@@ -55549,7 +55493,7 @@ definitions:
             type: string
             format: uint64
             title: max CU per epoch for the whole plan duration
-          servicers_to_pair:
+          max_providers_to_pair:
             type: string
             format: uint64
             title: max providers to be paired in an epoch
@@ -55560,9 +55504,6 @@ definitions:
             type: string
             format: uint64
             title: price of CU overuse
-          name:
-            type: string
-            title: plan name (non-unique "human" name)
           description:
             type: string
             title: plan description (for humans)
@@ -55631,6 +55572,9 @@ definitions:
       epoch_cu_limit:
         type: string
         format: uint64
+      max_providers_to_pair:
+        type: string
+        format: uint64
   lavanet.lava.projects.Project:
     type: object
     properties:
@@ -55667,6 +55611,9 @@ definitions:
                 default: NONE
                 title: 'bitmap, must only be power of 2'
               title: 'the key type, determines the privilages of the key'
+            vrfpk:
+              type: string
+              title: the vrf public key used to calculate data reliability
         title: list of the projects keys
       policy:
         type: object
@@ -55691,6 +55638,9 @@ definitions:
           epoch_cu_limit:
             type: string
             format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
       used_cu:
         type: string
         format: uint64
@@ -55711,6 +55661,9 @@ definitions:
           default: NONE
           title: 'bitmap, must only be power of 2'
         title: 'the key type, determines the privilages of the key'
+      vrfpk:
+        type: string
+        title: the vrf public key used to calculate data reliability
   lavanet.lava.projects.ProjectKey.KEY_TYPE:
     type: string
     enum:
@@ -55765,6 +55718,9 @@ definitions:
                     default: NONE
                     title: 'bitmap, must only be power of 2'
                   title: 'the key type, determines the privilages of the key'
+                vrfpk:
+                  type: string
+                  title: the vrf public key used to calculate data reliability
             title: list of the projects keys
           policy:
             type: object
@@ -55787,6 +55743,9 @@ definitions:
                 type: string
                 format: uint64
               epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
                 type: string
                 format: uint64
           used_cu:
@@ -55831,6 +55790,9 @@ definitions:
                     default: NONE
                     title: 'bitmap, must only be power of 2'
                   title: 'the key type, determines the privilages of the key'
+                vrfpk:
+                  type: string
+                  title: the vrf public key used to calculate data reliability
             title: list of the projects keys
           policy:
             type: object
@@ -55853,6 +55815,9 @@ definitions:
                 type: string
                 format: uint64
               epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
                 type: string
                 format: uint64
           used_cu:

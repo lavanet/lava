@@ -117,10 +117,10 @@ message QueryGetPairingRequest {
 
 message QueryGetPairingResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
-	uint64 currentEpoch = 2;
-	uint64 timeLeftToNextPairing = 3;
-	uint64 specLastUpdatedBlock = 4;
-	uint64 blockOfNextPairing = 5;
+	uint64 current_epoch = 2;
+	uint64 time_left_to_next_pairing = 3;
+	uint64 spec_last_updated_block = 4;
+	uint64 block_of_next_pairing = 5;
 }
 
 message QueryVerifyPairingRequest {
@@ -133,6 +133,8 @@ message QueryVerifyPairingRequest {
 message QueryVerifyPairingResponse {
   bool valid = 1;
   int64 index = 2;
+  uint64 paired_providers = 3;
+  uint64 cu_per_epoch = 4;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {

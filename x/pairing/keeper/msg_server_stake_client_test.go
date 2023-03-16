@@ -127,23 +127,33 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
 	// check pairing in the same epoch
-	clientStakeEntry, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	epoch, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
-	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
+
+	clientStakeEntry, err := keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
+	require.Nil(t, err)
 
 	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
 	require.Nil(t, err)
 
 	// try to change stake
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, 2*stake, false)
-	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	epoch, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
+
+	clientStakeEntry, err = keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
+	require.Nil(t, err)
+
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
 
 	// new stake takes effect
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	epoch, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
+
+	clientStakeEntry, err = keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
+	require.Nil(t, err)
+
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(2*stake))
 }
