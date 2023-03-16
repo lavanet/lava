@@ -11,10 +11,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdShowProject() *cobra.Command {
+func CmdDeveloper() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-project [projectID]",
-		Short: "Query ShowProject",
+		Use:   "developer [developer-addr]",
+		Short: "Query to show the project for a developer key",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -24,9 +24,9 @@ func CmdShowProject() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowProjectRequest{Project: args[0]}
+			params := &types.QueryDeveloperRequest{Developer: args[0]}
 
-			res, err := queryClient.ShowProject(cmd.Context(), params)
+			res, err := queryClient.Developer(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

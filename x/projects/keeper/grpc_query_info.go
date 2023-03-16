@@ -9,17 +9,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ShowDevelopersProject(goCtx context.Context, req *types.QueryShowDevelopersProjectRequest) (*types.QueryShowDevelopersProjectResponse, error) {
+func (k Keeper) Info(goCtx context.Context, req *types.QueryInfoRequest) (*types.QueryInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	project, err := k.GetProjectForDeveloper(ctx, req.Developer, uint64(ctx.BlockHeight()))
+	project, err := k.GetProjectForBlock(ctx, req.Project, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryShowDevelopersProjectResponse{Project: &project}, nil
+	return &types.QueryInfoResponse{Project: &project}, nil
 }
