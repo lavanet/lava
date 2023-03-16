@@ -430,7 +430,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 		lt.commands[logName] = cmd
 
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startTendermintProvider")
+			lt.listenCmdCommand(cmd, "startLavaProviders process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startLavaProviders")
 		}(idx)
 	}
 
@@ -559,37 +559,6 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
-func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
-	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10 --geolocation 1 --log_level debug",
-	}
-
-	for idx, providerCommand := range providerCommands {
-		logName := "08_restProvider_" + fmt.Sprintf("%02d", idx)
-		lt.logs[logName] = new(bytes.Buffer)
-		cmd := exec.CommandContext(ctx, "", "")
-		cmd.Path = lt.lavadPath
-		cmd.Args = strings.Split(providerCommand, " ")
-		cmd.Stdout = lt.logs[logName]
-		cmd.Stderr = lt.logs[logName]
-
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		lt.commands[logName] = cmd
-
-		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startRESTProvider")
-		}(idx)
-	}
-	utils.LavaFormatInfo("startRESTProvider OK", nil)
-}
-
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting REST Consumer", nil)
@@ -648,37 +617,6 @@ func getRequest(url string) ([]byte, error) {
 	}
 
 	return body, nil
-}
-
-func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
-	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug",
-	}
-
-	for idx, providerCommand := range providerCommands {
-		logName := "10_grpcProvider_" + fmt.Sprintf("%02d", idx)
-		lt.logs[logName] = new(bytes.Buffer)
-		cmd := exec.CommandContext(ctx, "", "")
-		cmd.Path = lt.lavadPath
-		cmd.Args = strings.Split(providerCommand, " ")
-		cmd.Stdout = lt.logs[logName]
-		cmd.Stderr = lt.logs[logName]
-
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		lt.commands[logName] = cmd
-
-		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startGRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startGRPCProvider")
-		}(idx)
-	}
-	utils.LavaFormatInfo("startGRPCProvider OK", nil)
 }
 
 func (lt *lavaTest) checkGRPCConsumer(rpcURL string, timeout time.Duration) {

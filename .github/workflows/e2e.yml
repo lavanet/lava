@@ -103,14 +103,14 @@ jobs:
       continue-on-error: true
       run: cat testutil/e2e/logs/04_jsonConsumer_errors.log
 
-    - name: Tendermint Provider All Logs
+    - name: Lava Provider All Logs
       if: always()
-      run: grep "" testutil/e2e/logs/05_tendermintProvider* --exclude="*errors*"
+      run: grep "" testutil/e2e/logs/05_LavaProvider* --exclude="*errors*"
 
-    - name: Tendermint Provider Error Only Logs
+    - name: Lava Provider Error Only Logs
       if: always()
       continue-on-error: true
-      run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
+      run: grep "" testutil/e2e/logs/05_LavaProvider* --include="*errors*"
 
     - name: Lava over Lava All Logs
       if: always()
@@ -120,24 +120,6 @@ jobs:
       if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/07_lavaOverLava_errors.log
-
-    - name: Rest Provider All Logs
-      if: always()
-      run: grep "" testutil/e2e/logs/08_restProvider* --exclude="*errors*"
-
-    - name: Rest Provider Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
-
-    - name: GRPC Provider All Logs
-      if: always()
-      run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
-
-    - name: GRPC Provider Error Only Logs
-      if: always()
-      continue-on-error: true
-      run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
     - name: RPCConsumer Consumer All Logs
       if: always()
