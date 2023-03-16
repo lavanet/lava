@@ -120,9 +120,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	} else {
 		// legacy staked client
 		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
-		if err != nil {
+		if err2 != nil {
 			// user is not valid for pairing
-			return nil, "", 0, false, fmt.Errorf("invalid user for pairing: %s %s", err, err2)
+			return nil, "", 0, false, fmt.Errorf("invalid user for pairing: 1) %s 2) %s", err.Error(), err2.Error())
 		}
 		geolocation = clientStakeEntry.Geolocation
 

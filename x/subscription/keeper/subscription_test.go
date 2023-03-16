@@ -228,7 +228,7 @@ func TestSubscriptionAdminProject(t *testing.T) {
 
 	// a newly created subscription is expected to have one default project,
 	// with the subscription address as its developer key
-	_, err = keepers.Projects.GetProjectDeveloperKey(ctx, creator, block)
+	_, err = keepers.Projects.GetProjectDeveloperData(ctx, creator, block)
 	require.Nil(t, err)
 }
 
