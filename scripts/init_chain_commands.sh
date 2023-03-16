@@ -115,9 +115,9 @@ lavad tx pairing stake-provider "BASET" $PROVIDERSTAKE "$PROVIDER2_LISTENER,json
 lavad tx pairing stake-provider "BASET" $PROVIDERSTAKE "$PROVIDER3_LISTENER,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Sui Providers
-lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER2_LISTENER,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER2_LISTENER,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "SUIT" $PROVIDERSTAKE "$PROVIDER3_LISTENER,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # SOLANA Providers
 lavad tx pairing stake-provider "SOLANA" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
