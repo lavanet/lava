@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdCurrentSubscription() *cobra.Command {
+func CmdCurrent() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "current-subscription [consumer]",
+		Use:   "current [consumer]",
 		Short: "Query the current subscription of a consumer to a service plan",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -22,11 +22,11 @@ func CmdCurrentSubscription() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryCurrentSubscriptionRequest{
+			params := &types.QueryCurrentRequest{
 				Consumer: reqConsumer,
 			}
 
-			res, err := queryClient.CurrentSubscription(cmd.Context(), params)
+			res, err := queryClient.Current(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
