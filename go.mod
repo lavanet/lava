@@ -38,7 +38,7 @@ require (
 	github.com/ignite-hq/cli v0.22.1-0.20220610070456-1b33c09fceb7
 	github.com/jhump/protoreflect v1.14.0
 	github.com/joho/godotenv v1.3.0
-	github.com/newrelic/go-agent/v3 v3.20.3
+	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/spf13/pflag v1.0.5
 )
 
