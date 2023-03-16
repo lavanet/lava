@@ -81,7 +81,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	}
 }
 
-func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, QoSDR *types.QualityOfServiceReport) *types.RelaySession {
+func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
 	relaySession := &types.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
@@ -90,11 +90,11 @@ func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte,
 		CuSum:       cuSum,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
-		QoSReport:   QoSDR,
+		QoSReport:   qos,
 		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
 	}
-	if QoSDR != nil {
-		QoSDR.ComputeQoS()
+	if qos != nil {
+		qos.ComputeQoS()
 	}
 	return relaySession
 }

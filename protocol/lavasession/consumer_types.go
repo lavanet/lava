@@ -340,11 +340,12 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-		utils.LavaFormatInfo("QoS Sync report",
+		utils.LavaFormatDebug("QoS Sync report",
 			&map[string]string{
 				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
 				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
+				"session_id": strconv.FormatInt(blockHeightDiff, 10),
 			})
 	}
 }
