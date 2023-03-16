@@ -22,24 +22,39 @@ type ProviderSessionsEpochData struct {
 	MaxComputeUnits  uint64
 }
 
+type NodeUrl struct {
+	Url         string
+	AuthHeaders map[string]string
+	AuthPath    string
+}
+
 type RPCProviderEndpoint struct {
-	NetworkAddress string   `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
-	ChainID        string   `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
-	ApiInterface   string   `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64   `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
-	NodeUrl        []string `yaml:"node-url,omitempty" json:"node-url,omitempty" mapstructure:"node-url"`
+	NetworkAddress string    `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
+	ChainID        string    `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
+	ApiInterface   string    `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64    `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrls       []NodeUrl `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+}
+
+func (endpoint *RPCProviderEndpoint) UrlsString() string {
+	st_urls := make([]string, len(endpoint.NodeUrls))
+	for idx, url := range endpoint.NodeUrls {
+		st_urls[idx] = url.Url
+	}
+	return strings.Join(st_urls, ", ")
 }
 
 func (endpoint *RPCProviderEndpoint) String() (retStr string) {
-	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 }
 
 func (endpoint *RPCProviderEndpoint) Validate() error {
-	if len(endpoint.NodeUrl) == 0 {
+	if len(endpoint.NodeUrls) == 0 {
 		return utils.LavaFormatError("Empty URL list for endpoint", nil, &map[string]string{"endpoint": endpoint.String()})
 	}
-	for _, url := range endpoint.NodeUrl {
-		err := common.ValidateEndpoint(url, endpoint.ApiInterface)
+	for _, url := range endpoint.NodeUrls {
+		err := common.ValidateEndpoint(url.Url, endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}

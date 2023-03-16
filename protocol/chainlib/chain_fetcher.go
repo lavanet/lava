@@ -3,7 +3,6 @@ package chainlib
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -48,7 +47,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	blockNum, err := parser.ParseBlockFromReply(parserInput, serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
-			"nodeUrl":  strings.Join(cf.endpoint.NodeUrl, ","),
+			"nodeUrl":  cf.endpoint.UrlsString(),
 			"Method":   serviceApi.GetName(),
 			"Response": string(reply.Data),
 		})
@@ -122,7 +121,7 @@ type LavaChainFetcher struct {
 }
 
 func (lcf *LavaChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
-	return lavasession.RPCProviderEndpoint{NodeUrl: []string{lcf.clientCtx.NodeURI}, ChainID: "Lava-node", ApiInterface: "tendermintrpc"}
+	return lavasession.RPCProviderEndpoint{NodeUrls: []lavasession.NodeUrl{{Url: lcf.clientCtx.NodeURI}}, ChainID: "Lava-node", ApiInterface: "tendermintrpc"}
 }
 
 func (lcf *LavaChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {

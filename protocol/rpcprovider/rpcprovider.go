@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-url"}
+	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-urls.url"}
 	DefaultRPCProviderFileName = "rpcprovider.yml"
 )
 
@@ -105,7 +105,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed unmarshaling public address", err, &map[string]string{"keyName": keyName, "pubkey": clientKey.GetPubKey().Address().String()})
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: "+addr.String(), nil)
-	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcProviderEndpoints))})
+	utils.LavaFormatInfo("RPCProvider setting up endpoints", &map[string]string{"count": strconv.Itoa(len(rpcProviderEndpoints))})
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err, nil)
@@ -332,6 +332,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
+			}
+			for _, endpoint := range rpcProviderEndpoints {
+				utils.LavaFormatDebug("endpoint description", &map[string]string{"endpoint": fmt.Sprintf("%+v", endpoint)})
 			}
 			rpcProvider := RPCProvider{}
 			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)

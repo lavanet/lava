@@ -342,15 +342,15 @@ type JrpcChainProxy struct {
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
-	if len(rpcProviderEndpoint.NodeUrl) == 0 {
+	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
 	cp := &JrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	nodeUrl := rpcProviderEndpoint.NodeUrl[0]
-	verifyRPCEndpoint(nodeUrl)
-	return cp, cp.start(ctx, nConns, nodeUrl)
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	verifyRPCEndpoint(nodeUrl.Url)
+	return cp, cp.start(ctx, nConns, nodeUrl.Url)
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {

@@ -28,7 +28,7 @@ func initProviderSessionManager() *ProviderSessionManager {
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
-		NodeUrl:        []string{"http://localhost:666", "ws://localhost:666/websocket"},
+		NodeUrls:       []NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, testNumberOfBlocksKeptInMemory)
 }
 

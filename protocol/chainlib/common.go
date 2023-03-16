@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -172,17 +173,17 @@ func verifyRPCEndpoint(endpoint string) {
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, httpEndpoint string) {
+func verifyTendermintEndpoint(endpoints []lavasession.NodeUrl) (websocketEndpoint string, httpEndpoint string) {
 	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint)
+		u, err := url.Parse(endpoint.Url)
 		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+			utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint.Url})
 		}
 		switch u.Scheme {
 		case "http", "https":
-			httpEndpoint = endpoint
+			httpEndpoint = endpoint.Url
 		case "ws", "wss":
-			websocketEndpoint = endpoint
+			websocketEndpoint = endpoint.Url
 		default:
 			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil, nil)
 		}
