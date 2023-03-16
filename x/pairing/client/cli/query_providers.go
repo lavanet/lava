@@ -31,7 +31,11 @@ func CmdProviders() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			// check if the command includes --show-frozen-providers
-			showFrozenProviders := cmd.Flags().Lookup(ShowFrozenProvidersFlagName).Changed
+			showFrozenProvidersFlag := cmd.Flags().Lookup(ShowFrozenProvidersFlagName)
+			if showFrozenProvidersFlag == nil {
+				return fmt.Errorf("%s flag wasn't found",ShowFrozenProvidersFlagName)
+			}
+			showFrozenProviders := showFrozenProviders.Changed
 
 			params := &types.QueryProvidersRequest{
 				ChainID:    reqChainID,
