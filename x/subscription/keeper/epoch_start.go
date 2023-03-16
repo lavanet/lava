@@ -48,12 +48,15 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 			continue
 		}
 
+		if sub.DurationLeft == 0 {
+			panic("Subscription: EpochStart: negative DurationLeft for consumer " + sub.Consumer)
+		}
+
 		sub.DurationLeft -= 1
 
 		if sub.DurationLeft > 0 {
 			date = nextMonth(date)
 			sub.MonthExpiryTime = uint64(date.Unix())
-			sub.MonthCuLeft = sub.MonthCuTotal
 
 			// reset CU allowance for this coming month
 			sub.MonthCuLeft = sub.MonthCuTotal
