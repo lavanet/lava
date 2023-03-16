@@ -117,16 +117,14 @@ func TestPairingResetWithFailures(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for {
-		fmt.Printf("%v", len(csm.validAddresses))
-		cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
-		if err != nil {
-			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
-				break
-			}
-			require.True(t, false) // fail test.
+		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
+			break
 		}
+		cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		require.Nil(t, err)                                             // fail test.
 		err = csm.OnSessionFailure(cs, nil)
-
+		require.Nil(t, err) // fail test.
 	}
 	require.Equal(t, len(csm.validAddresses), 0)
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
@@ -148,15 +146,17 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	require.Nil(t, err)
 	for numberOfResets := 0; numberOfResets < numberOfResetsToTest; numberOfResets++ {
 		for {
-			fmt.Printf("%v", len(csm.validAddresses))
-			cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
-			if err != nil {
-				if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
-					break
-				}
-				require.True(t, false) // fail test.
+			utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
+				break
 			}
+			cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+			if len(csm.validAddresses) == 0 {                               // wait for all pairings to be blocked.
+				break
+			}
+			require.Nil(t, err)
 			err = csm.OnSessionFailure(cs, nil)
+			require.Nil(t, err)
 		}
 		require.Equal(t, len(csm.validAddresses), 0)
 		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session

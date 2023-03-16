@@ -12,6 +12,8 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
+const MONTHS_IN_YEAR = 12
+
 // SetSubscription sets a subscription (of a consumer) in the store
 func (k Keeper) SetSubscription(ctx sdk.Context, sub types.Subscription) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
@@ -68,65 +70,29 @@ func (k Keeper) GetAllSubscription(ctx sdk.Context) []types.Subscription {
 	return k.GetCondSubscription(ctx, nil)
 }
 
-// endOfMonth returns the date of the last day of the month (assume UTC)
-// (https://yourbasic.org/golang/last-day-month-date/)
-func endOfMonth(date time.Time) time.Time {
-	return date.AddDate(0, 1, -date.Day())
-}
-
-// isLeapYear returns true if the year in the date is a leap year (assume UTC)
-// (https://stackoverflow.com/questions/725098/leap-year-calculation)
-func isLeapYear(date time.Time) bool {
-	year := date.Year()
-	// Leap year occurs every 4 years; but every 100 years it is skipped;
-	// except that every every 400 years it is kept.
-	return year%400 == 0 || (year%4 == 0 && year%100 != 0)
-}
-
 // nextMonth returns the date of the same day next month (assumes UTC),
 // adjusting for end-of-months differences if needed.
 func nextMonth(date time.Time) time.Time {
-	next := date.AddDate(0, 1, 0)
+	// End-of-month days are tricky because months differ in days counts.
+	// To avoid this complixity, we trim day-of-month greater than 28 back to
+	// day 28, which all months always have (at the cost of the user possibly
+	// losing 1 (and up to 3) days of subscription in the first month.
 
-	// https://golang.org/pkg/time/#Time.AddDate:
-	//   AddDate normalizes its result in the same way that Date does, so, for
-	//   example, adding one month to October 31 yields December 1, the normalized
-	//   form for November 31.
-	//
-	// If we are at end of this month, then "manually" select end of next month;
-	// This properly handles transitions from short to longer months.
-
-	if date.Day() == endOfMonth(date).Day() {
-		next = time.Date(
-			date.Year(),
-			date.Month()+1,
-			1,
-			date.Hour(),
-			date.Minute(),
-			date.Second(),
-			date.Nanosecond(),
-			time.UTC)
-		return endOfMonth(next)
+	dayOfMonth := date.Day()
+	if dayOfMonth > 28 {
+		dayOfMonth = 28
 	}
 
-	return next
-}
-
-// nextYear returns the date of the same day next year (assumes UTC),
-// properly handling leap year variations on February.
-func nextYear(date time.Time) time.Time {
-	next := date.AddDate(1, 0, 0)
-
-	if date.Month() == 2 {
-		if date.Day() == 29 {
-			next = date.AddDate(1, 0, -1)
-		}
-		if date.Day() == 28 && isLeapYear(next) {
-			next = date.AddDate(1, 0, 1)
-		}
-	}
-
-	return next
+	return time.Date(
+		date.Year(),
+		date.Month()+1,
+		dayOfMonth,
+		date.Hour(),
+		date.Minute(),
+		date.Second(),
+		0,
+		time.UTC,
+	)
 }
 
 // CreateSubscription creates a subscription for a consumer
@@ -135,20 +101,19 @@ func (k Keeper) CreateSubscription(
 	creator string,
 	consumer string,
 	planIndex string,
-	isYearly bool,
+	duration uint64,
 ) error {
 	var err error
 
 	logger := k.Logger(ctx)
 	block := uint64(ctx.BlockHeight())
 
-	_, err = sdk.AccAddressFromBech32(consumer)
-	if err != nil {
+	if _, err = sdk.AccAddressFromBech32(consumer); err != nil {
 		details := map[string]string{
 			"consumer": consumer,
 			"error":    err.Error(),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid consumer")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid consumer")
 	}
 
 	creatorAcct, err := sdk.AccAddressFromBech32(creator)
@@ -157,63 +122,102 @@ func (k Keeper) CreateSubscription(
 			"creator": creator,
 			"error":   err.Error(),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid creator")
-	}
-
-	// only one subscription per consumer
-	if _, found := k.GetSubscription(ctx, consumer); found {
-		details := map[string]string{"consumer": consumer}
-		return utils.LavaError(ctx, logger, "subscribe", details, "consumer has existing subscription")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid creator")
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
 	if !found {
 		details := map[string]string{
 			"plan":  planIndex,
-			"block": strconv.FormatInt(ctx.BlockHeight(), 10),
+			"block": strconv.FormatInt(int64(block), 10),
 		}
-		return utils.LavaError(ctx, logger, "subscribe", details, "invalid plan")
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid plan")
 	}
 
-	// drop Plan reference in case of error:
-	// NOTE! FROM HERE ONWARD MUST SET ERR IF AN ERROR OCCURS
-	defer func() {
-		if err != nil {
-			k.plansKeeper.PutPlan(ctx, planIndex, plan.Block)
-		}
-	}()
+	sub, found := k.GetSubscription(ctx, consumer)
 
-	err = k.projectsKeeper.CreateDefaultProject(ctx, consumer)
-	if err != nil {
-		details := map[string]string{
-			"err": err.Error(),
+	// Subscription creation:
+	//   When: if not already exists for consumer address)
+	//   What: find plan, create default project, set duration, calculate price,
+	//         charge fees, save subscription.
+	//
+	// Subscription renewal:
+	//   When: if already exists and existing plan is the same as current plans
+	//         ("same" means same index and same block of creation)
+	//   What: find plan, update duration (total and remaining), calculate price,
+	//         charge fees, save subscription.
+	//
+	// Subscription upgrade: (TBD)
+	//
+	// Subscription downgrade: (TBD)
+
+	if !found {
+		// creeate new subscription with this plan
+		sub = types.Subscription{
+			Creator:   creator,
+			Consumer:  consumer,
+			Block:     block,
+			PlanIndex: planIndex,
+			PlanBlock: plan.Block,
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "failed to create default project")
-		return err
+
+		sub.MonthCuTotal = plan.GetComputeUnits()
+		sub.MonthCuLeft = plan.GetComputeUnits()
+
+		// new subscription needs a default project
+		if err = k.projectsKeeper.CreateDefaultProject(ctx, consumer); err != nil {
+			details := map[string]string{
+				"err": err.Error(),
+			}
+			return utils.LavaError(ctx, logger, "CreateSubscription", details, "failed to create default project")
+		}
+	} else {
+		// allow renewal with the same plan ("same" means both plan index,block match);
+		// otherwise, only one subscription per consumer
+		if !(plan.Index == sub.PlanIndex && plan.Block == sub.PlanBlock) {
+			details := map[string]string{"consumer": consumer}
+			return utils.LavaError(ctx, logger, "CreateSubscription", details, "consumer has existing subscription with a different plan")
+		}
+
+		// For now, allow renewal only by the same creator.
+		// TODO: after adding fixation, we can allow different creators
+		if creator != sub.Creator {
+			details := map[string]string{"creator": consumer}
+			return utils.LavaError(ctx, logger, "CreateSubscription", details, "existing subscription has different creator")
+		}
+
+		// The total duration may not exceed MAX_SUBSCRIPTION_DURATION, but allow an
+		// extra month to account for renwewals before the end of current subscription
+		if sub.DurationLeft+duration > types.MAX_SUBSCRIPTION_DURATION+1 {
+			details := map[string]string{"duration": strconv.FormatInt(int64(sub.DurationLeft), 10)}
+			msg := "duration would exceed limit (" + strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10) + " months)"
+			return utils.LavaError(ctx, logger, "CreateSubscription", details, msg)
+		}
 	}
 
-	// delete default Project in case of error
-	defer func() {
-		if err != nil {
-			// TODO: delete all projects of the subscription
-			// k.projectsKeeper.DeleteAllProject(ctx, consumer)
-			_ = err
-		}
-	}()
+	// update total (last requested) duration and remaining duration
+	sub.DurationTotal = duration
+	sub.DurationLeft += duration
 
-	price := plan.GetPrice()
-	expiry := time.Now().UTC()
+	// use current block's timestamp to calculate next month's time
+	timestamp := ctx.BlockTime()
+	expiry := timestamp
 
-	duration := int(plan.GetDuration())
-	for i := 0; i < duration; i++ {
+	for i := 0; i < int(duration); i++ {
 		expiry = nextMonth(expiry)
 	}
 
-	if isYearly && duration < 12 {
-		// extend the duration to 1 year, and price pro-rata
-		expiry = nextYear(time.Now().UTC())
-		price.Amount = price.Amount.MulRaw(12).QuoRaw(int64(duration))
+	sub.MonthExpiryTime = uint64(expiry.Unix())
 
+	if err := sub.ValidateSubscription(); err != nil {
+		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
+	}
+
+	// subscription looks good; let's charge the creator
+	price := plan.GetPrice()
+	price.Amount = price.Amount.MulRaw(int64(duration))
+
+	if duration >= MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
 		if discount > 0 {
@@ -228,8 +232,7 @@ func (k Keeper) CreateSubscription(
 			"price":   price.String(),
 			"error":   sdkerrors.ErrInsufficientFunds.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "insufficient funds")
-		return err
+		return utils.LavaError(ctx, logger, "CreateSub", details, "insufficient funds")
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
@@ -239,20 +242,7 @@ func (k Keeper) CreateSubscription(
 			"price":   price.String(),
 			"error":   err.Error(),
 		}
-		err = utils.LavaError(ctx, logger, "subscribe", details, "funds transfer failed")
-		return err
-	}
-
-	sub := types.Subscription{
-		Creator:     creator,
-		Consumer:    consumer,
-		Block:       block,
-		PlanIndex:   planIndex,
-		PlanBlock:   plan.Block,
-		IsYearly:    isYearly,
-		ExpiryTime:  uint64(expiry.Unix()),
-		RemainingCU: plan.GetComputeUnits(),
-		UsedCU:      0,
+		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
 	}
 
 	k.SetSubscription(ctx, sub)

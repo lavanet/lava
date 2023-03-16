@@ -45,7 +45,6 @@ func CreateMockPlan() plantypes.Plan {
 		Name:                     "mock plan",
 		Description:              "plan for testing",
 		Type:                     "rpc",
-		Duration:                 200,
 		Block:                    100,
 		Price:                    sdk.NewCoin("ulava", sdk.NewInt(100)),
 		ComputeUnits:             1000,

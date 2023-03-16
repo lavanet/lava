@@ -69,7 +69,6 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 			Name:                     "test plan",
 			Description:              "plan to test",
 			Type:                     "rpc",
-			Duration:                 200,
 			Block:                    100,
 			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
 			ComputeUnits:             1000,
@@ -160,14 +159,13 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 }
 
 const (
-	DURATION_FIELD    = 1
-	PRICE_FIELD       = 2
-	OVERUSE_FIELDS    = 3
-	CU_FIELD          = 4
-	SERVICERS_FIELD   = 5
-	NAME_FIELD        = 6
-	DESCRIPTION_FIELD = 7
-	TYPE_FIELD        = 8
+	PRICE_FIELD = iota+1
+	OVERUSE_FIELDS
+	CU_FIELD
+	SERVICERS_FIELD
+	NAME_FIELD
+	DESCRIPTION_FIELD
+	TYPE_FIELD
 )
 
 // Test that the plan verification before adding it to the plan storage is working correctly
@@ -184,14 +182,13 @@ func TestInvalidPlanAddition(t *testing.T) {
 		name       string
 		fieldIndex int
 	}{
-		{"InvalidDurationTest", 1},
-		{"InvalidPriceTest", 2},
-		{"InvalidOveruseTest", 3},
-		{"InvalidCuTest", 4},
-		{"InvalidServicersToPairTest", 5},
-		{"InvalidNameTest", 6},
-		{"InvalidDescriptionTest", 7},
-		{"InvalidTypeTest", 8},
+		{"InvalidPriceTest", 1},
+		{"InvalidOveruseTest", 2},
+		{"InvalidCuTest", 3},
+		{"InvalidServicersToPairTest", 4},
+		{"InvalidNameTest", 5},
+		{"InvalidDescriptionTest", 6},
+		{"InvalidTypeTest", 7},
 	}
 
 	for _, tt := range tests {
@@ -201,8 +198,6 @@ func TestInvalidPlanAddition(t *testing.T) {
 
 			// each test, change one field to an invalid value
 			switch tt.fieldIndex {
-			case DURATION_FIELD:
-				planToTest[0].Duration = 0
 			case PRICE_FIELD:
 				planToTest[0].Price = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
 			case OVERUSE_FIELDS:

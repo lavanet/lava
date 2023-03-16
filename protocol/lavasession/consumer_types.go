@@ -95,6 +95,10 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch      uint64
 }
 
+func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
+	return atomic.LoadUint64(&cswp.UsedComputeUnits)
+}
+
 // verify data reliability session exists or not
 func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (err error) {
 	cswp.Lock.Lock()

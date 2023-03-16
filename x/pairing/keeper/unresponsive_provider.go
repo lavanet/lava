@@ -34,7 +34,6 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	for counter := uint64(0); counter < largerEpochsNumConst+recommendedEpochNumToCollectPayment; counter++ {
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			utils.LavaFormatInfo("Epoch too early to punish unresponsive providers", &map[string]string{"epoch": fmt.Sprintf("%+v", currentEpoch)})
 			return nil
 		}
 		epochTemp = previousEpoch
@@ -52,7 +51,8 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	for counter := uint64(0); counter < recommendedEpochNumToCollectPayment; counter++ {
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			return utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", currentEpoch)}, "couldn't get previous epoch")
+			// it's too early in the chain life to do this calculation so bail, without an error
+			return nil
 		}
 		epochTemp = previousEpoch
 	}
