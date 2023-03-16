@@ -139,7 +139,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		for idx, provider := range pairedProviders {
 			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
 			require.Nil(t, err)
-			valid, _, foundIndex, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			valid, _, foundIndex, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
 			require.Nil(t, errPairing)
 			require.Equal(t, idx, foundIndex, "Failed ValidatePairingForClient", provider, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)

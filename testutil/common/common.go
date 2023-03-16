@@ -81,25 +81,22 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	}
 }
 
-func CreateRelay(t *testing.T, provider Account, consumer Account, data []byte, seassionID uint64, chainID string, cuSum uint64, blockHeight int64, relayNum uint64, requestBlock int64, dataReliability *types.VRFData) types.RelayRequest {
-	relayRequest := &types.RelayRequest{
-		Provider:        provider.Addr.String(),
-		ApiUrl:          "",
-		Data:            data,
-		SessionId:       seassionID,
-		ChainID:         chainID,
-		CuSum:           cuSum,
-		BlockHeight:     blockHeight,
-		RelayNum:        relayNum,
-		RequestBlock:    requestBlock,
-		DataReliability: nil,
+func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, QoSDR *types.QualityOfServiceReport) *types.RelaySession {
+	relaySession := &types.RelaySession{
+		Provider:    provider,
+		ContentHash: contentHash,
+		SessionId:   uint64(1),
+		SpecID:      spec,
+		CuSum:       cuSum,
+		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
+		RelayNum:    0,
+		QoSReport:   QoSDR,
+		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
 	}
-
-	sig, err := sigs.SignRelay(consumer.SK, *relayRequest)
-	relayRequest.Sig = sig
-	require.Nil(t, err)
-
-	return *relayRequest
+	if QoSDR != nil {
+		QoSDR.ComputeQoS()
+	}
+	return relaySession
 }
 
 func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account, provider1 Account, spec spectypes.Spec) (conflicttypes.MsgDetection, error) {

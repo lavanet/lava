@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29930,6 +29940,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30333,16 +30353,16 @@ paths:
                       type: string
                     moniker:
                       type: string
-              currentEpoch:
+              current_epoch:
                 type: string
                 format: uint64
-              timeLeftToNextPairing:
+              time_left_to_next_pairing:
                 type: string
                 format: uint64
-              specLastUpdatedBlock:
+              spec_last_updated_block:
                 type: string
                 format: uint64
-              blockOfNextPairing:
+              block_of_next_pairing:
                 type: string
                 format: uint64
         default:
@@ -31075,10 +31095,10 @@ paths:
               index:
                 type: string
                 format: int64
-              pairedProviders:
+              paired_providers:
                 type: string
                 format: uint64
-              cuPerEpoch:
+              cu_per_epoch:
                 type: string
                 format: uint64
         default:
@@ -31119,100 +31139,10 @@ paths:
           format: uint64
       tags:
         - Query
-  /lavanet/lava/plans/params:
+  '/lavanet/lava/plans/info/{plan_index}':
     get:
-      summary: Parameters queries the parameters of the module.
-      operationId: LavanetLavaPlansParams
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              params:
-                description: params holds all the parameters of this module.
-                type: object
-            description: >-
-              QueryParamsResponse is response type for the Query/Params RPC
-              method.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      tags:
-        - Query
-  /lavanet/lava/plans/show_all_plans:
-    get:
-      summary: Queries a list of ShowAllPlans items.
-      operationId: LavanetLavaPlansShowAllPlans
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              plans_info:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    index:
-                      type: string
-                    name:
-                      type: string
-                    price:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      tags:
-        - Query
-  '/lavanet/lava/plans/show_plan_info/{plan_index}':
-    get:
-      summary: Queries a list of ShowPlanInfo items.
-      operationId: LavanetLavaPlansShowPlanInfo
+      summary: Queries an Info item.
+      operationId: LavanetLavaPlansInfo
       responses:
         '200':
           description: A successful response.
@@ -31229,6 +31159,7 @@ paths:
                     format: uint64
                     title: the epoch that this plan was created
                   price:
+                    title: plan price (in ulava)
                     type: object
                     properties:
                       denom:
@@ -31243,7 +31174,6 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
-                    title: plan price (in ulava)
                   compute_units:
                     type: string
                     format: uint64
@@ -31298,10 +31228,64 @@ paths:
           type: string
       tags:
         - Query
-  /lavanet/lava/projects/params:
+  /lavanet/lava/plans/list:
+    get:
+      summary: Queries a list of List items.
+      operationId: LavanetLavaPlansList
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              plans_info:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    name:
+                      type: string
+                    price:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/plans/params:
     get:
       summary: Parameters queries the parameters of the module.
-      operationId: LavanetLavaProjectsParams
+      operationId: LavanetLavaPlansParams
       responses:
         '200':
           description: A successful response.
@@ -31334,10 +31318,10 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
-  '/lavanet/lava/projects/show_developers_project/{developer}':
+  '/lavanet/lava/projects/developer/{developer}':
     get:
       summary: Queries a list of ShowDevelopersProject items.
-      operationId: LavanetLavaProjectsShowDevelopersProject
+      operationId: LavanetLavaProjectsDeveloper
       responses:
         '200':
           description: A successful response.
@@ -31440,10 +31424,10 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/projects/show_project/{project}':
+  '/lavanet/lava/projects/info/{project}':
     get:
       summary: Queries a list of ShowProject items.
-      operationId: LavanetLavaProjectsShowProject
+      operationId: LavanetLavaProjectsInfo
       responses:
         '200':
           description: A successful response.
@@ -31544,6 +31528,42 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - Query
+  /lavanet/lava/projects/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaProjectsParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
       tags:
         - Query
   /lavanet/lava/spec/params:
@@ -32834,10 +32854,10 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/subscription/current_subscription/{consumer}':
+  '/lavanet/lava/subscription/current/{consumer}':
     get:
-      summary: Queries a list of CurrentSubscription items.
-      operationId: LavanetLavaSubscriptionCurrentSubscription
+      summary: Queries a list of Current items.
+      operationId: LavanetLavaSubscriptionCurrent
       responses:
         '200':
           description: A successful response.
@@ -55110,16 +55130,16 @@ definitions:
               type: string
             moniker:
               type: string
-      currentEpoch:
+      current_epoch:
         type: string
         format: uint64
-      timeLeftToNextPairing:
+      time_left_to_next_pairing:
         type: string
         format: uint64
-      specLastUpdatedBlock:
+      spec_last_updated_block:
         type: string
         format: uint64
-      blockOfNextPairing:
+      block_of_next_pairing:
         type: string
         format: uint64
   lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse:
@@ -55352,12 +55372,90 @@ definitions:
       index:
         type: string
         format: int64
-      pairedProviders:
+      paired_providers:
         type: string
         format: uint64
-      cuPerEpoch:
+      cu_per_epoch:
         type: string
         format: uint64
+  lavanet.lava.pairing.RelayPrivateData:
+    type: object
+    properties:
+      connection_type:
+        type: string
+      api_url:
+        type: string
+        title: >-
+          some relays have associated urls that are filled with params
+          ('/block/{height}')
+      data:
+        type: string
+        format: byte
+      request_block:
+        type: string
+        format: int64
+      apiInterface:
+        type: string
+      salt:
+        type: string
+        format: byte
+  lavanet.lava.pairing.RelaySession:
+    type: object
+    properties:
+      specID:
+        type: string
+      content_hash:
+        type: string
+        format: byte
+      session_id:
+        type: string
+        format: uint64
+      cu_sum:
+        type: string
+        format: uint64
+        title: total compute unit used including this relay
+      provider:
+        type: string
+      relay_num:
+        type: string
+        format: uint64
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
+      epoch:
+        type: string
+        format: int64
+      unresponsive_providers:
+        type: string
+        format: byte
+      lava_chain_id:
+        type: string
+      sig:
+        type: string
+        format: byte
+      badge:
+        type: object
+        properties:
+          cu_allocation:
+            type: string
+            format: uint64
+          epoch:
+            type: string
+            format: int64
+          badge_pk:
+            type: string
+            format: byte
+          spec_id:
+            type: string
+          project_sig:
+            type: string
+            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -55382,6 +55480,7 @@ definitions:
         format: uint64
         title: the epoch that this plan was created
       price:
+        title: plan price (in ulava)
         type: object
         properties:
           denom:
@@ -55393,7 +55492,6 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
-        title: plan price (in ulava)
       compute_units:
         type: string
         format: uint64
@@ -55423,41 +55521,7 @@ definitions:
         type: string
         format: uint64
         title: discount for buying the plan for a year
-  lavanet.lava.plans.QueryParamsResponse:
-    type: object
-    properties:
-      params:
-        description: params holds all the parameters of this module.
-        type: object
-    description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.plans.QueryShowAllPlansResponse:
-    type: object
-    properties:
-      plans_info:
-        type: array
-        items:
-          type: object
-          properties:
-            index:
-              type: string
-            name:
-              type: string
-            price:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-  lavanet.lava.plans.QueryShowPlanInfoResponse:
+  lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
       plan_info:
@@ -55470,6 +55534,7 @@ definitions:
             format: uint64
             title: the epoch that this plan was created
           price:
+            title: plan price (in ulava)
             type: object
             properties:
               denom:
@@ -55484,7 +55549,6 @@ definitions:
               method
 
               signatures required by gogoproto.
-            title: plan price (in ulava)
           compute_units:
             type: string
             format: uint64
@@ -55514,7 +55578,41 @@ definitions:
             type: string
             format: uint64
             title: discount for buying the plan for a year
-  lavanet.lava.plans.showAllPlansInfoStruct:
+  lavanet.lava.plans.QueryListResponse:
+    type: object
+    properties:
+      plans_info:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            name:
+              type: string
+            price:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+  lavanet.lava.plans.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.plans.listInfoStruct:
     type: object
     properties:
       index:
@@ -55672,6 +55770,150 @@ definitions:
       - DEVELOPER
     default: NONE
     title: 'bitmap, must only be power of 2'
+  lavanet.lava.projects.QueryDeveloperResponse:
+    type: object
+    properties:
+      project:
+        type: object
+        properties:
+          index:
+            type: string
+            title: >-
+              unique id that will be the combination of subscription address and
+              project name, cannot be changed once created
+          subscription:
+            type: string
+            title: the subscription address that owns the project
+          description:
+            type: string
+            title: the description of the project for the users convinient
+          enabled:
+            type: boolean
+            title: enabled flag
+          project_keys:
+            type: array
+            items:
+              type: object
+              properties:
+                key:
+                  type: string
+                  title: the address of the project key
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - NONE
+                      - ADMIN
+                      - DEVELOPER
+                    default: NONE
+                    title: 'bitmap, must only be power of 2'
+                  title: 'the key type, determines the privilages of the key'
+                vrfpk:
+                  type: string
+                  title: the vrf public key used to calculate data reliability
+            title: list of the projects keys
+          policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+          used_cu:
+            type: string
+            format: uint64
+  lavanet.lava.projects.QueryInfoResponse:
+    type: object
+    properties:
+      project:
+        type: object
+        properties:
+          index:
+            type: string
+            title: >-
+              unique id that will be the combination of subscription address and
+              project name, cannot be changed once created
+          subscription:
+            type: string
+            title: the subscription address that owns the project
+          description:
+            type: string
+            title: the description of the project for the users convinient
+          enabled:
+            type: boolean
+            title: enabled flag
+          project_keys:
+            type: array
+            items:
+              type: object
+              properties:
+                key:
+                  type: string
+                  title: the address of the project key
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - NONE
+                      - ADMIN
+                      - DEVELOPER
+                    default: NONE
+                    title: 'bitmap, must only be power of 2'
+                  title: 'the key type, determines the privilages of the key'
+                vrfpk:
+                  type: string
+                  title: the vrf public key used to calculate data reliability
+            title: list of the projects keys
+          policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+          used_cu:
+            type: string
+            format: uint64
   lavanet.lava.projects.QueryParamsResponse:
     type: object
     properties:
@@ -55679,150 +55921,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.projects.QueryShowDevelopersProjectResponse:
-    type: object
-    properties:
-      project:
-        type: object
-        properties:
-          index:
-            type: string
-            title: >-
-              unique id that will be the combination of subscription address and
-              project name, cannot be changed once created
-          subscription:
-            type: string
-            title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
-          enabled:
-            type: boolean
-            title: enabled flag
-          project_keys:
-            type: array
-            items:
-              type: object
-              properties:
-                key:
-                  type: string
-                  title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
-                vrfpk:
-                  type: string
-                  title: the vrf public key used to calculate data reliability
-            title: list of the projects keys
-          policy:
-            type: object
-            properties:
-              chain_policies:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    chain_id:
-                      type: string
-                    apis:
-                      type: array
-                      items:
-                        type: string
-              geolocation_profile:
-                type: string
-                format: uint64
-              total_cu_limit:
-                type: string
-                format: uint64
-              epoch_cu_limit:
-                type: string
-                format: uint64
-              max_providers_to_pair:
-                type: string
-                format: uint64
-          used_cu:
-            type: string
-            format: uint64
-  lavanet.lava.projects.QueryShowProjectResponse:
-    type: object
-    properties:
-      project:
-        type: object
-        properties:
-          index:
-            type: string
-            title: >-
-              unique id that will be the combination of subscription address and
-              project name, cannot be changed once created
-          subscription:
-            type: string
-            title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
-          enabled:
-            type: boolean
-            title: enabled flag
-          project_keys:
-            type: array
-            items:
-              type: object
-              properties:
-                key:
-                  type: string
-                  title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
-                vrfpk:
-                  type: string
-                  title: the vrf public key used to calculate data reliability
-            title: list of the projects keys
-          policy:
-            type: object
-            properties:
-              chain_policies:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    chain_id:
-                      type: string
-                    apis:
-                      type: array
-                      items:
-                        type: string
-              geolocation_profile:
-                type: string
-                format: uint64
-              total_cu_limit:
-                type: string
-                format: uint64
-              epoch_cu_limit:
-                type: string
-                format: uint64
-              max_providers_to_pair:
-                type: string
-                format: uint64
-          used_cu:
-            type: string
-            format: uint64
   lavanet.lava.spec.ApiInterface:
     type: object
     properties:
@@ -56852,7 +56950,7 @@ definitions:
   lavanet.lava.subscription.Params:
     type: object
     description: Params defines the parameters for the module.
-  lavanet.lava.subscription.QueryCurrentSubscriptionResponse:
+  lavanet.lava.subscription.QueryCurrentResponse:
     type: object
     properties:
       sub:
