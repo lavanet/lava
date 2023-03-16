@@ -81,10 +81,10 @@ func TestRelayPaymentSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), tt.cu, ts.spec.Name, nil)
 			relayRequest.SessionId = uint64(i)
-			relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
 			require.Nil(t, err)
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
-			require.Equal(t, tt.valid, err == nil)
+			require.Equal(t, tt.valid, err == nil, "results incorrect for usage of %d err == nil: %t", tt.cu, err == nil)
 		})
 	}
 }
