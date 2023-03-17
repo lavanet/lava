@@ -115,10 +115,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 			continue
 		}
 		cancel()
-		// add auth headers to the client
-		for header, headerVal := range nodeUrl.AuthConfig.AuthHeaders {
-			rpcClient.SetHeader(header, headerVal)
-		}
+		nodeUrl.SetAuthHeaders(ctx, rpcClient.SetHeader)
 		break
 	}
 
