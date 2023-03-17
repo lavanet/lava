@@ -33,18 +33,18 @@ type ChainFetcher interface {
 }
 
 type ChainTracker struct {
-	chainFetcher             ChainFetcher // used to communicate with the node
-	blocksToSave             uint64       // how many finalized blocks to keep
-	latestBlockNum           int64
-	blockQueueMu             sync.RWMutex
-	blocksQueue              []BlockStore // holds all past hashes up until latest block
-	forkCallback             func(int64)  // a function to be called when a fork is detected
-	newLatestCallback        func(int64)  // a function to be called when a new block is detected
-	serverBlockMemory        uint64
-	quit                     chan bool
-	endpoint                 lavasession.RPCProviderEndpoint
-	blockCheckpointDisatance uint64 // used to do something every X blocks
-	blockCheckpoint          uint64 // last time checkpoint was met
+	chainFetcher            ChainFetcher // used to communicate with the node
+	blocksToSave            uint64       // how many finalized blocks to keep
+	latestBlockNum          int64
+	blockQueueMu            sync.RWMutex
+	blocksQueue             []BlockStore // holds all past hashes up until latest block
+	forkCallback            func(int64)  // a function to be called when a fork is detected
+	newLatestCallback       func(int64)  // a function to be called when a new block is detected
+	serverBlockMemory       uint64
+	quit                    chan bool
+	endpoint                lavasession.RPCProviderEndpoint
+	blockCheckpointDistance uint64 // used to do something every X blocks
+	blockCheckpoint         uint64 // last time checkpoint was met
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -160,9 +160,10 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	if blocksQueueLen < cs.blocksToSave {
 		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, &map[string]string{"blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10)})
 	}
-	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDisatance < uint64(latestBlock) {
+	//only print logs if there is something interesting or we reached the checkpoint
+	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDistance < uint64(latestBlock) {
 		cs.blockCheckpoint = uint64(latestBlock)
-		utils.LavaFormatDebug("Chain Tracker Updated block hashes", &map[string]string{"latest_block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(int64(cs.blocksToSave)-blocksCopied, 10), "blocksKept": strconv.FormatInt(blocksCopied, 10), "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface})
+		utils.LavaFormatDebug("Chain Tracker Updated block hashes", &map[string]string{"latest_block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(int64(cs.blocksToSave)-blocksCopied, 10), "blocksKept": strconv.FormatInt(blocksCopied, 10), "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface, "nextBlocksUpdate": strconv.FormatUint(cs.blockCheckpoint+cs.blockCheckpointDistance, 10)})
 	}
 	return nil
 }
@@ -374,7 +375,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDisatance: config.blocksCheckpointDistance}
+	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil, nil)
 	}
