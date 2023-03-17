@@ -14,4 +14,4 @@ endpoints:
       chain-id: LAV1
       network-address: 127.0.0.1:2285
       node-urls:
-        -url: 127.0.0.1:9090
+        - url: 127.0.0.1:9090
