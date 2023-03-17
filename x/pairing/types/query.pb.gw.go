@@ -1401,31 +1401,31 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Providers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "providers", "chainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Providers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "providers", "chainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Clients_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "clients", "chainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Clients_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "clients", "chainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "get_pairing", "chainID", "client"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_GetPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "get_pairing", "chainID", "client"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_VerifyPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6, 1, 0, 4, 1, 5, 7}, []string{"lavanet", "lava", "pairing", "verify_pairing", "chainID", "client", "provider", "block"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_VerifyPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6, 1, 0, 4, 1, 5, 7}, []string{"lavanet", "lava", "pairing", "verify_pairing", "chainID", "client", "provider", "block"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UniquePaymentStorageClientProvider_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "unique_payment_storage_client_provider", "index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UniquePaymentStorageClientProvider_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "unique_payment_storage_client_provider", "index"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UniquePaymentStorageClientProviderAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "unique_payment_storage_client_provider"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UniquePaymentStorageClientProviderAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "unique_payment_storage_client_provider"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ProviderPaymentStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "provider_payment_storage", "index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ProviderPaymentStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "provider_payment_storage", "index"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ProviderPaymentStorageAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "provider_payment_storage"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ProviderPaymentStorageAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "provider_payment_storage"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_EpochPayments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "epoch_payments", "index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_EpochPayments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "epoch_payments", "index"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_EpochPaymentsAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "epoch_payments"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_EpochPaymentsAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "epoch_payments"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_UserEntry_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "user_entry", "address", "chainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_UserEntry_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "user_entry", "address", "chainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_StaticProvidersList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "static_providers_list", "chainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_StaticProvidersList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "static_providers_list", "chainID"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

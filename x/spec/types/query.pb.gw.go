@@ -655,19 +655,19 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Spec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"lavanet", "lava", "spec", "ChainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Spec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"lavanet", "lava", "spec", "ChainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_SpecAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2}, []string{"lavanet", "lava", "spec"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_SpecAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2}, []string{"lavanet", "lava", "spec"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_SpecRaw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "spec", "spec_raw", "ChainID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_SpecRaw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "spec", "spec_raw", "ChainID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_SpecAllRaw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "spec_raw"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_SpecAllRaw_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "spec_raw"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ShowAllChains_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "show_all_chains"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ShowAllChains_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "show_all_chains"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ShowChainInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "spec", "show_chain_info", "chainName"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ShowChainInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "spec", "show_chain_info", "chainName"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

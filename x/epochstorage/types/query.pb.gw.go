@@ -558,17 +558,17 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_StakeStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "epochstorage", "stake_storage", "index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_StakeStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "epochstorage", "stake_storage", "index"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_StakeStorageAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "stake_storage"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_StakeStorageAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "stake_storage"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_EpochDetails_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "epoch_details"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_EpochDetails_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "epoch_details"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_FixatedParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "epochstorage", "fixated_params", "index"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_FixatedParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "epochstorage", "fixated_params", "index"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_FixatedParamsAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "fixated_params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_FixatedParamsAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "epochstorage", "fixated_params"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
