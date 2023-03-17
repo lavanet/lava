@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/common"
+	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/performance"
@@ -49,7 +49,7 @@ type RPCConsumer struct {
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
-	if common.IsTestMode(ctx) {
+	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
 	// spawn up ConsumerStateTracker
@@ -104,7 +104,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
+	err = viper_endpoints.UnmarshalKey(commonlib.EndpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, &map[string]string{"viper_endpoints": fmt.Sprintf("%v", viper_endpoints.AllSettings())})
 	}
@@ -157,7 +157,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
-				viper_endpoints, err = common.ParseEndpointArgs(args, Yaml_config_properties, common.EndpointsConfigName)
+				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
 				if err != nil {
 					return utils.LavaFormatError("invalid endpoints arguments", err, &map[string]string{"endpoint_strings": strings.Join(args, "")})
 				}
@@ -195,11 +195,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			utils.LoggingLevel(logLevel)
 
-			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
+			test_mode, err := cmd.Flags().GetBool(commonlib.TestModeFlagName)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read test_mode flag", err, nil)
 			}
-			ctx = context.WithValue(ctx, common.TestModeFlagName, test_mode)
+			ctx = context.WithValue(ctx, commonlib.Test_mode_ctx_key{}, test_mode)
 			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
 			if pprofAddressFlagUsed {
@@ -246,10 +246,10 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
+	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
-	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
+	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 

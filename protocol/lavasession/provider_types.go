@@ -39,7 +39,6 @@ func (endpoint *RPCProviderEndpoint) UrlsString() string {
 }
 
 func (endpoint *RPCProviderEndpoint) String() (retStr string) {
-
 	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 }
 

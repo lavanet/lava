@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Test_mode_ctx_key struct{}
+
 const (
 	EndpointsConfigName = "endpoints"
 	SaveConfigFlagName  = "save-conf"
@@ -61,25 +63,24 @@ func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []strin
 			}
 
 			if strings.Contains(endpoint_strings[idx+inner_idx], ",") {
-				seperated_arguments := strings.Split(endpoint_strings[idx+inner_idx], ",")
-				config_elements := make([]interface{}, len(seperated_arguments))
-				for element_idx, config_element := range seperated_arguments {
+				separated_arguments := strings.Split(endpoint_strings[idx+inner_idx], ",")
+				config_elements := make([]interface{}, len(separated_arguments))
+				for element_idx, config_element := range separated_arguments {
 					config_elements[element_idx] = config_element
 				}
 				setPropertyElements(config_elements...)
 			} else {
 				setPropertyElements(endpoint_strings[idx+inner_idx])
 			}
-
 		}
 		endpoints = append(endpoints, toAdd)
 	}
 
 	viper_endpoints.Set(endpointsConfigName, endpoints)
-	return
+	return viper_endpoints, err
 }
 
 func IsTestMode(ctx context.Context) bool {
-	test_mode, ok := ctx.Value(TestModeFlagName).(bool)
+	test_mode, ok := ctx.Value(Test_mode_ctx_key{}).(bool)
 	return ok && test_mode
 }

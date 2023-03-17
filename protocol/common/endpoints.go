@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	URL_QUERY_PARAMETERS_SEPERATOR_FROM_PATH        = "?"
-	URL_QUERY_PARAMETERS_SEPERATOR_OTHER_PARAMETERS = "&"
+	URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH        = "?"
+	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
 )
 
 type NodeUrl struct {
@@ -38,10 +38,10 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 	// AuthPath is expected to be added as a uri optional parameter
 	if strings.Contains(url, "?") {
 		// there are already optional parameters
-		return url + URL_QUERY_PARAMETERS_SEPERATOR_OTHER_PARAMETERS + ac.AuthQuery
+		return url + URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS + ac.AuthQuery
 	}
 	// path doesn't have query parameters
-	return url + URL_QUERY_PARAMETERS_SEPERATOR_FROM_PATH + ac.AuthQuery
+	return url + URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH + ac.AuthQuery
 }
 
 func ValidateEndpoint(endpoint string, apiInterface string) error {

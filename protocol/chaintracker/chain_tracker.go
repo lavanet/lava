@@ -160,7 +160,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	if blocksQueueLen < cs.blocksToSave {
 		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, &map[string]string{"blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10)})
 	}
-	//only print logs if there is something interesting or we reached the checkpoint
+	// only print logs if there is something interesting or we reached the checkpoint
 	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDistance < uint64(latestBlock) {
 		cs.blockCheckpoint = uint64(latestBlock)
 		utils.LavaFormatDebug("Chain Tracker Updated block hashes", &map[string]string{"latest_block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(int64(cs.blocksToSave)-blocksCopied, 10), "blocksKept": strconv.FormatInt(blocksCopied, 10), "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface, "nextBlocksUpdate": strconv.FormatUint(cs.blockCheckpoint+cs.blockCheckpointDistance, 10)})
