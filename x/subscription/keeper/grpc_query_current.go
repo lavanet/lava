@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) CurrentSubscription(goCtx context.Context, req *types.QueryCurrentSubscriptionRequest) (*types.QueryCurrentSubscriptionResponse, error) {
+func (k Keeper) Current(goCtx context.Context, req *types.QueryCurrentRequest) (*types.QueryCurrentResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	res := types.QueryCurrentSubscriptionResponse{}
+	res := types.QueryCurrentResponse{}
 
 	// TODO: should indeed allow anyone to query about anyone?
 	sub, found := k.GetSubscription(ctx, req.Consumer)

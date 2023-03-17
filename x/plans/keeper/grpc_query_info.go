@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ShowPlanInfo(goCtx context.Context, req *types.QueryShowPlanInfoRequest) (*types.QueryShowPlanInfoResponse, error) {
+func (k Keeper) Info(goCtx context.Context, req *types.QueryInfoRequest) (*types.QueryInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -21,5 +21,5 @@ func (k Keeper) ShowPlanInfo(goCtx context.Context, req *types.QueryShowPlanInfo
 		return nil, status.Error(codes.NotFound, "plan not found")
 	}
 
-	return &types.QueryShowPlanInfoResponse{PlanInfo: planToPrint}, nil
+	return &types.QueryInfoResponse{PlanInfo: planToPrint}, nil
 }

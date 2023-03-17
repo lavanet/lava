@@ -5,17 +5,17 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/x/plans/types"
 	"github.com/spf13/cobra"
 )
 
 var _ = strconv.Itoa(0)
 
-func CmdShowDevelopersProject() *cobra.Command {
+func CmdList() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-developers-project [developer address]",
-		Short: "Query ShowDevelopersProject",
-		Args:  cobra.ExactArgs(1),
+		Use:   "list",
+		Short: "Query to show the list of all available plan",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -24,9 +24,9 @@ func CmdShowDevelopersProject() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowDevelopersProjectRequest{Developer: args[0]}
+			params := &types.QueryListRequest{}
 
-			res, err := queryClient.ShowDevelopersProject(cmd.Context(), params)
+			res, err := queryClient.List(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

@@ -5,20 +5,18 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/projects/types"
 	"github.com/spf13/cobra"
 )
 
 var _ = strconv.Itoa(0)
 
-func CmdShowPlanInfo() *cobra.Command {
+func CmdDeveloper() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-plan-info [plan-index]",
-		Short: "Query to show plan info",
+		Use:   "developer [developer-addr]",
+		Short: "Query to show the project for a developer key",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqPlanIndex := args[0]
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -26,11 +24,9 @@ func CmdShowPlanInfo() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryShowPlanInfoRequest{
-				PlanIndex: reqPlanIndex,
-			}
+			params := &types.QueryDeveloperRequest{Developer: args[0]}
 
-			res, err := queryClient.ShowPlanInfo(cmd.Context(), params)
+			res, err := queryClient.Developer(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

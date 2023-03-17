@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ShowDevelopersProject(goCtx context.Context, req *types.QueryShowDevelopersProjectRequest) (*types.QueryShowDevelopersProjectResponse, error) {
+func (k Keeper) Developer(goCtx context.Context, req *types.QueryDeveloperRequest) (*types.QueryDeveloperResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -21,5 +21,5 @@ func (k Keeper) ShowDevelopersProject(goCtx context.Context, req *types.QuerySho
 		return nil, err
 	}
 
-	return &types.QueryShowDevelopersProjectResponse{Project: &project}, nil
+	return &types.QueryDeveloperResponse{Project: &project}, nil
 }

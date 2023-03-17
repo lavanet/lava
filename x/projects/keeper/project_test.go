@@ -19,12 +19,12 @@ func TestCreateDefaultProject(t *testing.T) {
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
-	response1, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: subAccount.Addr.String()})
+	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	response2, err := keepers.Projects.ShowProject(ctx, &types.QueryShowProjectRequest{Project: response1.Project.Index})
+	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
@@ -46,13 +46,13 @@ func TestCreateProject(t *testing.T) {
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
-	response1, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: subAccount.Addr.String()})
+	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.NotNil(t, err)
 
-	response1, err = keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	response1, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 
-	response2, err := keepers.Projects.ShowProject(ctx, &types.QueryShowProjectRequest{Project: response1.Project.Index})
+	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
@@ -75,7 +75,7 @@ func TestAddKeys(t *testing.T) {
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	projectRes, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	projectRes, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 
 	project := projectRes.Project
@@ -106,7 +106,7 @@ func TestAddKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// fetch project with new developer
-	projectRes, err = keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: developerAcc2.Addr.String()})
+	projectRes, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc2.Addr.String()})
 	require.Nil(t, err)
 }
 
@@ -126,7 +126,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	response, err := keepers.Projects.ShowDevelopersProject(ctx, &types.QueryShowDevelopersProjectRequest{Developer: adminAcc.Addr.String()})
+	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), projectName1))
 }
