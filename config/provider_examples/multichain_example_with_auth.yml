@@ -36,3 +36,4 @@ endpoints:
             auth-query: auth=banana
             auth-headers:
               AUTH-X-HEADER-2: xxyyzz
+          ip-forwarding: true
