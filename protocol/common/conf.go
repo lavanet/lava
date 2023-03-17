@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,7 @@ const (
 	EndpointsConfigName = "endpoints"
 	SaveConfigFlagName  = "save-conf"
 	GeolocationFlag     = "geolocation"
+	TestModeFlagName    = "test-mode"
 )
 
 func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
@@ -75,4 +77,9 @@ func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []strin
 
 	viper_endpoints.Set(endpointsConfigName, endpoints)
 	return
+}
+
+func IsTestMode(ctx context.Context) bool {
+	test_mode, ok := ctx.Value(TestModeFlagName).(bool)
+	return ok && test_mode
 }

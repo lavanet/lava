@@ -49,6 +49,9 @@ type RPCConsumer struct {
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
+	if common.IsTestMode(ctx) {
+		testModeWarn("RPCConsumer running tests")
+	}
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
@@ -192,6 +195,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			utils.LoggingLevel(logLevel)
 
+			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read test_mode flag", err, nil)
+			}
+			ctx = context.WithValue(ctx, common.TestModeFlagName, test_mode)
 			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
 			if pprofAddressFlagUsed {
@@ -241,8 +249,15 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
+	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 
 	return cmdRPCConsumer
+}
+
+func testModeWarn(desc string) {
+	utils.LavaFormatWarning("------------------------------test mode --------------------------------\n\t\t\t"+
+		desc+"\n\t\t\t"+
+		"------------------------------test mode --------------------------------\n", nil, nil)
 }

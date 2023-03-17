@@ -31,7 +31,7 @@ endpoints:
       chain-id: ETH1
       network-address: 127.0.0.1:2221
       node-urls: 
-        - url: wss://ethereum-rpc.com/ws/
+        - url: ws://your_node_url/
           auth-config:
             auth-query: auth=banana
             auth-headers:

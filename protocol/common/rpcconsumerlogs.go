@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -182,4 +183,14 @@ func (pl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string) bool {
 		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
 	}
 	return true
+}
+
+func (rpccl *RPCConsumerLogs) LogTestMode(fiberCtx *fiber.Ctx) {
+	headers := fiberCtx.GetReqHeaders()
+	st := "Test Mode Log: new request\n"
+	st += "Full URI: " + fiberCtx.Request().URI().String() + "\n"
+	for header, HeaderVal := range headers {
+		st += fmt.Sprintf("Header %16s HeaderVal: %s\n", header, HeaderVal)
+	}
+	utils.LavaFormatInfo(st, nil)
 }
