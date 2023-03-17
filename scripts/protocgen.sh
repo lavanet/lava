@@ -2,8 +2,8 @@
 
 set -eo pipefail
 
-# Define a shell function for generating Gogo proto code.
-generate_gogo_proto() {
+# Define a shell function for generating proto code.
+generate_proto() {
   local dir="$1"
   for file in "$dir"/*.proto; do
     if grep -q go_package "$file"; then
@@ -27,7 +27,7 @@ go get github.com/regen-network/cosmos-proto/protoc-gen-gocosmos 2>/dev/null
 cd proto
 proto_dirs=$(find . -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
-  generate_gogo_proto "$dir"
+  generate_proto "$dir"
 done
 cd ..
 
