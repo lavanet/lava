@@ -302,7 +302,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
 	rcp := &RestChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, AuthConfig: rpcProviderEndpoint.NodeUrls[0].AuthConfig},
 		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"),
 	}
 	return rcp, nil
@@ -338,7 +338,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, url, msgBuffer)
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -347,6 +347,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	// setting up provider headers for it's node
+	for header, headerValue := range rcp.AuthConfig.AuthHeaders {
+		req.Header.Set(header, headerValue)
+	}
+
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, "", nil, err

@@ -8,6 +8,42 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	URL_QUERY_PARAMETERS_SEPERATOR_FROM_PATH        = "?"
+	URL_QUERY_PARAMETERS_SEPERATOR_OTHER_PARAMETERS = "&"
+)
+
+type NodeUrl struct {
+	Url        string     `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	AuthConfig AuthConfig `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+}
+
+func (url *NodeUrl) String() string {
+	if url == nil {
+		return ""
+	}
+	return url.Url
+}
+
+type AuthConfig struct {
+	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
+	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+}
+
+func (ac *AuthConfig) AddAuthPath(url string) string {
+	// there is no auth provided
+	if ac.AuthQuery == "" {
+		return url
+	}
+	// AuthPath is expected to be added as a uri optional parameter
+	if strings.Contains(url, "?") {
+		// there are already optional parameters
+		return url + URL_QUERY_PARAMETERS_SEPERATOR_OTHER_PARAMETERS + ac.AuthQuery
+	}
+	// path doesn't have query parameters
+	return url + URL_QUERY_PARAMETERS_SEPERATOR_FROM_PATH + ac.AuthQuery
+}
+
 func ValidateEndpoint(endpoint string, apiInterface string) error {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:

@@ -345,15 +345,15 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
-	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
-	}
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	cp := &JrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, AuthConfig: nodeUrl.AuthConfig},
+	}
 	verifyRPCEndpoint(nodeUrl.Url)
-	return cp, cp.start(ctx, nConns, nodeUrl.Url)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
-func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
 	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
 	if err != nil {
 		return err

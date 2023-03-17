@@ -179,6 +179,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 		listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	}
+	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service", nil)
 	if len(rpcp.disabledEndpoints) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", rpcp.disabledEndpoints), nil, nil)
 	}

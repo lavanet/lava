@@ -12,7 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -48,6 +47,7 @@ type parsedMessage struct {
 
 type BaseChainProxy struct {
 	averageBlockTime time.Duration
+	AuthConfig       common.AuthConfig
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
@@ -173,7 +173,7 @@ func verifyRPCEndpoint(endpoint string) {
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []lavasession.NodeUrl) (websocketEndpoint string, httpEndpoint string) {
+func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint common.NodeUrl, httpEndpoint common.NodeUrl) {
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {
@@ -181,18 +181,18 @@ func verifyTendermintEndpoint(endpoints []lavasession.NodeUrl) (websocketEndpoin
 		}
 		switch u.Scheme {
 		case "http", "https":
-			httpEndpoint = endpoint.Url
+			httpEndpoint = endpoint
 		case "ws", "wss":
-			websocketEndpoint = endpoint.Url
+			websocketEndpoint = endpoint
 		default:
 			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil, nil)
 		}
 	}
 
-	if websocketEndpoint == "" || httpEndpoint == "" {
+	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
 		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
-		if httpEndpoint != "" {
+			&map[string]string{"websocket": websocketEndpoint.String(), "http": httpEndpoint.String()})
+		if httpEndpoint.String() != "" {
 			return httpEndpoint, httpEndpoint
 		} else {
 			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil, nil)

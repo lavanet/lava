@@ -22,18 +22,12 @@ type ProviderSessionsEpochData struct {
 	MaxComputeUnits  uint64
 }
 
-type NodeUrl struct {
-	Url         string
-	AuthHeaders map[string]string
-	AuthPath    string
-}
-
 type RPCProviderEndpoint struct {
-	NetworkAddress string    `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
-	ChainID        string    `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
-	ApiInterface   string    `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64    `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
-	NodeUrls       []NodeUrl `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	NetworkAddress string           `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
+	ChainID        string           `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
+	ApiInterface   string           `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64           `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrls       []common.NodeUrl `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {

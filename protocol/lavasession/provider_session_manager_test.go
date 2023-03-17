@@ -3,6 +3,7 @@ package lavasession
 import (
 	"testing"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +29,7 @@ func initProviderSessionManager() *ProviderSessionManager {
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
-		NodeUrls:       []NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
+		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, testNumberOfBlocksKeptInMemory)
 }
 

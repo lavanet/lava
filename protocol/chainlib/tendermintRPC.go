@@ -416,18 +416,16 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	httpNodeUrl string
+	httpNodeUrl common.NodeUrl
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
-	var httpUrl string
-	var websocketUrl string
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
 	}
-	websocketUrl, httpUrl = verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
+	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, AuthConfig: websocketUrl.AuthConfig}},
 		httpNodeUrl:    httpUrl,
 	}
 	return cp, cp.start(ctx, nConns, websocketUrl)
@@ -466,7 +464,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 
 	// construct the url by concatenating the node url with the path variable
-	url := cp.httpNodeUrl + "/" + nodeMessage.Path
+	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
 	// create context
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
@@ -478,9 +476,14 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	defer cancel()
 
 	// create a new http request
-	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.httpNodeUrl.AuthConfig.AddAuthPath(url), nil)
 	if err != nil {
 		return nil, "", nil, err
+	}
+
+	// setting up provider headers for it's node
+	for header, headerValue := range cp.httpNodeUrl.AuthConfig.AuthHeaders {
+		req.Header.Set(header, headerValue)
 	}
 
 	// send the http request and get the response

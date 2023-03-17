@@ -139,6 +139,6 @@ func FormatStringerList[T fmt.Stringer](description string, listToPrint []T) str
 	for _, printable := range listToPrint {
 		st = st + printable.String() + "\n"
 	}
-	st = fmt.Sprintf(description+"\n%s", st)
+	st = fmt.Sprintf(description+"\n\t%s", st)
 	return st
 }
