@@ -1,6 +1,10 @@
 package types
 
-const DEFAULT_PROJECT_NAME = "default"
+import (
+	"fmt"
+)
+
+const ADMIN_PROJECT_NAME = "admin"
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
@@ -55,4 +59,25 @@ func (project *Project) AppendKey(keyToAdd ProjectKey) {
 
 func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
+}
+
+func (project *Project) VerifyProject(chainID string) error {
+	if !project.Enabled {
+		return fmt.Errorf("the developers project is disabled")
+	}
+
+	if !project.Policy.ContainsChainID(chainID) {
+		return fmt.Errorf("the developers project policy does not include the chain")
+	}
+
+	err := project.VerifyCuUsage()
+	return err
+}
+
+func (project *Project) VerifyCuUsage() error {
+	// TODO: when overuse is added, change here to take that into account
+	if project.Policy.TotalCuLimit <= project.UsedCu {
+		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
+	}
+	return nil
 }

@@ -60,12 +60,13 @@ type Keepers struct {
 }
 
 type Servers struct {
-	EpochServer    epochstoragetypes.MsgServer
-	SpecServer     spectypes.MsgServer
-	PairingServer  pairingtypes.MsgServer
-	ConflictServer conflicttypes.MsgServer
-	ProjectServer  projectstypes.MsgServer
-	PlansServer    planstypes.MsgServer
+	EpochServer        epochstoragetypes.MsgServer
+	SpecServer         spectypes.MsgServer
+	PairingServer      pairingtypes.MsgServer
+	ConflictServer     conflicttypes.MsgServer
+	ProjectServer      projectstypes.MsgServer
+	SubscriptionServer subscriptiontypes.MsgServer
+	PlansServer        planstypes.MsgServer
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
@@ -168,7 +169,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
@@ -193,6 +194,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
+	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 

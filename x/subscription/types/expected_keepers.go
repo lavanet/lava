@@ -20,12 +20,13 @@ type BankKeeper interface {
 }
 
 type EpochstorageKeeper interface {
+	BlocksToSave(ctx sdk.Context, block uint64) (uint64, error)
 	GetEpochStart(ctx sdk.Context) uint64
 	// Methods imported from epochstorage should be defined here
 }
 
 type ProjectsKeeper interface {
-	CreateDefaultProject(ctx sdk.Context, consumer string) error
+	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error
 	DeleteProject(ctx sdk.Context, index string) error
 	// Methods imported from projectskeeper should be defined here
 }

@@ -17,7 +17,6 @@ message Project {
 
 message ProjectKey {
     string  key = 1; // the address of the project key
-    
     enum KEY_TYPE{ // bitmap, must only be power of 2
         NONE = 0;
         ADMIN = 1;
@@ -25,6 +24,7 @@ message ProjectKey {
     }    
 
     repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
+    string vrfpk = 3; // the vrf public key used to calculate data reliability
 }
 
 message Policy {
@@ -32,6 +32,7 @@ message Policy {
     uint64 geolocation_profile = 2;
     uint64 total_cu_limit = 3;
     uint64 epoch_cu_limit = 4;
+    uint64 max_providers_to_pair = 5;
 }
 
 message ChainPolicy {
@@ -39,6 +40,7 @@ message ChainPolicy {
     repeated string apis = 2 [(gogoproto.nullable) = false];
 }
 
-message ProtoString {
-    string string = 1;
+message ProtoDeveloperData {
+    string projectID = 1;
+    string vrfpk = 2;
 }

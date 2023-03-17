@@ -58,7 +58,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.ChainID,
 			clientAddr,
@@ -105,7 +105,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
 			}
 			// check this other provider is indeed legitimate
-			isValidPairing, _, _, err := k.Keeper.ValidatePairingForClient(
+			isValidPairing, _, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
 				relay.ChainID,
 				clientAddr,
@@ -121,10 +121,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing mismatch")
 			}
 			vrfPk := &utils.VrfPubKey{}
-			vrfPk, err = vrfPk.DecodeFromBech32(userStake.Vrfpk)
+			vrfPk, err = vrfPk.DecodeFromBech32(vrfk)
 			if err != nil {
 				details["error"] = err.Error()
-				details["vrf_bech32"] = userStake.Vrfpk
+				details["vrf_bech32"] = vrfk
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			// signatures valid, validate VRF signing
@@ -134,13 +134,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			providersCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
-			}
-
-			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
+			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersToPair), spec.ReliabilityThreshold)
 			if vrfErr != nil {
 				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
@@ -170,7 +164,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 
-		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, userStake, totalCUInEpochForUserProvider, epochStart)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, epochStart)
 		if err != nil {
 			// TODO: maybe give provider money but burn user, colluding?
 			// TODO: display correct totalCU and usedCU for provider
@@ -215,18 +209,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 
-		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
+		if legacy {
+			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
+			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
 
-		if err2 != nil {
-			details["amountToBurn"] = burnAmount.String()
-			details["error"] = err2.Error()
-			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user")
-		}
-		if !burnSucceeded {
-			details["amountToBurn"] = burnAmount.String()
-			details["error"] = "insufficient funds or didn't find user"
-			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+			if err2 != nil {
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = err2.Error()
+				return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user")
+			}
+			if !burnSucceeded {
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = "insufficient funds or didn't find user"
+				return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+			}
+
+			details["clientFee"] = burnAmount.String()
 		}
 
 		if payReliability {
@@ -257,9 +255,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
 			}
 		}
-		details["clientFee"] = burnAmount.String()
+
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
+
+		// if this returns an error it means this is legacy consumer
+		if !legacy {
+			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
+			}
+		}
 
 		// Get servicersToPair param
 		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
