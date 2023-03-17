@@ -11,11 +11,10 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
 )
 
@@ -101,6 +100,7 @@ func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayReq
 	if err != nil {
 		return nil, err
 	}
+
 	return relayReceiver.Relay(ctx, request)
 }
 

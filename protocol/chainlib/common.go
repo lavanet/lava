@@ -47,7 +47,7 @@ type parsedMessage struct {
 
 type BaseChainProxy struct {
 	averageBlockTime time.Duration
-	AuthConfig       common.AuthConfig
+	NodeUrl          common.NodeUrl
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {

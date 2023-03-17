@@ -425,7 +425,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 	}
 	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, AuthConfig: websocketUrl.AuthConfig}},
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl}},
 		httpNodeUrl:    httpUrl,
 	}
 	return cp, cp.start(ctx, nConns, websocketUrl)
@@ -481,11 +481,9 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		return nil, "", nil, err
 	}
 
-	// setting up provider headers for it's node
-	for header, headerValue := range cp.httpNodeUrl.AuthConfig.AuthHeaders {
-		req.Header.Set(header, headerValue)
-	}
+	cp.httpNodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
+	cp.httpNodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 	// send the http request and get the response
 	res, err := httpClient.Do(req)
 	if err != nil {
@@ -537,6 +535,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		if chainMessage.GetInterface().Category.HangingApi {
 			relayTimeout += cp.averageBlockTime
 		}
+		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call

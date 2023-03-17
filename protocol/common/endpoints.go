@@ -1,21 +1,25 @@
 package common
 
 import (
+	"context"
 	"net/url"
 	"strings"
 
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc/peer"
 )
 
 const (
 	URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH        = "?"
 	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
+	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
 )
 
 type NodeUrl struct {
-	Url        string     `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
-	AuthConfig AuthConfig `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+	Url          string     `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	AuthConfig   AuthConfig `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+	IpForwarding bool       `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
 }
 
 func (url *NodeUrl) String() string {
@@ -23,6 +27,24 @@ func (url *NodeUrl) String() string {
 		return ""
 	}
 	return url.Url
+}
+
+func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
+	for header, headerValue := range url.AuthConfig.AuthHeaders {
+		headerSetter(header, headerValue)
+	}
+}
+
+func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter func(string, string)) {
+	if !url.IpForwarding {
+		// not necessary
+		return
+	}
+	grpcPeer, exists := peer.FromContext(ctx)
+	if exists {
+		peerAddress := grpcPeer.Addr.String()
+		headerSetter(IP_FORWARDING_HEADER_NAME, peerAddress)
+	}
 }
 
 type AuthConfig struct {
