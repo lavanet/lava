@@ -102,7 +102,7 @@ var Upgrade_0_7_1 = Upgrade{
 }
 
 var Upgrade_0_8_0 = Upgrade{
-	UpgradeName: "v0.8.0",
+	UpgradeName: "v0.8.0-RC1",
 	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
 		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 			return m.RunMigrations(ctx, c, vm)
