@@ -8,6 +8,7 @@ option go_package = "github.com/lavanet/lava/x/subscription/types";
 // Msg defines the Msg service.
 service Msg {
       rpc Buy(MsgBuy) returns (MsgBuyResponse);
+  rpc AddProject(MsgAddProject) returns (MsgAddProjectResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -20,6 +21,16 @@ message MsgBuy {
 }
 
 message MsgBuyResponse {
+}
+
+message MsgAddProject {
+  string creator = 1;
+  string subscriptionAddress = 2;
+  string projectName = 3;
+  bool enable = 4;
+}
+
+message MsgAddProjectResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
