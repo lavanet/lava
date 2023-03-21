@@ -426,3 +426,53 @@ func TestPrice(t *testing.T) {
 		})
 	}
 }
+
+func TestAddProject(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
+	plan := ts.plans[0]
+
+	subPayer := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	adminAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	regularAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+
+	subPayerAddr := subPayer.Addr.String()
+	adminAccountAddr := adminAccount.Addr.String()
+	regularAccountAddr := regularAccount.Addr.String()
+
+	err := keeper.CreateSubscription(ts.ctx, subPayerAddr, adminAccountAddr, plan.Index, 1, "")
+	require.Nil(t, err)
+
+	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
+
+	template := []struct {
+		name                string
+		subOwner            string // also known as "creator"
+		projectAdminAccount string // also known as "consumer"
+		projectName         string
+		success             bool
+	}{
+		{"project admin = sub owner", adminAccountAddr, adminAccountAddr, "test1", true},
+		{"project admin = regular account", adminAccountAddr, regularAccountAddr, "test2", true},
+		{"project admin = subscription payer account", adminAccountAddr, subPayerAddr, "test3", true},
+		{"bad subOwner (regular account)", regularAccountAddr, adminAccountAddr, "test4", false},
+		{"bad subOwner (subscription payer account)", subPayerAddr, adminAccountAddr, "test5", false},
+		{"bad projectName (duplicate)", subPayerAddr, adminAccountAddr, defaultProjectName, false},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			err = keeper.AddProjectToSubscription(ts.ctx, tt.subOwner, tt.projectAdminAccount, tt.projectName, true, "")
+			if tt.success {
+				require.Nil(t, err)
+				proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subOwner, tt.projectName), uint64(ts.ctx.BlockHeight()))
+				require.Nil(t, err)
+				require.Equal(t, tt.subOwner, proj.Subscription)
+			} else {
+				require.NotNil(t, err)
+				_, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subOwner, tt.projectName), uint64(ts.ctx.BlockHeight()))
+				require.NotNil(t, err)
+			}
+		})
+	}
+}
