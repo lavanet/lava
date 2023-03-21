@@ -25,9 +25,10 @@ message MsgBuyResponse {
 
 message MsgAddProject {
   string creator = 1;
-  string subscriptionAddress = 2;
-  string projectName = 3;
+  string consumer = 2;
+  string project_name = 3;
   bool enable = 4;
+  string vrfpk = 5;
 }
 
 message MsgAddProjectResponse {

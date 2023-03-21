@@ -9,12 +9,13 @@ const TypeMsgAddProject = "add_project"
 
 var _ sdk.Msg = &MsgAddProject{}
 
-func NewMsgAddProject(creator string, subscriptionAddress string, projectName string, enable bool) *MsgAddProject {
+func NewMsgAddProject(creator string, projectName string, enable bool, consumer string, vrfpk string) *MsgAddProject {
 	return &MsgAddProject{
-		Creator:             creator,
-		SubscriptionAddress: subscriptionAddress,
-		ProjectName:         projectName,
-		Enable:              enable,
+		Creator:     creator,
+		Consumer:    consumer,
+		ProjectName: projectName,
+		Enable:      enable,
+		Vrfpk:       vrfpk,
 	}
 }
 

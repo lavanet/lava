@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math"
 	"strconv"
 	"time"
 
@@ -250,4 +251,25 @@ func (k Keeper) CreateSubscription(
 	k.SetSubscription(ctx, sub)
 
 	return nil
+}
+
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enable bool, vrfpk string) error {
+	sub, found := k.GetSubscription(ctx, subscriptionOwner)
+	if !found {
+		details := map[string]string{
+			"subscriptionOwner": subscriptionOwner,
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
+	}
+
+	plan, found := k.plansKeeper.GetPlan(ctx, sub.GetPlanIndex())
+	if !found {
+		details := map[string]string{
+			"subscriptionConsumer": projectAdmin,
+			"planIndex":            sub.GetPlanIndex(),
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
+	}
+
+	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enable, sub.GetMonthCuLeft(), plan.GetComputeUnitsPerEpoch(), plan.GetMaxProvidersToPair(), math.MaxUint64, vrfpk)
 }

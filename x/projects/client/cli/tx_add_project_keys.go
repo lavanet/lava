@@ -16,7 +16,7 @@ func CmdAddProjectKeys() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add-project-keys",
 		Short: "Broadcast message AddProjectKeys",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
