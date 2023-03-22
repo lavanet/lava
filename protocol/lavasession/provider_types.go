@@ -186,9 +186,9 @@ func (pswc *ProviderSessionsWithConsumer) getExistingSession(sessionId uint64) (
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {
-		locked := session.lock.TryLock()
-		if !locked {
-			return nil, utils.LavaFormatError("getExistingSession failed to lock when getting session", LockMisUseDetectedError, &map[string]string{"sessionId": strconv.FormatUint(session.SessionID, 10)})
+		lockSuccessful := session.lock.TryLock()
+		if !lockSuccessful {
+			return nil, utils.LavaFormatError("getExistingSession failed to lock when getting session, session is already locked and being used by the user.", SessionOutOfSyncError, &map[string]string{"sessionId": strconv.FormatUint(session.SessionID, 10)})
 		}
 		return session, nil
 	}
