@@ -105,12 +105,15 @@ var Upgrade_0_7_1 = Upgrade{
 // 	StoreUpgrades:        store.StoreUpgrades{},
 // }
 
+// for Upgrade_0_8_1 the old StoreKey for Projects module
+const oldProjectsModuleStoreKey = "projects"
+
 // Upgrade_0_8_1 fixes StoreKey "projects"->"project": delete old and add new
 var Upgrade_0_8_1 = Upgrade{
 	UpgradeName:          "v0.8.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Deleted: []string{"projects"},
-		Added:   []string{"project"},
+		Deleted: []string{oldProjectsModuleStoreKey},
+		Added:   []string{projectsmoduletypes.StoreKey},
 	},
 }
