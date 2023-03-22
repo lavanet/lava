@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"math"
 	"strconv"
 	"time"
 
@@ -253,7 +252,7 @@ func (k Keeper) CreateSubscription(
 	return nil
 }
 
-func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enabled bool, projectDescription string, vrfpk string) error {
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enabled bool, projectDescription string, geolocation uint64, vrfpk string) error {
 	sub, found := k.GetSubscription(ctx, subscriptionOwner)
 	if !found {
 		details := map[string]string{
@@ -272,5 +271,5 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner stri
 		panic(err)
 	}
 
-	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, math.MaxUint64, vrfpk)
+	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, geolocation, vrfpk)
 }

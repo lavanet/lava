@@ -30,6 +30,7 @@ message MsgAddProject {
   bool enabled = 4;
   string vrfpk = 5;
   string project_description = 6;
+  uint64 geolocation = 7;
 }
 
 message MsgAddProjectResponse {

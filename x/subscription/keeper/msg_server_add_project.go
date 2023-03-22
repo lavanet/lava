@@ -11,7 +11,7 @@ import (
 func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (*types.MsgAddProjectResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.Keeper.AddProjectToSubscription(ctx, msg.GetCreator(), msg.GetConsumer(), msg.GetProjectName(), msg.GetEnabled(), msg.GetProjectDescription(), msg.GetVrfpk())
+	err := k.Keeper.AddProjectToSubscription(ctx, msg.GetCreator(), msg.GetConsumer(), msg.GetProjectName(), msg.GetEnabled(), msg.GetProjectDescription(), msg.GetGeolocation(), msg.GetVrfpk())
 	if err == nil {
 		logger := k.Keeper.Logger(ctx)
 		details := map[string]string{

@@ -10,7 +10,7 @@ const TypeMsgAddProject = "add_project"
 
 var _ sdk.Msg = &MsgAddProject{}
 
-func NewMsgAddProject(creator string, projectName string, enabled bool, consumer string, vrfpk string, projectDescription string) *MsgAddProject {
+func NewMsgAddProject(creator string, projectName string, enabled bool, consumer string, vrfpk string, projectDescription string, geolocation uint64) *MsgAddProject {
 	return &MsgAddProject{
 		Creator:            creator,
 		Consumer:           consumer,
@@ -18,6 +18,7 @@ func NewMsgAddProject(creator string, projectName string, enabled bool, consumer
 		Enabled:            enabled,
 		Vrfpk:              vrfpk,
 		ProjectDescription: projectDescription,
+		Geolocation:        geolocation,
 	}
 }
 

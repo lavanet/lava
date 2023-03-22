@@ -470,7 +470,7 @@ func TestAddProject(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			err = keeper.AddProjectToSubscription(ts.ctx, tt.subOwner, tt.projectAdminAccount, tt.projectName, true, tt.projectDescription, "")
+			err = keeper.AddProjectToSubscription(ts.ctx, tt.subOwner, tt.projectAdminAccount, tt.projectName, true, tt.projectDescription, 1, "")
 			if tt.success {
 				require.Nil(t, err)
 				proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subOwner, tt.projectName), uint64(ts.ctx.BlockHeight()))
