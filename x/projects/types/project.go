@@ -61,6 +61,10 @@ func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
 }
 
+func (project *Project) IsAdminKey(projectKey string) bool {
+	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
+}
+
 func (project *Project) VerifyProject(chainID string) error {
 	if !project.Enabled {
 		return fmt.Errorf("the developers project is disabled")
