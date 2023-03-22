@@ -182,13 +182,13 @@ func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(session
 }
 
 // this function returns the session locked to be used
-func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) getExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {
 		locked := session.lock.TryLock()
 		if !locked {
-			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError, nil)
+			return nil, utils.LavaFormatError("getExistingSession failed to lock when getting session", LockMisUseDetectedError, &map[string]string{"sessionId": strconv.FormatUint(session.SessionID, 10)})
 		}
 		return session, nil
 	}

@@ -217,7 +217,7 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 }
 
 func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64) (singleProviderSession *SingleProviderSession, err error) {
-	session, err := providerSessionWithConsumer.GetExistingSession(sessionId)
+	session, err := providerSessionWithConsumer.getExistingSession(sessionId)
 	if err == nil {
 		return session, nil
 	} else if SessionDoesNotExist.Is(err) {
