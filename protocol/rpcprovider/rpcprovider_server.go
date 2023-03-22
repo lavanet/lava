@@ -115,6 +115,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		})
 	} else {
 		// On successful relay
+		pairingEpoch := relaySession.PairingEpoch // before release lock get pairing epoch for proof
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
@@ -122,7 +123,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			if request.DataReliability == nil {
 				// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 				// Therefore the signature changes, so we need the original copy to extract the address from it.
-				err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+				err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 				if err != nil {
 					return nil, err
 				}
@@ -131,7 +132,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 					"request.relayNumber": strconv.FormatUint(request.RelaySession.RelayNum, 10),
 				})
 			} else {
-				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
 				if !updated {
 					return nil, utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, nil)
 				}
@@ -183,11 +184,12 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), srv, chainMessage, consumerAddress, relaySession) // this function does not return until subscription ends
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
+		pairingEpoch := relaySession.PairingEpoch                              // before release lock get pairing epoch for proof
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession) // TODO: when we pay as u go on subscription this will need to change
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+			err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 			if err != nil {
 				return err
 			}
@@ -211,8 +213,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	return rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) SendProof(ctx context.Context, providerSession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
-	epoch := providerSession.PairingEpoch
+func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
 	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String())
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
