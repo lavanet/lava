@@ -97,8 +97,20 @@ var Upgrade_0_7_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_8_0 = Upgrade{
-	UpgradeName:          "v0.8.0-RC1",
+//// Upgrade_0_8_0 canceled: module StoreKey "projects" renamed to "project" without store
+//// rename/delete/add; outcome not recoverable (due to cosmos-sdk v0.45.11 bug?).
+// var Upgrade_0_8_0 = Upgrade{
+// 	UpgradeName:          "v0.8.0-RC1",
+// 	CreateUpgradeHandler: defaultUpgradeHandler,
+// 	StoreUpgrades:        store.StoreUpgrades{},
+// }
+
+// Upgrade_0_8_1 fixes StoreKey "projects"->"project": delete old and add new
+var Upgrade_0_8_1 = Upgrade{
+	UpgradeName:          "v0.8.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
+	StoreUpgrades: store.StoreUpgrades{
+		Deleted: []string{"projects"},
+		Added:   []string{"project"},
+	},
 }
