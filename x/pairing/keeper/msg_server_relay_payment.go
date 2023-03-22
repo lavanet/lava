@@ -266,6 +266,17 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
 			}
+
+			project, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(ctx.BlockHeight()))
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_getting_project", details, "Failed to get project for developer")
+			}
+			err = k.subscriptionKeeper.AddComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_subscription_add_cu", details, "Failed to add CU to the subscription")
+			}
 		}
 
 		// Get servicersToPair param

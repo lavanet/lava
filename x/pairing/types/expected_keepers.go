@@ -70,3 +70,7 @@ type ProjectsKeeper interface {
 	AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, vrfpk string, errRet error)
 }
+
+type SubscriptionKeeper interface {
+	AddComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
+}

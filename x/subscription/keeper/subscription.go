@@ -273,3 +273,19 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner stri
 
 	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, geolocation, vrfpk)
 }
+
+func (k Keeper) AddComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error {
+	sub, found := k.GetSubscription(ctx, subscriptionOwner)
+	if !found {
+		details := map[string]string{
+			"subscriptionOwner": subscriptionOwner,
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
+	}
+
+	sub.MonthCuLeft -= cuAmount
+
+	k.SetSubscription(ctx, sub)
+
+	return nil
+}

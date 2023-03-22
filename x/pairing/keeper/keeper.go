@@ -23,6 +23,7 @@ type (
 		specKeeper         types.SpecKeeper
 		epochStorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
+		subscriptionKeeper types.SubscriptionKeeper
 	}
 )
 
