@@ -26,8 +26,8 @@ type EpochstorageKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error
-	CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error
+	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan planstypes.Plan, vrfpk string) error
+	CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enabled bool, projectDescription string, plan planstypes.Plan, geolocation uint64, vrfpk string) error
 	DeleteProject(ctx sdk.Context, index string) error
 	// Methods imported from projectskeeper should be defined here
 }

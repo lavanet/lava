@@ -16,16 +16,17 @@ var _ = strconv.Itoa(0)
 
 func CmdAddProject() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add-project [project-name] [enable] [optional: consumer]",
+		Use:   "add-project [project-name] [enabled] [optional: project-admin] [optional: project-description]",
 		Short: "Add a new project to a subcsciption",
-		Long:  `The add-project command allows the subscription owner (the TX's "creator") to create a new project and associate it with its subscription. The consumer is the beneficiary user, i.e. the project admin (default: the creator)`,
-		Example: `required flags: --from <creator-address>
-		lavad tx subscription add-project [project-name] [enable] --from <creator_address>
-		lavad tx subscription add-project [project-name] [enable] [consumer] --from <creator_address>`,
-		Args: cobra.RangeArgs(2, 3),
+		Long:  `The add-project command allows the subscription owner to create a new project and associate it with its subscription. The project-admin can optionally be a different account than the subscription owner (note, the owner is an admin by default)`,
+		Example: `required flags: --from <sub-owner-address>
+		lavad tx subscription add-project [project-name] [enable] --from <sub-owner-address>
+		lavad tx subscription add-project [project-name] [enable] [project-admin] --from <sub-owner-address>
+		lavad tx subscription add-project [project-name] [enable] [project-admin] [project-description] --from <sub-owner-address>`,
+		Args: cobra.RangeArgs(2, 4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argProjectName := args[0]
-			argEnable, err := cast.ToBoolE(args[1])
+			argEnabled, err := cast.ToBoolE(args[1])
 			if err != nil {
 				return err
 			}
@@ -38,8 +39,13 @@ func CmdAddProject() *cobra.Command {
 			creator := clientCtx.GetFromAddress().String()
 
 			argConsumer := creator
-			if len(args) == 3 {
+			if len(args) > 2 {
 				argConsumer = args[2]
+			}
+
+			argProjectDescription := ""
+			if len(args) > 3 {
+				argProjectDescription = args[3]
 			}
 
 			_, vrfpk, err := utils.GetOrCreateVRFKey(clientCtx)
@@ -54,9 +60,10 @@ func CmdAddProject() *cobra.Command {
 			msg := types.NewMsgAddProject(
 				creator,
 				argProjectName,
-				argEnable,
+				argEnabled,
 				argConsumer,
 				vrfpk_str,
+				argProjectDescription,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

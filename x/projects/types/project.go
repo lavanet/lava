@@ -4,7 +4,10 @@ import (
 	"fmt"
 )
 
-const ADMIN_PROJECT_NAME = "admin"
+const (
+	ADMIN_PROJECT_NAME        = "admin"
+	ADMIN_PROJECT_DESCRIPTION = "default admin project"
+)
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName

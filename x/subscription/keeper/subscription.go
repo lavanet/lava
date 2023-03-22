@@ -167,7 +167,7 @@ func (k Keeper) CreateSubscription(
 		sub.MonthCuLeft = plan.GetComputeUnits()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan, vrfpk)
 		if err != nil {
 			details := map[string]string{
 				"err": err.Error(),
@@ -253,7 +253,7 @@ func (k Keeper) CreateSubscription(
 	return nil
 }
 
-func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enable bool, vrfpk string) error {
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enabled bool, projectDescription string, vrfpk string) error {
 	sub, found := k.GetSubscription(ctx, subscriptionOwner)
 	if !found {
 		details := map[string]string{
@@ -268,8 +268,9 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner stri
 			"subscriptionConsumer": projectAdmin,
 			"planIndex":            sub.GetPlanIndex(),
 		}
-		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
+		err := utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
+		panic(err)
 	}
 
-	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enable, sub.GetMonthCuLeft(), plan.GetComputeUnitsPerEpoch(), plan.GetMaxProvidersToPair(), math.MaxUint64, vrfpk)
+	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, math.MaxUint64, vrfpk)
 }

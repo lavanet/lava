@@ -15,7 +15,8 @@ func TestCreateDefaultProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), 100, 100, 5, "")
+	plan := common.CreateMockPlan()
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), plan, "")
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
@@ -36,13 +37,14 @@ func TestCreateProject(t *testing.T) {
 	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	plan := common.CreateMockPlan()
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
 	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
@@ -70,7 +72,8 @@ func TestAddKeys(t *testing.T) {
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	plan := common.CreateMockPlan()
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
@@ -118,10 +121,11 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	plan := common.CreateMockPlan()
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.Nil(t, err)
 
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)

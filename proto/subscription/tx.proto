@@ -27,8 +27,9 @@ message MsgAddProject {
   string creator = 1;
   string consumer = 2;
   string project_name = 3;
-  bool enable = 4;
+  bool enabled = 4;
   string vrfpk = 5;
+  string project_description = 6;
 }
 
 message MsgAddProjectResponse {

@@ -5,16 +5,17 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
 // add a default project to a subscription, add the subscription key as
-func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk)
+func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan plantypes.Plan, vrfpk string) error {
+	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, types.ADMIN_PROJECT_DESCRIPTION, plan, math.MaxUint64, vrfpk)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enabled bool, projectDescription string, plan plantypes.Plan, geolocation uint64, vrfpk string) error {
 	project := types.CreateProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
@@ -25,9 +26,9 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	project.Policy.EpochCuLimit = cuPerEpoch
-	project.Policy.TotalCuLimit = totalCU
-	project.Policy.MaxProvidersToPair = providers
+	project.Policy.EpochCuLimit = plan.GetComputeUnitsPerEpoch()
+	project.Policy.TotalCuLimit = plan.GetComputeUnits()
+	project.Policy.MaxProvidersToPair = plan.GetMaxProvidersToPair()
 	project.Policy.GeolocationProfile = geolocation
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
@@ -37,7 +38,8 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return err
 	}
 
-	project.Enabled = enable
+	project.Enabled = enabled
+	project.Description = projectDescription
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
 }
 
