@@ -1,10 +1,12 @@
 package types
 
 import (
+	"strings"
 	"testing"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,13 +19,17 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgAddProject{
-				Creator: "invalid_address",
+				Creator:     "invalid_address",
+				Consumer:    "another invalid address",
+				ProjectName: strings.Repeat("InvalidName", projectstypes.MAX_PROJECT_NAME_LEN),
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgAddProject{
-				Creator: sample.AccAddress(),
+				Creator:     sample.AccAddress(),
+				Consumer:    sample.AccAddress(),
+				ProjectName: "validName",
 			},
 		},
 	}
