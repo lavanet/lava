@@ -1,7 +1,7 @@
 {
     "proposal": {
-        "title": "Add default plan proposal",
-        "description": "A proposal of a default plan",
+        "title": "Add plan proposal: explorer",
+        "description": "A proposal for a new plan for a beginner user",
         "plans": [
             {
                 "index": "explorer",
