@@ -33,8 +33,8 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	//   recommendedEpochNumToCollectPayment+
 	//   max(epochsNumToCheckCUForComplainers,epochsNumToCheckCUForUnresponsiveProvider)
 	// epochs from the current epoch.
-	minHistoryBlock := k.getBlockEpochsAgo(ctx, currentEpoch, largerEpochsNumConst+recommendedEpochNumToCollectPayment)
-	if minHistoryBlock == 0 {
+	minHistoryBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, largerEpochsNumConst+recommendedEpochNumToCollectPayment)
+	if err != nil {
 		// not enough history, do nothing
 		return nil
 	}
@@ -47,8 +47,8 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	}
 
 	// Go back recommendedEpochNumToCollectPayment
-	minPaymentBlock := k.getBlockEpochsAgo(ctx, currentEpoch, recommendedEpochNumToCollectPayment)
-	if minPaymentBlock == 0 {
+	minPaymentBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, recommendedEpochNumToCollectPayment)
+	if err != nil {
 		// not enough history, do nothiing
 		return nil
 	}
@@ -81,16 +81,16 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 }
 
 // getBlockEpochsAgo returns the block numEpochs back from the given blockHeight
-func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight uint64, numEpochs uint64) uint64 {
+func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight uint64, numEpochs uint64) (uint64, error) {
 	for counter := 0; counter < int(numEpochs); counter++ {
 		var err error
 		blockHeight, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, blockHeight)
 		if err != nil {
 			// too early in the chain life: bail without an error
-			return uint64(0)
+			return uint64(0), err
 		}
 	}
-	return blockHeight
+	return blockHeight, nil
 }
 
 // Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns a list of the found providerPaymentStorageKey
