@@ -32,6 +32,7 @@ message ApiInterface {
 message BlockParser {
   repeated string parser_arg = 1;
   PARSER_FUNC parser_func = 2;
+  string default_value = 3; // default value when set allows parsing failures to assume the default value
 }
 
 enum PARSER_FUNC{
@@ -40,7 +41,7 @@ enum PARSER_FUNC{
   PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
   PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
   PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-  PARSE_DICTIONARY_OR_DEFAULT = 5; //means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
+  // reserved
   DEFAULT = 6; //means parameters are non related to block, and should fetch latest block args: "latest"
 }
 
