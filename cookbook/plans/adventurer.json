@@ -4,16 +4,16 @@
         "description": "A proposal of a default plan",
         "plans": [
             {
-                "index": "DefaultPlan",
-                "description": "This plan has no restrictions",
+                "index": "adventurer",
+                "description": "Plan for the Lava adventurer",
                 "type": "rpc",
                 "price": {
                     "denom": "ulava",
-                    "amount": "100000"
+                    "amount": "600000000000"
                 },
-                "annual_discount_percentage": "20",
-                "compute_units": "10000000000",
-                "compute_units_per_epoch": "1000",
+                "annual_discount_percentage": "0",
+                "compute_units": "1000000000",
+                "compute_units_per_epoch": "5000000",
                 "max_providers_to_pair": "5",
                 "allow_overuse": false,
                 "overuse_rate": "0"
@@ -22,3 +22,4 @@
     },
     "deposit": "10000000ulava"
 }
+
