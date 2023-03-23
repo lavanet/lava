@@ -58,7 +58,7 @@ func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, proje
 		return nil
 	}
 
-	return utils.LavaError(ctx, k.Logger(ctx), "RegisterDeveloperKey_developer_exists", map[string]string{"developerKey": developerKey, "projectIndex": projectIndex, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "developer key already exists")
+	return utils.LavaError(ctx, k.Logger(ctx), "RegisterDeveloperKey_developer_exists", map[string]string{"developerKey": developerKey, "projectIndex": projectIndex, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "developer key already exists in another project")
 }
 
 // snapshot project, create a snapshot of a project and reset the cu

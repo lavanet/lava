@@ -125,8 +125,9 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
 	require.Nil(t, err)
 
+	// this is supposed to fail because you can't use the same admin key for two different projects
 	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
-	require.Nil(t, err)
+	require.NotNil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 

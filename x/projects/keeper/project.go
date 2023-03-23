@@ -62,11 +62,26 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 
 	// check that those keys are unique for developers
 	for _, projectKey := range projectKeys {
-		err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()), projectKey.Vrfpk)
-		if err != nil {
-			return err
-		}
+		for _, keyType := range projectKey.GetTypes() {
+			if keyType == types.ProjectKey_DEVELOPER {
+				err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()), projectKey.Vrfpk)
+				if err != nil {
+					return err
+				}
+			}
 
+			if keyType == types.ProjectKey_ADMIN {
+				// see if the key is of admin type, check if it's already a developer. register as a developer only if not to avoid error
+				var developerData types.ProtoDeveloperData
+				_, found := k.developerKeysFS.FindEntry(ctx, projectKey.Key, uint64(ctx.BlockHeight()), &developerData)
+				if !found {
+					err = k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()), projectKey.Vrfpk)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
 		project.AppendKey(projectKey)
 	}
 
