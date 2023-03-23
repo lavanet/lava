@@ -261,7 +261,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// if this returns an error it means this is legacy consumer
 		if !legacy {
-			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
+			err = k.projectsKeeper.ChangeComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
@@ -272,7 +272,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_getting_project", details, "Failed to get project for developer")
 			}
-			err = k.subscriptionKeeper.AddComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+			err = k.subscriptionKeeper.ChangeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_subscription_add_cu", details, "Failed to add CU to the subscription")

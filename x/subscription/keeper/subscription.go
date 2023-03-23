@@ -255,10 +255,7 @@ func (k Keeper) CreateSubscription(
 func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enabled bool, projectDescription string, geolocation uint64, vrfpk string) error {
 	sub, found := k.GetSubscription(ctx, subscriptionOwner)
 	if !found {
-		details := map[string]string{
-			"subscriptionOwner": subscriptionOwner,
-		}
-		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
+		return sdkerrors.ErrKeyNotFound.Wrapf("can't get subscription of %s", subscriptionOwner)
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, sub.GetPlanIndex())
@@ -274,7 +271,7 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner stri
 	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, geolocation, vrfpk)
 }
 
-func (k Keeper) AddComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error {
+func (k Keeper) ChangeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error {
 	sub, found := k.GetSubscription(ctx, subscriptionOwner)
 	if !found {
 		details := map[string]string{
@@ -283,7 +280,11 @@ func (k Keeper) AddComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner
 		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
 	}
 
-	sub.MonthCuLeft -= cuAmount
+	if sub.MonthCuLeft < cuAmount {
+		sub.MonthCuLeft = 0
+	} else {
+		sub.MonthCuLeft -= cuAmount
+	}
 
 	k.SetSubscription(ctx, sub)
 

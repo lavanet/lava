@@ -428,20 +428,20 @@ func TestPrice(t *testing.T) {
 	}
 }
 
-func TestAddProject(t *testing.T) {
+func TestAddProjectToSubscription(t *testing.T) {
 	ts := setupTestStruct(t, 1)
 	keeper := ts.keepers.Subscription
 	plan := ts.plans[0]
 
-	subOwner := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	subPayer := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	projectAdminAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	regularAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 
-	subOwnerAddr := subOwner.Addr.String()
+	subPayerAddr := subPayer.Addr.String()
 	projectAdminAccountAddr := projectAdminAccount.Addr.String()
 	regularAccountAddr := regularAccount.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, subOwnerAddr, projectAdminAccountAddr, plan.Index, 1, "")
+	err := keeper.CreateSubscription(ts.ctx, subPayerAddr, projectAdminAccountAddr, plan.Index, 1, "")
 	require.Nil(t, err)
 
 	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
@@ -458,14 +458,14 @@ func TestAddProject(t *testing.T) {
 		projectDescription  string
 		success             bool
 	}{
-		{"project admin = sub owner", projectAdminAccountAddr, projectAdminAccountAddr, "test1", projectDescription, true},
-		{"project admin = regular account", projectAdminAccountAddr, regularAccountAddr, "test2", projectDescription, true},
-		{"project admin = subscription payer account", projectAdminAccountAddr, subOwnerAddr, "test3", projectDescription, true},
+		{"project admin = regular account", projectAdminAccountAddr, regularAccountAddr, "test1", projectDescription, true},
+		{"project admin = subscription payer account", projectAdminAccountAddr, subPayerAddr, "test2", projectDescription, true},
+		{"bad project admin (existing project admin)", projectAdminAccountAddr, projectAdminAccountAddr, "test3", projectDescription, false},
 		{"bad subOwner (regular account)", regularAccountAddr, projectAdminAccountAddr, "test4", projectDescription, false},
-		{"bad subOwner (subscription payer account)", subOwnerAddr, projectAdminAccountAddr, "test5", projectDescription, false},
-		{"bad projectName (duplicate)", subOwnerAddr, projectAdminAccountAddr, defaultProjectName, projectDescription, false},
-		{"bad projectName (too long)", subOwnerAddr, projectAdminAccountAddr, longProjectName, projectDescription, false},
-		{"bad projectDescription (too long)", subOwnerAddr, projectAdminAccountAddr, "test6", longProjectDescription, false},
+		{"bad subOwner (subscription payer account)", subPayerAddr, projectAdminAccountAddr, "test5", projectDescription, false},
+		{"bad projectName (duplicate)", projectAdminAccountAddr, projectAdminAccountAddr, defaultProjectName, projectDescription, false},
+		{"bad projectName (too long)", projectAdminAccountAddr, projectAdminAccountAddr, longProjectName, projectDescription, false},
+		{"bad projectDescription (too long)", projectAdminAccountAddr, projectAdminAccountAddr, "test6", longProjectDescription, false},
 	}
 
 	for _, tt := range template {
@@ -477,8 +477,6 @@ func TestAddProject(t *testing.T) {
 				require.Nil(t, err)
 				require.Equal(t, tt.subOwner, proj.Subscription)
 			} else {
-				require.NotNil(t, err)
-				_, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subOwner, tt.projectName), uint64(ts.ctx.BlockHeight()))
 				require.NotNil(t, err)
 			}
 		})
