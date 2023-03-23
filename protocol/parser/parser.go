@@ -17,9 +17,7 @@ const (
 	PARSE_RESULT = 1
 )
 
-var (
-	ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
-)
+var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
 
 type RPCInput interface {
 	GetParams() interface{}
