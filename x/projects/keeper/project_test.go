@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -59,10 +60,18 @@ func TestCreateProject(t *testing.T) {
 
 	require.Equal(t, response2.Project, response1.Project)
 
-	require.Equal(t, len(response2.Project.ProjectKeys), 1)
+	proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), response1.Project.Index, 0)
+	require.Nil(t, err)
+	strings.Split(proj.Index, "")
+
+	// there should be one project key
+	require.Equal(t, 1, len(response2.Project.ProjectKeys))
+
+	// the project key is the admin key
 	require.Equal(t, response2.Project.ProjectKeys[0].Key, adminAcc.Addr.String())
-	require.Equal(t, len(response2.Project.ProjectKeys[0].Types), 1)
-	require.Equal(t, response2.Project.ProjectKeys[0].Types[0], types.ProjectKey_ADMIN)
+
+	// the admin is both an admin and a developer
+	require.Equal(t, 2, len(response2.Project.ProjectKeys[0].Types))
 }
 
 func TestAddKeys(t *testing.T) {

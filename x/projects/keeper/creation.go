@@ -32,33 +32,79 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	project.Policy.MaxProvidersToPair = plan.GetMaxProvidersToPair()
 	project.Policy.GeolocationProfile = geolocation
 
-	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
+	project.Enabled = enabled
+	project.Description = projectDescription
+	err := k.RegisterKey(ctx, types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk}, &project, blockHeight)
+	if err != nil {
+		return err
+	}
+	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
+}
 
-	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
+func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+	if project == nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_project_is_nil", nil, "project is nil")
+	}
+
+	developerKeyFound := false
+	inputKeyIsAdmin := false
+	var developerData types.ProtoDeveloperData
+
+	for _, keyType := range key.GetTypes() {
+		if keyType == types.ProjectKey_ADMIN {
+			inputKeyIsAdmin = true
+		}
+
+		if keyType == types.ProjectKey_DEVELOPER {
+			_, found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
+			if found {
+				developerKeyFound = true
+			}
+		}
+	}
+
+	// every admin is a developer. So, if the developer key to add already exists, return error
+	if developerKeyFound {
+		details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
+		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
+	}
+
+	err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight, key.GetVrfpk(), &developerData)
+	if err != nil {
+		details := map[string]string{
+			"developerKey": key.GetKey(),
+			"projectIndex": project.GetIndex(),
+			"blockHeight":  strconv.FormatUint(blockHeight, 10),
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
+	}
+
+	if inputKeyIsAdmin {
+		k.AddAdminKey(ctx, project, key.GetKey(), key.GetVrfpk())
+	}
+
+	return nil
+}
+
+func (k Keeper) AddAdminKey(ctx sdk.Context, project *types.Project, adminKey string, vrfpk string) {
+	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
+}
+
+func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64, vrfpk string, developerData *types.ProtoDeveloperData) error {
+	if developerData == nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "AddDeveloperKey_developer_data_nil", nil, "developer data is nil")
+	}
+
+	developerData.ProjectID = project.GetIndex()
+	developerData.Vrfpk = vrfpk
+	err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, developerData)
 	if err != nil {
 		return err
 	}
 
-	project.Enabled = enabled
-	project.Description = projectDescription
-	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
-}
+	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk})
 
-func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, projectIndex string, blockHeight uint64, vrfpk string) error {
-	var developerData types.ProtoDeveloperData
-	_, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &developerData)
-	// a developer key with this address is not registered, add it to the developer keys list
-	if !found {
-		developerData.ProjectID = projectIndex
-		developerData.Vrfpk = vrfpk
-		err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &developerData)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	return utils.LavaError(ctx, k.Logger(ctx), "RegisterDeveloperKey_developer_exists", map[string]string{"developerKey": developerKey, "projectIndex": projectIndex, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "developer key already exists in another project")
+	return nil
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
