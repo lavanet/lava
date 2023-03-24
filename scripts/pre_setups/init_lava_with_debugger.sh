@@ -2,6 +2,9 @@
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$__dir"/../useful_commands.sh
 . "${__dir}"/../vars/variables.sh
+LOGS_DIR=${__dir}/../testutil/debugging/logs
+mkdir -p $LOGS_DIR
+rm $LOGS_DIR/*.log
 
 # Making sure old screens are not running
 killall screen
@@ -30,6 +33,12 @@ lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,tende
 
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
+
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
+$PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
+$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC, ws://localhost:26657/websocket' \
+$PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \
 127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \

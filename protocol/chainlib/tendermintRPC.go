@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
@@ -416,7 +417,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	httpNodeUrl string
+	httpNodeUrl   string
+	httpConnector *chainproxy.Connector
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
@@ -429,9 +431,23 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 	cp := &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
 		httpNodeUrl:    httpUrl,
+		httpConnector:  nil,
 	}
-	// @audit what is the reason for us to send only websocketUrl here?
-	return cp, cp.start(ctx, nConns, websocketUrl)
+
+	cp.start(ctx, nConns, httpUrl)
+	return cp, cp.JrpcChainProxy.start(ctx, nConns, websocketUrl)
+}
+
+func (cp *tendermintRpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
+	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		return err
+	}
+	cp.httpConnector = conn
+	if cp.httpConnector == nil {
+		return errors.New("g_conn == nil")
+	}
+	return nil
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
@@ -512,10 +528,19 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 // SendRPC sends Tendermint HTTP or WebSockets call
 func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
-	rpc, err := cp.conn.GetRpc(ctx, true)
-	if err != nil {
-		return nil, "", nil, err
+	var rpc *rpcclient.Client
+	if ch != nil {
+		rpc, err = cp.conn.GetRpc(ctx, true)
+		if err != nil {
+			return nil, "", nil, err
+		}
+	} else {
+		rpc, err = cp.httpConnector.GetRpc(ctx, true)
+		if err != nil {
+			return nil, "", nil, err
+		}
 	}
+
 	// return the rpc connection to the pool after the function completes
 	defer cp.conn.ReturnRpc(rpc)
 
