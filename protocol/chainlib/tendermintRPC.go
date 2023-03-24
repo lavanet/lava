@@ -430,6 +430,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime}},
 		httpNodeUrl:    httpUrl,
 	}
+	// @audit what is the reason for us to send only websocketUrl here?
 	return cp, cp.start(ctx, nConns, websocketUrl)
 }
 
