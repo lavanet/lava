@@ -266,10 +266,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	})
 
 	// Go
-	err := app.Listen(apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
-	}
+	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }
 
 type RestChainProxy struct {

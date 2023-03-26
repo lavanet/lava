@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"net"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -220,9 +220,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
 
-	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-		utils.LavaFormatFatal("Portal failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": apil.endpoint.ChainID})
-	}
+	ListenWithRetryGrpc(&httpServer, lis)
 }
 
 type GrpcChainProxy struct {

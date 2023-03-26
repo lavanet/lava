@@ -3,6 +3,8 @@ package chainlib
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -18,6 +20,7 @@ import (
 
 const (
 	ContextUserValueKeyDappID = "dappID"
+	RetryListeningInterval    = 10 // seconds
 )
 
 type parsedMessage struct {
@@ -180,4 +183,25 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
 	}
 	return websocketEndpoint, httpEndpoint
+}
+
+func ListenWithRetry(app *fiber.App, address string) {
+	for {
+		err := app.Listen(address)
+		if err != nil {
+			utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
+		}
+		time.Sleep(RetryListeningInterval * time.Second)
+	}
+}
+
+func ListenWithRetryGrpc(httpServer *http.Server, lis net.Listener) {
+	for {
+		err := httpServer.Serve(lis)
+		if err != nil {
+			utils.LavaFormatError("httpServer.Serve(lis)", err, nil)
+		}
+		time.Sleep(RetryListeningInterval * time.Second)
+		utils.LavaFormatWarning("Attempting connection retry", nil, nil)
+	}
 }
