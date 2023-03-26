@@ -2873,6 +2873,30 @@
                         "name": "block",
                         "block_parsing": {
                             "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "blockParserMethod",
+                        "block_parsing": {
+                            "parser_arg": [
                                 "height",
                                 "=",
                                 "0"
