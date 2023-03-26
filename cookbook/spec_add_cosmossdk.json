@@ -2825,9 +2825,9 @@
                         "name": "abci_info",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2849,9 +2849,9 @@
                         "name": "abci_query",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2873,9 +2873,9 @@
                         "name": "block",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2935,9 +2935,9 @@
                         "name": "block_by_hash",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2959,9 +2959,9 @@
                         "name": "block_results",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3007,9 +3007,9 @@
                         "name": "blockchain",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3153,9 +3153,9 @@
                         "name": "commit",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3177,9 +3177,9 @@
                         "name": "consensus_params",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5460,9 +5460,9 @@
                         "name": "validators",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
