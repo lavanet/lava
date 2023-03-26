@@ -48,6 +48,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 	developerKeyFound := false
 	inputKeyIsAdmin := false
+	inputKeyIsDeveloper := false
 	var developerData types.ProtoDeveloperData
 
 	for _, keyType := range key.GetTypes() {
@@ -56,6 +57,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 		}
 
 		if keyType == types.ProjectKey_DEVELOPER {
+			inputKeyIsDeveloper = true
 			_, found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
 			if found {
 				developerKeyFound = true
@@ -63,8 +65,18 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 		}
 	}
 
-	// every admin is a developer. So, if the developer key to add already exists, return error
-	if developerKeyFound {
+	// handle admin key type
+	if inputKeyIsAdmin {
+		k.AddAdminKey(ctx, project, key.GetKey(), key.GetVrfpk())
+	}
+
+	// handle case of admin-only key type (no need to register developer key)
+	if !inputKeyIsDeveloper {
+		return nil
+	}
+
+	// handle developer key type (and admin-developer key type)
+	if developerKeyFound && inputKeyIsDeveloper {
 		details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
 		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
 	}
@@ -77,10 +89,6 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 			"blockHeight":  strconv.FormatUint(blockHeight, 10),
 		}
 		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
-	}
-
-	if inputKeyIsAdmin {
-		k.AddAdminKey(ctx, project, key.GetKey(), key.GetVrfpk())
 	}
 
 	return nil

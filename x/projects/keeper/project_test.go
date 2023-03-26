@@ -113,7 +113,7 @@ func TestAddKeys(t *testing.T) {
 
 	// new admin adding another developer
 	developerAcc2 := common.CreateNewAccount(ctx, *keepers, 10000)
-	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: developerAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
