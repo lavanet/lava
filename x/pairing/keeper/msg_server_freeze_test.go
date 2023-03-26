@@ -245,7 +245,7 @@ func TestPaymentFrozen(t *testing.T) {
 	relayRequest := &types.RelaySession{
 		Provider:  providerToFreeze.Address,
 		SessionId: uint64(1),
-		SpecID:    ts.spec.Name,
+		SpecId:    ts.spec.Name,
 		CuSum:     ts.spec.Apis[0].ComputeUnits * 10,
 		Epoch:     blockForPaymentBeforeFreeze,
 		RelayNum:  0,

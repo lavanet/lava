@@ -70,7 +70,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VoteDeadline = voteDeadline
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiUrl
 		conflictVote.ClientAddress = msg.Creator
-		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.SpecID
+		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.SpecId
 		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.RequestBlock)
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Data
 

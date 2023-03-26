@@ -114,7 +114,7 @@ func (rs *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pa
 
 func (rs *relayServer) findReceiver(request *pairingtypes.RelayRequest) (RelayReceiver, error) {
 	apiInterface := request.RelayData.ApiInterface
-	chainID := request.RelaySession.SpecID
+	chainID := request.RelaySession.SpecId
 	endpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
 	rs.lock.RLock()
 	defer rs.lock.RUnlock()

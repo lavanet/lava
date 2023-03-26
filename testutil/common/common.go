@@ -86,11 +86,11 @@ func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte,
 		Provider:    provider,
 		ContentHash: contentHash,
 		SessionId:   uint64(1),
-		SpecID:      spec,
+		SpecId:      spec,
 		CuSum:       cuSum,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
-		QoSReport:   qos,
+		QosReport:   qos,
 		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
 	}
 	if qos != nil {
@@ -116,11 +116,11 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 		Provider:    provider0.Addr.String(),
 		ContentHash: sigs.CalculateContentHashForRelayData(msg.ResponseConflict.ConflictRelayData0.Request.RelayData),
 		SessionId:   uint64(1),
-		SpecID:      spec.Index,
+		SpecId:      spec.Index,
 		CuSum:       0,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
-		QoSReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
+		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
 
 	msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = nil

@@ -54261,11 +54261,6 @@ definitions:
           sig:
             type: string
             format: byte
-          chainID:
-            type: string
-          epoch:
-            type: string
-            format: int64
       QoSReport:
         type: object
         properties:
@@ -54281,7 +54276,7 @@ definitions:
       relay_session:
         type: object
         properties:
-          specID:
+          spec_id:
             type: string
           content_hash:
             type: string
@@ -54298,7 +54293,7 @@ definitions:
           relay_num:
             type: string
             format: uint64
-          QoSReport:
+          qos_report:
             type: object
             properties:
               latency:
@@ -54351,9 +54346,38 @@ definitions:
           request_block:
             type: string
             format: int64
-          apiInterface:
+          api_interface:
             type: string
           salt:
+            type: string
+            format: byte
+      data_reliability:
+        type: object
+        properties:
+          chain_id:
+            type: string
+          epoch:
+            type: string
+            format: int64
+          differentiator:
+            type: boolean
+          vrf_value:
+            type: string
+            format: byte
+          vrf_proof:
+            type: string
+            format: byte
+          provider_sig:
+            type: string
+            format: byte
+          all_data_hash:
+            type: string
+            format: byte
+          query_hash:
+            type: string
+            format: byte
+            title: we only need it for payment later
+          sig:
             type: string
             format: byte
   lavanet.lava.pairing.VRFData:
@@ -54380,11 +54404,18 @@ definitions:
       sig:
         type: string
         format: byte
-      chainID:
+      chain_id:
         type: string
       epoch:
         type: string
         format: int64
+      all_data_hash:
+        type: string
+        format: byte
+      query_hash:
+        type: string
+        format: byte
+        title: we only need it for payment later
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -55374,7 +55405,7 @@ definitions:
       request_block:
         type: string
         format: int64
-      apiInterface:
+      api_interface:
         type: string
       salt:
         type: string
@@ -55382,7 +55413,7 @@ definitions:
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
-      specID:
+      spec_id:
         type: string
       content_hash:
         type: string
@@ -55399,7 +55430,7 @@ definitions:
       relay_num:
         type: string
         format: uint64
-      QoSReport:
+      qos_report:
         type: object
         properties:
           latency:
