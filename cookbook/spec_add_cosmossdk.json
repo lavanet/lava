@@ -13,7 +13,7 @@
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "10",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -2825,9 +2825,9 @@
                         "name": "cosmos.auth.v1beta1.Query/Account",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2897,9 +2897,9 @@
                         "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5452,9 +5452,7 @@
                         "name": "validators",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                ""
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                             "default_value":"latest"
