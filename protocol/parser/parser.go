@@ -324,7 +324,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 	// The number of arguments should be 3
 	// [prop_name,separator,parameter order if not found]
 	if len(input) != 3 {
-		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 3", len(input))
+		return nil, fmt.Errorf("ParseDictionaryOrOrdered: invalid input format, input length: %d and needs to be 3: %s", len(input), strings.Join(input, ","))
 	}
 
 	// Unmarshall data
