@@ -9,9 +9,11 @@ const TypeMsgSetProjectPolicy = "set_project_policy"
 
 var _ sdk.Msg = &MsgSetProjectPolicy{}
 
-func NewMsgSetProjectPolicy(creator string) *MsgSetProjectPolicy {
+func NewMsgSetProjectPolicy(creator string, projectId string, policy Policy) *MsgSetProjectPolicy {
 	return &MsgSetProjectPolicy{
 		Creator: creator,
+		Project: projectId,
+		Policy:  &policy,
 	}
 }
 
@@ -40,6 +42,12 @@ func (msg *MsgSetProjectPolicy) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	if msg.Policy.GetTotalCuLimit() < msg.Policy.GetEpochCuLimit() {
+		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. total_cu_limit (%v) is smaller than epoch_cu_limit (%v)", msg.Policy.TotalCuLimit, msg.Policy.EpochCuLimit)
+	}
+	if msg.Policy.GetMaxProvidersToPair() < 1 {
+		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. max providers to pair should be at least 1. current value: %v", msg.Policy.MaxProvidersToPair)
 	}
 	return nil
 }

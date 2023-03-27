@@ -444,6 +444,11 @@ func New(
 		keys[projectsmoduletypes.StoreKey],
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		app.PlansKeeper,
+		app.EpochstorageKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
@@ -473,6 +478,7 @@ func New(
 		app.ProjectsKeeper,
 		app.PlansKeeper,
 	)
+
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
