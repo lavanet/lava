@@ -45,7 +45,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 				if string(attribute.Key) == "BasePay" {
 					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
 					if err != nil {
-						return utils.LavaFormatError("failed parsing simulation result", nil, &map[string]string{"attribute": string(attribute.Value)})
+						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{"attribute", string(attribute.Value)})
 					}
 					lavaReward = lavaReward.Add(lavaRewardTemp)
 					break
@@ -61,7 +61,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
 
 	if gasFee.IsGTE(lavaRewardDec) {
-		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, &map[string]string{"gasFee": gasFee.String(), "lava_reward:": lavaRewardDec.String()})
+		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, utils.Attribute{"gasFee", gasFee}, utils.Attribute{"lava_reward:", lavaRewardDec})
 	}
 	return nil
 }
@@ -104,51 +104,47 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			// only then we can ask for a new sequence number continue and try again.
 			var seq uint64
 			if sequenceNumberParsed != 0 {
-				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", &map[string]string{"sequence": strconv.Itoa(sequenceNumberParsed)})
+				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", utils.Attribute{"sequence", strconv.Itoa(sequenceNumberParsed)})
 				seq = uint64(sequenceNumberParsed)
 			} else {
 				var err error
 				_, seq, err = clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 				if err != nil {
-					utils.LavaFormatError("failed to get correct sequence number for account, give up", err, nil)
+					utils.LavaFormatError("failed to get correct sequence number for account, give up", err)
 					break // give up
 				}
 			}
 			txfactory = txfactory.WithSequence(seq)
 			myWriter.Reset()
-			utils.LavaFormatInfo("Retrying with sequence number:", &map[string]string{
-				"SeqNum": strconv.FormatUint(seq, 10),
-			})
+			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{"SeqNum", seq})
 		}
 		var transactionResult string
 		clientCtx.Output = &myWriter
 		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
 		if err != nil {
-			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
-				"msg": fmt.Sprintf("%+v", msg),
-			})
+			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{"msg", msg})
 			transactionResult = err.Error() // incase we got an error the tx result is basically the error
 		} else {
 			transactionResult = myWriter.String()
 		}
 		var returnCode int
 		summarizedTransactionResult, returnCode = common.ParseTransactionResult(transactionResult)
-		// utils.LavaFormatDebug("parsed transaction code", &map[string]string{"code": strconv.Itoa(returnCode), "transactionResult": transactionResult})
+		// utils.LavaFormatDebug("parsed transaction code", utils.Attribute{"code",  strconv.Itoa(returnCode)}, "transactionResult": transactionResult})
 		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
 			success = true
 		} else if strings.Contains(transactionResult, "account sequence") {
 			hasSequenceError = true
 			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
 			if err != nil {
-				utils.LavaFormatWarning("Failed findSequenceNumber", err, &map[string]string{"sequence": transactionResult})
+				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{"sequence", transactionResult})
 			}
 			summarizedTransactionResult = transactionResult
 		}
 	}
 	if !success {
-		return utils.LavaFormatError(fmt.Sprintf("failed sending transaction %s", summarizedTransactionResult), nil, nil)
+		return utils.LavaFormatError(fmt.Sprintf("failed sending transaction %s", summarizedTransactionResult), nil)
 	}
-	utils.LavaFormatInfo(fmt.Sprintf("succeeded sending transaction %s", summarizedTransactionResult), nil)
+	utils.LavaFormatInfo(fmt.Sprintf("succeeded sending transaction %s", summarizedTransactionResult))
 	return nil
 }
 
@@ -199,7 +195,7 @@ func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizatio
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
-		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err, nil)
+		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }
@@ -221,7 +217,7 @@ func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests [
 	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, dataReliabilityProofs, description)
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
 	if err != nil {
-		return utils.LavaFormatError("relay_payment - sending Tx Failed", err, nil)
+		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
 	}
 	return nil
 }
@@ -230,7 +226,7 @@ func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymana
 	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
-		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err, nil)
+		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }
@@ -239,7 +235,7 @@ func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliability
 	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
-		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err, nil)
+		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }

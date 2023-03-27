@@ -117,7 +117,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for {
-		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
 		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 			break
 		}
@@ -146,7 +146,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	require.Nil(t, err)
 	for numberOfResets := 0; numberOfResets < numberOfResetsToTest; numberOfResets++ {
 		for {
-			utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+			utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
 			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 				break
 			}
@@ -279,7 +279,7 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 }
 
 func TestHappyFlowMultiThreaded(t *testing.T) {
-	utils.LavaFormatInfo("Parallel test:", nil)
+	utils.LavaFormatInfo("Parallel test:")
 
 	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer s.Stop()           // stop the server when finished.
@@ -305,10 +305,10 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 			all_chs[ch2val] = struct{}{}
 		}
 		if len(all_chs) >= parallelGoRoutines*2 {
-			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)))
 			break // routines finished
 		} else {
-			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val))
 		}
 	}
 
@@ -327,7 +327,7 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 }
 
 func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
-	utils.LavaFormatInfo("Parallel test:", nil)
+	utils.LavaFormatInfo("Parallel test:")
 
 	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer s.Stop()           // stop the server when finished.
@@ -349,7 +349,7 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 		ch2val := <-ch2 + parallelGoRoutines
 		if len(all_chs) == parallelGoRoutines { // at half of the go routines launch the swap.
 			go func() {
-				utils.LavaFormatInfo(fmt.Sprintf("#### UPDATING PROVIDERS ####"), nil)
+				utils.LavaFormatInfo(fmt.Sprintf("#### UPDATING PROVIDERS ####"))
 				err := csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2")) // update the providers. with half of them
 				require.Nil(t, err)
 			}()
@@ -362,10 +362,10 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 			all_chs[ch2val] = struct{}{}
 		}
 		if len(all_chs) >= parallelGoRoutines*2 {
-			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)))
 			break // routines finished
 		} else {
-			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val))
 		}
 	}
 

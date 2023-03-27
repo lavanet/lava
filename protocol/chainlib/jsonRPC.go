@@ -69,7 +69,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := apip.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{"method", msg.Method})
 	}
 
 	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
@@ -234,7 +234,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 				break
 			}
 			dappID := extractDappIDFromWebsocketConnection(websockConn)
-			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg), "dappID": dappID})
+			utils.LavaFormatInfo("ws in <<<", utils.Attribute{"seed", msgSeed}, utils.Attribute{"msg", msg}, utils.Attribute{"dappID", dappID})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
@@ -294,7 +294,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		msgSeed := apil.logger.GetMessageSeed()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(fiberCtx.Body()), "dappID": dappID})
+		utils.LavaFormatInfo("in <<<", utils.Attribute{"seed", msgSeed}, utils.Attribute{"msg", fiberCtx.Body()}, utils.Attribute{"dappID", dappID})
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
@@ -334,7 +334,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	// Go
 	err := app.Listen(apil.endpoint.NetworkAddress)
 	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
+		utils.LavaFormatError("app.Listen(listenAddr)", err)
 	}
 }
 
@@ -345,7 +345,7 @@ type JrpcChainProxy struct {
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
-		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{"chainID", rpcProviderEndpoint.ChainID}, utils.Attribute{"ApiInterface", rpcProviderEndpoint.ApiInterface})
 	}
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
@@ -377,7 +377,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{"rpcMessage", rpcInputMessage})
 	}
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
@@ -400,7 +400,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	var replyMsg rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
-		utils.LavaFormatDebug("received an error from SendNodeMsg", &map[string]string{"error": err.Error()})
+		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{"error", err})
 		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
 			Version: nodeMessage.Version,
 			ID:      nodeMessage.ID,
@@ -413,7 +413,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, nil)
+			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err)
 		}
 		replyMsg = *replyMessage
 	}
@@ -430,7 +430,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if ch != nil {
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
+			return nil, "", nil, utils.LavaFormatError("Subscription failed", err)
 		}
 	}
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -156,7 +155,7 @@ func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *
 func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
 	if relayRequestData.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
-			&map[string]string{"requested_common_data": fmt.Sprintf("%+v", relayRequestData), "epoch": strconv.FormatInt(epoch, 10), "chainID": chainID})
+			utils.Attribute{"requested_common_data", relayRequestData}, utils.Attribute{"epoch", epoch}, utils.Attribute{"chainID", chainID})
 	}
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:       relayRequestData,
@@ -179,11 +178,11 @@ func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID strin
 
 func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResults []*RelayResult, totalNumberOfSessions int) (conflict bool, conflicts []*conflicttypes.ResponseConflict) {
 	verificationsLength := len(dataReliabilityResults)
-	participatingProviders := make(map[string]string, verificationsLength+1)
-	participatingProviders["originalAddress"] = originalResult.ProviderAddress
+	participatingProviders := make([]utils.Attribute, verificationsLength+1) // only used for logging
+	participatingProviders = append(participatingProviders, utils.Attribute{"originalAddress", originalResult.ProviderAddress})
 	for idx, dataReliabilityResult := range dataReliabilityResults {
 		add := dataReliabilityResult.ProviderAddress
-		participatingProviders["address"+strconv.Itoa(idx)] = add
+		participatingProviders = append(participatingProviders, utils.Attribute{"address" + strconv.Itoa(idx), add})
 		conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
 		if conflict_now {
 			conflicts = []*conflicttypes.ResponseConflict{detectionMessage}
@@ -204,9 +203,9 @@ func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResult
 
 	if !conflict && totalNumberOfSessions == verificationsLength { // if no conflict was detected data reliability was successful
 		// all reliability sessions succeeded
-		utils.LavaFormatInfo("Reliability verified successfully!", &participatingProviders)
+		utils.LavaFormatInfo("Reliability verified successfully!", participatingProviders...)
 	} else {
-		utils.LavaFormatInfo("Data is not Reliability verified!", &participatingProviders)
+		utils.LavaFormatInfo("Data is not Reliability verified!", participatingProviders...)
 	}
 	return conflict, conflicts
 }
@@ -218,7 +217,7 @@ func compareRelaysFindConflict(result1 *RelayResult, result2 *RelayResult) (conf
 		return false, nil
 	}
 	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(result1.Reply.Data), "Data1": string(result2.Reply.Data)})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{"Data0", string(result1.Reply.Data)}, utils.Attribute{"Data1", result2.Reply.Data})
 	responseConflict = &conflicttypes.ResponseConflict{
 		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},

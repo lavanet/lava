@@ -46,11 +46,11 @@ func NewMetricService() *MetricService {
 			select {
 			case <-ticker.C:
 				{
-					utils.LavaFormatInfo("metric triggered, sending accumulated data to server", nil)
+					utils.LavaFormatInfo("metric triggered, sending accumulated data to server")
 					result.SendEachProjectMetricData()
 				}
 			case metricData := <-mChannel:
-				utils.LavaFormatInfo("reading from chanel data", nil)
+				utils.LavaFormatInfo("reading from chanel data")
 				result.storeAggregatedData(metricData)
 			}
 		}
@@ -63,11 +63,11 @@ func (m *MetricService) SendData(data RelayMetrics) {
 		select {
 		case m.MetricsChannel <- data:
 		default:
-			utils.LavaFormatInfo("channel is full, ignoring these data", &map[string]string{
-				"projectHash": data.ProjectHash,
-				"chainId":     data.ChainID,
-				"apiType":     data.APIType,
-			})
+			utils.LavaFormatInfo("channel is full, ignoring these data",
+				utils.Attribute{"projectHash", data.ProjectHash},
+				utils.Attribute{"chainId", data.ChainID},
+				utils.Attribute{"apiType", data.APIType},
+			)
 		}
 	}
 }
@@ -109,31 +109,31 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 
 func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
 	if len(data) == 0 {
-		utils.LavaFormatDebug("no metrics found for this project.", nil)
+		utils.LavaFormatDebug("no metrics found for this project.")
 		return nil
 	}
 	jsonValue, err := json.Marshal(data)
 	if err != nil {
-		utils.LavaFormatError("error converting data to json", err, nil)
+		utils.LavaFormatError("error converting data to json", err)
 		return err
 	}
 	resp, err := http.Post(reportUrl, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
-		utils.LavaFormatError("error posting data to report url.", err, &map[string]string{"url": reportUrl})
+		utils.LavaFormatError("error posting data to report url.", err, utils.Attribute{"url", reportUrl})
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		utils.LavaFormatError("error status code returned from server.", nil, &map[string]string{"url": reportUrl})
+		utils.LavaFormatError("error status code returned from server.", nil, utils.Attribute{"url", reportUrl})
 	}
 	return nil
 }
 
 func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
-	utils.LavaFormatDebug("new data to store", &map[string]string{
-		"projectHash": data.ProjectHash,
-		"apiType":     data.APIType,
-		"chainId":     data.ChainID,
-	})
+	utils.LavaFormatDebug("new data to store",
+		utils.Attribute{"projectHash", data.ProjectHash},
+		utils.Attribute{"apiType", data.APIType},
+		utils.Attribute{"chainId", data.ChainID},
+	)
 
 	var successCount int64
 	var successLatencyValue uint64

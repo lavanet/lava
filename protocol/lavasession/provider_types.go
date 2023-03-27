@@ -44,7 +44,7 @@ func (endpoint *RPCProviderEndpoint) String() (retStr string) {
 
 func (endpoint *RPCProviderEndpoint) Validate() error {
 	if len(endpoint.NodeUrls) == 0 {
-		return utils.LavaFormatError("Empty URL list for endpoint", nil, &map[string]string{"endpoint": endpoint.String()})
+		return utils.LavaFormatError("Empty URL list for endpoint", nil, utils.Attribute{"endpoint", endpoint.String()})
 	}
 	for _, url := range endpoint.NodeUrls {
 		err := common.ValidateEndpoint(url.Url, endpoint.ApiInterface)
@@ -67,7 +67,7 @@ func (sm subscriptionData) onDeleteEvent() {
 	for _, consumer := range sm.subscriptionMap {
 		for _, subscription := range consumer {
 			if subscription.Sub == nil { // validate subscription not nil
-				utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, &map[string]string{"subscripionId": subscription.Id})
+				utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, utils.Attribute{"subscripionId", subscription.Id})
 			} else {
 				subscription.Sub.Unsubscribe()
 			}
@@ -174,7 +174,7 @@ func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
 func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
-	utils.LavaFormatDebug("Provider creating new sessionID", &map[string]string{"SessionID": strconv.FormatUint(sessionId, 10), "epoch": strconv.FormatUint(epoch, 10)})
+	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{"SessionID", sessionId}, utils.Attribute{"epoch", epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
 		SessionID:          sessionId,
@@ -196,7 +196,7 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 	if session, ok := pswc.Sessions[sessionId]; ok {
 		locked := session.lock.TryLock()
 		if !locked {
-			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError, nil)
+			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError)
 		}
 		return session, nil
 	}
@@ -205,7 +205,7 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 
 // this function verifies the provider can create a data reliability session and returns one if valid
 func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
-	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", &map[string]string{"SessionID": strconv.FormatUint(sessionId, 10), "epoch": strconv.FormatUint(epoch, 10)})
+	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", utils.Attribute{"SessionID", sessionId}, utils.Attribute{"epoch", epoch})
 	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
 	if foundDataReliabilitySession {
 		// if session exists, relay number should be 0 as it might had an error
@@ -251,23 +251,23 @@ func (sps *SingleProviderSession) VerifyLock() error {
 // In case the user session is a data reliability we just need to verify that the cusum is the amount agreed between the consumer and the provider
 func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayRequestTotalCU uint64) error {
 	if relayRequestTotalCU != DataReliabilityCuSum {
-		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, &map[string]string{"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10)})
+		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, utils.Attribute{"relayRequestTotalCU", relayRequestTotalCU})
 	}
 	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
 	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum += 1
-	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage", &map[string]string{
-		"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-		"sps.LatestRelayCu":   strconv.FormatUint(sps.LatestRelayCu, 10),
-		"sps.RelayNum":        strconv.FormatUint(sps.RelayNum, 10),
-	})
+	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage",
+		utils.Attribute{"relayRequestTotalCU", relayRequestTotalCU},
+		utils.Attribute{"sps.LatestRelayCu", sps.LatestRelayCu},
+		utils.Attribute{"sps.RelayNum", sps.RelayNum},
+	)
 	return nil
 }
 
 func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, nil)
+		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err)
 	}
 
 	// checking if this user session is a data reliability user session.
@@ -278,13 +278,13 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
 	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
 		sps.lock.Unlock() // unlock on error
-		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch, &map[string]string{
-			"request.CuSum":  strconv.FormatUint(relayRequestTotalCU, 10),
-			"provider.CuSum": strconv.FormatUint(sps.CuSum, 10),
-			"specCU":         strconv.FormatUint(cuFromSpec, 10),
-			"expected":       strconv.FormatUint(sps.CuSum+cuFromSpec, 10),
-			"relayNumber":    strconv.FormatUint(relayNumber, 10),
-		})
+		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
+			utils.Attribute{"request.CuSum", relayRequestTotalCU},
+			utils.Attribute{"provider.CuSum", sps.CuSum},
+			utils.Attribute{"specCU", cuFromSpec},
+			utils.Attribute{"expected", sps.CuSum + cuFromSpec},
+			utils.Attribute{"relayNumber", relayNumber},
+		)
 	}
 
 	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
@@ -300,13 +300,13 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
 	sps.RelayNum = relayNumber  // 3. update RelayNum, we already verified relayNum is valid in GetSession.
-	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage", &map[string]string{
-		"relayRequestTotalCU": strconv.FormatUint(relayRequestTotalCU, 10),
-		"sps.LatestRelayCu":   strconv.FormatUint(sps.LatestRelayCu, 10),
-		"sps.RelayNum":        strconv.FormatUint(sps.RelayNum, 10),
-		"sps.CuSum":           strconv.FormatUint(sps.CuSum, 10),
-		"sps.sessionId":       strconv.FormatUint(sps.SessionID, 10),
-	})
+	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
+		utils.Attribute{"relayRequestTotalCU", relayRequestTotalCU},
+		utils.Attribute{"sps.LatestRelayCu", sps},
+		utils.Attribute{"sps.RelayNum", sps},
+		utils.Attribute{"sps.CuSum", sps},
+		utils.Attribute{"sps.sessionId", sps},
+	)
 	return nil
 }
 
@@ -314,11 +314,11 @@ func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu u
 	for {
 		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
 		if usedCu+currentCU > maxCu {
-			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer, &map[string]string{
-				"usedCu":    strconv.FormatUint(usedCu, 10),
-				"currentCU": strconv.FormatUint(currentCU, 10),
-				"maxCu":     strconv.FormatUint(maxCu, 10),
-			})
+			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
+				utils.Attribute{"usedCu", usedCu},
+				utils.Attribute{"currentCU", currentCU},
+				utils.Attribute{"maxCu", maxCu},
+			)
 		}
 		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again
 		// this can happen when multiple sessions are adding their cu at the same time.
@@ -348,7 +348,7 @@ func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
 func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, nil)
+		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err)
 	}
 	defer sps.lock.Unlock()
 
@@ -367,7 +367,7 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 func (sps *SingleProviderSession) onSessionDone() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err, nil)
+		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err)
 	}
 	sps.LatestRelayCu = 0 // reset the cu, we can also verify its 0 when loading.
 	sps.lock.Unlock()

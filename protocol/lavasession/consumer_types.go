@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -144,7 +143,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, &map[string]string{"cu": strconv.FormatUint((cswp.UsedComputeUnits + cu), 10), "maxCu": strconv.FormatUint(cswp.MaxComputeUnits, 10)})
+		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{"cu", cswp.UsedComputeUnits + cu}, utils.Attribute{"maxCu", cswp.MaxComputeUnits})
 	}
 	return nil
 }
@@ -253,10 +252,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.NetworkAddress, "provider address": cswp.PublicLavaAddress, "endpoint": fmt.Sprintf("%+v", endpoint)})
+					utils.LavaFormatError("error connecting to provider", err, utils.Attribute{"provider endpoint", endpoint.NetworkAddress}, utils.Attribute{"provider address", cswp.PublicLavaAddress}, utils.Attribute{"endpoint", endpoint})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.NetworkAddress, "address": cswp.PublicLavaAddress, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{"Endpoint", endpoint.NetworkAddress}, utils.Attribute{"address", cswp.PublicLavaAddress}, utils.Attribute{"currentEpoch", sessionEpoch})
 					}
 					continue
 				}
@@ -283,7 +282,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.PublicLavaAddress})
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, utils.Attribute{"provider endpoints", cswp.Endpoints}, utils.Attribute{"provider address", cswp.PublicLavaAddress})
 		// report provider.
 		return connected, endpointPtr, AllProviderEndpointsDisabledError
 	}
@@ -309,7 +308,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
+		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{"Availability", cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{"down percent", downtimePercentage})
 	}
 
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -341,12 +340,11 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
 		utils.LavaFormatDebug("QoS Sync report",
-			&map[string]string{
-				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
-				"block diff": strconv.FormatInt(blockHeightDiff, 10),
-				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
-				"session_id": strconv.FormatInt(blockHeightDiff, 10),
-			})
+			utils.Attribute{"Sync", cs.QoSInfo.LastQoSReport.Sync},
+			utils.Attribute{"block diff", blockHeightDiff},
+			utils.Attribute{"sync score", strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
+			utils.Attribute{"session_id", blockHeightDiff},
+		)
 	}
 }
 

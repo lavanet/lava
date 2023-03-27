@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -89,7 +88,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 	// get the provider's SDK account address
 	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
 	if err != nil {
-		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, utils.Attribute{Key: "provider_address", Value: providerStakeEntry.Address})
 	}
 
 	// check which of the consts is larger
@@ -167,7 +166,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)
 	if err != nil {
 		// if bad data was given, we cant parse it so we ignore it and continue this protects from spamming wrong information.
-		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": providerAddress})
+		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: providerAddress})
 	}
 
 	// Get provider's stake entry
@@ -181,7 +180,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
 	err = k.unsafeUnstakeProviderEntry(ctx, epoch, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
 	if err != nil {
-		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, &map[string]string{"chainID": chainID, "indexInStakeStorage": strconv.FormatUint(indexInStakeStorage, 10), "existingEntry": existingEntry.GetStake().String()})
+		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}, {Key: "existingEntry", Value: existingEntry.GetStake()}}...)
 	}
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)

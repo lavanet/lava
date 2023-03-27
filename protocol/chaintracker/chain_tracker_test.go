@@ -120,7 +120,7 @@ func TestChainTracker(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
@@ -252,13 +252,13 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
 	forkCallback := func(arg int64) {
-		utils.LavaFormatDebug("fork callback called", nil)
+		utils.LavaFormatDebug("fork callback called")
 		callbackCalledFork = true
 	}
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
 	newBlockCallback := func(arg int64) {
-		utils.LavaFormatDebug("new latest callback called", nil)
+		utils.LavaFormatDebug("new latest callback called")
 		callbackCalledNewLatest = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
@@ -266,7 +266,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			callbackCalledFork = false
 			callbackCalledNewLatest = false
 			for i := 0; i < int(tt.advancement); i++ {
@@ -340,7 +340,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
 	forkCallback := func(arg int64) {
-		utils.LavaFormatDebug("fork callback called", nil)
+		utils.LavaFormatDebug("fork callback called")
 		callbackCalledFork = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
@@ -348,7 +348,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			callbackCalledFork = false
 			for i := 0; i < int(tt.advancement); i++ {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()

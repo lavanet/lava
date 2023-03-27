@@ -63,21 +63,21 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
-		utils.LavaFormatFatal("failed getting key name from clientCtx", err, nil)
+		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
 	}
 	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 	if err != nil {
-		utils.LavaFormatFatal("failed getting private key from key name", err, &map[string]string{"keyName": keyName})
+		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{"keyName", keyName})
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 
 	var addr sdk.AccAddress
 	err = addr.Unmarshal(clientKey.GetPubKey().Address())
 	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, &map[string]string{"keyName": keyName, "pubkey": clientKey.GetPubKey().Address().String()})
+		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{"keyName", keyName}, utils.Attribute{"pubkey", clientKey.GetPubKey().Address()})
 	}
-	utils.LavaFormatInfo("RPCConsumer pubkey: "+addr.String(), nil)
-	utils.LavaFormatInfo("RPCConsumer setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcEndpoints))})
+	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
+	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{"length", strconv.Itoa(len(rpcEndpoints))})
 	for _, rpcEndpoint := range rpcEndpoints {
 		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint)
 		key := rpcEndpoint.Key()
@@ -93,7 +93,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": rpcEndpoint.String()})
+		utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{"endpoints", rpcEndpoint.String()})
 		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
 	}
 
@@ -106,7 +106,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
 	err = viper_endpoints.UnmarshalKey(commonlib.EndpointsConfigName, &endpoints)
 	if err != nil {
-		utils.LavaFormatFatal("could not unmarshal endpoints", err, &map[string]string{"viper_endpoints": fmt.Sprintf("%v", viper_endpoints.AllSettings())})
+		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{"viper_endpoints", viper_endpoints.AllSettings()})
 	}
 	for _, endpoint := range endpoints {
 		endpoint.Geolocation = geolocation
@@ -139,7 +139,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("RPCConsumer started", &map[string]string{"args": strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{"args", strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -159,29 +159,29 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if len(args) > 1 {
 				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
 				if err != nil {
-					return utils.LavaFormatError("invalid endpoints arguments", err, &map[string]string{"endpoint_strings": strings.Join(args, "")})
+					return utils.LavaFormatError("invalid endpoints arguments", err, utils.Attribute{"endpoint_strings", strings.Join(args, "")})
 				}
 				viper.MergeConfigMap(viper_endpoints.AllSettings())
 				err := viper.SafeWriteConfigAs(DefaultRPCConsumerFileName)
 				if err != nil {
-					utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", &map[string]string{"file_name": viper.ConfigFileUsed()})
+					utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", utils.Attribute{"file_name", viper.ConfigFileUsed()})
 				} else {
-					utils.LavaFormatInfo("created new config file", &map[string]string{"file_name": DefaultRPCConsumerFileName})
+					utils.LavaFormatInfo("created new config file", utils.Attribute{"file_name", DefaultRPCConsumerFileName})
 				}
 			} else {
 				err = viper.ReadInConfig()
 				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, &map[string]string{"expected_config_name": viper.ConfigFileUsed()})
+					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{"expected_config_name", viper.ConfigFileUsed()})
 				}
-				utils.LavaFormatInfo("read config file successfully", &map[string]string{"expected_config_name": viper.ConfigFileUsed()})
+				utils.LavaFormatInfo("read config file successfully", utils.Attribute{"expected_config_name", viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)
 			if err != nil {
-				utils.LavaFormatFatal("failed to read geolocation flag, required flag", err, nil)
+				utils.LavaFormatFatal("failed to read geolocation flag, required flag", err)
 			}
 			rpcEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, &map[string]string{"endpoint_strings": strings.Join(endpoints_strings, "")})
+				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{"endpoint_strings", strings.Join(endpoints_strings, "")})
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
@@ -191,13 +191,13 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
-				utils.LavaFormatFatal("failed to read log level flag", err, nil)
+				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
 			utils.LoggingLevel(logLevel)
 
 			test_mode, err := cmd.Flags().GetBool(commonlib.TestModeFlagName)
 			if err != nil {
-				utils.LavaFormatFatal("failed to read test_mode flag", err, nil)
+				utils.LavaFormatFatal("failed to read test_mode flag", err)
 			}
 			ctx = context.WithValue(ctx, commonlib.Test_mode_ctx_key{}, test_mode)
 			// check if the command includes --pprof-address
@@ -206,35 +206,35 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				// get pprof server ip address (default value: "")
 				pprofServerAddress, err := cmd.Flags().GetString("pprof-address")
 				if err != nil {
-					utils.LavaFormatFatal("failed to read pprof address flag", err, nil)
+					utils.LavaFormatFatal("failed to read pprof address flag", err)
 				}
 
 				// start pprof HTTP server
 				err = performance.StartPprofServer(pprofServerAddress)
 				if err != nil {
-					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
+					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
-			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
+			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 			if err != nil {
-				utils.LavaFormatFatal("failed getting or creating a VRF key", err, nil)
+				utils.LavaFormatFatal("failed getting or creating a VRF key", err)
 			}
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
-				utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", cmd.Flags())})
+				utils.LavaFormatError("Failed To Get Cache Address flag", err, utils.Attribute{"flags", cmd.Flags()})
 			} else if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
-					utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{"address", cacheAddr})
 				} else {
-					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+					utils.LavaFormatInfo("cache service connected", utils.Attribute{"address", cacheAddr})
 				}
 			}
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
@@ -259,5 +259,5 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 func testModeWarn(desc string) {
 	utils.LavaFormatWarning("------------------------------test mode --------------------------------\n\t\t\t"+
 		desc+"\n\t\t\t"+
-		"------------------------------test mode --------------------------------\n", nil, nil)
+		"------------------------------test mode --------------------------------\n", nil)
 }

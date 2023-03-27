@@ -2,7 +2,6 @@ package reliabilitymanager
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -47,7 +46,8 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		if voteDeadline < nodeHeight {
 			// its too late to vote
 			utils.LavaFormatError("Vote Event received but it's too late to vote", nil,
-				&map[string]string{"deadline": strconv.FormatUint(voteDeadline, 10), "nodeHeight": strconv.FormatUint(nodeHeight, 10)})
+				utils.Attribute{"deadline", voteDeadline},
+				utils.Attribute{"nodeHeight", nodeHeight})
 			return
 		}
 	}
@@ -60,40 +60,40 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 			if voteParams.GetCloseVote() {
 				// we are closing the vote, so its okay we have this voteID
 				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry",
-					&map[string]string{"voteID": voteID})
+					utils.Attribute{"voteID", voteID})
 				delete(rm.votes, voteID)
 				return
 			}
 			// expected to start a new vote but found an existing one
 			utils.LavaFormatError("new vote Request for vote had existing entry", nil,
-				&map[string]string{"voteParams": fmt.Sprintf("%+v", voteParams), "voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
+				utils.Attribute{"voteParams", voteParams}, utils.Attribute{"voteID", voteID}, utils.Attribute{"voteData", vote})
 			return
 		}
 		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result",
-			&map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
+			utils.Attribute{"voteID", voteID}, utils.Attribute{"voteData", vote})
 		rm.txSender.SendVoteReveal(voteID, vote)
 		return
 	} else {
 		// new vote
 		if voteParams == nil {
 			utils.LavaFormatError("vote commit Request didn't have a vote entry", nil,
-				&map[string]string{"voteID": voteID})
+				utils.Attribute{"voteID", voteID})
 			return
 		}
 		if voteParams.GetCloseVote() {
 			utils.LavaFormatError("vote closing received but didn't have a vote entry", nil,
-				&map[string]string{"voteID": voteID})
+				utils.Attribute{"voteID", voteID})
 			return
 		}
 		if voteParams.ParamsType != DetectionVoteType {
 			utils.LavaFormatError("new voteID without DetectionVoteType", nil,
-				&map[string]string{"voteParams": fmt.Sprintf("%v", voteParams)})
+				utils.Attribute{"voteParams", voteParams})
 			return
 		}
 		// try to find this provider in the jury
 		found := slices.Contains(voteParams.Voters, rm.publicAddress)
 		if !found {
-			utils.LavaFormatInfo("new vote initiated but not for this provider to vote", nil)
+			utils.LavaFormatInfo("new vote initiated but not for this provider to vote")
 			// this is a new vote but not for us
 			return
 		}
@@ -103,13 +103,13 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType)
 		if err != nil {
 			utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
-				&map[string]string{"voteID": voteID, "chainID": voteParams.ChainID})
+				utils.Attribute{"voteID", voteID}, utils.Attribute{"chainID", voteParams.ChainID})
 			return
 		}
 		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 		if err != nil {
 			utils.LavaFormatError("vote relay send has failed", err,
-				&map[string]string{"ApiURL": voteParams.ApiURL, "RequestData": string(voteParams.RequestData)})
+				utils.Attribute{"ApiURL", voteParams.ApiURL}, utils.Attribute{"RequestData", voteParams.RequestData})
 			return
 		}
 		nonce := rand.Int63()
@@ -118,7 +118,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 
 		vote = &VoteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		rm.votes[voteID] = vote
-		utils.LavaFormatInfo("Received Vote start, sending commitment for result", &map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
+		utils.LavaFormatInfo("Received Vote start, sending commitment for result", utils.Attribute{"voteID", voteID}, utils.Attribute{"voteData", vote})
 		rm.txSender.SendVoteCommitment(voteID, vote)
 		return
 	}
@@ -180,15 +180,15 @@ func BuildBaseVoteDataFromEvent(event terderminttypes.Event) (voteID string, vot
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {
-		return "", 0, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return "", 0, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	num_str, ok := attributes["voteDeadline"]
 	if !ok {
-		return voteID, 0, utils.LavaFormatError("no attribute deadline", NoVoteDeadline, nil)
+		return voteID, 0, utils.LavaFormatError("no attribute deadline", NoVoteDeadline)
 	}
 	voteDeadline, err = strconv.ParseUint(num_str, 10, 64)
 	if err != nil {
-		return "", 0, utils.LavaFormatError("vote deadline could not be parsed", err, &map[string]string{"deadline": num_str, "voteID": voteID})
+		return "", 0, utils.LavaFormatError("vote deadline could not be parsed", err, utils.Attribute{"deadline", num_str}, utils.Attribute{"voteID", voteID})
 	}
 	return voteID, voteDeadline, nil
 }
@@ -200,49 +200,49 @@ func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	chainID, ok := attributes["chainID"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	apiURL, ok := attributes["apiURL"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	requestData_str, ok := attributes["requestData"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	requestData := []byte(requestData_str)
 
 	connectionType, ok := attributes["connectionType"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	apiInterface, ok := attributes["apiInterface"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	num_str, ok := attributes["requestBlock"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 	if err != nil {
-		return nil, utils.LavaFormatError("vote requested block could not be parsed", err, &map[string]string{"requested block": num_str, "voteID": voteID})
+		return nil, utils.LavaFormatError("vote requested block could not be parsed", err, utils.Attribute{"requested block", num_str}, utils.Attribute{"voteID", voteID})
 	}
 	num_str, ok = attributes["voteDeadline"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
 	if err != nil {
-		return nil, utils.LavaFormatError("vote deadline could not be parsed", err, &map[string]string{"deadline": num_str, "voteID": voteID})
+		return nil, utils.LavaFormatError("vote deadline could not be parsed", err, utils.Attribute{"deadline", num_str}, utils.Attribute{"voteID", voteID})
 	}
 	voters_st, ok := attributes["voters"]
 	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, &attributes)
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{"attributes", attributes})
 	}
 	voters := strings.Split(voters_st, ",")
 	voteParams := &VoteParams{

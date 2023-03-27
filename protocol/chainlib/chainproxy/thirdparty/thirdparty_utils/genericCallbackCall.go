@@ -22,20 +22,20 @@ func (qs *ThirdPartyGeneticCallBackCaller) CallbackCaller(ctx context.Context, m
 	reqMarshaled, err := json.Marshal(requestType)
 	log.Println("json: ", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := qs.CallBack(ctx, method, reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	switch t := responseType.(type) {
 	case protoreflect.ProtoMessage:
 		err = proto.Unmarshal(res, t)
 		if err != nil {
-			return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+			return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 		}
 		return t, nil
 	default:
-		return nil, utils.LavaFormatError("Unsupported interface type", nil, &map[string]string{"type": fmt.Sprintf("%T", t)})
+		return nil, utils.LavaFormatError("Unsupported interface type", nil, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", t)})
 	}
 }

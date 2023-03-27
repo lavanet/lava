@@ -221,7 +221,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(c)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
+		utils.LavaFormatInfo("in <<<", utils.Attribute{"path", path}, utils.Attribute{"dappID", dappID}, utils.Attribute{"msgSeed", msgSeed})
 		requestBody := string(c.Body())
 		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics)
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
@@ -257,7 +257,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
 		dappID := extractDappIDFromFiberContext(c)
-		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
+		utils.LavaFormatInfo("in <<<", utils.Attribute{"path", path}, utils.Attribute{"dappID", dappID}, utils.Attribute{"msgSeed", msgSeed})
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
 		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics)
@@ -288,7 +288,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	// Go
 	err := app.Listen(apil.endpoint.NetworkAddress)
 	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
+		utils.LavaFormatError("app.Listen(listenAddr)", err)
 	}
 }
 
@@ -299,7 +299,7 @@ type RestChainProxy struct {
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
-		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{"chainID", rpcProviderEndpoint.ChainID}, utils.Attribute{"ApiInterface", rpcProviderEndpoint.ApiInterface})
 	}
 	rcp := &RestChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0]},
@@ -310,7 +310,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 
 func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
-		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
 	httpClient := http.Client{
 		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
@@ -319,7 +319,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{"rpcMessage", rpcInputMessage})
 	}
 
 	var connectionTypeSlected string = http.MethodGet
