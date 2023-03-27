@@ -49,6 +49,7 @@ func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
 func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	nonceBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonceBytes, value)
+	requestData.Salt = nonceBytes
 }
 
 func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) *pairingtypes.RelayPrivateData {

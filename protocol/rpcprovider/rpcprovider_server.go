@@ -89,10 +89,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay request",
+		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
-		utils.Attribute{Key: "GUID", Value: ctx},
 	)
 
 	// Init relay
