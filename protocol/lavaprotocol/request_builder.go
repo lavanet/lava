@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"math/rand"
 	"strconv"
 	"time"
 
@@ -39,17 +38,33 @@ type RelayResult struct {
 	Finalized       bool
 }
 
-func NewRelayData(connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) *pairingtypes.RelayPrivateData {
-	nonceBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(nonceBytes, rand.Uint32())
-	return &pairingtypes.RelayPrivateData{
+func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
+	salt := requestData.Salt
+	if len(salt) < 8 {
+		return 0
+	}
+	return binary.LittleEndian.Uint64(salt)
+}
+
+func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, value)
+}
+
+func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string) *pairingtypes.RelayPrivateData {
+	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
 		Data:           data,
 		RequestBlock:   requestBlock,
 		ApiInterface:   apiInterface,
-		Salt:           nonceBytes,
 	}
+	guid, found := utils.GetUniqueIdentifier(ctx)
+	if !found {
+		guid = utils.GenerateUniqueIdentifier()
+	}
+	SetSalt(relayData, guid)
+	return relayData
 }
 
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {

@@ -101,7 +101,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	unwantedProviders := map[string]struct{}{}
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface)
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	for retries := 0; retries < MaxRelayRetries; retries++ {
@@ -117,7 +117,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 				break
 			}
 			// decide if we should break here if its something retry won't solve
-			utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "error", Value: err.Error()})
+			utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err.Error()})
 			continue
 		}
 		relayResults = append(relayResults, relayResult)
@@ -133,16 +133,20 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		for _, relayResult := range relayResults {
 			// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 			// as data reliability happens in a go routine it will continue while the response returns.
+			guid, found := utils.GetUniqueIdentifier(ctx)
 			dataReliabilityContext := context.Background()
+			if found {
+				dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
+			}
 			go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, relayResult, chainMessage, dataReliabilityThreshold) // runs asynchronously
 		}
 	}
 
 	// TODO: secure, go over relay results to find discrepancies and choose majority, or trigger a second wallet relay
 	if len(relayResults) == 0 {
-		return nil, nil, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "errors", Value: relayErrors})
+		return nil, nil, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	} else if len(relayErrors) > 0 {
-		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "errors", Value: relayErrors})
+		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	}
 	var returnedResult *lavaprotocol.RelayResult
 	for _, iteratedResult := range relayResults {
@@ -220,7 +224,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// relay failed need to fail the session advancement
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return relayResult, utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "original error", Value: err.Error()})
+			return relayResult, utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
 		}
 		return relayResult, err
 	}
@@ -294,7 +298,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return relayResult, utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, utils.Attribute{Key: "original error", Value: err.Error()})
+			return relayResult, utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
 		}
 		return relayResult, err
 	}
@@ -318,7 +322,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 
 	// validate relayResult is not nil
 	if relayResult == nil || relayResult.Reply == nil || relayResult.Request == nil {
-		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, utils.Attribute{Key: "relayResult", Value: relayResult})
+		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayResult", Value: relayResult})
 	}
 
 	specCategory := chainMessage.GetInterface().Category
@@ -333,22 +337,22 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	// get two indexesMap for data reliability.
 	providersCount := uint32(rpccs.consumerSessionManager.GetAtomicPairingAddressesLength())
 	indexesMap := lavaprotocol.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1}, []bool{false, true}, dataReliabilityThreshold, providersCount)
-	utils.LavaFormatDebug("DataReliability Randomized Values", utils.Attribute{Key: "vrf0", Value: uint64(binary.LittleEndian.Uint32(vrfRes0))}, utils.Attribute{Key: "vrf1", Value: uint64(binary.LittleEndian.Uint32(vrfRes1))}, utils.Attribute{Key: "decisionMap", Value: indexesMap})
+	utils.LavaFormatDebug("DataReliability Randomized Values", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "vrf0", Value: uint64(binary.LittleEndian.Uint32(vrfRes0))}, utils.Attribute{Key: "vrf1", Value: uint64(binary.LittleEndian.Uint32(vrfRes1))}, utils.Attribute{Key: "decisionMap", Value: indexesMap})
 	for idxExtract, uniqueIdentifier := range indexesMap { // go over each unique index and get a session.
 		// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
 		dataReliabilityConsumerSession, providerPublicAddress, epoch, err := rpccs.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract, sessionEpoch)
 		if err != nil {
 			if lavasession.DataReliabilityIndexRequestedIsOriginalProviderError.Is(err) {
 				// index belongs to original provider, nothing is wrong here, print info and continue
-				utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", utils.Attribute{Key: "provider", Value: providerPubAddress}, utils.Attribute{Key: "Index", Value: idxExtract})
+				utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "provider", Value: providerPubAddress}, utils.Attribute{Key: "Index", Value: idxExtract})
 			} else if lavasession.DataReliabilityAlreadySentThisEpochError.Is(err) {
-				utils.LavaFormatInfo("DataReliability: Already Sent Data Reliability This Epoch To This Provider.", utils.Attribute{Key: "Provider", Value: providerPubAddress}, utils.Attribute{Key: "Epoch", Value: epoch})
+				utils.LavaFormatInfo("DataReliability: Already Sent Data Reliability This Epoch To This Provider.", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Provider", Value: providerPubAddress}, utils.Attribute{Key: "Epoch", Value: epoch})
 			} else if lavasession.DataReliabilityEpochMismatchError.Is(err) {
-				utils.LavaFormatInfo("DataReliability: Epoch changed cannot send data reliability", utils.Attribute{Key: "original_epoch", Value: sessionEpoch}, utils.Attribute{Key: "data_reliability_epoch", Value: epoch})
+				utils.LavaFormatInfo("DataReliability: Epoch changed cannot send data reliability", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original_epoch", Value: sessionEpoch}, utils.Attribute{Key: "data_reliability_epoch", Value: epoch})
 				// if epoch changed, we can stop trying to get data reliability sessions
 				break
 			} else {
-				utils.LavaFormatError("GetDataReliabilitySession", err)
+				utils.LavaFormatError("GetDataReliabilitySession", err, utils.Attribute{Key: "GUID", Value: ctx})
 			}
 			continue // if got an error continue to next index.
 		}
@@ -368,11 +372,11 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		reportedProviders, err := rpccs.consumerSessionManager.GetReportedProviders(uint64(epoch))
 		if err != nil {
 			reportedProviders = nil
-			utils.LavaFormatError("failed reading reported providers for epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
+			utils.LavaFormatError("failed reading reported providers for epoch", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
 		}
 		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, rpccs.lavaChainID, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayResult.Request.RelayData, providerAddress, epoch, reportedProviders)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed creating data reliability relay", err, utils.Attribute{Key: "relayRequestData", Value: relayResult.Request.RelayData})
+			return nil, utils.LavaFormatError("failed creating data reliability relay", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayRequestData", Value: relayResult.Request.RelayData})
 		}
 		relayResult = &lavaprotocol.RelayResult{Request: reliabilityRequest, ProviderAddress: providerAddress, Finalized: false}
 		relayTimeout := lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu) + chainlib.AverageWorldLatency + chainlib.DataReliabilityTimeoutIncrease
@@ -380,9 +384,9 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if err != nil {
 			errRet := rpccs.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
 			if errRet != nil {
-				return nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, utils.Attribute{Key: "sendReliabilityError", Value: err.Error()})
+				return nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sendReliabilityError", Value: err.Error()})
 			}
-			return nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, utils.Attribute{Key: "Address", Value: providerAddress})
+			return nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Address", Value: providerAddress})
 		}
 
 		expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
@@ -393,7 +397,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	checkReliability := func() {
 		numberOfReliabilitySessions := len(dataReliabilitySessions)
 		if numberOfReliabilitySessions > lavaprotocol.SupportedNumberOfVRFs {
-			utils.LavaFormatError("Trying to use DataReliability with more than two vrf sessions, currently not supported", nil, utils.Attribute{Key: "number_of_DataReliabilitySessions", Value: strconv.Itoa(numberOfReliabilitySessions)})
+			utils.LavaFormatError("Trying to use DataReliability with more than two vrf sessions, currently not supported", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "number_of_DataReliabilitySessions", Value: strconv.Itoa(numberOfReliabilitySessions)})
 			return
 		} else if numberOfReliabilitySessions == 0 {
 			return
@@ -412,7 +416,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 						ProviderAddress: dataReliabilitySession.ProviderPublicAddress,
 					})
 			} else {
-				utils.LavaFormatWarning("failed data reliability relay", err)
+				utils.LavaFormatWarning("failed data reliability relay", err, utils.Attribute{Key: "GUID", Value: ctx})
 			}
 		}
 		if len(dataReliabilityVerifications) > 0 {
@@ -421,7 +425,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 				for _, conflict := range conflicts {
 					err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
 					if err != nil {
-						utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "conflict", Value: conflict})
+						utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
 					}
 				}
 			}

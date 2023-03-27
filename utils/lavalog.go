@@ -114,9 +114,13 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 				// we don't want to print the whole context so change it
 				switch key {
 				case "GUID":
-					guid := GetUniqueIdentifier(value)
-					st_val = strconv.FormatUint(guid, 10)
-					attributes[idx] = Attribute{Key: key, Value: guid}
+					guid, found := GetUniqueIdentifier(value)
+					if found {
+						st_val = strconv.FormatUint(guid, 10)
+						attributes[idx] = Attribute{Key: key, Value: guid}
+					} else {
+						attributes[idx] = Attribute{Key: key, Value: "no-guid"}
+					}
 				default:
 					attributes[idx] = Attribute{Key: key, Value: "context-masked"}
 				}

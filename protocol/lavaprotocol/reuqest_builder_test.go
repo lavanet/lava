@@ -27,7 +27,7 @@ func TestSignAndExtract(t *testing.T) {
 		BlockListed:                 false, // if session lost sync we blacklist it.
 		ConsecutiveNumberOfFailures: 0,     // number of times this session has failed
 	}
-	relayRequestData := NewRelayData("GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc")
+	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc")
 	relay, err := ConstructRelayRequest(ctx, sk, "lava", specId, relayRequestData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
