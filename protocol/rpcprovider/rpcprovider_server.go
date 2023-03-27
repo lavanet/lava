@@ -626,7 +626,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes})
-
 	}
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
