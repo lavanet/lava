@@ -12,7 +12,7 @@
                 "block_distance_for_finalized_data": 64,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": "13000",
-                "allowed_block_lag_for_qos_sync": "5",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -1331,7 +1331,7 @@
                 "block_distance_for_finalized_data": 7,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": "13000",
-                "allowed_block_lag_for_qos_sync": "5",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

@@ -13,7 +13,7 @@
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "10",
+                "allowed_block_lag_for_qos_sync": "2",
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -2825,9 +2825,9 @@
                         "name": "abci_info",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2849,11 +2849,9 @@
                         "name": "abci_query",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "2"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2873,6 +2871,30 @@
                     },
                     {
                         "name": "block",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "tendermintrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "blockParserMethod",
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -2913,9 +2935,9 @@
                         "name": "block_by_hash",
                         "block_parsing": {
                             "parser_arg": [
-                                "latest"
+                                ""
                             ],
-                            "parser_func": "DEFAULT"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2937,11 +2959,9 @@
                         "name": "block_results",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -2987,11 +3007,9 @@
                         "name": "blockchain",
                         "block_parsing": {
                             "parser_arg": [
-                                "maxHeight",
-                                "=",
-                                "1"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3135,11 +3153,9 @@
                         "name": "commit",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -3161,11 +3177,9 @@
                         "name": "consensus_params",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5446,11 +5460,9 @@
                         "name": "validators",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                ""
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                            "parser_func": "EMPTY"
                         },
                         "compute_units": "10",
                         "enabled": true,
