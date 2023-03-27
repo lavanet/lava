@@ -148,7 +148,7 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
-			utils.LavaFormatError("regex Compile api", err, utils.Attribute{"apiName", apiName})
+			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
 		if re.Match([]byte(name)) {
@@ -162,7 +162,7 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 func verifyRPCEndpoint(endpoint string) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{"url", endpoint})
+		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
 	}
 	switch u.Scheme {
 	case "ws", "wss":
@@ -177,7 +177,7 @@ func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint com
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{"url", endpoint.Url})
+			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.Url})
 		}
 		switch u.Scheme {
 		case "http", "https":
@@ -191,7 +191,7 @@ func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint com
 
 	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
 		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			utils.Attribute{"websocket", websocketEndpoint.String()}, utils.Attribute{"http", httpEndpoint.String()})
+			utils.Attribute{Key: "websocket", Value: websocketEndpoint.String()}, utils.Attribute{Key: "http", Value: httpEndpoint.String()})
 		if httpEndpoint.String() != "" {
 			return httpEndpoint, httpEndpoint
 		} else {

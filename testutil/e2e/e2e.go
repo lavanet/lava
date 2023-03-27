@@ -709,7 +709,7 @@ func (lt *lavaTest) saveLogs() {
 		writer := bufio.NewWriter(file)
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
-		utils.LavaFormatDebug("writing file", []utils.Attribute{{"fileName", fileName}, {"lines", len(logBuffer.Bytes())}}...)
+		utils.LavaFormatDebug("writing file", []utils.Attribute{{Key: "fileName", Value: fileName}, {Key: "lines", Value: len(logBuffer.Bytes())}}...)
 		file.Close()
 
 		lines := strings.Split(logBuffer.String(), "\n")

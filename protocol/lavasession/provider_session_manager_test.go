@@ -193,7 +193,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps)
-
+	require.Nil(t, err)
 	// Update the session CU to reach the limit of the cu allowed
 	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
 	require.Nil(t, err)
@@ -216,7 +216,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps)
-
+	require.Nil(t, err)
 	// get another session
 	sps, err = psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
 	require.Nil(t, err)
@@ -452,6 +452,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1)
 	// create 2nd subscription as we release the session we can just ask for it again with relayNumber + 1
 	sps, err := psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	require.Nil(t, err)
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1)
 
 	err = psm.ProcessUnsubscribe("unsubscribeOne", subscriptionID, consumerOneAddress, epoch1)

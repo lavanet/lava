@@ -112,12 +112,12 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("GRPC api not supported", nil, utils.Attribute{"name", name})
+		return nil, utils.LavaFormatError("GRPC api not supported", nil, utils.Attribute{Key: "name", Value: name})
 	}
 
 	// Return an error if api is disabled
 	if !api.Enabled {
-		return nil, utils.LavaFormatError("GRPC api is disabled", nil, utils.Attribute{"name", name})
+		return nil, utils.LavaFormatError("GRPC api is disabled", nil, utils.Attribute{Key: "name", Value: name})
 	}
 
 	return &api, nil
@@ -205,7 +205,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	lis, err := net.Listen("tcp", apil.endpoint.NetworkAddress)
 	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{"listenAddr", apil.endpoint.NetworkAddress})
+		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
@@ -228,13 +228,13 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	_, httpServer, err := thirdparty.RegisterServer(apil.endpoint.ChainID, sendRelayCallback)
 	if err != nil {
-		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{"listenAddr", apil.endpoint.NetworkAddress})
+		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
 
-	utils.LavaFormatInfo("Server listening", utils.Attribute{"Address", lis.Addr()})
+	utils.LavaFormatInfo("Server listening", utils.Attribute{Key: "Address", Value: lis.Addr()})
 
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{"Address", lis.Addr()}, utils.Attribute{"ChainID", apil.endpoint.ChainID})
+		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
 }
 
@@ -245,7 +245,7 @@ type GrpcChainProxy struct {
 
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
-		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{"chainID", rpcProviderEndpoint.ChainID}, utils.Attribute{"ApiInterface", rpcProviderEndpoint.ApiInterface})
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	cp := &GrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
@@ -274,7 +274,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{"rpcMessage", rpcInputMessage})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -294,11 +294,11 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{"descriptor", descriptor})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "descriptor", Value: descriptor})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{"methodName", methodName})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "methodName", Value: methodName})
 	}
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
@@ -332,7 +332,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{"Method", nodeMessage.Path}, utils.Attribute{"msg", nodeMessage.Msg})
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
 	}
 
 	var respBytes []byte

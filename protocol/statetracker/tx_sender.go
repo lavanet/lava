@@ -45,7 +45,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 				if string(attribute.Key) == "BasePay" {
 					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
 					if err != nil {
-						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{"attribute", string(attribute.Value)})
+						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Value)})
 					}
 					lavaReward = lavaReward.Add(lavaRewardTemp)
 					break
@@ -61,7 +61,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
 
 	if gasFee.IsGTE(lavaRewardDec) {
-		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, utils.Attribute{"gasFee", gasFee}, utils.Attribute{"lava_reward:", lavaRewardDec})
+		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, utils.Attribute{Key: "gasFee", Value: gasFee}, utils.Attribute{Key: "lava_reward:", Value: lavaRewardDec})
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			// only then we can ask for a new sequence number continue and try again.
 			var seq uint64
 			if sequenceNumberParsed != 0 {
-				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", utils.Attribute{"sequence", strconv.Itoa(sequenceNumberParsed)})
+				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", utils.Attribute{Key: "sequence", Value: strconv.Itoa(sequenceNumberParsed)})
 				seq = uint64(sequenceNumberParsed)
 			} else {
 				var err error
@@ -116,13 +116,13 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			}
 			txfactory = txfactory.WithSequence(seq)
 			myWriter.Reset()
-			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{"SeqNum", seq})
+			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{Key: "SeqNum", Value: seq})
 		}
 		var transactionResult string
 		clientCtx.Output = &myWriter
 		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
 		if err != nil {
-			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{"msg", msg})
+			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{Key: "msg", Value: msg})
 			transactionResult = err.Error() // incase we got an error the tx result is basically the error
 		} else {
 			transactionResult = myWriter.String()
@@ -136,7 +136,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			hasSequenceError = true
 			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
 			if err != nil {
-				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{"sequence", transactionResult})
+				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{Key: "sequence", Value: transactionResult})
 			}
 			summarizedTransactionResult = transactionResult
 		}

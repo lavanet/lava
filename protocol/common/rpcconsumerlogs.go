@@ -53,10 +53,10 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 			// Set specific Config fields inside a custom ConfigOption.
 			sMaxSamplesStored, ok := os.LookupEnv("NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED")
 			if ok {
-				utils.LavaFormatDebug("Setting NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", utils.Attribute{"sMaxSamplesStored", sMaxSamplesStored})
+				utils.LavaFormatDebug("Setting NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", utils.Attribute{Key: "sMaxSamplesStored", Value: sMaxSamplesStored})
 				maxSamplesStored, err := strconv.Atoi(sMaxSamplesStored)
 				if err != nil {
-					utils.LavaFormatError("Failed converting sMaxSamplesStored to number", err, utils.Attribute{"sMaxSamplesStored", sMaxSamplesStored})
+					utils.LavaFormatError("Failed converting sMaxSamplesStored to number", err, utils.Attribute{Key: "sMaxSamplesStored", Value: sMaxSamplesStored})
 				} else {
 					cfg.TransactionEvents.MaxSamplesStored = maxSamplesStored
 				}
@@ -95,7 +95,7 @@ func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, ms
 		data.Error = responseError.Error()
 	}
 
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, utils.Attribute{"msgSeed", msgSeed})
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
 	ret, _ := json.Marshal(data)
 
@@ -122,10 +122,10 @@ func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Con
 
 func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError && err != nil {
-		utils.LavaFormatError(module, err, []utils.Attribute{{"GUID", msgSeed}, {"request", req}, {"response", parser.CapStringLen(resp)}, {"method", method}, {"path", path}, {"HasError", hasError}}...)
+		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
 	}
-	utils.LavaFormatDebug(module, []utils.Attribute{{"GUID", msgSeed}, {"request", req}, {"response", parser.CapStringLen(resp)}, {"method", method}, {"path", path}, {"HasError", hasError}}...)
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
 func (pl *RPCConsumerLogs) LogStartTransaction(name string) {

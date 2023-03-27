@@ -39,7 +39,7 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*EpochUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{"updater", epochUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
@@ -58,7 +58,7 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
 	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{"updater", voteUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: voteUpdaterRaw})
 	}
 	endpoint := lavasession.RPCEndpoint{ChainID: endpointP.ChainID, ApiInterface: endpointP.ApiInterface}
 	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
@@ -69,7 +69,7 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
 	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{"updater", payemntUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: payemntUpdaterRaw})
 	}
 
 	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)

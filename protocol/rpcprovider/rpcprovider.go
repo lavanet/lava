@@ -95,17 +95,17 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 	if err != nil {
-		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{"keyName", keyName})
+		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	lavaChainID := clientCtx.ChainID
 	var addr sdk.AccAddress
 	err = addr.Unmarshal(clientKey.GetPubKey().Address())
 	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{"keyName", keyName}, utils.Attribute{"pubkey", clientKey.GetPubKey().Address()})
+		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: " + addr.String())
-	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{"count", strconv.Itoa(len(rpcProviderEndpoints))})
+	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(rpcProviderEndpoints))})
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
@@ -113,7 +113,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
 		err := rpcProviderEndpoint.Validate()
 		if err != nil {
-			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{"endpoint", rpcProviderEndpoint.String()})
+			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
 			continue
 		}
@@ -128,7 +128,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
 		if err != nil {
-			utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{"parallelConnections", uint64(parallelConnections)}, utils.Attribute{"rpcProviderEndpoint", rpcProviderEndpoint})
+			utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
 			continue
 		}
@@ -143,7 +143,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 		chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 		if err != nil {
-			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{"chainTrackerConfig", chainTrackerConfig}, utils.Attribute{"endpoint", rpcProviderEndpoint})
+			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			rpcp.disabledEndpoints = append(rpcp.disabledEndpoints, rpcProviderEndpoint)
 			continue
 		}
@@ -153,7 +153,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		rpcProviderServer := &RPCProviderServer{}
 		if _, ok := rpcp.rpcProviderServers[key]; ok {
 			utils.LavaFormatFatal("Trying to add the same key twice to rpcProviderServers check config file.", nil,
-				utils.Attribute{"key", key})
+				utils.Attribute{Key: "key", Value: key})
 		}
 		rpcp.rpcProviderServers[key] = rpcProviderServer
 		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID)
@@ -175,7 +175,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 		}
 		if listener == nil {
-			utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{"RPCProviderEndpoint", rpcProviderEndpoint.String()})
+			utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
 		}
 		listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	}
@@ -202,7 +202,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
 	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
 	if err != nil {
-		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{"viper_endpoints", viper_endpoints.AllSettings()})
+		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
 	for _, endpoint := range endpoints {
 		endpoint.Geolocation = geolocation
@@ -237,7 +237,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{"args", strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -256,27 +256,27 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if len(args) > 1 {
 				viper_endpoints, err = common.ParseEndpointArgs(args, Yaml_config_properties, common.EndpointsConfigName)
 				if err != nil {
-					return utils.LavaFormatError("invalid endpoints arguments", err, utils.Attribute{"endpoint_strings", strings.Join(args, "")})
+					return utils.LavaFormatError("invalid endpoints arguments", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(args, "")})
 				}
 				save_config, err := cmd.Flags().GetBool(common.SaveConfigFlagName)
 				if err != nil {
-					return utils.LavaFormatError("failed reading flag", err, utils.Attribute{"flag_name", common.SaveConfigFlagName})
+					return utils.LavaFormatError("failed reading flag", err, utils.Attribute{Key: "flag_name", Value: common.SaveConfigFlagName})
 				}
 				viper.MergeConfigMap(viper_endpoints.AllSettings())
 				if save_config {
 					err := viper.SafeWriteConfigAs(DefaultRPCProviderFileName)
 					if err != nil {
-						utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", utils.Attribute{"file_name", DefaultRPCProviderFileName}, utils.Attribute{"error", err})
+						utils.LavaFormatInfo("did not create new config file, if it's desired remove the config file", utils.Attribute{Key: "file_name", Value: DefaultRPCProviderFileName}, utils.Attribute{Key: "error", Value: err})
 					} else {
-						utils.LavaFormatInfo("created new config file", utils.Attribute{"file_name", DefaultRPCProviderFileName})
+						utils.LavaFormatInfo("created new config file", utils.Attribute{Key: "file_name", Value: DefaultRPCProviderFileName})
 					}
 				}
 			} else {
 				err = viper.ReadInConfig()
 				if err != nil {
-					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{"expected_config_name", viper.ConfigFileUsed()})
+					utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 				}
-				utils.LavaFormatInfo("read config file successfully", utils.Attribute{"expected_config_name", viper.ConfigFileUsed()})
+				utils.LavaFormatInfo("read config file successfully", utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
 			geolocation, err := cmd.Flags().GetUint64(lavasession.GeolocationFlag)
 			if err != nil {
@@ -284,7 +284,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcProviderEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{"endpoint_strings", strings.Join(endpoints_strings, "")})
+				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
@@ -321,13 +321,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
-				utils.LavaFormatError("Failed To Get Cache Address flag", err, utils.Attribute{"flags", cmd.Flags()})
+				utils.LavaFormatError("Failed To Get Cache Address flag", err, utils.Attribute{Key: "flags", Value: cmd.Flags()})
 			} else if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
-					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{"address", cacheAddr})
+					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{Key: "address", Value: cacheAddr})
 				} else {
-					utils.LavaFormatInfo("cache service connected", utils.Attribute{"address", cacheAddr})
+					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
@@ -335,7 +335,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err)
 			}
 			for _, endpoint := range rpcProviderEndpoints {
-				utils.LavaFormatDebug("endpoint description", utils.Attribute{"endpoint", endpoint})
+				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			rpcProvider := RPCProvider{}
 			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)

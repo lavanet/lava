@@ -35,10 +35,10 @@ func (pl *ProviderListener) RegisterReceiver(existingReceiver RelayReceiver, end
 	_, ok := pl.relayServer.relayReceivers[listen_endpoint.Key()]
 	if ok {
 		// there was already a receiver defined
-		return utils.LavaFormatError("double_receiver_setup receiver already defined on this address with the same chainID and apiInterface", nil, utils.Attribute{"chainID", endpoint.ChainID}, utils.Attribute{"apiInterface", endpoint.ApiInterface})
+		return utils.LavaFormatError("double_receiver_setup receiver already defined on this address with the same chainID and apiInterface", nil, utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
 	}
 	pl.relayServer.relayReceivers[listen_endpoint.Key()] = existingReceiver
-	utils.LavaFormatInfo("Provider Listening on Address", utils.Attribute{"chainID", endpoint.ChainID}, utils.Attribute{"apiInterface", endpoint.ApiInterface}, utils.Attribute{"Address", endpoint.NetworkAddress})
+	utils.LavaFormatInfo("Provider Listening on Address", utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface}, utils.Attribute{Key: "Address", Value: endpoint.NetworkAddress})
 	return nil
 }
 
@@ -55,7 +55,7 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	// GRPC
 	lis, err := net.Listen("tcp", networkAddress)
 	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{"listenAddr", networkAddress})
+		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: networkAddress})
 	}
 	grpcServer := grpc.NewServer()
 
@@ -75,11 +75,11 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
-		utils.LavaFormatInfo("New provider listener active", utils.Attribute{"address", networkAddress})
+		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
 		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{"Address", lis.Addr().String()})
+			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
 		}
-		utils.LavaFormatInfo("listener closed server", utils.Attribute{"address", networkAddress})
+		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})
 	}()
 	return pl
 }
@@ -124,7 +124,7 @@ func (rs *relayServer) findReceiver(request *pairingtypes.RelayRequest) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		return nil, utils.LavaFormatError("got called with unhandled relay receiver", nil, utils.Attribute{"requested_receiver", endpoint.Key()}, utils.Attribute{"handled_receivers", strings.Join(keys, ",")})
+		return nil, utils.LavaFormatError("got called with unhandled relay receiver", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
 	}
 	return relayReceiver, nil
 }

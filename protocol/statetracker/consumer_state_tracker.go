@@ -40,11 +40,11 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*PairingUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{"updater", pairingUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
 	}
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
-		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{"data", consumerSessionManager.RPCEndpoint()})
+		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
 	}
 }
 
@@ -53,7 +53,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*FinalizationConsensusUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{"updater", finalizationConsensusUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: finalizationConsensusUpdaterRaw})
 	}
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }

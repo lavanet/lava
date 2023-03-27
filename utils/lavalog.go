@@ -25,6 +25,10 @@ type Attribute struct {
 	Value interface{}
 }
 
+func LogAttr(key string, value interface{}) Attribute {
+	return Attribute{Key: key, Value: value}
+}
+
 func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
 	attributes_str := ""
 	eventAttrs := []sdk.Attribute{}

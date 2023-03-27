@@ -147,7 +147,7 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
 		return nil, utils.LavaFormatError("RecoverCompact", err, utils.Attribute{
-			"sigLen", len(sig),
+			Key: "sigLen", Value: len(sig),
 		})
 	}
 	pk := recPub.SerializeCompressed()

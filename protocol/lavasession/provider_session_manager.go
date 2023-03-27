@@ -66,15 +66,15 @@ func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string
 
 func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	if providerSessionWithConsumer.atomicReadConsumerBlocked() != notBlockListedConsumer {
-		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, utils.Attribute{"RequestedEpoch", epoch}, utils.Attribute{"consumer", providerSessionWithConsumer.consumerAddr})
+		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: providerSessionWithConsumer.consumerAddr})
 	}
 	// before getting any sessions.
 	singleProviderSession, err := psm.getSessionFromAnActiveConsumer(providerSessionWithConsumer, sessionId, epoch) // after getting session verify relayNum etc..
 	if err != nil {
-		return nil, utils.LavaFormatError("getSessionFromAnActiveConsumer Failure", err, utils.Attribute{"RequestedEpoch", epoch}, utils.Attribute{"sessionId", sessionId})
+		return nil, utils.LavaFormatError("getSessionFromAnActiveConsumer Failure", err, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "sessionId", Value: sessionId})
 	}
 	if singleProviderSession.RelayNum+1 < relayNumber { // validate relay number here, but add only in PrepareSessionForUsage
-		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, utils.Attribute{"singleProviderSession.RelayNum", singleProviderSession.RelayNum + 1}, utils.Attribute{"request.relayNumber", relayNumber})
+		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, utils.Attribute{Key: "singleProviderSession.RelayNum", Value: singleProviderSession.RelayNum + 1}, utils.Attribute{Key: "request.relayNumber", Value: relayNumber})
 	}
 	// singleProviderSession is locked at this point.
 	return singleProviderSession, err
@@ -85,7 +85,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 		if providerSessionWithConsumer, consumerAddressFound := mapOfDataReliabilitySessionsWithConsumer.sessionMap[address]; consumerAddressFound {
 			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
 				// consumer is blocked.
-				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, utils.Attribute{"RequestedEpoch", epoch}, utils.Attribute{"ConsumerAddress", address})
+				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "ConsumerAddress", Value: address})
 				return nil, ConsumerIsBlockListed
 			}
 			// validate self index is the same.
@@ -109,24 +109,24 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64, selfProviderIndex int64) (*SingleProviderSession, error) {
 	// validate Epoch
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{"RequestedEpoch", epoch})
+		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 		return nil, InvalidEpochError
 	}
 
 	// validate sessionId
 	if sessionId > DataReliabilitySessionId {
-		return nil, utils.LavaFormatError("request's sessionId is larger than the data reliability allowed session ID", nil, utils.Attribute{"sessionId", sessionId}, utils.Attribute{"DataReliabilitySessionId", strconv.Itoa(DataReliabilitySessionId)})
+		return nil, utils.LavaFormatError("request's sessionId is larger than the data reliability allowed session ID", nil, utils.Attribute{Key: "sessionId", Value: sessionId}, utils.Attribute{Key: "DataReliabilitySessionId", Value: strconv.Itoa(DataReliabilitySessionId)})
 	}
 
 	// validate RelayNumber
 	if relayNumber > DataReliabilityRelayNumber {
-		return nil, utils.LavaFormatError("request's relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", nil, utils.Attribute{"relayNumber", relayNumber}, utils.Attribute{"DataReliabilityRelayNumber", DataReliabilityRelayNumber})
+		return nil, utils.LavaFormatError("request's relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", nil, utils.Attribute{Key: "relayNumber", Value: relayNumber}, utils.Attribute{Key: "DataReliabilityRelayNumber", Value: DataReliabilityRelayNumber})
 	}
 
 	// validate active consumer.
 	providerSessionWithConsumer, err := psm.getOrCreateDataReliabilitySessionWithConsumer(address, epoch, sessionId, selfProviderIndex)
 	if err != nil {
-		return nil, utils.LavaFormatError("getOrCreateDataReliabilitySessionWithConsumer Failed", err, utils.Attribute{"relayNumber", relayNumber}, utils.Attribute{"DataReliabilityRelayNumber", DataReliabilityRelayNumber})
+		return nil, utils.LavaFormatError("getOrCreateDataReliabilitySessionWithConsumer Failed", err, utils.Attribute{Key: "relayNumber", Value: relayNumber}, utils.Attribute{Key: "DataReliabilityRelayNumber", Value: DataReliabilityRelayNumber})
 	}
 
 	// singleProviderSession is locked after this method is called unless we got an error
@@ -146,7 +146,7 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 
 func (psm *ProviderSessionManager) GetSession(address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{"RequestedEpoch", epoch}, utils.Attribute{"blockedEpochHeight", psm.blockedEpochHeight}, utils.Attribute{"blockDistanceForEpochValidity", psm.blockDistanceForEpochValidity})
+		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
 	}
 
@@ -162,7 +162,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
-		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, utils.Attribute{"RequestedEpoch", epoch})
+		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 		return nil, InvalidEpochError
 	}
 
@@ -191,7 +191,7 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(consumerA
 		} else {
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err)
 		}
-		utils.LavaFormatDebug("provider registered consumer", utils.Attribute{"consumer", consumerAddress}, utils.Attribute{"epoch", epoch})
+		utils.LavaFormatDebug("provider registered consumer", utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch})
 	}
 	return psm.getSingleSessionFromProviderSessionWithConsumer(providerSessionWithConsumer, sessionId, epoch, relayNumber)
 }
@@ -200,14 +200,14 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 	psm.lock.RLock()
 	defer psm.lock.RUnlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
-		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, utils.Attribute{"RequestedEpoch", epoch})
+		utils.LavaFormatError("getActiveConsumer", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 		return nil, InvalidEpochError
 	}
 	if mapOfProviderSessionsWithConsumer, consumerFoundInEpoch := psm.sessionsWithAllConsumers[epoch]; consumerFoundInEpoch {
 		if providerSessionWithConsumer, consumerAddressFound := mapOfProviderSessionsWithConsumer.sessionMap[address]; consumerAddressFound {
 			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
 				// consumer is blocked.
-				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, utils.Attribute{"RequestedEpoch", epoch}, utils.Attribute{"ConsumerAddress", address})
+				utils.LavaFormatWarning("getActiveConsumer", ConsumerIsBlockListed, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "ConsumerAddress", Value: address})
 				return nil, ConsumerIsBlockListed
 			}
 			return providerSessionWithConsumer, nil // no error
@@ -284,11 +284,11 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 	defer psm.lock.Unlock()
 	mapOfConsumers, foundMapOfConsumers := psm.subscriptionSessionsWithAllConsumers[epoch]
 	if !foundMapOfConsumers {
-		return utils.LavaFormatError("Couldn't find epoch in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{"epoch", epoch}, utils.Attribute{"address", consumerAddress})
+		return utils.LavaFormatError("Couldn't find epoch in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
 	}
 	mapOfSubscriptionId, foundMapOfSubscriptionId := mapOfConsumers.subscriptionMap[consumerAddress]
 	if !foundMapOfSubscriptionId {
-		return utils.LavaFormatError("Couldn't find consumer address in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{"epoch", epoch}, utils.Attribute{"address", consumerAddress})
+		return utils.LavaFormatError("Couldn't find consumer address in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
 	}
 
 	var err error
@@ -296,7 +296,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 		// unsubscribe all subscriptions
 		for _, v := range mapOfSubscriptionId {
 			if v.Sub == nil {
-				err = utils.LavaFormatError("ProcessUnsubscribe TendermintUnsubscribeAll mapOfSubscriptionId Error", SubscriptionPointerIsNilError, utils.Attribute{"subscripionId", subscriptionID})
+				err = utils.LavaFormatError("ProcessUnsubscribe TendermintUnsubscribeAll mapOfSubscriptionId Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscriptionID})
 			} else {
 				v.Sub.Unsubscribe()
 			}
@@ -307,11 +307,11 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 
 	subscription, foundSubscription := mapOfSubscriptionId[subscriptionID]
 	if !foundSubscription {
-		return utils.LavaFormatError("Couldn't find subscription Id in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{"epoch", epoch}, utils.Attribute{"address", consumerAddress}, utils.Attribute{"subscriptionId", subscriptionID})
+		return utils.LavaFormatError("Couldn't find subscription Id in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "subscriptionId", Value: subscriptionID})
 	}
 
 	if subscription.Sub == nil {
-		err = utils.LavaFormatError("ProcessUnsubscribe Error", SubscriptionPointerIsNilError, utils.Attribute{"subscripionId", subscriptionID})
+		err = utils.LavaFormatError("ProcessUnsubscribe Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscriptionID})
 	} else {
 		subscription.Sub.Unsubscribe()
 	}
@@ -343,7 +343,7 @@ func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSub
 	}
 
 	// if we get here we found a subscription already in the storage and we need to return an error as we can't add two subscriptions with the same id
-	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, utils.Attribute{"SubscriptionId", subscription.Id}, utils.Attribute{"epoch", epoch}, utils.Attribute{"address", consumerAddress})
+	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, utils.Attribute{Key: "SubscriptionId", Value: subscription.Id}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
 }
 
 func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
@@ -374,7 +374,7 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 	}
 
 	if subscription.Sub == nil { // validate subscription not nil
-		utils.LavaFormatError("SubscriptionEnded Error", SubscriptionPointerIsNilError, utils.Attribute{"subscripionId", subscription.Id})
+		utils.LavaFormatError("SubscriptionEnded Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscription.Id})
 	} else {
 		subscription.Sub.Unsubscribe()
 	}
@@ -387,16 +387,16 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
-		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, utils.Attribute{"RequestedEpoch", epoch})
+		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 	}
 
 	providerSessionsWithConsumerMap, ok := psm.sessionsWithAllConsumers[epoch]
 	if !ok {
-		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, utils.Attribute{"epoch", epoch})
+		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch})
 	}
 	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap.sessionMap[consumerAddress]
 	if !foundConsumer {
-		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{"epoch", epoch}, utils.Attribute{"consumer", consumerAddress})
+		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress})
 	}
 
 	usedCu := providerSessionWithConsumer.atomicReadUsedComputeUnits() // check used cu now

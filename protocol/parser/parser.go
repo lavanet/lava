@@ -139,7 +139,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
 		if len(unmarshalled) == 0 {
-			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, utils.Attribute{"data source", "PARSE_RESULT"})
+			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, utils.Attribute{Key: "data source", Value: "PARSE_RESULT"})
 		}
 		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
@@ -174,17 +174,17 @@ func blockInterfaceToString(block interface{}) string {
 func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
-		return nil, utils.LavaFormatError("invalid input format, input length", nil, utils.Attribute{"input_len", strconv.Itoa(len(input))})
+		return nil, utils.LavaFormatError("invalid input format, input length", nil, utils.Attribute{Key: "input_len", Value: strconv.Itoa(len(input))})
 	}
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, utils.LavaFormatError("invalid input format, input isn't an unsigned index", err, utils.Attribute{"input", inp})
+		return nil, utils.LavaFormatError("invalid input format, input isn't an unsigned index", err, utils.Attribute{Key: "input", Value: inp})
 	}
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, utils.LavaFormatError("invalid input format, data is not json", err, utils.Attribute{"data", unmarshalledData})
+		return nil, utils.LavaFormatError("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
@@ -199,7 +199,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatError("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{"request", unmarshaledDataTyped})
+		return nil, utils.LavaFormatError("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
 	}
 }
 

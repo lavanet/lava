@@ -214,7 +214,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		epoch := sessionList[j].epoch
 		require.Equal(t, epoch, csm.currentEpoch)
 
-		if rand.Intn(1) > 0 {
+		if rand.Intn(2) > 0 {
 			successfulRelays += 1
 			cuSum += cuForFirstRequest
 			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
@@ -238,7 +238,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
 		cs := sessionList[j].cs
 		epoch := sessionList[j].epoch
-		if rand.Intn(1) > 0 {
+		if rand.Intn(2) > 0 {
 			successfulRelays += 1
 			cuSum += cuForFirstRequest
 			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
@@ -349,7 +349,7 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 		ch2val := <-ch2 + parallelGoRoutines
 		if len(all_chs) == parallelGoRoutines { // at half of the go routines launch the swap.
 			go func() {
-				utils.LavaFormatInfo(fmt.Sprintf("#### UPDATING PROVIDERS ####"))
+				utils.LavaFormatInfo("#### UPDATING PROVIDERS ####")
 				err := csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2")) // update the providers. with half of them
 				require.Nil(t, err)
 			}()

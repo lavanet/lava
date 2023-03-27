@@ -105,9 +105,13 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 		// add auth path
 		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
 		if err != nil {
-			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
-				Key: "Current Number Of Connections", Value: currentNumberOfConnections}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts},
-				{Key: "Network Address", Value: nodeUrl.Url}}...)
+			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{
+				{
+					Key: "Current Number Of Connections", Value: currentNumberOfConnections,
+				},
+				{Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts},
+				{Key: "Network Address", Value: nodeUrl.Url},
+			}...)
 			cancel()
 			continue
 		}
@@ -384,7 +388,8 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
-				Key: "Current Number Of Connections", Value: currentNumberOfConnections}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}}...)
+				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
+			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}}...)
 			cancel()
 			continue
 		}

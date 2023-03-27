@@ -64,9 +64,9 @@ func (m *MetricService) SendData(data RelayMetrics) {
 		case m.MetricsChannel <- data:
 		default:
 			utils.LavaFormatInfo("channel is full, ignoring these data",
-				utils.Attribute{"projectHash", data.ProjectHash},
-				utils.Attribute{"chainId", data.ChainID},
-				utils.Attribute{"apiType", data.APIType},
+				utils.Attribute{Key: "projectHash", Value: data.ProjectHash},
+				utils.Attribute{Key: "chainId", Value: data.ChainID},
+				utils.Attribute{Key: "apiType", Value: data.APIType},
 			)
 		}
 	}
@@ -119,20 +119,20 @@ func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
 	}
 	resp, err := http.Post(reportUrl, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
-		utils.LavaFormatError("error posting data to report url.", err, utils.Attribute{"url", reportUrl})
+		utils.LavaFormatError("error posting data to report url.", err, utils.Attribute{Key: "url", Value: reportUrl})
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		utils.LavaFormatError("error status code returned from server.", nil, utils.Attribute{"url", reportUrl})
+		utils.LavaFormatError("error status code returned from server.", nil, utils.Attribute{Key: "url", Value: reportUrl})
 	}
 	return nil
 }
 
 func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	utils.LavaFormatDebug("new data to store",
-		utils.Attribute{"projectHash", data.ProjectHash},
-		utils.Attribute{"apiType", data.APIType},
-		utils.Attribute{"chainId", data.ChainID},
+		utils.Attribute{Key: "projectHash", Value: data.ProjectHash},
+		utils.Attribute{Key: "apiType", Value: data.APIType},
+		utils.Attribute{Key: "chainId", Value: data.ChainID},
 	)
 
 	var successCount int64
