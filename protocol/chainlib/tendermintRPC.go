@@ -434,11 +434,11 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		httpConnector:  nil,
 	}
 
-	cp.start(ctx, nConns, httpUrl)
+	cp.addHttpConnector(ctx, nConns, httpUrl)
 	return cp, cp.JrpcChainProxy.start(ctx, nConns, websocketUrl)
 }
 
-func (cp *tendermintRpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
+func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns uint, nodeUrl string) error {
 	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
 	if err != nil {
 		return err
@@ -451,11 +451,6 @@ func (cp *tendermintRpcChainProxy) start(ctx context.Context, nConns uint, nodeU
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	rpc, err := cp.conn.GetRpc(ctx, true)
-	if err != nil {
-		return nil, "", nil, err
-	}
-	defer cp.conn.ReturnRpc(rpc)
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
