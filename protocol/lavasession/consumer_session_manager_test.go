@@ -218,7 +218,6 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		require.Equal(t, epoch, csm.currentEpoch)
 
 		if rand.Intn(2) > 0 {
-
 			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
