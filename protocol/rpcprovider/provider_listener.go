@@ -2,12 +2,12 @@ package rpcprovider
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -76,9 +76,7 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
-		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
-		}
+		chainlib.ListenWithRetryGrpc(&pl.httpServer, lis)
 		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})
 	}()
 	return pl
