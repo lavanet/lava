@@ -43,11 +43,11 @@ func (msg *MsgSetProjectPolicy) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
-	if msg.Policy.GetTotalCuLimit() < msg.Policy.GetEpochCuLimit() {
-		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. total_cu_limit (%v) is smaller than epoch_cu_limit (%v)", msg.Policy.TotalCuLimit, msg.Policy.EpochCuLimit)
+	if msg.GetPolicy().GetTotalCuLimit() < msg.GetPolicy().GetEpochCuLimit() {
+		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. total_cu_limit (%v) is smaller than epoch_cu_limit (%v)", msg.GetPolicy().GetTotalCuLimit(), msg.Policy.GetEpochCuLimit())
 	}
-	if msg.Policy.GetMaxProvidersToPair() < 1 {
-		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. max providers to pair should be at least 1. current value: %v", msg.Policy.MaxProvidersToPair)
+	if msg.GetPolicy().GetMaxProvidersToPair() < 1 {
+		return sdkerrors.Wrapf(ErrPolicyBasicValidation, "invalid policy. max providers to pair should be at least 1. current value: %v", msg.GetPolicy().GetMaxProvidersToPair())
 	}
 	return nil
 }
