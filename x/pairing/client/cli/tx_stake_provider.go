@@ -35,7 +35,7 @@ func CmdStakeProvider() *cobra.Command {
 			for _, endpointStr := range tmpArg {
 				splitted := strings.Split(endpointStr, ",")
 				if len(splitted) != 3 {
-					return fmt.Errorf("invalid argument format in endpoints, must be: IP:PORT,useType,geolocation IP:PORT,useType,geolocation")
+					return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,geolocation HOST:PORT,useType,geolocation, received: %s", endpointStr)
 				}
 				geoloc, err := strconv.ParseUint(splitted[2], 10, 64)
 				if err != nil {

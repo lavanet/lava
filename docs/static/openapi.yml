@@ -54273,6 +54273,113 @@ definitions:
       unresponsive_providers:
         type: string
         format: byte
+      relay_session:
+        type: object
+        properties:
+          spec_id:
+            type: string
+          content_hash:
+            type: string
+            format: byte
+          session_id:
+            type: string
+            format: uint64
+          cu_sum:
+            type: string
+            format: uint64
+            title: total compute unit used including this relay
+          provider:
+            type: string
+          relay_num:
+            type: string
+            format: uint64
+          qos_report:
+            type: object
+            properties:
+              latency:
+                type: string
+              availability:
+                type: string
+              sync:
+                type: string
+          epoch:
+            type: string
+            format: int64
+          unresponsive_providers:
+            type: string
+            format: byte
+          lava_chain_id:
+            type: string
+          sig:
+            type: string
+            format: byte
+          badge:
+            type: object
+            properties:
+              cu_allocation:
+                type: string
+                format: uint64
+              epoch:
+                type: string
+                format: int64
+              badge_pk:
+                type: string
+                format: byte
+              spec_id:
+                type: string
+              project_sig:
+                type: string
+                format: byte
+      relay_data:
+        type: object
+        properties:
+          connection_type:
+            type: string
+          api_url:
+            type: string
+            title: >-
+              some relays have associated urls that are filled with params
+              ('/block/{height}')
+          data:
+            type: string
+            format: byte
+          request_block:
+            type: string
+            format: int64
+          api_interface:
+            type: string
+          salt:
+            type: string
+            format: byte
+      data_reliability:
+        type: object
+        properties:
+          chain_id:
+            type: string
+          epoch:
+            type: string
+            format: int64
+          differentiator:
+            type: boolean
+          vrf_value:
+            type: string
+            format: byte
+          vrf_proof:
+            type: string
+            format: byte
+          provider_sig:
+            type: string
+            format: byte
+          all_data_hash:
+            type: string
+            format: byte
+          query_hash:
+            type: string
+            format: byte
+            title: we only need it for payment later
+          sig:
+            type: string
+            format: byte
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -54297,6 +54404,18 @@ definitions:
       sig:
         type: string
         format: byte
+      chain_id:
+        type: string
+      epoch:
+        type: string
+        format: int64
+      all_data_hash:
+        type: string
+        format: byte
+      query_hash:
+        type: string
+        format: byte
+        title: we only need it for payment later
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -54680,6 +54799,23 @@ definitions:
             moniker:
               type: string
       epochBlockHash:
+        type: string
+        format: byte
+  lavanet.lava.pairing.Badge:
+    type: object
+    properties:
+      cu_allocation:
+        type: string
+        format: uint64
+      epoch:
+        type: string
+        format: int64
+      badge_pk:
+        type: string
+        format: byte
+      spec_id:
+        type: string
+      project_sig:
         type: string
         format: byte
   lavanet.lava.pairing.CacheUsage:
@@ -55253,6 +55389,84 @@ definitions:
       cu_per_epoch:
         type: string
         format: uint64
+  lavanet.lava.pairing.RelayPrivateData:
+    type: object
+    properties:
+      connection_type:
+        type: string
+      api_url:
+        type: string
+        title: >-
+          some relays have associated urls that are filled with params
+          ('/block/{height}')
+      data:
+        type: string
+        format: byte
+      request_block:
+        type: string
+        format: int64
+      api_interface:
+        type: string
+      salt:
+        type: string
+        format: byte
+  lavanet.lava.pairing.RelaySession:
+    type: object
+    properties:
+      spec_id:
+        type: string
+      content_hash:
+        type: string
+        format: byte
+      session_id:
+        type: string
+        format: uint64
+      cu_sum:
+        type: string
+        format: uint64
+        title: total compute unit used including this relay
+      provider:
+        type: string
+      relay_num:
+        type: string
+        format: uint64
+      qos_report:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
+      epoch:
+        type: string
+        format: int64
+      unresponsive_providers:
+        type: string
+        format: byte
+      lava_chain_id:
+        type: string
+      sig:
+        type: string
+        format: byte
+      badge:
+        type: object
+        properties:
+          cu_allocation:
+            type: string
+            format: uint64
+          epoch:
+            type: string
+            format: int64
+          badge_pk:
+            type: string
+            format: byte
+          spec_id:
+            type: string
+          project_sig:
+            type: string
+            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:

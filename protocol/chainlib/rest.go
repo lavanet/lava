@@ -21,7 +21,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/lavanet/lava/protocol/metrics"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -29,12 +29,25 @@ type RestChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewRestChainParser creates a new instance of RestChainParser
 func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
+}
+
+func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		// chain fetcher sends the replaced request inside data
+		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType)
+	}
+
+	restMessage := rpcInterfaceMessages.RestMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -50,13 +63,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, err
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
@@ -66,14 +73,27 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		Msg:  data,
 		Path: url,
 	}
-
-	// TODO why we don't have requested block here?
-	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          restMessage,
+	if connectionType == http.MethodGet {
+		// support for optional params, our listener puts them inside Msg data
+		restMessage = rpcInterfaceMessages.RestMessage{
+			Msg:  nil,
+			Path: url + string(data),
+		}
 	}
+
+	// TODO fix requested block
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, restMessage)
 	return nodeMsg, nil
+}
+
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestBlock int64, restMessage rpcInterfaceMessages.RestMessage) *parsedMessage {
+	nodeMsg := &parsedMessage{
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            restMessage,
+		requestedBlock: requestBlock,
+	}
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -120,7 +140,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -288,7 +308,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return rcp, nil
 }
 
-func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
@@ -310,10 +330,6 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.nodeUrl + nodeMessage.Path
-	// Only get calls uses query params the rest uses the body
-	if connectionTypeSlected == http.MethodGet {
-		url += string(nodeMessage.Msg)
-	}
 
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)

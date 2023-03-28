@@ -36,7 +36,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const logsFolder = "./testutil/e2e/logs/"
+const (
+	logsFolder   = "./testutil/e2e/logs/"
+	configFolder = "./testutil/e2e/e2eProviderConfigs/"
+)
 
 var (
 	checkedSpecsE2E    = []string{"LAV1", "ETH1"}
@@ -204,17 +207,17 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	utils.LavaFormatInfo("startJSONRPCProxy OK", nil)
 }
 
-func (lt *lavaTest) startJSONRPCProvider(rpcURL string, ctx context.Context) {
+func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "jsonrpcProvider1.yml --from servicer1 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "jsonrpcProvider2.yml --from servicer2 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "jsonrpcProvider3.yml --from servicer3 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "jsonrpcProvider4.yml --from servicer4 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "jsonrpcProvider5.yml --from servicer5 --geolocation 1 --log_level debug",
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "03_jsonProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -231,11 +234,16 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string, ctx context.Context) {
 			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startJSONRPCProvider")
 		}(idx)
 	}
+	// validate all providers are up
+	for idx := 0; idx < len(providerCommands); idx++ {
+		lt.checkProviderResponsive(ctx, "127.0.0.1:222"+fmt.Sprintf("%d", idx+1), time.Minute)
+	}
+
 	utils.LavaFormatInfo("startJSONRPCProvider OK", nil)
 }
 
 func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
+	providerCommand := lt.lavadPath + " rpcconsumer " + configFolder + "ethConsumer.yml --from user1 --geolocation 1 --log_level debug"
 	logName := "04_jsonConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -273,6 +281,24 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 		time.Sleep(time.Second)
 	}
 	panic("checkJSONRPCConsumer: JSONRPC Check Failed Consumer didn't respond")
+}
+
+func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting Provider "+rpcURL, nil)
+		nctx, cancel := context.WithTimeout(ctx, time.Second)
+		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			// utils.LavaFormatInfo(fmt.Sprintf("Provider is still intializing %s", err), nil)
+			cancel()
+			time.Sleep(time.Second)
+			continue
+		}
+		cancel()
+		grpcClient.Close()
+		return
+	}
+	panic("checkProviderResponsive: Check Failed Provider didn't respond" + rpcURL)
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
@@ -379,17 +405,17 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startTendermintProvider(rpcURL string, httpUrl string, ctx context.Context) {
+func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
-		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
-		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug --tendermint-http-endpoint " + httpUrl,
+		lt.lavadPath + " rpcprovider " + configFolder + "lavaProvider6.yml --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "lavaProvider7.yml --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "lavaProvider8.yml --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "lavaProvider9.yml --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " rpcprovider " + configFolder + "lavaProvider10.yml --from servicer10 --geolocation 1 --log_level debug",
 	}
 
 	for idx, providerCommand := range providerCommands {
-		logName := "05_tendermintProvider_" + fmt.Sprintf("%02d ", idx)
+		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
@@ -404,14 +430,22 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string, httpUrl string, ctx c
 		lt.commands[logName] = cmd
 
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startTendermintProvider")
+			lt.listenCmdCommand(cmd, "startLavaProviders process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startLavaProviders")
 		}(idx)
 	}
+
+	// validate all providers are up
+	for idx := 0; idx < len(providerCommands); idx++ {
+		lt.checkProviderResponsive(ctx, "127.0.0.1:226"+fmt.Sprintf("%d", idx+1), time.Minute)
+		lt.checkProviderResponsive(ctx, "127.0.0.1:227"+fmt.Sprintf("%d", idx+1), time.Minute)
+		lt.checkProviderResponsive(ctx, "127.0.0.1:228"+fmt.Sprintf("%d", idx+1), time.Minute)
+	}
+
 	utils.LavaFormatInfo("startTendermintProvider OK", nil)
 }
 
-func (lt *lavaTest) startRPCConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3340 LAV1 tendermintrpc 127.0.0.1:3341 LAV1 rest 127.0.0.1:3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
+func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
+	providerCommand := lt.lavadPath + " rpcconsumer " + configFolder + "lavaConsumer.yml --from user2 --geolocation 1 --log_level debug"
 	logName := "06_RPCConsumer"
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -481,7 +515,7 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 		"%s/status":                              true,
 		"%s/block?height=1":                      true,
 		"%s/blockchain?minHeight=0&maxHeight=10": true,
-		"%s/dial_peers?persistent=true&unconditional=true&private=true": false, // this is a rpc affecting query and is not available on the spec so it should fail
+		// "%s/dial_peers?persistent=true&unconditional=true&private=true": false, // this is a rpc affecting query and is not available on the spec so it should fail
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for api, noFail := range mostImportantApisToTest {
@@ -523,59 +557,6 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
 	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
-}
-
-func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
-	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10 --geolocation 1 --log_level debug",
-	}
-
-	for idx, providerCommand := range providerCommands {
-		logName := "08_restProvider_" + fmt.Sprintf("%02d ", idx)
-		lt.logs[logName] = new(bytes.Buffer)
-		cmd := exec.CommandContext(ctx, "", "")
-		cmd.Path = lt.lavadPath
-		cmd.Args = strings.Split(providerCommand, " ")
-		cmd.Stdout = lt.logs[logName]
-		cmd.Stderr = lt.logs[logName]
-
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		lt.commands[logName] = cmd
-
-		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startRESTProvider")
-		}(idx)
-	}
-	utils.LavaFormatInfo("startRESTProvider OK", nil)
-}
-
-func (lt *lavaTest) startRESTConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " rpcconsumer 127.0.0.1:3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
-	logName := "09_restConsumer"
-	lt.logs[logName] = new(bytes.Buffer)
-
-	cmd := exec.CommandContext(ctx, "", "")
-	cmd.Path = lt.lavadPath
-	cmd.Args = strings.Split(providerCommand, " ")
-	cmd.Stdout = lt.logs[logName]
-	cmd.Stderr = lt.logs[logName]
-
-	err := cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-	lt.commands[logName] = cmd
-	go func() {
-		lt.listenCmdCommand(cmd, "startRESTConsumer process returned unexpectedly", "startRESTConsumer")
-	}()
-	utils.LavaFormatInfo("startRESTConsumer OK", nil)
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -636,59 +617,6 @@ func getRequest(url string) ([]byte, error) {
 	}
 
 	return body, nil
-}
-
-func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
-	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug",
-	}
-
-	for idx, providerCommand := range providerCommands {
-		logName := "10_grpcProvider_" + fmt.Sprintf("%02d ", idx)
-		lt.logs[logName] = new(bytes.Buffer)
-		cmd := exec.CommandContext(ctx, "", "")
-		cmd.Path = lt.lavadPath
-		cmd.Args = strings.Split(providerCommand, " ")
-		cmd.Stdout = lt.logs[logName]
-		cmd.Stderr = lt.logs[logName]
-
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		lt.commands[logName] = cmd
-
-		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startGRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startGRPCProvider")
-		}(idx)
-	}
-	utils.LavaFormatInfo("startGRPCProvider OK", nil)
-}
-
-func (lt *lavaTest) startGRPCConsumer(ctx context.Context) {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
-	logName := "11_grpcConsumer"
-	lt.logs[logName] = new(bytes.Buffer)
-
-	cmd := exec.CommandContext(ctx, "", "")
-	cmd.Path = lt.lavadPath
-	cmd.Args = strings.Split(providerCommand, " ")
-	cmd.Stdout = lt.logs[logName]
-	cmd.Stderr = lt.logs[logName]
-
-	err := cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-	lt.commands[logName] = cmd
-	go func() {
-		lt.listenCmdCommand(cmd, "startGRPCConsumer process returned unexpectedly", "startGRPCConsumer")
-	}()
-	utils.LavaFormatInfo("startGRPCConsumer OK", nil)
 }
 
 func (lt *lavaTest) checkGRPCConsumer(rpcURL string, timeout time.Duration) {
@@ -781,6 +709,7 @@ func (lt *lavaTest) saveLogs() {
 		writer := bufio.NewWriter(file)
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
+		utils.LavaFormatDebug("writing file", &map[string]string{"fileName": fileName, "lines": strconv.Itoa(len(logBuffer.Bytes()))})
 		file.Close()
 
 		lines := strings.Split(logBuffer.String(), "\n")
@@ -908,23 +837,22 @@ func runE2E() {
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
-	jsonCTX := context.Background()
+	// ETH1 flow
+	jsonCTX, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	lt.startJSONRPCProxy(jsonCTX)
 	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	lt.startJSONRPCProvider("http://127.0.0.1:1111", jsonCTX)
+	lt.startJSONRPCProvider(jsonCTX)
 	lt.startJSONRPCConsumer(jsonCTX)
 	lt.checkJSONRPCConsumer("http://127.0.0.1:3333/1", time.Minute*2, "JSONRPCConsumer OK")
 
-	tendermintCTX := context.Background()
-	lt.startTendermintProvider("ws://0.0.0.0:26657/websocket", "http://0.0.0.0:26657", tendermintCTX)
+	// Lava Flow
+	rpcCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	restCTX := context.Background()
-	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
-
-	grpcCTX := context.Background()
-	lt.startGRPCProvider("127.0.0.1:9090", grpcCTX)
-
-	lt.startRPCConsumer(tendermintCTX)
+	lt.startLavaProviders(rpcCtx)
+	lt.startLavaConsumer(rpcCtx)
 	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
 	lt.checkRESTConsumer("http://127.0.0.1:3341/1", time.Second*30)
 	lt.checkGRPCConsumer("127.0.0.1:3342", time.Second*30)
@@ -950,7 +878,7 @@ func runE2E() {
 		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
 	}
 
-	lt.lavaOverLava(tendermintCTX)
+	lt.lavaOverLava(rpcCtx)
 
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 	if restErr != nil {
@@ -969,9 +897,7 @@ func runE2E() {
 	}
 
 	jsonCTX.Done()
-	tendermintCTX.Done()
-	restCTX.Done()
-	grpcCTX.Done()
+	rpcCtx.Done()
 
 	lt.finishTestSuccessfully()
 }

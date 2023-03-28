@@ -22,7 +22,7 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type qoSInfo struct {
+type QoSReport struct {
 	LastQoSReport    *pairingtypes.QualityOfServiceReport
 	LatencyScoreList []sdk.Dec
 	SyncScoreSum     int64
@@ -34,7 +34,7 @@ type qoSInfo struct {
 type SingleConsumerSession struct {
 	CuSum                       uint64
 	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
-	QoSInfo                     qoSInfo
+	QoSInfo                     QoSReport
 	SessionId                   int64
 	Client                      *ConsumerSessionsWithProvider
 	lock                        utils.LavaMutex
@@ -60,10 +60,15 @@ type Endpoint struct {
 }
 
 type RPCEndpoint struct {
-	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // IP:PORT
+	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
 	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
 	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+}
+
+func (endpoint *RPCEndpoint) String() (retStr string) {
+	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return
 }
 
 func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
@@ -335,11 +340,12 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-		utils.LavaFormatInfo("QoS Sync report",
+		utils.LavaFormatDebug("QoS Sync report",
 			&map[string]string{
 				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
 				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
+				"session_id": strconv.FormatInt(blockHeightDiff, 10),
 			})
 	}
 }

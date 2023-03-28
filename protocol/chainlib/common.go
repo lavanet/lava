@@ -6,12 +6,13 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -20,12 +21,28 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 )
 
+type BaseChainParser struct {
+	taggedApis map[string]spectypes.ServiceApi
+	rwLock     sync.RWMutex
+}
+
+func (bcp *BaseChainParser) SetTaggedApis(taggedApis map[string]spectypes.ServiceApi) {
+	bcp.taggedApis = taggedApis
+}
+
+func (bcp *BaseChainParser) GetSpecApiByTag(tag string) (spectypes.ServiceApi, bool) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+
+	val, ok := bcp.taggedApis[tag]
+	return val, ok
+}
+
 type parsedMessage struct {
-	serviceApi       *spectypes.ServiceApi
-	apiInterface     *spectypes.ApiInterface
-	averageBlockTime int64
-	requestedBlock   int64
-	msg              interface{}
+	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
+	requestedBlock int64
+	msg            parser.RPCInput
 }
 
 type BaseChainProxy struct {
@@ -45,11 +62,7 @@ func (pm parsedMessage) RequestedBlock() int64 {
 }
 
 func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
-	rpcInput, ok := pm.msg.(parser.RPCInput)
-	if !ok {
-		return nil
-	}
-	return rpcInput
+	return pm.msg
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
@@ -176,8 +189,34 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 	}
 
 	if websocketEndpoint == "" || httpEndpoint == "" {
-		utils.LavaFormatFatal("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
+		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
 			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
+		if httpEndpoint != "" {
+			return httpEndpoint, httpEndpoint
+		} else {
+			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil, nil)
+		}
 	}
 	return websocketEndpoint, httpEndpoint
+}
+
+func GetApiInterfaceFromServiceApi(serviceApi *spectypes.ServiceApi, connectionType string) *spectypes.ApiInterface {
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	return apiInterface
+}
+
+type CraftData struct {
+	Path           string
+	Data           []byte
+	ConnectionType string
+}
+
+func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(serviceApi, craftData)
 }

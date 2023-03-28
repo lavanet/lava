@@ -48,6 +48,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
@@ -84,7 +85,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2 // indirect
-	github.com/dgraph-io/ristretto v0.0.3 // indirect
+	github.com/dgraph-io/ristretto v0.1.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/docker v20.10.19+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
