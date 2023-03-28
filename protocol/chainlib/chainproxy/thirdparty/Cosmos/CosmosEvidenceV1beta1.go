@@ -19,16 +19,16 @@ type implementedCosmosEvidenceV1beta1 struct {
 func (is *implementedCosmosEvidenceV1beta1) AllEvidence(ctx context.Context, req *pb_pkg.QueryAllEvidenceRequest) (*pb_pkg.QueryAllEvidenceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "cosmos.evidence.v1beta1.Query/AllEvidence", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllEvidenceResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

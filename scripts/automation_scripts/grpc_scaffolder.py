@@ -131,16 +131,16 @@ METHOD_TEMPLATE = f"""
 func (is *implemented###UNIQUENAME###) ###METHOD_NAME###(ctx context.Context, req *pb_pkg.###REQUEST###) (*pb_pkg.###RESPONSE###, error) {"{"}
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {"{"}
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	{"}"}
 	res, err := is.cb(ctx, "###WHOLE_SERVICE###", reqMarshaled)
 	if err != nil {"{"}
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	{"}"}
 	result := &pb_pkg.###RESPONSE###{"{}"}
 	err = proto.Unmarshal(res, result)
 	if err != nil {"{"}
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	{"}"}
 	return result, nil
 {"}"}

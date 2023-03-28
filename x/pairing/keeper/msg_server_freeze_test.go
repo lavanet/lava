@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -242,24 +242,20 @@ func TestPaymentFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	relayRequest := &types.RelayRequest{
-		Provider:        providerToFreeze.Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-		BlockHeight:     blockForPaymentBeforeFreeze,
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relayRequest := &types.RelaySession{
+		Provider:  providerToFreeze.Address,
+		SessionId: uint64(1),
+		SpecId:    ts.spec.Name,
+		CuSum:     ts.spec.Apis[0].ComputeUnits * 10,
+		Epoch:     blockForPaymentBeforeFreeze,
+		RelayNum:  0,
 	}
 
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
-	var Relays []*types.RelayRequest
+	var Relays []*types.RelaySession
 	Relays = append(Relays, relayRequest)
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: providerToFreeze.Address, Relays: Relays})

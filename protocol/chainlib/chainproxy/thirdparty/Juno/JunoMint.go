@@ -20,16 +20,16 @@ type implementedJunoMint struct {
 func (is *implementedJunoMint) AnnualProvisions(ctx context.Context, req *pb_pkg.QueryAnnualProvisionsRequest) (*pb_pkg.QueryAnnualProvisionsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "juno.mint.Query/AnnualProvisions", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAnnualProvisionsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -39,16 +39,16 @@ func (is *implementedJunoMint) AnnualProvisions(ctx context.Context, req *pb_pkg
 func (is *implementedJunoMint) Inflation(ctx context.Context, req *pb_pkg.QueryInflationRequest) (*pb_pkg.QueryInflationResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "juno.mint.Query/Inflation", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryInflationResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -58,16 +58,16 @@ func (is *implementedJunoMint) Inflation(ctx context.Context, req *pb_pkg.QueryI
 func (is *implementedJunoMint) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "juno.mint.Query/Params", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

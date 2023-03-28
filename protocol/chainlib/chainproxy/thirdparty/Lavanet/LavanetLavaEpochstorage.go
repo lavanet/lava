@@ -19,16 +19,16 @@ type implementedLavanetLavaEpochstorage struct {
 func (is *implementedLavanetLavaEpochstorage) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/Params", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -36,16 +36,16 @@ func (is *implementedLavanetLavaEpochstorage) Params(ctx context.Context, req *p
 func (is *implementedLavanetLavaEpochstorage) EpochDetails(ctx context.Context, req *pb_pkg.QueryGetEpochDetailsRequest) (*pb_pkg.QueryGetEpochDetailsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/EpochDetails", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryGetEpochDetailsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -55,16 +55,16 @@ func (is *implementedLavanetLavaEpochstorage) EpochDetails(ctx context.Context, 
 func (is *implementedLavanetLavaEpochstorage) FixatedParams(ctx context.Context, req *pb_pkg.QueryGetFixatedParamsRequest) (*pb_pkg.QueryGetFixatedParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/FixatedParams", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryGetFixatedParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -74,16 +74,16 @@ func (is *implementedLavanetLavaEpochstorage) FixatedParams(ctx context.Context,
 func (is *implementedLavanetLavaEpochstorage) FixatedParamsAll(ctx context.Context, req *pb_pkg.QueryAllFixatedParamsRequest) (*pb_pkg.QueryAllFixatedParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/FixatedParamsAll", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllFixatedParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -93,16 +93,16 @@ func (is *implementedLavanetLavaEpochstorage) FixatedParamsAll(ctx context.Conte
 func (is *implementedLavanetLavaEpochstorage) StakeStorage(ctx context.Context, req *pb_pkg.QueryGetStakeStorageRequest) (*pb_pkg.QueryGetStakeStorageResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/StakeStorage", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryGetStakeStorageResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -112,16 +112,16 @@ func (is *implementedLavanetLavaEpochstorage) StakeStorage(ctx context.Context, 
 func (is *implementedLavanetLavaEpochstorage) StakeStorageAll(ctx context.Context, req *pb_pkg.QueryAllStakeStorageRequest) (*pb_pkg.QueryAllStakeStorageResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query/StakeStorageAll", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllStakeStorageResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

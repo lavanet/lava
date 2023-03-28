@@ -14,6 +14,6 @@ var (
 
 func TestErrorTypeChecks(t *testing.T) {
 	var err error = TestError
-	newErr := utils.LavaFormatError("testing 123", err, &map[string]string{"attribute": "test"})
+	newErr := utils.LavaFormatError("testing 123", err, utils.Attribute{"attribute", "test"})
 	require.True(t, TestError.Is(newErr))
 }

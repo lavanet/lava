@@ -5,7 +5,8 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
+	"github.com/lavanet/lava/utils"
 )
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
@@ -38,6 +39,15 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 	}
 
 	return msg, nil
+}
+
+func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
+	msg := &JsonrpcMessage{}
+	err := json.Unmarshal(input, msg)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
+	}
+	return ParsableRPCInput{Result: msg.Result}, nil
 }
 
 func (cp JsonrpcMessage) GetParams() interface{} {

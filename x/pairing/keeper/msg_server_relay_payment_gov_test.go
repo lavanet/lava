@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -64,18 +64,15 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				QoSReport:       badQoS,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
+				QosReport:   badQoS,
 			}
 
 			// Sign and send the payment requests for block 0 tx
@@ -84,7 +81,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			require.Nil(t, err)
 
 			// Add the relay request to the Relays array (for relayPaymentMessage())
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 
 			// Get provider's and consumer's balance before payment
@@ -101,7 +98,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 			// Compute the relay request's QoS score
-			score, err := relayRequest.QoSReport.ComputeQoS()
+			score, err := relayRequest.QosReport.ComputeQoS()
 			require.Nil(t, err)
 
 			// Calculate how much the provider wants to get paid for its service
@@ -169,17 +166,14 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests
@@ -188,7 +182,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
@@ -251,17 +245,14 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests
@@ -270,7 +261,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
@@ -338,17 +329,14 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			}
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests
@@ -357,7 +345,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
@@ -414,17 +402,14 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests
@@ -433,7 +418,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
@@ -507,17 +492,14 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests for block 20 (=epochBeforeChange)
@@ -526,7 +508,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Add the relay request to the Relays array (for relayPaymentMessage())
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
@@ -601,17 +583,14 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           uint64(200000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
-				BlockHeight:     int64(tt.epoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       uint64(200000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
+				Epoch:       int64(tt.epoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests for block 20 (=epochBeforeChange)
@@ -620,7 +599,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			require.Nil(t, err)
 
 			// Add the relay request to the Relays array (for relayPaymentMessage())
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
@@ -697,17 +676,14 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			}
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &pairingtypes.RelayRequest{
-				Provider:        ts.providers[0].Addr.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(ti),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.paymentEpoch),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
+			relayRequest := &pairingtypes.RelaySession{
+				Provider:    ts.providers[0].Addr.String(),
+				ContentHash: []byte(ts.spec.Apis[0].Name),
+				SessionId:   uint64(ti),
+				SpecId:      ts.spec.Name,
+				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				Epoch:       int64(tt.paymentEpoch),
+				RelayNum:    0,
 			}
 
 			// Sign and send the payment requests
@@ -716,7 +692,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			require.Nil(t, err)
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*pairingtypes.RelayRequest
+			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
@@ -826,17 +802,14 @@ func TestStakePaymentUnstake(t *testing.T) {
 	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
-	relayRequest := &pairingtypes.RelayRequest{
-		Provider:        ts.providers[0].Addr.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           uint64(10000),
-		BlockHeight:     int64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	relayRequest := &pairingtypes.RelaySession{
+		Provider:    ts.providers[0].Addr.String(),
+		ContentHash: []byte(ts.spec.Apis[0].Name),
+		SessionId:   uint64(1),
+		SpecId:      ts.spec.Name,
+		CuSum:       uint64(10000),
+		Epoch:       int64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
+		RelayNum:    0,
 	}
 
 	// Sign and send the payment requests for block 20 (=epochBeforeChange)
@@ -845,7 +818,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	require.Nil(t, err)
 
 	// Add the relay request to the Relays array (for relayPaymentMessage())
-	var Relays []*pairingtypes.RelayRequest
+	var Relays []*pairingtypes.RelaySession
 	Relays = append(Relays, relayRequest)
 
 	// get payment
@@ -903,17 +876,14 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 		epochAfterEpochBlocksChanged := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-		relayRequest := &pairingtypes.RelayRequest{
-			Provider:        ts.providers[0].Addr.String(),
-			ApiUrl:          "",
-			Data:            []byte(ts.spec.Apis[0].Name),
-			SessionId:       uint64(1),
-			ChainID:         ts.spec.Name,
-			CuSum:           uint64(10000),
-			BlockHeight:     int64(epochAfterEpochBlocksChanged),
-			RelayNum:        0,
-			RequestBlock:    -1,
-			DataReliability: nil,
+		relayRequest := &pairingtypes.RelaySession{
+			Provider:    ts.providers[0].Addr.String(),
+			ContentHash: []byte(ts.spec.Apis[0].Name),
+			SessionId:   uint64(1),
+			SpecId:      ts.spec.Name,
+			CuSum:       uint64(10000),
+			Epoch:       int64(epochAfterEpochBlocksChanged),
+			RelayNum:    0,
 		}
 
 		// Sign the payment request
@@ -922,7 +892,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		require.Nil(t, err)
 
 		// Add the relay request to the Relays array (for relayPaymentMessage())
-		var Relays []*pairingtypes.RelayRequest
+		var Relays []*pairingtypes.RelaySession
 		Relays = append(Relays, relayRequest)
 
 		// get payment
@@ -951,9 +921,9 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 }
 
 // Helper function to verify the relay payment objects that are saved on-chain after getting payment from a relay request
-func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairingtypes.RelayRequest, objectExists bool) {
+func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairingtypes.RelaySession, objectExists bool) {
 	// Get EpochPayment struct from current epoch and perform basic verifications
-	epochPayments, found, epochPaymentKey := ts.keepers.Pairing.GetEpochPaymentsFromBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()))
+	epochPayments, found, epochPaymentKey := ts.keepers.Pairing.GetEpochPaymentsFromBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetEpoch()))
 	if objectExists {
 		require.Equal(t, true, found)
 		require.Equal(t, epochPaymentKey, epochPayments.GetIndex())
@@ -963,7 +933,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	}
 
 	// Get the providerPaymentStorageKey
-	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayRequest.GetBlockHeight()), ts.providers[0].Addr)
+	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayRequest.GetEpoch()), ts.providers[0].Addr)
 
 	// Get the providerPaymentStorage struct from epochPayments
 	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
@@ -974,7 +944,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 		}
 	}
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
-	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorageFromEpochPayments.GetEpoch())
+	require.Equal(t, uint64(relayRequest.GetEpoch()), providerPaymentStorageFromEpochPayments.GetEpoch())
 
 	// Get the UniquePaymentStorageClientProvider key
 	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
@@ -988,13 +958,13 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 		}
 	}
 	require.NotEmpty(t, uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetIndex())
-	require.Equal(t, uint64(relayRequest.GetBlockHeight()), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetBlock())
+	require.Equal(t, uint64(relayRequest.GetEpoch()), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetBlock())
 	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
 
 	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
-	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetChainID(), ts.clients[0].Addr, uint64(relayRequest.GetBlockHeight()))
+	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetSpecId(), ts.clients[0].Addr, uint64(relayRequest.GetEpoch()))
 	require.Nil(t, err)
-	clientMaxCU, err := ts.keepers.Pairing.ClientMaxCUProviderForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()), clientStakeEntry)
+	clientMaxCU, err := ts.keepers.Pairing.ClientMaxCUProviderForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetEpoch()), clientStakeEntry)
 	require.Nil(t, err)
 	if clientMaxCU < relayRequest.CuSum {
 		require.Equal(t, relayRequest.GetCuSum(), clientMaxCU)
@@ -1005,12 +975,12 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	// Get the providerPaymentStorage struct directly
 	providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
 	require.Equal(t, true, found)
-	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorage.GetEpoch())
+	require.Equal(t, uint64(relayRequest.GetEpoch()), providerPaymentStorage.GetEpoch())
 
 	// Get one of the UniquePaymentStorageClientProvider struct directly
 	uniquePaymentStorageClientProvider, found := ts.keepers.Pairing.GetUniquePaymentStorageClientProvider(sdk.UnwrapSDKContext(ts.ctx), uniquePaymentStorageClientProviderKey)
 	require.Equal(t, true, found)
-	require.Equal(t, uint64(relayRequest.GetBlockHeight()), uniquePaymentStorageClientProvider.GetBlock())
+	require.Equal(t, uint64(relayRequest.GetEpoch()), uniquePaymentStorageClientProvider.GetBlock())
 
 	if clientMaxCU < relayRequest.CuSum {
 		require.Equal(t, relayRequest.GetCuSum(), clientMaxCU)

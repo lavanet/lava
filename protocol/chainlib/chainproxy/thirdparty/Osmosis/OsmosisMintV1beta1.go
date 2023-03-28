@@ -19,16 +19,16 @@ type implementedOsmosisMintV1beta1 struct {
 func (is *implementedOsmosisMintV1beta1) EpochProvisions(ctx context.Context, req *pb_pkg.QueryEpochProvisionsRequest) (*pb_pkg.QueryEpochProvisionsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query/EpochProvisions", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryEpochProvisionsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -38,16 +38,16 @@ func (is *implementedOsmosisMintV1beta1) EpochProvisions(ctx context.Context, re
 func (is *implementedOsmosisMintV1beta1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

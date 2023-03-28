@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
+	"github.com/lavanet/lava/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,12 +62,19 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType")
 	}))
 
-	go app.Listen("127.0.0.1:3000")
+	listenFunc := func() {
+		address := "127.0.0.1:3000"
+		err := app.Listen(address)
+		if err != nil {
+			utils.LavaFormatError("can't listen in unitests", err, utils.Attribute{Key: "address", Value: address})
+		}
+	}
+	go listenFunc()
 	defer func() {
 		app.Shutdown()
 	}()
-
-	url := "ws://localhost:3000/"
+	time.Sleep(time.Millisecond * 100)
+	url := "ws://127.0.0.1:3000/"
 	dialer := &websocket2.Dialer{}
 	conn, _, err := dialer.Dial(url, nil)
 	if err != nil {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -23,7 +23,7 @@ const (
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
-
+	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return nil, err
@@ -31,18 +31,23 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	errorLogAndFormat := func(name string, attrs map[string]string, details string) (*types.MsgRelayPaymentResponse, error) {
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
+
+	dataReliabilityStore, err := dataReliabilityByConsumer(msg.VRFs)
+	if err != nil {
+		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
+	}
+
 	for _, relay := range msg.Relays {
-		if relay.BlockHeight > ctx.BlockHeight() {
+		if relay.LavaChainId != lavaChainID {
+			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
+		}
+		if relay.Epoch > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}
 
-		pubKey, err := sigs.RecoverPubKeyFromRelay(*relay)
+		clientAddr, err := sigs.ExtractSignerAddress(relay)
 		if err != nil {
 			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
-		}
-		clientAddr, err := sdk.AccAddressFromHex(pubKey.Address().String())
-		if err != nil {
-			return errorLogAndFormat("relay_payment_user_addr", map[string]string{"user": pubKey.Address().String()}, "invalid user address in relay msg")
 		}
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
@@ -53,17 +58,17 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// TODO: add support for spec changes
-		spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
 		if !found || !spec.Enabled {
-			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecId}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
 			ctx,
-			relay.ChainID,
+			relay.SpecId,
 			clientAddr,
 			providerAddr,
-			uint64(relay.BlockHeight),
+			uint64(relay.Epoch),
 		)
 		if err != nil {
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
@@ -74,28 +79,30 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_pairing", details, "invalid pairing claim on proof of relay")
 		}
 
-		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.Epoch))
 		if err != nil {
-			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
+			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.Epoch), 10), "error": err.Error()}
 			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
 		}
 
 		payReliability := false
 		// validate data reliability
-		if relay.DataReliability != nil {
+		vrfStoreKey := VRFKey{ChainID: relay.SpecId, Epoch: epochStart, Consumer: clientAddr.String()}
+		if vrfData, ok := dataReliabilityStore[vrfStoreKey]; ok {
+			delete(dataReliabilityStore, vrfStoreKey)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
-				details["chainID"] = relay.ChainID
+				details["chainID"] = relay.SpecId
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}
 
 			// verify user signed this data reliability
-			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
+			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *vrfData)
 			if err != nil || !valid {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
 			}
-			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(relay.DataReliability)
+			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(vrfData)
 			if err != nil {
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
 			}
@@ -107,10 +114,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			// check this other provider is indeed legitimate
 			isValidPairing, _, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
-				relay.ChainID,
+				relay.SpecId,
 				clientAddr,
 				otherProviderAddress,
-				uint64(relay.BlockHeight),
+				uint64(relay.Epoch),
 			)
 			if err != nil {
 				details["error"] = err.Error()
@@ -128,13 +135,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			// signatures valid, validate VRF signing
-			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk, epochStart)
+			valid = utils.VerifyVrfProofFromVRFData(vrfData, *vrfPk, epochStart)
 			if !valid {
 				details["error"] = "vrf signing is invalid, proof result mismatch"
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersToPair), spec.ReliabilityThreshold)
+			index, vrfErr := utils.GetIndexForVrf(vrfData.VrfValue, uint32(providersToPair), spec.ReliabilityThreshold)
 			if vrfErr != nil {
 				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
@@ -151,7 +158,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
 			details := map[string]string{
@@ -191,15 +198,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
-		if relay.QoSReport != nil {
-			QoS, err := relay.QoSReport.ComputeQoS()
+		if relay.QosReport != nil {
+			QoS, err := relay.QosReport.ComputeQoS()
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
-			details["QoSReport"] = "Latency: " + relay.QoSReport.Latency.String() + ", Availability: " + relay.QoSReport.Availability.String() + ", Sync: " + relay.QoSReport.Sync.String()
+			details["QoSReport"] = "Latency: " + relay.QosReport.Latency.String() + ", Availability: " + relay.QosReport.Availability.String() + ", Sync: " + relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
 			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
@@ -208,10 +215,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
-
 		if legacy {
 			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
+			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecId, clientAddr, burnAmount, false)
 
 			if err2 != nil {
 				details["amountToBurn"] = burnAmount.String()
@@ -261,7 +267,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// if this returns an error it means this is legacy consumer
 		if !legacy {
-			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.BlockHeight), relay.CuSum)
+			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.Epoch), relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
@@ -275,10 +281,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.ChainID, relay.CuSum, servicersToPair, clientAddr)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, clientAddr)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
+	}
+	if len(dataReliabilityStore) > 0 {
+		return nil, utils.LavaError(ctx, k.Logger(ctx), "invalid relay payment with unused data reliability proofs", map[string]string{"dataReliabilityProofs": fmt.Sprintf("%+v", dataReliabilityStore)}, "didn't find a usage match for each relay")
 	}
 	return &types.MsgRelayPaymentResponse{}, nil
 }
@@ -299,7 +308,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
-		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
+		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, []utils.Attribute{{Key: "UnresponsiveProviders", Value: unresponsiveData}, {Key: "dataLength", Value: len(unresponsiveData)}}...)
 	}
 
 	// check there are unresponsive providers
@@ -316,7 +325,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		// get provider address
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
-			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
+			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
 			continue
 		}
 
@@ -324,7 +333,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 		if !found {
 			// the epochPayments object should exist since we already paid. if not found, print an error and continue
-			utils.LavaFormatError("did not find epochPayments object", err, &map[string]string{"epochPaymentskey": key})
+			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: key})
 			continue
 		}
 
@@ -357,4 +366,29 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	}
 
 	return nil
+}
+
+type VRFKey struct {
+	Consumer string
+	Epoch    uint64
+	ChainID  string
+}
+
+func dataReliabilityByConsumer(vrfs []*types.VRFData) (dataReliabilityByConsumer map[VRFKey]*types.VRFData, err error) {
+	dataReliabilityByConsumer = map[VRFKey]*types.VRFData{}
+	if len(vrfs) == 0 {
+		return
+	}
+	for _, vrf := range vrfs {
+		signer, err := sigs.GetSignerForVRF(*vrf)
+		if err != nil {
+			return nil, err
+		}
+		dataReliabilityByConsumer[VRFKey{
+			Consumer: signer.String(),
+			Epoch:    uint64(vrf.Epoch),
+			ChainID:  vrf.ChainId,
+		}] = vrf
+	}
+	return dataReliabilityByConsumer, nil
 }

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,39 +33,40 @@ type Connector struct {
 	lock        sync.RWMutex
 	freeClients []*rpcclient.Client
 	usedClients int64
-	addr        string
+	nodeUrl     common.NodeUrl
 }
 
-func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
+func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Connector, error) {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
 	connector := &Connector{
 		freeClients: make([]*rpcclient.Client, 0, nConns),
-		addr:        addr,
+		nodeUrl:     nodeUrl,
 	}
 
-	rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
+	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 	if err != nil {
-		utils.LavaFormatFatal("Failed to create the first connection", err, &map[string]string{"address": addr})
+		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.Url})
 	}
-	connector.addClient(rpcClient)
-	go addClientsAsynchronously(ctx, connector, nConns-1, addr)
 
-	return connector
+	connector.addClient(rpcClient)
+	go addClientsAsynchronously(ctx, connector, nConns-1, nodeUrl)
+
+	return connector, nil
 }
 
-func addClientsAsynchronously(ctx context.Context, connector *Connector, nConns uint, addr string) {
+func addClientsAsynchronously(ctx context.Context, connector *Connector, nConns uint, nodeUrl common.NodeUrl) {
 	for i := uint(0); i < nConns; i++ {
-		rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
+		rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 		if err != nil {
 			break
 		}
 		connector.addClient(rpcClient)
 	}
 	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
-		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, &map[string]string{"address": addr})
+		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: nodeUrl.Url})
 	}
-	utils.LavaFormatInfo("Finished adding Clients Asynchronously"+strconv.Itoa(len(connector.freeClients)), nil)
-	utils.LavaFormatInfo("Number of parallel connections created: "+strconv.Itoa(len(connector.freeClients)), nil)
+	utils.LavaFormatInfo("Finished adding Clients Asynchronously")
+	utils.LavaFormatInfo("Number of parallel connections created: " + strconv.Itoa(len(connector.freeClients)))
 	go connector.connectorLoop(ctx)
 }
 
@@ -84,7 +86,7 @@ func (connector *Connector) numberOfUsedClients() int {
 	return int(atomic.LoadInt64(&connector.usedClients))
 }
 
-func (connector *Connector) createConnection(ctx context.Context, addr string, currentNumberOfConnections int) (*rpcclient.Client, error) {
+func (connector *Connector) createConnection(ctx context.Context, nodeUrl common.NodeUrl, currentNumberOfConnections int) (*rpcclient.Client, error) {
 	var rpcClient *rpcclient.Client
 	var err error
 	numberOfConnectionAttempts := 0
@@ -92,8 +94,7 @@ func (connector *Connector) createConnection(ctx context.Context, addr string, c
 		numberOfConnectionAttempts += 1
 		if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 			err = utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
-				nil, &map[string]string{"Currently Connected": strconv.FormatUint(uint64(currentNumberOfConnections), 10)},
-			)
+				nil, utils.Attribute{Key: "Currently Connected", Value: currentNumberOfConnections})
 			break
 		}
 		if ctx.Err() != nil {
@@ -101,18 +102,22 @@ func (connector *Connector) createConnection(ctx context.Context, addr string, c
 			return nil, ctx.Err()
 		}
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		rpcClient, err = rpcclient.DialContext(nctx, addr)
+		// add auth path
+		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
 		if err != nil {
-			utils.LavaFormatWarning("Could not connect to the node, retrying", err, &map[string]string{
-				"Current Number Of Connections": strconv.FormatUint(uint64(currentNumberOfConnections), 10),
-				"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
-			})
+			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{
+				{Key: "Current Number Of Connections", Value: currentNumberOfConnections},
+				{Key: "Network Address", Value: nodeUrl.Url},
+				{Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts},
+			}...)
 			cancel()
 			continue
 		}
 		cancel()
+		nodeUrl.SetAuthHeaders(ctx, rpcClient.SetHeader)
 		break
 	}
+
 	return rpcClient, err
 }
 
@@ -143,16 +148,16 @@ func (connector *Connector) Close() {
 }
 
 func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
-	utils.LavaFormatDebug("increasing number of clients", &map[string]string{"numberOfFreeClients": strconv.Itoa(numberOfFreeClients)})
+	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients})
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		rpcClient, err = rpcclient.DialContext(nctx, connector.addr)
+		rpcClient, err = rpcclient.DialContext(nctx, connector.nodeUrl.Url)
 		if err != nil {
 			utils.LavaFormatDebug(
-				"increaseNumberOfClients, Could not connect to the node, retrying",
-				&map[string]string{"err": err.Error(), "Number Of Attempts": strconv.Itoa(connectionAttempt)})
+				"could no increase number of connections to the node jsonrpc connector, retrying",
+				[]utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
 			cancel()
 			continue
 		}
@@ -163,7 +168,7 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 		connector.freeClients = append(connector.freeClients, rpcClient)
 		return
 	}
-	utils.LavaFormatDebug("Failed increasing number of clients", nil)
+	utils.LavaFormatDebug("Failed increasing number of clients")
 }
 
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
@@ -219,7 +224,7 @@ type GRPCConnector struct {
 	addr        string
 }
 
-func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnector {
+func NewGRPCConnector(ctx context.Context, nConns uint, addr string) (*GRPCConnector, error) {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
 	connector := &GRPCConnector{
 		freeClients: make([]*grpc.ClientConn, 0, nConns),
@@ -228,22 +233,22 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 
 	rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
 	if err != nil {
-		utils.LavaFormatFatal("Failed to create the first connection", err, &map[string]string{"address": addr})
+		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: addr})
 	}
 	connector.addClient(rpcClient)
 	go addClientsAsynchronouslyGrpc(ctx, connector, nConns-1, addr)
-	return connector
+	return connector, nil
 }
 
 func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
-	utils.LavaFormatDebug("increasing number of clients", &map[string]string{"numberOfFreeClients": strconv.Itoa(numberOfFreeClients)})
+	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients})
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", &map[string]string{"err": err.Error(), "Number Of Attempts": strconv.Itoa(connectionAttempt)})
+			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
 			cancel()
 			continue
 		}
@@ -254,7 +259,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 		connector.freeClients = append(connector.freeClients, grpcClient)
 		return
 	}
-	utils.LavaFormatDebug("increasing number of clients failed", nil)
+	utils.LavaFormatDebug("increasing number of clients failed")
 }
 
 func (connector *GRPCConnector) GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error) {
@@ -339,10 +344,10 @@ func addClientsAsynchronouslyGrpc(ctx context.Context, connector *GRPCConnector,
 		connector.addClient(rpcClient)
 	}
 	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
-		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, &map[string]string{"address": addr})
+		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: addr})
 	}
-	utils.LavaFormatInfo("Finished adding Clients Asynchronously"+strconv.Itoa(len(connector.freeClients)), nil)
-	utils.LavaFormatInfo("Number of parallel connections created: "+strconv.Itoa(len(connector.freeClients)), nil)
+	utils.LavaFormatInfo("Finished adding Clients Asynchronously" + strconv.Itoa(len(connector.freeClients)))
+	utils.LavaFormatInfo("Number of parallel connections created: " + strconv.Itoa(len(connector.freeClients)))
 	go connector.connectorLoop(ctx)
 }
 
@@ -370,8 +375,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 		numberOfConnectionAttempts += 1
 		if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 			err = utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
-				nil, &map[string]string{"Currently Connected": strconv.FormatUint(uint64(currentNumberOfConnections), 10)},
-			)
+				nil, utils.Attribute{Key: "Currently Connected", Value: currentNumberOfConnections})
 			break
 		}
 		if ctx.Err() != nil {
@@ -381,10 +385,9 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			utils.LavaFormatWarning("Could not connect to the node, retrying", err, &map[string]string{
-				"Current Number Of Connections": strconv.FormatUint(uint64(currentNumberOfConnections), 10),
-				"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
-			})
+			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
+				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
+			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}}...)
 			cancel()
 			continue
 		}
