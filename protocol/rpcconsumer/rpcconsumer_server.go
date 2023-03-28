@@ -157,7 +157,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = returnedResult.Request.CuSum
+		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
 	}
 
 	return returnedResult.Reply, returnedResult.ReplyServer, nil
