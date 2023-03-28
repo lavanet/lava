@@ -130,3 +130,106 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), projectName1))
 }
+
+func TestSetPolicy(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	projectName := "mockname1"
+	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
+	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
+	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
+	projectID := types.ProjectIndex(subAccount.Addr.String(), projectName)
+
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), true, 100, 100, 5, math.MaxUint64, "")
+	require.Nil(t, err)
+
+	keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, adminAcc.Addr.String(),
+		[]types.ProjectKey{{
+			Key:   developerAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}})
+
+	spec := common.CreateMockSpec()
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	templates := []struct {
+		name                           string
+		creator                        string
+		chainPolicies                  []types.ChainPolicy
+		totalCuLimit                   uint64
+		epochCuLimit                   uint64
+		maxProvidersToPair             uint64
+		basicValidationSuccess         bool
+		chainPoliciesValidationSuccess bool
+	}{
+		{"valid policy (admin account)", adminAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, true},
+
+		{"valid policy (subscription account)", subAccount.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, true},
+
+		{"bad creator (developer account -- not admin)", developerAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, false},
+
+		{"bad chainID (doesn't exist)", adminAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, false},
+
+		{"bad API (doesn't exist)", adminAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
+			100, 10, 3, true, false},
+		{"epoch CU larger than total CU", adminAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			10, 100, 3, false, true},
+		{"bad maxProvidersToPair", adminAcc.Addr.String(),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 0, false, true},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			newPolicy := types.Policy{
+				ChainPolicies:      tt.chainPolicies,
+				GeolocationProfile: 1,
+				TotalCuLimit:       tt.totalCuLimit,
+				EpochCuLimit:       tt.epochCuLimit,
+				MaxProvidersToPair: tt.maxProvidersToPair,
+			}
+
+			setPolicyProjectMessage := types.MsgSetProjectPolicy{
+				Creator: tt.creator,
+				Policy:  &newPolicy,
+				Project: projectID,
+			}
+
+			err = setPolicyProjectMessage.ValidateBasic()
+			if tt.basicValidationSuccess {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+
+			_, err := servers.ProjectServer.SetProjectPolicy(ctx, &setPolicyProjectMessage)
+
+			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+			if tt.chainPoliciesValidationSuccess {
+				require.Nil(t, err)
+
+				proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+				require.Nil(t, err)
+				require.Equal(t, tt.chainPolicies, proj.Policy.ChainPolicies)
+				require.Equal(t, uint64(1), proj.Policy.GeolocationProfile)
+				require.Equal(t, tt.totalCuLimit, proj.Policy.TotalCuLimit)
+				require.Equal(t, tt.epochCuLimit, proj.Policy.EpochCuLimit)
+				require.Equal(t, tt.maxProvidersToPair, proj.Policy.MaxProvidersToPair)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
+	}
+}
