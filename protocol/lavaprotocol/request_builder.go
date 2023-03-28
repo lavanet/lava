@@ -70,13 +70,13 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
 	return &pairingtypes.RelaySession{
-		SpecID:                chainID,
+		SpecId:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
 		SessionId:             uint64(consumerSession.SessionId),
 		CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
 		RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
-		QoSReport:             consumerSession.QoSInfo.LastQoSReport,
+		QosReport:             consumerSession.QoSInfo.LastQoSReport,
 		Epoch:                 epoch,
 		UnresponsiveProviders: reportedProviders,
 		LavaChainId:           lavaChainID,
@@ -86,13 +86,13 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 
 func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64) *pairingtypes.RelaySession {
 	return &pairingtypes.RelaySession{
-		SpecID:                chainID,
+		SpecId:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
 		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 		CuSum:                 lavasession.DataReliabilityCuSum,     // consumerSession.CuSum == 0
 		Provider:              providerPublicAddress,
 		RelayNum:              0,
-		QoSReport:             nil,
+		QosReport:             nil,
 		Epoch:                 epoch,
 		UnresponsiveProviders: nil,
 		LavaChainId:           lavaChainID,
@@ -155,7 +155,7 @@ func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, 
 
 func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
 	dataReliability := &pairingtypes.VRFData{
-		ChainID:        request.RelaySession.SpecID,
+		ChainId:        request.RelaySession.SpecId,
 		Epoch:          request.RelaySession.Epoch,
 		Differentiator: differentiator,
 		VrfValue:       vrf_res,

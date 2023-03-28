@@ -10,13 +10,13 @@ service Relayer {
 }
 
 message RelaySession {
-    string specID = 1;
+    string spec_id = 1;
     bytes content_hash = 2;
     uint64 session_id = 3;
     uint64 cu_sum = 4; // total compute unit used including this relay
     string provider = 5;
     uint64 relay_num = 6;
-    QualityOfServiceReport QoSReport = 7;
+    QualityOfServiceReport qos_report = 7;
     int64 epoch = 8;
     bytes unresponsive_providers = 9;
     string lava_chain_id = 10;
@@ -29,14 +29,14 @@ message RelayPrivateData {
     string api_url = 2; // some relays have associated urls that are filled with params ('/block/{height}')
     bytes data = 3;
     int64 request_block = 4;
-    string apiInterface = 5;
+    string api_interface = 5;
     bytes salt = 6;
 }
 
 message RelayRequest {
     RelaySession relay_session = 1;
     RelayPrivateData relay_data= 2;
-    VRFData DataReliability = 3;
+    VRFData data_reliability = 3;
 }
 
 message Badge {
@@ -57,14 +57,14 @@ message RelayReply {
 }
 
 message VRFData {
-    string chainID = 1;
+    string chain_id = 1;
     int64 epoch = 2;
     bool differentiator = 3;
     bytes vrf_value = 4;
     bytes vrf_proof = 5;
     bytes provider_sig = 6;
-    bytes allDataHash = 7;
-    bytes queryHash = 8; //we only need it for payment later
+    bytes all_data_hash = 7;
+    bytes query_hash = 8; //we only need it for payment later
     bytes sig = 9;
 }
 

@@ -116,6 +116,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		)
 	} else {
 		// On successful relay
+		pairingEpoch := relaySession.PairingEpoch
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession)
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
@@ -123,7 +124,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			if request.DataReliability == nil {
 				// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 				// Therefore the signature changes, so we need the original copy to extract the address from it.
-				err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+				err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 				if err != nil {
 					return nil, err
 				}
@@ -190,19 +191,18 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), srv, chainMessage, consumerAddress, relaySession) // this function does not return until subscription ends
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
+		pairingEpoch := relaySession.PairingEpoch
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession) // TODO: when we pay as u go on subscription this will need to change
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			err = rpcps.SendProof(ctx, relaySession, request, consumerAddress)
+			err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 			if err != nil {
 				return err
 			}
-			utils.LavaFormatDebug("Provider finished subscribing",
+			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-				utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
-				utils.Attribute{Key: "termination", Value: err},
 				utils.Attribute{Key: "GUID", Value: ctx},
 			)
 			err = nil // we don't want to return an error here
@@ -219,8 +219,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	return rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) SendProof(ctx context.Context, providerSession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
-	epoch := providerSession.PairingEpoch
+func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
 	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String())
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
@@ -351,7 +350,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		var validPairing bool
 		var verifyPairingError error
 		// verify pairing for DR session
-		validPairing, selfProviderIndex, verifyPairingError = rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecID)
+		validPairing, selfProviderIndex, verifyPairingError = rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecId)
 		if verifyPairingError != nil {
 			return nil, nil, utils.LavaFormatError("Failed to VerifyPairing after verifyRelaySession for GetDataReliabilitySession", verifyPairingError, utils.Attribute{Key: "sessionID", Value: request.RelaySession.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "provider", Value: rpcps.providerAddress}, utils.Attribute{Key: "relayNum", Value: request.RelaySession.RelayNum}, utils.Attribute{Key: "GUID", Value: ctx})
 		}
@@ -372,7 +371,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 			utils.Attribute{Key: "dataReliability", Value: dataReliabilityMarshalled},
 			utils.Attribute{Key: "vrfIndex", Value: vrfIndex},
 			utils.Attribute{Key: "self Index", Value: selfProviderIndex},
-			utils.Attribute{Key: "vrf_chainId", Value: request.DataReliability.ChainID},
+			utils.Attribute{Key: "vrf_chainId", Value: request.DataReliability.ChainId},
 			utils.Attribute{Key: "vrf_epoch", Value: request.DataReliability.Epoch},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
@@ -395,14 +394,14 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
-			valid, selfProviderIndex, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecID)
+			valid, selfProviderIndex, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
 				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sessionID", Value: request.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "provider", Value: rpcps.providerAddress}, utils.Attribute{Key: "relayNum", Value: request.RelayNum})
 			}
 			if !valid {
 				return nil, utils.LavaFormatError("VerifyPairing, this consumer address is not valid with this provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: request.Epoch}, utils.Attribute{Key: "sessionID", Value: request.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "provider", Value: rpcps.providerAddress}, utils.Attribute{Key: "relayNum", Value: request.RelayNum})
 			}
-			_, maxCuForConsumer, getVrfAndMaxCuError := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddressString, request.SpecID, uint64(request.Epoch))
+			_, maxCuForConsumer, getVrfAndMaxCuError := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddressString, request.SpecId, uint64(request.Epoch))
 			if getVrfAndMaxCuError != nil {
 				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetVrfPkAndMaxCuForUser failed", getVrfAndMaxCuError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: request.Epoch}, utils.Attribute{Key: "sessionID", Value: request.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "provider", Value: rpcps.providerAddress}, utils.Attribute{Key: "relayNum", Value: request.RelayNum})
 			}
@@ -423,8 +422,8 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, 
 	if requestSession.Provider != providerAddress {
 		return utils.LavaFormatError("request had the wrong provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
 	}
-	if requestSession.SpecID != rpcps.rpcProviderEndpoint.ChainID {
-		return utils.LavaFormatError("request had the wrong specID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_specID", Value: requestSession.SpecID}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	if requestSession.SpecId != rpcps.rpcProviderEndpoint.ChainID {
+		return utils.LavaFormatError("request had the wrong specID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_specID", Value: requestSession.SpecId}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 	if requestSession.LavaChainId != rpcps.lavaChainID {
 		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
@@ -436,7 +435,7 @@ func (rpcps *RPCProviderServer) verifyDataReliabilityRelayRequest(ctx context.Co
 	if request.RelaySession.CuSum != lavasession.DataReliabilityCuSum {
 		return lavasession.IndexNotFound, utils.LavaFormatError("request's CU sum is not equal to the data reliability CU sum", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "cuSum", Value: request.RelaySession.CuSum}, utils.Attribute{Key: "DataReliabilityCuSum", Value: lavasession.DataReliabilityCuSum})
 	}
-	vrf_pk, _, err := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddress.String(), request.RelaySession.SpecID, uint64(request.RelaySession.Epoch))
+	vrf_pk, _, err := rpcps.stateTracker.GetVrfPkAndMaxCuForUser(ctx, consumerAddress.String(), request.RelaySession.SpecId, uint64(request.RelaySession.Epoch))
 	if err != nil {
 		return lavasession.IndexNotFound, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err,
 			utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "userAddr", Value: consumerAddress},
@@ -465,9 +464,9 @@ func (rpcps *RPCProviderServer) verifyDataReliabilityRelayRequest(ctx context.Co
 			utils.Attribute{Key: "requested epoch", Value: request.RelaySession.Epoch}, utils.Attribute{Key: "userAddr", Value: consumerAddress}, utils.Attribute{Key: "dataReliability", Value: request.DataReliability})
 	}
 	_, dataReliabilityThreshold := rpcps.chainParser.DataReliabilityParams()
-	providersCount, err := rpcps.stateTracker.GetProvidersCountForConsumer(ctx, consumerAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecID)
+	providersCount, err := rpcps.stateTracker.GetProvidersCountForConsumer(ctx, consumerAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecId)
 	if err != nil {
-		return lavasession.IndexNotFound, utils.LavaFormatError("VerifyReliabilityAddressSigning failed fetching providers count for consumer", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecID}, utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: request.RelaySession.Epoch})
+		return lavasession.IndexNotFound, utils.LavaFormatError("VerifyReliabilityAddressSigning failed fetching providers count for consumer", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecId}, utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: request.RelaySession.Epoch})
 	}
 	vrfIndex, vrfErr := utils.GetIndexForVrf(request.DataReliability.VrfValue, providersCount, dataReliabilityThreshold)
 	if vrfErr != nil || otherProviderIndex == vrfIndex {
@@ -518,7 +517,7 @@ func (rpcps *RPCProviderServer) VerifyReliabilityAddressSigning(ctx context.Cont
 		return false, 0, utils.LavaFormatError("failed converting signer to address", err, utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "consumer", Value: consumer}, utils.Attribute{Key: "PubKey", Value: pubKey.Address()})
 	}
-	return rpcps.stateTracker.VerifyPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecID) // return if this pairing is authorised
+	return rpcps.stateTracker.VerifyPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.RelaySession.Epoch), request.RelaySession.SpecId) // return if this pairing is authorised
 }
 
 func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {

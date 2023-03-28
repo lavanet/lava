@@ -54379,7 +54379,11 @@ definitions:
       relay_session:
         type: object
         properties:
+<<<<<<< HEAD
           specID:
+=======
+          spec_id:
+>>>>>>> main
             type: string
           content_hash:
             type: string
@@ -54396,7 +54400,11 @@ definitions:
           relay_num:
             type: string
             format: uint64
+<<<<<<< HEAD
           QoSReport:
+=======
+          qos_report:
+>>>>>>> main
             type: object
             properties:
               latency:
@@ -54483,10 +54491,10 @@ definitions:
       epoch:
         type: string
         format: int64
-  lavanet.lava.epochstorage.Endpoint:
-    type: object
-    properties:
-      iPPORT:
+<<<<<<< HEAD
+=======
+      all_data_hash:
+        type: string
         type: string
       useType:
         type: string
@@ -55480,11 +55488,11 @@ definitions:
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
+<<<<<<< HEAD
       specID:
+=======
+      spec_id:
         type: string
-      content_hash:
-        type: string
-        format: byte
       session_id:
         type: string
         format: uint64
@@ -55497,7 +55505,11 @@ definitions:
       relay_num:
         type: string
         format: uint64
+<<<<<<< HEAD
       QoSReport:
+=======
+      qos_report:
+>>>>>>> main
         type: object
         properties:
           latency:

@@ -58,14 +58,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// TODO: add support for spec changes
-		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecID)
+		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
 		if !found || !spec.Enabled {
-			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecID}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecId}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
 			ctx,
-			relay.SpecID,
+			relay.SpecId,
 			clientAddr,
 			providerAddr,
 			uint64(relay.Epoch),
@@ -87,12 +87,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		payReliability := false
 		// validate data reliability
-		vrfStoreKey := VRFKey{ChainID: relay.SpecID, Epoch: epochStart, Consumer: clientAddr.String()}
+		vrfStoreKey := VRFKey{ChainID: relay.SpecId, Epoch: epochStart, Consumer: clientAddr.String()}
 		if vrfData, ok := dataReliabilityStore[vrfStoreKey]; ok {
 			delete(dataReliabilityStore, vrfStoreKey)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !spec.DataReliabilityEnabled {
-				details["chainID"] = relay.SpecID
+				details["chainID"] = relay.SpecId
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}
 
@@ -114,7 +114,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			// check this other provider is indeed legitimate
 			isValidPairing, _, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
-				relay.SpecID,
+				relay.SpecId,
 				clientAddr,
 				otherProviderAddress,
 				uint64(relay.Epoch),
@@ -158,7 +158,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
 			details := map[string]string{
@@ -198,15 +198,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
-		if relay.QoSReport != nil {
-			QoS, err := relay.QoSReport.ComputeQoS()
+		if relay.QosReport != nil {
+			QoS, err := relay.QosReport.ComputeQoS()
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
-			details["QoSReport"] = "Latency: " + relay.QoSReport.Latency.String() + ", Availability: " + relay.QoSReport.Availability.String() + ", Sync: " + relay.QoSReport.Sync.String()
+			details["QoSReport"] = "Latency: " + relay.QosReport.Latency.String() + ", Availability: " + relay.QosReport.Availability.String() + ", Sync: " + relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
 			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
@@ -217,7 +217,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 		if legacy {
 			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecID, clientAddr, burnAmount, false)
+			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecId, clientAddr, burnAmount, false)
 
 			if err2 != nil {
 				details["amountToBurn"] = burnAmount.String()
@@ -281,7 +281,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecID, relay.CuSum, servicersToPair, clientAddr)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, clientAddr)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -387,7 +387,7 @@ func dataReliabilityByConsumer(vrfs []*types.VRFData) (dataReliabilityByConsumer
 		dataReliabilityByConsumer[VRFKey{
 			Consumer: signer.String(),
 			Epoch:    uint64(vrf.Epoch),
-			ChainID:  vrf.ChainID,
+			ChainID:  vrf.ChainId,
 		}] = vrf
 	}
 	return dataReliabilityByConsumer, nil

@@ -68,11 +68,11 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
-				QoSReport:   badQoS,
+				QosReport:   badQoS,
 			}
 
 			// Sign and send the payment requests for block 0 tx
@@ -98,7 +98,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 			// Compute the relay request's QoS score
-			score, err := relayRequest.QoSReport.ComputeQoS()
+			score, err := relayRequest.QosReport.ComputeQoS()
 			require.Nil(t, err)
 
 			// Calculate how much the provider wants to get paid for its service
@@ -170,7 +170,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -249,7 +249,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -333,7 +333,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -406,7 +406,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -496,7 +496,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -587,7 +587,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       uint64(200000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
@@ -680,7 +680,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 				Provider:    ts.providers[0].Addr.String(),
 				ContentHash: []byte(ts.spec.Apis[0].Name),
 				SessionId:   uint64(ti),
-				SpecID:      ts.spec.Name,
+				SpecId:      ts.spec.Name,
 				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.paymentEpoch),
 				RelayNum:    0,
@@ -806,7 +806,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 		Provider:    ts.providers[0].Addr.String(),
 		ContentHash: []byte(ts.spec.Apis[0].Name),
 		SessionId:   uint64(1),
-		SpecID:      ts.spec.Name,
+		SpecId:      ts.spec.Name,
 		CuSum:       uint64(10000),
 		Epoch:       int64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
 		RelayNum:    0,
@@ -880,7 +880,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 			Provider:    ts.providers[0].Addr.String(),
 			ContentHash: []byte(ts.spec.Apis[0].Name),
 			SessionId:   uint64(1),
-			SpecID:      ts.spec.Name,
+			SpecId:      ts.spec.Name,
 			CuSum:       uint64(10000),
 			Epoch:       int64(epochAfterEpochBlocksChanged),
 			RelayNum:    0,
@@ -962,7 +962,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
 
 	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
-	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetSpecID(), ts.clients[0].Addr, uint64(relayRequest.GetEpoch()))
+	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetSpecId(), ts.clients[0].Addr, uint64(relayRequest.GetEpoch()))
 	require.Nil(t, err)
 	clientMaxCU, err := ts.keepers.Pairing.ClientMaxCUProviderForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetEpoch()), clientStakeEntry)
 	require.Nil(t, err)

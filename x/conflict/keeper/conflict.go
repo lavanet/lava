@@ -16,9 +16,9 @@ func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *type
 
 func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.ResponseConflict, clientAddr sdk.AccAddress) error {
 	// 1. validate mismatching data
-	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecID
-	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecID {
-		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.SpecID)
+	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecId
+	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecId {
+		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.SpecId)
 	}
 	block := conflictData.ConflictRelayData0.Request.RelaySession.Epoch
 	if block != conflictData.ConflictRelayData1.Request.RelaySession.Epoch {
