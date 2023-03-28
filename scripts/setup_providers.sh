@@ -130,13 +130,13 @@ $PROVIDER3_LISTENER CANTO jsonrpc '$CANTO_RPC' \
 $PROVIDER3_LISTENER CANTO tendermintrpc '$CANTO_TENDERMINT,$CANTO_TENDERMINT' \
 $PROVIDER3_LISTENER CANTO rest '$CANTO_REST' \
 $PROVIDER3_LISTENER CANTO grpc '$CANTO_GRPC' \
-$PROVIDER2_LISTENER AXELAR tendermintrpc '$AXELAR_RPC_HTTP,$AXELAR_RPC_HTTP' \
-$PROVIDER2_LISTENER AXELAR rest '$AXELAR_REST' \
-$PROVIDER2_LISTENER AXELAR grpc '$AXELAR_GRPC' \
+$PROVIDER3_LISTENER AXELAR tendermintrpc '$AXELAR_RPC_HTTP,$AXELAR_RPC_HTTP' \
+$PROVIDER3_LISTENER AXELAR rest '$AXELAR_REST' \
+$PROVIDER3_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 # Setup Portal
-screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \
+screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer \
 127.0.0.1:3333 ETH1 jsonrpc \
 127.0.0.1:3334 GTH1 jsonrpc \
 127.0.0.1:3335 FTM250 jsonrpc \
@@ -159,7 +159,7 @@ screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \
 127.0.0.1:3380 BSC jsonrpc \
 127.0.0.1:3381 SOLANA jsonrpc \
 127.0.0.1:3382 SUIT jsonrpc \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

@@ -38,16 +38,16 @@ func (gm GrpcMessage) GetResult() json.RawMessage {
 func (gm GrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 	if gm.methodDesc == nil {
-		return nil, utils.LavaFormatError("fdoes not have a methodDescriptor set in grpcMessage", nil, nil)
+		return nil, utils.LavaFormatError("does not have a methodDescriptor set in grpcMessage", nil)
 	}
 	msg := msgFactory.NewMessage(gm.methodDesc.GetOutputType())
 	if err := proto.Unmarshal(input, msg); err != nil {
-		return nil, utils.LavaFormatError("failed to unmarshal GetResult", err, nil)
+		return nil, utils.LavaFormatError("failed to unmarshal GetResult", err)
 	}
 
 	formattedInput, err := gm.formatter(msg)
 	if err != nil {
-		return nil, utils.LavaFormatError("m.formatter(msg)", err, nil)
+		return nil, utils.LavaFormatError("m.formatter(msg)", err)
 	}
 	return ParsableRPCInput{Result: []byte(formattedInput)}, nil
 }
@@ -81,7 +81,7 @@ func (ss ServerSource) FindSymbol(fullyQualifiedName string) (desc.Descriptor, e
 	}
 	d := file.FindSymbol(fullyQualifiedName)
 	if d == nil {
-		return nil, utils.LavaFormatError("Symbol not found", fmt.Errorf("missing symbol: %s", fullyQualifiedName), nil)
+		return nil, utils.LavaFormatError("Symbol not found", fmt.Errorf("missing symbol: %s", fullyQualifiedName))
 	}
 	return d, nil
 }
@@ -107,7 +107,7 @@ func ReflectionSupport(err error) error {
 		return nil
 	}
 	if stat, ok := status.FromError(err); ok && stat.Code() == codes.Unimplemented {
-		return utils.LavaFormatError("server does not support the reflection API", err, nil)
+		return utils.LavaFormatError("server does not support the reflection API", err)
 	}
 	return err
 }

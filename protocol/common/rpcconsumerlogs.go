@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -34,14 +35,14 @@ type RPCConsumerLogs struct {
 func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
-		utils.LavaFormatInfo("New relic missing environment file", nil)
+		utils.LavaFormatInfo("New relic missing environment file")
 		return &RPCConsumerLogs{}, nil
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
-		utils.LavaFormatInfo("New relic missing environment variables", nil)
+		utils.LavaFormatInfo("New relic missing environment variables")
 		return &RPCConsumerLogs{}, nil
 	}
 
@@ -52,15 +53,15 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 			// Set specific Config fields inside a custom ConfigOption.
 			sMaxSamplesStored, ok := os.LookupEnv("NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED")
 			if ok {
-				utils.LavaFormatDebug("Setting NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", &map[string]string{"sMaxSamplesStored": sMaxSamplesStored})
+				utils.LavaFormatDebug("Setting NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", utils.Attribute{Key: "sMaxSamplesStored", Value: sMaxSamplesStored})
 				maxSamplesStored, err := strconv.Atoi(sMaxSamplesStored)
 				if err != nil {
-					utils.LavaFormatError("Failed converting sMaxSamplesStored to number", err, &map[string]string{"sMaxSamplesStored": sMaxSamplesStored})
+					utils.LavaFormatError("Failed converting sMaxSamplesStored to number", err, utils.Attribute{Key: "sMaxSamplesStored", Value: sMaxSamplesStored})
 				} else {
 					cfg.TransactionEvents.MaxSamplesStored = maxSamplesStored
 				}
 			} else {
-				utils.LavaFormatDebug("Did not find NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED in env", nil)
+				utils.LavaFormatDebug("Did not find NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED in env")
 			}
 		},
 		newrelic.ConfigFromEnvironment(),
@@ -94,7 +95,7 @@ func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, ms
 		data.Error = responseError.Error()
 	}
 
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
 	ret, _ := json.Marshal(data)
 
@@ -106,7 +107,7 @@ func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, ms
 func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
-			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
+			utils.LavaFormatInfo("Websocket connection closed by the user, " + err.Error())
 			return
 		}
 		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
@@ -121,10 +122,10 @@ func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Con
 
 func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError && err != nil {
-		utils.LavaFormatError(module, err, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
 	}
-	utils.LavaFormatDebug(module, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
 func (pl *RPCConsumerLogs) LogStartTransaction(name string) {
@@ -182,4 +183,14 @@ func (pl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string) bool {
 		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
 	}
 	return true
+}
+
+func (rpccl *RPCConsumerLogs) LogTestMode(fiberCtx *fiber.Ctx) {
+	headers := fiberCtx.GetReqHeaders()
+	st := "Test Mode Log: new request\n"
+	st += "Full URI: " + fiberCtx.Request().URI().String() + "\n"
+	for header, HeaderVal := range headers {
+		st += fmt.Sprintf("Header %16s HeaderVal: %s\n", header, HeaderVal)
+	}
+	utils.LavaFormatInfo(st)
 }

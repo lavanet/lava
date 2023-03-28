@@ -3,9 +3,7 @@ package lavasession
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/rand"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,7 +45,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
 	if epoch <= csm.atomicReadCurrentEpoch() { // sentry shouldn't update an old epoch or current epoch
-		return utils.LavaFormatError("trying to update provider list for older epoch", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10), "currentEpoch": strconv.FormatUint(csm.atomicReadCurrentEpoch(), 10)})
+		return utils.LavaFormatError("trying to update provider list for older epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()})
 	}
 	// Update Epoch.
 	csm.atomicWriteCurrentEpoch(epoch)
@@ -107,7 +105,7 @@ func (csm *ConsumerSessionManager) resetValidAddresses() uint64 {
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
 	if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
-		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
+		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil)
 		csm.setValidAddressesToDefaultValue()
 		csm.numberOfResets += 1
 	}
@@ -148,11 +146,11 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
-				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, &map[string]string{"providerAddress": providerAddress})
+				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, utils.Attribute{Key: "providerAddress", Value: providerAddress})
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
-				utils.LavaFormatFatal("Unsupported Error", err, nil)
+				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 		}
 
@@ -165,12 +163,12 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				if err != nil {
 					if !EpochMismatchError.Is(err) {
 						// only acceptable error is EpochMismatchError so if different, throw fatal
-						utils.LavaFormatFatal("Unsupported Error", err, nil)
+						utils.LavaFormatFatal("Unsupported Error", err)
 					}
 				}
 				continue
 			} else {
-				utils.LavaFormatFatal("Unsupported Error", err, nil)
+				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 		} else if !connected {
 			// If failed to connect we ignore this provider for this get session request only
@@ -183,13 +181,13 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		reportedProviders, err = csm.GetReportedProviders(sessionEpoch)
 		if err != nil {
 			// if failed to GetReportedProviders just log the error and continue.
-			utils.LavaFormatError("Failed Unmarshal Error in GetReportedProviders", err, nil)
+			utils.LavaFormatError("Failed Unmarshal Error in GetReportedProviders", err)
 		}
 
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
 		if err != nil {
-			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", &map[string]string{"Error": err.Error()})
+			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", utils.Attribute{Key: "Error", Value: err.Error()})
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
@@ -200,35 +198,35 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 					return nil, 0, "", nil, err
 				}
 			} else {
-				utils.LavaFormatFatal("Unsupported Error", err, nil)
+				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 			continue
 		}
 
 		if pairingEpoch != sessionEpoch {
 			// pairingEpoch and SessionEpoch must be the same, we validate them here if they are different we raise an error and continue with pairingEpoch
-			utils.LavaFormatError("sessionEpoch and pairingEpoch mismatch", nil, &map[string]string{"sessionEpoch": strconv.FormatUint(sessionEpoch, 10), "pairingEpoch": strconv.FormatUint(pairingEpoch, 10)})
+			utils.LavaFormatError("sessionEpoch and pairingEpoch mismatch", nil, utils.Attribute{Key: "sessionEpoch", Value: sessionEpoch}, utils.Attribute{Key: "pairingEpoch", Value: pairingEpoch})
 			sessionEpoch = pairingEpoch
 		}
 
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
-			utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", &map[string]string{"Error": err.Error()})
+			utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", utils.Attribute{Key: "Error", Value: err.Error()})
 			if MaxComputeUnitsExceededError.Is(err) {
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				// We must unlock the consumer session before continuing.
 				consumerSession.lock.Unlock()
 				continue
 			} else {
-				utils.LavaFormatFatal("Unsupported Error", err, nil)
+				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 		} else {
 			consumerSession.LatestRelayCu = cuNeededForSession // set latestRelayCu
 			// Successfully created/got a consumerSession.
 			return consumerSession, sessionEpoch, providerAddress, reportedProviders, nil
 		}
-		utils.LavaFormatFatal("Unreachable Error", UnreachableCodeError, nil)
+		utils.LavaFormatFatal("Unreachable Error", UnreachableCodeError)
 	}
 }
 
@@ -239,7 +237,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	validAddressesLength := len(csm.validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", &map[string]string{"Provider list": fmt.Sprintf("%v", csm.validAddresses), "IgnoredProviderList": fmt.Sprintf("%v", ignoredProvidersList)})
+		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: csm.validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
 	}
@@ -261,14 +259,14 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	defer csm.lock.RUnlock()
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
-		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
+		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", utils.Attribute{Key: "ignoredProvidersEpoch", Value: ignoredProviders.currentEpoch}, utils.Attribute{Key: "currentEpoch", Value: currentEpoch})
 		ignoredProviders.providers = make(map[string]struct{}) // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
 
 	providerAddress, err = csm.getValidProviderAddress(ignoredProviders.providers)
 	if err != nil {
-		utils.LavaFormatError("could not get a provider address", err, nil)
+		utils.LavaFormatError("could not get a provider address", err)
 		return nil, "", 0, err
 	}
 	consumerSessionWithProvider = csm.pairing[providerAddress]
@@ -309,7 +307,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
 			// in case index wasnt found just continue with the method
-			utils.LavaFormatError("address was not found in valid addresses", err, &map[string]string{"address": address, "validAddresses": fmt.Sprintf("%v", csm.validAddresses)})
+			utils.LavaFormatError("address was not found in valid addresses", err, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
 		}
@@ -317,7 +315,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	if reportProvider { // Report provider flow
 		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
-			utils.LavaFormatInfo("Reporting Provider for unresponsiveness", &map[string]string{"Provider address": address})
+			utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
@@ -374,7 +372,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
 	var consumerSessionBlockListed bool
 	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || code == codes.Code(SessionOutOfSyncError.ABCICode()) {
-		utils.LavaFormatDebug("Blocking consumer session", &map[string]string{"id": strconv.FormatInt(consumerSession.SessionId, 10)})
+		utils.LavaFormatDebug("Blocking consumer session", utils.Attribute{Key: "id", Value: consumerSession.SessionId})
 		consumerSession.BlockListed = true // block this session from future usages
 		consumerSessionBlockListed = true
 	}
@@ -425,7 +423,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
 	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressesEpoch != csm.atomicReadCurrentEpoch() {
-		utils.LavaFormatDebug("Getting session ignores banned addresses due to epoch mismatch", &map[string]string{"bannedAddresses": fmt.Sprintf("%+v", bannedAddresses), "bannedAddressesEpoch": strconv.FormatUint(bannedAddressesEpoch, 10), "currentEpoch": strconv.FormatUint(csm.atomicReadCurrentEpoch(), 10)})
+		utils.LavaFormatDebug("Getting session ignores banned addresses due to epoch mismatch", utils.Attribute{Key: "bannedAddresses", Value: bannedAddresses}, utils.Attribute{Key: "bannedAddressesEpoch", Value: bannedAddressesEpoch}, utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()})
 		return csm.GetSession(ctx, cuNeeded, nil)
 	} else {
 		return csm.GetSession(ctx, cuNeeded, bannedAddresses)
@@ -510,7 +508,7 @@ func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddr
 	currentEpoch := csm.atomicReadCurrentEpoch()
 	pairingAddressesLength := csm.GetAtomicPairingAddressesLength()
 	if index >= pairingAddressesLength {
-		utils.LavaFormatInfo(DataReliabilityIndexOutOfRangeError.Error(), &map[string]string{"index": strconv.FormatUint(index, 10), "pairingAddressesLength": strconv.FormatUint(pairingAddressesLength, 10)})
+		utils.LavaFormatInfo(DataReliabilityIndexOutOfRangeError.Error(), utils.Attribute{Key: "index", Value: index}, utils.Attribute{Key: "pairingAddressesLength", Value: pairingAddressesLength})
 		return nil, "", currentEpoch, DataReliabilityIndexOutOfRangeError
 	}
 	providerAddress = csm.pairingAddresses[index]
@@ -532,12 +530,12 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 				if err != nil {
 					if !EpochMismatchError.Is(err) {
 						// only acceptable error is EpochMismatchError so if different, throw fatal
-						utils.LavaFormatFatal("Unsupported Error", err, nil)
+						utils.LavaFormatFatal("Unsupported Error", err)
 					}
 				}
 				break // all endpoints are disabled, no reason to continue with this provider.
 			} else {
-				utils.LavaFormatFatal("Unsupported Error", err, nil)
+				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 		}
 		if connected {
@@ -549,7 +547,7 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 	}
 	if !connected { // if we are not connected at the end
 		// failed to get an endpoint connection from that provider. return an error.
-		return nil, utils.LavaFormatError("Not Connected", FailedToConnectToEndPointForDataReliabilityError, &map[string]string{"provider": providerAddress})
+		return nil, utils.LavaFormatError("Not Connected", FailedToConnectToEndPointForDataReliabilityError, utils.Attribute{Key: "provider", Value: providerAddress})
 	}
 	return endpoint, nil
 }
@@ -583,7 +581,7 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	if currentEpoch != pairingEpoch { // validate they are the same, if not print an error and set currentEpoch to pairingEpoch.
-		utils.LavaFormatError("currentEpoch and pairingEpoch mismatch", nil, &map[string]string{"sessionEpoch": strconv.FormatUint(currentEpoch, 10), "pairingEpoch": strconv.FormatUint(pairingEpoch, 10)})
+		utils.LavaFormatError("currentEpoch and pairingEpoch mismatch", nil, utils.Attribute{Key: "sessionEpoch", Value: currentEpoch}, utils.Attribute{Key: "pairingEpoch", Value: pairingEpoch})
 		currentEpoch = pairingEpoch
 	}
 

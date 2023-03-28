@@ -20,16 +20,16 @@ type implementedCosmosFeegrantV1beta1 struct {
 func (is *implementedCosmosFeegrantV1beta1) Allowance(ctx context.Context, req *pb_pkg.QueryAllowanceRequest) (*pb_pkg.QueryAllowanceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/Allowance", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllowanceResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -39,16 +39,16 @@ func (is *implementedCosmosFeegrantV1beta1) Allowance(ctx context.Context, req *
 func (is *implementedCosmosFeegrantV1beta1) Allowances(ctx context.Context, req *pb_pkg.QueryAllowancesRequest) (*pb_pkg.QueryAllowancesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/Allowances", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllowancesResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -58,16 +58,16 @@ func (is *implementedCosmosFeegrantV1beta1) Allowances(ctx context.Context, req 
 func (is *implementedCosmosFeegrantV1beta1) AllowancesByGranter(ctx context.Context, req *pb_pkg.QueryAllowancesByGranterRequest) (*pb_pkg.QueryAllowancesByGranterResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/AllowancesByGranter", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryAllowancesByGranterResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

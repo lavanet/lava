@@ -104,7 +104,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 				// create new consensus group if no consensus matched
 				// newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
 				// fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-				return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err, nil)
+				return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err)
 			}
 
 			// if no discrepency with this group -> insert into consensus
@@ -118,7 +118,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			if err != nil {
 				// TODO: bring the other data as proof
 				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
-				return finalizationConflict, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAddress})
+				return finalizationConflict, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, utils.Attribute{Key: "Consensus idx", Value: strconv.Itoa(idx)}, utils.Attribute{Key: "provider", Value: providerAddress})
 			}
 		}
 	}
@@ -142,7 +142,7 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 		if otherHash, ok := otherBlocks[blockNum]; ok {
 			if blockHash != otherHash {
 				// TODO: gather discrepancy data
-				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
+				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, utils.Attribute{Key: "blockNum", Value: blockNum}, utils.Attribute{Key: "Hashes", Value: fmt.Sprintf("%s vs %s", blockHash, otherHash)}, utils.Attribute{Key: "toIterate", Value: toIterate}, utils.Attribute{Key: "otherBlocks", Value: otherBlocks})
 			}
 		}
 	}

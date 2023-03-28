@@ -47,6 +47,7 @@ type parsedMessage struct {
 
 type BaseChainProxy struct {
 	averageBlockTime time.Duration
+	NodeUrl          common.NodeUrl
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
@@ -147,7 +148,7 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
-			utils.LavaFormatError("regex Compile api", err, &map[string]string{"apiName": apiName})
+			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
 		if re.Match([]byte(name)) {
@@ -161,22 +162,22 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 func verifyRPCEndpoint(endpoint string) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
 	}
 	switch u.Scheme {
 	case "ws", "wss":
 		return
 	default:
-		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil, nil)
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil)
 	}
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, httpEndpoint string) {
+func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint common.NodeUrl, httpEndpoint common.NodeUrl) {
 	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint)
+		u, err := url.Parse(endpoint.Url)
 		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, &map[string]string{"url": endpoint})
+			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.Url})
 		}
 		switch u.Scheme {
 		case "http", "https":
@@ -184,17 +185,17 @@ func verifyTendermintEndpoint(endpoints []string) (websocketEndpoint string, htt
 		case "ws", "wss":
 			websocketEndpoint = endpoint
 		default:
-			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil, nil)
+			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil)
 		}
 	}
 
-	if websocketEndpoint == "" || httpEndpoint == "" {
+	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
 		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			&map[string]string{"websocket": websocketEndpoint, "http": httpEndpoint})
-		if httpEndpoint != "" {
+			utils.Attribute{Key: "websocket", Value: websocketEndpoint.String()}, utils.Attribute{Key: "http", Value: httpEndpoint.String()})
+		if httpEndpoint.String() != "" {
 			return httpEndpoint, httpEndpoint
 		} else {
-			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil, nil)
+			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil)
 		}
 	}
 	return websocketEndpoint, httpEndpoint

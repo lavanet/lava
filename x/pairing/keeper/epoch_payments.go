@@ -83,7 +83,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 	// add a uniquePaymentStorageClientProvider object (the object that represent the actual payment) to this epoch's providerPaymentPayment object
 	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, utils.LavaFormatError("could not add epoch payment", err, &map[string]string{"userAddress": userAddress.String(), "providerAddress": providerAddress.String(), "uniqueIdentifier": uniqueIdentifier, "epoch": strconv.FormatUint(epoch, 10), "chainID": chainID})
+		return 0, utils.LavaFormatError("could not add epoch payment", err, []utils.Attribute{{Key: "userAddress", Value: userAddress}, {Key: "providerAddress", Value: providerAddress}, {Key: "uniqueIdentifier", Value: uniqueIdentifier}, {Key: "epoch", Value: epoch}, {Key: "chainID", Value: chainID}}...)
 	}
 
 	// get this epoch's epochPayments object
