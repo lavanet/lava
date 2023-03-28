@@ -21,7 +21,9 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type RPCProviderServer struct {
@@ -80,6 +82,17 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.stateTracker = stateTracker
 	rpcps.providerAddress = providerAddress
 	rpcps.lavaChainID = lavaChainID
+}
+
+func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *wrapperspb.UInt64Value, opts ...grpc.CallOption) (*wrapperspb.UInt64Value, error) {
+	guid, found := utils.GetUniqueIdentifier(ctx)
+	attributes := []utils.Attribute{{Key: "probe", Value: probeReq.Value}}
+	if found {
+		attributes = append(attributes, utils.Attribute{Key: "GUID", Value: guid})
+	}
+	utils.LavaFormatDebug("Provider got probe", attributes...)
+
+	return probeReq, nil
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver

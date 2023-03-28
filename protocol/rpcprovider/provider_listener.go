@@ -8,14 +8,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/protocol/lavasession"
-
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type ProviderListener struct {
@@ -93,6 +93,7 @@ type relayServer struct {
 type RelayReceiver interface {
 	Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error)
 	RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error
+	Probe(ctx context.Context, in *wrapperspb.UInt64Value, opts ...grpc.CallOption) (*wrapperspb.UInt64Value, error)
 }
 
 func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
