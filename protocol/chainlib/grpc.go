@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -202,10 +202,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	utils.LavaFormatInfo("gRPC PortalStart")
 
-	lis, err := net.Listen("tcp", apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
-	}
+	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -214,7 +211,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err = apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
@@ -233,7 +230,9 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	utils.LavaFormatInfo("Server listening", utils.Attribute{Key: "Address", Value: lis.Addr()})
 
-	ListenWithRetryGrpc(&httpServer, lis)
+	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
+	}
 }
 
 type GrpcChainProxy struct {

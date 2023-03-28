@@ -2,7 +2,7 @@ package rpcprovider
 
 import (
 	"context"
-	"net"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -53,10 +53,7 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pl := &ProviderListener{networkAddress: networkAddress}
 
 	// GRPC
-	lis, err := net.Listen("tcp", networkAddress)
-	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: networkAddress})
-	}
+	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress)
 	grpcServer := grpc.NewServer()
 
 	wrappedServer := grpcweb.WrapServer(grpcServer)
@@ -76,7 +73,9 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
-		chainlib.ListenWithRetryGrpc(&pl.httpServer, lis)
+		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
+		}
 		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})
 	}()
 	return pl

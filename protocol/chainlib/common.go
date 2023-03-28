@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -214,12 +213,13 @@ func ListenWithRetry(app *fiber.App, address string) {
 	}
 }
 
-func ListenWithRetryGrpc(httpServer *http.Server, lis net.Listener) {
+func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
 	for {
-		err := httpServer.Serve(lis)
-		if err != nil {
-			utils.LavaFormatError("httpServer.Serve(lis)", err)
+		lis, err := net.Listen(protocol, addr)
+		if err == nil {
+			return lis
 		}
+		utils.LavaFormatError("failure setting up listener, net.Listen(protocol, addr)", err, utils.Attribute{Key: "listenAddr", Value: addr})
 		time.Sleep(RetryListeningInterval * time.Second)
 		utils.LavaFormatWarning("Attempting connection retry", nil)
 	}
