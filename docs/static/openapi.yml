@@ -29674,16 +29674,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29940,16 +29930,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -54359,11 +54339,6 @@ definitions:
           sig:
             type: string
             format: byte
-          chainID:
-            type: string
-          epoch:
-            type: string
-            format: int64
       QoSReport:
         type: object
         properties:
@@ -54379,11 +54354,7 @@ definitions:
       relay_session:
         type: object
         properties:
-<<<<<<< HEAD
-          specID:
-=======
           spec_id:
->>>>>>> main
             type: string
           content_hash:
             type: string
@@ -54400,11 +54371,7 @@ definitions:
           relay_num:
             type: string
             format: uint64
-<<<<<<< HEAD
-          QoSReport:
-=======
           qos_report:
->>>>>>> main
             type: object
             properties:
               latency:
@@ -54457,9 +54424,38 @@ definitions:
           request_block:
             type: string
             format: int64
-          apiInterface:
+          api_interface:
             type: string
           salt:
+            type: string
+            format: byte
+      data_reliability:
+        type: object
+        properties:
+          chain_id:
+            type: string
+          epoch:
+            type: string
+            format: int64
+          differentiator:
+            type: boolean
+          vrf_value:
+            type: string
+            format: byte
+          vrf_proof:
+            type: string
+            format: byte
+          provider_sig:
+            type: string
+            format: byte
+          all_data_hash:
+            type: string
+            format: byte
+          query_hash:
+            type: string
+            format: byte
+            title: we only need it for payment later
+          sig:
             type: string
             format: byte
   lavanet.lava.pairing.VRFData:
@@ -54486,15 +54482,22 @@ definitions:
       sig:
         type: string
         format: byte
-      chainID:
+      chain_id:
         type: string
       epoch:
         type: string
         format: int64
-<<<<<<< HEAD
-=======
       all_data_hash:
         type: string
+        format: byte
+      query_hash:
+        type: string
+        format: byte
+        title: we only need it for payment later
+  lavanet.lava.epochstorage.Endpoint:
+    type: object
+    properties:
+      iPPORT:
         type: string
       useType:
         type: string
@@ -55480,7 +55483,7 @@ definitions:
       request_block:
         type: string
         format: int64
-      apiInterface:
+      api_interface:
         type: string
       salt:
         type: string
@@ -55488,11 +55491,11 @@ definitions:
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
-<<<<<<< HEAD
-      specID:
-=======
       spec_id:
         type: string
+      content_hash:
+        type: string
+        format: byte
       session_id:
         type: string
         format: uint64
@@ -55505,11 +55508,7 @@ definitions:
       relay_num:
         type: string
         format: uint64
-<<<<<<< HEAD
-      QoSReport:
-=======
       qos_report:
->>>>>>> main
         type: object
         properties:
           latency:
