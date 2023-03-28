@@ -105,6 +105,59 @@ func TestPairingUniqueness(t *testing.T) {
 	}
 }
 
+func TestValidatePairingDeterminism(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	// init keepers state
+	spec := common.CreateMockSpec()
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	var balance int64 = 10000
+	stake := balance / 10
+
+	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer1, spec, stake, false)
+	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
+
+	providers := []common.Account{}
+	for i := 1; i <= 10; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+		providers = append(providers, provider)
+	}
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	// test that 2 different clients get different pairings
+	pairedProviders, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	require.Nil(t, err)
+	verifyPairingOncurrentBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	testAllProviders := func() {
+		for idx, provider := range pairedProviders {
+			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
+			require.Nil(t, err)
+			valid, _, foundIndex, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			require.Nil(t, errPairing)
+			require.Equal(t, idx, foundIndex, "Failed ValidatePairingForClient", provider, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.True(t, valid)
+		}
+	}
+	startBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	for i := startBlock; i < startBlock+(func() uint64 {
+		blockToSave, err := keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ctx), i)
+		require.Nil(t, err)
+		return blockToSave
+
+	})(); i++ {
+		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+		testAllProviders()
+	}
+
+}
+
 // Test that verifies that new get-pairing return values (CurrentEpoch, TimeLeftToNextPairing, SpecLastUpdatedBlock) is working properly
 func TestGetPairing(t *testing.T) {
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)

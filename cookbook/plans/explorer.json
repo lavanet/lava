@@ -1,0 +1,24 @@
+{
+    "proposal": {
+        "title": "Add plan proposal: explorer",
+        "description": "A proposal for a new plan for a beginner user",
+        "plans": [
+            {
+                "index": "explorer",
+                "description": "Plan for the Lava explorer",
+                "type": "rpc",
+                "price": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "annual_discount_percentage": "0",
+                "compute_units": "10000000",
+                "compute_units_per_epoch": "100000",
+                "max_providers_to_pair": "5",
+                "allow_overuse": false,
+                "overuse_rate": "0"
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}

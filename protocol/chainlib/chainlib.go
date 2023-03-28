@@ -8,17 +8,17 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/relayer/metrics"
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
-	DefaultTimeout           = 5 * time.Second
-	TimePerCU                = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay = time.Second
-	AverageWorldLatency      = 200 * time.Millisecond
+	TimePerCU                      = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay       = time.Second
+	AverageWorldLatency            = 300 * time.Millisecond
+	DataReliabilityTimeoutIncrease = 5 * time.Second
 )
 
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
@@ -54,12 +54,18 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
+	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)
+	CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error)
 }
 
 type ChainMessage interface {
+	RequestedBlock() int64
+	ChainMessageForSend
+}
+
+type ChainMessageForSend interface {
 	GetServiceApi() *spectypes.ServiceApi
 	GetInterface() *spectypes.ApiInterface
-	RequestedBlock() int64
 	GetRPCMessage() parser.RPCInput
 }
 
@@ -79,7 +85,7 @@ type ChainListener interface {
 }
 
 type ChainProxy interface {
-	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
 func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
@@ -97,5 +103,5 @@ func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavase
 }
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
-	return time.Duration(cu * TimePerCU)
+	return time.Duration(cu*TimePerCU) + AverageWorldLatency // TODO: remove average world latency once our providers run locally, or allow a flag that says local to make it tight, tighter timeouts are better
 }

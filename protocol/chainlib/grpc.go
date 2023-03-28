@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -24,7 +25,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -36,12 +37,24 @@ type GrpcChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewGrpcChainParser creates a new instance of GrpcChainParser
 func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
+}
+
+func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType)
+	}
+
+	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -57,13 +70,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
@@ -74,13 +81,19 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 
-	// TODO why we don't have requested block here?
-	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          grpcMessage,
-	}
+	// TODO: fix requested block
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
 	return nodeMsg, nil
+}
+
+func (*GrpcChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage) *parsedMessage {
+	nodeMsg := &parsedMessage{
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		requestedBlock: requestedBlock,
+	}
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -99,12 +112,12 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("GRPC api not supported")
+		return nil, utils.LavaFormatError("GRPC api not supported", nil, &map[string]string{"name": name})
 	}
 
 	// Return an error if api is disabled
 	if !api.Enabled {
-		return nil, errors.New("api is disabled")
+		return nil, utils.LavaFormatError("GRPC api is disabled", nil, &map[string]string{"name": name})
 	}
 
 	return &api, nil
@@ -127,7 +140,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -237,14 +250,18 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	cp := &GrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"))
+	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"))
+	if err != nil {
+		return nil, err
+	}
+	cp.conn = conn
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
 	}
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
@@ -255,9 +272,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	defer cp.conn.ReturnRpc(conn)
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.GrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
 	}
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -293,9 +310,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		formatMessage = true
 	}
 
-	// nodeMessage.MethodDesc = methodDescriptor // TODO: this is useful for parsing the response
-	// rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
-	rp, _, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+	rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
 		EmitJSONDefaultFields: false,
 		IncludeTextSeparator:  false,
 		AllowUnknownFields:    true,
@@ -303,7 +318,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
 	}
-	// nm.formatter = formatter
+
+	// used when parsing the grpc result
+	nodeMessage.SetParsingData(methodDescriptor, formatter)
+
 	if formatMessage {
 		err = rp.Next(msg)
 		if err != nil {

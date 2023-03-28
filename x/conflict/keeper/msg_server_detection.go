@@ -13,7 +13,7 @@ import (
 )
 
 func DetectionIndex(msg *types.MsgDetection, epochStart uint64) string {
-	return msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.Provider + msg.ResponseConflict.ConflictRelayData1.Request.Provider + strconv.FormatUint(epochStart, 10)
+	return msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider + msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider + strconv.FormatUint(epochStart, 10)
 }
 
 func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*types.MsgDetectionResponse, error) {
@@ -45,38 +45,38 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		// 3. accept incoming commit transactions for this vote,
 		// 4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
 		// 5. majority wins, minority gets penalised
-		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
+		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch))
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get EpochStart for specific block")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get EpochStart for specific block")
 		}
 		index := DetectionIndex(msg, epochStart)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: conflict with is already open for this client and providers in this epoch")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: conflict with is already open for this client and providers in this epoch")
 		}
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit
-		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight)
+		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch)
 		epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get epochblocks")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get epochblocks")
 		}
 
 		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+k.VotePeriod(ctx)*epochBlocks)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get NextEpoch")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get NextEpoch")
 		}
 		conflictVote.VoteDeadline = voteDeadline
-		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl
+		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiUrl
 		conflictVote.ClientAddress = msg.Creator
-		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.ChainID
-		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock)
-		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.Data
+		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.SpecId
+		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.RequestBlock)
+		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Data
 
-		conflictVote.FirstProvider.Account = msg.ResponseConflict.ConflictRelayData0.Request.Provider
+		conflictVote.FirstProvider.Account = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider
 		conflictVote.FirstProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData0.Reply.Data)
-		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
+		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider
 		conflictVote.SecondProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData1.Reply.Data)
 		conflictVote.Votes = []types.Vote{}
 		voters := k.Keeper.LotteryVoters(goCtx, epochStart, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
@@ -89,12 +89,13 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData := map[string]string{"client": msg.Creator}
 		eventData["voteID"] = conflictVote.Index
 		eventData["chainID"] = conflictVote.ChainID
-		eventData["connectionType"] = msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType
+		eventData["connectionType"] = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ConnectionType
 		eventData["apiURL"] = conflictVote.ApiUrl
 		eventData["requestData"] = string(conflictVote.RequestData)
 		eventData["requestBlock"] = strconv.FormatUint(conflictVote.RequestBlock, 10)
 		eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
+		eventData["apiInterface"] = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiInterface
 
 		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Simulation: Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil

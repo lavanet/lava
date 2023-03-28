@@ -62,8 +62,9 @@ message MsgUnstakeClientResponse {
 
 message MsgRelayPayment {
   string creator = 1;
-  repeated RelayRequest relays = 2;
-  string descriptionString = 3;
+  repeated RelaySession relays = 2;
+  repeated VRFData VRFs = 3;
+  string descriptionString = 4;
 }
 
 message MsgRelayPaymentResponse {

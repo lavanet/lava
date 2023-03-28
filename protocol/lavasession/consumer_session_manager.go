@@ -24,7 +24,7 @@ type ConsumerSessionManager struct {
 	currentEpoch   uint64
 	numberOfResets uint64
 	// pairingAddresses for Data reliability
-	pairingAddresses       []string // contains all addresses from the initial pairing.
+	pairingAddresses       map[uint64]string // contains all addresses from the initial pairing. and the keys are the vrf indexes
 	pairingAddressesLength uint64
 
 	validAddresses        []string            // contains all addresses that are currently valid
@@ -40,7 +40,7 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 }
 
 // Update the provider pairing list for the ConsumerSessionManager
-func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
+func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 
 	csm.lock.Lock()         // start by locking the class lock.
@@ -54,7 +54,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 	// Reset States
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
-	csm.pairingAddresses = make([]string, pairingListLength)
+	csm.pairingAddresses = make(map[uint64]string, 0)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
 	csm.numberOfResets = 0
@@ -74,7 +74,11 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue() {
 	csm.validAddresses = make([]string, len(csm.pairingAddresses))
-	copy(csm.validAddresses, csm.pairingAddresses)
+	index := 0
+	for _, provider := range csm.pairingAddresses {
+		csm.validAddresses[index] = provider
+		index++
+	}
 }
 
 // reads cs.currentEpoch atomically
