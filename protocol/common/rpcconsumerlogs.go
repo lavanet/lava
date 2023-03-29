@@ -137,7 +137,9 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	tx := pl.newRelicApplication.StartTransaction(name)
 
 	return func() {
-		tx.End()
+		if tx != nil {
+			tx.End()
+		}
 	}
 }
 
