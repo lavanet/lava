@@ -3,11 +3,11 @@ package rpcprovider
 import (
 	"context"
 	"errors"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -53,10 +53,7 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pl := &ProviderListener{networkAddress: networkAddress}
 
 	// GRPC
-	lis, err := net.Listen("tcp", networkAddress)
-	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: networkAddress})
-	}
+	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress)
 	grpcServer := grpc.NewServer()
 
 	wrappedServer := grpcweb.WrapServer(grpcServer)
