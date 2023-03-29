@@ -444,6 +444,11 @@ func New(
 		keys[projectsmoduletypes.StoreKey],
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		app.PlansKeeper,
+		app.EpochstorageKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 

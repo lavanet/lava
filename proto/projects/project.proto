@@ -2,7 +2,6 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
-
 option go_package = "github.com/lavanet/lava/x/projects/types";
 
 message Project {
@@ -28,16 +27,16 @@ message ProjectKey {
 }
 
 message Policy {
-    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false];
-    uint64 geolocation_profile = 2;
-    uint64 total_cu_limit = 3;
-    uint64 epoch_cu_limit = 4;
-    uint64 max_providers_to_pair = 5;
+    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"chain_policies\""];
+    uint64 geolocation_profile = 2 [(gogoproto.moretags) = "mapstructure:\"geolocation_profile\"", (gogoproto.jsontag) = "geolocation_profile"];
+    uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\""];
+    uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\""];
+    uint64 max_providers_to_pair = 5 [(gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
 }
 
 message ChainPolicy {
-    string chain_id = 1;
-    repeated string apis = 2 [(gogoproto.nullable) = false];
+    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\""];
+    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
 }
 
 message ProtoDeveloperData {
