@@ -10,7 +10,7 @@ lavad tx gov submit-proposal spec-add ./cookbook/sorted_specs/0/spec_add_ibc.jso
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 4
 
-lavad tx gov submit-proposal spec-add ./cookbook/sorted_specs/3/spec_add_cosmoshub.json,./cookbook/sorted_specs/3/spec_add_lava.json,./cookbook/sorted_specs/4/spec_add_osmosis.json,./cookbook/sorted_specs/1/spec_add_fantom.json,./cookbook/sorted_specs/1/spec_add_celo.json,./cookbook/sorted_specs/1/spec_add_optimism.json,./cookbook/sorted_specs/1/spec_add_arbitrum.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal spec-add ./cookbook/sorted_specs/3/spec_add_cosmoshub.json,./cookbook/sorted_specs/3/spec_add_lava.json,./cookbook/sorted_specs/4/spec_add_osmosis.json,./cookbook/sorted_specs/1/spec_add_fantom.json,./cookbook/sorted_specs/2/spec_add_celo.json,./cookbook/sorted_specs/1/spec_add_optimism.json,./cookbook/sorted_specs/1/spec_add_arbitrum.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4
