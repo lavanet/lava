@@ -208,8 +208,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Use(favicon.New())
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
-		endTx := apil.logger.LogStartTransaction("jsonRpc-WebSocket")
-		defer endTx()
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
