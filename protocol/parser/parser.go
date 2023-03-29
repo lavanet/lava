@@ -40,6 +40,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	default:
 		// try to parse a number
 	}
+	utils.LavaFormatError("DEBUG2", nil, utils.Attribute{Key: "block", Value: block})
 	blockNum, err := strconv.ParseInt(block, 0, 64)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
@@ -246,6 +247,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			}
 		}
 		retArr := make([]interface{}, 0)
+		utils.LavaFormatError("DEBUG4", nil, utils.Attribute{Key: "here", Value: "here22"})
 		retArr = append(retArr, blockInterfaceToString(blockContainer))
 		return retArr, nil
 	case map[string]interface{}:
@@ -253,7 +255,8 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			if val, ok := unmarshaledDataTyped[key]; ok {
 				if idx == (len(input) - 1) {
 					retArr := make([]interface{}, 0)
-					retArr = append(retArr, val)
+					utils.LavaFormatError("DEBUG3", nil, utils.Attribute{Key: "here", Value: "here22"})
+					retArr = append(retArr, blockInterfaceToString(val))
 					return retArr, nil
 				}
 				// if we didn't get to the last elemnt continue deeper by chaning unmarshaledDataTyped

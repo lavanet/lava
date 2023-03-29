@@ -53,9 +53,9 @@
                             "function_tag": "getBlockNumber",
                             "result_parsing": {
                                 "parser_arg": [
-                                    "latest"
+                                    "0"
                                 ],
-                                "parser_func": "DEFAULT"
+                                "parser_func": "PARSE_BY_ARG"
                             }
                         },
                         "block_parsing": {
