@@ -478,7 +478,6 @@ func New(
 		app.ProjectsKeeper,
 		app.PlansKeeper,
 	)
-
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
