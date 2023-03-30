@@ -9,7 +9,8 @@ type ProviderOptimizer struct {
 type Strategy int
 
 const (
-	STRATEGY_QOS Strategy = iota
+	STRATEGY_BALANCED Strategy = iota
+	STRATEGY_QOS
 	STRATEGY_COST
 	STRATEGY_PRIVACY
 	STRATEGY_ACCURACY

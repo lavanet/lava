@@ -77,11 +77,21 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
+
+	// we want one provider optimizer per chain so we will store them for reuse accross rpcEndpoints
+	optimizers := map[string]*provideroptimizer.ProviderOptimizer{}
+
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(len(rpcEndpoints))})
 	for _, rpcEndpoint := range rpcEndpoints {
-		strategy := provideroptimizer.STRATEGY_QOS
-		optimizer := provideroptimizer.NewProviderOptimizer(strategy)
+		var optimizer *provideroptimizer.ProviderOptimizer
+		var exists bool
+		if optimizer, exists = optimizers[rpcEndpoint.ChainID]; !exists {
+			// doesn't exist for this chain create a new one
+			strategy := provideroptimizer.STRATEGY_BALANCED
+			optimizer = provideroptimizer.NewProviderOptimizer(strategy)
+			optimizers[rpcEndpoint.ChainID] = optimizer
+		}
 		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
 		key := rpcEndpoint.Key()
 		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)

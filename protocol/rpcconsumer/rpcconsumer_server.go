@@ -393,7 +393,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			if errRet != nil {
 				return nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sendReliabilityError", Value: err.Error()})
 			}
-			return nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Address", Value: providerAddress})
+			return nil, utils.LavaFormatError("send Reliability Relay Could not get reply to reliability relay from provider", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Address", Value: providerAddress})
 		}
 
 		expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
