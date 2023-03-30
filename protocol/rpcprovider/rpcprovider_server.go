@@ -581,10 +581,11 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}
 
-		if request.RelayData.RequestBlock > latestBlock {
-			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
-			return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-		}
+		// TODO: add a mechanism to handle this
+		// if request.RelayData.RequestBlock > latestBlock {
+		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
+		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+		// }
 
 		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
 	}
