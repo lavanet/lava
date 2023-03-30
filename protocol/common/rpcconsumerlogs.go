@@ -128,10 +128,18 @@ func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, m
 	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
-func (pl *RPCConsumerLogs) LogStartTransaction(name string) {
-	if pl.newRelicApplication != nil {
-		txn := pl.newRelicApplication.StartTransaction(name)
-		defer txn.End()
+func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
+	if pl.newRelicApplication == nil {
+		return func() {
+		}
+	}
+
+	tx := pl.newRelicApplication.StartTransaction(name)
+
+	return func() {
+		if tx != nil {
+			tx.End()
+		}
 	}
 }
 
