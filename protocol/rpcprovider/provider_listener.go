@@ -93,7 +93,6 @@ type relayServer struct {
 type RelayReceiver interface {
 	Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error)
 	RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error
-	Probe(ctx context.Context, in *wrapperspb.UInt64Value, opts ...grpc.CallOption) (*wrapperspb.UInt64Value, error)
 }
 
 func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
@@ -102,6 +101,17 @@ func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayReq
 		return nil, err
 	}
 	return relayReceiver.Relay(ctx, request)
+}
+
+func (rs *relayServer) Probe(ctx context.Context, probeReq *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error) {
+	guid, found := utils.GetUniqueIdentifier(ctx)
+	attributes := []utils.Attribute{{Key: "probe", Value: probeReq.Value}}
+	if found {
+		attributes = append(attributes, utils.Attribute{Key: "GUID", Value: guid})
+	}
+	utils.LavaFormatDebug("Provider got probe", attributes...)
+
+	return probeReq, nil
 }
 
 func (rs *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {

@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/performance"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -79,7 +80,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(len(rpcEndpoints))})
 	for _, rpcEndpoint := range rpcEndpoints {
-		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint)
+		strategy := provideroptimizer.STRATEGY_QOS
+		optimizer := provideroptimizer.NewProviderOptimizer(strategy)
+		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
 		key := rpcEndpoint.Key()
 		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)

@@ -18,11 +18,6 @@ type ProviderSessionManager struct {
 	blockDistanceForEpochValidity           uint64 // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 }
 
-// reads cs.BlockedEpoch atomically
-func (psm *ProviderSessionManager) atomicWriteBlockedEpoch(epoch uint64) {
-	atomic.StoreUint64(&psm.blockedEpochHeight, epoch)
-}
-
 func (psm *ProviderSessionManager) GetProviderIndexWithConsumer(epoch uint64, consumerAddress string) (int64, error) {
 	providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, consumerAddress)
 	if err != nil {
