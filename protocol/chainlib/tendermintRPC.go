@@ -127,7 +127,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
 	if !isJsonrpc {

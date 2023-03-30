@@ -66,7 +66,6 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	path := serviceApi.Name
 	data := []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum))
-	utils.LavaFormatError("DEBUG", nil, utils.Attribute{Key: "data", Value: data})
 	chainMessage, err := CraftChainMessage(serviceApi, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: serviceApi.ApiInterfaces[0].Type})
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)

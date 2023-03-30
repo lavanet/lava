@@ -76,10 +76,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
-
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing}, utils.Attribute{Key: "service_api", Value: serviceApi.Name})
 	}
 
 	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, *msg)
