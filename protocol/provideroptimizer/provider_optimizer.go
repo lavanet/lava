@@ -16,7 +16,6 @@ const (
 )
 
 func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, failure bool) {
-
 }
 
 func NewProviderOptimizer(strategy Strategy) *ProviderOptimizer {
