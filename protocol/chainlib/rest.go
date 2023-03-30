@@ -211,7 +211,8 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("rest-http")
+		endTx := apil.logger.LogStartTransaction("rest-http")
+		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
 
@@ -255,7 +256,8 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("rest-http")
+		endTx := apil.logger.LogStartTransaction("rest-http")
+		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 
 		query := "?" + string(c.Request().URI().QueryString())
@@ -294,10 +296,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	})
 
 	// Go
-	err := app.Listen(apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err)
-	}
+	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }
 
 type RestChainProxy struct {

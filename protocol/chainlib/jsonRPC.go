@@ -76,10 +76,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
-
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing}, utils.Attribute{Key: "service_api", Value: serviceApi.Name})
 	}
 
 	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, *msg)
@@ -208,7 +207,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Use(favicon.New())
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("jsonRpc-WebSocket")
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -291,7 +289,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
 	app.Post("/:dappId/*", func(fiberCtx *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("jsonRpc-http post")
+		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
+		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -336,10 +335,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	})
 
 	// Go
-	err := app.Listen(apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err)
-	}
+	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }
 
 type JrpcChainProxy struct {

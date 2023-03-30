@@ -92,7 +92,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the result with other providers if defined so
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
-
+	relaySentTime := time.Now()
 	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, nil, err
@@ -153,6 +153,13 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		// TODO: go over rpccs.requiredResponses and get majority
 		returnedResult = iteratedResult
 	}
+
+	if analytics != nil {
+		currentLatency := time.Since(relaySentTime)
+		analytics.Latency = currentLatency.Milliseconds()
+		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
+	}
+
 	return returnedResult.Reply, returnedResult.ReplyServer, nil
 }
 
