@@ -253,7 +253,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			if val, ok := unmarshaledDataTyped[key]; ok {
 				if idx == (len(input) - 1) {
 					retArr := make([]interface{}, 0)
-					retArr = append(retArr, val)
+					retArr = append(retArr, blockInterfaceToString(val))
 					return retArr, nil
 				}
 				// if we didn't get to the last elemnt continue deeper by chaning unmarshaledDataTyped
