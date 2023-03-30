@@ -39,13 +39,25 @@ func TestCreateProject(t *testing.T) {
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	plan := common.CreateMockPlan()
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
+
+	projectData := types.ProjectData{
+		Name:        projectName,
+		Description: "",
+		Enabled:     false,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   adminAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}},
+		Policy: types.Policy{},
+	}
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
 	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
@@ -81,13 +93,32 @@ func TestAddKeys(t *testing.T) {
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
+	developerAcc2 := common.CreateNewAccount(ctx, *keepers, 10000)
 	plan := common.CreateMockPlan()
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
+
+	projectData := types.ProjectData{
+		Name:        projectName,
+		Description: "",
+		Enabled:     false,
+		ProjectKeys: []types.ProjectKey{
+			{
+				Key:   adminAcc.Addr.String(),
+				Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
+				Vrfpk: "",
+			},
+			{
+				Key:   developerAcc.Addr.String(),
+				Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+				Vrfpk: "",
+			}},
+		Policy: types.Policy{},
+	}
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	projectRes, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
+	projectRes, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc.Addr.String()})
 	require.Nil(t, err)
 
 	project := projectRes.Project
@@ -96,13 +127,13 @@ func TestAddKeys(t *testing.T) {
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: developerAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
-	// admin key adding as developer
-	pk = types.ProjectKey{Key: developerAcc.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	// admin key adding a developer
+	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: adminAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
-	// developer tries to add admin
-	pk = types.ProjectKey{Key: developerAcc.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	// developer tries to add the second developer as admin
+	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: developerAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
@@ -112,37 +143,50 @@ func TestAddKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// new admin adding another developer
-	developerAcc2 := common.CreateNewAccount(ctx, *keepers, 10000)
-	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	developerAcc3 := common.CreateNewAccount(ctx, *keepers, 10000)
+	pk = types.ProjectKey{Key: developerAcc3.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: developerAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// fetch project with new developer
-	projectRes, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc2.Addr.String()})
+	projectRes, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc3.Addr.String()})
 	require.Nil(t, err)
 }
 
 func TestAddAdminInTwoProjects(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 	// he should be a developer only in the first project
-	projectName1 := "mockname1"
-	projectName2 := "mockname2"
+	projectName := "mockname"
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	plan := common.CreateMockPlan()
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
+	projectData := types.ProjectData{
+		Name:        projectName,
+		Description: "",
+		Enabled:     false,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   adminAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
+			Vrfpk: "",
+		}},
+		Policy: types.Policy{GeolocationProfile: math.MaxUint64},
+	}
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), plan, "")
 	require.Nil(t, err)
 
-	// this is supposed to fail because you can't use the same admin key for two different projects
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, "", plan, math.MaxUint64, "")
-	require.NotNil(t, err)
+	// this is not supposed to fail because you can use the same admin key for two different projects
+	// creating a regular project (not admin project) so subAccount won't be a developer there
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
+	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
 	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
+	require.NotNil(t, err)
+	response, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.Nil(t, err)
-	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), projectName1))
+	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), types.ADMIN_PROJECT_NAME))
 }
 
 func TestSetPolicy(t *testing.T) {
@@ -153,8 +197,20 @@ func TestSetPolicy(t *testing.T) {
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	projectID := types.ProjectIndex(subAccount.Addr.String(), projectName)
+	plan := common.CreateMockPlan()
 
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), true, 100, 100, 5, math.MaxUint64, "")
+	projectData := types.ProjectData{
+		Name:        projectName,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   adminAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
+			Vrfpk: "",
+		}},
+		Policy: types.Policy{GeolocationProfile: math.MaxUint64},
+	}
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
 
 	keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, adminAcc.Addr.String(),

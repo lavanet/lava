@@ -13,11 +13,12 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateProject(subscriptionAddress string, projectName string) Project {
+func CreateProject(subscriptionAddress string, projectName string, description string, enabled bool) Project {
 	return Project{
 		Index:        ProjectIndex(subscriptionAddress, projectName),
 		Subscription: subscriptionAddress,
-		Description:  "",
+		Description:  description,
+		Enabled:      enabled,
 		ProjectKeys:  []ProjectKey{},
 		Policy:       Policy{},
 		UsedCu:       0,

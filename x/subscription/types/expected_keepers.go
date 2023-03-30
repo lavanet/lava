@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -27,7 +28,7 @@ type EpochstorageKeeper interface {
 
 type ProjectsKeeper interface {
 	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan planstypes.Plan, vrfpk string) error
-	CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enabled bool, projectDescription string, plan planstypes.Plan, geolocation uint64, vrfpk string) error
+	CreateProject(ctx sdk.Context, subscriptionAddress string, projectData projectstypes.ProjectData, plan planstypes.Plan) error
 	DeleteProject(ctx sdk.Context, index string) error
 	// Methods imported from projectskeeper should be defined here
 }

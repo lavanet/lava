@@ -10,15 +10,10 @@ const TypeMsgAddProject = "add_project"
 
 var _ sdk.Msg = &MsgAddProject{}
 
-func NewMsgAddProject(creator string, projectName string, enabled bool, consumer string, vrfpk string, projectDescription string, geolocation uint64) *MsgAddProject {
+func NewMsgAddProject(creator string, projectData projectstypes.ProjectData) *MsgAddProject {
 	return &MsgAddProject{
-		Creator:            creator,
-		Consumer:           consumer,
-		ProjectName:        projectName,
-		Enabled:            enabled,
-		Vrfpk:              vrfpk,
-		ProjectDescription: projectDescription,
-		Geolocation:        geolocation,
+		Creator:     creator,
+		ProjectData: projectData,
 	}
 }
 
@@ -49,17 +44,19 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.Consumer)
-	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid consumer address (%s)", err)
+	for _, projectKey := range msg.GetProjectData().ProjectKeys {
+		_, err = sdk.AccAddressFromBech32(projectKey.GetKey())
+		if err != nil {
+			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address in project key (%s)", err)
+		}
 	}
 
-	if msg.GetProjectName() == "" || len(msg.GetProjectName()) > projectstypes.MAX_PROJECT_NAME_LEN {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name (%s). Either empty or too long (max_len = %d)", msg.GetProjectName(), projectstypes.MAX_PROJECT_NAME_LEN)
+	if msg.GetProjectData().Name == "" || len(msg.GetProjectData().Name) > projectstypes.MAX_PROJECT_NAME_LEN {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name (%s). Either empty or too long (max_len = %d)", msg.GetProjectData().Name, projectstypes.MAX_PROJECT_NAME_LEN)
 	}
 
-	if len(msg.GetProjectDescription()) > projectstypes.MAX_PROJECT_DESCRIPTION_LEN {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "project description too long (%s). max_len = %d", msg.GetProjectDescription(), projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
+	if len(msg.GetProjectData().Description) > projectstypes.MAX_PROJECT_DESCRIPTION_LEN {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "project description too long (%s). max_len = %d", msg.GetProjectData().Description, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
 	}
 	return nil
 }

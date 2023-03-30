@@ -12,33 +12,71 @@ import (
 
 // add a default project to a subscription, add the subscription key as
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan plantypes.Plan, vrfpk string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, types.ADMIN_PROJECT_DESCRIPTION, plan, math.MaxUint64, vrfpk)
+	projectData := types.ProjectData{
+		Name:        types.ADMIN_PROJECT_NAME,
+		Description: types.ADMIN_PROJECT_DESCRIPTION,
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk}},
+		Policy:      types.Policy{},
+	}
+	return k.CreateProject(ctx, subscriptionAddress, projectData, plan)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enabled bool, projectDescription string, plan plantypes.Plan, geolocation uint64, vrfpk string) error {
-	project := types.CreateProject(subscriptionAddress, projectName)
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectData types.ProjectData, plan plantypes.Plan) error {
+	if len(projectData.GetName()) > types.MAX_PROJECT_NAME_LEN || len(projectData.GetDescription()) > types.MAX_PROJECT_DESCRIPTION_LEN {
+		details := map[string]string{
+			"name":              projectData.GetName(),
+			"nameMaxLen":        strconv.FormatInt(types.MAX_PROJECT_NAME_LEN, 10),
+			"description":       projectData.GetDescription(),
+			"descriptionMaxLen": strconv.FormatInt(types.MAX_PROJECT_DESCRIPTION_LEN, 10),
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "CreateProject_name_or_description_too_long", details, "project name or description too long")
+	}
+
+	project := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
 	var emptyProject types.Project
 
 	blockHeight := uint64(ctx.BlockHeight())
 	_, found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject)
 	// the project with the same name already exists if no error has returned
 	if found {
-		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
+		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"projectIndex": types.ProjectIndex(subscriptionAddress, projectData.GetName())}, "project already exist for the current subscription with the same name")
 	}
 
-	project.Policy.EpochCuLimit = plan.GetComputeUnitsPerEpoch()
-	project.Policy.TotalCuLimit = plan.GetComputeUnits()
-	project.Policy.MaxProvidersToPair = plan.GetMaxProvidersToPair()
-	project.Policy.GeolocationProfile = geolocation
+	policy := projectData.GetPolicy()
+	if k.policyEmpty(policy) {
+		policy = types.Policy{
+			ChainPolicies:      []types.ChainPolicy{},
+			GeolocationProfile: math.MaxUint64,
+			TotalCuLimit:       plan.GetComputeUnits(),
+			EpochCuLimit:       plan.GetComputeUnitsPerEpoch(),
+			MaxProvidersToPair: plan.GetMaxProvidersToPair(),
+		}
+	}
 
-	project.Enabled = enabled
-	project.Description = projectDescription
-	err := k.RegisterKey(ctx, types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk}, &project, blockHeight)
+	err := k.ValidateChainPolicies(ctx, policy)
 	if err != nil {
 		return err
 	}
+
+	project.Policy = policy
+
+	for _, projectKey := range projectData.GetProjectKeys() {
+		err = k.RegisterKey(ctx, types.ProjectKey{Key: projectKey.GetKey(), Types: projectKey.GetTypes(), Vrfpk: projectKey.GetVrfpk()}, &project, blockHeight)
+		if err != nil {
+			return err
+		}
+	}
+
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
+}
+
+func (k Keeper) policyEmpty(policy types.Policy) bool {
+	if len(policy.ChainPolicies) == 0 && policy.EpochCuLimit == uint64(0) && policy.GeolocationProfile == uint64(0) && policy.MaxProvidersToPair == 0 && policy.TotalCuLimit == 0 {
+		return true
+	}
+	return false
 }
 
 func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
@@ -46,66 +84,47 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_project_is_nil", nil, "project is nil")
 	}
 
-	developerKeyFound := false
-	inputKeyIsAdmin := false
-	inputKeyIsDeveloper := false
-	var developerData types.ProtoDeveloperData
-
 	for _, keyType := range key.GetTypes() {
-		if keyType == types.ProjectKey_ADMIN {
-			inputKeyIsAdmin = true
-		}
-
-		if keyType == types.ProjectKey_DEVELOPER {
-			inputKeyIsDeveloper = true
+		switch keyType {
+		case types.ProjectKey_ADMIN:
+			k.AddAdminKey(project, key.GetKey(), key.GetVrfpk())
+		case types.ProjectKey_DEVELOPER:
+			// try to find the developer key
+			var developerData types.ProtoDeveloperData
 			_, found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
-			if found {
-				developerKeyFound = true
+
+			// if we find the developer key and it belongs to a different project, return error
+			if found && developerData.ProjectID == project.GetIndex() {
+				details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
+				return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
+			}
+
+			if !found {
+				err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight, key.GetVrfpk())
+				if err != nil {
+					details := map[string]string{
+						"developerKey": key.GetKey(),
+						"projectIndex": project.GetIndex(),
+						"blockHeight":  strconv.FormatUint(blockHeight, 10),
+					}
+					return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
+				}
 			}
 		}
-	}
-
-	// handle admin key type
-	if inputKeyIsAdmin {
-		k.AddAdminKey(ctx, project, key.GetKey(), key.GetVrfpk())
-	}
-
-	// handle case of admin-only key type (no need to register developer key)
-	if !inputKeyIsDeveloper {
-		return nil
-	}
-
-	// handle developer key type (and admin-developer key type)
-	if developerKeyFound && inputKeyIsDeveloper {
-		details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
-		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
-	}
-
-	err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight, key.GetVrfpk(), &developerData)
-	if err != nil {
-		details := map[string]string{
-			"developerKey": key.GetKey(),
-			"projectIndex": project.GetIndex(),
-			"blockHeight":  strconv.FormatUint(blockHeight, 10),
-		}
-		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
 	}
 
 	return nil
 }
 
-func (k Keeper) AddAdminKey(ctx sdk.Context, project *types.Project, adminKey string, vrfpk string) {
+func (k Keeper) AddAdminKey(project *types.Project, adminKey string, vrfpk string) {
 	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 }
 
-func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64, vrfpk string, developerData *types.ProtoDeveloperData) error {
-	if developerData == nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "AddDeveloperKey_developer_data_nil", nil, "developer data is nil")
-	}
-
+func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64, vrfpk string) error {
+	var developerData types.ProtoDeveloperData
 	developerData.ProjectID = project.GetIndex()
 	developerData.Vrfpk = vrfpk
-	err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, developerData)
+	err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &developerData)
 	if err != nil {
 		return err
 	}

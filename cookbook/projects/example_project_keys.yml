@@ -1,0 +1,12 @@
+# Types enum: ADMIN=1, DEVELOPER=2
+Project-Keys:
+  - key: lava@1twr5y45fzptf9qe2va87jztswe8460susfp78g
+    types:
+      - 1
+      - 2
+    vrfpk:
+  - key: lava@1r6t9p3nd9hllz4knwe4d3vurldksndu6arv7ud
+    types:
+      - 1
+    vrfpk: dummyVrfpk
+

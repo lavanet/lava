@@ -9,6 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -252,30 +253,30 @@ func (k Keeper) CreateSubscription(
 	return nil
 }
 
-func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscriptionOwner string, projectAdmin string, projectName string, enabled bool, projectDescription string, geolocation uint64, vrfpk string) error {
-	sub, found := k.GetSubscription(ctx, subscriptionOwner)
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, projectData projectstypes.ProjectData) error {
+	sub, found := k.GetSubscription(ctx, subscription)
 	if !found {
-		return sdkerrors.ErrKeyNotFound.Wrapf("can't get subscription of %s", subscriptionOwner)
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, sub.GetPlanIndex())
 	if !found {
 		details := map[string]string{
-			"subscriptionConsumer": projectAdmin,
-			"planIndex":            sub.GetPlanIndex(),
+			"subscription": sub.GetCreator(),
+			"planIndex":    sub.GetPlanIndex(),
 		}
 		err := utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
 		panic(err)
 	}
 
-	return k.projectsKeeper.CreateProject(ctx, subscriptionOwner, projectName, projectAdmin, enabled, projectDescription, plan, geolocation, vrfpk)
+	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
 }
 
-func (k Keeper) ChangeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error {
-	sub, found := k.GetSubscription(ctx, subscriptionOwner)
+func (k Keeper) DeductComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
+	sub, found := k.GetSubscription(ctx, subscription)
 	if !found {
 		details := map[string]string{
-			"subscriptionOwner": subscriptionOwner,
+			"subscription": subscription,
 		}
 		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
 	}

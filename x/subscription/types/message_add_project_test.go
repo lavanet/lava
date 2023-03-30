@@ -1,7 +1,6 @@
 package types
 
 import (
-	"strings"
 	"testing"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -19,17 +18,29 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgAddProject{
-				Creator:     "invalid_address",
-				Consumer:    "another invalid address",
-				ProjectName: strings.Repeat("InvalidName", projectstypes.MAX_PROJECT_NAME_LEN),
+				Creator: "invalid_address",
+				ProjectData: projectstypes.ProjectData{
+					Name: "validName",
+					ProjectKeys: []projectstypes.ProjectKey{{
+						Key:   "invalid address",
+						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Vrfpk: "",
+					}},
+				},
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgAddProject{
-				Creator:     sample.AccAddress(),
-				Consumer:    sample.AccAddress(),
-				ProjectName: "validName",
+				Creator: sample.AccAddress(),
+				ProjectData: projectstypes.ProjectData{
+					Name: "validName",
+					ProjectKeys: []projectstypes.ProjectKey{{
+						Key:   sample.AccAddress(),
+						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Vrfpk: "",
+					}},
+				},
 			},
 		},
 	}

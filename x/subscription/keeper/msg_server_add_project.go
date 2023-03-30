@@ -11,15 +11,14 @@ import (
 func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (*types.MsgAddProjectResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.Keeper.AddProjectToSubscription(ctx, msg.GetCreator(), msg.GetConsumer(), msg.GetProjectName(), msg.GetEnabled(), msg.GetProjectDescription(), msg.GetGeolocation(), msg.GetVrfpk())
+	err := k.Keeper.AddProjectToSubscription(ctx, msg.GetCreator(), msg.GetProjectData())
 	if err == nil {
 		logger := k.Keeper.Logger(ctx)
 		details := map[string]string{
-			"subscriptionOwner": msg.GetCreator(),
-			"projectName":       msg.GetProjectName(),
-			"projectAdmin":      msg.GetConsumer(),
+			"subscription": msg.GetCreator(),
+			"projectName":  msg.GetProjectData().Name,
 		}
-		utils.LogLavaEvent(ctx, logger, types.AddProjectEventName, details, "consumer added project to subscription")
+		utils.LogLavaEvent(ctx, logger, types.AddProjectEventName, details, "project added to subscription")
 	}
 
 	return &types.MsgAddProjectResponse{}, err
