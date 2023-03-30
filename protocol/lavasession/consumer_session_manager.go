@@ -95,8 +95,8 @@ func (csm *ConsumerSessionManager) probeProviders(pairingList map[uint64]*Consum
 	for _, consumerSessionWithProvider := range pairingList {
 		// consumerSessionWithProvider is thread safe since it's unreachable yet on other threads
 		latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionWithProvider, epoch)
-		failure := err != nil // if failure then regard it in availability
-		csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, failure)
+		success := err == nil // if failure then regard it in availability
+		csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
 	}
 }
 
