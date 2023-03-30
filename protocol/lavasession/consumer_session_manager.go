@@ -66,8 +66,22 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
-
+	go csm.probeProviders(pairingList)    // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
 	return nil
+}
+
+func (csm *ConsumerSessionManager) probeProviders(pairingList map[uint64]*ConsumerSessionsWithProvider) {
+	utils.LavaFormatInfo("Updated providers, probe initiated", utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint})
+	for _, consumerSessionWithProvider := range pairingList {
+		// csm.getEndpointFromConsumerSessionWithProviderForDR()
+		// csm.fetchEndpointConnectionFromConsumerSessionWithProvider()
+		csm.probeProvider(consumerSessionWithProvider)
+	}
+}
+
+func (csm *ConsumerSessionManager) probeProvider(consumerSessionsWithProvider *ConsumerSessionsWithProvider) {
+	csm.fetchEndpointFromConsumerSessionWithProviderWithRetry(context.Background(), consumerSessionsWithProvider)
+	return
 }
 
 func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue() {
@@ -519,10 +533,10 @@ func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddr
 	return csm.pairing[providerAddress], providerAddress, currentEpoch, nil
 }
 
-func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderForDR(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
+func (csm *ConsumerSessionManager) fetchEndpointFromConsumerSessionWithProviderWithRetry(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
 	var connected bool
 	for idx := 0; idx < MaxConsecutiveConnectionAttempts; idx++ { // try to connect to the endpoint 3 times
-		connected, endpoint, err = consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
+		connected, endpoint, err = consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
 		if err != nil {
 			// verify err is AllProviderEndpointsDisabled and report.
 			if AllProviderEndpointsDisabledError.Is(err) {
@@ -569,7 +583,7 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	// We can get an endpoint now and create a data reliability session.
-	endpoint, err := csm.getEndpointFromConsumerSessionWithProviderForDR(ctx, consumerSessionWithProvider, currentEpoch, providerAddress)
+	endpoint, err := csm.fetchEndpointFromConsumerSessionWithProviderWithRetry(ctx, consumerSessionWithProvider, currentEpoch, providerAddress)
 	if err != nil {
 		return nil, "", currentEpoch, err
 	}
