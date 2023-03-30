@@ -17,7 +17,7 @@ import (
 )
 
 type ProviderOptimizer interface {
-	AppendRelayData(providerAddress string, latency time.Duration, failure bool)
+	AppendProbeRelayData(providerAddress string, latency time.Duration, failure bool)
 }
 
 type ignoredProviders struct {

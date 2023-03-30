@@ -84,17 +84,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(len(rpcEndpoints))})
 	for _, rpcEndpoint := range rpcEndpoints {
-		var optimizer *provideroptimizer.ProviderOptimizer
-		var exists bool
-		if optimizer, exists = optimizers[rpcEndpoint.ChainID]; !exists {
-			// doesn't exist for this chain create a new one
-			strategy := provideroptimizer.STRATEGY_BALANCED
-			optimizer = provideroptimizer.NewProviderOptimizer(strategy)
-			optimizers[rpcEndpoint.ChainID] = optimizer
-		}
-		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
-		key := rpcEndpoint.Key()
-		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
 		if err != nil {
 			return err
@@ -103,6 +92,19 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		if err != nil {
 			return err
 		}
+		allowedBlockLagForSync, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+		var optimizer *provideroptimizer.ProviderOptimizer
+		var exists bool
+		if optimizer, exists = optimizers[rpcEndpoint.ChainID]; !exists {
+			// doesn't exist for this chain create a new one
+			strategy := provideroptimizer.STRATEGY_BALANCED
+			optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime)
+			optimizers[rpcEndpoint.ChainID] = optimizer
+		}
+		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
+		key := rpcEndpoint.Key()
+		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+
 		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
