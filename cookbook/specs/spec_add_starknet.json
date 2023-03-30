@@ -53,9 +53,9 @@
                             "function_tag": "getBlockNumber",
                             "result_parsing": {
                                 "parser_arg": [
-                                    "latest"
+                                    "0"
                                 ],
-                                "parser_func": "DEFAULT"
+                                "parser_func": "PARSE_BY_ARG"
                             }
                         },
                         "block_parsing": {
@@ -180,7 +180,7 @@
                         "name": "starknet_getBlockWithTxHashes",
                         "parsing": {
                             "function_tag": "getBlockByNumber",
-                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxs\",\"params\":[{\"block_number\":%d}],\"id\":1}",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxHashes\",\"params\":[{\"block_number\":%d}],\"id\":1}",
                             "result_parsing": {
                                 "parser_arg": [
                                     "0",
@@ -191,9 +191,11 @@
                         },
                         "block_parsing": {
                             "parser_arg": [
-                                "0"
+                                "0",
+                                "block_number"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "PARSE_CANONICAL",
+                            "default_value":"latest"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -215,9 +217,11 @@
                         "name": "starknet_getBlockWithTxs",
                         "block_parsing": {
                             "parser_arg": [
-                                "0"
+                                "0",
+                                "block_number"
                             ],
-                            "parser_func": "PARSE_BY_ARG"
+                            "parser_func": "PARSE_CANONICAL",
+                            "default_value":"latest"
                         },
                         "compute_units": "1",
                         "enabled": true,
