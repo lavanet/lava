@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
@@ -564,6 +565,7 @@ type testSessionData struct {
 	relayNum  uint64
 	epoch     uint64
 	session   *SingleProviderSession
+	history   []string
 }
 
 // this test is running sessions and usage in a sync way to see integrity of behavior, opening and closing of sessions is separate
@@ -575,7 +577,9 @@ func TestPSMUsageSync(t *testing.T) {
 		Geolocation:    1,
 		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, 20)
-
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
 	consumerAddress := "stub-consumer"
 	maxCuForConsumer := uint64(math.MaxInt64)
 	selfProviderIndex := int64(0)
@@ -605,11 +609,13 @@ func TestPSMUsageSync(t *testing.T) {
 						sessionStoreTest.inUse = false
 						sessionStoreTest.relayNum += 1
 						sessionStoreTest.currentCU += relayCU
+						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionDone")
 					} else {
 						// error closing
 						err := psm.OnSessionFailure(sessionStoreTest.session)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = false
+						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionFailure")
 					}
 				} else {
 					// try to use and fail
@@ -617,6 +623,7 @@ func TestPSMUsageSync(t *testing.T) {
 					_, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, relayNumToGet)
 					require.Error(t, err)
 					require.False(t, ConsumerNotRegisteredYet.Is(err))
+					sessionStoreTest.history = append(sessionStoreTest.history, ",TryToUseAgain")
 				}
 			} else {
 				// session not in use yet, so try to use it. we have several options:
@@ -630,8 +637,9 @@ func TestPSMUsageSync(t *testing.T) {
 					session, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
 					if sessionStoreTest.relayNum > 0 {
 						// this is not a first relay so we expect this to work
-						require.NoError(t, err)
+						require.NoError(t, err, "sessionID %d relayNum %d storedRelayNum %d epoch %d, history %s", sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, sessionStoreTest.session.RelayNum, sessionStoreTest.epoch, sessionStoreTest.history)
 						require.Same(t, session, sessionStoreTest.session)
+						sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
 					} else {
 						// this can be a first relay or after an error, so allow not registered error
 						if err != nil {
@@ -643,8 +651,10 @@ func TestPSMUsageSync(t *testing.T) {
 							session, err := psm.RegisterProviderSessionWithConsumer(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, selfProviderIndex)
 							require.NoError(t, err)
 							sessionStoreTest.session = session
+							sessionStoreTest.history = append(sessionStoreTest.history, ",RegisterGet")
 						} else {
 							sessionStoreTest.session = session
+							sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
 						}
 					}
 					choice := rand.Intn(2)
@@ -654,7 +664,7 @@ func TestPSMUsageSync(t *testing.T) {
 						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU, sessionStoreTest.relayNum+1)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = true
-
+						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
 					case 1:
 						cuToUse := uint64(rand.Intn(10)) + 1
 						cuMissing := rand.Intn(int(cuToUse)) + 1
@@ -663,6 +673,7 @@ func TestPSMUsageSync(t *testing.T) {
 						}
 						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), sessionStoreTest.relayNum+1)
 						require.Error(t, err)
+						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")
 					}
 				} else {
 					// getSession should fail
@@ -673,6 +684,7 @@ func TestPSMUsageSync(t *testing.T) {
 					require.Error(t, err)
 					_, err = psm.GetSession(consumerAddress, 5, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
 					require.Error(t, err)
+					sessionStoreTest.history = append(sessionStoreTest.history, ",ErrGet")
 				}
 			}
 		}
@@ -722,8 +734,9 @@ func initSessionStore(numSessions int, epoch uint64) []*testSessionData {
 			relayNum:  0,
 			epoch:     epoch,
 			session:   nil,
+			history:   []string{},
 		}
+		utils.LavaFormatInfo("session", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "sessionID", Value: retSessions[i].sessionID})
 	}
-	utils.LavaFormatInfo("sessions", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "data", Value: retSessions})
 	return retSessions
 }
