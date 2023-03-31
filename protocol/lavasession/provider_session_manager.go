@@ -68,7 +68,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 	if err != nil {
 		return nil, utils.LavaFormatError("getSessionFromAnActiveConsumer Failure", err, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "sessionId", Value: sessionId})
 	}
-	if singleProviderSession.RelayNum+1 < relayNumber { // validate relay number here, but add only in PrepareSessionForUsage
+	if singleProviderSession.RelayNum+1 > relayNumber { // validate relay number here, but add only in PrepareSessionForUsage
 		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, utils.Attribute{Key: "singleProviderSession.RelayNum", Value: singleProviderSession.RelayNum + 1}, utils.Attribute{Key: "request.relayNumber", Value: relayNumber})
 	}
 	// singleProviderSession is locked at this point.
@@ -245,6 +245,11 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
+	if epoch <= psm.blockedEpochHeight {
+		// this shouldn't happen, but nothing to do
+		utils.LavaFormatWarning("called updateEpoch with invalid epoch", nil, utils.Attribute{"epoch", epoch}, utils.Attribute{"blockedEpoch", psm.blockedEpochHeight})
+		return
+	}
 	if epoch > psm.blockDistanceForEpochValidity {
 		psm.blockedEpochHeight = epoch - psm.blockDistanceForEpochValidity
 	} else {
