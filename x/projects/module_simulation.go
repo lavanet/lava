@@ -32,6 +32,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgSetAdminPolicy int = 100
 
+	opWeightMsgSetSubscriptionPolicy = "op_weight_msg_set_subscription_policy"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgSetSubscriptionPolicy int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -85,6 +89,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgSetAdminPolicy,
 		projectssimulation.SimulateMsgSetAdminPolicy(am.keeper),
+	))
+
+	var weightMsgSetSubscriptionPolicy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetSubscriptionPolicy, &weightMsgSetSubscriptionPolicy, nil,
+		func(_ *rand.Rand) {
+			weightMsgSetSubscriptionPolicy = defaultWeightMsgSetSubscriptionPolicy
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgSetSubscriptionPolicy,
+		projectssimulation.SimulateMsgSetSubscriptionPolicy(am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

@@ -12,6 +12,7 @@ option go_package = "github.com/lavanet/lava/x/projects/types";
 service Msg {
       rpc AddProjectKeys(MsgAddProjectKeys) returns (MsgAddProjectKeysResponse);
   rpc SetAdminPolicy(MsgSetAdminPolicy) returns (MsgSetAdminPolicyResponse);
+  rpc SetSubscriptionPolicy(MsgSetSubscriptionPolicy) returns (MsgSetSubscriptionPolicyResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -31,6 +32,16 @@ message MsgSetAdminPolicy {
 }
 
 message MsgSetAdminPolicyResponse {
+}
+
+message MsgSetSubscriptionPolicy {
+  string creator = 1;
+  string subscription = 2;
+  repeated string projects = 3;
+  string policy = 4;
+}
+
+message MsgSetSubscriptionPolicyResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
