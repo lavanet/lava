@@ -32,8 +32,8 @@
                         }
                     ],
                     "geolocation_profile": "1",
-                    "total_cu_limit": "1000",
-                    "epoch_cu_limit": "10",
+                    "total_cu_limit": "1000000",
+                    "epoch_cu_limit": "10000",
                     "max_providers_to_pair": "3"
                 }
             }
