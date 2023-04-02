@@ -10,11 +10,11 @@ import (
 
 // add a default project to a subscription, add the subscription key as
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk)
+	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk, []types.ChainPolicy{})
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string, chainPolicies []types.ChainPolicy) error {
 	project := types.CreateProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
@@ -29,6 +29,11 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	project.AdminPolicy.TotalCuLimit = totalCU
 	project.AdminPolicy.MaxProvidersToPair = providers
 	project.AdminPolicy.GeolocationProfile = geolocation
+	project.AdminPolicy.ChainPolicies = chainPolicies
+
+	// projects can be created only by the subscription address. So the subscription policy is equal to the admin policy
+	// if the admin wishes to change the policy, it can use the set-admin-project TX
+	project.SubscriptionPolicy = project.AdminPolicy
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 
