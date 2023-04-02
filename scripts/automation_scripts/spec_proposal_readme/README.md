@@ -1,3 +1,15 @@
+# Spec Proposal Sorter
+
+### How to use:
+
+```
+python3 scripts/automation_scripts/spec_proposal_sorter.py
+```
+
+# Results:
+
+A directory containing the below hierarchy
+
 # Spec Hierarchy
 
 ### Overview
