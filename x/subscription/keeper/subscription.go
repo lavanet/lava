@@ -162,11 +162,11 @@ func (k Keeper) CreateSubscription(
 			PlanBlock: plan.Block,
 		}
 
-		sub.MonthCuTotal = plan.GetComputeUnits()
-		sub.MonthCuLeft = plan.GetComputeUnits()
+		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
+		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.PlanPolicy.GetTotalCuLimit(), plan.PlanPolicy.GetEpochCuLimit(), plan.PlanPolicy.GetMaxProvidersToPair(), vrfpk)
 		if err != nil {
 			details := map[string]string{
 				"err": err.Error(),

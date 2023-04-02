@@ -2,7 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
-
+option (gogoproto.equal_all) = true;
 option go_package = "github.com/lavanet/lava/x/projects/types";
 
 message Project {
@@ -30,9 +30,9 @@ message ProjectKey {
 message Policy {
     repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false];
     uint64 geolocation_profile = 2;
-    uint64 total_cu_limit = 3;
-    uint64 epoch_cu_limit = 4;
-    uint64 max_providers_to_pair = 5;
+    uint64 total_cu_limit = 3 [(gogoproto.jsontag) = "total_cu_limit"];
+    uint64 epoch_cu_limit = 4 [(gogoproto.jsontag) = "epoch_cu_limit"];
+    uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair"];
 }
 
 message ChainPolicy {
