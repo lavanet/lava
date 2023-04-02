@@ -28,6 +28,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
+	planTypes "github.com/lavanet/lava/x/plans/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
@@ -41,6 +42,7 @@ const (
 )
 
 var (
+	checkedPlansE2E    = []string{"DefaultPlan"}
 	checkedSpecsE2E    = []string{"LAV1", "ETH1"}
 	checkedSpecsE2ELOL = []string{"GTH1"}
 )
@@ -165,7 +167,34 @@ func (lt *lavaTest) stakeLava() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, checkedSpecs []string, successMessage string) {
+func (lt *lavaTest) checkStakeLava(
+	planCount int,
+	specCount int,
+	providerCount int,
+	clientCount int,
+	checkedPlans []string,
+	checkedSpecs []string,
+	successMessage string,
+) {
+	planQueryClient := planTypes.NewQueryClient(lt.grpcConn)
+
+	// query all plans
+	planQueryRes, err := planQueryClient.List(context.Background(), &planTypes.QueryListRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	// check if plans added exist
+	if len(planQueryRes.PlansInfo) != planCount {
+		panic("Staking Failed PLAN count")
+	}
+
+	for _, plan := range planQueryRes.PlansInfo {
+		if !slices.Contains(checkedPlans, plan.Index) {
+			panic("Staking Failed PLAN names")
+		}
+	}
+
 	// providerCount and clientCount refers to number and providers and client for each spec
 	// number of providers and clients should be the same for all specs for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
@@ -517,7 +546,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 1 plan: "DefaultPlan"
 
-	lt.checkStakeLava(5, 5, 1, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(1, 5, 5, 1, checkedPlansE2E, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -781,9 +810,12 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK")
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava()
-	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
-	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
-	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
+
+	// scripts/init_e2e.sh will:
+	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
+	// - produce 1 plan: "DefaultPlan"
+
+	lt.checkStakeLava(1, 5, 5, 1, checkedPlansE2E, checkedSpecsE2E, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
