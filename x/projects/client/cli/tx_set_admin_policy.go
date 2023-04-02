@@ -12,10 +12,10 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdSetProjectPolicy() *cobra.Command {
+func CmdSetAdminPolicy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set-project-policy",
-		Short: "Broadcast message SetProjectPolicy",
+		Use:   "set-admin-policy",
+		Short: "Broadcast message SetAdminPolicy",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -23,7 +23,7 @@ func CmdSetProjectPolicy() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgSetProjectPolicy(
+			msg := types.NewMsgSetAdminPolicy(
 				clientCtx.GetFromAddress().String(),
 			)
 			if err := msg.ValidateBasic(); err != nil {

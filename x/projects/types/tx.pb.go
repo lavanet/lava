@@ -124,24 +124,24 @@ func (m *MsgAddProjectKeysResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgAddProjectKeysResponse proto.InternalMessageInfo
 
-type MsgSetProjectPolicy struct {
+type MsgSetAdminPolicy struct {
 	Creator string  `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	Project string  `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
 	Policy  *Policy `protobuf:"bytes,3,opt,name=policy,proto3" json:"policy,omitempty"`
 }
 
-func (m *MsgSetProjectPolicy) Reset()         { *m = MsgSetProjectPolicy{} }
-func (m *MsgSetProjectPolicy) String() string { return proto.CompactTextString(m) }
-func (*MsgSetProjectPolicy) ProtoMessage()    {}
-func (*MsgSetProjectPolicy) Descriptor() ([]byte, []int) {
+func (m *MsgSetAdminPolicy) Reset()         { *m = MsgSetAdminPolicy{} }
+func (m *MsgSetAdminPolicy) String() string { return proto.CompactTextString(m) }
+func (*MsgSetAdminPolicy) ProtoMessage()    {}
+func (*MsgSetAdminPolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{2}
 }
-func (m *MsgSetProjectPolicy) XXX_Unmarshal(b []byte) error {
+func (m *MsgSetAdminPolicy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetProjectPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgSetAdminPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetProjectPolicy.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgSetAdminPolicy.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -151,54 +151,54 @@ func (m *MsgSetProjectPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *MsgSetProjectPolicy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetProjectPolicy.Merge(m, src)
+func (m *MsgSetAdminPolicy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetAdminPolicy.Merge(m, src)
 }
-func (m *MsgSetProjectPolicy) XXX_Size() int {
+func (m *MsgSetAdminPolicy) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetProjectPolicy) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetProjectPolicy.DiscardUnknown(m)
+func (m *MsgSetAdminPolicy) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetAdminPolicy.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetProjectPolicy proto.InternalMessageInfo
+var xxx_messageInfo_MsgSetAdminPolicy proto.InternalMessageInfo
 
-func (m *MsgSetProjectPolicy) GetCreator() string {
+func (m *MsgSetAdminPolicy) GetCreator() string {
 	if m != nil {
 		return m.Creator
 	}
 	return ""
 }
 
-func (m *MsgSetProjectPolicy) GetProject() string {
+func (m *MsgSetAdminPolicy) GetProject() string {
 	if m != nil {
 		return m.Project
 	}
 	return ""
 }
 
-func (m *MsgSetProjectPolicy) GetPolicy() *Policy {
+func (m *MsgSetAdminPolicy) GetPolicy() *Policy {
 	if m != nil {
 		return m.Policy
 	}
 	return nil
 }
 
-type MsgSetProjectPolicyResponse struct {
+type MsgSetAdminPolicyResponse struct {
 }
 
-func (m *MsgSetProjectPolicyResponse) Reset()         { *m = MsgSetProjectPolicyResponse{} }
-func (m *MsgSetProjectPolicyResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgSetProjectPolicyResponse) ProtoMessage()    {}
-func (*MsgSetProjectPolicyResponse) Descriptor() ([]byte, []int) {
+func (m *MsgSetAdminPolicyResponse) Reset()         { *m = MsgSetAdminPolicyResponse{} }
+func (m *MsgSetAdminPolicyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSetAdminPolicyResponse) ProtoMessage()    {}
+func (*MsgSetAdminPolicyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{3}
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgSetAdminPolicyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgSetAdminPolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetProjectPolicyResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgSetAdminPolicyResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -208,29 +208,29 @@ func (m *MsgSetProjectPolicyResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetProjectPolicyResponse.Merge(m, src)
+func (m *MsgSetAdminPolicyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetAdminPolicyResponse.Merge(m, src)
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Size() int {
+func (m *MsgSetAdminPolicyResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetProjectPolicyResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetProjectPolicyResponse.DiscardUnknown(m)
+func (m *MsgSetAdminPolicyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetAdminPolicyResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetProjectPolicyResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgSetAdminPolicyResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*MsgAddProjectKeys)(nil), "lavanet.lava.projects.MsgAddProjectKeys")
 	proto.RegisterType((*MsgAddProjectKeysResponse)(nil), "lavanet.lava.projects.MsgAddProjectKeysResponse")
-	proto.RegisterType((*MsgSetProjectPolicy)(nil), "lavanet.lava.projects.MsgSetProjectPolicy")
-	proto.RegisterType((*MsgSetProjectPolicyResponse)(nil), "lavanet.lava.projects.MsgSetProjectPolicyResponse")
+	proto.RegisterType((*MsgSetAdminPolicy)(nil), "lavanet.lava.projects.MsgSetAdminPolicy")
+	proto.RegisterType((*MsgSetAdminPolicyResponse)(nil), "lavanet.lava.projects.MsgSetAdminPolicyResponse")
 }
 
 func init() { proto.RegisterFile("projects/tx.proto", fileDescriptor_b5dcbe7dfba713c0) }
 
 var fileDescriptor_b5dcbe7dfba713c0 = []byte{
-	// 333 bytes of a gzipped FileDescriptorProto
+	// 326 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x28, 0xca, 0xcf,
 	0x4a, 0x4d, 0x2e, 0x29, 0xd6, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xcd,
 	0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x30, 0x79, 0x29, 0x31, 0xb8, 0x4a,
@@ -241,17 +241,17 @@ var fileDescriptor_b5dcbe7dfba713c0 = []byte{
 	0xe4, 0xc5, 0xc5, 0x03, 0x65, 0xc6, 0x67, 0xa7, 0x56, 0x16, 0x4b, 0x30, 0x2b, 0x30, 0x6b, 0x70,
 	0x1b, 0x29, 0xea, 0x61, 0x75, 0xa5, 0x1e, 0xc2, 0x36, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82,
 	0xb8, 0x0b, 0x10, 0xf6, 0x2b, 0x49, 0x73, 0x49, 0x62, 0x38, 0x2a, 0x28, 0xb5, 0xb8, 0x20, 0x3f,
-	0xaf, 0x38, 0x55, 0xa9, 0x81, 0x91, 0x4b, 0xd8, 0xb7, 0x38, 0x3d, 0x38, 0xb5, 0x04, 0x2a, 0x1b,
-	0x90, 0x9f, 0x93, 0x99, 0x5c, 0x49, 0x96, 0xa3, 0x4d, 0xb9, 0xd8, 0x0a, 0xc0, 0xba, 0x25, 0x98,
-	0x15, 0x18, 0x35, 0xb8, 0x8d, 0x64, 0x71, 0x39, 0x17, 0xac, 0x28, 0x08, 0xaa, 0x58, 0x49, 0x96,
-	0x4b, 0x1a, 0x8b, 0x0b, 0x60, 0x2e, 0x34, 0x7a, 0xce, 0xc8, 0xc5, 0xec, 0x5b, 0x9c, 0x2e, 0x94,
-	0xc3, 0xc5, 0x87, 0x16, 0xb0, 0x1a, 0x38, 0xcc, 0xc7, 0xf0, 0xad, 0x94, 0x01, 0xb1, 0x2a, 0x61,
-	0xb6, 0x0a, 0x15, 0x71, 0x09, 0x60, 0x84, 0x89, 0x16, 0x6e, 0x53, 0xd0, 0xd5, 0x4a, 0x19, 0x11,
-	0xaf, 0x16, 0x66, 0xa7, 0x93, 0xd3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78,
-	0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44,
-	0x69, 0xa4, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x43, 0xcd, 0x05, 0xd3,
-	0xfa, 0x15, 0xfa, 0x88, 0xa4, 0x5c, 0x59, 0x90, 0x5a, 0x9c, 0xc4, 0x06, 0x4e, 0x89, 0xc6, 0x80,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0x80, 0xa2, 0xf2, 0xe2, 0xe3, 0x02, 0x00, 0x00,
+	0xaf, 0x38, 0x55, 0xa9, 0x0e, 0xec, 0xe2, 0xe0, 0xd4, 0x12, 0xc7, 0x94, 0xdc, 0xcc, 0xbc, 0x80,
+	0xfc, 0x9c, 0xcc, 0xe4, 0x4a, 0xb2, 0x5c, 0x6c, 0xca, 0xc5, 0x56, 0x00, 0xd6, 0x2d, 0xc1, 0xac,
+	0xc0, 0xa8, 0xc1, 0x6d, 0x24, 0x8b, 0xcb, 0xad, 0x60, 0x45, 0x41, 0x50, 0xc5, 0x50, 0xc7, 0xa1,
+	0xda, 0x0f, 0x73, 0x9c, 0xd1, 0x43, 0x46, 0x2e, 0x66, 0xdf, 0xe2, 0x74, 0xa1, 0x1c, 0x2e, 0x3e,
+	0xb4, 0x30, 0xd5, 0xc0, 0x61, 0x3a, 0x86, 0x47, 0xa5, 0x0c, 0x88, 0x55, 0x09, 0xb3, 0x15, 0x64,
+	0x1b, 0x5a, 0x78, 0xe0, 0xb1, 0x0d, 0x55, 0x25, 0x3e, 0xdb, 0xb0, 0xfb, 0xd1, 0xc9, 0xe9, 0xc4,
+	0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1,
+	0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18, 0xa2, 0x34, 0xd2, 0x33, 0x4b, 0x32, 0x4a, 0x93,
+	0xf4, 0x92, 0xf3, 0x73, 0xf5, 0xa1, 0xa6, 0x82, 0x69, 0xfd, 0x0a, 0x7d, 0x44, 0xfa, 0xad, 0x2c,
+	0x48, 0x2d, 0x4e, 0x62, 0x03, 0x27, 0x3f, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf1, 0xf6,
+	0x1b, 0x57, 0xd8, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -267,7 +267,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	AddProjectKeys(ctx context.Context, in *MsgAddProjectKeys, opts ...grpc.CallOption) (*MsgAddProjectKeysResponse, error)
-	SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolicy, opts ...grpc.CallOption) (*MsgSetProjectPolicyResponse, error)
+	SetAdminPolicy(ctx context.Context, in *MsgSetAdminPolicy, opts ...grpc.CallOption) (*MsgSetAdminPolicyResponse, error)
 }
 
 type msgClient struct {
@@ -287,9 +287,9 @@ func (c *msgClient) AddProjectKeys(ctx context.Context, in *MsgAddProjectKeys, o
 	return out, nil
 }
 
-func (c *msgClient) SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolicy, opts ...grpc.CallOption) (*MsgSetProjectPolicyResponse, error) {
-	out := new(MsgSetProjectPolicyResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/SetProjectPolicy", in, out, opts...)
+func (c *msgClient) SetAdminPolicy(ctx context.Context, in *MsgSetAdminPolicy, opts ...grpc.CallOption) (*MsgSetAdminPolicyResponse, error) {
+	out := new(MsgSetAdminPolicyResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/SetAdminPolicy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (c *msgClient) SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolic
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	AddProjectKeys(context.Context, *MsgAddProjectKeys) (*MsgAddProjectKeysResponse, error)
-	SetProjectPolicy(context.Context, *MsgSetProjectPolicy) (*MsgSetProjectPolicyResponse, error)
+	SetAdminPolicy(context.Context, *MsgSetAdminPolicy) (*MsgSetAdminPolicyResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -309,8 +309,8 @@ type UnimplementedMsgServer struct {
 func (*UnimplementedMsgServer) AddProjectKeys(ctx context.Context, req *MsgAddProjectKeys) (*MsgAddProjectKeysResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddProjectKeys not implemented")
 }
-func (*UnimplementedMsgServer) SetProjectPolicy(ctx context.Context, req *MsgSetProjectPolicy) (*MsgSetProjectPolicyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetProjectPolicy not implemented")
+func (*UnimplementedMsgServer) SetAdminPolicy(ctx context.Context, req *MsgSetAdminPolicy) (*MsgSetAdminPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetAdminPolicy not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -335,20 +335,20 @@ func _Msg_AddProjectKeys_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_SetProjectPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgSetProjectPolicy)
+func _Msg_SetAdminPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSetAdminPolicy)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).SetProjectPolicy(ctx, in)
+		return srv.(MsgServer).SetAdminPolicy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.projects.Msg/SetProjectPolicy",
+		FullMethod: "/lavanet.lava.projects.Msg/SetAdminPolicy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).SetProjectPolicy(ctx, req.(*MsgSetProjectPolicy))
+		return srv.(MsgServer).SetAdminPolicy(ctx, req.(*MsgSetAdminPolicy))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -362,8 +362,8 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_AddProjectKeys_Handler,
 		},
 		{
-			MethodName: "SetProjectPolicy",
-			Handler:    _Msg_SetProjectPolicy_Handler,
+			MethodName: "SetAdminPolicy",
+			Handler:    _Msg_SetAdminPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -444,7 +444,7 @@ func (m *MsgAddProjectKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSetProjectPolicy) Marshal() (dAtA []byte, err error) {
+func (m *MsgSetAdminPolicy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -454,12 +454,12 @@ func (m *MsgSetProjectPolicy) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetProjectPolicy) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSetAdminPolicy) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetProjectPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSetAdminPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -493,7 +493,7 @@ func (m *MsgSetProjectPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSetProjectPolicyResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgSetAdminPolicyResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -503,12 +503,12 @@ func (m *MsgSetProjectPolicyResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetProjectPolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSetAdminPolicyResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetProjectPolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSetAdminPolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -559,7 +559,7 @@ func (m *MsgAddProjectKeysResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgSetProjectPolicy) Size() (n int) {
+func (m *MsgSetAdminPolicy) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -580,7 +580,7 @@ func (m *MsgSetProjectPolicy) Size() (n int) {
 	return n
 }
 
-func (m *MsgSetProjectPolicyResponse) Size() (n int) {
+func (m *MsgSetAdminPolicyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -793,7 +793,7 @@ func (m *MsgAddProjectKeysResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
+func (m *MsgSetAdminPolicy) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -816,10 +816,10 @@ func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetProjectPolicy: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgSetAdminPolicy: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetProjectPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSetAdminPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -943,7 +943,7 @@ func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSetProjectPolicyResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgSetAdminPolicyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -966,10 +966,10 @@ func (m *MsgSetProjectPolicyResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetProjectPolicyResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgSetAdminPolicyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetProjectPolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSetAdminPolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

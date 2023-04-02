@@ -25,10 +25,10 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	project.Policy.EpochCuLimit = cuPerEpoch
-	project.Policy.TotalCuLimit = totalCU
-	project.Policy.MaxProvidersToPair = providers
-	project.Policy.GeolocationProfile = geolocation
+	project.AdminPolicy.EpochCuLimit = cuPerEpoch
+	project.AdminPolicy.TotalCuLimit = totalCU
+	project.AdminPolicy.MaxProvidersToPair = providers
+	project.AdminPolicy.GeolocationProfile = geolocation
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 

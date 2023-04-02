@@ -31,9 +31,9 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	// support legacy
 	project, vrfpk_proj, err := k.GetProjectData(ctx, userAddr, req.ChainID, epochStart)
 	if err == nil {
-		allowedCU := project.Policy.EpochCuLimit
+		allowedCU := project.AdminPolicy.EpochCuLimit
 		return &types.QueryUserEntryResponse{Consumer: epochstoragetypes.StakeEntry{
-			Geolocation: project.Policy.GeolocationProfile,
+			Geolocation: project.AdminPolicy.GeolocationProfile,
 			Address:     req.Address,
 			Chain:       req.ChainID,
 			Vrfpk:       vrfpk_proj,

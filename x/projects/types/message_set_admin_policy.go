@@ -5,25 +5,25 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const TypeMsgSetProjectPolicy = "set_project_policy"
+const TypeMsgSetAdminPolicy = "set_admin_policy"
 
-var _ sdk.Msg = &MsgSetProjectPolicy{}
+var _ sdk.Msg = &MsgSetAdminPolicy{}
 
-func NewMsgSetProjectPolicy(creator string) *MsgSetProjectPolicy {
-	return &MsgSetProjectPolicy{
+func NewMsgSetAdminPolicy(creator string) *MsgSetAdminPolicy {
+	return &MsgSetAdminPolicy{
 		Creator: creator,
 	}
 }
 
-func (msg *MsgSetProjectPolicy) Route() string {
+func (msg *MsgSetAdminPolicy) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgSetProjectPolicy) Type() string {
-	return TypeMsgSetProjectPolicy
+func (msg *MsgSetAdminPolicy) Type() string {
+	return TypeMsgSetAdminPolicy
 }
 
-func (msg *MsgSetProjectPolicy) GetSigners() []sdk.AccAddress {
+func (msg *MsgSetAdminPolicy) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -31,12 +31,12 @@ func (msg *MsgSetProjectPolicy) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgSetProjectPolicy) GetSignBytes() []byte {
+func (msg *MsgSetAdminPolicy) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgSetProjectPolicy) ValidateBasic() error {
+func (msg *MsgSetAdminPolicy) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)

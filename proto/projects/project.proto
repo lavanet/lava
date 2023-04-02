@@ -11,8 +11,10 @@ message Project {
     string description = 3; // the description of the project for the users convinient
     bool enabled = 4; // enabled flag
     repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
-    Policy policy = 6 [(gogoproto.nullable) = false];
+    reserved 6;
     uint64 used_cu = 7;
+    Policy subscription_policy = 8 [(gogoproto.nullable) = false];
+    Policy admin_policy = 9 [(gogoproto.nullable) = false];
 }
 
 message ProjectKey {

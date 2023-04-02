@@ -8,7 +8,7 @@ import (
 	"github.com/lavanet/lava/x/projects/types"
 )
 
-func (k msgServer) SetProjectPolicy(goCtx context.Context, msg *types.MsgSetProjectPolicy) (*types.MsgSetProjectPolicyResponse, error) {
+func (k msgServer) SetAdminPolicy(goCtx context.Context, msg *types.MsgSetAdminPolicy) (*types.MsgSetAdminPolicyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	projectID := msg.Project
 	adminKey := msg.Creator
@@ -16,18 +16,18 @@ func (k msgServer) SetProjectPolicy(goCtx context.Context, msg *types.MsgSetProj
 
 	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 	if err != nil || !found {
-		return nil, utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		return nil, utils.LavaError(ctx, ctx.Logger(), "SetAdminPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
 	// check if the admin key is valid
 	if !project.IsAdminKey(adminKey) {
-		return nil, utils.LavaError(ctx, ctx.Logger(), "SetProjectPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+		return nil, utils.LavaError(ctx, ctx.Logger(), "SetAdminPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
-	project.Policy = *msg.Policy
+	project.AdminPolicy = *msg.Policy
 
-	if project.UsedCu > project.Policy.TotalCuLimit {
-		project.Policy.TotalCuLimit = project.UsedCu
+	if project.UsedCu > project.AdminPolicy.TotalCuLimit {
+		project.AdminPolicy.TotalCuLimit = project.UsedCu
 	}
 
 	// TODO this needs to be applied in the next epoch
@@ -37,5 +37,5 @@ func (k msgServer) SetProjectPolicy(goCtx context.Context, msg *types.MsgSetProj
 		return nil, err
 	}
 
-	return &types.MsgSetProjectPolicyResponse{}, nil
+	return &types.MsgSetAdminPolicyResponse{}, nil
 }

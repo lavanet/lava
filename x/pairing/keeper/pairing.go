@@ -111,10 +111,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
-		geolocation = project.Policy.GeolocationProfile
-		providersToPair = project.Policy.MaxProvidersToPair
+		geolocation = project.AdminPolicy.GeolocationProfile
+		providersToPair = project.AdminPolicy.MaxProvidersToPair
 		projectToPair = project.Index
-		allowedCU = project.Policy.EpochCuLimit
+		allowedCU = project.AdminPolicy.EpochCuLimit
 		vrfk = vrfpk_proj
 		legacyStake = false
 	} else {

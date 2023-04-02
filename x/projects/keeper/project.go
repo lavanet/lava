@@ -79,7 +79,7 @@ func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string,
 		return types.Policy{}, err
 	}
 
-	return project.Policy, nil
+	return project.AdminPolicy, nil
 }
 
 func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {

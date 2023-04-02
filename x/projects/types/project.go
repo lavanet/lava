@@ -12,12 +12,13 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 
 func CreateProject(subscriptionAddress string, projectName string) Project {
 	return Project{
-		Index:        ProjectIndex(subscriptionAddress, projectName),
-		Subscription: subscriptionAddress,
-		Description:  "",
-		ProjectKeys:  []ProjectKey{},
-		Policy:       Policy{},
-		UsedCu:       0,
+		Index:              ProjectIndex(subscriptionAddress, projectName),
+		Subscription:       subscriptionAddress,
+		Description:        "",
+		ProjectKeys:        []ProjectKey{},
+		AdminPolicy:        Policy{},
+		SubscriptionPolicy: Policy{},
+		UsedCu:             0,
 	}
 }
 
@@ -70,7 +71,7 @@ func (project *Project) VerifyProject(chainID string) error {
 		return fmt.Errorf("the developers project is disabled")
 	}
 
-	if !project.Policy.ContainsChainID(chainID) {
+	if !project.AdminPolicy.ContainsChainID(chainID) {
 		return fmt.Errorf("the developers project policy does not include the chain")
 	}
 
@@ -80,7 +81,7 @@ func (project *Project) VerifyProject(chainID string) error {
 
 func (project *Project) VerifyCuUsage() error {
 	// TODO: when overuse is added, change here to take that into account
-	if project.Policy.TotalCuLimit <= project.UsedCu {
+	if project.AdminPolicy.TotalCuLimit <= project.UsedCu {
 		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
 	}
 	return nil
