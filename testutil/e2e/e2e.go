@@ -254,7 +254,9 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	if err != nil {
 		panic("Could not find go executable path")
 	}
-	command := goExecutablePath + " test ./testutil/e2e/proxy/. -v eth"
+	// force go's test timeout to 0, otherwise the default is 10m; our timeout
+	// will be enforced by the given ctx.
+	command := goExecutablePath + " test ./testutil/e2e/proxy/. -v -timeout 0 eth"
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
@@ -775,7 +777,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	}
 }
 
-func runE2E() {
+func runE2E(timeout time.Duration) {
 	os.RemoveAll(logsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
@@ -806,7 +808,7 @@ func runE2E() {
 
 	utils.LavaFormatInfo("Starting Lava")
 	go lt.startLava(context.Background())
-	lt.checkLava(time.Minute * 10)
+	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava()
@@ -822,23 +824,20 @@ func runE2E() {
 	// hereinafter:
 	// run each consumer test once for staked client and once for subscription client
 
-	// ETH1 flow
-	jsonCTX, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	lt.startJSONRPCProxy(jsonCTX)
+	// ETH1 flow
+	lt.startJSONRPCProxy(ctx)
 	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	lt.startJSONRPCProvider(jsonCTX)
-	lt.startJSONRPCConsumer(jsonCTX)
+	lt.startJSONRPCProvider(ctx)
+	lt.startJSONRPCConsumer(ctx)
 	lt.checkJSONRPCConsumer("http://127.0.0.1:3331/1", time.Minute*2, "JSONRPCConsumer1 OK")
 	lt.checkJSONRPCConsumer("http://127.0.0.1:3332/1", time.Minute*2, "JSONRPCConsumer2 OK")
 
 	// Lava Flow
-	rpcCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	lt.startLavaProviders(rpcCtx)
-	lt.startLavaConsumer(rpcCtx)
+	lt.startLavaProviders(ctx)
+	lt.startLavaConsumer(ctx)
 	// staked client then with subscription
 	lt.checkTendermintConsumer("http://127.0.0.1:3340/1", time.Second*30)
 	lt.checkRESTConsumer("http://127.0.0.1:3341/1", time.Second*30)
@@ -874,7 +873,7 @@ func runE2E() {
 	}
 	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
 
-	lt.lavaOverLava(rpcCtx)
+	lt.lavaOverLava(ctx)
 
 	// staked client then with subscription
 	if restErr := restTests("http://127.0.0.1:3341/1", time.Second*30); restErr != nil {
@@ -896,9 +895,6 @@ func runE2E() {
 		panic(grpcErr)
 	}
 	utils.LavaFormatInfo("GRPC TEST OK")
-
-	jsonCTX.Done()
-	rpcCtx.Done()
 
 	lt.finishTestSuccessfully()
 }
