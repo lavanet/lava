@@ -134,7 +134,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 					utils.Attribute{Key: "GUID", Value: ctx},
 				)
 			} else {
-				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, relaySession.PairingEpoch, consumerAddress.String())
+				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
 				if !updated {
 					return nil, utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, utils.Attribute{Key: "GUID", Value: ctx})
 				}
