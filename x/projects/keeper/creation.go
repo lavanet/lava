@@ -45,7 +45,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	}
 
 	policy := projectData.GetPolicy()
-	if k.policyEmpty(policy) {
+	if k.isPolicyEmpty(policy) {
 		policy = types.Policy{
 			ChainPolicies:      []types.ChainPolicy{},
 			GeolocationProfile: math.MaxUint64,
@@ -72,7 +72,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
 }
 
-func (k Keeper) policyEmpty(policy types.Policy) bool {
+func (k Keeper) isPolicyEmpty(policy types.Policy) bool {
 	if len(policy.ChainPolicies) == 0 && policy.EpochCuLimit == uint64(0) && policy.GeolocationProfile == uint64(0) && policy.MaxProvidersToPair == 0 && policy.TotalCuLimit == 0 {
 		return true
 	}
