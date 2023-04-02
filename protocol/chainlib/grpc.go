@@ -281,7 +281,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
 
-	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn)) // TODO: improve functionality, this is reading descriptors every send
+	// TODO: improve functionality, this is reading descriptors every send
+	// improvement would be caching the descriptors, instead of fetching them.
+	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 	var descriptor desc.Descriptor
