@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strings"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -51,7 +53,7 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		}
 	}
 
-	if msg.GetProjectData().Name == "" || len(msg.GetProjectData().Name) > projectstypes.MAX_PROJECT_NAME_LEN {
+	if msg.GetProjectData().Name == "" || len(msg.GetProjectData().Name) > projectstypes.MAX_PROJECT_NAME_LEN || strings.Contains(msg.GetProjectData().Name, ",") {
 		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name (%s). Either empty or too long (max_len = %d)", msg.GetProjectData().Name, projectstypes.MAX_PROJECT_NAME_LEN)
 	}
 
