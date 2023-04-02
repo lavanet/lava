@@ -1,11 +1,11 @@
-package v0_9_0
+package v0_9_1
 
 import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/lavanet/lava/app/upgrades"
 )
 
-const UpgradeName = "v0.9.0"
+const UpgradeName = "v0.9.1"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,           // upgrade name defined few lines above
