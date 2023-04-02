@@ -388,6 +388,7 @@ func New(
 		keys[plansmoduletypes.StoreKey],
 		keys[plansmoduletypes.MemStoreKey],
 		app.GetSubspace(plansmoduletypes.ModuleName),
+		app.ProjectsKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -446,6 +447,7 @@ func New(
 		keys[projectsmoduletypes.StoreKey],
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.SpecKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 

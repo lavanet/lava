@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/types"
+	projecttypes "github.com/lavanet/lava/x/projects/types"
 )
 
 // AddPlan adds a new plan to the KVStore. The function returns if the added plan is a first version plans
@@ -52,4 +53,8 @@ func (k Keeper) PutPlan(ctx sdk.Context, index string, block uint64) bool {
 // GetAllPlanIndices gets from the KVStore all the plans' indices
 func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 	return k.plansFs.GetAllEntryIndices(ctx)
+}
+
+func (k Keeper) ValidateChainPolicies(ctx sdk.Context, policy projecttypes.Policy) error {
+	return k.projectsKeeper.ValidateChainPolicies(ctx, policy)
 }

@@ -29,6 +29,17 @@ func handlePlansProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddProp
 	// add the plans to the plan storage
 	for _, planElem := range p.Plans {
 		logger := k.Logger(ctx)
+		if len(planElem.PlanPolicy.GetChainPolicies()) > 0 {
+			err := k.ValidateChainPolicies(ctx, planElem.GetPlanPolicy())
+			if err != nil {
+				details := map[string]string{
+					"planIndex": planElem.GetIndex(),
+					"err":       err.Error(),
+				}
+				return utils.LavaError(ctx, logger, "validate_chain_policies", details, "invalid chain policies in plan policy")
+			}
+		}
+
 		err := k.AddPlan(ctx, planElem)
 		if err != nil {
 			details := map[string]string{

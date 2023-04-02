@@ -19,6 +19,8 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
+		specKeeper types.SpecKeeper
+
 		projectsFS      common.FixationStore
 		developerKeysFS common.FixationStore
 	}
@@ -29,6 +31,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
+	specKeeper types.SpecKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -43,6 +46,7 @@ func NewKeeper(
 		storeKey:        storeKey,
 		memKey:          memKey,
 		paramstore:      ps,
+		specKeeper:      specKeeper,
 		projectsFS:      *projectsfs,
 		developerKeysFS: *developerKeysfs,
 	}

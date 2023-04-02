@@ -69,8 +69,8 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
-		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects),
-		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans),
+		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil),
+		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

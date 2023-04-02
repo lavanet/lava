@@ -17,6 +17,8 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 		plansFs    common.FixationStore
+
+		projectsKeeper types.ProjectsKeeper
 	}
 )
 
@@ -25,6 +27,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
+	projectsKeeper types.ProjectsKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -32,9 +35,10 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		memKey:     memKey,
-		paramstore: ps,
-		plansFs:    *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix),
+		memKey:         memKey,
+		paramstore:     ps,
+		plansFs:        *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix),
+		projectsKeeper: projectsKeeper,
 	}
 }
 
