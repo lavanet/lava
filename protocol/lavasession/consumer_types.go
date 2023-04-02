@@ -16,6 +16,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type ProviderOptimizer interface {
+	AppendRelayData(providerAddress string, latency time.Duration, failure bool)
+}
+
 type ignoredProviders struct {
 	providers    map[string]struct{}
 	currentEpoch uint64
@@ -239,7 +243,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, sessionEpoch uint64) (connected bool, endpointPtr *Endpoint, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
@@ -255,7 +259,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					utils.LavaFormatError("error connecting to provider", err, utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "currentEpoch", Value: sessionEpoch})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
 					}
 					continue
 				}
@@ -284,10 +288,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	if allDisabled {
 		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
 		// report provider.
-		return connected, endpointPtr, AllProviderEndpointsDisabledError
+		return connected, endpointPtr, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
 
-	return connected, endpointPtr, nil
+	return connected, endpointPtr, cswp.PublicLavaAddress, nil
 }
 
 // returns the expected latency to a threshold.
