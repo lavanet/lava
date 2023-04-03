@@ -114,6 +114,19 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 }
 
+func (sps *SingleProviderSession) readSessionDetailsAtomically() []utils.Attribute {
+	cuSum := atomic.LoadUint64(&sps.CuSum)
+	LatestRelayCu := atomic.LoadUint64(&sps.LatestRelayCu)
+	SessionID := atomic.LoadUint64(&sps.SessionID)
+	RelayNum := atomic.LoadUint64(&sps.RelayNum)
+	return []utils.Attribute{
+		{Key: "cuSum", Value: cuSum},
+		{Key: "LatestRelayCu", Value: LatestRelayCu},
+		{Key: "SessionID", Value: SessionID},
+		{Key: "RelayNum", Value: RelayNum},
+	}
+}
+
 func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
@@ -181,7 +194,8 @@ func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (
 	if session, ok := pswc.Sessions[sessionId]; ok {
 		locked := session.lock.TryLock()
 		if !locked {
-			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError)
+			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError,
+				append(session.readSessionDetailsAtomically(), utils.Attribute{Key: "SessionId", Value: sessionId})...)
 		}
 		return session, nil
 	}
