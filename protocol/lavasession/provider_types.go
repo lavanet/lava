@@ -350,6 +350,7 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 }
 
 func (sps *SingleProviderSession) onSessionDone() error {
+	// this can be called on collected sessions, so if in the future you need to touch the parent, take this into consideration to change the OnSessionDone calls in provider_session_manager
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err)
