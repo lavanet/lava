@@ -117,3 +117,9 @@ var Upgrade_0_8_1 = Upgrade{
 		Added:   []string{projectsmoduletypes.StoreKey},
 	},
 }
+
+var Upgrade_0_9_2 = Upgrade{
+	UpgradeName:          "v0.9.2",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
