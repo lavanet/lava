@@ -15,7 +15,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
-	project := types.CreateProject(subscriptionAddress, projectName)
+	project := types.NewProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
 	blockHeight := uint64(ctx.BlockHeight())
@@ -38,6 +38,8 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	}
 
 	project.Enabled = enable
+
+	k.AppendSubscriptionProject(ctx, subscriptionAddress, project.Index)
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
 }
 
@@ -58,7 +60,7 @@ func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, proje
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) SnapshotProject(ctx sdk.Context, projectID string) error {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 	if err != nil || !found {
@@ -70,6 +72,16 @@ func (k Keeper) SnapshotProject(ctx sdk.Context, projectID string) error {
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
+func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
+	projects := k.GetSubscriptionProjects(ctx, subscriptionAddr)
+	for _, projectID := range projects {
+		err := k.snapshotProject(ctx, projectID)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
@@ -79,6 +91,8 @@ func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
 
 	project.Enabled = false
 	// TODO: delete all developer keys from the fixation
+	// also really delete, and remove from subscription-projects
+	// k.RemoveSubscriptionProject(ctx, subscriptionAddress, projectID)
 
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
