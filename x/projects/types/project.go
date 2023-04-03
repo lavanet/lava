@@ -10,7 +10,7 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateProject(subscriptionAddress string, projectName string) Project {
+func NewProject(subscriptionAddress string, projectName string) Project {
 	return Project{
 		Index:        ProjectIndex(subscriptionAddress, projectName),
 		Subscription: subscriptionAddress,
