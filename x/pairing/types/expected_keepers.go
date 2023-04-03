@@ -72,5 +72,5 @@ type ProjectsKeeper interface {
 }
 
 type SubscriptionKeeper interface {
-	DeductComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
+	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
 }

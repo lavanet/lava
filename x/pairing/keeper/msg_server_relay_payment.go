@@ -279,7 +279,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_getting_project", details, "Failed to get project for developer")
 			}
-			err = k.subscriptionKeeper.DeductComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+			err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_subscription_add_cu", details, "Failed to add CU to the subscription")

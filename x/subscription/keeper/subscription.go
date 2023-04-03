@@ -272,7 +272,7 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
 }
 
-func (k Keeper) DeductComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
 	sub, found := k.GetSubscription(ctx, subscription)
 	if !found {
 		details := map[string]string{
