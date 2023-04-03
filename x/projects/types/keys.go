@@ -19,10 +19,24 @@ const (
 	// prefix for the projects fixation store
 	ProjectsFixationPrefix = "prj-fs"
 
-	// prefix for the projects fixation store
+	// prefix for the developer keys fixation store
 	DeveloperKeysFixationPrefix = "dev-fs"
+
+	// prefix for the subscription-to-projects mapping
+	SubscriptionProjectsPrefix = "sub/projs/"
 )
 
 func KeyPrefix(p string) []byte {
 	return []byte(p)
+}
+
+// SubscriptionKey returns the store key to retrieve a Subscription from the consumer field
+func SubscriptionKey(consumer string) []byte {
+	var key []byte
+
+	indexBytes := []byte(consumer)
+	key = append(key, indexBytes...)
+	key = append(key, []byte("/")...)
+
+	return key
 }

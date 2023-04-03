@@ -44,3 +44,8 @@ message ProtoDeveloperData {
     string projectID = 1;
     string vrfpk = 2;
 }
+
+// map subscription to a list of its projects
+message Subscription {
+	repeated string projects = 1; // projectID(s) of this subscription
+}

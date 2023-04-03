@@ -4,10 +4,61 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/projects/types"
 )
+
+func (k Keeper) GetSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) []string {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionProjectsPrefix))
+
+	b := store.Get(types.SubscriptionKey(subscriptionAddr))
+	if b == nil {
+		return []string{}
+	}
+
+	var val types.Subscription
+	k.cdc.MustUnmarshal(b, &val)
+
+	return val.Projects
+}
+
+func (k Keeper) SetSubscriptionProjects(ctx sdk.Context, subscriptionAddr string, projects []string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionProjectsPrefix))
+
+	val := types.Subscription{
+		Projects: projects,
+	}
+
+	b := k.cdc.MustMarshal(&val)
+	store.Set(types.SubscriptionKey(subscriptionAddr), b)
+}
+
+func (k Keeper) AppendSubscriptionProject(ctx sdk.Context, subscriptionAddr string, projectID string) {
+	projects := k.GetSubscriptionProjects(ctx, subscriptionAddr)
+	projects = append(projects, projectID)
+	k.SetSubscriptionProjects(ctx, subscriptionAddr, projects)
+}
+
+func (k Keeper) RemoveSubscriptionProject(ctx sdk.Context, subscriptionAddr string, projectID string) {
+	projects := k.GetSubscriptionProjects(ctx, subscriptionAddr)
+
+	length := len(projects)
+	for i := 0; i < length; i++ {
+		if projects[i] == projectID {
+			if i >= length {
+				projects = []string{}
+			} else {
+				projects[i] = projects[length-1]
+				projects = projects[:length-1]
+			}
+			break
+		}
+	}
+
+	k.SetSubscriptionProjects(ctx, subscriptionAddr, projects)
+}
 
 func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeight uint64) (types.Project, error) {
 	var project types.Project
