@@ -422,8 +422,10 @@ func TestExpiryTime(t *testing.T) {
 			require.Equal(t, tt.months, sub.DurationTotal)
 
 			keeper.RemoveSubscription(ts.ctx, creator)
+
 			// TODO: remove when RemoveSubscriptions properly removes projects
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectstypes.ProjectIndex(creator, "default"))
+			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
+			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }
@@ -467,8 +469,10 @@ func TestPrice(t *testing.T) {
 			require.Equal(t, balance.Amount.Int64(), int64(10000-tt.cost))
 
 			keeper.RemoveSubscription(ts.ctx, creator)
+
 			// TODO: remove when RemoveSubscriptions properly removes projects
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectstypes.ProjectIndex(creator, "default"))
+			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
+			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }
