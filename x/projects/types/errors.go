@@ -8,5 +8,7 @@ import (
 
 // x/projects module sentinel errors
 var (
-	ErrSample = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrInvalidPolicyCuFields           = sdkerrors.Register(ModuleName, 1100, "CU per epoch field can't be larger than Total CU field")
+	ErrInvalidPolicyMaxProvidersToPair = sdkerrors.Register(ModuleName, 1101, "MaxProvidersToPair cannot be less than 2")
+	ErrInvalidPolicy                   = sdkerrors.Register(ModuleName, 1102, "Invalid policy")
 )

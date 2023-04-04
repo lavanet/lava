@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const ADMIN_PROJECT_NAME = "admin"
@@ -84,5 +86,17 @@ func (project *Project) VerifyCuUsage() error {
 	if project.AdminPolicy.TotalCuLimit <= project.UsedCu {
 		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
 	}
+	return nil
+}
+
+func ValidateBasicPolicy(policy Policy) error {
+	if policy.EpochCuLimit > policy.TotalCuLimit {
+		return sdkerrors.Wrapf(ErrInvalidPolicyCuFields, "invalid policy's CU fields (EpochCuLimit = %v, TotalCuLimit = %v)", policy.EpochCuLimit, policy.TotalCuLimit)
+	}
+
+	if policy.MaxProvidersToPair <= 1 {
+		return sdkerrors.Wrapf(ErrInvalidPolicyMaxProvidersToPair, "invalid policy's MaxProvidersToPair fields (MaxProvidersToPair = %v)", policy.MaxProvidersToPair)
+	}
+
 	return nil
 }

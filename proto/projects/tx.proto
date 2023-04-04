@@ -36,9 +36,8 @@ message MsgSetAdminPolicyResponse {
 
 message MsgSetSubscriptionPolicy {
   string creator = 1;
-  string subscription = 2;
-  repeated string projects = 3;
-  string policy = 4;
+  repeated string projects = 2;
+  Policy policy = 3;
 }
 
 message MsgSetSubscriptionPolicyResponse {

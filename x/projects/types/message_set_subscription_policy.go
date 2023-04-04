@@ -9,12 +9,11 @@ const TypeMsgSetSubscriptionPolicy = "set_subscription_policy"
 
 var _ sdk.Msg = &MsgSetSubscriptionPolicy{}
 
-func NewMsgSetSubscriptionPolicy(creator string, subscription string, projects []string, policy string) *MsgSetSubscriptionPolicy {
+func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy Policy) *MsgSetSubscriptionPolicy {
 	return &MsgSetSubscriptionPolicy{
-		Creator:      creator,
-		Subscription: subscription,
-		Projects:     projects,
-		Policy:       policy,
+		Creator:  creator,
+		Projects: projects,
+		Policy:   &policy,
 	}
 }
 
@@ -43,6 +42,11 @@ func (msg *MsgSetSubscriptionPolicy) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+
+	err = ValidateBasicPolicy(*msg.GetPolicy())
+	if err != nil {
+		return sdkerrors.Wrapf(ErrInvalidPolicy, "invalid policy")
 	}
 	return nil
 }

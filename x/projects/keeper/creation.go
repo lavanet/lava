@@ -31,8 +31,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	project.AdminPolicy.GeolocationProfile = geolocation
 	project.AdminPolicy.ChainPolicies = chainPolicies
 
-	// projects can be created only by the subscription address. So the subscription policy is equal to the admin policy
-	// if the admin wishes to change the policy, it can use the set-admin-project TX
+	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
 	project.SubscriptionPolicy = project.AdminPolicy
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})

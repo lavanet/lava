@@ -73,13 +73,16 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy types.Policy, err error) {
+func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64, adminPolicy bool) (policy types.Policy, err error) {
 	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
 	if err != nil {
 		return types.Policy{}, err
 	}
 
-	return project.AdminPolicy, nil
+	if adminPolicy {
+		return project.AdminPolicy, nil
+	}
+	return project.SubscriptionPolicy, nil
 }
 
 func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {

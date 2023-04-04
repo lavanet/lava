@@ -26,10 +26,6 @@ func (k msgServer) SetAdminPolicy(goCtx context.Context, msg *types.MsgSetAdminP
 
 	project.AdminPolicy = *msg.Policy
 
-	if project.UsedCu > project.AdminPolicy.TotalCuLimit {
-		project.AdminPolicy.TotalCuLimit = project.UsedCu
-	}
-
 	// TODO this needs to be applied in the next epoch
 	err = k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 
