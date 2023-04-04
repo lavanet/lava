@@ -15,7 +15,11 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string, chainPolicies []types.ChainPolicy) error {
-	project := types.CreateProject(subscriptionAddress, projectName)
+	project, err := types.CreateProject(subscriptionAddress, projectName)
+	if err != nil {
+		return err
+	}
+
 	var emptyProject types.Project
 
 	blockHeight := uint64(ctx.BlockHeight())
@@ -36,7 +40,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 
-	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
+	err = k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
 	if err != nil {
 		return err
 	}

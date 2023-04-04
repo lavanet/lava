@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -12,7 +14,11 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateProject(subscriptionAddress string, projectName string) Project {
+func CreateProject(subscriptionAddress string, projectName string) (Project, error) {
+	if !validateProjectName(projectName) {
+		return Project{}, fmt.Errorf("project name must be ASCII and cannot contain \",\". Name: %s", projectName)
+	}
+
 	return Project{
 		Index:              ProjectIndex(subscriptionAddress, projectName),
 		Subscription:       subscriptionAddress,
@@ -21,7 +27,23 @@ func CreateProject(subscriptionAddress string, projectName string) Project {
 		AdminPolicy:        Policy{},
 		SubscriptionPolicy: Policy{},
 		UsedCu:             0,
+	}, nil
+}
+
+func validateProjectName(projectName string) bool {
+	if strings.Contains(projectName, ",") || !isASCII(projectName) {
+		return false
 	}
+	return true
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }
 
 func (project *Project) GetKey(projectKey string) ProjectKey {
