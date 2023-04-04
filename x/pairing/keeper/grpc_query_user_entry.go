@@ -31,9 +31,33 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	// support legacy
 	project, vrfpk_proj, err := k.GetProjectData(ctx, userAddr, req.ChainID, epochStart)
 	if err == nil {
-		allowedCU := project.AdminPolicy.EpochCuLimit
+		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+		if err != nil {
+			return nil, err
+		}
+
+		planPolicy := plan.GetPlanPolicy()
+
+		err = project.VerifyProject(req.ChainID, planPolicy)
+		if err != nil {
+			return nil, err
+		}
+
+		// geolocation is a bitmap. common denominator can be calculated with logical AND
+		geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+
+		if err != nil {
+			return nil, err
+		}
+
+		allowedCU := minCuLimit([]uint64{
+			project.AdminPolicy.GetEpochCuLimit(),
+			project.SubscriptionPolicy.GetEpochCuLimit(),
+			planPolicy.GetEpochCuLimit(),
+		})
+
 		return &types.QueryUserEntryResponse{Consumer: epochstoragetypes.StakeEntry{
-			Geolocation: project.AdminPolicy.GeolocationProfile,
+			Geolocation: geolocation,
 			Address:     req.Address,
 			Chain:       req.ChainID,
 			Vrfpk:       vrfpk_proj,

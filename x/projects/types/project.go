@@ -90,22 +90,27 @@ func (project *Project) IsAdminKey(projectKey string) bool {
 	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
 }
 
-func (project *Project) VerifyProject(chainID string) error {
-	if !project.Enabled {
-		return fmt.Errorf("the developers project is disabled")
-	}
-
-	if !project.AdminPolicy.ContainsChainID(chainID) {
+func (project *Project) VerifyProject(chainID string, planPolicy Policy) error {
+	if !project.AdminPolicy.ContainsChainID(chainID) || !project.SubscriptionPolicy.ContainsChainID(chainID) || !planPolicy.ContainsChainID(chainID) {
 		return fmt.Errorf("the developers project policy does not include the chain")
 	}
 
-	err := project.VerifyCuUsage()
+	err := project.VerifyCuUsage(planPolicy)
 	return err
 }
 
-func (project *Project) VerifyCuUsage() error {
+func (project *Project) VerifyCuUsage(planPolicy Policy) error {
 	// TODO: when overuse is added, change here to take that into account
-	if project.AdminPolicy.TotalCuLimit <= project.UsedCu {
+	subCuLimit := project.SubscriptionPolicy.TotalCuLimit
+	adminCuLimit := project.AdminPolicy.TotalCuLimit
+	planCuLimit := planPolicy.TotalCuLimit
+
+	// if all of the CU limits are zero -> unlimited CU
+	if subCuLimit == 0 && adminCuLimit == 0 && planCuLimit == 0 {
+		return nil
+	}
+
+	if subCuLimit <= project.UsedCu || adminCuLimit <= project.UsedCu || planCuLimit <= project.UsedCu {
 		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
 	}
 	return nil

@@ -462,6 +462,7 @@ func New(
 		app.SpecKeeper,
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
+		app.SubscriptionKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
@@ -84,9 +85,8 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 		return projectstypes.Project{}, "", err
 	}
 
-	err = project.VerifyProject(chainID)
-	if err != nil {
-		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index, "error": err.Error()}, "the developers project is invalid")
+	if !project.Enabled {
+		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index}, "the developers project is disabled")
 	}
 
 	return project, vrfpk, nil
@@ -111,10 +111,36 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
-		geolocation = project.AdminPolicy.GeolocationProfile
-		providersToPair = project.AdminPolicy.MaxProvidersToPair
+		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+		if err != nil {
+			return nil, "", 0, false, err
+		}
+
+		planPolicy := plan.GetPlanPolicy()
+
+		err = project.VerifyProject(chainID, planPolicy)
+		if err != nil {
+			return nil, "", 0, false, err
+		}
+
+		// geolocation is a bitmap. common denominator can be calculated with logical AND
+		geolocation = project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+
+		providersToPair, err = minMaxProvidersToPair([]uint64{
+			project.AdminPolicy.GetMaxProvidersToPair(),
+			project.SubscriptionPolicy.GetMaxProvidersToPair(),
+			planPolicy.GetMaxProvidersToPair(),
+		})
+		if err != nil {
+			return nil, "", 0, false, err
+		}
+
 		projectToPair = project.Index
-		allowedCU = project.AdminPolicy.EpochCuLimit
+		allowedCU = minCuLimit([]uint64{
+			project.AdminPolicy.GetEpochCuLimit(),
+			project.SubscriptionPolicy.GetEpochCuLimit(),
+			planPolicy.GetEpochCuLimit(),
+		})
 		vrfk = vrfpk_proj
 		legacyStake = false
 	} else {
@@ -151,6 +177,47 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
 
 	return providers, vrfk, allowedCU, legacyStake, err
+}
+
+func minMaxProvidersToPair(values []uint64) (uint64, error) {
+	min := uint64(math.MaxUint64)
+	for _, v := range values {
+		// maxProviderToPair should never be smaller than 2
+		if v <= 1 {
+			continue
+		}
+
+		if v < min {
+			min = v
+		}
+	}
+
+	if min == math.MaxUint64 {
+		return 0, fmt.Errorf("could not get min MaxProvidersToPair")
+	}
+
+	return min, nil
+}
+
+func minCuLimit(values []uint64) uint64 {
+	min := uint64(math.MaxUint64)
+	for _, v := range values {
+		// when the CU limits are enforced, 0 indicates unlimited CU. So it's actually larger than non-zero limitations
+		if v == 0 {
+			continue
+		}
+
+		if v < min {
+			min = v
+		}
+	}
+
+	// min = initial value -> couldn't find non-zero min value -> unlimited CU
+	if min == math.MaxUint64 {
+		return 0
+	}
+
+	return min
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {

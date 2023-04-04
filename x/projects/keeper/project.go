@@ -85,20 +85,12 @@ func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string,
 	return project.SubscriptionPolicy, nil
 }
 
-func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {
-	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
-	if err != nil {
-		return err
+func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, project *types.Project, cu uint64) (err error) {
+	if project == nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "AddComputeUnitsToProject_project_nil", nil, "project is nil")
 	}
-
-	err = project.VerifyCuUsage()
-	if err != nil {
-		return err
-	}
-
 	project.UsedCu += cu
-
-	return k.projectsFS.ModifyEntry(ctx, project.Index, blockHeight, &project)
+	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), project)
 }
 
 func (k Keeper) ValidateChainPolicies(ctx sdk.Context, policy types.Policy) error {
