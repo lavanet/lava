@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -44,17 +46,8 @@ func (k Keeper) AppendSubscriptionProject(ctx sdk.Context, subscriptionAddr stri
 func (k Keeper) RemoveSubscriptionProject(ctx sdk.Context, subscriptionAddr string, projectID string) {
 	projects := k.GetSubscriptionProjects(ctx, subscriptionAddr)
 
-	length := len(projects)
-	for i := 0; i < length; i++ {
-		if projects[i] == projectID {
-			if i >= length {
-				projects = []string{}
-			} else {
-				projects[i] = projects[length-1]
-				projects = projects[:length-1]
-			}
-			break
-		}
+	if idx := slices.Index(projects, projectID); idx >= 0 {
+		projects = slices.Delete(projects, idx, idx+1)
 	}
 
 	k.SetSubscriptionProjects(ctx, subscriptionAddr, projects)
