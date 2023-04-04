@@ -278,8 +278,8 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 			continue
 		}
 		geolocationSupported := stakeEntry.Geolocation & geolocation
-		if geolocationSupported == 0 {
-			// no match in geolocation bitmap
+		if geolocationSupported == 0 && geolocation != 0 {
+			// no match in geolocation bitmap (geolocation = 0 --> support all regions)
 			continue
 		}
 		validProviders = append(validProviders, stakeEntry)
