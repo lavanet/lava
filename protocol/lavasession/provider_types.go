@@ -1,6 +1,7 @@
 package lavasession
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,16 +105,6 @@ type ProviderSessionsWithConsumer struct {
 	selfProviderIndex int64
 }
 
-type SingleProviderSession struct {
-	userSessionsParent *ProviderSessionsWithConsumer
-	CuSum              uint64
-	LatestRelayCu      uint64
-	SessionID          uint64
-	lock               sync.RWMutex
-	RelayNum           uint64
-	PairingEpoch       uint64
-}
-
 func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
@@ -158,7 +149,7 @@ func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
-func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
@@ -167,23 +158,22 @@ func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(session
 	}
 	pswc.Lock.Lock()
 	defer pswc.Lock.Unlock()
+
 	// this is a double lock and risky but we just created session and nobody has reference to it yet
-	session.lock.Lock()
+	// the following code has to be as short as possible
+	session.lockForUse(ctx)
 	pswc.Sessions[sessionId] = session
 	// session is still locked when we return it
 	return session, nil
 }
 
 // this function returns the session locked to be used
-func (pswc *ProviderSessionsWithConsumer) GetExistingSession(sessionId uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) GetExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {
-		locked := session.lock.TryLock()
-		if !locked {
-			return nil, utils.LavaFormatError("GetExistingSession failed to lock when getting session", LockMisUseDetectedError)
-		}
-		return session, nil
+		err := session.tryLockForUse(ctx)
+		return session, err
 	}
 	return nil, SessionDoesNotExist
 }
@@ -193,7 +183,7 @@ func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessio
 	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
 	if foundDataReliabilitySession {
-		// if session exists, relay number should be 0 as it might had an error
+		// if session exists, relay number should be 0 as it might have had an error
 		// locking the session and returning for validation
 		session.lock.Lock()
 		return session, nil
@@ -213,149 +203,4 @@ func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessio
 
 	// session is still locked when we return it
 	return session, nil
-}
-
-func (sps *SingleProviderSession) GetPairingEpoch() uint64 {
-	return atomic.LoadUint64(&sps.PairingEpoch)
-}
-
-func (sps *SingleProviderSession) SetPairingEpoch(epoch uint64) {
-	atomic.StoreUint64(&sps.PairingEpoch, epoch)
-}
-
-// Verify the SingleProviderSession is locked when getting to this function, if its not locked throw an error
-func (sps *SingleProviderSession) VerifyLock() error {
-	if sps.lock.TryLock() { // verify.
-		// if we managed to lock throw an error for misuse.
-		defer sps.lock.Unlock()
-		return LockMisUseDetectedError
-	}
-	return nil
-}
-
-// In case the user session is a data reliability we just need to verify that the cusum is the amount agreed between the consumer and the provider
-func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayRequestTotalCU uint64) error {
-	if relayRequestTotalCU != DataReliabilityCuSum {
-		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU})
-	}
-	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
-	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum += 1
-	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage",
-		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
-		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
-		utils.Attribute{Key: "sps.RelayNum", Value: sps.RelayNum},
-	)
-	return nil
-}
-
-func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
-	err := sps.VerifyLock() // sps is locked
-	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err)
-	}
-
-	// checking if this user session is a data reliability user session.
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
-	}
-
-	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
-	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
-		sps.lock.Unlock() // unlock on error
-		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
-			utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
-			utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
-			utils.Attribute{Key: "specCU", Value: cuFromSpec},
-			utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
-			utils.Attribute{Key: "relayNumber", Value: relayNumber},
-		)
-	}
-
-	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
-	cuToAdd := relayRequestTotalCU - sps.CuSum // how much consumer thinks he needs to pay - our current state
-
-	// this must happen first, as we also validate and add the used cu to parent here
-	err = sps.validateAndAddUsedCU(cuToAdd, maxCu)
-	if err != nil {
-		sps.lock.Unlock() // unlock on error
-		return err
-	}
-	// finished validating, can add all info.
-	sps.LatestRelayCu = cuToAdd // 1. update latest
-	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = relayNumber  // 3. update RelayNum, we already verified relayNum is valid in GetSession.
-	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
-		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
-		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps},
-		utils.Attribute{Key: "sps.RelayNum", Value: sps},
-		utils.Attribute{Key: "sps.CuSum", Value: sps},
-		utils.Attribute{Key: "sps.sessionId", Value: sps},
-	)
-	return nil
-}
-
-func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
-	for {
-		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
-		if usedCu+currentCU > maxCu {
-			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
-				utils.Attribute{Key: "usedCu", Value: usedCu},
-				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu},
-			)
-		}
-		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again
-		// this can happen when multiple sessions are adding their cu at the same time.
-		// comparing and adding is protecting against race conditions as the parent is not locked.
-		if sps.userSessionsParent.atomicCompareAndWriteUsedComputeUnits(usedCu+currentCU, usedCu) {
-			return nil
-		}
-	}
-}
-
-func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
-	for {
-		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits()                               // check used cu now
-		if sps.userSessionsParent.atomicCompareAndWriteUsedComputeUnits(usedCu-currentCU, usedCu) { // decrease the amount of used cu from the known value
-			return nil
-		}
-	}
-}
-
-func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
-	sps.CuSum -= sps.LatestRelayCu
-	sps.RelayNum -= 1
-	sps.LatestRelayCu = 0
-	return nil
-}
-
-func (sps *SingleProviderSession) onSessionFailure() error {
-	err := sps.VerifyLock() // sps is locked
-	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err)
-	}
-	defer sps.lock.Unlock()
-
-	// handle data reliability session failure
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.onDataReliabilitySessionFailure()
-	}
-
-	sps.CuSum -= sps.LatestRelayCu
-	sps.RelayNum -= 1
-	sps.validateAndSubUsedCU(sps.LatestRelayCu)
-	sps.LatestRelayCu = 0
-	return nil
-}
-
-func (sps *SingleProviderSession) onSessionDone() error {
-	// this can be called on collected sessions, so if in the future you need to touch the parent, take this into consideration to change the OnSessionDone calls in provider_session_manager
-	err := sps.VerifyLock() // sps is locked
-	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err)
-	}
-	sps.LatestRelayCu = 0 // reset the cu, we can also verify its 0 when loading.
-	sps.lock.Unlock()
-	return nil
 }

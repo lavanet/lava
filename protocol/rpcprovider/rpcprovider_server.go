@@ -391,7 +391,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, request *pairingtypes.RelaySession, consumerAddressString string) (*lavasession.SingleProviderSession, error) {
 	// regular session, verifies pairing epoch and relay number
-	singleProviderSession, err := rpcps.providerSessionManager.GetSession(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
+	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, selfProviderIndex, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
@@ -406,7 +406,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetVrfPkAndMaxCuForUser failed", getVrfAndMaxCuError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: request.Epoch}, utils.Attribute{Key: "sessionID", Value: request.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "provider", Value: rpcps.providerAddress}, utils.Attribute{Key: "relayNum", Value: request.RelayNum})
 			}
 			// After validating the consumer we can register it with provider session manager.
-			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex)
+			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex)
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sessionID", Value: request.SessionId}, utils.Attribute{Key: "consumer", Value: consumerAddressString}, utils.Attribute{Key: "relayNum", Value: request.RelayNum})
 			}

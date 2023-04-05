@@ -21,6 +21,7 @@ const (
 	IndexNotFound                                    = -15
 	AverageWorldLatency                              = 300 * time.Millisecond
 	MinValidAddressesForBlockingProbing              = 2
+	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing

@@ -3,6 +3,7 @@ package rpcconsumer
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"strconv"
 	"time"
 
@@ -226,13 +227,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 	}
 	relayTimeout := extraRelayTimeout + lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu) + lavasession.AverageWorldLatency
-	relayResult, relayLatency, err := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)
+	relayResult, relayLatency, err, backoff := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)
 	if err != nil {
-		// relay failed need to fail the session advancement
-		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
-		if errReport != nil {
-			return relayResult, utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
+		failRelaySession := func(origErr error, backoff_ bool) {
+			backOffDuration := 0 * time.Second
+			if backoff_ {
+				backOffDuration = lavasession.BACKOFF_TIME_ON_FAILURE
+			}
+			time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
+			// relay failed need to fail the session advancement
+			errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
+			if errReport != nil {
+				utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
+			}
 		}
+		go failRelaySession(err, backoff)
 		return relayResult, err
 	}
 	// get here only if performed a regular relay successfully
@@ -254,26 +263,31 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return relayResult, err
 }
 
-func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *lavaprotocol.RelayResult, relayTimeout time.Duration) (relayResultRet *lavaprotocol.RelayResult, relayLatency time.Duration, err error) {
+func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *lavaprotocol.RelayResult, relayTimeout time.Duration) (relayResultRet *lavaprotocol.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
 	relaySentTime := time.Now()
-	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
-	defer cancel()
+	connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
 	relayRequest := relayResult.Request
 	providerPublicAddress := relayResult.ProviderAddress
 	reply, err := endpointClient.Relay(connectCtx, relayRequest)
 	relayLatency = time.Since(relaySentTime)
 	if err != nil {
-		return relayResult, 0, err
+		backoff := false
+		if errors.Is(connectCtx.Err(), context.DeadlineExceeded) {
+			backoff = true
+		}
+		connectCtxCancel()
+		return relayResult, 0, err, backoff
 	}
+	connectCtxCancel()
 	relayResult.Reply = reply
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
 	finalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
 	err = lavaprotocol.VerifyRelayReply(reply, relayRequest, providerPublicAddress)
 	if err != nil {
-		return relayResult, 0, err
+		return relayResult, 0, err, false
 	}
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
@@ -285,17 +299,17 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
 				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil)
 			}
-			return relayResult, 0, err
+			return relayResult, 0, err, false
 		}
 
 		finalizationConflict, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, reply.LatestBlock, finalizedBlocks, relayRequest.RelaySession, reply)
 		if err != nil {
 			go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil)
-			return relayResult, 0, err
+			return relayResult, 0, err, false
 		}
 	}
 	relayResult.Finalized = finalized
-	return relayResult, relayLatency, nil
+	return relayResult, relayLatency, nil, false
 }
 
 func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *lavaprotocol.RelayResult) (relayResultRet *lavaprotocol.RelayResult, err error) {
@@ -387,12 +401,21 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		}
 		relayResult = &lavaprotocol.RelayResult{Request: reliabilityRequest, ProviderAddress: providerAddress, Finalized: false}
 		relayTimeout := lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu) + lavasession.AverageWorldLatency + chainlib.DataReliabilityTimeoutIncrease
-		relayResult, dataReliabilityLatency, err := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)
+		relayResult, dataReliabilityLatency, err, backoff := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)
 		if err != nil {
-			errRet := rpccs.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
-			if errRet != nil {
-				return nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sendReliabilityError", Value: err.Error()})
+			failRelaySession := func(origErr error, backoff_ bool) {
+				backOffDuration := 0 * time.Second
+				if backoff_ {
+					backOffDuration = lavasession.BACKOFF_TIME_ON_FAILURE
+				}
+				time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
+				// relay failed need to fail the session advancement
+				errReport := rpccs.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
+				if errReport != nil {
+					utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sendReliabilityError", Value: err.Error()})
+				}
 			}
+			go failRelaySession(err, backoff)
 			return nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Address", Value: providerAddress})
 		}
 
