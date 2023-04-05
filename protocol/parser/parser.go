@@ -360,16 +360,16 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		// Fetch value using prop index
 		block := unmarshalledDataTyped[propIndex]
 
-		return appendInterfaceToInterfaceArray(block), nil
+		return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", block)), nil
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(val), nil
+			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
 		}
 
 		// If attribute with key index exists return value
 		if val, ok := unmarshalledDataTyped[inp]; ok {
-			return appendInterfaceToInterfaceArray(val), nil
+			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
 		}
 
 		// Else return not set error
