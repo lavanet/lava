@@ -16,9 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 type testStruct struct {
 	ctx     context.Context
 	keepers *testkeeper.Keepers
@@ -61,7 +58,7 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 	// create dummy plans in a loop according to planAmount
 	for i := startIndex; i < startIndex+planAmount; i++ {
 		// create distinct plan index by the loop counter
-		planIndex := "mockPlan" + strconv.FormatUint(i, 10)
+		planIndex := "mockPlan" + strconv.Itoa(int(i))
 		overuseRate := uint64(10)
 
 		// create dummy plan and append to the testPlans array
@@ -336,10 +333,8 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// decrease the old plans' refCount
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
-	require.True(t, found)
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
-	require.True(t, found)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
 	ts.advanceEpochUntilStale()
