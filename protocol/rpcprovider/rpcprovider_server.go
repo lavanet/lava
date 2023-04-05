@@ -124,20 +124,22 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			if request.DataReliability == nil {
 				// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 				// Therefore the signature changes, so we need the original copy to extract the address from it.
-				err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
-				if err != nil {
-					return nil, err
-				}
+				// we want this code to run in parallel so it doesn't stop the flow
+
+				go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 				utils.LavaFormatDebug("Provider Finished Relay Successfully",
 					utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 					utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 					utils.Attribute{Key: "GUID", Value: ctx},
 				)
 			} else {
-				updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
-				if !updated {
-					return nil, utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, utils.Attribute{Key: "GUID", Value: ctx})
+				updateRewardServer := func() {
+					updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
+					if !updated {
+						utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, utils.Attribute{Key: "GUID", Value: ctx})
+					}
 				}
+				go updateRewardServer() // do not block flow on reward server
 				utils.LavaFormatDebug("Provider Finished DataReliability Relay Successfully",
 					utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 					utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -196,10 +198,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			err = rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
-			if err != nil {
-				return err
-			}
+			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
