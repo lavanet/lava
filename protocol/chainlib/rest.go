@@ -343,7 +343,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += rcp.averageBlockTime
 	}
-	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+
+	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {

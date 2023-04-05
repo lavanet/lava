@@ -85,16 +85,14 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	}
 	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
 	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum += 1
 	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage",
 		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
 		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
-		utils.Attribute{Key: "sps.RelayNum", Value: sps.RelayNum},
 	)
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64, relayNumber uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err)
@@ -113,7 +111,6 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 			utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
 			utils.Attribute{Key: "specCU", Value: cuFromSpec},
 			utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
-			utils.Attribute{Key: "relayNumber", Value: relayNumber},
 		)
 	}
 
@@ -129,13 +126,11 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
-	sps.RelayNum = relayNumber  // 3. update RelayNum, we already verified relayNum is valid in GetSession.
 	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
 		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
-		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps},
-		utils.Attribute{Key: "sps.RelayNum", Value: sps},
-		utils.Attribute{Key: "sps.CuSum", Value: sps},
-		utils.Attribute{Key: "sps.sessionId", Value: sps},
+		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
+		utils.Attribute{Key: "sps.CuSum", Value: sps.CuSum},
+		utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID},
 	)
 	return nil
 }
@@ -168,10 +163,8 @@ func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
 	}
 }
 
+// for a different behavior in data reliability session failure add here
 func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
-	sps.CuSum -= sps.LatestRelayCu
-	sps.RelayNum -= 1
-	sps.LatestRelayCu = 0
 	return nil
 }
 
@@ -188,18 +181,18 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 	}
 
 	sps.CuSum -= sps.LatestRelayCu
-	sps.RelayNum -= 1
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
 	sps.LatestRelayCu = 0
 	return nil
 }
 
-func (sps *SingleProviderSession) onSessionDone() error {
+func (sps *SingleProviderSession) onSessionDone(relayNumber uint64) error {
 	// this can be called on collected sessions, so if in the future you need to touch the parent, take this into consideration to change the OnSessionDone calls in provider_session_manager
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionDone", err)
 	}
+	sps.RelayNum = relayNumber
 	sps.LatestRelayCu = 0 // reset the cu, we can also verify its 0 when loading.
 	sps.lock.Unlock()
 	return nil

@@ -282,7 +282,9 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				utils.LavaFormatFatal("Unsupported Error", err)
 			}
 		} else {
+			// consumer session is locked and valid, we need to set the relayNumber and the relay cu. before returning.
 			consumerSession.LatestRelayCu = cuNeededForSession // set latestRelayCu
+			consumerSession.RelayNum += RelayNumberIncrement   // increase relayNum
 			// Successfully created/got a consumerSession.
 			return consumerSession, sessionEpoch, providerAddress, reportedProviders, nil
 		}
@@ -531,7 +533,6 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
-	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
 	// calculate QoS
@@ -624,20 +625,21 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	// after choosing a provider, try to see if it already has an existing data reliability session.
-	err = consumerSessionWithProvider.verifyDataReliabilitySessionWasNotAlreadyCreated()
-	if err != nil {
-		return nil, "", currentEpoch, err
-	}
+	consumerSession, pairingEpoch, err := consumerSessionWithProvider.verifyDataReliabilitySessionWasNotAlreadyCreated()
+	if NoDataReliabilitySessionWasCreatedError.Is(err) { // need to create a new data reliability session
+		// We can get an endpoint now and create a data reliability session.
+		endpoint, err := csm.fetchEndpointFromConsumerSessionsWithProviderWithRetry(ctx, consumerSessionWithProvider, currentEpoch)
+		if err != nil {
+			return nil, "", currentEpoch, err
+		}
 
-	// We can get an endpoint now and create a data reliability session.
-	endpoint, err := csm.fetchEndpointFromConsumerSessionsWithProviderWithRetry(ctx, consumerSessionWithProvider, currentEpoch)
-	if err != nil {
-		return nil, "", currentEpoch, err
-	}
+		// get data reliability session from endpoint
+		consumerSession, pairingEpoch, err = consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
+		if err != nil {
+			return nil, "", currentEpoch, err
+		}
 
-	// get data reliability session from endpoint
-	consumerSession, pairingEpoch, err := consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
-	if err != nil {
+	} else if err != nil {
 		return nil, "", currentEpoch, err
 	}
 
@@ -646,11 +648,14 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 		currentEpoch = pairingEpoch
 	}
 
+	// DR consumer session is locked, we can increment data reliability relay number.
+	consumerSession.RelayNum += 1
+
 	return consumerSession, providerAddress, currentEpoch, nil
 }
 
 // On a successful Subscribe relay
-func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSession *SingleConsumerSession) error {
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession) error {
 	if err := csm.verifyLock(consumerSession); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
 	}
@@ -658,7 +663,6 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSessi
 	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
-	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	return nil
 }
@@ -676,6 +680,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 	}
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
+	consumerSession.RelayNum -= 1                    // upon data reliability failure, decrease the relay number so we can try again.
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
 	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
