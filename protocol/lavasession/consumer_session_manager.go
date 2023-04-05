@@ -10,6 +10,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -112,7 +113,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 	}
 	relaySentTime := time.Now()
-	connectCtx, cancel := context.WithTimeout(ctx, AverageWorldLatency)
+	connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
 	defer cancel()
 	guid, found := utils.GetUniqueIdentifier(connectCtx)
 	if !found {

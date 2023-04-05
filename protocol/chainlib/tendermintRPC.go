@@ -478,14 +478,14 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	// create a new http client with a timeout set by the getTimePerCu function
 	httpClient := http.Client{
-		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
 	}
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
 	// create context
-	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
@@ -556,7 +556,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// create a context with a timeout set by the LocalNodeTimePerCu function
-		relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
 		if chainMessage.GetInterface().Category.HangingApi {
 			relayTimeout += cp.averageBlockTime
