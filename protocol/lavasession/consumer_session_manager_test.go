@@ -36,7 +36,7 @@ const (
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, 0, baseLatency))
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, 0, baseLatency, 3))
 }
 
 func createGRPCServer(t *testing.T) *grpc.Server {
