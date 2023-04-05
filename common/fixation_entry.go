@@ -151,13 +151,7 @@ func (fs *FixationStore) AppendEntry(
 			return fs.ModifyEntry(ctx, index, block, entryData)
 		}
 
-		// if the old latest entry has refcount of 0, then update its "stale_at" time
-		// TODO: remove this when the latest entry gets its own refcount.
-		if latestEntry.Refcount == 0 {
-			// never overflows because because ctx.BlockHeight is int64
-			latestEntry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
-			fs.setEntry(ctx, latestEntry)
-		}
+		fs.putEntry(ctx, latestEntry)
 	}
 
 	// marshal the new entry's data
@@ -169,7 +163,7 @@ func (fs *FixationStore) AppendEntry(
 		Block:    block,
 		StaleAt:  math.MaxUint64,
 		Data:     marshaledEntryData,
-		Refcount: 0,
+		Refcount: 1,
 	}
 
 	fs.setEntry(ctx, entry)
@@ -308,6 +302,22 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec
 	return true
 }
 
+// putEntry decrements the refcount of an entry and marks for staleness if needed
+func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
+	if entry.Refcount == 0 {
+		panic("Fixation: prefix " + fs.prefix + ": negative refcount safeIndex: " + entry.Index)
+	}
+
+	entry.Refcount -= 1
+
+	if entry.Refcount == 0 {
+		// never overflows because because ctx.BlockHeight is int64
+		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME) - 1
+	}
+
+	fs.setEntry(ctx, entry)
+}
+
 // PutEntry finds the entry by index and block and decrements the refcount
 func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 	safeIndex, err := sanitizeIndex(index)
@@ -320,18 +330,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 		panic("PutEntry with unknown index: " + index)
 	}
 
-	if entry.Refcount == 0 {
-		panic("PutEntry with refcount zero index: " + index)
-	}
-
-	entry.Refcount -= 1
-
-	if entry.Refcount == 0 {
-		// never overflows because because ctx.BlockHeight is int64
-		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME) - 1
-	}
-
-	fs.setEntry(ctx, entry)
+	fs.putEntry(ctx, entry)
 }
 
 // removeEntry removes an entry from the store

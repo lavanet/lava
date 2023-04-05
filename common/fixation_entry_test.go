@@ -244,6 +244,20 @@ func TestGetAndPutEntry(t *testing.T) {
 	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
+func TestDoublePutEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME+1
+
+	playbook := []fixationTemplate{
+		{ op: "append", name: "entry #1 version 0", count: block0, coin: 0 },
+		{ op: "append", name: "entry #1 version 1", count: block1, coin: 0 },
+		// entry #1 with block zero now has refcount = zero
+		{ op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false },
+	}
+
+	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 3, 1) })
+}
+
 func TestDeleteTwoEntries(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
