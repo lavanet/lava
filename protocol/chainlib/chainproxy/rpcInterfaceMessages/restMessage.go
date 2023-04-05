@@ -2,19 +2,41 @@ package rpcInterfaceMessages
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/lavanet/lava/protocol/parser"
 )
 
 type RestMessage struct {
-	Msg  []byte
-	Path string
+	Msg      []byte
+	Path     string
+	SpecPath string
 }
 
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (cp RestMessage) GetParams() interface{} {
-	return nil
+
+	var parsedMethod string
+	idx := strings.Index(cp.Path, "?")
+	if idx == -1 {
+		parsedMethod = cp.Path
+	} else {
+		parsedMethod = cp.Path[0:idx]
+	}
+
+	objectSpec := strings.Split(cp.SpecPath, "/")
+	objectPath := strings.Split(parsedMethod, "/")
+
+	var parameters []interface{}
+
+	for index, element := range objectSpec {
+		if strings.Contains(element, "{") {
+			parameters = append(parameters, objectPath[index])
+		}
+	}
+
+	return parameters
 }
 
 // GetResult will be deprecated after we remove old client
