@@ -307,7 +307,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(val), nil
+			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
 		}
 
 		// Else return an error
