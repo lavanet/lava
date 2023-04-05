@@ -22,8 +22,10 @@ func NewScoreStore(num float64, denom float64, inpTime time.Time) ScoreStore {
 // The function returns a new ScoreStore entry with the updated numerator, denominator, and current time.
 //
 // The mathematical equation used to calculate the update is:
-//    updatedNum = oldScore.Num*exp(-(now-oldScore.Time)/halfLife) + newScore.Num*exp(-(now-newScore.Time)/halfLife)*updateWeight
-//    updatedDenom = oldScore.Denom*exp(-(now-oldScore.Time)/halfLife) + newScore.Denom*exp(-(now-newScore.Time)/halfLife)*updateWeight
+//
+//	updatedNum = oldScore.Num*exp(-(now-oldScore.Time)/halfLife) + newScore.Num*exp(-(now-newScore.Time)/halfLife)*updateWeight
+//	updatedDenom = oldScore.Denom*exp(-(now-oldScore.Time)/halfLife) + newScore.Denom*exp(-(now-newScore.Time)/halfLife)*updateWeight
+//
 // where now is the current time.
 //
 // Note that the returned ScoreStore has a new Time field set to the current time.

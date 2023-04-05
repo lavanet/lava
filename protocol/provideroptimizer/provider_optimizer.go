@@ -210,7 +210,6 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) ProviderDat
 			utils.LavaFormatFatal("invalid usage of optimizer provider storage", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
 		}
 	} else {
-
 		providerData = ProviderData{
 			Availability: score.NewScoreStore(1, 2, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score
 			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score (twice the time)
@@ -235,7 +234,7 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 		newNumerator = 0
 	}
 	oldScore := providerData.Availability
-	newScore := score.NewScoreStore(newNumerator, 1, time.Now()) //denom is 1, entry time is now
+	newScore := score.NewScoreStore(newNumerator, 1, time.Now()) // denom is 1, entry time is now
 	providerData.Availability = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight)
 	return providerData
 }
@@ -281,7 +280,6 @@ func (po *ProviderOptimizer) getRelayStatsTimeDiff(providerAddress string) time.
 func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.Time {
 	storedVal, found := po.providerRelayStats.Get(providerAddress)
 	if found {
-
 		times, ok := storedVal.([]time.Time)
 		if !ok {
 			utils.LavaFormatFatal("invalid usage of optimizer relay stats cache", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
@@ -314,7 +312,6 @@ func zScore(mean float64, variance float64, value float64) float64 {
 
 // calculate the probability a random variable with a given average and variance with Z repetitions will be less than or equal to value
 func probValueAfterRepetitions(mean float64, variance float64, value float64, repetitions float64) float64 {
-
 	// Calculate the mean and variance of the sum of the random variables
 	sumMean := mean * repetitions
 	sumVariance := variance * repetitions

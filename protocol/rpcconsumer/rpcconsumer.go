@@ -79,7 +79,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
 
-	// we want one provider optimizer per chain so we will store them for reuse accross rpcEndpoints
+	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	optimizers := map[string]*provideroptimizer.ProviderOptimizer{}
 
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
