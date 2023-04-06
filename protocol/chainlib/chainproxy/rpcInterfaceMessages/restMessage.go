@@ -16,7 +16,6 @@ type RestMessage struct {
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (cp RestMessage) GetParams() interface{} {
-
 	var parsedMethod string
 	idx := strings.Index(cp.Path, "?")
 	if idx == -1 {
