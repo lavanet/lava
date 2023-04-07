@@ -26,8 +26,9 @@ import (
 //    - GetEntry(index, *entry): get a copy (and reference) of the latest version of an entry
 //    - PutEntry(index, block): drop a reference of a version of an entry
 //    - [TBD] RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls
-//    - GetAllEntryIndex(): get all the entries indices (without versions)
-//    - AdvanceBlock(): notify of block height progress for garbage collection
+//    - GetAllEntryIndices(): get all the entries indices (without versions)
+//    - GetAllEntryVersions(index): get all the versions of an entry (for testing)
+//    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
 //
 // Entry names (index) must contain only visible ascii characters (ascii values 32-125).
 // The ascii 'DEL' invisible character is used internally to terminate the index values

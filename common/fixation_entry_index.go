@@ -4,6 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 )
 
 // FixationStore manages lists of entries with versions in the store.
@@ -40,7 +41,7 @@ func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
 	store.Delete(types.KeyPrefix(fs.createEntryIndexKey(safeIndex)))
 }
 
-// GetAllEntryIndex returns all Entry indices
+// GetAllEntryIndices returns all Entry indices
 func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	store := fs.getEntryIndexStore(ctx)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -55,6 +56,33 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	}
 
 	return indexList
+}
+
+// GetAllEntryVersions returns a list of all versions (blocks) of an entry.
+// If stale == true, then the output will include stale versions (for testing).
+func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
+	safeIndex, err := sanitizeIndex(index)
+	if err != nil {
+		details := map[string]string{"index": index}
+		utils.LavaError(ctx, ctx.Logger(), "GetAllEntryVersions", details, "invalid non-ascii entry")
+		return nil
+	}
+
+	store := fs.getStore(ctx, safeIndex)
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var entry types.Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if !stale && entry.IsStale(ctx) {
+			continue
+		}
+		blocks = append(blocks, entry.Block)
+	}
+
+	return blocks
 }
 
 func (fs FixationStore) createEntryIndexStoreKey() string {
