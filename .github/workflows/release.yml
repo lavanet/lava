@@ -7,6 +7,11 @@ on:
 permissions:
   contents: write
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: 'us-east-1'
+
 jobs:
   release:
     name: 'release'
@@ -66,6 +71,30 @@ jobs:
           -H "Content-Type: $(file -b --mime-type build/lavad)" \
           --data-binary @build/lavad \
           $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
+
+          #Upload to binary registry
+          if [ ${{ github.event.release.prerelease }} ]; then
+            aws s3 cp s3://network-upgrades-zarak/prerelease/latest/linux-amd64/lavad build/lavad_latest
+            chmod +x build/lavad_latest
+            latest_version_number=$(build/lavad_latest version)
+            execution_version_number=$(echo '${{ github.event.release.tag_name }}' | tr -d 'v')
+            if (( $(echo "$execution_version_number $latest_version_number" | awk '{print ($1 > $2)}') )); then
+              aws s3 cp build/lavad s3://network-upgrades-zarak/prerelease/"${{ github.event.release.tag_name }}"/linux-amd64/lavad
+            else
+              echo "Latest version in prerelease is higher than the current version"
+            fi
+          else
+            aws s3 cp s3://network-upgrades-zarak/latest/linux-amd64/lavad build/lavad_latest
+            chmod +x build/lavad_latest
+            latest_version_number=$(build/lavad_latest version)
+            execution_version_number=$(echo '${{ github.event.release.tag_name }}' | tr -d 'v')
+            if (( $(echo "$execution_version_number $latest_version_number" | awk '{print ($1 > $2)}') )); then
+              aws s3 cp build/lavad s3://network-upgrades-zarak/"${{ github.event.release.tag_name }}"/linux-amd64/lavad
+            else
+              echo "Latest version is higher than the current version"
+            fi
+          fi
+
         }
 
         delete_binary(){
