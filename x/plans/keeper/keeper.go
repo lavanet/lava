@@ -31,11 +31,17 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	fs := *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix)
+
 	return &Keeper{
 		memKey:     memKey,
 		paramstore: ps,
-		plansFs:    *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix),
+		plansFs:    fs,
 	}
+}
+
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.plansFs.AdvanceBlock(ctx)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
