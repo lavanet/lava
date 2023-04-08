@@ -379,7 +379,7 @@ func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64
 }
 
 func (fs *FixationStore) createStoreKey(index string) string {
-	return types.EntryKey + fs.prefix + index
+	return types.EntryPrefix + fs.prefix + index
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
@@ -389,8 +389,10 @@ func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
 // NewFixationStore returns a new FixationStore object
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
+
 	callback := func(ctx sdk.Context, data string) { fs.deleteStaleEntries(ctx, data) }
 	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
+
 	return &fs
 }
