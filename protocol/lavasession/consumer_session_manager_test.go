@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -33,7 +34,7 @@ const (
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
-	return &ConsumerSessionManager{}
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_QOS))
 }
 
 func createGRPCServer(t *testing.T) *grpc.Server {
@@ -44,20 +45,20 @@ func createGRPCServer(t *testing.T) *grpc.Server {
 	return s
 }
 
-func createPairingList() []*ConsumerSessionsWithProvider {
-	cswpList := make([]*ConsumerSessionsWithProvider, 0)
+func createPairingList(providerPrefixAddress string) map[uint64]*ConsumerSessionsWithProvider {
+	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
 	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Client: nil, ConnectionRefusals: 0}
 	for p := 0; p < numberOfProviders; p++ {
-		cswpList = append(cswpList, &ConsumerSessionsWithProvider{
-			PublicLavaAddress: "provider" + strconv.Itoa(p),
+		cswpList[uint64(p)] = &ConsumerSessionsWithProvider{
+			PublicLavaAddress: "provider" + providerPrefixAddress + strconv.Itoa(p),
 			Endpoints:         pairingEndpoints,
 			Sessions:          map[int64]*SingleConsumerSession{},
 			MaxComputeUnits:   200,
 			ReliabilitySent:   false,
 			PairingEpoch:      firstEpochHeight,
-		})
+		}
 	}
 	return cswpList
 }
@@ -68,7 +69,7 @@ func TestHappyFlow(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
@@ -89,7 +90,7 @@ func TestPairingReset(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	csm.validAddresses = []string{}                                     // set valid addresses to zero
@@ -113,11 +114,11 @@ func TestPairingResetWithFailures(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for {
-		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+		utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
 		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 			break
 		}
@@ -141,12 +142,12 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for numberOfResets := 0; numberOfResets < numberOfResetsToTest; numberOfResets++ {
 		for {
-			utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)), nil)
+			utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
 			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 				break
 			}
@@ -188,7 +189,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 
@@ -196,7 +197,12 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		cs    *SingleConsumerSession
 		epoch uint64
 	}
+	type SessTestData struct {
+		relayNum uint64
+		cuSum    uint64
+	}
 	sessionList := make([]session, numberOfAllowedSessionsPerConsumer)
+	sessionListData := make([]SessTestData, numberOfAllowedSessionsPerConsumer)
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
 		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 		require.Nil(t, err)
@@ -206,52 +212,57 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		sessionList[i] = session{cs: cs, epoch: epoch}
 	}
 
-	var successfulRelays uint64
-	var cuSum uint64
 	for j := 0; j < numberOfAllowedSessionsPerConsumer/2; j++ {
 		cs := sessionList[j].cs
 		require.NotNil(t, cs)
 		epoch := sessionList[j].epoch
 		require.Equal(t, epoch, csm.currentEpoch)
 
-		if rand.Intn(1) > 0 {
-			successfulRelays += 1
-			cuSum += cuForFirstRequest
+		if rand.Intn(2) > 0 {
 			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 			require.Nil(t, err)
-			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.RelayNum, uint64(1))
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
+			sessionListData[j] = SessTestData{cuSum: cuForFirstRequest, relayNum: 1}
 		} else {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
-			require.Equal(t, cs.CuSum, cuSum)
-			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.CuSum, uint64(0))
+			require.Equal(t, cs.RelayNum, uint64(0))
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+			sessionListData[j] = SessTestData{cuSum: 0, relayNum: 0}
 		}
 	}
 
-	err = csm.UpdateAllProviders(secondEpochHeight, pairingList[0:(numberOfProviders/2)]) // update the providers. with half of them
+	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
+		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		require.Nil(t, err)
+		require.NotNil(t, cs)
+		require.Equal(t, epoch, csm.currentEpoch)
+		require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+	}
+
+	err = csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2")) // update the providers. with half of them
 	require.Nil(t, err)
 
 	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
 		cs := sessionList[j].cs
 		epoch := sessionList[j].epoch
-		if rand.Intn(1) > 0 {
-			successfulRelays += 1
-			cuSum += cuForFirstRequest
+		if rand.Intn(2) > 0 {
+
 			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 			require.Nil(t, err)
-			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, sessionListData[j].cuSum+cuForFirstRequest, cs.CuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.RelayNum, sessionListData[j].relayNum+1)
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 		} else {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
-			require.Equal(t, cs.CuSum, cuSum)
-			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, sessionListData[j].cuSum, cs.CuSum)
+			require.Equal(t, sessionListData[j].relayNum, cs.RelayNum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
 		}
 	}
@@ -279,13 +290,13 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 }
 
 func TestHappyFlowMultiThreaded(t *testing.T) {
-	utils.LavaFormatInfo("Parallel test:", nil)
+	utils.LavaFormatInfo("Parallel test:")
 
 	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	ch1 := make(chan int)
@@ -305,10 +316,10 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 			all_chs[ch2val] = struct{}{}
 		}
 		if len(all_chs) >= parallelGoRoutines*2 {
-			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)))
 			break // routines finished
 		} else {
-			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val))
 		}
 	}
 
@@ -327,13 +338,13 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 }
 
 func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
-	utils.LavaFormatInfo("Parallel test:", nil)
+	utils.LavaFormatInfo("Parallel test:")
 
 	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	ch1 := make(chan int)
@@ -349,8 +360,8 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 		ch2val := <-ch2 + parallelGoRoutines
 		if len(all_chs) == parallelGoRoutines { // at half of the go routines launch the swap.
 			go func() {
-				utils.LavaFormatInfo(fmt.Sprintf("#### UPDATING PROVIDERS ####"), nil)
-				err := csm.UpdateAllProviders(secondEpochHeight, pairingList[0:(numberOfProviders/2)]) // update the providers. with half of them
+				utils.LavaFormatInfo("#### UPDATING PROVIDERS ####")
+				err := csm.UpdateAllProviders(secondEpochHeight, createPairingList("test2")) // update the providers. with half of them
 				require.Nil(t, err)
 			}()
 		}
@@ -362,10 +373,10 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 			all_chs[ch2val] = struct{}{}
 		}
 		if len(all_chs) >= parallelGoRoutines*2 {
-			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("finished routines len(all_chs): %d", len(all_chs)))
 			break // routines finished
 		} else {
-			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val), nil)
+			utils.LavaFormatInfo(fmt.Sprintf("awaiting routines: ch1: %d, ch2: %d", ch1val, ch2val))
 		}
 	}
 
@@ -390,7 +401,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
@@ -426,7 +437,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a sesssion
@@ -444,7 +455,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
@@ -455,7 +466,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 func TestUpdateAllProviders(t *testing.T) {
 
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.Nil(t, err)
 	require.Equal(t, len(csm.validAddresses), numberOfProviders) // checking there are 2 valid addresses
@@ -469,7 +480,7 @@ func TestUpdateAllProviders(t *testing.T) {
 func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.Nil(t, err)
 	err = csm.UpdateAllProviders(firstEpochHeight, pairingList)
@@ -488,7 +499,7 @@ func TestGetSession(t *testing.T) {
 	defer s.Stop()           // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList()
+	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.Nil(t, err)
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil)

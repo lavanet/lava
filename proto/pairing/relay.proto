@@ -1,31 +1,52 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
     rpc RelaySubscribe (RelayRequest) returns (stream RelayReply) {}
+    rpc Probe (google.protobuf.UInt64Value) returns (google.protobuf.UInt64Value) {}
+}
+
+message RelaySession {
+    string spec_id = 1;
+    bytes content_hash = 2;
+    uint64 session_id = 3;
+    uint64 cu_sum = 4; // total compute unit used including this relay
+    string provider = 5;
+    uint64 relay_num = 6;
+    QualityOfServiceReport qos_report = 7;
+    int64 epoch = 8;
+    bytes unresponsive_providers = 9;
+    string lava_chain_id = 10;
+    bytes sig = 11;
+    Badge badge = 12;
+}
+
+message RelayPrivateData {
+    string connection_type = 1;
+    string api_url = 2; // some relays have associated urls that are filled with params ('/block/{height}')
+    bytes data = 3;
+    int64 request_block = 4;
+    string api_interface = 5;
+    bytes salt = 6;
 }
 
 message RelayRequest {
-    string chainID = 1;
-    string connection_type = 2;
-    string api_url = 3; // some relays have associated urls that are filled with params ('/block/{height}')
-    uint64 session_id = 4;
-    uint64 cu_sum = 5; // total compute unit used including this relay
+    RelaySession relay_session = 1;
+    RelayPrivateData relay_data= 2;
+    VRFData data_reliability = 3;
+}
 
-    bytes data = 6;
-    bytes sig = 7;
-    string provider = 8;
-    int64 block_height = 9;
-    uint64 relay_num = 10;
-    int64 request_block = 11;
-
-    VRFData DataReliability = 12;
-    QualityOfServiceReport QoSReport = 13;
-    bytes unresponsive_providers = 14;
+message Badge {
+    uint64 cu_allocation =1;
+    int64 epoch = 2;
+    bytes badge_pk = 3;
+    string spec_id = 4;
+    bytes project_sig = 5;
 }
 
 message RelayReply {
@@ -38,13 +59,15 @@ message RelayReply {
 }
 
 message VRFData {
-    bool differentiator = 1;
-    bytes vrf_value =2;
-    bytes vrf_proof =3;
-    bytes provider_sig = 4;
-    bytes allDataHash = 5;
-    bytes queryHash = 6; //we only need it for payment later
-    bytes sig =7;
+    string chain_id = 1;
+    int64 epoch = 2;
+    bool differentiator = 3;
+    bytes vrf_value = 4;
+    bytes vrf_proof = 5;
+    bytes provider_sig = 6;
+    bytes all_data_hash = 7;
+    bytes query_hash = 8; //we only need it for payment later
+    bytes sig = 9;
 }
 
 message QualityOfServiceReport{

@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -24,7 +24,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -36,12 +36,24 @@ type GrpcChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewGrpcChainParser creates a new instance of GrpcChainParser
 func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
+}
+
+func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType)
+	}
+
+	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -54,16 +66,10 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Check API is supported and save it in nodeMsg.
 	serviceApi, err := apip.getSupportedApi(url)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
+		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
@@ -74,13 +80,19 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 
-	// TODO why we don't have requested block here?
-	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          grpcMessage,
-	}
+	// TODO: fix requested block
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
 	return nodeMsg, nil
+}
+
+func (*GrpcChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage) *parsedMessage {
+	nodeMsg := &parsedMessage{
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		requestedBlock: requestedBlock,
+	}
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -99,12 +111,12 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("GRPC api not supported")
+		return nil, utils.LavaFormatError("GRPC api not supported", nil, utils.Attribute{Key: "name", Value: name})
 	}
 
 	// Return an error if api is disabled
 	if !api.Enabled {
-		return nil, errors.New("api is disabled")
+		return nil, utils.LavaFormatError("GRPC api is disabled", nil, utils.Attribute{Key: "name", Value: name})
 	}
 
 	return &api, nil
@@ -127,7 +139,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -188,26 +200,24 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return
 	}
 
-	utils.LavaFormatInfo("gRPC PortalStart", nil)
+	utils.LavaFormatInfo("gRPC PortalStart")
 
-	lis, err := net.Listen("tcp", apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": apil.endpoint.NetworkAddress})
-	}
+	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
+		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
-		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
+		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err = apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
-			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
+			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
 		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
 		return relayReply.Data, nil
@@ -215,13 +225,13 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	_, httpServer, err := thirdparty.RegisterServer(apil.endpoint.ChainID, sendRelayCallback)
 	if err != nil {
-		utils.LavaFormatFatal("provider failure RegisterServer", err, &map[string]string{"listenAddr": apil.endpoint.NetworkAddress})
+		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
 
-	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
+	utils.LavaFormatInfo("Server listening", utils.Attribute{Key: "Address", Value: lis.Addr()})
 
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-		utils.LavaFormatFatal("Portal failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": apil.endpoint.ChainID})
+		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
 }
 
@@ -231,33 +241,37 @@ type GrpcChainProxy struct {
 }
 
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
-	if len(rpcProviderEndpoint.NodeUrl) == 0 {
-		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, &map[string]string{"chainID": rpcProviderEndpoint.ChainID, "ApiInterface": rpcProviderEndpoint.ApiInterface})
+	if len(rpcProviderEndpoint.NodeUrls) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	cp := &GrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrl[0], "/"))
+	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"))
+	if err != nil {
+		return nil, err
+	}
+	cp.conn = conn
 	if cp.conn == nil {
-		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
+		return nil, utils.LavaFormatError("g_conn == nil", nil)
 	}
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
-		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on grpc", nil, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	conn, err := cp.conn.GetRpc(ctx, true)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, nil)
+		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	defer cp.conn.ReturnRpc(conn)
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.GrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -267,21 +281,23 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
 	defer cancel()
 
-	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn)) // TODO: improve functionality, this is reading descriptors every send
+	// TODO: improve functionality, this is reading descriptors every send
+	// improvement would be caching the descriptors, instead of fetching them.
+	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)
+		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"descriptor": fmt.Sprintf("%v", descriptor)})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"methodName": methodName})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
 	}
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
@@ -293,34 +309,35 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		formatMessage = true
 	}
 
-	// nodeMessage.MethodDesc = methodDescriptor // TODO: this is useful for parsing the response
-	// rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
-	rp, _, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+	rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
 		EmitJSONDefaultFields: false,
 		IncludeTextSeparator:  false,
 		AllowUnknownFields:    true,
 	})
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
+		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-	// nm.formatter = formatter
+
+	// used when parsing the grpc result
+	nodeMessage.SetParsingData(methodDescriptor, formatter)
+
 	if formatMessage {
 		err = rp.Next(msg)
 		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, nil)
+			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"Method": nodeMessage.Path, "msg": string(nodeMessage.Msg)})
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
 	}
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, nil)
+		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 
 	reply := &pairingtypes.RelayReply{

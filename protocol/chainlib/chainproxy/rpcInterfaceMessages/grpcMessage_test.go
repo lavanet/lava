@@ -96,7 +96,7 @@ func TestReflectionSupport(t *testing.T) {
 			name: "unimplemented error",
 			err:  status.Error(codes.Unimplemented, "unimplemented"),
 			result: utils.LavaFormatError("server does not support the reflection API",
-				status.Error(codes.Unimplemented, "unimplemented"), nil),
+				status.Error(codes.Unimplemented, "unimplemented")),
 		},
 	}
 

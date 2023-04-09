@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGRPCChainParser_Spec(t *testing.T) {
@@ -79,7 +81,9 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2")
 	assert.Error(t, err)
-	assert.Equal(t, "GRPC api not supported", err.Error())
+	errorData, _, found := strings.Cut(err.Error(), " --")
+	require.True(t, found)
+	assert.Equal(t, "GRPC api not supported", errorData)
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
@@ -88,7 +92,9 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1")
 	assert.Error(t, err)
-	assert.Equal(t, "api is disabled", err.Error())
+	errorData, _, found = strings.Cut(err.Error(), " --")
+	require.True(t, found)
+	assert.Equal(t, "GRPC api is disabled", errorData)
 }
 
 func TestGRPCParseMessage(t *testing.T) {
@@ -114,6 +120,7 @@ func TestGRPCParseMessage(t *testing.T) {
 		Msg:  []byte("test message"),
 		Path: "API1",
 	}
-
-	assert.Equal(t, grpcMessage, msg.GetRPCMessage())
+	grpcMsg, ok := msg.GetRPCMessage().(*rpcInterfaceMessages.GrpcMessage)
+	require.True(t, ok)
+	assert.Equal(t, grpcMessage, *grpcMsg)
 }

@@ -1,8 +1,6 @@
 package lavasession
 
 import (
-	"strconv"
-	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,8 +14,13 @@ const (
 	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
 	RelayNumberIncrement                             = 1
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
+	DataReliabilityRelayNumber                       = 1
 	DataReliabilityCuSum                             = 0
 	GeolocationFlag                                  = "geolocation"
+	TendermintUnsubscribeAll                         = "unsubscribe_all"
+	IndexNotFound                                    = -15
+	AverageWorldLatency                              = 300 * time.Millisecond
+	MinValidAddressesForBlockingProbing              = 2
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
@@ -29,13 +32,3 @@ const (
 	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded
 
 )
-
-func PrintRPCEndpoint(endpoint *RPCEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
-}
-
-func PrintRPCProviderEndpoint(endpoint *RPCProviderEndpoint) (retStr string) {
-	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + "Node: " + strings.Join(endpoint.NodeUrl, ", ") + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
-	return
-}

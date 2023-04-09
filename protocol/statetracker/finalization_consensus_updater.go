@@ -2,9 +2,7 @@ package statetracker
 
 import (
 	"context"
-	"strconv"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
 )
@@ -19,7 +17,7 @@ type FinalizationConsensusUpdater struct {
 	stateQuery                        *ConsumerStateQuery
 }
 
-func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
+func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
 	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 
@@ -39,7 +37,7 @@ func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
 	}
 	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(ctx, "", latestBlock)
 	if err != nil {
-		utils.LavaFormatError("could not get block stats for finzalizationConsensus, trying again later", err, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10)})
+		utils.LavaFormatError("could not get block stats for finzalizationConsensus, trying again later", err, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		fcu.nextBlockForUpdate += 1
 		return
 	}

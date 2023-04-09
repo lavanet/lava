@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -29,14 +28,14 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		largerEpochsNumConst = epochsNumToCheckCUForUnresponsiveProvider
 	}
 
-	// To check for punishment, we have to go back recommendedEpochNumToCollectPayment+max(epochsNumToCheckCUForComplainers,epochsNumToCheckCUForUnresponsiveProvider) epochs from the current epoch. If there isn't enough memory, do nothing
-	epochTemp := currentEpoch
-	for counter := uint64(0); counter < largerEpochsNumConst+recommendedEpochNumToCollectPayment; counter++ {
-		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
-		if err != nil {
-			return nil
-		}
-		epochTemp = previousEpoch
+	// To check for punishment, we have to go back:
+	//   recommendedEpochNumToCollectPayment+
+	//   max(epochsNumToCheckCUForComplainers,epochsNumToCheckCUForUnresponsiveProvider)
+	// epochs from the current epoch.
+	minHistoryBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, largerEpochsNumConst+recommendedEpochNumToCollectPayment)
+	if err != nil {
+		// not enough history, do nothing
+		return nil
 	}
 
 	// Get the current stake storages (from all chains). stake storages contain a list of stake entries. Each stake storage is for a different chain
@@ -47,28 +46,29 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	}
 
 	// Go back recommendedEpochNumToCollectPayment
-	epochTemp = currentEpoch
-	for counter := uint64(0); counter < recommendedEpochNumToCollectPayment; counter++ {
-		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
-		if err != nil {
-			// it's too early in the chain life to do this calculation so bail, without an error
-			return nil
-		}
-		epochTemp = previousEpoch
+	minPaymentBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, recommendedEpochNumToCollectPayment)
+	if err != nil {
+		// not enough history, do nothiing
+		return nil
 	}
 
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		for _, providerStakeEntry := range providerStakeStorage.GetStakeEntries() {
+			if minHistoryBlock < providerStakeEntry.StakeAppliedBlock {
+				// this staked provider has too short history (either since staking
+				// or since it was last unfrozen) - do not consider for jailing
+				continue
+			}
 			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
-			providerPaymentStorageKeyList, err := k.countCuForUnresponsiveness(ctx, epochTemp, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
+			providerPaymentStorageKeyList, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
 			if err != nil {
 				return utils.LavaError(ctx, k.Logger(ctx), "count_cu_for_unresponsiveness", map[string]string{"err": err.Error()}, "couldn't count CU for unreponsiveness")
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
 			if len(providerPaymentStorageKeyList) != 0 {
-				err = k.punishUnresponsiveProvider(ctx, epochTemp, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
+				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
 				}
@@ -77,6 +77,19 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	}
 
 	return nil
+}
+
+// getBlockEpochsAgo returns the block numEpochs back from the given blockHeight
+func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight uint64, numEpochs uint64) (uint64, error) {
+	for counter := 0; counter < int(numEpochs); counter++ {
+		var err error
+		blockHeight, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, blockHeight)
+		if err != nil {
+			// too early in the chain life: bail without an error
+			return uint64(0), err
+		}
+	}
+	return blockHeight, nil
 }
 
 // Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns a list of the found providerPaymentStorageKey
@@ -89,7 +102,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 	// get the provider's SDK account address
 	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
 	if err != nil {
-		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, utils.Attribute{Key: "provider_address", Value: providerStakeEntry.Address})
 	}
 
 	// check which of the consts is larger
@@ -167,7 +180,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)
 	if err != nil {
 		// if bad data was given, we cant parse it so we ignore it and continue this protects from spamming wrong information.
-		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": providerAddress})
+		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: providerAddress})
 	}
 
 	// Get provider's stake entry
@@ -181,7 +194,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
 	err = k.unsafeUnstakeProviderEntry(ctx, epoch, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
 	if err != nil {
-		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, &map[string]string{"chainID": chainID, "indexInStakeStorage": strconv.FormatUint(indexInStakeStorage, 10), "existingEntry": existingEntry.GetStake().String()})
+		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}, {Key: "existingEntry", Value: existingEntry.GetStake()}}...)
 	}
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)

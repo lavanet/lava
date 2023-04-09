@@ -97,7 +97,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, err
 }
 
-// function used to get a new pairing from relayer and client
+// function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, vrfk string, allowedCU uint64, legacyStake bool, errorRet error) {
 	var geolocation uint64

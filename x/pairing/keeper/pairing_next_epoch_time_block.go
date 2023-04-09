@@ -128,7 +128,7 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64
 
 func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList []blockHeightAndTime, sampleStep uint64) (uint64, error) {
 	if len(blockHeightAndTimeList) <= 1 {
-		return 0, utils.LavaFormatError("There isn't enough blockHeight structs in the previous epoch to calculate average block time", pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError, nil)
+		return 0, utils.LavaFormatError("There isn't enough blockHeight structs in the previous epoch to calculate average block time", pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError)
 	}
 
 	averageBlockTime := time.Duration(math.MaxInt64)
@@ -136,7 +136,7 @@ func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList [
 		// Calculate the average block time creation over sampleStep blocks
 		currentAverageBlockTime := blockHeightAndTimeList[i].blockTime.Sub(blockHeightAndTimeList[i-1].blockTime) / time.Duration(sampleStep)
 		if currentAverageBlockTime <= 0 {
-			return 0, utils.LavaFormatError("calculated average block time is less than or equal to zero", pairingtypes.AverageBlockTimeIsLessOrEqualToZeroError, &map[string]string{"block": fmt.Sprintf("%v", blockHeightAndTimeList[i].blockHeight), "block timestamp": blockHeightAndTimeList[i].blockTime.String(), "prevBlock": fmt.Sprintf("%v", blockHeightAndTimeList[i-1].blockHeight), "prevBlock timestamp": blockHeightAndTimeList[i-1].blockTime.String()})
+			return 0, utils.LavaFormatError("calculated average block time is less than or equal to zero", pairingtypes.AverageBlockTimeIsLessOrEqualToZeroError, []utils.Attribute{{Key: "block", Value: blockHeightAndTimeList[i].blockHeight}, {Key: "block timestamp", Value: blockHeightAndTimeList[i].blockTime}, {Key: "prevBlock", Value: blockHeightAndTimeList[i-1].blockHeight}, {Key: "prevBlock timestamp", Value: blockHeightAndTimeList[i-1].blockTime}}...)
 		}
 		// save the minimal average block time
 		if averageBlockTime > currentAverageBlockTime {

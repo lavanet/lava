@@ -19,16 +19,16 @@ type implementedOsmosisGammV1beta1 struct {
 func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountIn(ctx context.Context, req *pb_pkg.QuerySwapExactAmountInRequest) (*pb_pkg.QuerySwapExactAmountInResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QuerySwapExactAmountInResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -38,16 +38,16 @@ func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountIn(ctx context.C
 func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountOut(ctx context.Context, req *pb_pkg.QuerySwapExactAmountOutRequest) (*pb_pkg.QuerySwapExactAmountOutResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QuerySwapExactAmountOutResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -57,16 +57,16 @@ func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountOut(ctx context.
 func (is *implementedOsmosisGammV1beta1) NumPools(ctx context.Context, req *pb_pkg.QueryNumPoolsRequest) (*pb_pkg.QueryNumPoolsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/NumPools", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryNumPoolsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -76,16 +76,16 @@ func (is *implementedOsmosisGammV1beta1) NumPools(ctx context.Context, req *pb_p
 func (is *implementedOsmosisGammV1beta1) PoolParams(ctx context.Context, req *pb_pkg.QueryPoolParamsRequest) (*pb_pkg.QueryPoolParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/PoolParams", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryPoolParamsResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -95,16 +95,16 @@ func (is *implementedOsmosisGammV1beta1) PoolParams(ctx context.Context, req *pb
 func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_pkg.QueryPoolTypeRequest) (*pb_pkg.QueryPoolTypeResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/PoolType", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryPoolTypeResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -114,16 +114,16 @@ func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_p
 func (is *implementedOsmosisGammV1beta1) SpotPrice(ctx context.Context, req *pb_pkg.QuerySpotPriceRequest) (*pb_pkg.QuerySpotPriceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/SpotPrice", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QuerySpotPriceResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -133,16 +133,16 @@ func (is *implementedOsmosisGammV1beta1) SpotPrice(ctx context.Context, req *pb_
 func (is *implementedOsmosisGammV1beta1) TotalLiquidity(ctx context.Context, req *pb_pkg.QueryTotalLiquidityRequest) (*pb_pkg.QueryTotalLiquidityResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalLiquidity", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryTotalLiquidityResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -152,16 +152,16 @@ func (is *implementedOsmosisGammV1beta1) TotalLiquidity(ctx context.Context, req
 func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context, req *pb_pkg.QueryTotalPoolLiquidityRequest) (*pb_pkg.QueryTotalPoolLiquidityResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryTotalPoolLiquidityResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }
@@ -171,16 +171,16 @@ func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context,
 func (is *implementedOsmosisGammV1beta1) TotalShares(ctx context.Context, req *pb_pkg.QueryTotalSharesRequest) (*pb_pkg.QueryTotalSharesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err)
 	}
 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalShares", reqMarshaled)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err)
 	}
 	result := &pb_pkg.QueryTotalSharesResponse{}
 	err = proto.Unmarshal(res, result)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err)
 	}
 	return result, nil
 }

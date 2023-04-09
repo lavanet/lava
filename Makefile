@@ -168,7 +168,7 @@ ifeq (static,$(findstring static,$(LAVA_BUILD_OPTIONS)))
 endif
 
 ifeq (mask_consumer_logs,$(findstring mask_consumer_logs,$(LAVA_BUILD_OPTIONS)))
-  ldflags += -X github.com/lavanet/lava/relayer/chainproxy.ReturnMaskedErrors=true
+  ldflags += -X github.com/lavanet/lava/protocol/common.ReturnMaskedErrors=true
 endif
 ifeq (debug_mutex,$(findstring debug_mutex,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/lavanet/lava/utils.TimeoutMutex=true
