@@ -25,6 +25,7 @@ var ( // Consumer Side Errors
 	DataReliabilityAlreadySentThisEpochError             = sdkerrors.New("DataReliabilityAlreadySentThisEpoch Error", 682, "Trying to send data reliability more than once per provider per epoch")
 	FailedToConnectToEndPointForDataReliabilityError     = sdkerrors.New("FailedToConnectToEndPointForDataReliability Error", 683, "Failed to connect to a providers endpoints")
 	DataReliabilityEpochMismatchError                    = sdkerrors.New("DataReliabilityEpochMismatch Error", 684, "Data reliability epoch mismatch original session epoch.")
+	NoDataReliabilitySessionWasCreatedError              = sdkerrors.New("NoDataReliabilitySessionWasCreated Error", 685, "No Data reliability session was created")
 )
 
 var ( // Provider Side Errors

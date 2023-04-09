@@ -117,6 +117,10 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 	}
 
 	// validate RelayNumber
+	if relayNumber == 0 {
+		return nil, utils.LavaFormatError("request's relayNumber zero, expecting consumer to increment", nil, utils.Attribute{Key: "relayNumber", Value: relayNumber}, utils.Attribute{Key: "DataReliabilityRelayNumber", Value: DataReliabilityRelayNumber})
+	}
+
 	if relayNumber > DataReliabilityRelayNumber {
 		return nil, utils.LavaFormatError("request's relayNumber is larger than the DataReliabilityRelayNumber allowed in Data Reliability", nil, utils.Attribute{Key: "relayNumber", Value: relayNumber}, utils.Attribute{Key: "DataReliabilityRelayNumber", Value: DataReliabilityRelayNumber})
 	}
@@ -231,21 +235,21 @@ func (psm *ProviderSessionManager) ReportConsumer() (address string, epoch uint6
 }
 
 // OnSessionDone unlocks the session gracefully, this happens when session finished with an error
-func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession) (err error) {
+func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession, relayNumber uint64) (err error) {
 	if !psm.IsValidEpoch(singleProviderSession.PairingEpoch) {
 		// the single provider session is no longer valid, so do not do a onSessionFailure, we don;t want it racing with cleanup touching other objects
 		utils.LavaFormatWarning("epoch changed during session usage, so discarding sessionID changes on failure", nil,
 			utils.Attribute{Key: "sessionID", Value: singleProviderSession.SessionID},
 			utils.Attribute{Key: "cuSum", Value: singleProviderSession.CuSum},
 			utils.Attribute{Key: "PairingEpoch", Value: singleProviderSession.PairingEpoch})
-		return singleProviderSession.onSessionDone() // to unlock it and resume
+		return singleProviderSession.onSessionDone(relayNumber) // to unlock it and resume
 	}
 	return singleProviderSession.onSessionFailure()
 }
 
 // OnSessionDone unlocks the session gracefully, this happens when session finished successfully
-func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession) (err error) {
-	return singleProviderSession.onSessionDone()
+func (psm *ProviderSessionManager) OnSessionDone(singleProviderSession *SingleProviderSession, relayNumber uint64) (err error) {
+	return singleProviderSession.onSessionDone(relayNumber)
 }
 
 func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
@@ -357,8 +361,8 @@ func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSub
 	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, utils.Attribute{Key: "SubscriptionId", Value: subscription.Id}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
 }
 
-func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
-	err := psm.OnSessionDone(session)
+func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64, relayNumber uint64) error {
+	err := psm.OnSessionDone(session, relayNumber)
 	if err != nil {
 		return utils.LavaFormatError("Failed ReleaseSessionAndCreateSubscription", err)
 	}

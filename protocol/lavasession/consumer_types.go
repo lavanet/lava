@@ -103,13 +103,18 @@ func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
 }
 
 // verify data reliability session exists or not
-func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (err error) {
+func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		// validate our relay number reached the data reliability relay number limit
+		if dataReliabilitySession.RelayNum > DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		dataReliabilitySession.lock.Lock() // lock before returning.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
-	return nil
+	return nil, cswp.PairingEpoch, NoDataReliabilitySessionWasCreatedError
 }
 
 // get a data reliability session from an endpoint
@@ -117,14 +122,19 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	// we re validate the data reliability session now that we are locked.
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		if dataReliabilitySession.RelayNum > DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		// we already have the dr session. so return it.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
 
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
 		Client:    cswp,
 		Endpoint:  endpoint,
+		RelayNum:  0,
 	}
 	singleDataReliabilitySession.lock.Lock() // we must lock the session so other requests wont get it.
 
