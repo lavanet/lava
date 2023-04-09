@@ -399,9 +399,12 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
 func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, newCU uint64) error {
 	// load the session and update the CU inside
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
+
+	// Careful with locks here!
+	// Step 1: Lock psm
+	psm.lock.RLock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
+		defer psm.lock.RUnlock() // unlock psm in case of an error
 		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 	}
 
@@ -409,15 +412,33 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	if !ok {
 		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch})
 	}
+
 	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap.sessionMap[consumerAddress]
 	if !foundConsumer {
 		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress})
 	}
 
-	usedCu := providerSessionWithConsumer.atomicReadUsedComputeUnits() // check used cu now
-	if usedCu < newCU {
-		// if newCU proof is higher than current state, update.
-		providerSessionWithConsumer.atomicWriteUsedComputeUnits(newCU)
+	// Step 2: Unlock psm and Lock pswc
+	psm.lock.RUnlock()
+	providerSessionWithConsumer.Lock.RLock()
+
+	singleSession, foundSession := providerSessionWithConsumer.Sessions[sessionID]
+	if !foundSession {
+		return utils.LavaFormatError("UpdateSessionCU Failed", SessionIdNotFoundError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "sessionId", Value: sessionID})
+	}
+
+	// Step 3: Unlock psm after reading singleSession
+	providerSessionWithConsumer.Lock.RUnlock()
+
+	// Step 4: update information atomically. ( no locks required when updating atomically )
+	oldCuSum := singleSession.atomicReadCuSum() // check used cu now
+	if newCU > oldCuSum {
+		// update the session.
+		singleSession.writeCuSumAtomically(newCU)
+		usedCuInParent := providerSessionWithConsumer.atomicReadUsedComputeUnits()
+		usedCuInParent += (newCU - oldCuSum) // new cu is larger than old cu. so its ok to subtract
+		// update the parent
+		providerSessionWithConsumer.atomicWriteUsedComputeUnits(usedCuInParent)
 	}
 	return nil
 }
