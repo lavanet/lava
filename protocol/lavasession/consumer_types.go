@@ -108,7 +108,7 @@ func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlre
 	defer cswp.Lock.Unlock()
 	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
 		// validate our relay number reached the data reliability relay number limit
-		if dataReliabilitySession.RelayNum > DataReliabilityRelayNumber {
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
 			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
 		}
 		dataReliabilitySession.lock.Lock() // lock before returning.
@@ -123,7 +123,7 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 	defer cswp.Lock.Unlock()
 	// we re validate the data reliability session now that we are locked.
 	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		if dataReliabilitySession.RelayNum > DataReliabilityRelayNumber {
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
 			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
 		}
 		// we already have the dr session. so return it.
