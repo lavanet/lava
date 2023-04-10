@@ -279,9 +279,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_payment_failed_get_plan_for_subscription", details, "Failed to get plan for subscription")
 			}
 
-			project.VerifyCuUsage(plan.GetPlanPolicy())
+			err = project.VerifyCuUsage(plan.GetPlanPolicy())
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_verify_cu_usage", details, "CU verification failed")
+			}
 
-			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, &project, relay.CuSum)
+			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, project, relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")

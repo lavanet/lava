@@ -46,10 +46,6 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		// geolocation is a bitmap. common denominator can be calculated with logical AND
 		geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
 
-		if err != nil {
-			return nil, err
-		}
-
 		allowedCU := minCuLimit([]uint64{
 			project.AdminPolicy.GetEpochCuLimit(),
 			project.SubscriptionPolicy.GetEpochCuLimit(),

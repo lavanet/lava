@@ -3,9 +3,9 @@ package types
 import (
 	"fmt"
 	"strings"
-	"unicode"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
 const ADMIN_PROJECT_NAME = "admin"
@@ -31,17 +31,8 @@ func CreateProject(subscriptionAddress string, projectName string) (Project, err
 }
 
 func validateProjectName(projectName string) bool {
-	if strings.Contains(projectName, ",") || !isASCII(projectName) {
+	if strings.Contains(projectName, ",") || !commontypes.IsASCII(projectName) {
 		return false
-	}
-	return true
-}
-
-func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if s[i] > unicode.MaxASCII {
-			return false
-		}
 	}
 	return true
 }

@@ -141,6 +141,11 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 			project.SubscriptionPolicy.GetEpochCuLimit(),
 			planPolicy.GetEpochCuLimit(),
 		})
+		err = project.VerifyCuUsage(planPolicy)
+		if err != nil {
+			return nil, "", 0, false, fmt.Errorf("getPairingForClient: CU verification failed: %s", err.Error())
+		}
+
 		vrfk = vrfpk_proj
 		legacyStake = false
 	} else {

@@ -73,24 +73,21 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64, adminPolicy bool) (policy types.Policy, err error) {
+func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (adminPolicy types.Policy, subscriptionPolicy types.Policy, err error) {
 	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
 	if err != nil {
-		return types.Policy{}, err
+		return types.Policy{}, types.Policy{}, err
 	}
 
-	if adminPolicy {
-		return project.AdminPolicy, nil
-	}
-	return project.SubscriptionPolicy, nil
+	adminPolicy = project.AdminPolicy
+	subscriptionPolicy = project.SubscriptionPolicy
+	err = nil
+	return
 }
 
-func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, project *types.Project, cu uint64) (err error) {
-	if project == nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "AddComputeUnitsToProject_project_nil", nil, "project is nil")
-	}
+func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
 	project.UsedCu += cu
-	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), project)
+	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
 func (k Keeper) ValidateChainPolicies(ctx sdk.Context, policy types.Policy) error {
