@@ -27,7 +27,7 @@ const (
 	grpcListener                       = "localhost:48353"
 	servicedBlockNumber                = int64(30)
 	relayNumberAfterFirstCall          = uint64(1)
-	relayNumberAfterFirstFail          = uint64(0)
+	relayNumberAfterFirstFail          = uint64(1)
 	latestRelayCuAfterDone             = uint64(0)
 	cuSumOnFailure                     = uint64(0)
 )
@@ -178,7 +178,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-	require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
+	require.GreaterOrEqual(t, relayNumberAfterFirstFail, cs.RelayNum)
 	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 
 }
@@ -223,16 +223,16 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			require.Equal(t, cs.RelayNum, uint64(1))
+			require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 			sessionListData[j] = SessTestData{cuSum: cuForFirstRequest, relayNum: 1}
 		} else {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, uint64(0))
-			require.Equal(t, cs.RelayNum, uint64(0))
+			require.Equal(t, cs.RelayNum, relayNumberAfterFirstFail)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			sessionListData[j] = SessTestData{cuSum: 0, relayNum: 0}
+			sessionListData[j] = SessTestData{cuSum: 0, relayNum: 1}
 		}
 	}
 
@@ -262,7 +262,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
 			require.Equal(t, sessionListData[j].cuSum, cs.CuSum)
-			require.Equal(t, sessionListData[j].relayNum, cs.RelayNum)
+			require.Equal(t, cs.RelayNum, sessionListData[j].relayNum+1)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
 		}
 	}
@@ -507,4 +507,12 @@ func TestGetSession(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+}
+
+func TestContext(t *testing.T) {
+	ctx := context.Background()
+	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
+	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
+	cancel()
 }

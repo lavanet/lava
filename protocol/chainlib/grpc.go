@@ -293,7 +293,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	// TODO: improve functionality, this is reading descriptors every send
