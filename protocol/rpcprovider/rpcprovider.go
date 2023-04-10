@@ -111,7 +111,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
 	}
-	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+	for endpointNum, rpcProviderEndpoint := range rpcProviderEndpoints {
+		utils.LavaFormatDebug("setting up endpoint support in provider", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()}, utils.Attribute{Key: "endpoint_idx", Value: endpointNum})
 		err := rpcProviderEndpoint.Validate()
 		if err != nil {
 			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
@@ -123,7 +124,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 		if err != nil {
-			return err
+			utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+			continue
 		}
 		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcProviderEndpoint.ChainID)
 		_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
@@ -182,7 +184,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(rpcp.disabledEndpoints) > 0 {
-		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", rpcp.disabledEndpoints), nil)
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Running with disabled Endpoints:", rpcp.disabledEndpoints), nil)
 	}
 	select {
 	case <-ctx.Done():
