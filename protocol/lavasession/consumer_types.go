@@ -264,7 +264,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !endpoint.Enabled {
 				continue
 			}
-			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected bool) {
+			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
 				if endpoint.Client != nil && endpoint.connection.GetState() != connectivity.Shutdown {
 					return true
 				}
@@ -287,20 +287,19 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				return true
 			}
 			if endpoint.Client == nil {
-				connected := connectEndpoint(cswp, ctx, endpoint)
-				if !connected {
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
 					continue
 				}
-			} else {
-				if endpoint.connection.GetState() == connectivity.Shutdown {
-					// connection was shut down, so we need to create a new one
-					endpoint.connection.Close()
-					endpoint.Client = nil
-					connected := connectEndpoint(cswp, ctx, endpoint)
-					if !connected {
-						continue
-					}
+			} else if endpoint.connection.GetState() == connectivity.Shutdown {
+				// connection was shut down, so we need to create a new one
+				endpoint.connection.Close()
+				endpoint.Client = nil
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
+					continue
 				}
+
 			}
 			cswp.Endpoints[idx] = endpoint
 			return true, endpoint, false
