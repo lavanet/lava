@@ -60,5 +60,10 @@ func (msg *MsgAddProject) ValidateBasic() error {
 	if len(msg.GetProjectData().Description) > projectstypes.MAX_PROJECT_DESCRIPTION_LEN {
 		return sdkerrors.Wrapf(ErrInvalidParameter, "project description too long (%s). max_len = %d", msg.GetProjectData().Description, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
 	}
+
+	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "project maxProvidersToPair field is invalid (maxProvidersToPair = %v). This field must be greater than 1", msg.GetProjectData().Policy.MaxProvidersToPair)
+	}
+
 	return nil
 }
