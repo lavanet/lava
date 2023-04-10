@@ -544,7 +544,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			return nil, "", nil, err
 		}
 		// return the rpc connection to the http pool after the function completes
-		cp.httpConnector.ReturnRpc(rpc)
+		defer cp.httpConnector.ReturnRpc(rpc)
 	}
 
 	// create variables for the rpc message and reply message
