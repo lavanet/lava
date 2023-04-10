@@ -395,7 +395,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			reportedProviders = nil
 			utils.LavaFormatError("failed reading reported providers for epoch", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
 		}
-		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, rpccs.lavaChainID, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayResult.Request.RelayData, providerAddress, epoch, reportedProviders, singleConsumerSession)
+		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, rpccs.lavaChainID, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayResult.Request.RelayData, providerAddress, epoch, reportedProviders, singleConsumerSession.RelayNum)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed creating data reliability relay", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayRequestData", Value: relayResult.Request.RelayData})
 		}

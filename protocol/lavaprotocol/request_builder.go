@@ -84,14 +84,14 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	}
 }
 
-func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64, singleConsumerSession *lavasession.SingleConsumerSession) *pairingtypes.RelaySession {
+func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64, relayNum uint64) *pairingtypes.RelaySession {
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
 		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 		CuSum:                 lavasession.DataReliabilityCuSum,     // consumerSession.CuSum == 0
 		Provider:              providerPublicAddress,
-		RelayNum:              singleConsumerSession.RelayNum,
+		RelayNum:              relayNum,
 		QosReport:             nil,
 		Epoch:                 epoch,
 		UnresponsiveProviders: nil,
@@ -168,14 +168,14 @@ func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *
 	return dataReliability
 }
 
-func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte, singleConsumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayRequest, error) {
+func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte, relayNum uint64) (*pairingtypes.RelayRequest, error) {
 	if relayRequestData.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
 			utils.Attribute{Key: "requested_common_data", Value: relayRequestData}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "chainID", Value: chainID})
 	}
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:       relayRequestData,
-		RelaySession:    dataReliabilityRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, epoch, singleConsumerSession),
+		RelaySession:    dataReliabilityRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, epoch, relayNum),
 		DataReliability: vrfData,
 	}
 	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
