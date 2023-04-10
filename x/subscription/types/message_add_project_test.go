@@ -20,7 +20,8 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 			msg: MsgAddProject{
 				Creator: "invalid_address",
 				ProjectData: projectstypes.ProjectData{
-					Name: "validName",
+					Name:   "validName",
+					Policy: projectstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   "invalid address",
 						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
@@ -34,7 +35,8 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 			msg: MsgAddProject{
 				Creator: sample.AccAddress(),
 				ProjectData: projectstypes.ProjectData{
-					Name: "validName",
+					Name:   "validName",
+					Policy: projectstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   sample.AccAddress(),
 						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
