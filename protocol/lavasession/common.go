@@ -20,6 +20,7 @@ const (
 	TendermintUnsubscribeAll                         = "unsubscribe_all"
 	IndexNotFound                                    = -15
 	MinValidAddressesForBlockingProbing              = 2
+	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing

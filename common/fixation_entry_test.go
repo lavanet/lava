@@ -100,35 +100,23 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 				require.NotNil(t, err, what)
 			}
 		case "find":
-			err, found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
+			found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
 			if !play.fail {
-				require.Nil(t, err, what)
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
 			} else {
-				require.NotNil(t, err, what)
 				require.False(t, found, what)
 			}
 		case "get":
-			err, found := vs[play.store].GetEntry(ctx, play.index, &dummy)
+			found := vs[play.store].GetEntry(ctx, play.index, &dummy)
 			if !play.fail {
-				require.Nil(t, err, what)
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
 			} else {
-				require.NotNil(t, err, what)
 				require.False(t, found, what)
 			}
 		case "put":
-			err, found := vs[play.store].PutEntry(ctx, play.index, block, &dummy)
-			if !play.fail {
-				require.Nil(t, err, what)
-				require.True(t, found, what)
-				require.Equal(t, dummy, coins[play.coin], what)
-			} else {
-				require.NotNil(t, err, what)
-				require.False(t, found, what)
-			}
+			vs[play.store].PutEntry(ctx, play.index, block)
 		case "block":
 			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
 		case "getall":
@@ -266,9 +254,7 @@ func TestGetAndPutEntry(t *testing.T) {
 		{ op: "append", name: "entry #2", count: block1, coin: 1 },
 		// entry #1 should not be deleted because it has refcount != zero);
 		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "put", name: "refcount entry #1", count: block0, coin: 0 },
-		// double put triggers error
-		{ op: "put", name: "refcount entry #1", count: block0, fail: true },
+		{ op: "put", name: "refcount entry #1", count: block0 },
 		// entry #1 not deleted because not enough time with refcount = zero
 		{ op: "find", name: "entry #1", count: block0, coin: 0 },
 		{ op: "append", name: "entry #3", count: block2, coin: 2 },
