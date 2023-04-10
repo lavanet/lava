@@ -26,17 +26,18 @@ import (
 )
 
 type RPCProviderServer struct {
-	cache                  *performance.Cache
-	chainProxy             chainlib.ChainProxy
-	privKey                *btcec.PrivateKey
-	reliabilityManager     ReliabilityManagerInf
-	providerSessionManager *lavasession.ProviderSessionManager
-	rewardServer           RewardServerInf
-	chainParser            chainlib.ChainParser
-	rpcProviderEndpoint    *lavasession.RPCProviderEndpoint
-	stateTracker           StateTrackerInf
-	providerAddress        sdk.AccAddress
-	lavaChainID            string
+	cache                     *performance.Cache
+	chainProxy                chainlib.ChainProxy
+	privKey                   *btcec.PrivateKey
+	reliabilityManager        ReliabilityManagerInf
+	providerSessionManager    *lavasession.ProviderSessionManager
+	rewardServer              RewardServerInf
+	chainParser               chainlib.ChainParser
+	rpcProviderEndpoint       *lavasession.RPCProviderEndpoint
+	stateTracker              StateTrackerInf
+	providerAddress           sdk.AccAddress
+	lavaChainID               string
+	allowedMissingCUThreshold float64
 }
 
 type ReliabilityManagerInf interface {
@@ -69,6 +70,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	stateTracker StateTrackerInf,
 	providerAddress sdk.AccAddress,
 	lavaChainID string,
+	allowedMissingCUThreshold float64,
 ) {
 	rpcps.cache = cache
 	rpcps.chainProxy = chainProxy
@@ -81,6 +83,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.stateTracker = stateTracker
 	rpcps.providerAddress = providerAddress
 	rpcps.lavaChainID = lavaChainID
+	rpcps.allowedMissingCUThreshold = allowedMissingCUThreshold
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
@@ -119,21 +122,24 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	} else {
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
+		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
 			if request.DataReliability == nil {
-				// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
-				// Therefore the signature changes, so we need the original copy to extract the address from it.
-				// we want this code to run in parallel so it doesn't stop the flow
+				if sendRewards {
+					// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
+					// Therefore the signature changes, so we need the original copy to extract the address from it.
+					// we want this code to run in parallel so it doesn't stop the flow
 
-				go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
-				utils.LavaFormatDebug("Provider Finished Relay Successfully",
-					utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-					utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-					utils.Attribute{Key: "GUID", Value: ctx},
-				)
+					go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
+					utils.LavaFormatDebug("Provider Finished Relay Successfully",
+						utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+						utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
+						utils.Attribute{Key: "GUID", Value: ctx},
+					)
+				}
 			} else {
 				updateRewardServer := func() {
 					updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
@@ -164,7 +170,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(relayCU, request.RelaySession.CuSum)
+	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, 0.2)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.

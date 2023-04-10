@@ -61,7 +61,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(relayCu, relayCu)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.2)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -74,7 +74,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	return psm, sps
 }
 
-func prepareDRSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSession) {
+func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
 	// initialize the struct
 	psm := initProviderSessionManager()
 
@@ -91,7 +91,7 @@ func prepareDRSession(t *testing.T) (*ProviderSessionManager, *SingleProviderSes
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
+	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0.2)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -124,7 +124,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	_, sps := prepareSession(t, context.Background())
 
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(relayCu, relayCu)
+	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0.2)
 	require.Error(t, err)
 }
 
@@ -194,8 +194,9 @@ func TestPSMUpdateCu(t *testing.T) {
 }
 
 func TestPSMUpdateCuMaxCuReached(t *testing.T) {
+	ctx := context.Background()
 	// init test
-	psm, sps := prepareSession(t, context.Background())
+	psm, sps := prepareSession(t, ctx)
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
@@ -206,37 +207,39 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, maxCu)
 
 	// get another session, this time sps is not nil as the session ID is already registered
-	sps, err = psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1)
 	require.Nil(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
-	err = sps.PrepareSessionForUsage(relayCu, maxCu+relayCu)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0.2)
 	require.Error(t, err)
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
 }
 
 func TestPSMCUMisMatch(t *testing.T) {
+	ctx := context.Background()
 	// init test
-	psm, sps := prepareSession(t, context.Background())
+	psm, sps := prepareSession(t, ctx)
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 	require.Nil(t, err)
 	// get another session
-	sps, err = psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1)
 	require.Nil(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
-	err = sps.PrepareSessionForUsage(relayCu+1, relayCu)
+	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0.2)
 	require.Error(t, err)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
 
 func TestPSMDataReliabilityHappyFlow(t *testing.T) {
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	ctx := context.Background()
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session done
 	psm.OnSessionDone(sps, relayNumber)
@@ -250,8 +253,9 @@ func TestPSMDataReliabilityHappyFlow(t *testing.T) {
 }
 
 func TestPSMDataReliabilityTwicePerEpoch(t *testing.T) {
+	ctx := context.Background()
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session done
 	psm.OnSessionDone(sps, relayNumber)
@@ -274,7 +278,8 @@ func TestPSMDataReliabilityTwicePerEpoch(t *testing.T) {
 
 func TestPSMDataReliabilitySessionFailure(t *testing.T) {
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	ctx := context.Background()
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session failure.
 	psm.OnSessionFailure(sps, relayNumber)
@@ -288,8 +293,9 @@ func TestPSMDataReliabilitySessionFailure(t *testing.T) {
 }
 
 func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
+	ctx := context.Background()
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session failure.
 	psm.OnSessionFailure(sps, relayNumber)
@@ -309,7 +315,7 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(relayCu, dataReliabilityRelayCu)
+	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0.2)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -330,8 +336,10 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 }
 
 func TestPSMDataReliabilityEpochChange(t *testing.T) {
+
+	ctx := context.Background()
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session done.
 	psm.OnSessionDone(sps, relayNumber)
@@ -345,8 +353,9 @@ func TestPSMDataReliabilityEpochChange(t *testing.T) {
 }
 
 func TestPSMDataReliabilitySessionFailureEpochChange(t *testing.T) {
+	ctx := context.Background()
 	// prepare data reliability session
-	psm, sps := prepareDRSession(t)
+	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session done.
 	psm.OnSessionFailure(sps, relayNumber)
@@ -591,6 +600,7 @@ func TestPSMUsageSync(t *testing.T) {
 	sessionsStoreTooAdvanced := initSessionStore(numSessions, 15) // sessionIDs will overlap, this is intentional
 	// an attempt is either a valid opening, valid closing, invalid opening, erroring session, epoch too advanced usage
 	simulateUsageOnSessionsStore := func(attemptsNum int, sessionsStoreArg []*testSessionData, needsRegister bool) {
+		ctx := context.Background()
 		for attempts := 0; attempts < attemptsNum; attempts++ {
 			// pick scenario:
 			sessionIdx := rand.Intn(len(sessionsStoreArg))
@@ -622,7 +632,7 @@ func TestPSMUsageSync(t *testing.T) {
 				} else {
 					// try to use and fail
 					relayNumToGet := sessionStoreTest.relayNum + uint64(rand.Intn(3))
-					_, err := psm.GetSession(context.Background(), consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, relayNumToGet)
+					_, err := psm.GetSession(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, relayNumToGet)
 					require.Error(t, err)
 					require.False(t, ConsumerNotRegisteredYet.Is(err))
 					sessionStoreTest.history = append(sessionStoreTest.history, ",TryToUseAgain")
@@ -636,7 +646,7 @@ func TestPSMUsageSync(t *testing.T) {
 				choice := rand.Intn(2)
 				if choice == 0 || sessionStoreTest.relayNum == 0 {
 					// getSession should work
-					session, err := psm.GetSession(context.Background(), consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
+					session, err := psm.GetSession(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
 					if sessionStoreTest.relayNum > 0 {
 						// this is not a first relay so we expect this to work
 						require.NoError(t, err, "sessionID %d relayNum %d storedRelayNum %d epoch %d, history %s", sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, sessionStoreTest.session.RelayNum, sessionStoreTest.epoch, sessionStoreTest.history)
@@ -650,7 +660,7 @@ func TestPSMUsageSync(t *testing.T) {
 							require.True(t, needsRegister)
 							needsRegister = false
 							utils.LavaFormatInfo("registered session", utils.Attribute{Key: "sessionID", Value: sessionStoreTest.sessionID}, utils.Attribute{Key: "epoch", Value: sessionStoreTest.epoch})
-							session, err := psm.RegisterProviderSessionWithConsumer(context.Background(), consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, selfProviderIndex)
+							session, err := psm.RegisterProviderSessionWithConsumer(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, selfProviderIndex)
 							require.NoError(t, err)
 							sessionStoreTest.session = session
 							sessionStoreTest.history = append(sessionStoreTest.history, ",RegisterGet")
@@ -663,7 +673,7 @@ func TestPSMUsageSync(t *testing.T) {
 					switch choice {
 					case 0:
 						cuToUse := uint64(rand.Intn(10)) + 1
-						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0.2)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = true
 						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
@@ -673,7 +683,7 @@ func TestPSMUsageSync(t *testing.T) {
 						if cuToUse+sessionStoreTest.currentCU <= uint64(cuMissing) {
 							cuToUse += 1
 						}
-						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing))
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0.2)
 						require.Error(t, err)
 						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")
 					}

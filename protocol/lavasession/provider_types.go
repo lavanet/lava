@@ -13,8 +13,9 @@ import (
 )
 
 type ProviderSessionsEpochData struct {
-	UsedComputeUnits uint64
-	MaxComputeUnits  uint64
+	UsedComputeUnits    uint64
+	MaxComputeUnits     uint64
+	MissingComputeUnits uint64
 }
 
 type RPCProviderEndpoint struct {
@@ -145,7 +146,38 @@ func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
+	return atomic.LoadUint64(&pswc.epochData.MissingComputeUnits)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicWriteMissingComputeUnits(cu uint64) {
+	atomic.StoreUint64(&pswc.epochData.MissingComputeUnits, cu)
+}
+
+func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool) {
+	missing := pswc.atomicReadMissingComputeUnits()
+	used := pswc.atomicReadUsedComputeUnits()
+	max := pswc.atomicReadMaxComputeUnits()
+	// do not allow bypassing max used CU
+	if currentMissingCU+missing+used > max {
+		return false
+	}
+	// do not allow having more missing than threshold
+	if currentMissingCU+missing > uint64(float64(max)*allowedThreshold) {
+		return false
+	}
+	// do not allow having more missing than already used
+	if currentMissingCU > used {
+		return false
+	}
+	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
+	return true
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent

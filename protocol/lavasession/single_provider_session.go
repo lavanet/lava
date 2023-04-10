@@ -24,6 +24,12 @@ type SingleProviderSession struct {
 	occupyingGuid      uint64 //used for tracking errors
 }
 
+// to be used only when locked, otherwise can return wrong values
+// is used to determine if the proof is beneficial and needs to be sent to rewardServer
+func (sps *SingleProviderSession) IsPayingRelay() bool {
+	return sps.LatestRelayCu > 0
+}
+
 func (sps *SingleProviderSession) lockForUse(ctx context.Context) {
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	sps.lock.Lock()
@@ -92,10 +98,10 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, relayRequestTotalCU uint64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err)
+		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
 	}
 
 	// checking if this user session is a data reliability user session.
@@ -105,13 +111,45 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
 	if relayRequestTotalCU < sps.CuSum+cuFromSpec {
-		sps.lock.Unlock() // unlock on error
-		return utils.LavaFormatError("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
-			utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
-			utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
-			utils.Attribute{Key: "specCU", Value: cuFromSpec},
-			utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
-		)
+		// there is a mismatch, check if it's critical
+		// there are allowed cases when a mismatch happens
+		// 1) mismatch still provides us with more CU, count the missing diff as missing, we still send the new proof to reward server
+		// 2) mismatch provides us with less total CU, count all of the request CU as missing, and do not send the proof (setting sps.LatestRelayCu to 0)
+
+		missingCU := cuFromSpec
+		if relayRequestTotalCU > sps.CuSum {
+			// case 1) expected: cuFromSpec + sps.CuSum, given: relayRequestTotalCU, missing: expected-given
+			missingCU = cuFromSpec + sps.CuSum - relayRequestTotalCU
+		} else {
+			// case 2) the relay is giving less than our latest proof, it's missing the entire spec cu
+			relayRequestTotalCU = sps.CuSum // sets cuToAdd to 0
+		}
+
+		var cuErr error = nil
+		// verify there are enough missing cus allowed
+		canAddMissingCU := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
+		if !canAddMissingCU {
+			cuErr = utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
+				utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
+				utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
+				utils.Attribute{Key: "specCU", Value: cuFromSpec},
+				utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
+				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
+				utils.Attribute{Key: "missingCUs", Value: missingCU},
+				utils.Attribute{Key: "allowedThreshold", Value: allowedThreshold},
+			)
+		}
+		// verify missing cus aren't immediately expended and are scattered across the session duration
+
+		if cuErr != nil {
+			sps.lock.Unlock() // unlock on error
+			return cuErr
+		}
+		// there are missing CU but that's fine because it's within the threshold, and provider gets paid for the new request
+		// reading userSessionParent address because it's a fixed string value that isn't changing
+		utils.LavaFormatWarning("CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
+			utils.Attribute{Key: "sessionID", Value: sps.SessionID}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
 	}
 
 	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
@@ -127,10 +165,12 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(cuFromSpec uint64, rela
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
 	utils.LavaFormatDebug("Before Update Normal PrepareSessionForUsage",
+		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
 		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
 		utils.Attribute{Key: "sps.CuSum", Value: sps.CuSum},
 		utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID},
+		utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 	)
 	return nil
 }
@@ -171,7 +211,7 @@ func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
 func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
-		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err)
+		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, utils.Attribute{Key: "sessionID", Value: sps.SessionID})
 	}
 	defer sps.lock.Unlock()
 
