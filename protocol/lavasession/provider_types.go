@@ -173,7 +173,7 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 		return false
 	}
 	// do not allow having more missing than already used
-	if currentMissingCU > used {
+	if currentMissingCU+missing > used {
 		return false
 	}
 	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
