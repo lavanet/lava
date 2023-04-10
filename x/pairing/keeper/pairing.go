@@ -111,43 +111,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
-		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
-		if err != nil {
-			return nil, "", 0, false, err
-		}
-
-		planPolicy := plan.GetPlanPolicy()
-
-		err = project.VerifyProject(chainID, planPolicy)
-		if err != nil {
-			return nil, "", 0, false, err
-		}
-
-		// geolocation is a bitmap. common denominator can be calculated with logical AND
-		geolocation = project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
-
-		providersToPair, err = minMaxProvidersToPair([]uint64{
-			project.AdminPolicy.GetMaxProvidersToPair(),
-			project.SubscriptionPolicy.GetMaxProvidersToPair(),
-			planPolicy.GetMaxProvidersToPair(),
-		})
-		if err != nil {
-			return nil, "", 0, false, err
-		}
-
-		projectToPair = project.Index
-		allowedCU = minCuLimit([]uint64{
-			project.AdminPolicy.GetEpochCuLimit(),
-			project.SubscriptionPolicy.GetEpochCuLimit(),
-			planPolicy.GetEpochCuLimit(),
-		})
-		err = project.VerifyCuUsage(planPolicy)
-		if err != nil {
-			return nil, "", 0, false, fmt.Errorf("getPairingForClient: CU verification failed: %s", err.Error())
-		}
-
 		vrfk = vrfpk_proj
 		legacyStake = false
+		geolocation, providersToPair, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		if err != nil {
+			return nil, "", 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		}
 	} else {
 		// legacy staked client
 		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
@@ -184,24 +153,51 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, vrfk, allowedCU, legacyStake, err
 }
 
-func minMaxProvidersToPair(values []uint64) (uint64, error) {
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, error) {
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	planPolicy := plan.GetPlanPolicy()
+
+	err = project.VerifyProject(chainID, planPolicy)
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	// geolocation is a bitmap. common denominator can be calculated with logical AND
+	geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+
+	providersToPair := minMaxProvidersToPair([]uint64{
+		project.AdminPolicy.GetMaxProvidersToPair(),
+		project.SubscriptionPolicy.GetMaxProvidersToPair(),
+		planPolicy.GetMaxProvidersToPair(),
+	})
+
+	projectToPair := project.Index
+	allowedCU := minCuLimit([]uint64{
+		project.AdminPolicy.GetEpochCuLimit(),
+		project.SubscriptionPolicy.GetEpochCuLimit(),
+		planPolicy.GetEpochCuLimit(),
+	})
+	err = project.VerifyCuUsage(planPolicy)
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	return geolocation, providersToPair, projectToPair, allowedCU, nil
+}
+
+func minMaxProvidersToPair(values []uint64) uint64 {
 	min := uint64(math.MaxUint64)
 	for _, v := range values {
-		// maxProviderToPair should never be smaller than 2
-		if v <= 1 {
-			continue
-		}
-
 		if v < min {
 			min = v
 		}
 	}
 
-	if min == math.MaxUint64 {
-		return 0, fmt.Errorf("could not get min MaxProvidersToPair")
-	}
-
-	return min, nil
+	return min
 }
 
 func minCuLimit(values []uint64) uint64 {

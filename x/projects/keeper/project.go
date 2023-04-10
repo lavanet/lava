@@ -79,46 +79,10 @@ func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string,
 		return types.Policy{}, types.Policy{}, err
 	}
 
-	adminPolicy = project.AdminPolicy
-	subscriptionPolicy = project.SubscriptionPolicy
-	err = nil
-	return
+	return project.AdminPolicy, project.SubscriptionPolicy, nil
 }
 
 func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
 	project.UsedCu += cu
 	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
-}
-
-func (k Keeper) ValidateChainPolicies(ctx sdk.Context, policy types.Policy) error {
-	// validate chainPolicies
-	for _, chainPolicy := range policy.GetChainPolicies() {
-		// get spec and make sure it's enabled
-		spec, found := k.specKeeper.GetSpec(ctx, chainPolicy.GetChainId())
-		if !found {
-			return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_spec_not_found", map[string]string{"specIndex": spec.GetIndex()}, "policy's spec not found")
-		}
-		if !spec.GetEnabled() {
-			return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_spec_not_enabled", map[string]string{"specIndex": spec.GetIndex()}, "policy's spec not enabled")
-		}
-
-		// go over the chain policy's APIs and make sure that they are part of the spec
-		for _, policyApi := range chainPolicy.GetApis() {
-			foundApi := false
-			for _, api := range spec.GetApis() {
-				if api.GetName() == policyApi {
-					foundApi = true
-				}
-			}
-			if !foundApi {
-				details := map[string]string{
-					"specIndex": spec.GetIndex(),
-					"API":       policyApi,
-				}
-				return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_chain_policy_api_not_found", details, "policy's spec's API not found")
-			}
-		}
-	}
-
-	return nil
 }

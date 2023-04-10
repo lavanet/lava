@@ -273,18 +273,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_payment_failed_get_project_for_developer", details, "Failed to get project for client")
 			}
 
-			plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.Subscription)
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_get_plan_for_subscription", details, "Failed to get plan for subscription")
-			}
-
-			err = project.VerifyCuUsage(plan.GetPlanPolicy())
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_verify_cu_usage", details, "CU verification failed")
-			}
-
 			err = k.projectsKeeper.AddComputeUnitsToProject(ctx, project, relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()

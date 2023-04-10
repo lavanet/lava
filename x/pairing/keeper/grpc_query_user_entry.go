@@ -38,11 +38,6 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 
 		planPolicy := plan.GetPlanPolicy()
 
-		err = project.VerifyProject(req.ChainID, planPolicy)
-		if err != nil {
-			return nil, err
-		}
-
 		// geolocation is a bitmap. common denominator can be calculated with logical AND
 		geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
 
