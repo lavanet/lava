@@ -400,45 +400,55 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, newCU uint64) error {
 	// load the session and update the CU inside
 
-	// Careful with locks here!
 	// Step 1: Lock psm
-	psm.lock.RLock()
-	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
-		defer psm.lock.RUnlock() // unlock psm in case of an error
-		return utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
+	getProviderSessionsFromManager := func() (*ProviderSessionsWithConsumer, error) {
+		psm.lock.RLock()
+		defer psm.lock.RUnlock()
+		if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
+			return nil, utils.LavaFormatError("UpdateSessionCU", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
+		}
+
+		providerSessionsWithConsumerMap, ok := psm.sessionsWithAllConsumers[epoch]
+		if !ok {
+			return nil, utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch})
+		}
+
+		providerSessionsWithConsumer, foundConsumer := providerSessionsWithConsumerMap.sessionMap[consumerAddress]
+		if !foundConsumer {
+			return nil, utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress})
+		}
+
+		psm.lock.RUnlock()
+		return providerSessionsWithConsumer, nil
 	}
-
-	providerSessionsWithConsumerMap, ok := psm.sessionsWithAllConsumers[epoch]
-	if !ok {
-		return utils.LavaFormatError("UpdateSessionCU Failed", EpochIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch})
+	providerSessionsWithConsumer, err := getProviderSessionsFromManager()
+	if err != nil {
+		return err
 	}
+	// Step 2: Lock pswc and get the session id
+	getSessionIDFromProviderSessions := func() (*SingleProviderSession, error) {
+		providerSessionsWithConsumer.Lock.RLock()
+		defer providerSessionsWithConsumer.Lock.RUnlock()
+		singleSession, foundSession := providerSessionsWithConsumer.Sessions[sessionID]
+		if !foundSession {
+			return nil, utils.LavaFormatError("UpdateSessionCU Failed", SessionIdNotFoundError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "sessionId", Value: sessionID})
+		}
 
-	providerSessionWithConsumer, foundConsumer := providerSessionsWithConsumerMap.sessionMap[consumerAddress]
-	if !foundConsumer {
-		return utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress})
+		return singleSession, nil
 	}
-
-	// Step 2: Unlock psm and Lock pswc
-	psm.lock.RUnlock()
-	providerSessionWithConsumer.Lock.RLock()
-
-	singleSession, foundSession := providerSessionWithConsumer.Sessions[sessionID]
-	if !foundSession {
-		return utils.LavaFormatError("UpdateSessionCU Failed", SessionIdNotFoundError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "sessionId", Value: sessionID})
+	singleSession, err := getSessionIDFromProviderSessions()
+	if err != nil {
+		return err
 	}
-
-	// Step 3: Unlock psm after reading singleSession
-	providerSessionWithConsumer.Lock.RUnlock()
-
-	// Step 4: update information atomically. ( no locks required when updating atomically )
+	// Step 3: update information atomically. ( no locks required when updating atomically )
 	oldCuSum := singleSession.atomicReadCuSum() // check used cu now
 	if newCU > oldCuSum {
 		// update the session.
 		singleSession.writeCuSumAtomically(newCU)
-		usedCuInParent := providerSessionWithConsumer.atomicReadUsedComputeUnits()
+		usedCuInParent := providerSessionsWithConsumer.atomicReadUsedComputeUnits()
 		usedCuInParent += (newCU - oldCuSum) // new cu is larger than old cu. so its ok to subtract
 		// update the parent
-		providerSessionWithConsumer.atomicWriteUsedComputeUnits(usedCuInParent)
+		providerSessionsWithConsumer.atomicWriteUsedComputeUnits(usedCuInParent)
 	}
 	return nil
 }
