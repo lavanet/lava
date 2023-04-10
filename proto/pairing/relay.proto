@@ -1,12 +1,14 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
     rpc RelaySubscribe (RelayRequest) returns (stream RelayReply) {}
+    rpc Probe (google.protobuf.UInt64Value) returns (google.protobuf.UInt64Value) {}
 }
 
 message RelaySession {

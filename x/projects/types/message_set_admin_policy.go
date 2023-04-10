@@ -9,9 +9,11 @@ const TypeMsgSetAdminPolicy = "set_admin_policy"
 
 var _ sdk.Msg = &MsgSetAdminPolicy{}
 
-func NewMsgSetAdminPolicy(creator string) *MsgSetAdminPolicy {
+func NewMsgSetAdminPolicy(creator string, project string, policy Policy) *MsgSetAdminPolicy {
 	return &MsgSetAdminPolicy{
 		Creator: creator,
+		Project: project,
+		Policy:  policy,
 	}
 }
 
@@ -40,6 +42,10 @@ func (msg *MsgSetAdminPolicy) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	err = ValidateBasicPolicy(msg.GetPolicy())
+	if err != nil {
+		return sdkerrors.Wrapf(ErrInvalidPolicy, "invalid policy")
 	}
 	return nil
 }

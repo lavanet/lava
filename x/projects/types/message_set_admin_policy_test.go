@@ -18,12 +18,22 @@ func TestMsgSetAdminPolicy_ValidateBasic(t *testing.T) {
 			name: "invalid address",
 			msg: MsgSetAdminPolicy{
 				Creator: "invalid_address",
+				Policy: Policy{
+					EpochCuLimit:       100,
+					TotalCuLimit:       1000,
+					MaxProvidersToPair: 3,
+				},
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgSetAdminPolicy{
 				Creator: sample.AccAddress(),
+				Policy: Policy{
+					EpochCuLimit:       100,
+					TotalCuLimit:       1000,
+					MaxProvidersToPair: 3,
+				},
 			},
 		},
 	}

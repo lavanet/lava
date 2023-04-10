@@ -9,8 +9,10 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/projects/types"
+	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -36,11 +38,30 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"ProjectsParams",
 	)
+
+	paramsSubspaceSpec := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"SpecParams",
+	)
+
+	paramsSubspaceEpochstorage := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"EpochStorageParams",
+	)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
+		&mockBankKeeper{},
+		mockAccountKeeper{},
+		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
+		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

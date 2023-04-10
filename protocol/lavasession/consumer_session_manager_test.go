@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -33,7 +34,7 @@ const (
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
-	return &ConsumerSessionManager{}
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_QOS))
 }
 
 func createGRPCServer(t *testing.T) *grpc.Server {

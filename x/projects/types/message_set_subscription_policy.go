@@ -13,7 +13,7 @@ func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy Polic
 	return &MsgSetSubscriptionPolicy{
 		Creator:  creator,
 		Projects: projects,
-		Policy:   &policy,
+		Policy:   policy,
 	}
 }
 
@@ -44,7 +44,7 @@ func (msg *MsgSetSubscriptionPolicy) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	err = ValidateBasicPolicy(*msg.GetPolicy())
+	err = ValidateBasicPolicy(msg.GetPolicy())
 	if err != nil {
 		return sdkerrors.Wrapf(ErrInvalidPolicy, "invalid policy")
 	}

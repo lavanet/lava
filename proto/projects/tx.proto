@@ -28,7 +28,7 @@ message MsgAddProjectKeysResponse {
 message MsgSetAdminPolicy {
   string creator = 1;
   string project = 2;
-  Policy policy = 3;
+  Policy policy = 3 [(gogoproto.nullable) = false];
 }
 
 message MsgSetAdminPolicyResponse {
@@ -37,7 +37,7 @@ message MsgSetAdminPolicyResponse {
 message MsgSetSubscriptionPolicy {
   string creator = 1;
   repeated string projects = 2;
-  Policy policy = 3;
+  Policy policy = 3 [(gogoproto.nullable) = false];
 }
 
 message MsgSetSubscriptionPolicyResponse {

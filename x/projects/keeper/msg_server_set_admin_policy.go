@@ -24,7 +24,7 @@ func (k msgServer) SetAdminPolicy(goCtx context.Context, msg *types.MsgSetAdminP
 		return nil, utils.LavaError(ctx, ctx.Logger(), "SetAdminPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
-	project.AdminPolicy = *msg.Policy
+	project.AdminPolicy = msg.Policy
 
 	// TODO this needs to be applied in the next epoch
 	err = k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)

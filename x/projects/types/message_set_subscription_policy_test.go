@@ -18,7 +18,7 @@ func TestMsgSetSubscriptionPolicy_ValidateBasic(t *testing.T) {
 			name: "invalid address",
 			msg: MsgSetSubscriptionPolicy{
 				Creator: "invalid_address",
-				Policy: &Policy{
+				Policy: Policy{
 					EpochCuLimit:       10,
 					TotalCuLimit:       100,
 					MaxProvidersToPair: 3,
@@ -29,7 +29,7 @@ func TestMsgSetSubscriptionPolicy_ValidateBasic(t *testing.T) {
 			name: "valid address",
 			msg: MsgSetSubscriptionPolicy{
 				Creator: sample.AccAddress(),
-				Policy: &Policy{
+				Policy: Policy{
 					EpochCuLimit:       10,
 					TotalCuLimit:       100,
 					MaxProvidersToPair: 3,

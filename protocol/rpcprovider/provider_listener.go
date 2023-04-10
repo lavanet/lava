@@ -7,15 +7,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
-
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type ProviderListener struct {
@@ -98,6 +98,17 @@ func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayReq
 		return nil, err
 	}
 	return relayReceiver.Relay(ctx, request)
+}
+
+func (rs *relayServer) Probe(ctx context.Context, probeReq *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error) {
+	guid, found := utils.GetUniqueIdentifier(ctx)
+	attributes := []utils.Attribute{{Key: "probe", Value: probeReq.Value}}
+	if found {
+		attributes = append(attributes, utils.Attribute{Key: "GUID", Value: guid})
+	}
+	utils.LavaFormatDebug("Provider got probe", attributes...)
+
+	return probeReq, nil
 }
 
 func (rs *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
