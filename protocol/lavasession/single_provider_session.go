@@ -38,6 +38,7 @@ func (sps *SingleProviderSession) atomicReadCuSum() uint64 {
 	return atomic.LoadUint64(&sps.CuSum)
 }
 
+// locks the session, and sets occupying guid for identifying lock races causes
 func (sps *SingleProviderSession) lockForUse(ctx context.Context) {
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	sps.lock.Lock()

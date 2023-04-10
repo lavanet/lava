@@ -176,6 +176,7 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 	if currentMissingCU+missing > used {
 		return false
 	}
+	// TODO: use compare and swap for race avoidance
 	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
 	return true
 }

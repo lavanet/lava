@@ -266,21 +266,27 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *lavaprotocol.RelayResult, relayTimeout time.Duration) (relayResultRet *lavaprotocol.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
-	relaySentTime := time.Now()
-	connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
-	relayRequest := relayResult.Request
 	providerPublicAddress := relayResult.ProviderAddress
-	reply, err := endpointClient.Relay(connectCtx, relayRequest)
-	relayLatency = time.Since(relaySentTime)
-	if err != nil {
-		backoff := false
-		if errors.Is(connectCtx.Err(), context.DeadlineExceeded) {
-			backoff = true
+	relayRequest := relayResult.Request
+	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
+		relaySentTime := time.Now()
+		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
+		defer connectCtxCancel()
+		reply, err = endpointClient.Relay(connectCtx, relayRequest)
+		relayLatency = time.Since(relaySentTime)
+		if err != nil {
+			backoff := false
+			if errors.Is(connectCtx.Err(), context.DeadlineExceeded) {
+				backoff = true
+			}
+			return reply, 0, err, backoff
 		}
-		connectCtxCancel()
+		return reply, relayLatency, nil, false
+	}
+	reply, relayLatency, err, backoff := callRelay()
+	if err != nil {
 		return relayResult, 0, err, backoff
 	}
-	connectCtxCancel()
 	relayResult.Reply = reply
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()

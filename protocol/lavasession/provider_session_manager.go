@@ -226,7 +226,7 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(ctx context.Co
 		// if we don't have a session we need to create a new one.
 		return providerSessionsWithConsumer.createNewSingleProviderSession(ctx, sessionId, epoch)
 	} else {
-		return nil, utils.LavaFormatError("could not get existing session", err)
+		return nil, utils.LavaFormatError("could not get existing session", err, utils.Attribute{Key: "sessionId", Value: sessionId})
 	}
 }
 
@@ -443,6 +443,7 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 	// Step 3: update information atomically. ( no locks required when updating atomically )
 	oldCuSum := singleSession.atomicReadCuSum() // check used cu now
 	if newCU > oldCuSum {
+		// TODO: use compare and swap for race avoidance
 		// update the session.
 		singleSession.writeCuSumAtomically(newCU)
 		usedCuInParent := providerSessionsWithConsumer.atomicReadUsedComputeUnits()
