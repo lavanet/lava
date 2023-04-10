@@ -24,7 +24,7 @@ import (
 // the user is the module "package":
 //
 // 1. When instantiated, TimerStore gets a `prefix string` - used as a namespace to
-// separate between instances of TimerStore. For instance, module "packages" would
+// separate between instances of TimerStore. For instance, module "package" would
 // use its module name for prefix.
 //
 // 2. TimerStore keeps the timers with a special prefix; it uses the timeout value
@@ -34,10 +34,10 @@ import (
 // For instance, module "packages" may have two (block height) timeouts with their data
 // set to "first" and "second" respectively:
 //
-//     prefix: packages_Timer_Next_       key: BlockHeight      value: 150
-//     prefix: packages_Timer_Next_       key: BLockTimer       value: MaxInt64
-//     prefix: packages_Timer_Value_          key: 150          data: "first"
-//     prefix: packages_Entry_Value_          key: 180          data: "second"
+//     prefix: package_Timer_Next_       key: BlockHeight      value: 150
+//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxInt64
+//     prefix: package_Timer_Value_          key: 150          data: "first"
+//     prefix: package_Entry_Value_          key: 180          data: "second"
 //
 // 3. TimerStore tracks the next-timeout for both block-height/block-timestamp. On
 // every call to Tick(), it tests the current ctx's block height/timestamp against the
@@ -46,14 +46,9 @@ import (
 // 4. If the next-timeout is reached/passed, then it will iterate through the timer
 // entries and invoke the (respective) callback for those entries; And finally it will
 // advance the (respective) next-timeout.
-
-// Thus, iterating on the prefix "packages_Entry_Index_" would yield all the package
-// indices. Reverse iterating on the prefix "packages_Entry_Raw_<INDEX>" would yield
-// all the Fixation of the entry named <INDEX> in descending order.
-//
-// 4. FixationStore keeps a reference count of Fixation of entries, and when the
-// count reaches 0 it marks them for deletion. The actual deletion takes place after
-// a fixed number of epochs has passed.
+// If exact timeouts are needed, the user should call Tick() on every BeginBlock() of
+// its own module. If timeouts may occur with delay (e.g. at start of an epoch), then
+// the user may call Tick() at other deterministic intervals and reduce the workload.
 //
 // Example:
 //     func callback(ctx sdk.Context, data string) {
