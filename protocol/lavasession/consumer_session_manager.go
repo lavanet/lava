@@ -42,17 +42,21 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 
 // Update the provider pairing list for the ConsumerSessionManager
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
+	ctx := context.Background()
 	pairingListLength := len(pairingList)
-	// if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
-	// 	// we have enough valid providers, probe before updating the pairing
-	// 	csm.probeProviders(pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
-	// } else {
-	// }
-	defer func() {
-		// run this after done updating pairing
-		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // sleep up to 500ms in order to scatter different chains probe triggers
-		go csm.probeProviders(pairingList, epoch)                    // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
-	}()
+	if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
+		// we have enough valid providers, probe before updating the pairing
+		time.Sleep(time.Duration(rand.Int63n(int64(BLOCKING_PROBE_SLEEP_TIME)))) // sleep in order to scatter different chains probe triggers
+		probeCtx, cancel := context.WithTimeout(ctx, BLOCKING_PROBE_TIMEOUT)     // limit probing block
+		csm.probeProviders(probeCtx, pairingList, epoch)                         // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
+		cancel()
+	} else {
+		defer func() {
+			// run this after done updating pairing
+			time.Sleep(time.Duration(rand.Int63n(int64(BLOCKING_PROBE_SLEEP_TIME))))
+			go csm.probeProviders(context.Background(), pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
+		}()
+	}
 	csm.lock.Lock()         // start by locking the class lock.
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
@@ -78,7 +82,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
-	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch})
+	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "chainID", Value: csm.rpcEndpoint.ChainID})
 	return nil
 }
 
@@ -88,19 +92,42 @@ func (csm *ConsumerSessionManager) validAddressesLen() int {
 	return len(csm.validAddresses)
 }
 
-func (csm *ConsumerSessionManager) probeProviders(pairingList map[uint64]*ConsumerSessionsWithProvider, epoch uint64) {
-	ctx := context.Background()
+func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingList map[uint64]*ConsumerSessionsWithProvider, epoch uint64) error {
 	guid := utils.GenerateUniqueIdentifier()
 	ctx = utils.AppendUniqueIdentifier(ctx, guid)
 	utils.LavaFormatInfo("providers probe initiated", utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
+	// Create a wait group to synchronize the goroutines
+	wg := sync.WaitGroup{}
+	wg.Add(len(pairingList)) // increment by this and not by 1 for each go routine because we don;t want a race finishing the go routine before the next invocation
 	for _, consumerSessionWithProvider := range pairingList {
-		// consumerSessionWithProvider is thread safe since it's unreachable yet on other threads
-		latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionWithProvider, epoch)
-		success := err == nil // if failure then regard it in availability
-		go csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
+		// Start a new goroutine for each provider
+		go func(consumerSessionsWithProvider *ConsumerSessionsWithProvider) {
+			// Call the probeProvider function and defer the WaitGroup Done call
+			defer wg.Done()
+			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch)
+			success := err == nil // if failure then regard it in availability
+			csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
+		}(consumerSessionWithProvider)
+	}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		wg.Wait()
+	}()
+
+	select {
+	case <-done:
+		// all probes finished in time
+		utils.LavaFormatDebug("providers probe done", utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
+		return nil
+	case <-ctx.Done():
+		utils.LavaFormatWarning("providers probe ran out of time", nil, utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
+		// ran out of time
+		return ctx.Err()
 	}
 }
 
+// this code needs to be thread safe
 func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64) (latency time.Duration, providerAddress string, err error) {
 	// TODO: fetch all endpoints not just one
 	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
@@ -127,6 +154,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	if probeResp.Value != guid {
 		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil)
 	}
+	// public lava address is a value that is not changing, so it's thread safe
 	utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress})
 	return relayLatency, providerAddress, nil
 }

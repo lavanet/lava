@@ -21,6 +21,8 @@ const (
 	IndexNotFound                                    = -15
 	MinValidAddressesForBlockingProbing              = 2
 	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
+	BLOCKING_PROBE_SLEEP_TIME                        = 1000 * time.Millisecond // maximum amount of time to sleep before triggering probe, to scatter probes uniformly across chains
+	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
