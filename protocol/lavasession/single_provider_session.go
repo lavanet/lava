@@ -30,6 +30,14 @@ func (sps *SingleProviderSession) IsPayingRelay() bool {
 	return sps.LatestRelayCu > 0
 }
 
+func (sps *SingleProviderSession) writeCuSumAtomically(cuSum uint64) {
+	atomic.StoreUint64(&sps.CuSum, cuSum)
+}
+
+func (sps *SingleProviderSession) atomicReadCuSum() uint64 {
+	return atomic.LoadUint64(&sps.CuSum)
+}
+
 func (sps *SingleProviderSession) lockForUse(ctx context.Context) {
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	sps.lock.Lock()

@@ -47,4 +47,5 @@ var ( // Provider Side Errors
 	SubscriptionPointerIsNilError                    = sdkerrors.New("SubscriptionPointerIsNil Error", 896, "Trying to unsubscribe a nil pointer.")
 	CouldNotFindIndexAsConsumerNotYetRegisteredError = sdkerrors.New("CouldNotFindIndexAsConsumerNotYetRegistered Error", 897, "fetching provider index from psm failed")
 	ProviderIndexMisMatchError                       = sdkerrors.New("ProviderIndexMisMatch Error", 898, "provider index mismatch")
+	SessionIdNotFoundError                           = sdkerrors.New("SessionIdNotFound Error", 899, "Session Id not found")
 )

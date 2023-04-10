@@ -508,3 +508,10 @@ func TestGetSession(t *testing.T) {
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
 }
+
+func TestContext(t *testing.T) {
+	ctx := context.Background()
+	ctxTO, _ := context.WithTimeout(ctx, time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
+	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
+}

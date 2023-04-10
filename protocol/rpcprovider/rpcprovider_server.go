@@ -108,16 +108,22 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Try sending relay
 	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
-	if err != nil {
+
+	if err != nil || common.ContextOutOfTime(ctx) {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 		if relayFailureError != nil {
-			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
+			var extraInfo string
+			if err != nil {
+				extraInfo = err.Error()
+			}
+			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+extraInfo)
 		}
 		err = utils.LavaFormatError("TryRelay Failed", err,
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 			utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
 			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 		)
 	} else {
 		// On successful relay
@@ -125,7 +131,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
-			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
+			utils.LavaFormatError("OnSession Done failure: ", relayError)
 		} else {
 			if request.DataReliability == nil {
 				if sendRewards {
