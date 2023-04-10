@@ -153,8 +153,10 @@ func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi)
 			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
-		if re.Match([]byte(name)) {
-			return api, true
+		if re.MatchString(name) {
+			if re.FindStringIndex(name)[0] == 0 && re.FindStringIndex(name)[1] == len(name) {
+				return api, true
+			}
 		}
 	}
 	return spectypes.ServiceApi{}, false
