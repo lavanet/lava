@@ -29,6 +29,8 @@ lavad tx pairing stake-client "LAV1"   $CLIENTSTAKE 1 -y --from user1 --gas-adju
 
 lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,tendermintrpc,1 $PROVIDER1_LISTENER,rest,1 $PROVIDER1_LISTENER,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+sleep_until_next_epoch
+
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
 $PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
