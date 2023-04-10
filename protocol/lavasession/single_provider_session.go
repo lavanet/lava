@@ -21,7 +21,7 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
-	occupyingGuid      uint64 //used for tracking errors
+	occupyingGuid      uint64 // used for tracking errors
 }
 
 // to be used only when locked, otherwise can return wrong values

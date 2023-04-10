@@ -638,7 +638,6 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 		if err != nil {
 			return nil, "", currentEpoch, err
 		}
-
 	} else if err != nil {
 		return nil, "", currentEpoch, err
 	}
