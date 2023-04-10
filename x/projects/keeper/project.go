@@ -13,7 +13,7 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 	var project types.Project
 
 	if found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project); !found {
-		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForBlock_not_found", map[string]string{"project": projectID, "blockHeight": strconv.Itoa(int(blockHeight))}, "project not found")
+		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForBlock_not_found", map[string]string{"project": projectID, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "project not found")
 	}
 
 	return project, nil

@@ -138,8 +138,8 @@ func (fs *FixationStore) AppendEntry(
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.GetBlock() {
 			details := map[string]string{
-				"latestBlock": strconv.Itoa(int(latestEntry.GetBlock())),
-				"block":       strconv.Itoa(int(block)),
+				"latestBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
+				"block":       strconv.FormatUint(block, 10),
 				"index":       index,
 				"fs.prefix":   fs.prefix,
 			}
@@ -222,7 +222,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 		details := map[string]string{
 			"fs.prefix": fs.prefix,
 			"index":     index,
-			"block":     strconv.Itoa(int(block)),
+			"block":     strconv.FormatUint(block, 10),
 		}
 		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", details, "entry does not exist")
 	}
