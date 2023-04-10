@@ -81,6 +81,7 @@ stake_provider() {
         "${LAVA_RELAY_ENDPOINT}" \
         "${LAVA_GEOLOCATION}" \
         --from "${LAVA_ADDRESS}" \
+        --provider-moniker "dummyMoniker" \
         --node "${LAVA_RPC_NODE}" \
         --chain-id "${LAVA_CHAIN_ID}" \
         --keyring-backend "${LAVA_KEYRING}" \
