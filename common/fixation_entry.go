@@ -180,11 +180,17 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	// remove "eligible" stale entry versions, where "eligible" is either:
-	//   an entry version that follows a stale entry version, -OR-
-	//   the older entry version
-	// rationale: we keep certain stale entry versions in order to mark -
-	// for future findEntry - that blocks from that stale entry onward are
+	// "stale" entry versions are ones that reached refcount zero at least
+	// STALE_TIME blocks ago; they are not visible in lookups, hence may be
+	// discarded. specifically, a stale entry version becomes "elgibile for
+	// removal" , if either it is:
+	//   one that follows a stale entry version, -OR-
+	//   the oldest entry version
+	// rationale: entries are generally valid from their block time until
+	// the block time of the following newer entry. this newer entry marks
+	// the end of the previous entry, and hence may not be removed until
+	// that previous entry gets discarded. keeping the stale entry versions
+	// ensures (future FindEntry) that blocks from that entry onward are
 	// stale (otherwise, a lookup might resolve successfully with an older
 	// non-stale entry version). For this, one - the oldest - marker is
 	// enough, and additional younger markers can be discarded.
@@ -338,7 +344,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	entry.Refcount -= 1
 
 	if entry.Refcount == 0 {
-		// never overflows because because ctx.BlockHeight is int64
+		// never overflows because ctx.BlockHeight is int64
 		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, entry.Index)
 	}
