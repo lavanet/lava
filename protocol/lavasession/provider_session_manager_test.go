@@ -61,7 +61,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.2)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -91,7 +91,7 @@ func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManage
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0.2)
+	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -124,7 +124,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	_, sps := prepareSession(t, context.Background())
 
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0.2)
+	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0)
 	require.Error(t, err)
 }
 
@@ -212,7 +212,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
-	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0.2)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0)
 	require.Error(t, err)
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
 }
@@ -231,7 +231,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
-	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0.2)
+	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0)
 	require.Error(t, err)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
@@ -315,7 +315,7 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0.2)
+	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
 
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -673,7 +673,7 @@ func TestPSMUsageSync(t *testing.T) {
 					switch choice {
 					case 0:
 						cuToUse := uint64(rand.Intn(10)) + 1
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0.2)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = true
 						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
@@ -683,7 +683,7 @@ func TestPSMUsageSync(t *testing.T) {
 						if cuToUse+sessionStoreTest.currentCU <= uint64(cuMissing) {
 							cuToUse += 1
 						}
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0.2)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0)
 						require.Error(t, err)
 						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")
 					}

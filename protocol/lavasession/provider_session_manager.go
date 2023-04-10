@@ -418,7 +418,6 @@ func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch
 			return nil, utils.LavaFormatError("UpdateSessionCU Failed", ConsumerIsNotRegisteredError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: consumerAddress})
 		}
 
-		psm.lock.RUnlock()
 		return providerSessionsWithConsumer, nil
 	}
 	providerSessionsWithConsumer, err := getProviderSessionsFromManager()

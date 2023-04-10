@@ -42,16 +42,16 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 // Update the provider pairing list for the ConsumerSessionManager
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
-	if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
-		// we have enough valid providers, probe before updating the pairing
-		csm.probeProviders(pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
-	} else {
-		defer func() {
-			// run this after done updating pairing
-
-			go csm.probeProviders(pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
-		}()
-	}
+	// if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
+	// 	// we have enough valid providers, probe before updating the pairing
+	// 	csm.probeProviders(pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
+	// } else {
+	// }
+	defer func() {
+		// run this after done updating pairing
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // sleep up to 500ms in order to scatter different chains probe triggers
+		go csm.probeProviders(pairingList, epoch)                    // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
+	}()
 	csm.lock.Lock()         // start by locking the class lock.
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
