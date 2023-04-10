@@ -51,27 +51,41 @@ const (
 	STRATEGY_ACCURACY
 )
 
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	returnedProviders := []string{}
-	latencyScore := float64(0)
-	syncScore := float64(0)
-
+// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string) {
+	returnedProviders := make([]string, 1) // location 0 is always the best score
+	latencyScore := math.MaxFloat64        // smaller = better i.e less latency
+	syncScore := math.MaxFloat64           // smaller = better i.e less sync lag
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
 			continue
 		}
 		providerData := po.getProviderData(providerAddress)
+
+		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
+		// latency perturbation
+		latencyScoreCurrent = pertrubWithNormalGaussian(latencyScoreCurrent, perturbationPercentage)
+
+		// sync score
 		syncScoreCurrent := float64(0)
 		if requestedBlock < 0 {
 			// means user didn't ask for a specific block and we want to give him the best
 			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
+			// sync perturbation
+			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
+
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			returnedProviders = append(returnedProviders, providerAddress)
+			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders)) {
+				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
+				returnedProviders = append(returnedProviders, returnedProviders[0])
+			}
+			returnedProviders[0] = providerAddress // best provider is always on position 0
 			latencyScore = latencyScoreCurrent
+			syncScore = syncScoreCurrent
 			continue
 		}
 		if po.shouldExplore(len(returnedProviders)) {
@@ -89,7 +103,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
 	switch po.strategy {
 	case STRATEGY_LATENCY:
-		return true
+		return true // we want a lot of parallel tries on latency
 	case STRATEGY_ACCURACY:
 		return true
 	case STRATEGY_COST:
@@ -101,9 +115,6 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
-	if syncScoreCurrent == 0 {
-		return latencyScore > latencyScoreCurrent
-	}
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
@@ -117,6 +128,9 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 		}
 	default:
 		latencyWeight = 0.8
+	}
+	if syncScoreCurrent == 0 {
+		return latencyScore > latencyScoreCurrent
 	}
 	return latencyScore*latencyWeight+syncScore*(1-latencyWeight) > latencyScoreCurrent*latencyWeight+syncScoreCurrent*(1-latencyWeight)
 }
@@ -334,4 +348,8 @@ func probValueAfterRepetitions(mean float64, variance float64, value float64, re
 	prob := 1.0 - (1.0-math.Pow(0.5, intPart))*0.5*(1.0+math.Erf(intSumZ/math.Sqrt2)) - 0.5*(1.0+math.Erf(fracSumZ/math.Sqrt2))
 
 	return prob
+}
+
+func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
+	return orig + rand.NormFloat64()*percentage*orig
 }
