@@ -20,8 +20,11 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		case *types.MsgAddProjectKeys:
 			res, err := msgServer.AddProjectKeys(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgSetProjectPolicy:
-			res, err := msgServer.SetProjectPolicy(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgSetAdminPolicy:
+			res, err := msgServer.SetAdminPolicy(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgSetSubscriptionPolicy:
+			res, err := msgServer.SetSubscriptionPolicy(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 			// this line is used by starport scaffolding # 1
 		default:

@@ -15,7 +15,7 @@ import (
 
 var _ = strconv.Itoa(0)
 
-func CmdSetProjectPolicy() *cobra.Command {
+func CmdSetAdminPolicy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-project-policy [project-index] [policy-file-path]",
 		Short: "set policy to a project",
@@ -53,7 +53,7 @@ func CmdSetProjectPolicy() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgSetProjectPolicy(
+			msg := types.NewMsgSetAdminPolicy(
 				clientCtx.GetFromAddress().String(),
 				projectId,
 				policy,

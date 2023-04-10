@@ -10,12 +10,16 @@ import (
 
 // add a default project to a subscription, add the subscription key as
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error {
-	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk)
+	return k.CreateProject(ctx, subscriptionAddress, types.ADMIN_PROJECT_NAME, subscriptionAddress, true, totalCU, cuPerEpoch, providers, math.MaxUint64, vrfpk, []types.ChainPolicy{})
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
-	project := types.CreateProject(subscriptionAddress, projectName)
+func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string, chainPolicies []types.ChainPolicy) error {
+	project, err := types.CreateProject(subscriptionAddress, projectName)
+	if err != nil {
+		return err
+	}
+
 	var emptyProject types.Project
 
 	blockHeight := uint64(ctx.BlockHeight())
@@ -25,14 +29,18 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	project.Policy.EpochCuLimit = cuPerEpoch
-	project.Policy.TotalCuLimit = totalCU
-	project.Policy.MaxProvidersToPair = providers
-	project.Policy.GeolocationProfile = geolocation
+	project.AdminPolicy.EpochCuLimit = cuPerEpoch
+	project.AdminPolicy.TotalCuLimit = totalCU
+	project.AdminPolicy.MaxProvidersToPair = providers
+	project.AdminPolicy.GeolocationProfile = geolocation
+	project.AdminPolicy.ChainPolicies = chainPolicies
+
+	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
+	project.SubscriptionPolicy = project.AdminPolicy
 
 	project.AppendKey(types.ProjectKey{Key: adminAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 
-	err := k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
+	err = k.RegisterDeveloperKey(ctx, adminAddress, project.Index, blockHeight, vrfpk)
 	if err != nil {
 		return err
 	}

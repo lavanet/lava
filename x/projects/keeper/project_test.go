@@ -36,13 +36,13 @@ func TestCreateProject(t *testing.T) {
 	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "", []types.ChainPolicy{})
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
 	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "", []types.ChainPolicy{})
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
@@ -70,7 +70,7 @@ func TestAddKeys(t *testing.T) {
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "", []types.ChainPolicy{})
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
@@ -118,10 +118,10 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName1, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "", []types.ChainPolicy{})
 	require.Nil(t, err)
 
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "")
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName2, adminAcc.Addr.String(), false, 100, 100, 5, math.MaxUint64, "", []types.ChainPolicy{})
 	require.Nil(t, err)
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
@@ -140,7 +140,7 @@ func TestSetPolicy(t *testing.T) {
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	projectID := types.ProjectIndex(subAccount.Addr.String(), projectName)
 
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), true, 100, 100, 5, math.MaxUint64, "")
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectName, adminAcc.Addr.String(), true, uint64(100), uint64(100), uint64(5), math.MaxUint64, "", []types.ChainPolicy{})
 	require.Nil(t, err)
 
 	keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, adminAcc.Addr.String(),
@@ -177,11 +177,11 @@ func TestSetPolicy(t *testing.T) {
 
 		{"bad chainID (doesn't exist)", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false},
+			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 
 		{"bad API (doesn't exist)", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
-			100, 10, 3, true, false},
+			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 		{"epoch CU larger than total CU", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, true},
@@ -200,9 +200,9 @@ func TestSetPolicy(t *testing.T) {
 				MaxProvidersToPair: tt.maxProvidersToPair,
 			}
 
-			setPolicyProjectMessage := types.MsgSetProjectPolicy{
+			setPolicyProjectMessage := types.MsgSetAdminPolicy{
 				Creator: tt.creator,
-				Policy:  &newPolicy,
+				Policy:  newPolicy,
 				Project: projectID,
 			}
 
@@ -213,7 +213,7 @@ func TestSetPolicy(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			_, err := servers.ProjectServer.SetProjectPolicy(ctx, &setPolicyProjectMessage)
+			_, err := servers.ProjectServer.SetAdminPolicy(ctx, &setPolicyProjectMessage)
 
 			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -222,11 +222,11 @@ func TestSetPolicy(t *testing.T) {
 
 				proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 				require.Nil(t, err)
-				require.Equal(t, tt.chainPolicies, proj.Policy.ChainPolicies)
-				require.Equal(t, uint64(1), proj.Policy.GeolocationProfile)
-				require.Equal(t, tt.totalCuLimit, proj.Policy.TotalCuLimit)
-				require.Equal(t, tt.epochCuLimit, proj.Policy.EpochCuLimit)
-				require.Equal(t, tt.maxProvidersToPair, proj.Policy.MaxProvidersToPair)
+				require.Equal(t, tt.chainPolicies, proj.AdminPolicy.ChainPolicies)
+				require.Equal(t, uint64(1), proj.AdminPolicy.GeolocationProfile)
+				require.Equal(t, tt.totalCuLimit, proj.AdminPolicy.TotalCuLimit)
+				require.Equal(t, tt.epochCuLimit, proj.AdminPolicy.EpochCuLimit)
+				require.Equal(t, tt.maxProvidersToPair, proj.AdminPolicy.MaxProvidersToPair)
 			} else {
 				require.NotNil(t, err)
 			}

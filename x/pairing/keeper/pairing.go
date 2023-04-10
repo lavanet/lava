@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
@@ -84,9 +85,8 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 		return projectstypes.Project{}, "", err
 	}
 
-	err = project.VerifyProject(chainID)
-	if err != nil {
-		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index, "error": err.Error()}, "the developers project is invalid")
+	if !project.Enabled {
+		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index}, "the developers project is disabled")
 	}
 
 	return project, vrfpk, nil
@@ -111,12 +111,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
-		geolocation = project.Policy.GeolocationProfile
-		providersToPair = project.Policy.MaxProvidersToPair
-		projectToPair = project.Index
-		allowedCU = project.Policy.EpochCuLimit
 		vrfk = vrfpk_proj
 		legacyStake = false
+		geolocation, providersToPair, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		if err != nil {
+			return nil, "", 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		}
 	} else {
 		// legacy staked client
 		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
@@ -151,6 +151,74 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
 
 	return providers, vrfk, allowedCU, legacyStake, err
+}
+
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, error) {
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	planPolicy := plan.GetPlanPolicy()
+
+	err = project.VerifyProject(chainID, planPolicy)
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	// geolocation is a bitmap. common denominator can be calculated with logical AND
+	geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+
+	providersToPair := minMaxProvidersToPair([]uint64{
+		project.AdminPolicy.GetMaxProvidersToPair(),
+		project.SubscriptionPolicy.GetMaxProvidersToPair(),
+		planPolicy.GetMaxProvidersToPair(),
+	})
+
+	projectToPair := project.Index
+	allowedCU := minCuLimit([]uint64{
+		project.AdminPolicy.GetEpochCuLimit(),
+		project.SubscriptionPolicy.GetEpochCuLimit(),
+		planPolicy.GetEpochCuLimit(),
+	})
+	err = project.VerifyCuUsage(planPolicy)
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	return geolocation, providersToPair, projectToPair, allowedCU, nil
+}
+
+func minMaxProvidersToPair(values []uint64) uint64 {
+	min := uint64(math.MaxUint64)
+	for _, v := range values {
+		if v < min {
+			min = v
+		}
+	}
+
+	return min
+}
+
+func minCuLimit(values []uint64) uint64 {
+	min := uint64(math.MaxUint64)
+	for _, v := range values {
+		// when the CU limits are enforced, 0 indicates unlimited CU. So it's actually larger than non-zero limitations
+		if v == 0 {
+			continue
+		}
+
+		if v < min {
+			min = v
+		}
+	}
+
+	// min = initial value -> couldn't find non-zero min value -> unlimited CU
+	if min == math.MaxUint64 {
+		return 0
+	}
+
+	return min
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
@@ -211,8 +279,8 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 			continue
 		}
 		geolocationSupported := stakeEntry.Geolocation & geolocation
-		if geolocationSupported == 0 {
-			// no match in geolocation bitmap
+		if geolocationSupported == 0 && geolocation != 0 {
+			// no match in geolocation bitmap (geolocation = 0 --> support all regions)
 			continue
 		}
 		validProviders = append(validProviders, stakeEntry)

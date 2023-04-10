@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/projects/types"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -47,13 +46,6 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"SpecParams",
 	)
 
-	paramsSubspacePlans := typesparams.NewSubspace(cdc,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"PlansParams",
-	)
-
 	paramsSubspaceEpochstorage := typesparams.NewSubspace(cdc,
 		types.Amino,
 		storeKey,
@@ -69,7 +61,6 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		&mockBankKeeper{},
 		mockAccountKeeper{},
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans),
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 	)
 

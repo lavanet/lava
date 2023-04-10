@@ -9,6 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -162,11 +163,11 @@ func (k Keeper) CreateSubscription(
 			PlanBlock: plan.Block,
 		}
 
-		sub.MonthCuTotal = plan.GetComputeUnits()
-		sub.MonthCuLeft = plan.GetComputeUnits()
+		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
+		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.PlanPolicy.GetTotalCuLimit(), plan.PlanPolicy.GetEpochCuLimit(), plan.PlanPolicy.GetMaxProvidersToPair(), vrfpk)
 		if err != nil {
 			details := map[string]string{
 				"err": err.Error(),
@@ -250,4 +251,18 @@ func (k Keeper) CreateSubscription(
 	k.SetSubscription(ctx, sub)
 
 	return nil
+}
+
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+	sub, found := k.GetSubscription(ctx, consumer)
+	if !found {
+		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_subscription", map[string]string{"consumer": consumer}, "can't find subscription with consumer address")
+	}
+
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, uint64(ctx.BlockHeight()))
+	if !found {
+		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_plan", map[string]string{"consumer": consumer, "planId": sub.PlanIndex}, "can't find plan from subscription with consumer address")
+	}
+
+	return plan, nil
 }

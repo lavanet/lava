@@ -22,7 +22,7 @@ lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_base.json,./cook
 lavad tx gov vote 4 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4
-lavad tx gov submit-proposal plans-add ./cookbook/specs/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 5 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 CLIENTSTAKE="500000000000ulava"
