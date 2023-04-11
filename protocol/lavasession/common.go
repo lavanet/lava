@@ -19,6 +19,8 @@ const (
 	GeolocationFlag                                  = "geolocation"
 	TendermintUnsubscribeAll                         = "unsubscribe_all"
 	IndexNotFound                                    = -15
+	AverageWorldLatency                              = 300 * time.Millisecond
+	MinValidAddressesForBlockingProbing              = 2
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing

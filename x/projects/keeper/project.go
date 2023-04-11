@@ -60,104 +60,59 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
-	// check that those keys are unique for developers
 	for _, projectKey := range projectKeys {
 		k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
-
-		// project.AppendKey(projectKey)
 	}
 
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy types.Policy, err error) {
+func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (adminPolicy types.Policy, subscriptionPolicy types.Policy, err error) {
 	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
 	if err != nil {
-		return types.Policy{}, err
+		return types.Policy{}, types.Policy{}, err
 	}
 
-	return project.Policy, nil
+	return project.AdminPolicy, project.SubscriptionPolicy, nil
 }
 
-func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {
-	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
-	if err != nil {
-		return err
-	}
-
-	err = project.VerifyCuUsage()
-	if err != nil {
-		return err
-	}
-
+func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
 	project.UsedCu += cu
-
-	return k.projectsFS.ModifyEntry(ctx, project.Index, blockHeight, &project)
+	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) ValidateChainPolicies(ctx sdk.Context, policy types.Policy) error {
-	// validate chainPolicies
-	for _, chainPolicy := range policy.GetChainPolicies() {
-		// get spec and make sure it's enabled
-		spec, found := k.specKeeper.GetSpec(ctx, chainPolicy.GetChainId())
-		if !found {
-			return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_spec_not_found", map[string]string{"specIndex": spec.GetIndex()}, "policy's spec not found")
+func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy types.Policy, key string, isAdminPolicy bool) error {
+	for _, projectID := range projectIDs {
+		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
 		}
-		if !spec.GetEnabled() {
-			return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_spec_not_enabled", map[string]string{"specIndex": spec.GetIndex()}, "policy's spec not enabled")
-		}
-
-		// go over the chain policy's APIs and make sure that they are part of the spec
-		for _, policyApi := range chainPolicy.GetApis() {
-			foundApi := false
-			for _, api := range spec.GetApis() {
-				if api.GetName() == policyApi {
-					foundApi = true
-				}
-			}
-			if !foundApi {
-				details := map[string]string{
-					"specIndex": spec.GetIndex(),
-					"API":       policyApi,
-				}
-				return utils.LavaError(ctx, k.Logger(ctx), "validateChainPolicies_chain_policy_api_not_found", details, "policy's spec's API not found")
+		// for admin policy - check if the key is an address of a project admin
+		if isAdminPolicy {
+			if !project.IsAdminKey(key) {
+				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_admin", map[string]string{"project": projectID, "key": key}, "cannot set admin policy because the requesting key is not admin key")
+			} else {
+				project.AdminPolicy = policy
 			}
 		}
-	}
 
-	return nil
-}
+		// for subscription policy - check if the key is an address of the project's subscription consumer
+		if !isAdminPolicy {
+			if key != project.GetSubscription() {
+				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_subscription_consumer", map[string]string{"project": projectID, "key": key}, "cannot set subscription policy because the requesting key is not subscription consumer key")
+			} else {
+				project.SubscriptionPolicy = policy
+			}
+		}
 
-func (k Keeper) SetPolicy(ctx sdk.Context, projectID string, policy types.Policy, adminKey string) error {
-	err := k.ValidateChainPolicies(ctx, policy)
-	if err != nil {
-		return err
-	}
-
-	project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
-	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
-	}
-
-	// check if the admin key is valid
-	if !project.IsAdminKey(adminKey) {
-		return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
-	}
-
-	project.Policy = policy
-
-	if project.UsedCu > project.Policy.TotalCuLimit {
-		project.Policy.TotalCuLimit = project.UsedCu
-	}
-
-	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
-	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "SetPolicy_cant_get_next_epoch", map[string]string{"block": strconv.FormatUint(uint64(ctx.BlockHeight()), 10)}, "can't get next epoch")
-	}
-	err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
-
-	if err != nil {
-		return err
+		nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return utils.LavaError(ctx, k.Logger(ctx), "SetPolicy_cant_get_next_epoch", map[string]string{"block": strconv.FormatUint(uint64(ctx.BlockHeight()), 10)}, "can't get next epoch")
+		}
+		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

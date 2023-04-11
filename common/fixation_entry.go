@@ -71,36 +71,6 @@ type FixationStore struct {
 	prefix   string
 }
 
-const (
-	ASCII_MIN = 32  // min visible ascii
-	ASCII_MAX = 126 // max visible ascii
-	ASCII_DEL = 127 // ascii for DEL
-)
-
-// sanitizeIdnex checks that a string contains only visible ascii characters
-// (i.e. Ascii 32-126), and appends a (ascii) DEL to the index; this ensures
-// that an index can never be a prefix of another index.
-func sanitizeIndex(index string) (string, error) {
-	for i := 0; i < len(index); i++ {
-		if index[i] < ASCII_MIN || index[i] > ASCII_MAX {
-			return index, types.ErrInvalidIndex
-		}
-	}
-	return index + string([]byte{ASCII_DEL}), nil
-}
-
-// desantizeIndex reverts the effect of sanitizeIndex - removes the trailing
-// (ascii) DEL terminator.
-func desanitizeIndex(safeIndex string) string {
-	return safeIndex[0 : len(safeIndex)-1]
-}
-
-func (fs *FixationStore) assertSanitizedIndex(safeIndex string) {
-	if []byte(safeIndex)[len(safeIndex)-1] != ASCII_DEL {
-		panic("Fixation: prefix " + fs.prefix + ": unsanitized safeIndex: " + safeIndex)
-	}
-}
-
 func (fs *FixationStore) getStore(ctx sdk.Context, index string) *prefix.Store {
 	store := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
@@ -118,7 +88,7 @@ func (fs *FixationStore) setEntry(ctx sdk.Context, entry types.Entry) {
 
 // AppendEntry adds a new entry to the store
 func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_invalid_index", details, "invalid non-ascii entry")
@@ -175,7 +145,7 @@ func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64
 }
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
-	fs.assertSanitizedIndex(safeIndex)
+	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getStore(ctx, safeIndex)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
@@ -205,7 +175,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 
 // ModifyEntry modifies an existing entry in the store
 func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "ModifyEntry_invalid_index", details, "invalid non-ascii entry")
@@ -233,7 +203,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
 // nearest-smaller block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex string, block uint64) (types.Entry, bool) {
-	fs.assertSanitizedIndex(safeIndex)
+	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getStore(ctx, safeIndex)
 
 	// init a reverse iterator
@@ -264,7 +234,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 
 // FindEntry returns the entry with index and block without changing the refcount
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry"), false
@@ -287,7 +257,7 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 
 // GetEntry returns the latest entry with index and increments the refcount
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) (error, bool) {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry"), false
@@ -315,7 +285,7 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec
 
 // get entry with index and block with ref decrease
 func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		return utils.LavaError(ctx, ctx.Logger(), "PutEntry_invalid_index", details, "invalid non-ascii entry"), false

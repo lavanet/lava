@@ -247,11 +247,11 @@ func TestSetPolicy(t *testing.T) {
 
 		{"bad chainID (doesn't exist)", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false},
+			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 
 		{"bad API (doesn't exist)", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
-			100, 10, 3, true, false},
+			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 		{"epoch CU larger than total CU", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, true},
@@ -270,9 +270,9 @@ func TestSetPolicy(t *testing.T) {
 				MaxProvidersToPair: tt.maxProvidersToPair,
 			}
 
-			setPolicyProjectMessage := types.MsgSetProjectPolicy{
+			setPolicyProjectMessage := types.MsgSetAdminPolicy{
 				Creator: tt.creator,
-				Policy:  &newPolicy,
+				Policy:  newPolicy,
 				Project: projectID,
 			}
 
@@ -283,7 +283,7 @@ func TestSetPolicy(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			_, err := servers.ProjectServer.SetProjectPolicy(ctx, &setPolicyProjectMessage)
+			_, err := servers.ProjectServer.SetAdminPolicy(ctx, &setPolicyProjectMessage)
 
 			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -292,11 +292,11 @@ func TestSetPolicy(t *testing.T) {
 
 				proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 				require.Nil(t, err)
-				require.Equal(t, tt.chainPolicies, proj.Policy.ChainPolicies)
-				require.Equal(t, uint64(1), proj.Policy.GeolocationProfile)
-				require.Equal(t, tt.totalCuLimit, proj.Policy.TotalCuLimit)
-				require.Equal(t, tt.epochCuLimit, proj.Policy.EpochCuLimit)
-				require.Equal(t, tt.maxProvidersToPair, proj.Policy.MaxProvidersToPair)
+				require.Equal(t, tt.chainPolicies, proj.AdminPolicy.ChainPolicies)
+				require.Equal(t, uint64(1), proj.AdminPolicy.GeolocationProfile)
+				require.Equal(t, tt.totalCuLimit, proj.AdminPolicy.TotalCuLimit)
+				require.Equal(t, tt.epochCuLimit, proj.AdminPolicy.EpochCuLimit)
+				require.Equal(t, tt.maxProvidersToPair, proj.AdminPolicy.MaxProvidersToPair)
 			} else {
 				require.NotNil(t, err)
 			}

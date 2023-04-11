@@ -15,14 +15,14 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 
 	providerAddr, err := sdk.AccAddressFromBech32(msg.GetCreator())
 	if err != nil {
-		return nil, utils.LavaFormatError("Unfreeze_get_provider_address", err, &map[string]string{"providerAddress": msg.GetCreator()})
+		return nil, utils.LavaFormatError("Unfreeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: msg.GetCreator()})
 	}
 	current_block := uint64(ctx.BlockHeight())
 	unfrozen_chains := []string{}
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainId, providerAddr)
 		if !found {
-			return nil, utils.LavaFormatError("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, &map[string]string{"chainID": chainId, "providerAddress": msg.GetCreator()})
+			return nil, utils.LavaFormatError("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
 
 		if stakeEntry.StakeAppliedBlock > current_block {

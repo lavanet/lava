@@ -29,10 +29,11 @@ func CmdAddProject() *cobra.Command {
 		Finally, you can optionally create a disabled project by using the "--disable" flag.
 		Note, after the project is added, its name (a.k.a. index) is 
 		changed to "<project_subscription_address>-<original_project_name>".`,
-		Example: `required flags: --from <admin-key> (the project's subscription address is also considered admin)
-				  optional flags: --policy-file <policy-file-path>, --project-keys-file <project-keys-file-path>, --disable
+		Example: `required flags: --from <subscription_consumer>
 				  
-		lavad tx subscription add-project [project-file-path] --from <admin-key>`,
+		optional flags: --policy-file <policy-file-path>, --project-keys-file <project-keys-file-path>, --disable
+				  
+		lavad tx subscription add-project [project-file-path] --from <subscription_consumer>`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			projectName := args[0]

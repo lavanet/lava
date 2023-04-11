@@ -265,20 +265,19 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
-		// if this returns an error it means this is legacy consumer
 		if !legacy {
-			err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, clientAddr.String(), uint64(relay.Epoch), relay.CuSum)
+			project, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed_get_project_for_developer", details, "Failed to get project for client")
+			}
 
+			err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
 			}
 
-			project, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(ctx.BlockHeight()))
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_getting_project", details, "Failed to get project for developer")
-			}
 			err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
 			if err != nil {
 				details["error"] = err.Error()
@@ -320,7 +319,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
-		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
+		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, []utils.Attribute{{Key: "UnresponsiveProviders", Value: unresponsiveData}, {Key: "dataLength", Value: len(unresponsiveData)}}...)
 	}
 
 	// check there are unresponsive providers
@@ -337,7 +336,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		// get provider address
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
-			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
+			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
 			continue
 		}
 
@@ -345,7 +344,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 		if !found {
 			// the epochPayments object should exist since we already paid. if not found, print an error and continue
-			utils.LavaFormatError("did not find epochPayments object", err, &map[string]string{"epochPaymentskey": key})
+			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: key})
 			continue
 		}
 

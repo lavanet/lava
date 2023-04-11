@@ -27,7 +27,7 @@ func StartPprofServer(addr string) error {
 		}
 	}()
 
-	utils.LavaFormatInfo("start pprof HTTP server", &map[string]string{"IPAddress": addr})
+	utils.LavaFormatInfo("start pprof HTTP server", utils.Attribute{Key: "IPAddress", Value: addr})
 
 	return nil
 }

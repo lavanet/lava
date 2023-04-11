@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -15,6 +16,8 @@ const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
 )
+
+var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
 
 type RPCInput interface {
 	GetParams() interface{}
@@ -65,14 +68,17 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		retval, err = ParseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
 		retval = ParseDefault(rpcInput, blockParser.ParserArg, dataSource)
-	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_DEFAULT:
-		retval, err = ParseDictionaryOrDefault(rpcInput, blockParser.ParserArg, dataSource)
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
 	}
 
 	if err != nil {
-		return nil, err
+		if ValueNotSetError.Is(err) && blockParser.DefaultValue != "" {
+			// means this parsing failed because the value did not exist on an optional param
+			retval = appendInterfaceToInterfaceArray(blockParser.DefaultValue)
+		} else {
+			return nil, err
+		}
 	}
 
 	return retval, nil
@@ -133,7 +139,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
 		if len(unmarshalled) == 0 {
-			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, &map[string]string{"data source": "PARSE_RESULT"})
+			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, utils.Attribute{Key: "data source", Value: "PARSE_RESULT"})
 		}
 		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
@@ -168,22 +174,22 @@ func blockInterfaceToString(block interface{}) string {
 func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
-		return nil, fmt.Errorf("invalid input format, input length: %d", len(input))
+		return nil, utils.LavaFormatError("invalid input format, input length", nil, utils.Attribute{Key: "input_len", Value: strconv.Itoa(len(input))})
 	}
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
+		return nil, utils.LavaFormatError("invalid input format, input isn't an unsigned index", err, utils.Attribute{Key: "input", Value: inp})
 	}
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, utils.LavaFormatError("invalid input format, data is not json", err, &map[string]string{"data": fmt.Sprintf("%s", unmarshalledData)})
+		return nil, utils.LavaFormatError("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
-			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
+			return nil, ValueNotSetError
 		}
 		block := unmarshaledDataTyped[param_index]
 		// TODO: turn this into type assertion instead
@@ -193,7 +199,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatInfo("Parse type unsupported in parse by arg, only list parameters are currently supported", &map[string]string{"request": fmt.Sprintf("%s", unmarshaledDataTyped)})
+		return nil, utils.LavaFormatError("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
 	}
 }
 
@@ -223,7 +229,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
-			return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
+			return nil, ValueNotSetError
 		}
 		blockContainer := unmarshaledDataTyped[param_index]
 		for _, key := range input[1:] {
@@ -247,7 +253,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			if val, ok := unmarshaledDataTyped[key]; ok {
 				if idx == (len(input) - 1) {
 					retArr := make([]interface{}, 0)
-					retArr = append(retArr, val)
+					retArr = append(retArr, blockInterfaceToString(val))
 					return retArr, nil
 				}
 				// if we didn't get to the last elemnt continue deeper by chaning unmarshaledDataTyped
@@ -258,7 +264,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
 				}
 			} else {
-				return nil, fmt.Errorf("invalid parser input format, %s missing from %s", key, unmarshaledDataTyped)
+				return nil, ValueNotSetError
 			}
 		}
 	default:
@@ -266,50 +272,6 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
 	}
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
-}
-
-// ParseDictionaryOrDefault return a value of prop specified in args if exists in dictionary
-// if not it returns default value also specified in args
-func ParseDictionaryOrDefault(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	// Validate number of arguments
-	// The number of arguments should be 3
-	// [prop_name,separator,default value]
-	if len(input) != 3 {
-		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 3", len(input))
-	}
-
-	// Unmarshall data
-	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
-	if err != nil {
-		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
-	}
-
-	// Extract arguments
-	propName := input[0]
-	innerSeparator := input[1]
-	defaultValue := input[2]
-
-	switch unmarshalledDataTyped := unmarshalledData.(type) {
-	case []interface{}:
-		// If value attribute with propName exists in array return it
-		value := parseArrayOfInterfaces(unmarshalledDataTyped, propName, innerSeparator)
-		if value != nil {
-			return value, nil
-		}
-
-		// if there is no matching prop, return default
-		return appendInterfaceToInterfaceArray(defaultValue), nil
-	case map[string]interface{}:
-		// If attribute with key propName exists return value
-		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(val), nil
-		}
-
-		// Else return default value
-		return appendInterfaceToInterfaceArray(defaultValue), nil
-	default:
-		return nil, fmt.Errorf("not Supported ParseDictionaryOrDefault with other types")
-	}
 }
 
 // ParseDictionary return a value of prop specified in args if exists in dictionary
@@ -341,7 +303,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		}
 
 		// Else return an error
-		return nil, fmt.Errorf("invalid input format, did not find prop name %s on params: %s", propName, unmarshalledData)
+		return nil, ValueNotSetError
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
@@ -349,7 +311,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		}
 
 		// Else return an error
-		return nil, fmt.Errorf("%s missing from map %s", propName, unmarshalledDataTyped)
+		return nil, ValueNotSetError
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
@@ -362,7 +324,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 	// The number of arguments should be 3
 	// [prop_name,separator,parameter order if not found]
 	if len(input) != 3 {
-		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 3", len(input))
+		return nil, fmt.Errorf("ParseDictionaryOrOrdered: invalid input format, input length: %d and needs to be 3: %s", len(input), strings.Join(input, ","))
 	}
 
 	// Unmarshall data
@@ -392,7 +354,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 		// If not make sure there are enough elements
 		if uint64(len(unmarshalledDataTyped)) <= propIndex {
-			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", propIndex, unmarshalledDataTyped)
+			return nil, ValueNotSetError
 		}
 
 		// Fetch value using prop index
@@ -410,8 +372,8 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 			return appendInterfaceToInterfaceArray(val), nil
 		}
 
-		// Else not return an error
-		return nil, fmt.Errorf("%s missing from map %s", propName, unmarshalledDataTyped)
+		// Else return not set error
+		return nil, ValueNotSetError
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}

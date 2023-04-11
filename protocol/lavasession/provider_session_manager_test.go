@@ -1,8 +1,13 @@
 package lavasession
 
 import (
+	"math"
+	"math/rand"
 	"testing"
+	"time"
 
+	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +33,7 @@ func initProviderSessionManager() *ProviderSessionManager {
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
-		NodeUrl:        []string{"http://localhost:666", "ws://localhost:666/websocket"},
+		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, testNumberOfBlocksKeptInMemory)
 }
 
@@ -192,7 +197,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps)
-
+	require.Nil(t, err)
 	// Update the session CU to reach the limit of the cu allowed
 	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
 	require.Nil(t, err)
@@ -215,7 +220,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps)
-
+	require.Nil(t, err)
 	// get another session
 	sps, err = psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
 	require.Nil(t, err)
@@ -451,6 +456,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1)
 	// create 2nd subscription as we release the session we can just ask for it again with relayNumber + 1
 	sps, err := psm.GetSession(consumerOneAddress, epoch1, sessionId, relayNumber+1)
+	require.Nil(t, err)
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1)
 
 	err = psm.ProcessUnsubscribe("unsubscribeOne", subscriptionID, consumerOneAddress, epoch1)
@@ -550,4 +556,187 @@ func TestPSMSubscribeEpochChange(t *testing.T) {
 	psm.UpdateEpoch(epoch2)
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 	require.Empty(t, psm.sessionsWithAllConsumers)
+}
+
+type testSessionData struct {
+	currentCU uint64
+	inUse     bool
+	sessionID uint64
+	relayNum  uint64
+	epoch     uint64
+	session   *SingleProviderSession
+	history   []string
+}
+
+// this test is running sessions and usage in a sync way to see integrity of behavior, opening and closing of sessions is separate
+func TestPSMUsageSync(t *testing.T) {
+	psm := NewProviderSessionManager(&RPCProviderEndpoint{
+		NetworkAddress: "127.0.0.1:6666",
+		ChainID:        "LAV1",
+		ApiInterface:   "tendermint",
+		Geolocation:    1,
+		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
+	}, 20)
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
+	consumerAddress := "stub-consumer"
+	maxCuForConsumer := uint64(math.MaxInt64)
+	selfProviderIndex := int64(0)
+	numSessions := 5
+	psm.UpdateEpoch(10)
+	sessionsStore := initSessionStore(numSessions, 10)
+	sessionsStoreTooAdvanced := initSessionStore(numSessions, 15) // sessionIDs will overlap, this is intentional
+	// an attempt is either a valid opening, valid closing, invalid opening, erroring session, epoch too advanced usage
+	simulateUsageOnSessionsStore := func(attemptsNum int, sessionsStoreArg []*testSessionData, needsRegister bool) {
+		for attempts := 0; attempts < attemptsNum; attempts++ {
+			// pick scenario:
+			sessionIdx := rand.Intn(len(sessionsStoreArg))
+			sessionStoreTest := sessionsStoreArg[sessionIdx]
+			inUse := sessionStoreTest.inUse
+			if inUse {
+				// session is in use so either we close it or try to use and fail
+				choice := rand.Intn(2)
+				if choice == 0 {
+					// close it
+					choice = rand.Intn(2)
+					// proper closing or error closing
+					if choice == 0 {
+						relayCU := sessionStoreTest.session.LatestRelayCu
+						// proper closing
+						err := psm.OnSessionDone(sessionStoreTest.session)
+						require.NoError(t, err)
+						sessionStoreTest.inUse = false
+						sessionStoreTest.relayNum += 1
+						sessionStoreTest.currentCU += relayCU
+						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionDone")
+					} else {
+						// error closing
+						err := psm.OnSessionFailure(sessionStoreTest.session)
+						require.NoError(t, err)
+						sessionStoreTest.inUse = false
+						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionFailure")
+					}
+				} else {
+					// try to use and fail
+					relayNumToGet := sessionStoreTest.relayNum + uint64(rand.Intn(3))
+					_, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, relayNumToGet)
+					require.Error(t, err)
+					require.False(t, ConsumerNotRegisteredYet.Is(err))
+					sessionStoreTest.history = append(sessionStoreTest.history, ",TryToUseAgain")
+				}
+			} else {
+				// session not in use yet, so try to use it. we have several options:
+				// 1. proper usage /
+				// 2. usage with wrong CU
+				// 3. usage with wrong relay number
+				// 4. usage with wrong epoch number
+				choice := rand.Intn(2)
+				if choice == 0 || sessionStoreTest.relayNum == 0 {
+					// getSession should work
+					session, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
+					if sessionStoreTest.relayNum > 0 {
+						// this is not a first relay so we expect this to work
+						require.NoError(t, err, "sessionID %d relayNum %d storedRelayNum %d epoch %d, history %s", sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, sessionStoreTest.session.RelayNum, sessionStoreTest.epoch, sessionStoreTest.history)
+						require.Same(t, session, sessionStoreTest.session)
+						sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
+					} else {
+						// this can be a first relay or after an error, so allow not registered error
+						if err != nil {
+							// first relay
+							require.True(t, ConsumerNotRegisteredYet.Is(err))
+							require.True(t, needsRegister)
+							needsRegister = false
+							utils.LavaFormatInfo("registered session", utils.Attribute{Key: "sessionID", Value: sessionStoreTest.sessionID}, utils.Attribute{Key: "epoch", Value: sessionStoreTest.epoch})
+							session, err := psm.RegisterProviderSessionWithConsumer(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, selfProviderIndex)
+							require.NoError(t, err)
+							sessionStoreTest.session = session
+							sessionStoreTest.history = append(sessionStoreTest.history, ",RegisterGet")
+						} else {
+							sessionStoreTest.session = session
+							sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
+						}
+					}
+					choice := rand.Intn(2)
+					switch choice {
+					case 0:
+						cuToUse := uint64(rand.Intn(10)) + 1
+						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU, sessionStoreTest.relayNum+1)
+						require.NoError(t, err)
+						sessionStoreTest.inUse = true
+						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
+					case 1:
+						cuToUse := uint64(rand.Intn(10)) + 1
+						cuMissing := rand.Intn(int(cuToUse)) + 1
+						if cuToUse+sessionStoreTest.currentCU <= uint64(cuMissing) {
+							cuToUse += 1
+						}
+						err = sessionStoreTest.session.PrepareSessionForUsage(cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), sessionStoreTest.relayNum+1)
+						require.Error(t, err)
+						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")
+					}
+				} else {
+					// getSession should fail
+					relayNumSubs := rand.Intn(int(sessionStoreTest.relayNum) + 1) // [0,relayNum]
+					_, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum-uint64(relayNumSubs))
+					require.Error(t, err, "sessionID %d relayNum %d storedRelayNum %d", sessionStoreTest.sessionID, sessionStoreTest.relayNum-uint64(relayNumSubs), sessionStoreTest.session.RelayNum)
+					_, err = psm.GetSession(consumerAddress, sessionStoreTest.epoch-1, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
+					require.Error(t, err)
+					_, err = psm.GetSession(consumerAddress, 5, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
+					require.Error(t, err)
+					sessionStoreTest.history = append(sessionStoreTest.history, ",ErrGet")
+				}
+			}
+		}
+	}
+
+	simulateUsageOnSessionsStore(500, sessionsStore, true)
+	// now repeat with epoch advancement on consumer and provider node
+	simulateUsageOnSessionsStore(100, sessionsStoreTooAdvanced, true)
+
+	psm.UpdateEpoch(20) // update session, still within size, so shouldn't affect anything
+
+	simulateUsageOnSessionsStore(500, sessionsStore, false)
+	simulateUsageOnSessionsStore(100, sessionsStoreTooAdvanced, false)
+
+	psm.UpdateEpoch(40) // update session, still within size, so shouldn't affect anything
+	for attempts := 0; attempts < 100; attempts++ {
+		// pick scenario:
+		sessionIdx := rand.Intn(len(sessionsStore))
+		sessionStoreTest := sessionsStore[sessionIdx]
+		inUse := sessionStoreTest.inUse
+		if inUse {
+			err := psm.OnSessionDone(sessionStoreTest.session)
+			require.NoError(t, err)
+			sessionStoreTest.inUse = false
+			sessionStoreTest.relayNum += 1
+		} else {
+			_, err := psm.GetSession(consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1)
+			require.Error(t, err)
+		}
+	}
+	// .IsValidEpoch(uint64(request.RelaySession.Epoch))
+	// .GetSession(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
+	// on err: lavasession.ConsumerNotRegisteredYet.Is(err)
+	// // .RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex)
+	// .PrepareSessionForUsage(relayCU, request.RelaySession.CuSum, request.RelaySession.RelayNum)
+	// simulate error: .OnSessionFailure(relaySession)
+	// simulate success: .OnSessionDone(relaySession)
+}
+
+func initSessionStore(numSessions int, epoch uint64) []*testSessionData {
+	retSessions := make([]*testSessionData, numSessions)
+	for i := 0; i < numSessions; i++ {
+		retSessions[i] = &testSessionData{
+			currentCU: 0,
+			inUse:     false,
+			sessionID: uint64(i) + 1,
+			relayNum:  0,
+			epoch:     epoch,
+			session:   nil,
+			history:   []string{},
+		}
+		utils.LavaFormatInfo("session", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "sessionID", Value: retSessions[i].sessionID})
+	}
+	return retSessions
 }

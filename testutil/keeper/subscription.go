@@ -69,7 +69,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
-		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, nil, nil, nil, nil),
+		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, nil, nil, nil),
 		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans),
 	)
 

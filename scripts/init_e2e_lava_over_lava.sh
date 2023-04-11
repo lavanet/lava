@@ -4,7 +4,7 @@ source $__dir/useful_commands.sh
 
 GASPRICE="0.000000001ulava"
 NODE="http://127.0.0.1:3340/1"
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --node $NODE
+lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ethereum.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --node $NODE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --node $NODE
 sleep 4
 

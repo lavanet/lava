@@ -33,7 +33,7 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
 
-	utils.LavaFormatInfo("Registering Chain:"+chain, nil)
+	utils.LavaFormatInfo("Registering Chain:" + chain)
 	switch chain {
 	case "LAV1":
 		cosmos_thirdparty.RegisterLavaProtobufs(s, cb)
@@ -52,23 +52,13 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 		ibc_thirdparty.RegisterJunoProtobufs(s, cb)
 		juno_thirdparty.RegisterJunoProtobufs(s, cb)
 		cosmwasm.RegisterJunoProtobufs(s, cb)
-	case "EVMOS", "EVMOST":
-		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
-		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
-		//TODO: add other evmos protobufs missing
-	case "CANTO", "CANTOT":
-		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
-		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
-		//TODO: add other canto protobufs missing
-	case "AXELAR", "AXELART":
-		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
-		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
-		//TODO: add other canto protobufs missing
 	default:
-		utils.LavaFormatFatal("Unsupported Chain Server: "+chain, nil, nil)
+		utils.LavaFormatWarning("Spec ID is not in grpc server registry, setting the default descriptors of cosmos", nil)
+		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
+		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
 	}
 
-	utils.LavaFormatInfo("gogoreflection.Register()", nil)
+	utils.LavaFormatInfo("gogoreflection.Register()")
 	gogoreflection.Register(s)
 	return s, httpServer, nil
 }

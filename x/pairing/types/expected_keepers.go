@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -66,11 +67,11 @@ type BankKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy projectstypes.Policy, err error)
-	ChargeComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error)
+	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, vrfpk string, errRet error)
 }
 
 type SubscriptionKeeper interface {
+	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
 }

@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -16,6 +15,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+type ProviderOptimizer interface {
+	AppendRelayData(providerAddress string, latency time.Duration, failure bool)
+}
 
 type ignoredProviders struct {
 	providers    map[string]struct{}
@@ -144,7 +147,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, &map[string]string{"cu": strconv.FormatUint((cswp.UsedComputeUnits + cu), 10), "maxCu": strconv.FormatUint(cswp.MaxComputeUnits, 10)})
+		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
 	}
 	return nil
 }
@@ -240,7 +243,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, sessionEpoch uint64) (connected bool, endpointPtr *Endpoint, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
@@ -253,10 +256,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.NetworkAddress, "provider address": cswp.PublicLavaAddress, "endpoint": fmt.Sprintf("%+v", endpoint)})
+					utils.LavaFormatError("error connecting to provider", err, utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.NetworkAddress, "address": cswp.PublicLavaAddress, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
 					}
 					continue
 				}
@@ -283,12 +286,12 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.PublicLavaAddress})
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
 		// report provider.
-		return connected, endpointPtr, AllProviderEndpointsDisabledError
+		return connected, endpointPtr, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
 
-	return connected, endpointPtr, nil
+	return connected, endpointPtr, cswp.PublicLavaAddress, nil
 }
 
 // returns the expected latency to a threshold.
@@ -309,7 +312,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
+		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
 
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -341,12 +344,11 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
 		utils.LavaFormatDebug("QoS Sync report",
-			&map[string]string{
-				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
-				"block diff": strconv.FormatInt(blockHeightDiff, 10),
-				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
-				"session_id": strconv.FormatInt(blockHeightDiff, 10),
-			})
+			utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
+			utils.Attribute{Key: "block diff", Value: blockHeightDiff},
+			utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
+			utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+		)
 	}
 }
 

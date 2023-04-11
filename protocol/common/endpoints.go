@@ -1,19 +1,77 @@
 package common
 
 import (
+	"context"
 	"net/url"
 	"strings"
 
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc/peer"
 )
+
+const (
+	URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH        = "?"
+	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
+	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
+)
+
+type NodeUrl struct {
+	Url          string     `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	AuthConfig   AuthConfig `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+	IpForwarding bool       `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
+}
+
+func (url *NodeUrl) String() string {
+	if url == nil {
+		return ""
+	}
+	return url.Url
+}
+
+func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
+	for header, headerValue := range url.AuthConfig.AuthHeaders {
+		headerSetter(header, headerValue)
+	}
+}
+
+func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter func(string, string)) {
+	if !url.IpForwarding {
+		// not necessary
+		return
+	}
+	grpcPeer, exists := peer.FromContext(ctx)
+	if exists {
+		peerAddress := grpcPeer.Addr.String()
+		headerSetter(IP_FORWARDING_HEADER_NAME, peerAddress)
+	}
+}
+
+type AuthConfig struct {
+	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
+	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+}
+
+func (ac *AuthConfig) AddAuthPath(url string) string {
+	// there is no auth provided
+	if ac.AuthQuery == "" {
+		return url
+	}
+	// AuthPath is expected to be added as a uri optional parameter
+	if strings.Contains(url, "?") {
+		// there are already optional parameters
+		return url + URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS + ac.AuthQuery
+	}
+	// path doesn't have query parameters
+	return url + URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH + ac.AuthQuery
+}
 
 func ValidateEndpoint(endpoint string, apiInterface string) error {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:
 		parsedUrl, err := url.Parse(endpoint)
 		if err != nil {
-			return utils.LavaFormatError("could not parse node url", err, &map[string]string{"url": endpoint, "apiInterface": apiInterface})
+			return utils.LavaFormatError("could not parse node url", err, utils.Attribute{Key: "url", Value: endpoint}, utils.Attribute{Key: "apiInterface", Value: apiInterface})
 		}
 		switch parsedUrl.Scheme {
 		case "http", "https":
@@ -21,14 +79,14 @@ func ValidateEndpoint(endpoint string, apiInterface string) error {
 		case "ws", "wss":
 			return nil
 		default:
-			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, &map[string]string{"apiInterface": apiInterface})
+			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
 		}
 	case spectypes.APIInterfaceGrpc:
 		parsedUrl, err := url.Parse(endpoint)
 		if err == nil {
 			// user provided a valid url with a scheme
 			if parsedUrl.Scheme != "" && strings.Contains(endpoint, "/") {
-				return utils.LavaFormatError("grpc URL scheme should be empty and it is not, endpoint definition example: 127.0.0.1:9090 -or- my-node.com/grpc", nil, &map[string]string{"apiInterface": apiInterface, "scheme": parsedUrl.Scheme})
+				return utils.LavaFormatError("grpc URL scheme should be empty and it is not, endpoint definition example: 127.0.0.1:9090 -or- my-node.com/grpc", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "scheme", Value: parsedUrl.Scheme})
 			}
 			return nil
 		} else {
@@ -37,9 +95,9 @@ func ValidateEndpoint(endpoint string, apiInterface string) error {
 			if err == nil {
 				return nil
 			}
-			return utils.LavaFormatError("invalid grpc URL, usage example: 127.0.0.1:9090 or my-node.com/grpc", nil, &map[string]string{"apiInterface": apiInterface, "url": endpoint})
+			return utils.LavaFormatError("invalid grpc URL, usage example: 127.0.0.1:9090 or my-node.com/grpc", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "url", Value: endpoint})
 		}
 	default:
-		return utils.LavaFormatError("unsupported apiInterface", nil, &map[string]string{"apiInterface": apiInterface})
+		return utils.LavaFormatError("unsupported apiInterface", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
 }

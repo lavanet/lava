@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -62,7 +63,7 @@ func TestConnector(t *testing.T) {
 	listener := createRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer listener.Close()
 	ctx := context.Background()
-	conn, err := NewConnector(ctx, numberOfClients, listenerAddressTcp)
+	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	require.Nil(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {

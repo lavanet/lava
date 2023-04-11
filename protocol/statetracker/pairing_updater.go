@@ -1,9 +1,6 @@
 package statetracker
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -57,7 +54,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	for chainID, consumerSessionManagerList := range pu.consumerSessionManagersMap {
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(ctx, chainID, latestBlock)
 		if err != nil {
-			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, &map[string]string{"chain": chainID})
+			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
 			nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
 			continue
 		} else {
@@ -67,7 +64,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
 			err = pu.updateConsummerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 			if err != nil {
-				utils.LavaFormatError("failed updating consumer session manager", err, &map[string]string{"chainID": chainID, "apiInterface": consumerSessionManager.RPCEndpoint().ApiInterface, "pairingListLen": strconv.Itoa(len(pairingList))})
+				utils.LavaFormatError("failed updating consumer session manager", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "apiInterface", Value: consumerSessionManager.RPCEndpoint().ApiInterface}, utils.Attribute{Key: "pairingListLen", Value: len(pairingList)})
 				continue
 			}
 		}
@@ -98,7 +95,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		// Sanity
 		providerEndpoints := provider.GetEndpoints()
 		if len(providerEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider with no endoints", nil, &map[string]string{"Address": provider.Address, "ChainID": provider.Chain})
+			utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
 			continue
 		}
 
@@ -110,7 +107,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 			}
 		}
 		if len(relevantEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, &map[string]string{"Address": provider.Address, "ChainID": provider.Chain, "apiInterface": rpcEndpoint.ApiInterface, "Endpoints": fmt.Sprintf("%v", providerEndpoints)})
+			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: providerEndpoints})
 			continue
 		}
 
@@ -135,7 +132,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		}
 	}
 	if len(pairing) == 0 {
-		return nil, utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, &map[string]string{"apiInterface": rpcEndpoint.ApiInterface, "ChainID": rpcEndpoint.ChainID, "geolocation": strconv.FormatUint(rpcEndpoint.Geolocation, 10)})
+		return nil, utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "ChainID", Value: rpcEndpoint.ChainID}, utils.Attribute{Key: "geolocation", Value: rpcEndpoint.Geolocation})
 	}
 	// replace previous pairing with new providers
 	return pairing, nil

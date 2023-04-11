@@ -10,18 +10,18 @@ import (
 	"github.com/lavanet/lava/x/projects/types"
 )
 
-func SimulateMsgSetProjectPolicy(
+func SimulateMsgSetAdminPolicy(
 	k keeper.Keeper,
 ) simtypes.Operation {
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
-		msg := &types.MsgSetProjectPolicy{
+		msg := &types.MsgSetAdminPolicy{
 			Creator: simAccount.Address.String(),
 		}
 
-		// TODO: Handling the SetProjectPolicy simulation
+		// TODO: Handling the SetAdminPolicy simulation
 
-		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "SetProjectPolicy simulation not implemented"), nil, nil
+		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "SetAdminPolicy simulation not implemented"), nil, nil
 	}
 }

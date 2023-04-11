@@ -12,18 +12,18 @@ TEMPLATE = """
 
 # Lava:
 # grpc_server = "public-rpc.lavanet.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_lava.json"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_lava.json"
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_osmosis.json" 
 
 # Cosmos
 # grpc_server = "gaia-node-1.lavapro.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_cosmoshub.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_cosmoshub.json" 
 
 grpc_server = "juno-node-1.lavapro.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_juno.json" 
+spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_juno.json" 
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3

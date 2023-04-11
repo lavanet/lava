@@ -49,7 +49,7 @@ message QueryListResponse {
 
 message listInfoStruct {
 	string index = 1;
-	string name = 2;
+	string description = 2;
 	cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false];
 }
 

@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -30,7 +29,7 @@ func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry 
 func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, cuSum uint64, allowedCU uint64, totalCUInEpochForUserProvider uint64, epochStart uint64) error {
 	if totalCUInEpochForUserProvider > allowedCU {
 		// if cu limit reached we return an error.
-		return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), &map[string]string{"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "allowedCUProvider": strconv.FormatUint(allowedCU, 10)})
+		return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), []utils.Attribute{{Key: "totalCUInEpochForUserProvider", Value: totalCUInEpochForUserProvider}, {Key: "allowedCUProvider", Value: allowedCU}}...)
 	}
 	return nil
 }

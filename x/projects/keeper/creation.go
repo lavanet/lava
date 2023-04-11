@@ -34,9 +34,12 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, k.Logger(ctx), "CreateProject_name_or_description_too_long", details, "project name or description too long")
 	}
 
-	project := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
-	var emptyProject types.Project
+	project, err := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
+	if err != nil {
+		return err
+	}
 
+	var emptyProject types.Project
 	blockHeight := uint64(ctx.BlockHeight())
 	_, found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject)
 	// the project with the same name already exists if no error has returned
@@ -49,18 +52,16 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		policy = types.Policy{
 			ChainPolicies:      []types.ChainPolicy{},
 			GeolocationProfile: math.MaxUint64,
-			TotalCuLimit:       plan.GetComputeUnits(),
-			EpochCuLimit:       plan.GetComputeUnitsPerEpoch(),
-			MaxProvidersToPair: plan.GetMaxProvidersToPair(),
+			TotalCuLimit:       plan.PlanPolicy.GetTotalCuLimit(),
+			EpochCuLimit:       plan.PlanPolicy.GetEpochCuLimit(),
+			MaxProvidersToPair: plan.PlanPolicy.GetMaxProvidersToPair(),
 		}
 	}
 
-	err := k.ValidateChainPolicies(ctx, policy)
-	if err != nil {
-		return err
-	}
+	project.AdminPolicy = policy
 
-	project.Policy = policy
+	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
+	project.SubscriptionPolicy = project.AdminPolicy
 
 	for _, projectKey := range projectData.GetProjectKeys() {
 		err = k.RegisterKey(ctx, types.ProjectKey{Key: projectKey.GetKey(), Types: projectKey.GetTypes(), Vrfpk: projectKey.GetVrfpk()}, &project, blockHeight)

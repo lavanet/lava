@@ -22,7 +22,6 @@ type (
 		bankKeeper         types.BankKeeper
 		accountKeeper      types.AccountKeeper
 		specKeeper         types.SpecKeeper
-		plansKeeper        types.PlansKeeper
 		epochStorageKeeper types.EpochStorageKeeper
 
 		projectsFS      common.FixationStore
@@ -38,7 +37,6 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
 	specKeeper types.SpecKeeper,
-	plansKeeper types.PlansKeeper,
 	epochStorageKeeper types.EpochStorageKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -59,7 +57,6 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		bankKeeper:         bankKeeper,
 		specKeeper:         specKeeper,
-		plansKeeper:        plansKeeper,
 		epochStorageKeeper: epochStorageKeeper,
 	}
 }

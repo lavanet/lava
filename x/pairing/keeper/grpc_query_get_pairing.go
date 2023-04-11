@@ -43,7 +43,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	timeLeftToNextPairing, nextPairingBlock, err := k.calculateNextEpochTimeAndBlock(ctx)
 	if err != nil {
 		// we don't want to fail the query if the calculateNextEpochTime function fails. This shouldn't happen, it's a fail-safe
-		utils.LavaFormatError("calculate next epoch time failed. Returning default time=0", err, nil)
+		utils.LavaFormatError("calculate next epoch time failed. Returning default time=0", err)
 		timeLeftToNextPairing = 0
 	}
 
