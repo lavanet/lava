@@ -34,7 +34,7 @@ var NextTimerKey = []string{
 
 var TimerTypePrefix = []string{
 	"Block_", // for BlockHeight
-	"Date_",  // for BlockTime
+	"Time_",  // for BlockTime
 }
 
 // Common encoder/decode

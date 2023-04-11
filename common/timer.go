@@ -103,6 +103,11 @@ func (tstore *TimerStore) getStore(ctx sdk.Context, extraPrefix string) *prefix.
 	return &store
 }
 
+func (tstore *TimerStore) getStoreTimer(ctx sdk.Context, which types.TimerType) *prefix.Store {
+	prefix := types.TimerPrefix + types.TimerTypePrefix[which]
+	return tstore.getStore(ctx, prefix)
+}
+
 func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which types.TimerType) uint64 {
 	store := tstore.getStore(ctx, types.NextTimerPrefix)
 	b := store.Get([]byte(types.NextTimerKey[which]))
@@ -127,8 +132,7 @@ func (tstore *TimerStore) setNextTimeout(ctx sdk.Context, which types.TimerType,
 }
 
 func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, data string) {
-	prefix := types.TimerPrefix + types.TimerTypePrefix[which]
-	store := tstore.getStore(ctx, prefix)
+	store := tstore.getStoreTimer(ctx, which)
 	store.Set(types.EncodeKey(value), []byte(data))
 
 	nextValue := tstore.getNextTimeout(ctx, which)
@@ -138,8 +142,7 @@ func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value
 }
 
 func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value uint64) {
-	prefix := types.TimerPrefix + types.TimerTypePrefix[which]
-	store := tstore.getStore(ctx, prefix)
+	store := tstore.getStoreTimer(ctx, which)
 	store.Delete(types.EncodeKey(value))
 }
 
@@ -162,8 +165,7 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 		return
 	}
 
-	prefix := types.TimerPrefix + types.TimerTypePrefix[which]
-	store := tstore.getStore(ctx, prefix)
+	store := tstore.getStoreTimer(ctx, which)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
