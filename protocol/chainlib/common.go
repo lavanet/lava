@@ -148,15 +148,13 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
-		re, err := regexp.Compile(apiName)
+		re, err := regexp.Compile("^" + apiName + "$")
 		if err != nil {
 			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
 		if re.MatchString(name) {
-			if re.FindStringIndex(name)[0] == 0 && re.FindStringIndex(name)[1] == len(name) {
-				return api, true
-			}
+			return api, true
 		}
 	}
 	return spectypes.ServiceApi{}, false

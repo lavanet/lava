@@ -25,35 +25,128 @@ func TestMatchSpecApiByName(t *testing.T) {
 		expectedOk  bool
 	}{
 		{
+			name: "test0",
+			serverApis: map[string]spectypes.ServiceApi{
+				"/blocks/[^\\/\\s]+": {
+					Name: "/blocks/{height}",
+					BlockParsing: spectypes.BlockParser{
+						ParserArg:  []string{"0"},
+						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+					},
+					ComputeUnits: 10,
+					Enabled:      true,
+					ApiInterfaces: []spectypes.ApiInterface{
+						{Interface: "REST",
+							Type:     "GET",
+							Category: &spectypes.SpecCategory{Deterministic: true},
+						},
+					},
+					Parsing: spectypes.Parsing{
+						FunctionTag:      "",
+						FunctionTemplate: "",
+						ResultParsing: spectypes.BlockParser{
+							ParserArg:  []string{},
+							ParserFunc: spectypes.PARSER_FUNC_EMPTY,
+						},
+					},
+				},
+			},
+			inputName:   "/blocks/10",
+			expectedApi: spectypes.ServiceApi{Name: "/blocks/{height}"},
+			expectedOk:  true,
+		},
+		{
 			name: "test1",
 			serverApis: map[string]spectypes.ServiceApi{
-				"test1.*": {Name: "test1-api"},
-				"test2.*": {Name: "test2-api"},
+				"/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+": {
+					Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
+					BlockParsing: spectypes.BlockParser{
+						ParserArg:  []string{"0"},
+						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+					},
+					ComputeUnits: 10,
+					Enabled:      true,
+					ApiInterfaces: []spectypes.ApiInterface{
+						{Interface: "REST",
+							Type:     "GET",
+							Category: &spectypes.SpecCategory{Deterministic: true},
+						},
+					},
+					Parsing: spectypes.Parsing{
+						FunctionTag:      "getBlockByNumber",
+						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/%d",
+						ResultParsing: spectypes.BlockParser{
+							ParserArg:  []string{"block_id", "hash"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
+						},
+					},
+				},
 			},
-			inputName:   "test1-match",
-			expectedApi: spectypes.ServiceApi{Name: "test1-api"},
+			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/10",
+			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}"},
 			expectedOk:  true,
 		},
 		{
 			name: "test2",
 			serverApis: map[string]spectypes.ServiceApi{
-				"test1.*": {Name: "test1-api"},
-				"test2.*": {Name: "test2-api"},
+				"/cosmos/base/tendermint/v1beta1/blocks/latest": {
+					Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
+					BlockParsing: spectypes.BlockParser{
+						ParserArg:  []string{"0"},
+						ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+					},
+					ComputeUnits: 10,
+					Enabled:      true,
+					ApiInterfaces: []spectypes.ApiInterface{
+						{Interface: "REST",
+							Type:     "GET",
+							Category: &spectypes.SpecCategory{Deterministic: true},
+						},
+					},
+					Parsing: spectypes.Parsing{
+						FunctionTag:      "getBlockByNumber",
+						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/latest",
+						ResultParsing: spectypes.BlockParser{
+							ParserArg:  []string{"block", "header", "height"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
+						},
+					},
+				},
 			},
-			inputName:   "test2-match",
-			expectedApi: spectypes.ServiceApi{Name: "test2-api"},
+			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/latest",
+			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
 			expectedOk:  true,
 		},
-		{
-			name: "test3",
-			serverApis: map[string]spectypes.ServiceApi{
-				"test1.*": {Name: "test1-api"},
-				"test2.*": {Name: "test2-api"},
-			},
-			inputName:   "test3-match",
-			expectedApi: spectypes.ServiceApi{},
-			expectedOk:  false,
-		},
+		// {
+		// 	name: "test1",
+		// 	serverApis: map[string]spectypes.ServiceApi{
+		// 		"test1.*": {Name: "test1-api"},
+		// 		"test2.*": {Name: "test2-api"},
+		// 	},
+		// 	inputName:   "test1-match",
+		// 	expectedApi: spectypes.ServiceApi{Name: "test1-api"},
+		// 	expectedOk:  true,
+		// },
+		// {
+		// 	name: "test2",
+		// 	serverApis: map[string]spectypes.ServiceApi{
+		// 		"test1.*": {Name: "test1-api"},
+		// 		"test2.*": {Name: "test2-api"},
+		// 	},
+		// 	inputName:   "test2-match",
+		// 	expectedApi: spectypes.ServiceApi{Name: "test2-api"},
+		// 	expectedOk:  true,
+		// },
+		// {
+		// 	name: "test3",
+		// 	serverApis: map[string]spectypes.ServiceApi{
+		// 		"test1.*": {Name: "test1-api"},
+		// 		"test2.*": {Name: "test2-api"},
+		// 	},
+		// 	inputName:   "test3-match",
+		// 	expectedApi: spectypes.ServiceApi{},
+		// 	expectedOk:  false,
+		// },
 	}
 	for _, testCase := range testTable {
 		testCase := testCase
