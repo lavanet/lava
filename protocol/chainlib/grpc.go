@@ -122,7 +122,7 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	api, ok := matchSpecApiByName(name, apip.serverApis)
+	api, ok := apip.serverApis[name]
 
 	// Return an error if spec does not exist
 	if !ok {

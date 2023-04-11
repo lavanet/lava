@@ -80,18 +80,18 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:      data,
-		Path:     url,
-		SpecPath: serviceApi.Name,
+		Msg:  data,
+		Path: url,
 	}
 	if connectionType == http.MethodGet {
 		// support for optional params, our listener puts them inside Msg data
 		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:      nil,
-			Path:     url + string(data),
-			SpecPath: serviceApi.Name,
+			Msg:  nil,
+			Path: url + string(data),
 		}
 	}
+	// add spec path to rest message so we can extract the requested block.
+	restMessage.SpecPath = serviceApi.Name
 
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
