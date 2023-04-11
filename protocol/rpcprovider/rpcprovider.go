@@ -112,8 +112,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
 	}
 	var wg sync.WaitGroup
-	wg.Add(len(rpcProviderEndpoints))
-	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint)
+	parallelJobs := len(rpcProviderEndpoints)
+	wg.Add(parallelJobs)
+	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
@@ -177,8 +178,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 					var ok bool
 					listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress]
 					if !ok {
+						utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
 						listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
-						rpcp.rpcProviderListeners[listener.Key()] = listener
+						rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress] = listener
 					}
 				}()
 			}
@@ -190,7 +192,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}(rpcProviderEndpoint)
 	}
 	wg.Wait()
-
+	close(disabledEndpoints)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	disabledEndpointsList := []*lavasession.RPCProviderEndpoint{}
 	for disabledEndpoint := range disabledEndpoints {
@@ -198,8 +200,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", disabledEndpointsList), nil)
+		if len(disabledEndpointsList) == parallelJobs {
+			utils.LavaFormatFatal("all endpoints are disabled", nil)
+		}
 	}
-
 	// tearing down
 	select {
 	case <-ctx.Done():
