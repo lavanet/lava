@@ -24,6 +24,7 @@ import (
 
 const (
 	initRetriesCount = 3
+	BACKOFF_MAX_TIME = 10 * time.Minute
 )
 
 type ChainFetcher interface {
@@ -45,6 +46,7 @@ type ChainTracker struct {
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
+	ticker                  *time.Ticker
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -264,30 +266,42 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
 	// TODO: improve the polling time, we don't need to poll the first half of every block change
-	ticker := time.NewTicker(pollingBlockTime / 10) // divide here so we don't miss new blocks by all that much
-
+	tickerTime := pollingBlockTime / 10
+	cs.ticker = time.NewTicker(tickerTime) // divide here so we don't miss new blocks by all that much
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
 		return err
 	}
-
 	// Polls blocks and keeps a queue of them
 	go func() {
+		fetchFails := uint64(0)
 		for {
 			select {
-			case <-ticker.C:
+			case <-cs.ticker.C:
 				err := cs.fetchAllPreviousBlocksIfNecessary(ctx)
 				if err != nil {
-					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err)
+					fetchFails += 1
+					cs.updateTicker(tickerTime, fetchFails)
+					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails})
+				} else {
+					if fetchFails != 0 {
+						// means we had failures and they are gone, need to reset the ticker
+						cs.updateTicker(tickerTime, 0)
+					}
+					fetchFails = 0
 				}
 			case <-cs.quit:
-				ticker.Stop()
+				cs.ticker.Stop()
 				return
 			}
 		}
 	}()
-
 	return nil
+}
+
+func (cs *ChainTracker) updateTicker(tickerBaseTime time.Duration, fetchFails uint64) {
+	cs.ticker.Stop()
+	cs.ticker = time.NewTicker(exponentialBackoff(tickerBaseTime, fetchFails))
 }
 
 func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
@@ -384,4 +398,16 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	}
 	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
+}
+
+func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
+	if fails > 10 {
+		fails = 10
+	}
+	maxIncrease := BACKOFF_MAX_TIME
+	backoff := baseTime * (1 << fails)
+	if backoff > maxIncrease {
+		backoff = maxIncrease
+	}
+	return backoff
 }

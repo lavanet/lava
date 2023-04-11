@@ -21,6 +21,11 @@ const (
 	UnstakeDescriptionInsufficientFunds = "client stake is below the minimum stake required"
 )
 
+const (
+	FlagMoniker     = "provider-moniker"
+	MAX_LEN_MONIKER = 50
+)
+
 func StakeNewEventName(isProvider bool) string {
 	if isProvider {
 		return ProviderStakeEventName

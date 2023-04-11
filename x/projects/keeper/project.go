@@ -12,8 +12,7 @@ import (
 func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeight uint64) (types.Project, error) {
 	var project types.Project
 
-	err, found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project)
-	if err != nil || !found {
+	if found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project); !found {
 		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForBlock_not_found", map[string]string{"project": projectID, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "project not found")
 	}
 
@@ -22,8 +21,7 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 
 func (k Keeper) GetProjectDeveloperData(ctx sdk.Context, developerKey string, blockHeight uint64) (types.ProtoDeveloperData, error) {
 	var projectDeveloperData types.ProtoDeveloperData
-	err, found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectDeveloperData)
-	if err != nil || !found {
+	if found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectDeveloperData); !found {
 		return types.ProtoDeveloperData{}, fmt.Errorf("GetProjectIDForDeveloper_invalid_key, the requesting key is not registered to a project, developer: %s", developerKey)
 	}
 	return projectDeveloperData, nil
@@ -36,12 +34,7 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 		return project, "", err
 	}
 
-	err, found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project)
-	if err != nil {
-		return project, "", err
-	}
-
-	if !found {
+	if found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project); !found {
 		return project, "", utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectDeveloperData.ProjectID}, "the developers project was not found")
 	}
 
@@ -50,8 +43,7 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
 	var project types.Project
-	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil || !found {
+	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
 		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
@@ -61,7 +53,10 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	}
 
 	for _, projectKey := range projectKeys {
-		k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
+		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+		}
 	}
 
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)

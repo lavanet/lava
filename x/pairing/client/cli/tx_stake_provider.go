@@ -17,11 +17,9 @@ import (
 
 var _ = strconv.Itoa(0)
 
-const FlagMoniker = "moniker"
-
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [optional: moniker/name]",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] --from <address> --provider-moniker <moniker>",
 		Short: "Broadcast message stakeProvider",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -54,7 +52,10 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			moniker, _ := cmd.Flags().GetString(FlagMoniker)
+			moniker, err := cmd.Flags().GetString(types.FlagMoniker)
+			if err != nil {
+				return err
+			}
 
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
@@ -70,7 +71,8 @@ func CmdStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-	cmd.Flags().String(FlagMoniker, "", "The provider's name")
+	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
+	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

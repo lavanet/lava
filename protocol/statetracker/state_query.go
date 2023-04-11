@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	CacheMaxCost                = 10 * 1024 * 1024 // 10M cost
-	CacheNumCounters            = 100000           // expect 10K items
+	CacheMaxCost                = 10 * 1024 // 10K cost
+	CacheNumCounters            = 100000    // expect 10K items
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"
@@ -229,12 +229,13 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 
 func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
-
+	extractedResultFromCache := false
 	cachedInterface, found := psq.ResponsesCache.Get(VerifyPairingRespKey + key)
 	var verifyResponse *pairingtypes.QueryVerifyPairingResponse = nil
 	if found && cachedInterface != nil {
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryVerifyPairingResponse); ok {
 			verifyResponse = cachedResp
+			extractedResultFromCache = true
 		} else {
 			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryVerifyPairingResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
 		}
@@ -252,7 +253,7 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch})
+		return false, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
 	}
 	return verifyResponse.Valid, verifyResponse.GetIndex(), nil
 }

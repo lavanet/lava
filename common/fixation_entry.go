@@ -87,7 +87,12 @@ func (fs *FixationStore) setEntry(ctx sdk.Context, entry types.Entry) {
 }
 
 // AppendEntry adds a new entry to the store
-func (fs *FixationStore) AppendEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+func (fs *FixationStore) AppendEntry(
+	ctx sdk.Context,
+	index string,
+	block uint64,
+	entryData codec.ProtoMarshaler,
+) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
@@ -232,82 +237,61 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	return types.Entry{}, false
 }
 
-// FindEntry returns the entry with index and block without changing the refcount
-func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+// FindEntry returns the entry by index and block without changing the refcount
+func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry"), false
+		utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry")
+		return false
 	}
 
-	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
-		return types.ErrEntryNotFound, false
+		return false
 	}
 
-	// unmarshal the entry's data
-	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
-	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "FindEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
-	}
-
-	return nil, true
+	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
+	return true
 }
 
-// GetEntry returns the latest entry with index and increments the refcount
-func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) (error, bool) {
+// GetEntry returns the latest entry by index and increments the refcount
+func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry"), false
+		utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry")
+		return false
 	}
 
 	block := uint64(ctx.BlockHeight())
 
-	// get the unmarshaled entry for block
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found {
-		return types.ErrEntryNotFound, false
+		return false
 	}
 
-	// unmarshal the entry's data
-	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
-	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
-	}
+	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
 
 	entry.Refcount += 1
 	fs.setEntry(ctx, entry)
-
-	return nil, true
+	return true
 }
 
-// get entry with index and block with ref decrease
-func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (error, bool) {
+// PutEntry finds the entry by index and block and decrements the refcount
+func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "PutEntry_invalid_index", details, "invalid non-ascii entry"), false
-	}
-	// get the unmarshaled entry for block
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
-	if !found {
-		return types.ErrEntryNotFound, false
+		panic("PutEntry with non-ascii index: " + index)
 	}
 
-	// unmarshal the entry's data
-	err = fs.cdc.Unmarshal(entry.GetData(), entryData)
-	if err != nil {
-		return utils.LavaError(ctx, ctx.Logger(), "GetEntry_cant_unmarshal", map[string]string{"err": err.Error()}, "can't unmarshal entry data"), false
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
+	if !found {
+		panic("PutEntry with unknown index: " + index)
 	}
 
 	if entry.Refcount == 0 {
-		details := map[string]string{
-			"index":    index,
-			"refcount": strconv.FormatUint(entry.Refcount, 10),
-		}
-		return utils.LavaError(ctx, ctx.Logger(), "PutEntry_zero_count", details, "refcount already reached zero"), false
+		panic("PutEntry with refcount zero index: " + index)
 	}
 
 	entry.Refcount -= 1
@@ -318,7 +302,6 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64, e
 	}
 
 	fs.setEntry(ctx, entry)
-	return nil, true
 }
 
 // removeEntry removes an entry from the store

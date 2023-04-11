@@ -17,9 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
-
 type testStruct struct {
 	ctx     context.Context
 	keepers *testkeeper.Keepers
@@ -344,10 +341,8 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// decrease the old plans' refCount
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
-	require.True(t, found)
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
-	require.True(t, found)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
 	ts.advanceEpochUntilStale()
