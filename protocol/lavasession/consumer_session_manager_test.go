@@ -12,8 +12,11 @@ import (
 
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -515,4 +518,20 @@ func TestContext(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
 	cancel()
+}
+
+func TestGrpcClientHang(t *testing.T) {
+	ctx := context.Background()
+	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
+	defer s.Stop()           // stop the server when finished.
+	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	require.NoError(t, err)
+	client := pairingtypes.NewRelayerClient(conn)
+	err = conn.Close()
+	require.NoError(t, err)
+	err = conn.Close()
+	require.Error(t, err)
+	_, err = client.Probe(ctx, &wrapperspb.UInt64Value{})
+	fmt.Println(err)
+	require.Error(t, err)
 }

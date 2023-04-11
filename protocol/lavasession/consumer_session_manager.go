@@ -70,6 +70,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
+	csm.closePurgedUnusedPairingsConnections() // this must be before updating csm.pairingPurge as we want to close the connections of older sessions (prev 2 epochs)
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
@@ -79,6 +80,17 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch})
 	return nil
+}
+
+// After 2 epochs we need to close all open connections.
+// otherwise golang garbage collector is not closing network connections and they
+// will remain open forever.
+func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
+	for _, purgedPairing := range csm.pairingPurge {
+		for _, endpoint := range purgedPairing.Endpoints {
+			endpoint.connection.Close()
+		}
+	}
 }
 
 func (csm *ConsumerSessionManager) validAddressesLen() int {
