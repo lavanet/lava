@@ -46,8 +46,8 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool)
-	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string) (updatedWithProof bool)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool)
+	SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string, specId string, apiInterface string) (updatedWithProof bool)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
 }
@@ -139,7 +139,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 					// Therefore the signature changes, so we need the original copy to extract the address from it.
 					// we want this code to run in parallel so it doesn't stop the flow
 
-					go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
+					go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
 					utils.LavaFormatDebug("Provider Finished Relay Successfully",
 						utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 						utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -148,7 +148,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 				}
 			} else {
 				updateRewardServer := func() {
-					updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String())
+					updated := rpcps.rewardServer.SendNewDataReliabilityProof(ctx, request.DataReliability, pairingEpoch, consumerAddress.String(), request.RelaySession.SpecId, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
 					if !updated {
 						utils.LavaFormatError("existing data reliability proof", lavasession.DataReliabilityAlreadySentThisEpochError, utils.Attribute{Key: "GUID", Value: ctx})
 					}
@@ -212,7 +212,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
 		} else {
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress)
+			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -232,8 +232,8 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	return rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress) error {
-	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String())
+func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, apiInterface string) error {
+	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String(), apiInterface)
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
 		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU})
