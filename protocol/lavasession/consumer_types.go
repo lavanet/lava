@@ -299,7 +299,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				if !connected_ {
 					continue
 				}
-
 			}
 			cswp.Endpoints[idx] = endpoint
 			return true, endpoint, false
