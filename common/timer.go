@@ -13,7 +13,7 @@ import (
 // can be based on either block-height or block-timestamp. When a timeout occurs,
 // a designated callback function is called with the details (ctx and data).
 //
-// Once instantiated with NewFixationStore(), it offers the following methods:
+// Once instantiated with NewTimerStore(), it offers the following methods:
 //    - WithCallbackByBlockHeight(callback): sets the callback for block-height timers
 //    - WithCallbackByBlockTime(callback): sets the callback for block-time timers
 //    - AddTimerByBlockHeight(ctx, block, data): add a timer to expire at block height
