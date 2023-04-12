@@ -25,7 +25,7 @@ func TestMatchSpecApiByName(t *testing.T) {
 		expectedOk  bool
 	}{
 		{
-			name: "test0",
+			name: "test1",
 			serverApis: map[string]spectypes.ServiceApi{
 				"/blocks/[^\\/\\s]+": {
 					Name: "/blocks/{height}",
@@ -56,7 +56,7 @@ func TestMatchSpecApiByName(t *testing.T) {
 			expectedOk:  true,
 		},
 		{
-			name: "test1",
+			name: "test2",
 			serverApis: map[string]spectypes.ServiceApi{
 				"/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+": {
 					Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
@@ -87,7 +87,7 @@ func TestMatchSpecApiByName(t *testing.T) {
 			expectedOk:  true,
 		},
 		{
-			name: "test2",
+			name: "test3",
 			serverApis: map[string]spectypes.ServiceApi{
 				"/cosmos/base/tendermint/v1beta1/blocks/latest": {
 					Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
@@ -117,36 +117,6 @@ func TestMatchSpecApiByName(t *testing.T) {
 			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
 			expectedOk:  true,
 		},
-		// {
-		// 	name: "test1",
-		// 	serverApis: map[string]spectypes.ServiceApi{
-		// 		"test1.*": {Name: "test1-api"},
-		// 		"test2.*": {Name: "test2-api"},
-		// 	},
-		// 	inputName:   "test1-match",
-		// 	expectedApi: spectypes.ServiceApi{Name: "test1-api"},
-		// 	expectedOk:  true,
-		// },
-		// {
-		// 	name: "test2",
-		// 	serverApis: map[string]spectypes.ServiceApi{
-		// 		"test1.*": {Name: "test1-api"},
-		// 		"test2.*": {Name: "test2-api"},
-		// 	},
-		// 	inputName:   "test2-match",
-		// 	expectedApi: spectypes.ServiceApi{Name: "test2-api"},
-		// 	expectedOk:  true,
-		// },
-		// {
-		// 	name: "test3",
-		// 	serverApis: map[string]spectypes.ServiceApi{
-		// 		"test1.*": {Name: "test1-api"},
-		// 		"test2.*": {Name: "test2-api"},
-		// 	},
-		// 	inputName:   "test3-match",
-		// 	expectedApi: spectypes.ServiceApi{},
-		// 	expectedOk:  false,
-		// },
 	}
 	for _, testCase := range testTable {
 		testCase := testCase

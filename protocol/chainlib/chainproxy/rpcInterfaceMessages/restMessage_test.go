@@ -2,6 +2,8 @@ package rpcInterfaceMessages
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRestMessage(t *testing.T) {
@@ -14,9 +16,7 @@ func TestRestMessage(t *testing.T) {
 
 	// Test GetParams method
 	params := restMessage.GetParams()
-	if params == nil {
-		t.Errorf("Expected params, but got nil")
-	}
+	require.Nil(t, params)
 
 	// Test GetResult method
 	result := restMessage.GetResult()
