@@ -18,7 +18,8 @@ func NewMigrator(keeper Keeper) Migrator {
 }
 
 // Migrate2to3 implements store migration from v1 to v2:
-// Trigger the version upgrade of the planFS fixation store
+// - Trigger the version upgrade of the planFS fixation store
+// - Update plan policy
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	if err := m.keeper.plansFS.MigrateVersion(ctx); err != nil {
 		return fmt.Errorf("%w: plans fixation-store", err)
@@ -55,6 +56,24 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 			m.keeper.plansFS.ModifyEntry(ctx, planIndex, block, &plan_v3)
 		}
+	}
+
+	return nil
+}
+
+// Migrate3to4 implements store migration from v3 to v4:
+// - Trigger the version upgrade of the planFS fixation store
+// - Replace the store prefix from module-name ("plan") to "plan-fs"
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	const V4_PlanFixationStorePrefix = "plan"
+
+	// Note: MigratePrefix() already calls MigrateVersion() and thus will perform
+	// FixationStore version migration if needed, using the old prefix first.
+	// (This is required because otherwise the usual fixation-store MigrateVersion
+	// would wrongly use the new prefix).
+
+	if err := m.keeper.plansFS.MigratePrefix(ctx, V4_PlanFixationStorePrefix); err != nil {
+		return fmt.Errorf("%w: plans fixation-store", err)
 	}
 
 	return nil
