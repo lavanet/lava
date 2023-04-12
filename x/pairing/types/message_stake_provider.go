@@ -47,5 +47,13 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+
+	if msg.Moniker == "" {
+		return sdkerrors.Wrapf(MonikerEmptyError, "invalid moniker (%s)", msg.Moniker)
+	}
+
+	if len(msg.Moniker) > MAX_LEN_MONIKER {
+		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
+	}
 	return nil
 }

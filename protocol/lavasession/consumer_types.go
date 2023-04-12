@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -59,6 +60,7 @@ type Endpoint struct {
 	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
 	Client             *pairingtypes.RelayerClient
+	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
 }
 
@@ -103,13 +105,18 @@ func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
 }
 
 // verify data reliability session exists or not
-func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (err error) {
+func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		// validate our relay number reached the data reliability relay number limit
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		dataReliabilitySession.lock.Lock() // lock before returning.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
-	return nil
+	return nil, cswp.PairingEpoch, NoDataReliabilitySessionWasCreatedError
 }
 
 // get a data reliability session from an endpoint
@@ -117,14 +124,19 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	// we re validate the data reliability session now that we are locked.
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		// we already have the dr session. so return it.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
 
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
 		Client:    cswp,
 		Endpoint:  endpoint,
+		RelayNum:  0,
 	}
 	singleDataReliabilitySession.lock.Lock() // we must lock the session so other requests wont get it.
 
@@ -174,18 +186,18 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
+func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
 
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	/*defer conn.Close()*/
 
 	c := pairingtypes.NewRelayerClient(conn)
-	return &c, nil
+	return &c, conn, nil
 }
 
 func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
@@ -252,8 +264,11 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !endpoint.Enabled {
 				continue
 			}
-			if endpoint.Client == nil {
-				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
+			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
+				if endpoint.Client != nil && endpoint.connection.GetState() != connectivity.Shutdown {
+					return true
+				}
+				client, conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatError("error connecting to provider", err, utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint})
@@ -261,10 +276,29 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 						endpoint.Enabled = false
 						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
 					}
-					continue
+					return false
 				}
 				endpoint.ConnectionRefusals = 0
-				endpoint.Client = conn
+				endpoint.Client = client
+				if endpoint.connection != nil {
+					endpoint.connection.Close() // just to be safe
+				}
+				endpoint.connection = conn
+				return true
+			}
+			if endpoint.Client == nil {
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
+					continue
+				}
+			} else if endpoint.connection.GetState() == connectivity.Shutdown {
+				// connection was shut down, so we need to create a new one
+				endpoint.connection.Close()
+				endpoint.Client = nil
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
+					continue
+				}
 			}
 			cswp.Endpoints[idx] = endpoint
 			return true, endpoint, false

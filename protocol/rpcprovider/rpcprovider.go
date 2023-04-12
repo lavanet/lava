@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	ChainTrackerDefaultMemory = 100
+	ChainTrackerDefaultMemory  = 100
+	DEFAULT_ALLOWED_MISSING_CU = 0.2
 )
 
 var (
@@ -156,7 +157,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				utils.Attribute{Key: "key", Value: key})
 		}
 		rpcp.rpcProviderServers[key] = rpcProviderServer
-		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID)
+		rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU)
 
 		// set up grpc listener
 		var listener *ProviderListener
