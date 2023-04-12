@@ -536,14 +536,16 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		if err != nil {
 			return nil, "", nil, err
 		}
+		// return the rpc connection to the websocket pool after the function completes
+		defer cp.conn.ReturnRpc(rpc)
 	} else {
 		rpc, err = cp.httpConnector.GetRpc(ctx, true)
 		if err != nil {
 			return nil, "", nil, err
 		}
+		// return the rpc connection to the http pool after the function completes
+		defer cp.httpConnector.ReturnRpc(rpc)
 	}
-	// return the rpc connection to the pool after the function completes
-	defer cp.conn.ReturnRpc(rpc)
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
