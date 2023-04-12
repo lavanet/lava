@@ -77,10 +77,31 @@ type TimerStore struct {
 	callbacks [2]TimerCallback // as per TimerType
 }
 
+func TimerVersion() uint64 {
+	return 1
+}
+
 // NewTimerStore returns a new TimerStore object
 func NewTimerStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *TimerStore {
 	tstore := TimerStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 	return &tstore
+}
+
+func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
+	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
+
+	b := store.Get(types.KeyPrefix(types.TimerVersionKey))
+	if b == nil {
+		return 1
+	}
+
+	return types.DecodeKey(b)
+}
+
+func (tstore *TimerStore) setVersion(ctx sdk.Context, val uint64) {
+	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
+	b := types.EncodeKey(val)
+	store.Set(types.KeyPrefix(types.TimerVersionKey), b)
 }
 
 func (tstore *TimerStore) WithCallbackByBlockHeight(callback func(ctx sdk.Context, data string)) *TimerStore {
