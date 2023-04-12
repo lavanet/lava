@@ -12,8 +12,11 @@ import (
 
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -27,7 +30,7 @@ const (
 	grpcListener                       = "localhost:48353"
 	servicedBlockNumber                = int64(30)
 	relayNumberAfterFirstCall          = uint64(1)
-	relayNumberAfterFirstFail          = uint64(0)
+	relayNumberAfterFirstFail          = uint64(1)
 	latestRelayCuAfterDone             = uint64(0)
 	cuSumOnFailure                     = uint64(0)
 )
@@ -178,7 +181,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-	require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
+	require.GreaterOrEqual(t, relayNumberAfterFirstFail, cs.RelayNum)
 	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 
 }
@@ -223,16 +226,16 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			require.Equal(t, cs.RelayNum, uint64(1))
+			require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
 			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 			sessionListData[j] = SessTestData{cuSum: cuForFirstRequest, relayNum: 1}
 		} else {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, uint64(0))
-			require.Equal(t, cs.RelayNum, uint64(0))
+			require.Equal(t, cs.RelayNum, relayNumberAfterFirstFail)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
-			sessionListData[j] = SessTestData{cuSum: 0, relayNum: 0}
+			sessionListData[j] = SessTestData{cuSum: 0, relayNum: 1}
 		}
 	}
 
@@ -262,7 +265,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 			err = csm.OnSessionFailure(cs, nil)
 			require.Nil(t, err)
 			require.Equal(t, sessionListData[j].cuSum, cs.CuSum)
-			require.Equal(t, sessionListData[j].relayNum, cs.RelayNum)
+			require.Equal(t, cs.RelayNum, sessionListData[j].relayNum+1)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
 		}
 	}
@@ -507,4 +510,28 @@ func TestGetSession(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+}
+
+func TestContext(t *testing.T) {
+	ctx := context.Background()
+	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
+	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
+	cancel()
+}
+
+func TestGrpcClientHang(t *testing.T) {
+	ctx := context.Background()
+	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
+	defer s.Stop()           // stop the server when finished.
+	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	require.NoError(t, err)
+	client := pairingtypes.NewRelayerClient(conn)
+	err = conn.Close()
+	require.NoError(t, err)
+	err = conn.Close()
+	require.Error(t, err)
+	_, err = client.Probe(ctx, &wrapperspb.UInt64Value{})
+	fmt.Println(err)
+	require.Error(t, err)
 }

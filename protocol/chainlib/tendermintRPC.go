@@ -490,7 +490,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	// create a new http request
@@ -536,14 +536,16 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		if err != nil {
 			return nil, "", nil, err
 		}
+		// return the rpc connection to the websocket pool after the function completes
+		defer cp.conn.ReturnRpc(rpc)
 	} else {
 		rpc, err = cp.httpConnector.GetRpc(ctx, true)
 		if err != nil {
 			return nil, "", nil, err
 		}
+		// return the rpc connection to the http pool after the function completes
+		defer cp.httpConnector.ReturnRpc(rpc)
 	}
-	// return the rpc connection to the pool after the function completes
-	defer cp.conn.ReturnRpc(rpc)
 
 	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
@@ -562,7 +564,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			relayTimeout += cp.averageBlockTime
 		}
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		connectCtx, cancel := context.WithTimeout(ctx, relayTimeout)
+
+		connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)

@@ -25,16 +25,16 @@ sleep 4
 
 lavad tx subscription buy DefaultPlan -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2222,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2223,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2224,jsonrpc,1" 1 -y --from servicer4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2225,jsonrpc,1" 1 -y --from servicer5 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2221,jsonrpc,1" --provider-moniker "dummyMoniker" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2222,jsonrpc,1" --provider-moniker "dummyMoniker" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2223,jsonrpc,1" --provider-moniker "dummyMoniker" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2224,jsonrpc,1" --provider-moniker "dummyMoniker" 1 -y --from servicer4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "127.0.0.1:2225,jsonrpc,1" --provider-moniker "dummyMoniker" 1 -y --from servicer5 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Lava Providers
-lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2261,tendermintrpc,1 127.0.0.1:2271,rest,1 127.0.0.1:2274,grpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2262,tendermintrpc,1 127.0.0.1:2272,rest,1 127.0.0.1:2275,grpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2263,tendermintrpc,1 127.0.0.1:2273,rest,1 127.0.0.1:2276,grpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2261,tendermintrpc,1 127.0.0.1:2271,rest,1 127.0.0.1:2274,grpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2262,tendermintrpc,1 127.0.0.1:2272,rest,1 127.0.0.1:2275,grpc,1" 1 -y --from servicer2 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "127.0.0.1:2263,tendermintrpc,1 127.0.0.1:2273,rest,1 127.0.0.1:2276,grpc,1" 1 -y --from servicer3 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 
 # we need to wait for the next epoch for the stake to take action.
