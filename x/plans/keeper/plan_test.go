@@ -58,7 +58,7 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 	// create dummy plans in a loop according to planAmount
 	for i := startIndex; i < startIndex+planAmount; i++ {
 		// create distinct plan index by the loop counter
-		planIndex := "mockPlan" + strconv.Itoa(int(i))
+		planIndex := "mockPlan" + strconv.FormatUint(i, 10)
 		overuseRate := uint64(10)
 
 		// create dummy plan and append to the testPlans array
