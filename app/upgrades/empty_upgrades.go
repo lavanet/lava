@@ -130,8 +130,8 @@ var Upgrade_0_9_3 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_9_4 = Upgrade{
-	UpgradeName:          "v0.9.4",
+var Upgrade_0_9_5 = Upgrade{
+	UpgradeName:          "v0.9.5",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
