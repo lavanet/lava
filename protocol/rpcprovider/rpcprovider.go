@@ -63,7 +63,6 @@ type ProviderStateTrackerInf interface {
 
 type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
-	rpcProviderServers   map[string]*RPCProviderServer
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 }
@@ -76,7 +75,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -85,7 +83,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcp.providerStateTracker = providerStateTracker
-	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer, len(rpcProviderEndpoints))
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
@@ -124,7 +121,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 			providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
-			key := rpcProviderEndpoint.Key()
 			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 			if err != nil {
@@ -156,11 +152,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rpcProviderServer := &RPCProviderServer{}
-			if _, ok := rpcp.rpcProviderServers[key]; ok {
-				utils.LavaFormatFatal("Trying to add the same key twice to rpcProviderServers check config file.", nil,
-					utils.Attribute{Key: "key", Value: key})
-			}
-			rpcp.rpcProviderServers[key] = rpcProviderServer
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU)
 
 			// set up grpc listener
