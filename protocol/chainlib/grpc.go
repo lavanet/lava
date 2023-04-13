@@ -78,12 +78,6 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
-	// Check if custom block parser exists in the api interface
-	// Use custom block parser only for URI calls
-	if apiInterface.GetOverwriteBlockParsing() != nil {
-		blockParser = *apiInterface.GetOverwriteBlockParsing()
-	}
-
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
 		Msg:  data,
