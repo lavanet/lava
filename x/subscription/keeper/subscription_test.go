@@ -331,34 +331,54 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 2, "")
 	require.Nil(t, err)
 
-	block := uint64(ts.ctx.BlockHeight())
+	block1 := uint64(ts.ctx.BlockHeight())
 
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
+	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+
 	// use the subscription and the project
 	keeper.ChargeSubscription(ts.ctx, creator, 1000)
 	require.Equal(t, sub.PrevCuLeft, sub.MonthCuTotal-1000)
-	err = projectKeeper.AddComputeUnitsToProject(ts.ctx, creator, block, 1000)
+	err = projectKeeper.AddComputeUnitsToProject(ts.ctx, creator, block1, 1000)
 	require.Nil(t, err)
+
 	// verify that project used the CU
-	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block)
+	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
+
+	block2 := uint64(ts.ctx.BlockHeight())
+
+	// force fixation entry (by adding project key)
+	projKey := []projectstypes.ProjectKey{
+		{
+			Key: common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
+			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+		},
+	}
+	projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, creator, projKey)
 
 	// fast-forward one months
 	sub = ts.expireSubscription(sub)
 	require.Equal(t, uint64(1), sub.DurationLeft)
+
+	block3 := uint64(ts.ctx.BlockHeight())
 
 	// check that subscription and project have renewed CUs, and that the
 	// project created a snapshot for last month
 	sub, found = keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 	require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, uint64(ts.ctx.BlockHeight()))
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block2)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
 }
