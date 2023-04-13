@@ -32,7 +32,7 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret 
 		if len(ret.Proposal.Specs) > 0 {
 			ret.Proposal.Specs = append(ret.Proposal.Specs, proposal.Proposal.Specs...)
 			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
-			ret.Proposal.Title = proposal.Proposal.Title + " " + ret.Proposal.Title
+			ret.Proposal.Title = "Multi_Spec_Add"
 			retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
 			if err != nil {
 				return proposal, err
