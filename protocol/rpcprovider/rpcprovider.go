@@ -188,8 +188,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
 			}
 			listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+			utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 			return nil
-		}(rpcProviderEndpoint)
+		}(rpcProviderEndpoint) // continue on error
 	}
 	wg.Wait()
 	close(disabledEndpoints)
