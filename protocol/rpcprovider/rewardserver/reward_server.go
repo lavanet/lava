@@ -73,7 +73,7 @@ type RewardsTxSender interface {
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
-	consumerRewardsKey := proof.SpecId + apiInterface + consumerAddr
+	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 	epochRewards, ok := rws.rewards[epoch]
 	if !ok {
 		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
@@ -104,7 +104,7 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 func (rws *RewardServer) SendNewDataReliabilityProof(ctx context.Context, dataReliability *pairingtypes.VRFData, epoch uint64, consumerAddr string, specId string, apiInterface string) (updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
-	consumerRewardsKey := specId + apiInterface + consumerAddr
+	consumerRewardsKey := getKeyForConsumerRewards(specId, apiInterface, consumerAddr)
 	epochRewards, ok := rws.rewards[epoch]
 	if !ok {
 		consumerRewardsMap := map[string]*ConsumerRewards{(consumerRewardsKey): {epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelaySession{}, dataReliabilityProofs: []*pairingtypes.VRFData{dataReliability}}}
@@ -366,4 +366,8 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		ChainID:             chainID,
 	}
 	return payment, nil
+}
+
+func getKeyForConsumerRewards(specId string, apiInterface string, consumerAddress string) string {
+	return specId + apiInterface + consumerAddress
 }
