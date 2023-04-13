@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -66,9 +65,9 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	_, _, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
-	fmt.Printf("proj.Subscription: %v\n", proj.Subscription)
+
 	tests := []struct {
 		name  string
 		cu    uint64

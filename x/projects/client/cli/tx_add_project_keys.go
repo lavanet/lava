@@ -1,16 +1,14 @@
 package cli
 
 import (
-	"path/filepath"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/projects/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var _ = strconv.Itoa(0)
@@ -31,7 +29,7 @@ func CmdAddProjectKeys() *cobra.Command {
 			projectKeysFilePath := args[1]
 
 			var projectKeys []types.ProjectKey
-			err = readYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
+			err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
 			if err != nil {
 				return err
 			}
@@ -56,29 +54,4 @@ func CmdAddProjectKeys() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
-}
-
-func readYaml(filePath string, primaryKey string, content interface{}) error {
-	configPath, configName := filepath.Split(filePath)
-	if configPath == "" {
-		configPath = "."
-	}
-	viper.SetConfigName(configName)
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(configPath)
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return err
-	}
-
-	err = viper.GetViper().UnmarshalKey(primaryKey, content, func(dc *mapstructure.DecoderConfig) {
-		dc.ErrorUnset = true
-		dc.ErrorUnused = true
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

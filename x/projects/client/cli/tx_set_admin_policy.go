@@ -1,16 +1,14 @@
 package cli
 
 import (
-	"path/filepath"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/projects/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var _ = strconv.Itoa(0)
@@ -30,25 +28,10 @@ func CmdSetAdminPolicy() *cobra.Command {
 			}
 
 			projectId := args[0]
-			configPath, configName := filepath.Split(args[1])
-			if configPath == "" {
-				configPath = "."
-			}
-			viper.SetConfigName(configName)
-			viper.SetConfigType("yml")
-			viper.AddConfigPath(configPath)
-
-			err = viper.ReadInConfig()
-			if err != nil {
-				return err
-			}
+			adminPolicyFilePath := args[1]
 
 			var policy types.Policy
-
-			err = viper.GetViper().UnmarshalKey("Policy", &policy, func(dc *mapstructure.DecoderConfig) {
-				dc.ErrorUnset = true
-				dc.ErrorUnused = true
-			})
+			err = commontypes.ReadYaml(adminPolicyFilePath, "Policy", &policy)
 			if err != nil {
 				return err
 			}

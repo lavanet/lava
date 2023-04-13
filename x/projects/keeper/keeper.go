@@ -19,9 +19,6 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper         types.BankKeeper
-		accountKeeper      types.AccountKeeper
-		specKeeper         types.SpecKeeper
 		epochStorageKeeper types.EpochStorageKeeper
 
 		projectsFS      common.FixationStore
@@ -34,9 +31,6 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
-	bankKeeper types.BankKeeper,
-	accountKeeper types.AccountKeeper,
-	specKeeper types.SpecKeeper,
 	epochStorageKeeper types.EpochStorageKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -54,9 +48,6 @@ func NewKeeper(
 		paramstore:         ps,
 		projectsFS:         *projectsfs,
 		developerKeysFS:    *developerKeysfs,
-		accountKeeper:      accountKeeper,
-		bankKeeper:         bankKeeper,
-		specKeeper:         specKeeper,
 		epochStorageKeeper: epochStorageKeeper,
 	}
 }

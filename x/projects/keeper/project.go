@@ -93,10 +93,8 @@ func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy types.Pol
 			} else {
 				project.AdminPolicy = policy
 			}
-		}
-
-		// for subscription policy - check if the key is an address of the project's subscription consumer
-		if !isAdminPolicy {
+		} else {
+			// for subscription policy - check if the key is an address of the project's subscription consumer
 			if key != project.GetSubscription() {
 				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_subscription_consumer", map[string]string{"project": projectID, "key": key}, "cannot set subscription policy because the requesting key is not subscription consumer key")
 			} else {

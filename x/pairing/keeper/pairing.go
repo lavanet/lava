@@ -2,11 +2,11 @@ package keeper
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -169,14 +169,14 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
 
-	providersToPair := minMaxProvidersToPair([]uint64{
+	providersToPair := commontypes.FindUint64Min([]uint64{
 		project.AdminPolicy.GetMaxProvidersToPair(),
 		project.SubscriptionPolicy.GetMaxProvidersToPair(),
 		planPolicy.GetMaxProvidersToPair(),
 	})
 
 	projectToPair := project.Index
-	allowedCU := minCuLimit([]uint64{
+	allowedCU := commontypes.FindUint64Min([]uint64{
 		project.AdminPolicy.GetEpochCuLimit(),
 		project.SubscriptionPolicy.GetEpochCuLimit(),
 		planPolicy.GetEpochCuLimit(),
@@ -187,34 +187,6 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 
 	return geolocation, providersToPair, projectToPair, allowedCU, nil
-}
-
-func minMaxProvidersToPair(values []uint64) uint64 {
-	min := uint64(math.MaxUint64)
-	for _, v := range values {
-		if v < min {
-			min = v
-		}
-	}
-
-	return min
-}
-
-func minCuLimit(values []uint64) uint64 {
-	min := uint64(math.MaxUint64)
-	for _, v := range values {
-		// when the CU limits are enforced, 0 indicates unlimited CU. So it's actually larger than non-zero limitations
-		if v < min && v != 0 {
-			min = v
-		}
-	}
-
-	// min = initial value -> couldn't find non-zero min value -> unlimited CU
-	if min == math.MaxUint64 {
-		return 0
-	}
-
-	return min
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {

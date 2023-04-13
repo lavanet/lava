@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
@@ -38,15 +39,10 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 
 		planPolicy := plan.GetPlanPolicy()
 
-		err = project.VerifyProject(req.ChainID, planPolicy)
-		if err != nil {
-			return nil, err
-		}
-
 		// geolocation is a bitmap. common denominator can be calculated with logical AND
 		geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
 
-		allowedCU := minCuLimit([]uint64{
+		allowedCU := commontypes.FindUint64Min([]uint64{
 			project.AdminPolicy.GetEpochCuLimit(),
 			project.SubscriptionPolicy.GetEpochCuLimit(),
 			planPolicy.GetEpochCuLimit(),

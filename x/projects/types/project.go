@@ -18,8 +18,10 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 }
 
 func CreateProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
-	if !validateProjectName(projectName) {
-		return Project{}, fmt.Errorf("project name must be ASCII and cannot contain \",\". Name: %s", projectName)
+	if !validateProjectNameAndDescription(projectName, description) {
+		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d."+
+			" Name: %s. The project's description must also be ASCII and its length must be less than %d",
+			MAX_PROJECT_NAME_LEN, projectName, MAX_PROJECT_DESCRIPTION_LEN)
 	}
 
 	return Project{
@@ -34,10 +36,12 @@ func CreateProject(subscriptionAddress string, projectName string, description s
 	}, nil
 }
 
-func validateProjectName(projectName string) bool {
-	if strings.Contains(projectName, ",") || !commontypes.IsASCII(projectName) {
+func validateProjectNameAndDescription(name string, description string) bool {
+	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
+		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN {
 		return false
 	}
+
 	return true
 }
 
@@ -99,11 +103,6 @@ func (project *Project) VerifyCuUsage(planPolicy Policy) error {
 	subCuLimit := project.SubscriptionPolicy.TotalCuLimit
 	adminCuLimit := project.AdminPolicy.TotalCuLimit
 	planCuLimit := planPolicy.TotalCuLimit
-
-	// if all of the CU limits are zero -> unlimited CU
-	if subCuLimit == 0 && adminCuLimit == 0 && planCuLimit == 0 {
-		return nil
-	}
 
 	if subCuLimit <= project.UsedCu || adminCuLimit <= project.UsedCu || planCuLimit <= project.UsedCu {
 		return fmt.Errorf("the developers project policy used all the allowed cu for this project")

@@ -24,17 +24,8 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectData types.ProjectData, plan plantypes.Plan) error {
-	if len(projectData.GetName()) > types.MAX_PROJECT_NAME_LEN || len(projectData.GetDescription()) > types.MAX_PROJECT_DESCRIPTION_LEN {
-		details := map[string]string{
-			"name":              projectData.GetName(),
-			"nameMaxLen":        strconv.FormatInt(types.MAX_PROJECT_NAME_LEN, 10),
-			"description":       projectData.GetDescription(),
-			"descriptionMaxLen": strconv.FormatInt(types.MAX_PROJECT_DESCRIPTION_LEN, 10),
-		}
-		return utils.LavaError(ctx, k.Logger(ctx), "CreateProject_name_or_description_too_long", details, "project name or description too long")
-	}
-
-	project, err := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
+	project, err := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(),
+		projectData.GetEnabled())
 	if err != nil {
 		return err
 	}
@@ -95,7 +86,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 			_, found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
 
 			// if we find the developer key and it belongs to a different project, return error
-			if found && developerData.ProjectID == project.GetIndex() {
+			if found && developerData.ProjectID != project.GetIndex() {
 				details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
 				return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
 			}
