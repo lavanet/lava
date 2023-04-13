@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -52,6 +53,7 @@ func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craft
 
 // ParseMsg parses message data into chain message object
 func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	log.Println("REST connectionType: ", connectionType)
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")

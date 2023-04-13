@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -54,6 +55,7 @@ func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, cr
 
 // this func parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	log.Println("JSONRPC connectionType: ", connectionType)
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("JsonRPCChainParser not defined")
@@ -238,7 +240,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodGet, dappID, metricsData)
+			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, metricsData)
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
 
 			if err != nil {
@@ -301,7 +303,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
-		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodGet, dappID, metricsData)
+		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, metricsData)
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response

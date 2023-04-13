@@ -3,6 +3,7 @@ package chainlib
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"regexp"
@@ -228,6 +229,9 @@ func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
 func GetApiInterfaceFromServiceApi(serviceApi *spectypes.ServiceApi, connectionType string) *spectypes.ApiInterface {
 	var apiInterface *spectypes.ApiInterface = nil
 	for i := range serviceApi.ApiInterfaces {
+		log.Println("serviceApi.ApiInterfaces[i].Category: ", serviceApi.ApiInterfaces[i].Category)
+		log.Println("serviceApi.ApiInterfaces[i].Type: ", serviceApi.ApiInterfaces[i].Type)
+		log.Println("connectionType: ", connectionType)
 		if serviceApi.ApiInterfaces[i].Type == connectionType {
 			apiInterface = &serviceApi.ApiInterfaces[i]
 			break
