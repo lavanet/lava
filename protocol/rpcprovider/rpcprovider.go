@@ -162,6 +162,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 			rpcp.rpcProviderServers[key] = rpcProviderServer
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU)
+
 			// set up grpc listener
 			var listener *ProviderListener
 			if rpcProviderEndpoint.NetworkAddress == "" && len(rpcp.rpcProviderListeners) > 0 {
