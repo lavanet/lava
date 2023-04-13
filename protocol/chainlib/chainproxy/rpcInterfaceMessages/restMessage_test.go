@@ -9,9 +9,8 @@ import (
 func TestRestMessage(t *testing.T) {
 	// Test GetParams method
 	restMessage := RestMessage{
-		Path:     "eth_getTransactionByHash",
-		Msg:      []byte{1, 2, 3, 4, 5},
-		SpecPath: "eth_getTransactionByHash",
+		Path:     "blocks/latest",
+		SpecPath: "blocks/latest",
 	}
 
 	// Test GetParams method
