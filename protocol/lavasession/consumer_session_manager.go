@@ -88,7 +88,9 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	for _, purgedPairing := range csm.pairingPurge {
 		for _, endpoint := range purgedPairing.Endpoints {
-			endpoint.connection.Close()
+			if endpoint.connection != nil {
+				endpoint.connection.Close()
+			}
 		}
 	}
 }
