@@ -430,7 +430,7 @@ func convertInterfaceToString(input interface{}) (string, error) {
 	case string:
 		return inp, nil
 	case float64:
-		return fmt.Sprintf("%v", inp), nil
+		return strconv.FormatFloat(inp, 'f', -1, 64), nil
 	default:
 		return "", utils.LavaFormatError("Failed to convert to string, unknown type", nil, utils.Attribute{Key: "input.(type)", Value: reflect.TypeOf(input)})
 	}
