@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -55,7 +54,6 @@ func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, cr
 
 // this func parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
-	log.Println("JSONRPC connectionType: ", connectionType)
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("JsonRPCChainParser not defined")

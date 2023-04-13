@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -56,7 +55,6 @@ func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi,
 
 // ParseMsg parses message data into chain message object
 func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
-	log.Println("Tendermint connectionType: ", connectionType)
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")

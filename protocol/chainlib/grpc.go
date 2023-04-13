@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -59,7 +58,6 @@ func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craft
 
 // ParseMsg parses message data into chain message object
 func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
-	log.Println("GRPC connectionType: ", connectionType)
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("GrpcChainParser not defined")
