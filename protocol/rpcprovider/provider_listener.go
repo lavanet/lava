@@ -101,13 +101,6 @@ func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayReq
 }
 
 func (rs *relayServer) Probe(ctx context.Context, probeReq *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error) {
-	guid, found := utils.GetUniqueIdentifier(ctx)
-	attributes := []utils.Attribute{{Key: "probe", Value: probeReq.Value}}
-	if found {
-		attributes = append(attributes, utils.Attribute{Key: "GUID", Value: guid})
-	}
-	utils.LavaFormatDebug("Provider got probe", attributes...)
-
 	return probeReq, nil
 }
 
