@@ -58,7 +58,7 @@ lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
 
 # we need to wait for the next epoch for the stake to take action.
-# sleep_until_next_epoch
+sleep_until_next_epoch
 
 . ${__dir}/setup_providers.sh
 
