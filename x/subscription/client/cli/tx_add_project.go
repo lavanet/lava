@@ -47,14 +47,14 @@ func CmdAddProject() *cobra.Command {
 
 			creator := clientCtx.GetFromAddress().String()
 
-			var policy projectstypes.Policy
+			var policy *projectstypes.Policy
 			if cmd.Flags().Lookup("policy-file").Changed {
 				policyFilePath, err := cmd.Flags().GetString("policy-file")
 				if err != nil {
 					return err
 				}
 
-				err = commontypes.ReadYaml(policyFilePath, "Policy", &policy)
+				err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
 				if err != nil {
 					return err
 				}

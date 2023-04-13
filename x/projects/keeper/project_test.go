@@ -49,7 +49,7 @@ func TestCreateProject(t *testing.T) {
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}},
-		Policy: types.Policy{},
+		Policy: nil,
 	}
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
@@ -111,7 +111,7 @@ func TestAddKeys(t *testing.T) {
 				Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 				Vrfpk: "",
 			}},
-		Policy: types.Policy{},
+		Policy: nil,
 	}
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
@@ -170,7 +170,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
 			Vrfpk: "",
 		}},
-		Policy: types.Policy{GeolocationProfile: math.MaxUint64},
+		Policy: &types.Policy{GeolocationProfile: math.MaxUint64},
 	}
 	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), plan, "")
 	require.Nil(t, err)
@@ -216,7 +216,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
 			Vrfpk: "",
 		}},
-		Policy: types.Policy{GeolocationProfile: math.MaxUint64},
+		Policy: &types.Policy{GeolocationProfile: math.MaxUint64},
 	}
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
@@ -265,7 +265,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 			10, 100, 3, false, false},
 		{"bad maxProvidersToPair", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 0, false, false},
+			100, 10, 1, false, false},
 	}
 
 	for _, tt := range templates {

@@ -53,5 +53,5 @@ message ProjectData {
     string description = 2;
     bool enabled = 3;
     repeated ProjectKey projectKeys = 4 [(gogoproto.nullable) = false];
-    Policy policy = 5 [(gogoproto.nullable) = false];
+    Policy policy = 5;
   }

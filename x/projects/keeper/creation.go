@@ -17,7 +17,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 		Description: types.ADMIN_PROJECT_DESCRIPTION,
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk}},
-		Policy:      types.Policy{},
+		Policy:      nil,
 	}
 	return k.CreateProject(ctx, subscriptionAddress, projectData, plan)
 }
@@ -39,17 +39,18 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	}
 
 	policy := projectData.GetPolicy()
-	if k.isPolicyEmpty(policy) {
-		policy = types.Policy{
+	if policy == nil {
+		projectDefaultPolicy := types.Policy{
 			ChainPolicies:      []types.ChainPolicy{},
 			GeolocationProfile: math.MaxUint64,
 			TotalCuLimit:       plan.PlanPolicy.GetTotalCuLimit(),
 			EpochCuLimit:       plan.PlanPolicy.GetEpochCuLimit(),
 			MaxProvidersToPair: plan.PlanPolicy.GetMaxProvidersToPair(),
 		}
+		policy = &projectDefaultPolicy
 	}
 
-	project.AdminPolicy = policy
+	project.AdminPolicy = *policy
 
 	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
 	project.SubscriptionPolicy = project.AdminPolicy
@@ -62,13 +63,6 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	}
 
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
-}
-
-func (k Keeper) isPolicyEmpty(policy types.Policy) bool {
-	if len(policy.ChainPolicies) == 0 && policy.EpochCuLimit == uint64(0) && policy.GeolocationProfile == uint64(0) && policy.MaxProvidersToPair == 0 && policy.TotalCuLimit == 0 {
-		return true
-	}
-	return false
 }
 
 func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
