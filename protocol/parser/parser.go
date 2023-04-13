@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -307,7 +308,11 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
+			val, err := convertInterfaceToString(val)
+			if err != nil {
+				return nil, err
+			}
+			return appendInterfaceToInterfaceArray(val), nil
 		}
 
 		// Else return an error
@@ -359,17 +364,28 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 		// Fetch value using prop index
 		block := unmarshalledDataTyped[propIndex]
-
-		return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", block)), nil
+		block, err := convertInterfaceToString(block)
+		if err != nil {
+			return nil, err
+		}
+		return appendInterfaceToInterfaceArray(block), nil
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
+			val, err := convertInterfaceToString(val)
+			if err != nil {
+				return nil, err
+			}
+			return appendInterfaceToInterfaceArray(val), nil
 		}
 
 		// If attribute with key index exists return value
 		if val, ok := unmarshalledDataTyped[inp]; ok {
-			return appendInterfaceToInterfaceArray(fmt.Sprintf("%v", val)), nil
+			val, err := convertInterfaceToString(val)
+			if err != nil {
+				return nil, err
+			}
+			return appendInterfaceToInterfaceArray(val), nil
 		}
 
 		// Else return not set error
@@ -407,4 +423,15 @@ func appendInterfaceToInterfaceArray(value interface{}) []interface{} {
 	retArr := make([]interface{}, 0)
 	retArr = append(retArr, value)
 	return retArr
+}
+
+func convertInterfaceToString(input interface{}) (string, error) {
+	switch inp := input.(type) {
+	case string:
+		return inp, nil
+	case float64:
+		return fmt.Sprintf("%v", inp), nil
+	default:
+		return "", utils.LavaFormatError("Failed to convert to string, unknown type", nil, utils.Attribute{Key: "input.(type)", Value: reflect.TypeOf(input)})
+	}
 }
