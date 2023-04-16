@@ -115,6 +115,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
+	// TODO: change into score_latency^a * sync_score^b (do log for computation performance)
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
@@ -136,6 +137,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 }
 
 func (po *ProviderOptimizer) calculateSyncScore(SyncScore score.ScoreStore) float64 {
+	// TODO: do the same as latency score
 	return 1
 }
 
@@ -326,6 +328,7 @@ func zScore(mean float64, variance float64, value float64) float64 {
 
 // calculate the probability a random variable with a given average and variance with Z repetitions will be less than or equal to value
 func probValueAfterRepetitions(mean float64, variance float64, value float64, repetitions float64) float64 {
+	// TODO: do a poisson probability calculation instead of a repetition of a normal distribution with a given mean and variance
 	// Calculate the mean and variance of the sum of the random variables
 	sumMean := mean * repetitions
 	sumVariance := variance * repetitions
