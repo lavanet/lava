@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
@@ -46,7 +47,6 @@ type ConsumerStateTrackerInf interface {
 
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
-	rpcConsumerServers   map[string]*RPCConsumerServer
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -61,7 +61,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
-	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -78,41 +77,74 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
-
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
-	optimizers := map[string]*provideroptimizer.ProviderOptimizer{}
+	var optimizers sync.Map
+	var wg sync.WaitGroup
+	parallelJobs := len(rpcEndpoints)
+	wg.Add(parallelJobs)
+	errCh := make(chan error)
 
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
-	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(len(rpcEndpoints))})
+	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 	for _, rpcEndpoint := range rpcEndpoints {
-		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
-		if err != nil {
-			return err
-		}
-		err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
-		if err != nil {
-			return err
-		}
-		allowedBlockLagForSync, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-		var optimizer *provideroptimizer.ProviderOptimizer
-		var exists bool
-		if optimizer, exists = optimizers[rpcEndpoint.ChainID]; !exists {
-			// doesn't exist for this chain create a new one
-			strategy := provideroptimizer.STRATEGY_BALANCED
-			baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-			optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
-			optimizers[rpcEndpoint.ChainID] = optimizer
-		}
-		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
-		key := rpcEndpoint.Key()
-		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
+			defer wg.Done()
+			chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
+			if err != nil {
+				err = utils.LavaFormatError("failed creating chain parser", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
+			if err != nil {
+				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			allowedBlockLagForSync, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+			var optimizer *provideroptimizer.ProviderOptimizer
 
-		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
-		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
-		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			value, exists := optimizers.Load(rpcEndpoint.ChainID)
+			if !exists {
+				// doesn't exist for this chain create a new one
+				strategy := provideroptimizer.STRATEGY_BALANCED
+				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+				optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
+				optimizers.Store(rpcEndpoint.ChainID, optimizer)
+			} else {
+				var ok bool
+				optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
+				if !ok {
+					err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+					errCh <- err
+					return err
+				}
+			}
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
+			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+
+			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
+			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+			rpcConsumerServer := &RPCConsumerServer{}
+			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			if err != nil {
+				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			return nil
+		}(rpcEndpoint)
 	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		return err
+	}
+
+	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)

@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	MaxRelayRetries = 3
+	MaxRelayRetries = 4
 )
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
@@ -105,11 +105,17 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface)
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
+	blockOnSyncLoss := true
 	for retries := 0; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 		if relayResult.ProviderAddress != "" {
-			unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			if blockOnSyncLoss && lavasession.IsSessionSyncLoss(err) {
+				utils.LavaFormatDebug("Identified SyncLoss in provider, not removing it from list for another attempt", utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
+				blockOnSyncLoss = false // on the first sync loss no need to block the provider. give it another chance
+			} else {
+				unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			}
 		}
 		if err != nil {
 			relayErrors = append(relayErrors, err)

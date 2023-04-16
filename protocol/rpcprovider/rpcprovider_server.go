@@ -162,6 +162,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			}
 		}
 	}
+	utils.LavaFormatDebug("Provider returned a relay response",
+		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
+		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
+		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
+	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 

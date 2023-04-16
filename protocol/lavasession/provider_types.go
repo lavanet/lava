@@ -201,7 +201,7 @@ func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx con
 }
 
 // this function returns the session locked to be used
-func (pswc *ProviderSessionsWithConsumer) GetExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) getExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {

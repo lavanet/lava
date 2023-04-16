@@ -124,28 +124,26 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	}
 	readIndexDiff := latestBlock - currentLatestBlock
 	blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex := int64(0), int64(0), int64(0)
-	cs.blockQueueMu.RLock()
-	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
-	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
-		blockNumToFetch := latestBlock - idx // reading the blocks from the newest to oldest
-		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
-		if err != nil {
-			return utils.LavaFormatError("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
-		}
-		var foundOverlap bool
-		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
-		if foundOverlap {
-			utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "hash", Value: newHashForBlock}, utils.Attribute{Key: "KeptBlocks", Value: blocksQueueEndIndex - blocksQueueStartIndex}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
-			break
-		}
-		// there is no existing hash for this block
-		// this is very spammy
-		// utils.LavaFormatDebug("Chain Tracker read a new block hash", utils.Attribute{"block",  strconv.FormatInt(blockNumToFetch}, "newHash": newHashForBlock, "ChainID": cs.endpoint.ChainID, "ApiInterface": cs.endpoint.ApiInterface})
-		newBlocksQueue[int64(cs.blocksToSave)-1-idx] = BlockStore{Block: blockNumToFetch, Hash: newHashForBlock}
+	blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, err = cs.readHashes(latestBlock, ctx, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, readIndexDiff, newBlocksQueue)
+	if err != nil {
+		return err
 	}
-	cs.blockQueueMu.RUnlock()
 	blocksCopied := int64(cs.blocksToSave)
+	blocksCopied, blocksQueueLen, latestHash := cs.replaceBlocksQueue(latestBlock, newQueueStartIndex, blocksQueueStartIndex, blocksQueueEndIndex, newBlocksQueue, blocksCopied)
+	if blocksQueueLen < cs.blocksToSave {
+		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen})
+	}
+	// only print logs if there is something interesting or we reached the checkpoint
+	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDistance < uint64(latestBlock) {
+		cs.blockCheckpoint = uint64(latestBlock)
+		utils.LavaFormatDebug("Chain Tracker Updated block hashes", utils.Attribute{Key: "latest_block", Value: latestBlock}, utils.Attribute{Key: "latestHash", Value: latestHash}, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen}, utils.Attribute{Key: "blocksQueried", Value: int64(cs.blocksToSave) - blocksCopied}, utils.Attribute{Key: "blocksKept", Value: blocksCopied}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface}, utils.Attribute{Key: "nextBlocksUpdate", Value: cs.blockCheckpoint + cs.blockCheckpointDistance})
+	}
+	return nil
+}
+
+func (cs *ChainTracker) replaceBlocksQueue(latestBlock int64, newQueueStartIndex int64, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newBlocksQueue []BlockStore, blocksCopied int64) (int64, uint64, string) {
 	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
 	cs.setLatestBlockNum(latestBlock)
 	if newQueueStartIndex > 0 {
 		// means we copy previous blocks
@@ -157,16 +155,30 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	}
 	blocksQueueLen := uint64(len(cs.blocksQueue))
 	latestHash := cs.getLatestBlockUnsafe().Hash
-	cs.blockQueueMu.Unlock()
-	if blocksQueueLen < cs.blocksToSave {
-		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen})
+	return blocksCopied, blocksQueueLen, latestHash
+}
+
+func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64, readIndexDiff int64, newBlocksQueue []BlockStore) (int64, int64, int64, error) {
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
+	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
+		// reading the blocks from the newest to oldest
+		blockNumToFetch := latestBlock - idx
+		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
+		if err != nil {
+			return 0, 0, 0, utils.LavaFormatError("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+		}
+		var foundOverlap bool
+		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
+		if foundOverlap {
+			utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "hash", Value: newHashForBlock}, utils.Attribute{Key: "KeptBlocks", Value: blocksQueueEndIndex - blocksQueueStartIndex}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+			break
+		}
+		// there is no existing hash for this block
+		newBlocksQueue[int64(cs.blocksToSave)-1-idx] = BlockStore{Block: blockNumToFetch, Hash: newHashForBlock}
 	}
-	// only print logs if there is something interesting or we reached the checkpoint
-	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDistance < uint64(latestBlock) {
-		cs.blockCheckpoint = uint64(latestBlock)
-		utils.LavaFormatDebug("Chain Tracker Updated block hashes", utils.Attribute{Key: "latest_block", Value: latestBlock}, utils.Attribute{Key: "latestHash", Value: latestHash}, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen}, utils.Attribute{Key: "blocksQueried", Value: int64(cs.blocksToSave) - blocksCopied}, utils.Attribute{Key: "blocksKept", Value: blocksCopied}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface}, utils.Attribute{Key: "nextBlocksUpdate", Value: cs.blockCheckpoint + cs.blockCheckpointDistance})
-	}
-	return nil
+	return blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, nil
 }
 
 // this function finds if there is an existing block data by hash at the existing data, this allows us to stop querying for further data backwards since when there is a match all former blocks are the same

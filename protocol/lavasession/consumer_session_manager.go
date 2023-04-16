@@ -83,7 +83,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
-	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "chainID", Value: csm.rpcEndpoint.ChainID})
+	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
 
@@ -93,7 +93,9 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	for _, purgedPairing := range csm.pairingPurge {
 		for _, endpoint := range purgedPairing.Endpoints {
-			endpoint.connection.Close()
+			if endpoint.connection != nil {
+				endpoint.connection.Close()
+			}
 		}
 	}
 }
