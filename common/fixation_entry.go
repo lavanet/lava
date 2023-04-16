@@ -30,6 +30,7 @@ import (
 //    - [TBD] RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls
 //    - GetAllEntryIndices(): get all the entries indices (without versions)
 //    - GetAllEntryVersions(index): get all the versions of an entry (for testing)
+//    - GetEntryVersionsRange(index, block, delta): get range of entry versions (**)
 //    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
 // Note:
 //    - methods marked with (*) expect an exact existing method, or otherwise will panic
