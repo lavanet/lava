@@ -367,3 +367,71 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		})
 	}
 }
+
+func TestChargeComputeUnits(t *testing.T) {
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+
+	projectData := prepareProjectsData(_ctx, keepers)[0]
+	plan := common.CreateMockPlan()
+
+	subAddr := projectData.ProjectKeys[0].Key
+	devAddr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+
+	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+	block1 := uint64(ctx.BlockHeight())
+
+	err := keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
+	require.Nil(t, err)
+
+	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
+	ctx = sdk.UnwrapSDKContext(_ctx)
+	block2 := uint64(ctx.BlockHeight())
+
+	projectID := types.ProjectIndex(subAddr, projectData.Name)
+	project, err := keepers.Projects.GetProjectForBlock(ctx, projectID, block2)
+	require.Nil(t, err)
+
+	// add developer key (created fixation)
+	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	_, err = servers.ProjectServer.AddProjectKeys(_ctx, &types.MsgAddProjectKeys{
+		Creator:     subAddr,
+		Project:     project.Index,
+		ProjectKeys: []types.ProjectKey{pk},
+	})
+	require.Nil(t, err)
+
+	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
+	ctx = sdk.UnwrapSDKContext(_ctx)
+	block3 := uint64(ctx.BlockHeight())
+
+	keepers.Projects.SnapshotSubscriptionProjects(ctx, subAddr)
+
+	// try to charge CUs: should update oldest and second-oldest entries, but not the latest
+	// (because the latter is in a new snapshot)
+
+	err = keepers.Projects.ChargeComputeUnitsToProject(ctx, project, block1, 1000)
+	require.Nil(t, err)
+
+	proj, err := keepers.Projects.GetProjectForBlock(ctx, project.Index, block1)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block2)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block3)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), proj.UsedCu)
+
+	keepers.Projects.ChargeComputeUnitsToProject(ctx, project, block2, 1000)
+
+	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block1)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block2)
+	require.Nil(t, err)
+	require.Equal(t, uint64(2000), proj.UsedCu)
+	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block3)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), proj.UsedCu)
+}
