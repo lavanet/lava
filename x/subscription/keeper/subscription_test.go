@@ -345,7 +345,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	require.Equal(t, sub.PrevCuLeft, sub.MonthCuTotal-1000)
 	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
 	require.Nil(t, err)
-	err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, 1000)
+	err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, block1, 1000)
 	require.Nil(t, err)
 
 	// verify that project used the CU
