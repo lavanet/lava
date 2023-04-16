@@ -29,6 +29,11 @@ func TestPairingUniqueness(t *testing.T) {
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
 
+	for i := 1; i <= 1000; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+	}
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	// test that 2 different clients get different pairings
@@ -113,6 +118,11 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer1, spec, stake, false)
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
+
+	for i := 1; i <= 1000; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
