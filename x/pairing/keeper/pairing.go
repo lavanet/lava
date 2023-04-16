@@ -169,14 +169,14 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
 
-	providersToPair := commontypes.FindUint64Min([]uint64{
+	providersToPair := commontypes.FindMin([]uint64{
 		project.AdminPolicy.GetMaxProvidersToPair(),
 		project.SubscriptionPolicy.GetMaxProvidersToPair(),
 		planPolicy.GetMaxProvidersToPair(),
 	})
 
 	projectToPair := project.Index
-	allowedCU := commontypes.FindUint64Min([]uint64{
+	allowedCU := commontypes.FindMin([]uint64{
 		project.AdminPolicy.GetEpochCuLimit(),
 		project.SubscriptionPolicy.GetEpochCuLimit(),
 		planPolicy.GetEpochCuLimit(),

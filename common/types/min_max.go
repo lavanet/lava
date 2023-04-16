@@ -1,25 +1,33 @@
 package types
 
-import math "math"
+import (
+	"golang.org/x/exp/constraints"
+)
 
-func FindUint64Min(values []uint64) uint64 {
-	min := uint64(math.MaxUint64)
-	for _, v := range values {
-		if v < min {
-			min = v
+func FindMin[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
+	m := s[0]
+	for _, v := range s {
+		if m > v {
+			m = v
 		}
 	}
-
-	return min
+	return m
 }
 
-func FindUint64Max(values []uint64) uint64 {
-	max := uint64(0)
-	for _, v := range values {
-		if v > max {
-			max = v
+func FindMax[T constraints.Ordered](s []T) T {
+	if len(s) == 0 {
+		var zero T
+		return zero
+	}
+	m := s[0]
+	for _, v := range s {
+		if m < v {
+			m = v
 		}
 	}
-
-	return max
+	return m
 }
