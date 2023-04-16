@@ -64,7 +64,8 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 
 func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
 	project.UsedCu += cu
-	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	return nil
 }
 
 func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {

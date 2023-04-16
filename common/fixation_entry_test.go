@@ -71,12 +71,9 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 				require.NotNil(t, err, what)
 			}
 		case "modify":
-			err := fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
-			if !play.fail {
-				require.Nil(t, err, what)
-			} else {
-				require.NotNil(t, err, what)
-			}
+			fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
+		case "read":
+			fs[play.store].ReadEntry(ctx, index, block, &dummy)
 		case "find":
 			found := fs[play.store].FindEntry(ctx, index, block, &dummy)
 			if !play.fail {
@@ -114,15 +111,17 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 // Test API calls with invalid entry index
 func TestEntryInvalidIndex(t *testing.T) {
 	invalid := "index" + string('\001')
+	unknown := "unknown"
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "with invalid index (fail)", index: invalid, fail: true},
-		{op: "modify", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "find", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "get", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "find", name: "with unknown index (fail)", index: unknown, fail: true},
+		{op: "get", name: "with unknown index (fail)", index: unknown, fail: true},
 	}
 
-	testWithFixationTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 1, 1)
 }
 
 // Test addition and auto-removal of a fixation entry
@@ -261,7 +260,39 @@ func TestDoublePutEntry(t *testing.T) {
 		{op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false},
 	}
 
-	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 3, 1) })
+	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 1, 1) })
+}
+
+func TestExactEntryMethods(t *testing.T) {
+	invalid := "index" + string('\001')
+	unknown := "unknown"
+
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 1, 1)
+
+	playbooks := [][]fixationTemplate{
+		{{op: "read", name: "with invalid index (fail)", index: invalid}},
+		{{op: "modify", name: "with invalid index (fail)", index: invalid}},
+		{{op: "put", name: "with invalid index (fail)", index: invalid}},
+		{{op: "read", name: "with unknown index (fail)", index: unknown}},
+		{{op: "modify", name: "with unknown index (fail)", index: unknown}},
+		{{op: "put", name: "with unknown index (fail)", index: unknown}},
+		{{op: "read", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+		{{op: "modify", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+		{{op: "put", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+	}
+
+	for _, p := range playbooks {
+		what := p[0].op + " " + p[0].name
+		require.Panics(t, func() { testWithFixationTemplate(t, p, 1, 1) }, what)
+	}
 }
 
 func TestDeleteTwoEntries(t *testing.T) {
