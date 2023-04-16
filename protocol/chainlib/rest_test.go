@@ -92,7 +92,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 }
 
 func TestRestParseMessage(t *testing.T) {
-	var apip = &RestChainParser{
+	apip := &RestChainParser{
 		rwLock: sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{
 			"API1": {

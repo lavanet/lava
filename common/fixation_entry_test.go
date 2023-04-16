@@ -66,7 +66,7 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i+1))})
+		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i + 1))})
 	}
 
 	for _, play := range playbook {
@@ -143,10 +143,10 @@ func TestEntryInvalidIndex(t *testing.T) {
 	invalid := "index" + string('\001')
 
 	playbook := []template{
-		{ op: "append", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "modify", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "find", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "get", name: "with invalid index (fail)", index: invalid, fail: true },
+		{op: "append", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "modify", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "find", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "get", name: "with invalid index (fail)", index: invalid, fail: true},
 	}
 
 	testWithTemplate(t, playbook, 3, 1)
@@ -158,17 +158,17 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	block1 := block0 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "getall", name: "to check exactly one index", count: 1},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1 (not stale yet)", count: block0 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1 (not stale yet)", count: block0},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
-		{ op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true },
-		{ op: "find", name: "latest entry", coin: 1 },
-		{ op: "getall", name: "to check again exactly one index", count: 1 },
+		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},
+		{op: "find", name: "latest entry", coin: 1},
+		{op: "getall", name: "to check again exactly one index", count: 1},
 	}
 
 	testWithTemplate(t, playbook, 2, 1)
@@ -179,10 +179,10 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	block0 := int64(10)
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block0, coin: 1 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
-		{ op: "find", name: "entry #2", count: block0, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block0, coin: 1},
+		{op: "getall", name: "to check exactly one index", count: 1},
+		{op: "find", name: "entry #2", count: block0, coin: 1},
 	}
 
 	testWithTemplate(t, playbook, 2, 1)
@@ -194,10 +194,10 @@ func TestEntryVersions(t *testing.T) {
 	block1 := block0 + int64(10)
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "getall", name: "to check exactly one index", count: 1},
 	}
 
 	testWithTemplate(t, playbook, 2, 1)
@@ -207,23 +207,23 @@ func TestEntryVersions(t *testing.T) {
 func TestEntryStale(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME+1
+	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME + 1
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "get", name: "refcount entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "get", name: "refcount entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// entry #1 should not be deleted because it has refcount != zero);
 		// entry #2 (refcount = zero) also not deleted because it is not oldest
-		{ op: "find", name: "entry #1", count: block0+1, coin: 0 },
-		{ op: "find", name: "entry #2", count: block1+1, coin: 1 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
+		{op: "find", name: "entry #2", count: block1 + 1, coin: 1},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #2 now stale and therefore should not be visible
-		{ op: "find", name: "entry #2", count: block1+1, fail: true },
+		{op: "find", name: "entry #2", count: block1 + 1, fail: true},
 		// entry #3 (refcount = zero) is old, but being the latest it always
 		// remains visible (despite of refcount and age).
-		{ op: "find", name: "entry #3", count: block2+1, coin: 2 },
+		{op: "find", name: "entry #3", count: block2 + 1, coin: 2},
 	}
 
 	testWithTemplate(t, playbook, 3, 1)
@@ -233,23 +233,23 @@ func TestEntryStale(t *testing.T) {
 func TestDifferentFixationKeys(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + types.STALE_ENTRY_TIME+1
+	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []template{
-		{ op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1 },
-		{ op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1 },
-		{ op: "getall", name: "for exactly one index (store #2)", store: 1, count: 1 },
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
-		{ op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2 },
+		{op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1},
+		{op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1},
+		{op: "getall", name: "for exactly one index (store #2)", store: 1, count: 1},
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
+		{op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		// entry #2 in store#2 remains unaffected
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true },
-		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true},
+		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
 	}
 
 	testWithTemplate(t, playbook, 3, 2)
@@ -257,23 +257,23 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 func TestGetAndPutEntry(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME+1
-	block2 := block1 + types.STALE_ENTRY_TIME+1
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "get", name: "refcount entry #1", coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "get", name: "refcount entry #1", coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 should not be deleted because it has refcount != zero);
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "put", name: "refcount entry #1", count: block0, coin: 0 },
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "put", name: "refcount entry #1", count: block0, coin: 0},
 		// double put triggers error
-		{ op: "put", name: "refcount entry #1", count: block0, fail: true },
+		{op: "put", name: "refcount entry #1", count: block0, fail: true},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
-		{ op: "find", name: "entry #1", count: block0, fail: true },
+		{op: "find", name: "entry #1", count: block0, fail: true},
 	}
 
 	testWithTemplate(t, playbook, 3, 1)
@@ -283,16 +283,16 @@ func TestDeleteTwoEntries(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
-	block3 := block2 + types.STALE_ENTRY_TIME+1
+	block3 := block2 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// this update triggers deletion of entry #1, #2
-		{ op: "append", name: "entry #4", count: block3, coin: 3 },
-		{ op: "find", name: "entry #1", count: block0, fail: true },
-		{ op: "find", name: "entry #2", count: block1, fail: true },
+		{op: "append", name: "entry #4", count: block3, coin: 3},
+		{op: "find", name: "entry #1", count: block0, fail: true},
+		{op: "find", name: "entry #2", count: block1, fail: true},
 	}
 
 	testWithTemplate(t, playbook, 4, 1)
@@ -305,13 +305,13 @@ func TestEntriesSort(t *testing.T) {
 	block2 := block1 + int64(10)
 
 	playbook := []template{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
-		{ op: "find", name: "entry #3", count: block2+int64(5), coin: 2 },
-		{ op: "find", name: "entry #2", count: block1+int64(5), coin: 1 },
-		{ op: "find", name: "entry #1", count: block0+int64(5), coin: 0 },
-		{ op: "find", name: "no entry", count: block0-int64(5), fail: true },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
+		{op: "find", name: "entry #3", count: block2 + int64(5), coin: 2},
+		{op: "find", name: "entry #2", count: block1 + int64(5), coin: 1},
+		{op: "find", name: "entry #1", count: block0 + int64(5), coin: 0},
+		{op: "find", name: "no entry", count: block0 - int64(5), fail: true},
 	}
 
 	testWithTemplate(t, playbook, 3, 1)

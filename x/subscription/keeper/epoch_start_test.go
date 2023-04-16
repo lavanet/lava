@@ -30,7 +30,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	require.True(t, found)
 
 	// fast-forward one month
-	sub = ts.expireSubscription(sub)
+	_ = ts.expireSubscription(sub)
 
 	// subscription remains searchable, but with zero duration and CU
 	sub, found = keeper.GetSubscription(ts.ctx, account.String())

@@ -39,6 +39,7 @@ func TestConflictVoteGet(t *testing.T) {
 		)
 	}
 }
+
 func TestConflictVoteRemove(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
 	items := createNConflictVote(keeper, ctx, 10)

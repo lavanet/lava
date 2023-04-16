@@ -113,7 +113,6 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	i := 0
 	for ; uint64(i) < ts.plan.ComputeUnits/ts.plan.ComputeUnitsPerEpoch; i++ {
-
 		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.ComputeUnitsPerEpoch, ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
@@ -124,7 +123,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//last iteration should finish the plan quota
+	// last iteration should finish the plan quota
 	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.ComputeUnitsPerEpoch, ts.spec.Name, nil)
 	relayRequest.SessionId = uint64(i + 1)
 	relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)

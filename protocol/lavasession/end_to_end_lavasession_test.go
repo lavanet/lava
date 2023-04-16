@@ -39,18 +39,18 @@ func TestHappyFlowE2E(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
-	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, cs.LatestRelayCu, cuForFirstRequest)
 
 	// Provider Side:
 
-	sps, err := psm.GetSession(ctx, consumerOneAddress, uint64(cs.Client.PairingEpoch), uint64(cs.SessionId), cs.RelayNum)
+	sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Client.PairingEpoch, uint64(cs.SessionId), cs.RelayNum)
 	// validate expected results
 	require.Empty(t, psm.sessionsWithAllConsumers)
 	require.Nil(t, sps)
 	require.Error(t, err)
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, uint64(cs.Client.PairingEpoch), uint64(cs.SessionId), cs.RelayNum, cs.Client.MaxComputeUnits, selfProviderIndex)
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Client.PairingEpoch, uint64(cs.SessionId), cs.RelayNum, cs.Client.MaxComputeUnits, selfProviderIndex)
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
 	require.Nil(t, err)
@@ -72,7 +72,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	// Consumer Side:
-	err = csm.OnSessionDone(cs, epoch1, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), cs.CalculateExpectedLatency(2*time.Duration(time.Millisecond)), (servicedBlockNumber - 1), 1, 1)
+	err = csm.OnSessionDone(cs, epoch1, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)

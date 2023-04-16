@@ -25,16 +25,16 @@ type testStruct struct {
 	consumer  common.Account
 }
 
-func setupForConflictTests(t *testing.T, NumOfProviders int) testStruct {
+func setupForConflictTests(t *testing.T, numOfProviders int) testStruct {
 	ts := testStruct{}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	//init keepers state
+	// init keepers state
 	var balance int64 = 100000
-	//setup consumer
+	// setup consumer
 	ts.consumer = common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 
-	//setup providers
-	for i := 0; i < NumOfProviders; i++ {
+	// setup providers
+	for i := 0; i < numOfProviders; i++ {
 		ts.Providers = append(ts.Providers, common.CreateNewAccount(ts.ctx, *ts.keepers, balance))
 	}
 
@@ -42,15 +42,15 @@ func setupForConflictTests(t *testing.T, NumOfProviders int) testStruct {
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	var stake int64 = 1000
-	//stake consumer
+	// stake consumer
 	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.spec, stake, false)
 
-	//stake providers
+	// stake providers
 	for _, provider := range ts.Providers {
 		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake, true)
 	}
 
-	//advance for the staking to be valid
+	// advance for the staking to be valid
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	return ts
 }
@@ -97,7 +97,7 @@ func TestDetection(t *testing.T) {
 
 			msg.Creator = tt.Creator.Addr.String()
 
-			//changes to request1 according to test
+			// changes to request1 according to test
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ConnectionType += tt.ConnectionType
 			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ApiUrl += tt.ApiUrl
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Epoch += tt.BlockHeight
@@ -114,7 +114,7 @@ func TestDetection(t *testing.T) {
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 
-			//changes to reply1 according to test
+			// changes to reply1 according to test
 			msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, tt.ReplyData...)
 			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			require.Nil(t, err)
@@ -123,13 +123,11 @@ func TestDetection(t *testing.T) {
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Reply.SigBlocks = sigBlocks
 
-			//send detection msg
+			// send detection msg
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 			if tt.Valid {
 				require.Nil(t, err)
 				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
-			} else {
-
 			}
 		})
 	}
