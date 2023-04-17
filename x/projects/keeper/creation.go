@@ -23,7 +23,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectData types.ProjectData, plan plantypes.Plan) error {
-	project, err := types.CreateProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(),
+	project, err := types.NewProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(),
 		projectData.GetEnabled())
 	if err != nil {
 		return err
@@ -107,8 +107,19 @@ func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *t
 	return nil
 }
 
+// Snapshot all projects of a given subscription
+func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
+	projects := k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscriptionAddr)
+	for _, projectID := range projects {
+		err := k.snapshotProject(ctx, projectID)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) SnapshotProject(ctx sdk.Context, projectID string) error {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 	if err != nil || !found {

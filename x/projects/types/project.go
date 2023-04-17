@@ -16,7 +16,7 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
+func NewProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
 	if !ValidateProjectNameAndDescription(projectName, description) {
 		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d."+
 			" Name: %s. The project's description must also be ASCII and its length must be less than %d",
@@ -36,7 +36,7 @@ func CreateProject(subscriptionAddress string, projectName string, description s
 }
 
 func ValidateProjectNameAndDescription(name string, description string) bool {
-	if !strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
+	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
 		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
 		name == "" {
 		return false

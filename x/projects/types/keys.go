@@ -19,7 +19,7 @@ const (
 	// prefix for the projects fixation store
 	ProjectsFixationPrefix = "prj-fs"
 
-	// prefix for the projects fixation store
+	// prefix for the developer keys fixation store
 	DeveloperKeysFixationPrefix = "dev-fs"
 )
 

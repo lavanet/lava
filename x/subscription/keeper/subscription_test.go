@@ -120,7 +120,10 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 
 func setupTestStruct(t *testing.T, numPlans int) testStruct {
 	_, keepers, _ctx := keepertest.InitAllKeepers(t)
+
+	_ctx = keepertest.AdvanceEpoch(_ctx, keepers)
 	ctx := sdk.UnwrapSDKContext(_ctx)
+
 	plans := createNPlans(&keepers.Plans, ctx, numPlans)
 
 	ts := testStruct{
@@ -279,7 +282,7 @@ func TestRenewSubscription(t *testing.T) {
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
-	// fast-forward two months
+	// fast-forward three months
 	sub = ts.expireSubscription(sub)
 	sub = ts.expireSubscription(sub)
 	sub = ts.expireSubscription(sub)
@@ -316,6 +319,71 @@ func TestSubscriptionAdminProject(t *testing.T) {
 	// with the subscription address as its developer key
 	_, err = ts.keepers.Projects.GetProjectDeveloperData(ts.ctx, creator, block)
 	require.Nil(t, err)
+}
+
+func TestMonthlyRechargeCU(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
+	projectKeeper := ts.keepers.Projects
+
+	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	creator := account.Addr.String()
+
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 2, "")
+	require.Nil(t, err)
+
+	block1 := uint64(ts.ctx.BlockHeight())
+
+	sub, found := keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
+
+	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+
+	// use the subscription and the project
+	keeper.ChargeComputeUnitsToSubscription(ts.ctx, creator, 1000)
+	require.Equal(t, sub.PrevCuLeft, sub.MonthCuTotal-1000)
+	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	require.Nil(t, err)
+	err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, 1000)
+	require.Nil(t, err)
+
+	// verify that project used the CU
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+
+	block2 := uint64(ts.ctx.BlockHeight())
+
+	// force fixation entry (by adding project key)
+	projKey := []projectstypes.ProjectKey{
+		{
+			Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
+			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+		},
+	}
+	projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, creator, projKey)
+
+	// fast-forward one months
+	sub = ts.expireSubscription(sub)
+	require.Equal(t, uint64(1), sub.DurationLeft)
+
+	block3 := uint64(ts.ctx.BlockHeight())
+
+	// check that subscription and project have renewed CUs, and that the
+	// project created a snapshot for last month
+	sub, found = keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
+	require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block2)
+	require.Nil(t, err)
+	require.Equal(t, uint64(1000), proj.UsedCu)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block3)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), proj.UsedCu)
 }
 
 func TestExpiryTime(t *testing.T) {
@@ -377,8 +445,10 @@ func TestExpiryTime(t *testing.T) {
 			require.Equal(t, tt.months, sub.DurationTotal)
 
 			keeper.RemoveSubscription(ts.ctx, creator)
+
 			// TODO: remove when RemoveSubscriptions properly removes projects
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectstypes.ProjectIndex(creator, "default"))
+			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
+			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }
@@ -422,8 +492,10 @@ func TestPrice(t *testing.T) {
 			require.Equal(t, balance.Amount.Int64(), int64(10000-tt.cost))
 
 			keeper.RemoveSubscription(ts.ctx, creator)
+
 			// TODO: remove when RemoveSubscriptions properly removes projects
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectstypes.ProjectIndex(creator, "default"))
+			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
+			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }

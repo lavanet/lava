@@ -296,6 +296,9 @@ func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription s
 		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
 	}
 
+	// TODO: if subscription is exhausted, should we push back (and the provider
+	// may not be paid?
+
 	if sub.MonthCuLeft < cuAmount {
 		sub.MonthCuLeft = 0
 	} else {

@@ -59,8 +59,11 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 			date = nextMonth(date)
 			sub.MonthExpiryTime = uint64(date.Unix())
 
-			// reset CU allowance for this coming month
+			// reset subscription CU allowance for this coming month
 			sub.MonthCuLeft = sub.MonthCuTotal
+
+			// reset projects' CU allowance for this coming month
+			k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer)
 		} else {
 			// duration ended, but don't delete yet - keep around for another
 			// EpochsToSave epochs before removing, to allow for payments for
