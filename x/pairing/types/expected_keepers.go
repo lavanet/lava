@@ -7,6 +7,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type SpecKeeper interface {
@@ -74,4 +75,5 @@ type ProjectsKeeper interface {
 type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
+	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 }

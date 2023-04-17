@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"math"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,19 +37,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
-	policy := projectData.GetPolicy()
-	if policy == nil {
-		projectDefaultPolicy := types.Policy{
-			ChainPolicies:      []types.ChainPolicy{},
-			GeolocationProfile: math.MaxUint64,
-			TotalCuLimit:       plan.PlanPolicy.GetTotalCuLimit(),
-			EpochCuLimit:       plan.PlanPolicy.GetEpochCuLimit(),
-			MaxProvidersToPair: plan.PlanPolicy.GetMaxProvidersToPair(),
-		}
-		policy = &projectDefaultPolicy
-	}
-
-	project.AdminPolicy = *policy
+	project.AdminPolicy = projectData.GetPolicy()
 
 	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
 	project.SubscriptionPolicy = project.AdminPolicy
@@ -73,7 +60,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 	for _, keyType := range key.GetTypes() {
 		switch keyType {
 		case types.ProjectKey_ADMIN:
-			k.AddAdminKey(project, key.GetKey(), key.GetVrfpk())
+			k.AddAdminKey(project, key.GetKey(), "")
 		case types.ProjectKey_DEVELOPER:
 			// try to find the developer key
 			var developerData types.ProtoDeveloperData

@@ -171,7 +171,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 
-		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, epochStart)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId)
 		if err != nil {
 			// TODO: maybe give provider money but burn user, colluding?
 			// TODO: display correct totalCU and usedCU for provider
@@ -266,23 +266,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
 		if !legacy {
-			project, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_get_project_for_developer", details, "Failed to get project for client")
-			}
-
-			err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, relay.CuSum)
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_project_add_cu", details, "Failed to add CU to the project")
-			}
-
-			err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_failed_subscription_add_cu", details, "Failed to add CU to the subscription")
-			}
+			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
+			details["error"] = err.Error()
+			return errorLogAndFormat("relay_payment_failed", details, "")
 		}
 
 		// Get servicersToPair param
@@ -402,4 +388,23 @@ func dataReliabilityByConsumer(vrfs []*types.VRFData) (dataReliabilityByConsumer
 		}] = vrf
 	}
 	return dataReliabilityByConsumer, nil
+}
+
+func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession) error {
+	project, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
+	if err != nil {
+		return fmt.Errorf("failed to get project for client")
+	}
+
+	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, relay.CuSum)
+	if err != nil {
+		return fmt.Errorf("failed to add CU to the project")
+	}
+
+	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+	if err != nil {
+		return fmt.Errorf("failed to add CU to the subscription")
+	}
+
+	return nil
 }

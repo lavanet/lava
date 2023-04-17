@@ -37,7 +37,10 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 	}
 
 	err, found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project)
-	if err != nil || !found {
+	if err != nil {
+		return project, "", utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_find_entry_error", map[string]string{"err": err.Error(), "developer": developerKey, "project": projectDeveloperData.ProjectID}, "FindEntry failed with error")
+	}
+	if !found {
 		return project, "", utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectDeveloperData.ProjectID}, "the developers project was not found")
 	}
 
@@ -59,20 +62,11 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	for _, projectKey := range projectKeys {
 		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
 		}
 	}
 
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-}
-
-func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (adminPolicy types.Policy, subscriptionPolicy types.Policy, err error) {
-	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
-	if err != nil {
-		return types.Policy{}, types.Policy{}, err
-	}
-
-	return project.AdminPolicy, project.SubscriptionPolicy, nil
 }
 
 func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
@@ -80,20 +74,21 @@ func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Proje
 	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy types.Policy, key string, isAdminPolicy bool) error {
+func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {
 			return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
 		}
-		// for admin policy - check if the key is an address of a project admin
-		if isAdminPolicy {
+		// for admin policy - check if the key is an address of a project admin.
+		// Note, the subscription key is also considered an admin key
+		if setPolicyEnum == types.SET_ADMIN_POLICY {
 			if !project.IsAdminKey(key) {
 				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_admin", map[string]string{"project": projectID, "key": key}, "cannot set admin policy because the requesting key is not admin key")
 			} else {
 				project.AdminPolicy = policy
 			}
-		} else {
+		} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
 			// for subscription policy - check if the key is an address of the project's subscription consumer
 			if key != project.GetSubscription() {
 				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_subscription_consumer", map[string]string{"project": projectID, "key": key}, "cannot set subscription policy because the requesting key is not subscription consumer key")

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
@@ -160,33 +161,62 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 
 	planPolicy := plan.GetPlanPolicy()
-
-	err = project.VerifyProject(chainID, planPolicy)
-	if err != nil {
-		return 0, 0, "", 0, err
+	policies := []*projectstypes.Policy{project.AdminPolicy, project.SubscriptionPolicy, &planPolicy}
+	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
+		return 0, 0, "", 0, fmt.Errorf("chain ID not found in any of the policies")
 	}
 
-	// geolocation is a bitmap. common denominator can be calculated with logical AND
-	geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
-	providersToPair := commontypes.FindMin([]uint64{
-		project.AdminPolicy.GetMaxProvidersToPair(),
-		project.SubscriptionPolicy.GetMaxProvidersToPair(),
-		planPolicy.GetMaxProvidersToPair(),
-	})
+	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+	if !found {
+		return 0, 0, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	}
+	allowedCU := k.CalculateEffectiveAllowedCuFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	projectToPair := project.Index
-	allowedCU := commontypes.FindMin([]uint64{
-		project.AdminPolicy.GetEpochCuLimit(),
-		project.SubscriptionPolicy.GetEpochCuLimit(),
-		planPolicy.GetEpochCuLimit(),
-	})
-	err = project.VerifyCuUsage(planPolicy)
-	if err != nil {
-		return 0, 0, "", 0, err
+	return geolocation, providersToPair, projectToPair, allowedCU, nil
+}
+
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectstypes.Policy) uint64 {
+	geolocation := uint64(math.MaxUint64)
+
+	// geolocation is a bitmap. common denominator can be calculated with logical AND
+	for _, policy := range policies {
+		if policy != nil {
+			geolocation &= policy.GetGeolocationProfile()
+		}
 	}
 
-	return geolocation, providersToPair, projectToPair, allowedCU, nil
+	return geolocation
+}
+
+func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
+	var providersToPairValues []uint64
+
+	for _, policy := range policies {
+		if policy != nil {
+			providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+		}
+	}
+
+	return commontypes.FindMin(providersToPairValues)
+}
+
+func (k Keeper) CalculateEffectiveAllowedCuFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+	var policyEpochCuLimit []uint64
+	for _, policy := range policies {
+		if policy != nil {
+			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
+		}
+	}
+
+	effectiveTotalCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
+
+	return commontypes.FindMin([]uint64{effectiveTotalCuOfProject, cuLeftInProject, cuLeftInSubscription})
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
@@ -247,8 +277,8 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 			continue
 		}
 		geolocationSupported := stakeEntry.Geolocation & geolocation
-		if geolocationSupported == 0 && geolocation != 0 {
-			// no match in geolocation bitmap (geolocation = 0 --> support all regions)
+		if geolocationSupported == 0 {
+			// no match in geolocation bitmap
 			continue
 		}
 		validProviders = append(validProviders, stakeEntry)

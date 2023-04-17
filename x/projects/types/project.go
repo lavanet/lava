@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 )
 
@@ -18,7 +17,7 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 }
 
 func CreateProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
-	if !validateProjectNameAndDescription(projectName, description) {
+	if !ValidateProjectNameAndDescription(projectName, description) {
 		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d."+
 			" Name: %s. The project's description must also be ASCII and its length must be less than %d",
 			MAX_PROJECT_NAME_LEN, projectName, MAX_PROJECT_DESCRIPTION_LEN)
@@ -29,16 +28,17 @@ func CreateProject(subscriptionAddress string, projectName string, description s
 		Subscription:       subscriptionAddress,
 		Description:        description,
 		ProjectKeys:        []ProjectKey{},
-		AdminPolicy:        Policy{},
-		SubscriptionPolicy: Policy{},
+		AdminPolicy:        nil,
+		SubscriptionPolicy: nil,
 		UsedCu:             0,
 		Enabled:            enable,
 	}, nil
 }
 
-func validateProjectNameAndDescription(name string, description string) bool {
-	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
-		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN {
+func ValidateProjectNameAndDescription(name string, description string) bool {
+	if !strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
+		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
+		name == "" {
 		return false
 	}
 
@@ -87,37 +87,4 @@ func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_
 
 func (project *Project) IsAdminKey(projectKey string) bool {
 	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
-}
-
-func (project *Project) VerifyProject(chainID string, planPolicy Policy) error {
-	if !project.AdminPolicy.ContainsChainID(chainID) || !project.SubscriptionPolicy.ContainsChainID(chainID) || !planPolicy.ContainsChainID(chainID) {
-		return fmt.Errorf("the developers project policy does not include the chain")
-	}
-
-	err := project.VerifyCuUsage(planPolicy)
-	return err
-}
-
-func (project *Project) VerifyCuUsage(planPolicy Policy) error {
-	// TODO: when overuse is added, change here to take that into account
-	subCuLimit := project.SubscriptionPolicy.TotalCuLimit
-	adminCuLimit := project.AdminPolicy.TotalCuLimit
-	planCuLimit := planPolicy.TotalCuLimit
-
-	if subCuLimit <= project.UsedCu || adminCuLimit <= project.UsedCu || planCuLimit <= project.UsedCu {
-		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
-	}
-	return nil
-}
-
-func ValidateBasicPolicy(policy Policy) error {
-	if policy.EpochCuLimit > policy.TotalCuLimit {
-		return sdkerrors.Wrapf(ErrInvalidPolicyCuFields, "invalid policy's CU fields (EpochCuLimit = %v, TotalCuLimit = %v)", policy.EpochCuLimit, policy.TotalCuLimit)
-	}
-
-	if policy.MaxProvidersToPair <= 1 {
-		return sdkerrors.Wrapf(ErrInvalidPolicyMaxProvidersToPair, "invalid policy's MaxProvidersToPair fields (MaxProvidersToPair = %v)", policy.MaxProvidersToPair)
-	}
-
-	return nil
 }

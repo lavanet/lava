@@ -10,7 +10,8 @@ import (
 func (k msgServer) SetAdminPolicy(goCtx context.Context, msg *types.MsgSetAdminPolicy) (*types.MsgSetAdminPolicyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.SetPolicy(ctx, []string{msg.GetProject()}, msg.GetPolicy(), msg.GetCreator(), true)
+	policy := msg.GetPolicy()
+	err := k.SetPolicy(ctx, []string{msg.GetProject()}, &policy, msg.GetCreator(), types.SET_ADMIN_POLICY)
 	if err != nil {
 		return nil, err
 	}

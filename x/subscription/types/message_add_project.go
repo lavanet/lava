@@ -1,8 +1,6 @@
 package types
 
 import (
-	"strings"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -53,12 +51,8 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		}
 	}
 
-	if msg.GetProjectData().Name == "" || len(msg.GetProjectData().Name) > projectstypes.MAX_PROJECT_NAME_LEN || strings.Contains(msg.GetProjectData().Name, ",") {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name (%s). Either empty or too long (max_len = %d)", msg.GetProjectData().Name, projectstypes.MAX_PROJECT_NAME_LEN)
-	}
-
-	if len(msg.GetProjectData().Description) > projectstypes.MAX_PROJECT_DESCRIPTION_LEN {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "project description too long (%s). max_len = %d", msg.GetProjectData().Description, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
+	if projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name/description (name: %s, description: %s). Either name empty, name contains \",\", or name/description long (name_max_len = %d, description_max_len = %d)", msg.GetProjectData().Name, msg.GetProjectData().Description, projectstypes.MAX_PROJECT_NAME_LEN, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
 	}
 
 	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {

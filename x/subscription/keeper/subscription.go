@@ -260,7 +260,7 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_subscription", map[string]string{"consumer": consumer}, "can't find subscription with consumer address")
 	}
 
-	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, uint64(ctx.BlockHeight()))
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.Block)
 	if !found {
 		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_plan", map[string]string{"consumer": consumer, "planId": sub.PlanIndex}, "can't find plan from subscription with consumer address")
 	}
@@ -274,7 +274,7 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
 	}
 
-	plan, found := k.plansKeeper.GetPlan(ctx, sub.GetPlanIndex())
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.GetPlanIndex(), sub.GetBlock())
 	if !found {
 		details := map[string]string{
 			"subscription": sub.GetCreator(),

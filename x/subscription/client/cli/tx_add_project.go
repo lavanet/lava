@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
@@ -21,10 +22,11 @@ func CmdAddProject() *cobra.Command {
 		Short: "Add a new project to a subcsciption",
 		Long: `The add-project command allows the subscription owner to create a new project and associate 
 		it with its subscription.  Optionally, you can determine the policy of the project using a YAML file
-		(see example in cookbook/projects/example_policy.yml). You can also optionally provide a YAML file which 
-		consists additional accounts to be added to the project (see example in cookbook/project/example_project_keys.yml).
-		Note that in project keys, to define the key type, you should follow the enum described in the top of example_project_keys.yml.
-		Finally, you can optionally create a disabled project by using the "--disable" flag.
+		(see example in cookbook/projects/example_policy.yml. This policy will be both the admin policy and the
+		subscription policy). You can also optionally provide a YAML file which consists additional accounts to 
+		be added to the project (see example in cookbook/project/example_project_keys.yml).
+		Note that in project keys, to define the key type, you should follow the enum described in the top of 
+		example_project_keys.yml. Finally, you can optionally create a disabled project by using the "--disable" flag.
 		Note, after the project is added, its name (a.k.a. index) is 
 		changed to "<project_subscription_address>-<original_project_name>".`,
 		Example: `required flags: --from <subscription_consumer>
@@ -48,29 +50,26 @@ func CmdAddProject() *cobra.Command {
 			creator := clientCtx.GetFromAddress().String()
 
 			var policy *projectstypes.Policy
-			if cmd.Flags().Lookup("policy-file").Changed {
-				policyFilePath, err := cmd.Flags().GetString("policy-file")
-				if err != nil {
-					return err
-				}
 
-				err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
-				if err != nil {
-					return err
-				}
+			policyFilePath, err := cmd.Flags().GetString("policy-file")
+			if err != nil {
+				utils.LavaFormatFatal("failed to read policy file flag", err)
+			}
+
+			err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
+			if err != nil {
+				return err
 			}
 
 			var projectKeys []projectstypes.ProjectKey
-			if cmd.Flags().Lookup("project-keys-file").Changed {
-				projectKeysFilePath, err := cmd.Flags().GetString("project-keys-file")
-				if err != nil {
-					return err
-				}
+			projectKeysFilePath, err := cmd.Flags().GetString("project-keys-file")
+			if err != nil {
+				utils.LavaFormatFatal("failed to read project keys file flag", err)
+			}
 
-				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
-				if err != nil {
-					return err
-				}
+			err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
+			if err != nil {
+				return err
 			}
 
 			// keep all the inputs in a single projectData object (used as a container)

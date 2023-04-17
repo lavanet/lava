@@ -2,11 +2,12 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -38,15 +39,19 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		}
 
 		planPolicy := plan.GetPlanPolicy()
-
+		policies := []*projectstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
 		// geolocation is a bitmap. common denominator can be calculated with logical AND
-		geolocation := project.AdminPolicy.GeolocationProfile & project.SubscriptionPolicy.GeolocationProfile & planPolicy.GeolocationProfile
+		geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
-		allowedCU := commontypes.FindMin([]uint64{
-			project.AdminPolicy.GetEpochCuLimit(),
-			project.SubscriptionPolicy.GetEpochCuLimit(),
-			planPolicy.GetEpochCuLimit(),
-		})
+		sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+		if !found {
+			return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		}
+		allowedCU := k.CalculateEffectiveAllowedCuFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+
+		if !projectstypes.VerifyCuUsage(policies, project.GetUsedCu()) {
+			return nil, err
+		}
 
 		return &types.QueryUserEntryResponse{Consumer: epochstoragetypes.StakeEntry{
 			Geolocation: geolocation,

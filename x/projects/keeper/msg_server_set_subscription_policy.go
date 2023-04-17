@@ -10,7 +10,8 @@ import (
 func (k msgServer) SetSubscriptionPolicy(goCtx context.Context, msg *types.MsgSetSubscriptionPolicy) (*types.MsgSetSubscriptionPolicyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.SetPolicy(ctx, msg.GetProjects(), msg.GetPolicy(), msg.GetCreator(), false)
+	policy := msg.GetPolicy()
+	err := k.SetPolicy(ctx, msg.GetProjects(), &policy, msg.GetCreator(), types.SET_SUBSCRIPTION_POLICY)
 	if err != nil {
 		return nil, err
 	}
