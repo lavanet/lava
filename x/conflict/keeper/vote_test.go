@@ -90,7 +90,7 @@ func TestNotVotersProviders(t *testing.T) {
 	ts, voteID, detection := setupForCommitTests(t)
 
 	var notVoterProvider common.Account
-	notVoterProvider.SK, notVoterProvider.Addr = sigs.GenerateFloatingKey() //create new provider not in stake
+	notVoterProvider.SK, notVoterProvider.Addr, _, _ = sigs.GenerateFloatingKey() //create new provider not in stake
 
 	msg := conflicttypes.MsgConflictVoteCommit{}
 	msg.Creator = notVoterProvider.Addr.String()

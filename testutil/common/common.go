@@ -22,7 +22,7 @@ type Account struct {
 	SK    *btcSecp256k1.PrivateKey
 	Addr  sdk.AccAddress
 	VrfSk vrf.PrivateKey
-	VrfPk vrf.PublicKey
+	VrfPk *utils.VrfPubKey
 }
 
 func CreateMockSpec() spectypes.Spec {
@@ -61,7 +61,7 @@ func CreateMockPlan() plantypes.Plan {
 }
 
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc Account) {
-	acc.SK, acc.Addr = sigs.GenerateFloatingKey()
+	acc.SK, acc.Addr, acc.VrfSk, acc.VrfPk = sigs.GenerateFloatingKey()
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 	return
 }
@@ -73,9 +73,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 		require.Nil(t, err)
 	} else {
-		_, pk, _ := utils.GeneratePrivateVRFKey()
-		vrfPk := &utils.VrfPubKey{}
-		vrfPk.Unmarshal(pk)
+		vrfPk := acc.VrfPk
 		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 		require.Nil(t, err)
 	}

@@ -22,7 +22,7 @@ import (
 
 func createNSubscription(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Subscription {
 	items := make([]types.Subscription, n)
-	_, creator := sigs.GenerateFloatingKey()
+	_, creator, _, _ := sigs.GenerateFloatingKey()
 
 	for i := range items {
 		items[i].Creator = creator.String()
@@ -355,7 +355,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	// force fixation entry (by adding project key)
 	projKey := []projectstypes.ProjectKey{
 		{
-			Key: common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
+			Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
 			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
 		},
 	}

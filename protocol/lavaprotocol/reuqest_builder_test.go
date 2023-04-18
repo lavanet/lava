@@ -12,7 +12,7 @@ import (
 
 func TestSignAndExtract(t *testing.T) {
 	ctx := context.Background()
-	sk, address := sigs.GenerateFloatingKey()
+	sk, address, _, _ := sigs.GenerateFloatingKey()
 	specId := "LAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{

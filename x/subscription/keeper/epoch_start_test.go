@@ -13,7 +13,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	ts := setupTestStruct(t, 1)
 	keeper := ts.keepers.Subscription
 
-	_, account := sigs.GenerateFloatingKey()
+	_, account, _, _ := sigs.GenerateFloatingKey()
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000)))
 	ts.keepers.BankKeeper.SetBalance(ts.ctx, account, coins)
 

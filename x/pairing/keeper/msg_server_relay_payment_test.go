@@ -43,16 +43,13 @@ func createStubRequest(relaySession *types.RelaySession, dataReliability *types.
 
 func (ts *testStruct) addClient(amount int) error {
 	for i := 0; i < amount; i++ {
-		sk, address := sigs.GenerateFloatingKey()
-		vrfSk, vrfPk, _ := utils.GeneratePrivateVRFKey()
+		sk, address, vrfSk, vrfPk := sigs.GenerateFloatingKey()
 		ts.clients = append(ts.clients, &common.Account{SK: sk, Addr: address, VrfSk: vrfSk, VrfPk: vrfPk})
 		err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 		if err != nil {
 			return err
 		}
-		vrfPkStr := &utils.VrfPubKey{}
-		vrfPkStr.Unmarshal(vrfPk)
-		_, err = ts.servers.PairingServer.StakeClient(ts.ctx, &types.MsgStakeClient{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPkStr.String()})
+		_, err = ts.servers.PairingServer.StakeClient(ts.ctx, &types.MsgStakeClient{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 		if err != nil {
 			return err
 		}
@@ -62,7 +59,7 @@ func (ts *testStruct) addClient(amount int) error {
 
 func (ts *testStruct) addProvider(amount int) error {
 	for i := 0; i < amount; i++ {
-		sk, address := sigs.GenerateFloatingKey()
+		sk, address, _, _ := sigs.GenerateFloatingKey()
 		ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
 		err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 		if err != nil {

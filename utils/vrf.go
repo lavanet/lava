@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 
 	"github.com/99designs/keyring"
 	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 const (
@@ -94,8 +97,8 @@ func VerifyVRF(vrfpk string) error {
 	return nil
 }
 
-func GeneratePrivateVRFKey() (vrf.PrivateKey, vrf.PublicKey, error) {
-	privateKey, err := vrf.GenerateKey(nil)
+func GeneratePrivateVRFKey(readerForVRF io.Reader) (vrf.PrivateKey, vrf.PublicKey, error) {
+	privateKey, err := vrf.GenerateKey(readerForVRF) // reads only first 32 bytes
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,31 +109,28 @@ func GeneratePrivateVRFKey() (vrf.PrivateKey, vrf.PublicKey, error) {
 	return privateKey, pk, nil
 }
 
-func GetOrCreateVRFKey(clientCtx client.Context) (sk vrf.PrivateKey, pk *VrfPubKey, err error) {
-	sk, pk, err = LoadVRFKey(clientCtx)
+func GenerateVRFKeyFromSK(privateKey *secp256k1.PrivKey, salt []byte) (vrf.PrivateKey, *VrfPubKey, error) {
+	saltSigned, err := privateKey.Sign(salt)
 	if err != nil {
-		sk, pk, err = GenerateVRFKey(clientCtx)
-		fmt.Printf("Generated New VRF Key: {%X}\n", pk)
+		return nil, nil, err
 	}
-	return
+	readerForVRF := bytes.NewReader(saltSigned)
+
+	sk, pk, err := GeneratePrivateVRFKey(readerForVRF)
+	if err != nil {
+		return nil, nil, err
+	}
+	return sk, &VrfPubKey{pk: pk}, nil
 }
 
-func GenerateVRFKey(clientCtx client.Context) (vrf.PrivateKey, *VrfPubKey, error) {
-	kr, err := OpenKeyring(clientCtx)
+func GenerateVRFKey(clientCtx client.Context, txFactory tx.Factory, salt []byte) (vrf.PrivateKey, *VrfPubKey, error) {
+	saltSigned, _, err := txFactory.Keybase().Sign(clientCtx.GetFromName(), salt)
 	if err != nil {
 		return nil, nil, err
 	}
-	sk, pk, err := GeneratePrivateVRFKey()
-	if err != nil {
-		return nil, nil, err
-	}
-	key := keyring.Item{Key: pk_vrf_prefix + clientCtx.FromName, Data: pk, Label: "pk", Description: "the vrf public key"}
-	err = kr.Set(key)
-	if err != nil {
-		return nil, nil, err
-	}
-	key = keyring.Item{Key: sk_vrf_prefix + clientCtx.FromName, Data: sk, Label: "sk", Description: "the vrf secret key"}
-	err = kr.Set(key)
+	readerForVRF := bytes.NewReader(saltSigned)
+
+	sk, pk, err := GeneratePrivateVRFKey(readerForVRF)
 	if err != nil {
 		return nil, nil, err
 	}

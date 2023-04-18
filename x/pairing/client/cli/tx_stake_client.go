@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/binary"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -35,8 +36,11 @@ func CmdStakeClient() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			_, vrfpk, err := utils.GetOrCreateVRFKey(clientCtx)
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			salt := uint64(0)
+			saltBytes := make([]byte, 32)
+			binary.LittleEndian.PutUint64(saltBytes, salt)
+			_, vrfpk, err := utils.GenerateVRFKey(clientCtx, txFactory, saltBytes)
 			if err != nil {
 				return err
 			}

@@ -43,7 +43,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 			// Stake provider with moniker
-			sk, address := sigs.GenerateFloatingKey()
+			sk, address, _, _ := sigs.GenerateFloatingKey()
 			ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
 			err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 			require.Nil(t, err)
@@ -87,7 +87,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	moniker := "exampleMoniker"
 
 	// Stake provider with moniker
-	sk, address := sigs.GenerateFloatingKey()
+	sk, address, _, _ := sigs.GenerateFloatingKey()
 	ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
 	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 	require.Nil(t, err)

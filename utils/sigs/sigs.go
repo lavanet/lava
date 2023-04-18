@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
+	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -258,10 +259,16 @@ func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.Relay
 	return pubKey, nil
 }
 
-func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
-	secretKey, _ = btcSecp256k1.NewPrivateKey(btcSecp256k1.S256())
-	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
+func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress, vrfPrv vrf.PrivateKey, vrfPub *utils.VrfPubKey) {
+	sk := secp256k1.GenPrivKey()
+
+	vrfPrv, vrfPub, err := utils.GenerateVRFKeyFromSK(&sk, make([]byte, 32))
+	if err != nil {
+		panic("failed to generate VRF key " + err.Error())
+	}
+	publicBytes := sk.PubKey()
 	addr, _ = sdk.AccAddressFromHex(publicBytes.Address().String())
+	secretKey, _ = btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), sk.Bytes())
 	return
 }
 

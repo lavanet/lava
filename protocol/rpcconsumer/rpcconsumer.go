@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
@@ -250,7 +251,10 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
-			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
+			salt := uint64(0)
+			saltBytes := make([]byte, 32)
+			binary.LittleEndian.PutUint64(saltBytes, salt)
+			vrf_sk, _, err := utils.GenerateVRFKey(clientCtx, txFactory, saltBytes)
 			if err != nil {
 				utils.LavaFormatFatal("failed getting or creating a VRF key", err)
 			}

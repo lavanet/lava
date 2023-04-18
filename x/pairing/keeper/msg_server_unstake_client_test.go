@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -17,13 +16,10 @@ func TestUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	// init keepers state
-	_, clientAddr := sigs.GenerateFloatingKey()
+
+	_, clientAddr, _, vrfPk := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
-
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
 
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
@@ -68,13 +64,9 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	// init keepers state
-	_, clientAddr := sigs.GenerateFloatingKey()
+	_, clientAddr, _, _ := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
-
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
 
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
@@ -104,13 +96,9 @@ func TestDoubleUnstakeClient(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	// init keepers state
-	_, clientAddr := sigs.GenerateFloatingKey()
+	_, clientAddr, _, vrfPk := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
-
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
 
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
