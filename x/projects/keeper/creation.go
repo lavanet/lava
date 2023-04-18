@@ -15,7 +15,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectName string, adminAddress string, enable bool, totalCU uint64, cuPerEpoch uint64, providers uint64, geolocation uint64, vrfpk string) error {
-	project := types.CreateProject(subscriptionAddress, projectName)
+	project := types.NewProject(subscriptionAddress, projectName)
 	var emptyProject types.Project
 
 	blockHeight := uint64(ctx.BlockHeight())
@@ -41,6 +41,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	}
 
 	project.Enabled = enable
+
 	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
 }
 
@@ -59,8 +60,19 @@ func (k Keeper) RegisterDeveloperKey(ctx sdk.Context, developerKey string, proje
 	return nil
 }
 
+// Snapshot all projects of a given subscription
+func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
+	projects := k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscriptionAddr)
+	for _, projectID := range projects {
+		err := k.snapshotProject(ctx, projectID)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) SnapshotProject(ctx sdk.Context, projectID string) error {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
 		return utils.LavaError(ctx, ctx.Logger(), "SnapshotProject_project_not_found", map[string]string{"projectID": projectID}, "snapshot of project failed, project does not exist")

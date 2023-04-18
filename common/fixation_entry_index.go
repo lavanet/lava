@@ -41,10 +41,11 @@ func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
 	store.Delete(types.KeyPrefix(fs.createEntryIndexKey(safeIndex)))
 }
 
-// GetAllEntryIndices returns all Entry indices
-func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
+// GetAllEntryIndexWithPrefix returns all Entry indices with a given prefix
+func (fs FixationStore) GetAllEntryIndicesWithPrefix(ctx sdk.Context, prefix string) []string {
 	store := fs.getEntryIndexStore(ctx)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	entryPrefix := types.KeyPrefix(fs.createEntryIndexKey(prefix))
+	iterator := sdk.KVStorePrefixIterator(store, entryPrefix)
 	defer iterator.Close()
 
 	// iterate over the store's values and save the indices in a list
@@ -56,6 +57,11 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	}
 
 	return indexList
+}
+
+// GetAllEntryIndices returns all Entry indices
+func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
+	return fs.GetAllEntryIndicesWithPrefix(ctx, "")
 }
 
 // GetAllEntryVersions returns a list of all versions (blocks) of an entry.

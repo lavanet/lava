@@ -100,11 +100,14 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
 			fs[play.store].AdvanceBlock(ctx)
 		case "getall":
-			indices := fs[play.store].GetAllEntryIndices(ctx)
-			require.Equal(t, int(play.count), len(indices), what)
+			indexList := fs[play.store].GetAllEntryIndices(ctx)
+			require.Equal(t, int(play.count), len(indexList), what)
 		case "getvers":
-			indices := fs[play.store].GetAllEntryVersions(ctx, index, true)
-			require.Equal(t, int(play.count), len(indices), what)
+			indexList := fs[play.store].GetAllEntryVersions(ctx, index, true)
+			require.Equal(t, int(play.count), len(indexList), what)
+		case "getallprefix":
+			indexList := fs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
+			require.Equal(t, int(play.count), len(indexList), what)
 		}
 	}
 }
@@ -361,4 +364,24 @@ func TestEntriesSort(t *testing.T) {
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
+func TestGetAllEntries(t *testing.T) {
+	block0 := int64(10)
+
+	playbook := []fixationTemplate{
+		{ op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0 },
+		{ op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1 },
+		{ op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2 },
+		{ op: "append", name: "entry #1", index: "prefix2_a", count: block0, coin: 3 },
+		{ op: "append", name: "entry #1", index: "prefix2_b", count: block0, coin: 4 },
+		{ op: "append", name: "entry #1", index: "prefix3_a", count: block0, coin: 5 },
+		{ op: "getall", name: "to check all indices", count: 6 },
+		{ op: "getallprefix", name: "to check all indices with prefix", index: "prefix", count: 6 },
+		{ op: "getallprefix", name: "to check indices with prefix1", index: "prefix1", count: 3 },
+		{ op: "getallprefix", name: "to check indices with prefix2", index: "prefix2", count: 2 },
+		{ op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1 },
+	}
+
+	testWithFixationTemplate(t, playbook, 6, 1)
 }

@@ -251,3 +251,23 @@ func (k Keeper) CreateSubscription(
 
 	return nil
 }
+
+func (k Keeper) ChargeSubscription(ctx sdk.Context, consumer string, cuAmount uint64) error {
+	sub, found := k.GetSubscription(ctx, consumer)
+	if !found {
+		details := map[string]string{"consumer": consumer}
+		return utils.LavaError(ctx, k.Logger(ctx), "ChargeSubscription", details, "invalid subscription")
+	}
+
+	// TODO: if subscription is exhausted, should we push back (and the provider
+	// may not be paid?
+
+	if sub.MonthCuLeft < cuAmount {
+		sub.MonthCuLeft = 0
+	} else {
+		sub.MonthCuLeft -= cuAmount
+	}
+
+	k.SetSubscription(ctx, sub)
+	return nil
+}
