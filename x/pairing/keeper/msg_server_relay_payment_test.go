@@ -1253,7 +1253,12 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 				Key:   projectAdmin1,
 				Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
 			}},
-		Policy: nil,
+		Policy: &projecttypes.Policy{
+			GeolocationProfile: uint64(1),
+			MaxProvidersToPair: 3,
+			TotalCuLimit:       1000,
+			EpochCuLimit:       100,
+		},
 	}
 	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
 	require.Nil(t, err)

@@ -174,7 +174,7 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if !found {
 		return 0, 0, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCU := k.CalculateEffectiveAllowedCuFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	projectToPair := project.Index
 	return geolocation, providersToPair, projectToPair, allowedCU, nil
@@ -205,18 +205,22 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projec
 	return commontypes.FindMin(providersToPairValues)
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
 	var policyEpochCuLimit []uint64
+	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
 		if policy != nil {
 			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
+			policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
 		}
 	}
 
-	effectiveTotalCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
 	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
 
-	return commontypes.FindMin([]uint64{effectiveTotalCuOfProject, cuLeftInProject, cuLeftInSubscription})
+	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+
+	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {

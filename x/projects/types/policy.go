@@ -42,14 +42,14 @@ func CheckChainIdExistsInPolicies(chainID string, policies []*Policy) bool {
 	return false
 }
 
-func VerifyCuUsage(policies []*Policy, cuUsage uint64) bool {
+func VerifyTotalCuUsage(policies []*Policy, cuUsage uint64) bool {
 	for _, policy := range policies {
 		if policy != nil {
 			if cuUsage >= policy.GetTotalCuLimit() {
-				return true
+				return false
 			}
 		}
 	}
 
-	return false
+	return true
 }

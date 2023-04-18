@@ -38,7 +38,7 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, 
 
 		planPolicy := plan.GetPlanPolicy()
 		policies := []*projectstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
-		if !projectstypes.VerifyCuUsage(policies, project.GetUsedCu()) {
+		if !projectstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
 			return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount for the project", fmt.Errorf("consumer CU limit exceeded for project"), []utils.Attribute{{Key: "projectUsedCu", Value: project.GetUsedCu()}}...)
 		}
 
@@ -46,10 +46,9 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, 
 		if !found {
 			return utils.LavaFormatError("can't find subscription", fmt.Errorf("EnforceClientCUsUsageInEpoch_cant_find_subscription"), utils.Attribute{Key: "subscriptionKey", Value: project.GetSubscription()})
 		}
-		if !projectstypes.VerifyCuUsage(policies, sub.GetMonthCuTotal()-sub.GetMonthCuLeft()) {
+		if !projectstypes.VerifyTotalCuUsage(policies, sub.GetMonthCuTotal()-sub.GetMonthCuLeft()) {
 			return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount for the subscription", fmt.Errorf("consumer CU limit exceeded for subscription"), []utils.Attribute{{Key: "subscriptionUsedCu", Value: sub.GetMonthCuTotal() - sub.GetMonthCuLeft()}}...)
 		}
-		return nil
 	}
 
 	if totalCUInEpochForUserProvider > allowedCU {

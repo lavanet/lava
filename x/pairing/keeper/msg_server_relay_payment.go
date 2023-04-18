@@ -267,8 +267,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		if !legacy {
 			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
-			details["error"] = err.Error()
-			return errorLogAndFormat("relay_payment_failed", details, "")
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_failed", details, "")
+			}
 		}
 
 		// Get servicersToPair param

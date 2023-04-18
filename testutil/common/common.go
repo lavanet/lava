@@ -48,6 +48,7 @@ func CreateMockPlan() plantypes.Plan {
 		TotalCuLimit:       1000,
 		EpochCuLimit:       100,
 		MaxProvidersToPair: 3,
+		GeolocationProfile: 1,
 	}
 	plan := plantypes.Plan{
 		Index:                    "mockPlan",
