@@ -170,12 +170,16 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	// iterate over the timers: collect those that expire
 	var removals []timerTuple
+
+	// iterate over the timers and collect those that expire: because the
+	// key is block height/timestamp, the iterator yields entries ordered
+	// by height/timestamp.
 
 	for ; iterator.Valid(); iterator.Next() {
 		value := types.DecodeKey(iterator.Key())
 		if value > tickValue {
+			// stop at first not-expired timer (update next timeout)
 			tstore.setNextTimeout(ctx, which, value)
 			break
 		}
@@ -183,6 +187,7 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 		removals = append(removals, tuple)
 	}
 
+	// if no more pending timers - then set next timeout to infinity
 	if !iterator.Valid() {
 		tstore.setNextTimeout(ctx, which, math.MaxInt64)
 	}
