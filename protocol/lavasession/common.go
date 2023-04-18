@@ -4,6 +4,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gogo/status"
+	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -33,3 +35,8 @@ const (
 	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded
 
 )
+
+func IsSessionSyncLoss(err error) bool {
+	code := status.Code(err)
+	return code == codes.Code(SessionOutOfSyncError.ABCICode())
+}

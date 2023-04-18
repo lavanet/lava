@@ -64,7 +64,7 @@ func (sps *SingleProviderSession) tryLockForUse(ctx context.Context) error {
 		return nil
 	}
 	occupyingGuid := sps.GetOccupyingGuid()
-	return utils.LavaFormatError("tryLockForUse failure", LockMisUseDetectedError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "occupyingGuid", Value: occupyingGuid})
+	return utils.LavaFormatError("tryLockForUse failure", SessionOutOfSyncError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Error", Value: LockMisUseDetectedError}, utils.Attribute{Key: "occupyingGuid", Value: occupyingGuid})
 }
 
 func (sps *SingleProviderSession) GetOccupyingGuid() uint64 {
