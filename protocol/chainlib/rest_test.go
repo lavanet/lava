@@ -111,8 +111,9 @@ func TestRestParseMessage(t *testing.T) {
 	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
 
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:  []byte("test message"),
-		Path: "API1",
+		Msg:      []byte("test message"),
+		Path:     "API1",
+		SpecPath: "API1",
 	}
 
 	assert.Equal(t, restMessage, msg.GetRPCMessage())
