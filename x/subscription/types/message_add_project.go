@@ -51,7 +51,7 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		}
 	}
 
-	if projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
+	if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
 		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name/description (name: %s, description: %s). Either name empty, name contains \",\", or name/description long (name_max_len = %d, description_max_len = %d)", msg.GetProjectData().Name, msg.GetProjectData().Description, projectstypes.MAX_PROJECT_NAME_LEN, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
 	}
 

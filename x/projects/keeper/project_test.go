@@ -301,7 +301,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 					proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 					require.Nil(t, err)
 
-					require.Equal(t, newPolicy, proj.AdminPolicy)
+					require.Equal(t, newPolicy, *proj.AdminPolicy)
 				} else {
 					require.NotNil(t, err)
 				}
@@ -333,7 +333,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 						proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 						require.Nil(t, err)
 
-						require.Equal(t, newPolicy, proj.SubscriptionPolicy)
+						require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
 					} else {
 						require.NotNil(t, err)
 					}
