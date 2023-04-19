@@ -4,33 +4,14 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
-// Helper function to init a mock keeper and context
-func initCtxAndFixationStores(t *testing.T, count int) ([]*common.FixationStore, sdk.Context) {
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	mockStoreKey := sdk.NewKVStoreKey("storeKey")
-	mockMemStoreKey := storetypes.NewMemoryStoreKey("storeMemKey")
-	stateStore.MountStoreWithDB(mockStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(mockMemStoreKey, sdk.StoreTypeMemory, nil)
-
-	require.NoError(t, stateStore.LoadLatestVersion())
+func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*common.FixationStore) {
+	ctx, cdc := initCtx(t)
 
 	fs := make([]*common.FixationStore, count)
 	for i := 0; i < count; i++ {
@@ -38,17 +19,15 @@ func initCtxAndFixationStores(t *testing.T, count int) ([]*common.FixationStore,
 		fs[i] = common.NewFixationStore(mockStoreKey, cdc, fixationKey)
 	}
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
-
-	return fs, ctx
+	return ctx, fs
 }
 
-func initCtxAndFixationStore(t *testing.T) (*common.FixationStore, sdk.Context) {
-	fs, ctx := initCtxAndFixationStores(t, 1)
-	return fs[0], ctx
+func initCtxAndFixationStore(t *testing.T) (sdk.Context, *common.FixationStore) {
+	ctx, fs := initCtxAndFixationStores(t, 1)
+	return ctx, fs[0]
 }
 
-type template struct {
+type fixationTemplate struct {
 	op    string
 	name  string
 	store int
@@ -59,8 +38,8 @@ type template struct {
 }
 
 // helper to automate testing operations
-func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS int) {
-	vs, ctx := initCtxAndFixationStores(t, countVS)
+func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj int, countVS int) {
+	ctx, fs := initCtxAndFixationStores(t, countVS)
 
 	var coins []sdk.Coin
 	var dummy sdk.Coin
@@ -86,21 +65,21 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 			if block > uint64(ctx.BlockHeight()) {
 				ctx = ctx.WithBlockHeight(int64(block))
 			}
-			err := vs[play.store].AppendEntry(ctx, play.index, block, &coins[play.coin])
+			err := fs[play.store].AppendEntry(ctx, play.index, block, &coins[play.coin])
 			if !play.fail {
 				require.Nil(t, err, what)
 			} else {
 				require.NotNil(t, err, what)
 			}
 		case "modify":
-			err := vs[play.store].ModifyEntry(ctx, play.index, block, &coins[play.coin])
+			err := fs[play.store].ModifyEntry(ctx, play.index, block, &coins[play.coin])
 			if !play.fail {
 				require.Nil(t, err, what)
 			} else {
 				require.NotNil(t, err, what)
 			}
 		case "find":
-			found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
+			found := fs[play.store].FindEntry(ctx, play.index, block, &dummy)
 			if !play.fail {
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
@@ -108,7 +87,7 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 				require.False(t, found, what)
 			}
 		case "get":
-			found := vs[play.store].GetEntry(ctx, play.index, &dummy)
+			found := fs[play.store].GetEntry(ctx, play.index, &dummy)
 			if !play.fail {
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
@@ -116,14 +95,14 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 				require.False(t, found, what)
 			}
 		case "put":
-			vs[play.store].PutEntry(ctx, play.index, block)
+			fs[play.store].PutEntry(ctx, play.index, block)
 		case "block":
 			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
 		case "getall":
-			indexList := vs[play.store].GetAllEntryIndices(ctx)
+			indexList := fs[play.store].GetAllEntryIndices(ctx)
 			require.Equal(t, int(play.count), len(indexList), what)
 		case "getallprefix":
-			indexList := vs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
+			indexList := fs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
 			require.Equal(t, int(play.count), len(indexList), what)
 		}
 	}
@@ -140,7 +119,7 @@ func TestEntryInvalidIndex(t *testing.T) {
 		{op: "get", name: "with invalid index (fail)", index: invalid, fail: true},
 	}
 
-	testWithTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
 // Test addition and auto-removal of a fixation entry
@@ -153,6 +132,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "getall", name: "to check exactly one index", count: 1},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
+
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1 (not stale yet)", count: block0},
 		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
@@ -162,7 +142,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 		{op: "getall", name: "to check again exactly one index", count: 1},
 	}
 
-	testWithTemplate(t, playbook, 2, 1)
+	testWithFixationTemplate(t, playbook, 2, 1)
 }
 
 // Test addition of same entry twice within the same block
@@ -176,7 +156,7 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 		{op: "find", name: "entry #2", count: block0, coin: 1},
 	}
 
-	testWithTemplate(t, playbook, 2, 1)
+	testWithFixationTemplate(t, playbook, 2, 1)
 }
 
 // Test adding entry versions and getting an older version
@@ -191,7 +171,7 @@ func TestEntryVersions(t *testing.T) {
 		{op: "getall", name: "to check exactly one index", count: 1},
 	}
 
-	testWithTemplate(t, playbook, 2, 1)
+	testWithFixationTemplate(t, playbook, 2, 1)
 }
 
 // Test non-visibility of a stale entry
@@ -205,6 +185,7 @@ func TestEntryStale(t *testing.T) {
 		{op: "get", name: "refcount entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
+
 		// entry #1 should not be deleted because it has refcount != zero);
 		// entry #2 (refcount = zero) also not deleted because it is not oldest
 		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
@@ -217,7 +198,7 @@ func TestEntryStale(t *testing.T) {
 		{op: "find", name: "entry #3", count: block2 + 1, coin: 2},
 	}
 
-	testWithTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
 // Test adding entry versions with different fixation keys
@@ -234,6 +215,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
 		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
 		{op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2},
+
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
 		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
@@ -243,7 +225,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
 	}
 
-	testWithTemplate(t, playbook, 3, 2)
+	testWithFixationTemplate(t, playbook, 3, 2)
 }
 
 func TestGetAndPutEntry(t *testing.T) {
@@ -255,6 +237,7 @@ func TestGetAndPutEntry(t *testing.T) {
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
+
 		// entry #1 should not be deleted because it has refcount != zero);
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "put", name: "refcount entry #1", count: block0},
@@ -265,7 +248,7 @@ func TestGetAndPutEntry(t *testing.T) {
 		{op: "find", name: "entry #1", count: block0, fail: true},
 	}
 
-	testWithTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
 func TestDeleteTwoEntries(t *testing.T) {
@@ -278,13 +261,14 @@ func TestDeleteTwoEntries(t *testing.T) {
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
+
 		// this update triggers deletion of entry #1, #2
 		{op: "append", name: "entry #4", count: block3, coin: 3},
 		{op: "find", name: "entry #1", count: block0, fail: true},
 		{op: "find", name: "entry #2", count: block1, fail: true},
 	}
 
-	testWithTemplate(t, playbook, 4, 1)
+	testWithFixationTemplate(t, playbook, 4, 1)
 }
 
 // Test that the appended entries are sorted (first element is oldest)
@@ -303,7 +287,7 @@ func TestEntriesSort(t *testing.T) {
 		{op: "find", name: "no entry", count: block0 - int64(5), fail: true},
 	}
 
-	testWithTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
 func TestGetAllEntries(t *testing.T) {
@@ -323,5 +307,5 @@ func TestGetAllEntries(t *testing.T) {
 		{op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1},
 	}
 
-	testWithTemplate(t, playbook, 6, 1)
+	testWithFixationTemplate(t, playbook, 6, 1)
 }
