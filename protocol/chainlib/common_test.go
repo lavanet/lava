@@ -36,9 +36,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -67,9 +68,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -98,9 +100,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
