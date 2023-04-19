@@ -27,8 +27,8 @@ func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry 
 	return allowedCU, nil
 }
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string) error {
-	project, _, err := k.GetProjectData(ctx, clientAddr, chainID, uint64(ctx.BlockHeight()))
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) error {
+	project, _, err := k.GetProjectData(ctx, clientAddr, chainID, epoch)
 	// if client is not legacy (works through a project), the CU verification is different
 	if err == nil {
 		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
@@ -46,8 +46,8 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, 
 		if !found {
 			return utils.LavaFormatError("can't find subscription", fmt.Errorf("EnforceClientCUsUsageInEpoch_cant_find_subscription"), utils.Attribute{Key: "subscriptionKey", Value: project.GetSubscription()})
 		}
-		if !projectstypes.VerifyTotalCuUsage(policies, sub.GetMonthCuTotal()-sub.GetMonthCuLeft()) {
-			return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount for the subscription", fmt.Errorf("consumer CU limit exceeded for subscription"), []utils.Attribute{{Key: "subscriptionUsedCu", Value: sub.GetMonthCuTotal() - sub.GetMonthCuLeft()}}...)
+		if sub.GetMonthCuLeft() == 0 {
+			return utils.LavaFormatError("total cu in epoch for consumer exceeded the amount of CU left in the subscription", fmt.Errorf("consumer CU limit exceeded for subscription"), []utils.Attribute{{Key: "subscriptionCuLeft", Value: sub.GetMonthCuLeft()}}...)
 		}
 	}
 

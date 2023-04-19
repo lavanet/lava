@@ -49,16 +49,21 @@ func CmdAddProject() *cobra.Command {
 
 			creator := clientCtx.GetFromAddress().String()
 
-			var policy *projectstypes.Policy
+			var policy projectstypes.Policy
 
 			policyFilePath, err := cmd.Flags().GetString("policy-file")
 			if err != nil {
 				utils.LavaFormatFatal("failed to read policy file flag", err)
 			}
 
-			err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
-			if err != nil {
-				return err
+			if policyFilePath != "" {
+				err = commontypes.ReadYaml(policyFilePath, "Policy", &policy)
+				if err != nil {
+					return err
+				}
+			} else {
+				// create dummy policy to pass the ValidateBasic() check
+				policy = projectstypes.Policy{MaxProvidersToPair: 2}
 			}
 
 			var projectKeys []projectstypes.ProjectKey
@@ -67,9 +72,11 @@ func CmdAddProject() *cobra.Command {
 				utils.LavaFormatFatal("failed to read project keys file flag", err)
 			}
 
-			err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
-			if err != nil {
-				return err
+			if projectKeysFilePath != "" {
+				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
+				if err != nil {
+					return err
+				}
 			}
 
 			// keep all the inputs in a single projectData object (used as a container)
@@ -78,7 +85,7 @@ func CmdAddProject() *cobra.Command {
 				Description: projectDescription,
 				Enabled:     !disable,
 				ProjectKeys: projectKeys,
-				Policy:      policy,
+				Policy:      &policy,
 			}
 
 			msg := types.NewMsgAddProject(
