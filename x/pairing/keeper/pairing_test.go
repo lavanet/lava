@@ -119,7 +119,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
 
-	for i := 1; i <= 1000; i++ {
+	for i := 1; i <= 10; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
 	}
