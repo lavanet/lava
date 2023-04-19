@@ -65,21 +65,21 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			if block > uint64(ctx.BlockHeight()) {
 				ctx = ctx.WithBlockHeight(int64(block))
 			}
-			err := fs[play.store].AppendEntry(ctx, play.index, block, &coins[play.coin])
+			err := fs[play.store].AppendEntry(ctx, index, block, &coins[play.coin])
 			if !play.fail {
 				require.Nil(t, err, what)
 			} else {
 				require.NotNil(t, err, what)
 			}
 		case "modify":
-			err := fs[play.store].ModifyEntry(ctx, play.index, block, &coins[play.coin])
+			err := fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
 			if !play.fail {
 				require.Nil(t, err, what)
 			} else {
 				require.NotNil(t, err, what)
 			}
 		case "find":
-			found := fs[play.store].FindEntry(ctx, play.index, block, &dummy)
+			found := fs[play.store].FindEntry(ctx, index, block, &dummy)
 			if !play.fail {
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
@@ -87,7 +87,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 				require.False(t, found, what)
 			}
 		case "get":
-			found := fs[play.store].GetEntry(ctx, play.index, &dummy)
+			found := fs[play.store].GetEntry(ctx, index, &dummy)
 			if !play.fail {
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
@@ -95,11 +95,15 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 				require.False(t, found, what)
 			}
 		case "put":
-			fs[play.store].PutEntry(ctx, play.index, block)
+			fs[play.store].PutEntry(ctx, index, block)
 		case "block":
 			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
+			fs[play.store].AdvanceBlock(ctx)
 		case "getall":
 			indexList := fs[play.store].GetAllEntryIndices(ctx)
+			require.Equal(t, int(play.count), len(indexList), what)
+		case "getvers":
+			indexList := fs[play.store].GetAllEntryVersions(ctx, index, true)
 			require.Equal(t, int(play.count), len(indexList), what)
 		case "getallprefix":
 			indexList := fs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
@@ -247,6 +251,20 @@ func TestGetAndPutEntry(t *testing.T) {
 	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
+func TestDoublePutEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME+1
+
+	playbook := []fixationTemplate{
+		{ op: "append", name: "entry #1 version 0", count: block0, coin: 0 },
+		{ op: "append", name: "entry #1 version 1", count: block1, coin: 0 },
+		// entry #1 with block zero now has refcount = zero
+		{ op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false },
+	}
+
+	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 3, 1) })
+}
+
 func TestDeleteTwoEntries(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
@@ -264,6 +282,69 @@ func TestDeleteTwoEntries(t *testing.T) {
 	}
 
 	testWithFixationTemplate(t, playbook, 4, 1)
+}
+
+func TestRemoveStaleEntries(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + int64(10)
+	block3 := block2 + int64(10)
+	block4 := block3 + int64(10)
+	block5 := int64(100)
+	block6 := block5 + types.STALE_ENTRY_TIME
+	block7 := block6 + types.STALE_ENTRY_TIME/2
+	block8 := block7 + types.STALE_ENTRY_TIME/2 + 1
+	block9 := block8 + types.STALE_ENTRY_TIME/2 + 2
+
+	playbook := []fixationTemplate{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "get", name: "refcount entry #1", coin: 0 },
+		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{ op: "get", name: "refcount entry #2", coin: 1 },
+		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{ op: "get", name: "refcount entry #3", coin: 2 },
+		{ op: "append", name: "entry #4", count: block3, coin: 3 },
+		{ op: "get", name: "refcount entry #4", coin: 3 },
+		{ op: "append", name: "entry #5", count: block4, coin: 4 },
+		{ op: "get", name: "refcount entry #5", coin: 4 },
+		// release an entry
+		{ op: "block", name: "advance a bit", count: block5-block4 },
+		{ op: "put", name: "refcount entry #1", count: block0 },
+		{ op: "block", name: "wait entry #1 staled", count: block6-block5 },
+		// expect 5 entry versions left
+		{ op: "getvers", name: "to check 5 versions left", count: 4 },
+		// release more entries
+		{ op: "put", name: "refcount entry #4", count: block3 },
+		{ op: "block", name: "wait entry #1 half staled", count: block7-block6 },
+		{ op: "put", name: "refcount entry #3", count: block2 },
+		{ op: "block", name: "wait another #1 half staled", count: block8-block7 },
+		// entry #4 is stale but un-removable because entry #3 sill alive
+		{ op: "getvers", name: "to check 4 versions remain", count: 4 },
+		{ op: "block", name: "wait another #1 half staled", count: block9-block8 },
+		// entry #3 became stale, so (stale) entry #4 was removed
+		{ op: "getvers", name: "to check 3 versions remain", count: 3 },
+	}
+
+	testWithFixationTemplate(t, playbook, 5, 1)
+}
+
+func TestRemoveLastEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + types.STALE_ENTRY_TIME
+
+	playbook := []fixationTemplate{
+		{ op: "append", name: "entry #1", count: block0, coin: 0 },
+		{ op: "block", name: "advance a bit", count: block1-block0 },
+		{ op: "put", name: "refcount entry #1", count: block0 },
+		// expect 1 (stale) entry versions left
+		{ op: "getvers", name: "to check 1 versions left", count: 1 },
+		{ op: "block", name: "wait for entry #1 stale", count: block2-block1 },
+		// expect entry #1 gone now
+		{ op: "find", name: "try to find entry #1", count: block0, coin: 0, fail: true},
+	}
+
+	testWithFixationTemplate(t, playbook, 1, 1)
 }
 
 // Test that the appended entries are sorted (first element is oldest)

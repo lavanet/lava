@@ -8,7 +8,7 @@ import (
 // has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
 func (entry Entry) IsStale(ctx sdk.Context) bool {
 	if entry.GetRefcount() == 0 {
-		if entry.StaleAt < uint64(ctx.BlockHeight()) {
+		if entry.StaleAt <= uint64(ctx.BlockHeight()) {
 			return true
 		}
 	}
