@@ -264,7 +264,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	return types.Entry{}, false
 }
 
-// FindEntry returns the entry with index and block without changing the refcount
+// FindEntry returns the entry by index and block without changing the refcount
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
@@ -282,7 +282,7 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 	return true
 }
 
-// GetEntry returns the latest entry with index and increments the refcount
+// GetEntry returns the latest entry by index and increments the refcount
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
