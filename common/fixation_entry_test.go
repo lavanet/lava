@@ -112,7 +112,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 func TestEntryInvalidIndex(t *testing.T) {
 	invalid := "index" + string('\001')
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "modify", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "find", name: "with invalid index (fail)", index: invalid, fail: true},
@@ -127,7 +127,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + types.STALE_ENTRY_TIME + 1
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "getall", name: "to check exactly one index", count: 1},
@@ -149,7 +149,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	block0 := int64(10)
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block0, coin: 1},
 		{op: "getall", name: "to check exactly one index", count: 1},
@@ -164,7 +164,7 @@ func TestEntryVersions(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
@@ -180,7 +180,7 @@ func TestEntryStale(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME + 1
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
@@ -207,7 +207,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
 		{op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1},
 		{op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1},
@@ -233,7 +233,7 @@ func TestGetAndPutEntry(t *testing.T) {
 	block1 := block0 + types.STALE_ENTRY_TIME + 1
 	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
@@ -257,7 +257,7 @@ func TestDeleteTwoEntries(t *testing.T) {
 	block2 := block1 + int64(10)
 	block3 := block2 + types.STALE_ENTRY_TIME + 1
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
@@ -277,7 +277,7 @@ func TestEntriesSort(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
@@ -293,7 +293,7 @@ func TestEntriesSort(t *testing.T) {
 func TestGetAllEntries(t *testing.T) {
 	block0 := int64(10)
 
-	playbook := []template{
+	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0},
 		{op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1},
 		{op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2},
