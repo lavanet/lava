@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -109,6 +110,18 @@ func (fs *FixationStore) getStore(ctx sdk.Context, index string) *prefix.Store {
 		ctx.KVStore(fs.storeKey),
 		types.KeyPrefix(fs.createStoreKey(index)))
 	return &store
+}
+
+// getEntry returns an existing entry in the store
+func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint64) (entry types.Entry) {
+	store := fs.getStore(ctx, safeIndex)
+	byteKey := types.EncodeKey(block)
+	b := store.Get(byteKey)
+	if b == nil {
+		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d", desanitizeIndex(safeIndex), block))
+	}
+	fs.cdc.MustUnmarshal(b, &entry)
+	return entry
 }
 
 // setEntry modifies an existing entry in the store
