@@ -100,39 +100,30 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 				require.NotNil(t, err, what)
 			}
 		case "find":
-			err, found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
+			found := vs[play.store].FindEntry(ctx, play.index, block, &dummy)
 			if !play.fail {
-				require.Nil(t, err, what)
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
 			} else {
-				require.NotNil(t, err, what)
 				require.False(t, found, what)
 			}
 		case "get":
-			err, found := vs[play.store].GetEntry(ctx, play.index, &dummy)
+			found := vs[play.store].GetEntry(ctx, play.index, &dummy)
 			if !play.fail {
-				require.Nil(t, err, what)
 				require.True(t, found, what)
 				require.Equal(t, dummy, coins[play.coin], what)
 			} else {
-				require.NotNil(t, err, what)
 				require.False(t, found, what)
 			}
 		case "put":
-			err, found := vs[play.store].PutEntry(ctx, play.index, block, &dummy)
-			if !play.fail {
-				require.Nil(t, err, what)
-				require.True(t, found, what)
-				require.Equal(t, dummy, coins[play.coin], what)
-			} else {
-				require.NotNil(t, err, what)
-				require.False(t, found, what)
-			}
+			vs[play.store].PutEntry(ctx, play.index, block)
 		case "block":
 			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
 		case "getall":
 			indexList := vs[play.store].GetAllEntryIndices(ctx)
+			require.Equal(t, int(play.count), len(indexList), what)
+		case "getallprefix":
+			indexList := vs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
 			require.Equal(t, int(play.count), len(indexList), what)
 		}
 	}
@@ -266,9 +257,7 @@ func TestGetAndPutEntry(t *testing.T) {
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 should not be deleted because it has refcount != zero);
 		{op: "find", name: "entry #1", count: block0, coin: 0},
-		{op: "put", name: "refcount entry #1", count: block0, coin: 0},
-		// double put triggers error
-		{op: "put", name: "refcount entry #1", count: block0, fail: true},
+		{op: "put", name: "refcount entry #1", count: block0},
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
@@ -315,4 +304,24 @@ func TestEntriesSort(t *testing.T) {
 	}
 
 	testWithTemplate(t, playbook, 3, 1)
+}
+
+func TestGetAllEntries(t *testing.T) {
+	block0 := int64(10)
+
+	playbook := []template{
+		{op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0},
+		{op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1},
+		{op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2},
+		{op: "append", name: "entry #1", index: "prefix2_a", count: block0, coin: 3},
+		{op: "append", name: "entry #1", index: "prefix2_b", count: block0, coin: 4},
+		{op: "append", name: "entry #1", index: "prefix3_a", count: block0, coin: 5},
+		{op: "getall", name: "to check all indices", count: 6},
+		{op: "getallprefix", name: "to check all indices with prefix", index: "prefix", count: 6},
+		{op: "getallprefix", name: "to check indices with prefix1", index: "prefix1", count: 3},
+		{op: "getallprefix", name: "to check indices with prefix2", index: "prefix2", count: 2},
+		{op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1},
+	}
+
+	testWithTemplate(t, playbook, 6, 1)
 }

@@ -15,32 +15,55 @@ import (
 func TestGetPairingForSubscription(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	var balance int64 = 10000
-	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
+
+	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
 	vrfpk_stub := "testvrfpk"
-	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, Duration: 1, Vrfpk: vrfpk_stub})
+	msgBuy := &subtypes.MsgBuy{
+		Creator:  consumer,
+		Consumer: consumer,
+		Index:    ts.plan.Index,
+		Duration: 1,
+		Vrfpk:    vrfpk_stub,
+	}
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, msgBuy)
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx := sdk.UnwrapSDKContext(ts.ctx)
 
-	pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String()}
+	pairingReq := types.QueryGetPairingRequest{
+		ChainID: ts.spec.Index,
+		Client:  consumer,
+	}
 	pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.Nil(t, err)
 
-	verifyPairingQuery := &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())}
+	verifyPairingQuery := &types.QueryVerifyPairingRequest{
+		ChainID:  ts.spec.Index,
+		Client:   consumer,
+		Provider: pairing.Providers[0].Address,
+		Block:    uint64(ctx.BlockHeight()),
+	}
 	vefiry, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(ctx, consumer, uint64(ctx.BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, vrfpk, vrfpk_stub)
-	err = ts.keepers.Projects.DeleteProject(sdk.UnwrapSDKContext(ts.ctx), project.Index)
+
+	err = ts.keepers.Projects.DeleteProject(ctx, project.Index)
 	require.Nil(t, err)
 
 	_, err = ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.NotNil(t, err)
 
-	verifyPairingQuery = &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())}
+	verifyPairingQuery = &types.QueryVerifyPairingRequest{
+		ChainID:  ts.spec.Index,
+		Client:   consumer,
+		Provider: pairing.Providers[0].Address,
+		Block:    uint64(ctx.BlockHeight()),
+	}
 	vefiry, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.NotNil(t, err)
 	require.False(t, vefiry.Valid)

@@ -28,11 +28,12 @@ type EpochstorageKeeper interface {
 type ProjectsKeeper interface {
 	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, totalCU uint64, cuPerEpoch uint64, providers uint64, vrfpk string) error
 	DeleteProject(ctx sdk.Context, index string) error
+	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string)
 	// Methods imported from projectskeeper should be defined here
 }
 
 type PlansKeeper interface {
 	GetPlan(ctx sdk.Context, index string) (planstypes.Plan, bool)
-	PutPlan(ctx sdk.Context, index string, block uint64) bool
+	PutPlan(ctx sdk.Context, index string, block uint64)
 	// Methods imported from planskeeper should be defined here
 }

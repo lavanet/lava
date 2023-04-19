@@ -41,7 +41,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -65,7 +65,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -89,7 +89,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ],
@@ -124,7 +124,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ],
@@ -158,7 +158,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -182,7 +182,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -206,7 +206,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -230,7 +230,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -254,7 +254,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -278,7 +278,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -302,7 +302,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -326,7 +326,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -350,7 +350,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -374,7 +374,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -398,7 +398,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -422,7 +422,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -446,7 +446,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -470,7 +470,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -494,7 +494,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -518,7 +518,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -542,7 +542,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -566,7 +566,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -590,7 +590,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -614,7 +614,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -638,7 +638,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -662,7 +662,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -686,7 +686,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -710,7 +710,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -734,7 +734,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -758,7 +758,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -782,7 +782,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -806,7 +806,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -830,7 +830,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -854,7 +854,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -878,7 +878,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -902,7 +902,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -926,7 +926,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -950,7 +950,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -974,7 +974,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -998,7 +998,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1022,7 +1022,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1046,7 +1046,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1070,7 +1070,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1094,7 +1094,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1118,7 +1118,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1142,7 +1142,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1166,7 +1166,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1190,7 +1190,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1214,7 +1214,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1238,7 +1238,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1262,7 +1262,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1286,7 +1286,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1310,7 +1310,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1334,7 +1334,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1358,7 +1358,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1382,7 +1382,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1406,7 +1406,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1430,7 +1430,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1454,7 +1454,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1478,7 +1478,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1502,7 +1502,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -1526,7 +1526,7 @@
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
