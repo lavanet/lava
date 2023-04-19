@@ -9,8 +9,9 @@ func KeyPrefix(p string) []byte {
 // FixationStore
 
 const (
-	EntryIndexPrefix string = "Entry_Index_"
-	EntryPrefix      string = "Entry_Value_"
+	FixationVersionKey string = "Entry_Version"
+	EntryIndexPrefix   string = "Entry_Index_"
+	EntryPrefix        string = "Entry_Value_"
 )
 
 // TimerStore

@@ -386,6 +386,23 @@ func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
 	fs.tstore.Tick(ctx)
 }
 
+func (fs *FixationStore) getVersion(ctx sdk.Context) uint64 {
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
+
+	b := store.Get(types.KeyPrefix(types.FixationVersionKey))
+	if b == nil {
+		return 1
+	}
+
+	return types.DecodeKey(b)
+}
+
+func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
+	b := types.EncodeKey(val)
+	store.Set(types.KeyPrefix(types.FixationVersionKey), b)
+}
+
 // NewFixationStore returns a new FixationStore object
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
