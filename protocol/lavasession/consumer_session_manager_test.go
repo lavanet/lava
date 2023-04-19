@@ -36,7 +36,7 @@ const (
 )
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano()) //nolint:all
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_QOS))
 }
 
