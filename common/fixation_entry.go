@@ -14,7 +14,7 @@ import (
 // FixationStore manages lists of entries with versions in the store.
 // (See also documentation in common/fixation_entry_index.go)
 //
-// Its primary use it to implemented "fixated entries": entries that may change over
+// Its primary use it to implement "fixated entries": entries that may change over
 // time, and whose versions must be retained on-chain as long as they are referenced.
 // For examples, an older version of a package is needed as long as the subscription
 // that uses it lives.
