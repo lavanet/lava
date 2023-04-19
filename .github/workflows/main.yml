@@ -19,4 +19,4 @@ jobs:
       - name: Lint
         uses: golangci/golangci-lint-action@v3
         with: 
-          args: --config .golangci.yml --issues-exit-code=1 --print-issued-lines -v
+          args: --print-issued-lines --config .golangci.yml -v
