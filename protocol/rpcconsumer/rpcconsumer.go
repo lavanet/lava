@@ -249,7 +249,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
-			rand.Seed(time.Now().UnixNano()) //nolint:all
+			rand.Seed(time.Now().UnixNano())
 			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 			if err != nil {
 				utils.LavaFormatFatal("failed getting or creating a VRF key", err)

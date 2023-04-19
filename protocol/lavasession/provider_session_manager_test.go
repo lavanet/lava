@@ -589,7 +589,7 @@ func TestPSMUsageSync(t *testing.T) {
 		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, 20)
 	seed := time.Now().UnixNano()
-	rand.Seed(seed) //nolint:all
+	rand.Seed(seed)
 	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
 	consumerAddress := "stub-consumer"
 	maxCuForConsumer := uint64(math.MaxInt64)
