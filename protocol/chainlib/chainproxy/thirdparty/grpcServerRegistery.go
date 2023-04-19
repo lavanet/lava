@@ -2,22 +2,17 @@ package thirdparty
 
 import (
 	"context"
-	"net/http"
-
-	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	cosmos_thirdparty "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Cosmos"
-	cosmwasm "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Cosmwasm"
-	ibc_thirdparty "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Ibc"
-	juno_thirdparty "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Juno"
-	lava_thirdparty "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Lavanet"
-	osmosis_thirdparty "github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty/Osmosis"
-	"github.com/lavanet/lava/utils"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"github.com/lavanet/lava/grpcproxy"
 	"google.golang.org/grpc"
+	"net/http"
 )
 
+func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, http.Server, error) {
+	return grpcproxy.NewGRPCProxy(cb)
+}
+
+// TODO: removeme
+/*
 func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, http.Server, error) {
 	s := grpc.NewServer()
 	wrappedServer := grpcweb.WrapServer(s)
@@ -62,3 +57,5 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 	gogoreflection.Register(s)
 	return s, httpServer, nil
 }
+
+*/

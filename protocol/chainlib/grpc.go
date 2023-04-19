@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gogo/protobuf/jsonpb"
 	"io"
 	"net/http"
 	"strings"
@@ -305,7 +306,22 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
 	formatMessage := false
 	if len(nodeMessage.Msg) > 0 {
-		reader = bytes.NewReader(nodeMessage.Msg)
+		// guess if json or binary
+		if nodeMessage.Msg[0] != '{' && nodeMessage.Msg[0] != '[' {
+			msgLocal := msgFactory.NewMessage(methodDescriptor.GetInputType())
+			err = proto.Unmarshal(nodeMessage.Msg, msgLocal)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			buf := new(bytes.Buffer)
+			err = (&jsonpb.Marshaler{}).Marshal(buf, msgLocal)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			reader = buf
+		} else {
+			reader = bytes.NewReader(nodeMessage.Msg)
+		}
 		formatMessage = true
 	}
 
