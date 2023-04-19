@@ -37,6 +37,6 @@ type ProjectsKeeper interface {
 type PlansKeeper interface {
 	GetPlan(ctx sdk.Context, index string) (planstypes.Plan, bool)
 	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
-	PutPlan(ctx sdk.Context, index string, block uint64) bool
+	PutPlan(ctx sdk.Context, index string, block uint64)
 	// Methods imported from planskeeper should be defined here
 }

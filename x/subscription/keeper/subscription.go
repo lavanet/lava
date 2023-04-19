@@ -42,7 +42,7 @@ func (k Keeper) RemoveSubscription(ctx sdk.Context, consumer string) {
 
 	// (PlanIndex is empty only in testing of RemoveSubscription)
 	if sub.PlanIndex != "" {
-		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.Block)
+		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	}
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))

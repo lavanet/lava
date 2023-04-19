@@ -31,9 +31,8 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 
 	var emptyProject types.Project
 	blockHeight := uint64(ctx.BlockHeight())
-	_, found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject)
-	// the project with the same name already exists if no error has returned
-	if found {
+	if found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject); found {
+		// the project with the same name already exists if no error has returned
 		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
 	}
 
@@ -64,7 +63,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 		case types.ProjectKey_DEVELOPER:
 			// try to find the developer key
 			var developerData types.ProtoDeveloperData
-			_, found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
+			found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
 
 			// if we find the developer key and it belongs to a different project, return error
 			if found && developerData.ProjectID != project.GetIndex() {
@@ -121,8 +120,7 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 // snapshot project, create a snapshot of a project and reset the cu
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
-	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil || !found {
+	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
 		return utils.LavaError(ctx, ctx.Logger(), "SnapshotProject_project_not_found", map[string]string{"projectID": projectID}, "snapshot of project failed, project does not exist")
 	}
 
@@ -133,8 +131,7 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 
 func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
-	err, found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
-	if err != nil || !found {
+	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
 		return utils.LavaError(ctx, ctx.Logger(), "DeleteProject_project_not_found", map[string]string{"projectID": projectID}, "project to delete was not found")
 	}
 
