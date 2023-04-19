@@ -134,6 +134,9 @@ func testWithTemplate(t *testing.T, playbook []template, countObj int, countVS i
 		case "getall":
 			indexList := vs[play.store].GetAllEntryIndices(ctx)
 			require.Equal(t, int(play.count), len(indexList), what)
+		case "getallprefix":
+			indexList := vs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)
+			require.Equal(t, int(play.count), len(indexList), what)
 		}
 	}
 }
@@ -315,4 +318,24 @@ func TestEntriesSort(t *testing.T) {
 	}
 
 	testWithTemplate(t, playbook, 3, 1)
+}
+
+func TestGetAllEntries(t *testing.T) {
+	block0 := int64(10)
+
+	playbook := []template{
+		{ op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0 },
+		{ op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1 },
+		{ op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2 },
+		{ op: "append", name: "entry #1", index: "prefix2_a", count: block0, coin: 3 },
+		{ op: "append", name: "entry #1", index: "prefix2_b", count: block0, coin: 4 },
+		{ op: "append", name: "entry #1", index: "prefix3_a", count: block0, coin: 5 },
+		{ op: "getall", name: "to check all indices", count: 6 },
+		{ op: "getallprefix", name: "to check all indices with prefix", index: "prefix", count: 6 },
+		{ op: "getallprefix", name: "to check indices with prefix1", index: "prefix1", count: 3 },
+		{ op: "getallprefix", name: "to check indices with prefix2", index: "prefix2", count: 2 },
+		{ op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1 },
+	}
+
+	testWithTemplate(t, playbook, 6, 1)
 }
