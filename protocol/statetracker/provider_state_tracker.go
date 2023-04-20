@@ -95,7 +95,7 @@ func (pst *ProviderStateTracker) GetVrfPkAndMaxCuForUser(ctx context.Context, co
 	return pst.stateQuery.GetVrfPkAndMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
-func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index int64, err error) {
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error) {
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 
