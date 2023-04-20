@@ -23,6 +23,8 @@ var ReturnMaskedErrors = "false"
 const (
 	webSocketCloseMessage = "websocket: close 1005 (no status)"
 	RefererHeaderKey      = "Referer"
+	OriginHeaderKey       = "Origin"
+	UserAgentHeaderKey    = "User-Agent"
 )
 
 type RPCConsumerLogs struct {
@@ -77,12 +79,12 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 	return portal, err
 }
 
-func (pl *RPCConsumerLogs) GetMessageSeed() string {
+func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
-func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
+func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	type ErrorData struct {
 		Error_GUID string `json:"Error_GUID"`
 		Error      string `json:"Error,omitempty"`
@@ -104,23 +106,23 @@ func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, ms
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
-func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
+func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, " + err.Error())
 			return
 		}
-		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
-			"Error_Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
 		c.WriteMessage(mt, jsonResponse)
 	}
 }
 
-func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
+func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError && err != nil {
 		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
@@ -128,13 +130,13 @@ func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, m
 	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
-func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
-	if pl.newRelicApplication == nil {
+func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
+	if rpccl.newRelicApplication == nil {
 		return func() {
 		}
 	}
 
-	tx := pl.newRelicApplication.StartTransaction(name)
+	tx := rpccl.newRelicApplication.StartTransaction(name)
 
 	return func() {
 		if tx != nil {
@@ -143,52 +145,62 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
-	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
-		data.Success = err == nil
-		pl.MetricService.SendData(*data)
+func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
+	if rpccl.StoreMetricData && rpccl.shouldCountMetricForHttp(headers) {
+		originHeaderValue, _ := headers[OriginHeaderKey]
+		rpccl.SendMetrics(data, err, originHeaderValue)
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, err error, c *websocket.Conn) {
-	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
-		data.Success = err == nil
-		pl.MetricService.SendData(*data)
+func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, err error, c *websocket.Conn) {
+	if rpccl.StoreMetricData && rpccl.shouldCountMetricForWebSocket(c) {
+		originValue := c.Locals(OriginHeaderKey).(string)
+		rpccl.SendMetrics(data, err, originValue)
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, metadataValues *metadata.MD) {
-	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(metadataValues) {
-		data.Success = err == nil
-		pl.MetricService.SendData(*data)
+func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, metadataValues *metadata.MD) {
+	if rpccl.StoreMetricData && rpccl.shouldCountMetricForGrpc(metadataValues) {
+		originValue := GetMetadataHeaderOrDefault(metadataValues, OriginHeaderKey)
+		rpccl.SendMetrics(data, err, originValue)
 	}
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string) bool {
+func (rpccl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string) bool {
 	refererHeaderValue := headers[RefererHeaderKey]
-	return pl.shouldCountMetrics(refererHeaderValue)
+	userAgentHeaderValue := headers[UserAgentHeaderKey]
+	return rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue)
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
-	refererHeaderValue, isHeaderFound := c.Locals(RefererHeaderKey).(string)
-	if !isHeaderFound {
-		return true
-	}
-	return pl.shouldCountMetrics(refererHeaderValue)
+// TODO add these when the initial call is made (Origin,UserAgent)
+func (rpccl *RPCConsumerLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
+	refererHeaderValue := c.Locals(RefererHeaderKey).(string)
+	userAgentHeaderValue := c.Locals(UserAgentHeaderKey).(string)
+	return rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue)
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForGrpc(metadataValues *metadata.MD) bool {
+func (rpccl *RPCConsumerLogs) shouldCountMetricForGrpc(metadataValues *metadata.MD) bool {
 	if metadataValues != nil {
-		refererHeaderValue := metadataValues.Get(RefererHeaderKey)
-		result := len(refererHeaderValue) > 0 && pl.shouldCountMetrics(refererHeaderValue[0])
-		return !result
+		refererHeaderValue := GetMetadataHeaderOrDefault(metadataValues, RefererHeaderKey)
+		agentHeaderValue := GetMetadataHeaderOrDefault(metadataValues, UserAgentHeaderKey)
+		return rpccl.shouldCountMetrics(refererHeaderValue, agentHeaderValue)
 	}
 	return true
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string) bool {
-	if len(pl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
-		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
+func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, userAgentHeaderValue string) bool {
+	if len(rpccl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
+		return !strings.Contains(refererHeaderValue, rpccl.excludeMetricsReferrers)
+	}
+
+	if len(userAgentHeaderValue) == 0 {
+		return false
+	}
+	excludedUserAgents := []string{"curl", "PostmanRuntime"}
+	for _, excludedAgent := range excludedUserAgents {
+		if strings.Contains(userAgentHeaderValue, excludedAgent) {
+			return false
+		}
 	}
 	return true
 }
@@ -201,4 +213,19 @@ func (rpccl *RPCConsumerLogs) LogTestMode(fiberCtx *fiber.Ctx) {
 		st += fmt.Sprintf("Header %16s HeaderVal: %s\n", header, HeaderVal)
 	}
 	utils.LavaFormatInfo(st)
+}
+
+func (rpccl *RPCConsumerLogs) SendMetrics(data *metrics.RelayMetrics, err error, origin string) {
+	data.Success = err == nil
+	data.Origin = origin
+	rpccl.MetricService.SendData(*data)
+}
+
+func GetMetadataHeaderOrDefault(mt *metadata.MD, headerKey string) string {
+	headerValues := mt.Get(headerKey)
+	headerValue := ""
+	if len(headerValues) > 0 {
+		headerValue = headerValues[0]
+	}
+	return headerValue
 }

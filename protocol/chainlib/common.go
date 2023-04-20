@@ -81,6 +81,8 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 	handler := func(c *fiber.Ctx) error {
 		if isMetricEnabled {
 			c.Locals(common.RefererHeaderKey, c.Get(common.RefererHeaderKey, ""))
+			c.Locals(common.UserAgentHeaderKey, c.Get(common.UserAgentHeaderKey, ""))
+			c.Locals(common.OriginHeaderKey, c.Get(common.OriginHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}

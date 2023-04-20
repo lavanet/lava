@@ -15,10 +15,11 @@ type AggregatedMetric struct {
 	TotalLatency uint64
 	RelaysCount  int64
 	SuccessCount int64
+	ComputeUnits uint64
 }
 
 type MetricService struct {
-	AggregatedMetricMap *map[string]map[string]map[string]*AggregatedMetric
+	AggregatedMetricMap *map[string]map[string]map[string]map[string]*AggregatedMetric
 	MetricsChannel      chan RelayMetrics
 	ReportUrl           string
 }
@@ -36,7 +37,7 @@ func NewMetricService() *MetricService {
 	result := &MetricService{
 		MetricsChannel:      mChannel,
 		ReportUrl:           reportMetricsUrl,
-		AggregatedMetricMap: &map[string]map[string]map[string]*AggregatedMetric{},
+		AggregatedMetricMap: &map[string]map[string]map[string]map[string]*AggregatedMetric{},
 	}
 
 	// setup reader & sending of the results via http
@@ -82,26 +83,31 @@ func (m *MetricService) SendEachProjectMetricData() {
 		go sendMetricsViaHttp(m.ReportUrl, toSendData)
 	}
 	// we reset to be ready for new metric data
-	m.AggregatedMetricMap = &map[string]map[string]map[string]*AggregatedMetric{}
+	m.AggregatedMetricMap = &map[string]map[string]map[string]map[string]*AggregatedMetric{}
 }
 
-func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric, projectKey string) []RelayAnalyticsDTO {
+func prepareArrayForProject(projectData map[string]map[string]map[string]*AggregatedMetric, projectKey string) []RelayAnalyticsDTO {
 	var toSendData []RelayAnalyticsDTO
 	for chainKey, chainData := range projectData {
 		for apiTypekey, apiTypeData := range chainData {
-			var averageLatency uint64
-			if apiTypeData.SuccessCount > 0 {
-				averageLatency = apiTypeData.TotalLatency / uint64(apiTypeData.SuccessCount)
+			for origin, originData := range apiTypeData {
+				var averageLatency uint64
+				if originData.SuccessCount > 0 {
+					averageLatency = originData.TotalLatency / uint64(originData.SuccessCount)
+				}
+
+				toSendData = append(toSendData, RelayAnalyticsDTO{
+					ProjectHash:  projectKey,
+					APIType:      apiTypekey,
+					ChainID:      chainKey,
+					Latency:      averageLatency,
+					RelayCounts:  originData.RelaysCount,
+					SuccessCount: originData.SuccessCount,
+					Origin:       origin,
+					ComputeUnits: originData.ComputeUnits,
+				})
 			}
 
-			toSendData = append(toSendData, RelayAnalyticsDTO{
-				ProjectHash:  projectKey,
-				APIType:      apiTypekey,
-				ChainID:      chainKey,
-				Latency:      averageLatency,
-				RelayCounts:  apiTypeData.RelaysCount,
-				SuccessCount: apiTypeData.SuccessCount,
-			})
 		}
 	}
 	return toSendData
@@ -148,12 +154,15 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 		m.storeChainIdData(projectData, data, successCount, successLatencyValue)
 	} else {
 		// means we haven't stored any data yet for this project, so we build all the maps
-		projectData = map[string]map[string]*AggregatedMetric{
+		projectData = map[string]map[string]map[string]*AggregatedMetric{
 			data.ChainID: {
-				data.APIType: &AggregatedMetric{
-					TotalLatency: successLatencyValue,
-					RelaysCount:  1,
-					SuccessCount: successCount,
+				data.APIType: {
+					data.Origin: &AggregatedMetric{
+						TotalLatency: successLatencyValue,
+						RelaysCount:  1,
+						SuccessCount: successCount,
+						ComputeUnits: data.ComputeUnits,
+					},
 				},
 			},
 		}
@@ -162,33 +171,52 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 	return nil
 }
 
-func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
+func (m *MetricService) storeChainIdData(projectData map[string]map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
 	chainIdData, exists := projectData[data.ChainID]
 	if exists {
 		m.storeApiTypeData(chainIdData, data, successCount, successLatencyValue)
 	} else {
-		chainIdData = map[string]*AggregatedMetric{
+		chainIdData = map[string]map[string]*AggregatedMetric{
 			data.APIType: {
-				TotalLatency: successLatencyValue,
-				RelaysCount:  1,
-				SuccessCount: successCount,
+				data.Origin: {
+					TotalLatency: successLatencyValue,
+					RelaysCount:  1,
+					SuccessCount: successCount,
+					ComputeUnits: data.ComputeUnits,
+				},
 			},
 		}
 		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID] = chainIdData
 	}
 }
 
-func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
+func (m *MetricService) storeApiTypeData(chainIdData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
 	apiTypesData, exists := chainIdData[data.APIType]
 	if exists {
-		apiTypesData.TotalLatency += successLatencyValue
-		apiTypesData.SuccessCount += successCount
-		apiTypesData.RelaysCount += 1
+		m.storeOriginData(apiTypesData, data, successCount, successLatencyValue)
 	} else {
-		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType] = &AggregatedMetric{
+		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType][data.Origin] = &AggregatedMetric{
 			TotalLatency: successLatencyValue,
 			RelaysCount:  1,
 			SuccessCount: successCount,
+			ComputeUnits: data.ComputeUnits,
+		}
+	}
+}
+
+func (m *MetricService) storeOriginData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
+	originData, exists := chainIdData[data.Origin]
+	if exists {
+		originData.TotalLatency += successLatencyValue
+		originData.SuccessCount += successCount
+		originData.RelaysCount += 1
+		originData.ComputeUnits += data.ComputeUnits
+	} else {
+		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType][data.Origin] = &AggregatedMetric{
+			TotalLatency: successLatencyValue,
+			RelaysCount:  1,
+			SuccessCount: successCount,
+			ComputeUnits: data.ComputeUnits,
 		}
 	}
 }
