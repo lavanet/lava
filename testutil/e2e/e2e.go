@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -751,12 +752,20 @@ func (lt *lavaTest) saveLogs() {
 }
 
 func (lt *lavaTest) checkPayments(testDuration time.Duration) {
+
+	// TESTS TO ADD:
+	// 1- Check if correct amount is paid
+	// 2- Check if payment is made inside 2 epochs
+	// 3- Check CU updates from both consumer & provider
+
 	utils.LavaFormatInfo("Checking Payments")
 	ethPaid := false
 	lavaPaid := false
 	for start := time.Now(); time.Since(start) < testDuration; {
 		pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+		fmt.Println("pairingClient: ", pairingClient)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
+		fmt.Println("pairingRes: ", pairingRes)
 		if err != nil {
 			panic(err)
 		}
@@ -767,17 +776,56 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			continue
 		}
 		for _, epochPayment := range pairingRes.EpochPayments {
+			fmt.Println("epochPayment: ", epochPayment)
 			for _, clientsPaymentKey := range epochPayment.GetProviderPaymentStorageKeys() {
+				fmt.Println("clientsPaymentKey: ", clientsPaymentKey)
 				if strings.Contains(clientsPaymentKey, "ETH") {
 					ethPaid = true
 				} else if strings.Contains(clientsPaymentKey, "LAV") {
 					lavaPaid = true
 				}
+
+				// Check CU amount
+				paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+				fmt.Println("paymentStorageClientRes: ", paymentStorageClientRes)
+				if err != nil {
+					panic(err)
+				}
+				uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
+				fmt.Println("uniquePaymentStorageClientProviderList: ", uniquePaymentStorageClientProviderList)
+				for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
+					fmt.Println("uniquePaymentStorageClientProvider: ", uniquePaymentStorageClientProvider)
+
+					providerAddr := extractLava(clientsPaymentKey)
+					// fmt.Println("clientAddr:", clientAddr)
+					fmt.Println("providerAddr:", providerAddr)
+					// fmt.Println("chainID:", chainID)
+
+					cu := uniquePaymentStorageClientProvider.UsedCU
+					fmt.Println("cu: ", cu)
+					expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(cu))
+					fmt.Println("expectedPayment: ", expectedPayment)
+					// Just for fun, check the bank balances - We'll create magic if this works xD
+					bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+					fmt.Println("bankClient: ", bankClient)
+					balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+						Address: providerAddr,
+						Denom:   "ulava",
+					})
+					if err != nil {
+						fmt.Println("UPPSY: ", err)
+					}
+					fmt.Println("balanceRes: ", balanceRes)
+
+				}
+
 			}
 		}
+
 		if ethPaid && lavaPaid {
 			break
 		}
+
 	}
 
 	if !ethPaid && !lavaPaid {
@@ -795,6 +843,29 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	} else {
 		panic("PAYMENT FAILED FOR LAVA")
 	}
+}
+
+func extractLava(str string) string {
+	index := strings.Index(str, "lava@")
+	if index == -1 {
+		return ""
+	}
+	return str[index:]
+}
+
+func parseString(inputStr string) (clientAddr string, providerAddr string, chainID string) {
+	// Find the indices of the "lava@" separators
+	firstIndex := strings.Index(inputStr, "lava@")
+	fmt.Println("firstIndex: ", firstIndex)
+	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
+	fmt.Println("secondIndex: ", secondIndex)
+
+	// Extract the fields
+	clientAddr = inputStr[firstIndex:secondIndex]
+	providerAddr = inputStr[secondIndex : secondIndex+60]
+	chainID = inputStr[secondIndex+len(providerAddr):]
+
+	return clientAddr, providerAddr, chainID
 }
 
 func runE2E() {
@@ -887,14 +958,14 @@ func runE2E() {
 		utils.LavaFormatInfo("REST TEST OK")
 	}
 
-	lt.checkPayments(time.Minute * 10)
-
 	grpcErr := grpcTests("127.0.0.1:3342", time.Second*5) // TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
 	if grpcErr != nil {
 		panic(grpcErr)
 	} else {
 		utils.LavaFormatInfo("GRPC TEST OK")
 	}
+
+	lt.checkPayments(time.Minute * 10)
 
 	jsonCTX.Done()
 	rpcCtx.Done()
