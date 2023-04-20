@@ -123,7 +123,7 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("rest api not supported")
+		return nil, errors.New("rest api not supported" + name)
 	}
 
 	// Return an error if api is disabled
