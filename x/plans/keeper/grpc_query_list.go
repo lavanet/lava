@@ -30,9 +30,11 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 		}
 
 		// set the planInfoStruct
-		planInfoStruct := types.ListInfoStruct{}
-		planInfoStruct.Index = latestVersionPlan.GetIndex()
-		planInfoStruct.Price = latestVersionPlan.GetPrice()
+		planInfoStruct := types.ListInfoStruct{
+			Index:       latestVersionPlan.GetIndex(),
+			Description: latestVersionPlan.GetDescription(),
+			Price:       latestVersionPlan.GetPrice(),
+		}
 
 		// append the planInfoStruct to the allPlansInfo list
 		allPlansInfo = append(allPlansInfo, planInfoStruct)

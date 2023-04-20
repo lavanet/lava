@@ -9,6 +9,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -36,11 +37,20 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"ProjectsParams",
 	)
+
+	paramsSubspaceEpochstorage := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"EpochStorageParams",
+	)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
+		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

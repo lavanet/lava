@@ -13,11 +13,9 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
-
-// Prevent strconv unused error
-var _ = strconv.IntSize
 
 type testStruct struct {
 	ctx     context.Context
@@ -57,6 +55,11 @@ func TestPlanEntryGet(t *testing.T) {
 // Function to create an array of test plans. Can output an array with plans with the same ID
 func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) []types.Plan {
 	testPlans := []types.Plan{}
+	policy := projectstypes.Policy{
+		TotalCuLimit:       1000,
+		EpochCuLimit:       100,
+		MaxProvidersToPair: 3,
+	}
 
 	// create dummy plans in a loop according to planAmount
 	for i := startIndex; i < startIndex+planAmount; i++ {
@@ -71,9 +74,7 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 			Type:                     "rpc",
 			Block:                    100,
 			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
-			ComputeUnits:             1000,
-			ComputeUnitsPerEpoch:     100,
-			MaxProvidersToPair:       3,
+			PlanPolicy:               policy,
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
 			AnnualDiscountPercentage: 20,
@@ -161,7 +162,8 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 const (
 	PRICE_FIELD = iota + 1
 	OVERUSE_FIELDS
-	CU_FIELD
+	CU_FIELD_TOTAL
+	CU_FIELD_EPOCH
 	SERVICERS_FIELD
 	DESCRIPTION_FIELD
 	TYPE_FIELD
@@ -183,10 +185,11 @@ func TestInvalidPlanAddition(t *testing.T) {
 	}{
 		{"InvalidPriceTest", 1},
 		{"InvalidOveruseTest", 2},
-		{"InvalidCuTest", 3},
-		{"InvalidServicersToPairTest", 4},
-		{"InvalidDescriptionTest", 5},
-		{"InvalidTypeTest", 6},
+		{"InvalidTotalCuTest", 3},
+		{"InvalidEpochCuTest", 4},
+		{"InvalidServicersToPairTest", 5},
+		{"InvalidDescriptionTest", 6},
+		{"InvalidTypeTest", 7},
 	}
 
 	for _, tt := range tests {
@@ -201,10 +204,12 @@ func TestInvalidPlanAddition(t *testing.T) {
 			case OVERUSE_FIELDS:
 				planToTest[0].AllowOveruse = true
 				planToTest[0].OveruseRate = 0
-			case CU_FIELD:
-				planToTest[0].ComputeUnits = 0
+			case CU_FIELD_TOTAL:
+				planToTest[0].PlanPolicy.TotalCuLimit = 0
+			case CU_FIELD_EPOCH:
+				planToTest[0].PlanPolicy.EpochCuLimit = 0
 			case SERVICERS_FIELD:
-				planToTest[0].MaxProvidersToPair = 1
+				planToTest[0].PlanPolicy.MaxProvidersToPair = 1
 			case DESCRIPTION_FIELD:
 				planToTest[0].Description = strings.Repeat("a", types.MAX_LEN_PACKAGE_DESCRIPTION+1)
 			case TYPE_FIELD:
@@ -267,7 +272,7 @@ func TestProposeBadAndGoodPlans(t *testing.T) {
 	testPlans := CreateTestPlans(3, false, uint64(0))
 
 	// make one of the plans invalid
-	testPlans[2].ComputeUnits = 0
+	testPlans[2].PlanPolicy.TotalCuLimit = 0
 
 	// simulate a plan proposal of testPlans (note, inside SimulatePlansProposal
 	// it fails the test when a plan is invalid. So we avoid checking the error to
@@ -336,10 +341,8 @@ func TestPlansDeletion(t *testing.T) {
 	require.Equal(t, testPlans[1], secondPlanFromStore)
 
 	// decrease the old plans' refCount
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
-	require.True(t, found)
-	found = ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
-	require.True(t, found)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0].GetIndex(), firstPlanBlockHeight)
+	ts.keepers.Plans.PutPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[1].GetIndex(), secondPlanBlockHeight)
 
 	// advance an epoch and create an newer plan to add (and trigger the plan deletion)
 	ts.advanceEpochUntilStale()
