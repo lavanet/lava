@@ -108,7 +108,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{
 				{Key: "Current Number Of Connections", Value: currentNumberOfConnections},
 				{Key: "Network Address", Value: nodeUrl.Url},
-				{Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts},
+				{Key: "Number Of Attempts Remaining", Value: (MaximumNumberOfParallelConnectionsAttempts - numberOfConnectionAttempts)},
 			}...)
 			cancel()
 			continue

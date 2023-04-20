@@ -334,7 +334,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	}
 
 	// Check data
-	err = rpcps.verifyRelayRequestMetaData(ctx, request.RelaySession)
+	err = rpcps.verifyRelayRequestMetaData(ctx, request)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("did not pass relay validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -437,8 +437,9 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	return singleProviderSession, nil
 }
 
-func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, requestSession *pairingtypes.RelaySession) error {
+func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, request *pairingtypes.RelayRequest) error {
 	providerAddress := rpcps.providerAddress.String()
+	requestSession := request.RelaySession
 	if requestSession.Provider != providerAddress {
 		return utils.LavaFormatError("request had the wrong provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
 	}
@@ -447,6 +448,9 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, 
 	}
 	if requestSession.LavaChainId != rpcps.lavaChainID {
 		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
+	}
+	if !bytes.Equal(sigs.CalculateContentHashForRelayData(request.RelayData), requestSession.ContentHash) {
+		return utils.LavaFormatError("request had the wrong content hash", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_contenthash", Value: requestSession.ContentHash})
 	}
 	return nil
 }
