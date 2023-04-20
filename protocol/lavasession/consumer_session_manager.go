@@ -148,17 +148,18 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	if err != nil || !connected {
 		return 0, providerAddress, err
 	}
-	if endpoint.Client == nil {
-		consumerSessionsWithProvider.Lock.Lock()
-		defer consumerSessionsWithProvider.Lock.Unlock()
-		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
-	}
+
 	relaySentTime := time.Now()
 	connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
 	defer cancel()
 	guid, found := utils.GetUniqueIdentifier(connectCtx)
 	if !found {
 		return 0, providerAddress, utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
+	}
+	if endpoint.Client == nil {
+		consumerSessionsWithProvider.Lock.Lock()
+		defer consumerSessionsWithProvider.Lock.Unlock()
+		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 	}
 	client := *endpoint.Client
 	probeResp, err := client.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
