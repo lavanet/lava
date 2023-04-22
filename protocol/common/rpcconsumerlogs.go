@@ -147,14 +147,14 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
 	if rpccl.StoreMetricData && rpccl.shouldCountMetricForHttp(headers) {
-		originHeaderValue, _ := headers[OriginHeaderKey]
+		originHeaderValue := headers[OriginHeaderKey]
 		rpccl.SendMetrics(data, err, originHeaderValue)
 	}
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, err error, c *websocket.Conn) {
 	if rpccl.StoreMetricData && rpccl.shouldCountMetricForWebSocket(c) {
-		originValue := c.Locals(OriginHeaderKey).(string)
+		originValue, _ := c.Locals(OriginHeaderKey).(string)
 		rpccl.SendMetrics(data, err, originValue)
 	}
 }
@@ -174,8 +174,8 @@ func (rpccl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string
 
 // TODO add these when the initial call is made (Origin,UserAgent)
 func (rpccl *RPCConsumerLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
-	refererHeaderValue := c.Locals(RefererHeaderKey).(string)
-	userAgentHeaderValue := c.Locals(UserAgentHeaderKey).(string)
+	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
+	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	return rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue)
 }
 

@@ -107,7 +107,6 @@ func prepareArrayForProject(projectData map[string]map[string]map[string]*Aggreg
 					ComputeUnits: originData.ComputeUnits,
 				})
 			}
-
 		}
 	}
 	return toSendData
