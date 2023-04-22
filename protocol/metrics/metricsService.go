@@ -139,6 +139,7 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 		utils.Attribute{Key: "projectHash", Value: data.ProjectHash},
 		utils.Attribute{Key: "apiType", Value: data.APIType},
 		utils.Attribute{Key: "chainId", Value: data.ChainID},
+		utils.Attribute{Key: "origin", Value: data.Origin},
 	)
 
 	var successCount int64
@@ -195,12 +196,15 @@ func (m *MetricService) storeApiTypeData(chainIdData map[string]map[string]*Aggr
 	if exists {
 		m.storeOriginData(apiTypesData, data, successCount, successLatencyValue)
 	} else {
-		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType][data.Origin] = &AggregatedMetric{
-			TotalLatency: successLatencyValue,
-			RelaysCount:  1,
-			SuccessCount: successCount,
-			ComputeUnits: data.ComputeUnits,
+		apiTypesData = map[string]*AggregatedMetric{
+			data.Origin: {
+				TotalLatency: successLatencyValue,
+				RelaysCount:  1,
+				SuccessCount: successCount,
+				ComputeUnits: data.ComputeUnits,
+			},
 		}
+		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType] = apiTypesData
 	}
 }
 
