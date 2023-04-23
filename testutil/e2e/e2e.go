@@ -763,6 +763,45 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	lavaPaid := false
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 
+	// Before going into the tests, check before balances for all providers
+	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "ETH1",
+	})
+
+	lavaProviders := lavaProvidersResponse.GetStakeEntry()
+	ethProviders := ethProvidersResponse.GetStakeEntry()
+	fmt.Println("lavaProviders: ", lavaProviders)
+	fmt.Println("ethProviders: ", ethProviders)
+
+	for _, lavaProvider := range lavaProviders {
+		fmt.Println("lavaProvider: ", lavaProvider)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: lavaProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("lava provider before balanceRes: ", balanceRes)
+	}
+
+	for _, ethProvider := range ethProviders {
+		fmt.Println("lavaProvider: ", ethProvider)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: ethProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("eth provider before balanceRes: ", balanceRes)
+	}
+
 	for start := time.Now(); time.Since(start) < testDuration; {
 		fmt.Println("pairingClient: ", pairingClient)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
@@ -832,7 +871,14 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		fmt.Println("AFTER providerCU[providerAddr]: ", providerCU[providerAddr])
 	}
 
+	// Waiting for couple of epochs
+	fmt.Println("Waiting for TWO MINUTES")
+	time.Sleep(time.Minute * 2)
+	fmt.Println("Waiting is DONE")
+	//
+
 	for provider, totalCU := range providerCU {
+		fmt.Printf("provider[%s] totalCU[%d]\n", provider, totalCU)
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
 		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
@@ -841,7 +887,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			Denom:   "ulava",
 		})
 		if err != nil {
-			fmt.Println("UPPSY: ", err)
+			panic(err)
 		}
 		fmt.Println("balanceRes: ", balanceRes)
 	}
