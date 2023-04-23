@@ -248,9 +248,6 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 			} else {
 				tlsConf.Certificates = []tls.Certificate{cert}
 			}
-		} else {
-			// add dynamic certificates
-
 		}
 		connector.credentials = credentials.NewTLS(&tlsConf)
 	}

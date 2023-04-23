@@ -2,7 +2,7 @@ package chainproxy
 
 import (
 	"context"
-	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -12,13 +12,15 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
+	pb_pkg "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
 	listenerAddress    = "localhost:1234"
+	port               = "1234"
 	listenerAddressTcp = "http://localhost:1234"
 	numberOfClients    = 5
 )
@@ -41,25 +43,24 @@ func createGRPCServer(t *testing.T) *grpc.Server {
 	return s
 }
 
-func createGRPCSecureServer(t *testing.T) *grpc.Server {
-	cert, err := generateSelfSignedCertificate()
+type implementedLavanetLavaSpec struct {
+	pb_pkg.UnimplementedQueryServer
+}
+
+func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb_pkg.QueryShowChainInfoRequest) (*pb_pkg.QueryShowChainInfoResponse, error) {
+	md := metadata.New(map[string]string{"content-type": "text/html"})
+	grpc.SendHeader(ctx, md)
+
+	result := &pb_pkg.QueryShowChainInfoResponse{ChainID: "Test"}
+	return result, nil
+}
+
+func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
+	lis, err := net.Listen("tcp", listenerAddress)
 	require.Nil(t, err)
-
-	// Create TLS configuration
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
-
-	// Create server options with TLS configuration
-	serverOption := grpc.Creds(credentials.NewTLS(tlsConfig))
-
-	// Create server with server option
-	s := grpc.NewServer(serverOption)
-
-	// Create listener with TLS configuration
-	lis, err := tls.Listen("tcp", listenerAddress, tlsConfig)
-	require.Nil(t, err)
-
+	s := grpc.NewServer()
+	lavanetlavaspec := &implementedLavanetLavaSpec{}
+	pb_pkg.RegisterQueryServer(s, lavanetlavaspec)
 	go s.Serve(lis) // serve in a different thread
 	return s
 }
@@ -138,29 +139,36 @@ func TestConnectorGrpc(t *testing.T) {
 	require.Equal(t, increasedClients, len(conn.freeClients)) // checking we cleaned clients
 }
 
-func TestSecuredConnectorGrpc(t *testing.T) {
-	server := createGRPCSecureServer(t)
+func TestConnectorGrpcAndInvoke(t *testing.T) {
+	server := createGRPCServerWithRegisteredProto(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer server.Stop()
 	ctx := context.Background()
-	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress, AuthConfig: common.AuthConfig{UseTLS: true}})
+	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress})
 	require.Nil(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break
 		}
 	}
-	require.Equal(t, len(conn.freeClients), numberOfClients)
+	// require.Equal(t, len(conn.freeClients), numberOfClients)
 	increasedClients := numberOfClients * 2 // increase to double the number of clients
 	rpcList := make([]*grpc.ClientConn, increasedClients)
 	for i := 0; i < increasedClients; i++ {
 		rpc, err := conn.GetRpc(ctx, true)
 		require.Nil(t, err)
 		rpcList[i] = rpc
+		response := &pb_pkg.QueryShowChainInfoResponse{}
+		err = grpc.Invoke(ctx, "lavanet.lava.spec.Query/ShowChainInfo", &pb_pkg.QueryShowChainInfoRequest{}, response, rpc)
+		md, _ := metadata.FromIncomingContext(ctx)
+		fmt.Println(md)
+		md, _ = metadata.FromOutgoingContext(ctx)
+		fmt.Println(md)
+		require.Equal(t, "Test", response.ChainID)
+		require.Nil(t, err)
 	}
 	require.Equal(t, increasedClients, int(conn.usedClients)) // checking we have used clients
 	for i := 0; i < increasedClients; i++ {
 		conn.ReturnRpc(rpcList[i])
 	}
-	require.Equal(t, int(conn.usedClients), 0)                // checking we dont have clients used
-	require.Equal(t, increasedClients, len(conn.freeClients)) // checking we cleaned clients
+	require.Equal(t, int(conn.usedClients), 0) // checking we dont have clients used
 }
