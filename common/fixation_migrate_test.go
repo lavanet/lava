@@ -13,7 +13,7 @@ const (
 	mockPrefix = "mock-fs"
 )
 
-type mockEntry struct {
+type mockEntry1to2 struct {
 	index  string
 	block  uint64
 	head   bool
@@ -29,7 +29,7 @@ func TestMigrate1to2(t *testing.T) {
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix)
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
 
-	templates := []mockEntry{
+	templates := []mockEntry1to2{
 		// entry_1 has 3 valid versions
 		{"entry_1", 100, false, 1, 1, 1},
 		{"entry_1", 200, false, 2, 2, 2},
