@@ -761,8 +761,9 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	utils.LavaFormatInfo("Checking Payments")
 	ethPaid := false
 	lavaPaid := false
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+
 	for start := time.Now(); time.Since(start) < testDuration; {
-		pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 		fmt.Println("pairingClient: ", pairingClient)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
 		fmt.Println("pairingRes: ", pairingRes)
@@ -784,41 +785,6 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 				} else if strings.Contains(clientsPaymentKey, "LAV") {
 					lavaPaid = true
 				}
-
-				// Check CU amount
-				paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
-				fmt.Println("paymentStorageClientRes: ", paymentStorageClientRes)
-				if err != nil {
-					panic(err)
-				}
-				uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
-				fmt.Println("uniquePaymentStorageClientProviderList: ", uniquePaymentStorageClientProviderList)
-				for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
-					fmt.Println("uniquePaymentStorageClientProvider: ", uniquePaymentStorageClientProvider)
-
-					providerAddr := extractLava(clientsPaymentKey)
-					// fmt.Println("clientAddr:", clientAddr)
-					fmt.Println("providerAddr:", providerAddr)
-					// fmt.Println("chainID:", chainID)
-
-					cu := uniquePaymentStorageClientProvider.UsedCU
-					fmt.Println("cu: ", cu)
-					expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(cu))
-					fmt.Println("expectedPayment: ", expectedPayment)
-					// Just for fun, check the bank balances - We'll create magic if this works xD
-					bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-					fmt.Println("bankClient: ", bankClient)
-					balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-						Address: providerAddr,
-						Denom:   "ulava",
-					})
-					if err != nil {
-						fmt.Println("UPPSY: ", err)
-					}
-					fmt.Println("balanceRes: ", balanceRes)
-
-				}
-
 			}
 		}
 
@@ -843,29 +809,56 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	} else {
 		panic("PAYMENT FAILED FOR LAVA")
 	}
-}
 
-func extractLava(str string) string {
-	index := strings.Index(str, "lava@")
-	if index == -1 {
-		return ""
+	// Check CU usage:
+	providerCU := make(map[string]uint64)
+	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+	fmt.Println("paymentStorageClientRes: ", paymentStorageClientRes)
+	if err != nil {
+		panic(err)
 	}
-	return str[index:]
+	uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
+	fmt.Println("uniquePaymentStorageClientProviderList: ", uniquePaymentStorageClientProviderList)
+
+	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
+		fmt.Println("uniquePaymentStorageClientProvider: ", uniquePaymentStorageClientProvider)
+		providerAddr := DecodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
+		fmt.Println("providerAddr: ", providerAddr)
+
+		cu := uniquePaymentStorageClientProvider.UsedCU
+		fmt.Println("cu: ", cu)
+		fmt.Println("BEFORE providerCU[providerAddr]: ", providerCU[providerAddr])
+		providerCU[providerAddr] += cu
+		fmt.Println("AFTER providerCU[providerAddr]: ", providerCU[providerAddr])
+	}
+
+	for provider, totalCU := range providerCU {
+		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
+		fmt.Println("expectedPayment: ", expectedPayment)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: provider,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			fmt.Println("UPPSY: ", err)
+		}
+		fmt.Println("balanceRes: ", balanceRes)
+	}
 }
 
-func parseString(inputStr string) (clientAddr string, providerAddr string, chainID string) {
+func DecodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (providerAddr string) {
 	// Find the indices of the "lava@" separators
 	firstIndex := strings.Index(inputStr, "lava@")
-	fmt.Println("firstIndex: ", firstIndex)
 	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
-	fmt.Println("secondIndex: ", secondIndex)
+	// thirdIndex := secondIndex + 44
 
-	// Extract the fields
-	clientAddr = inputStr[firstIndex:secondIndex]
-	providerAddr = inputStr[secondIndex : secondIndex+60]
-	chainID = inputStr[secondIndex+len(providerAddr):]
+	// clientAddr = inputStr[firstIndex:secondIndex]
+	providerAddr = inputStr[secondIndex : secondIndex+44]
+	// uniqueIdentifier = inputStr[thirdIndex : thirdIndex+16]
+	// chainID = inputStr[thirdIndex+16:]
 
-	return clientAddr, providerAddr, chainID
+	return providerAddr
 }
 
 func runE2E() {
