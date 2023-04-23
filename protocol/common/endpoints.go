@@ -50,6 +50,26 @@ func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter
 type AuthConfig struct {
 	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
 	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+	UseTLS      bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
+	KeyPem      string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem     string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+}
+
+func (ac *AuthConfig) GetUseTls() bool {
+	if ac == nil {
+		return false
+	}
+	return ac.UseTLS
+}
+
+func (ac *AuthConfig) GetLoadingCertificateParams() (string, string) {
+	if ac == nil {
+		return "", ""
+	}
+	if ac.KeyPem == "" || ac.CertPem == "" {
+		return "", ""
+	}
+	return ac.KeyPem, ac.CertPem
 }
 
 func (ac *AuthConfig) AddAuthPath(url string) string {

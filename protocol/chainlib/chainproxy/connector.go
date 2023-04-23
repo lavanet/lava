@@ -7,9 +7,11 @@ package chainproxy
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,6 +20,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -223,13 +226,33 @@ type GRPCConnector struct {
 	freeClients []*grpc.ClientConn
 	usedClients int64
 	addr        string
+	credentials credentials.TransportCredentials
 }
 
-func NewGRPCConnector(ctx context.Context, nConns uint, addr string) (*GRPCConnector, error) {
+func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*GRPCConnector, error) {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
+	addr := strings.TrimSuffix(nodeUrl.Url, "/")
 	connector := &GRPCConnector{
 		freeClients: make([]*grpc.ClientConn, 0, nConns),
 		addr:        addr,
+	}
+
+	// in the case the grpc server needs to connect using tls.
+	if nodeUrl.AuthConfig.GetUseTls() {
+		var tlsConf tls.Config
+		keyPem, certPem := nodeUrl.AuthConfig.GetLoadingCertificateParams()
+		if keyPem != "" && certPem != "" {
+			cert, err := tls.LoadX509KeyPair(certPem, keyPem)
+			if err != nil {
+				utils.LavaFormatError("Failed setting up tls certificate from local path, continuing with dynamic certificates", err)
+			} else {
+				tlsConf.Certificates = []tls.Certificate{cert}
+			}
+		} else {
+			// add dynamic certificates
+
+		}
+		connector.credentials = credentials.NewTLS(&tlsConf)
 	}
 
 	rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
@@ -241,6 +264,13 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) (*GRPCConne
 	return connector, nil
 }
 
+func (connector *GRPCConnector) getTransportCredentials() grpc.DialOption {
+	if connector.credentials != nil {
+		return grpc.WithTransportCredentials(connector.credentials)
+	}
+	return grpc.WithTransportCredentials(insecure.NewCredentials())
+}
+
 func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
 	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients},
 		utils.Attribute{Key: "url", Value: connector.addr})
@@ -248,7 +278,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
 			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
 			cancel()
@@ -385,7 +415,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 			return nil, ctx.Err()
 		}
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
 				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
