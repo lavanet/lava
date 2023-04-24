@@ -85,12 +85,12 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 
 	if wait {
 		if err = cmd.Wait(); err != nil {
-			 panic(funcName + " failed " + err.Error())
+			panic(funcName + " failed " + err.Error())
 		}
 	} else {
 		lt.commands[logName] = cmd
 		go func() {
-			lt.listenCmdCommand(cmd, funcName + " process returned unexpectedly", funcName)
+			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
 		}()
 	}
 }
