@@ -1,4 +1,4 @@
-package common_test
+package common
 
 import (
 	"math"
@@ -7,23 +7,22 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/common"
 	"github.com/stretchr/testify/require"
 )
 
-func initCtxAndTimerStores(t *testing.T, count int) (sdk.Context, []*common.TimerStore) {
+func initCtxAndTimerStores(t *testing.T, count int) (sdk.Context, []*TimerStore) {
 	ctx, cdc := initCtx(t)
-	tstore := make([]*common.TimerStore, count)
+	tstore := make([]*TimerStore, count)
 
 	for i := 0; i < count; i++ {
 		timerKey := "mock_timer_" + strconv.Itoa(i)
-		tstore[i] = common.NewTimerStore(mockStoreKey, cdc, timerKey)
+		tstore[i] = NewTimerStore(mockStoreKey, cdc, timerKey)
 	}
 
 	return ctx, tstore
 }
 
-func initCtxAndTimerStore(t *testing.T) (sdk.Context, *common.TimerStore) {
+func initCtxAndTimerStore(t *testing.T) (sdk.Context, *TimerStore) {
 	ctx, tstore := initCtxAndTimerStores(t, 1)
 	return ctx, tstore[0]
 }
