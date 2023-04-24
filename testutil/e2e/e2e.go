@@ -56,6 +56,8 @@ type lavaTest struct {
 	providerType         map[string][]epochStorageTypes.Endpoint
 }
 
+var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
+
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
 	// Move to parent directory since running "go test ./testutil/e2e/ -v" would move working directory
@@ -763,45 +765,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	lavaPaid := false
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 
-	// Before going into the tests, check before balances for all providers
-	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "LAV1",
-	})
-	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "ETH1",
-	})
-
-	lavaProviders := lavaProvidersResponse.GetStakeEntry()
-	ethProviders := ethProvidersResponse.GetStakeEntry()
-	fmt.Println("lavaProviders: ", lavaProviders)
-	fmt.Println("ethProviders: ", ethProviders)
-
-	for _, lavaProvider := range lavaProviders {
-		fmt.Println("lavaProvider: ", lavaProvider)
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: lavaProvider.Address,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("lava provider before balanceRes: ", balanceRes)
-	}
-
-	for _, ethProvider := range ethProviders {
-		fmt.Println("lavaProvider: ", ethProvider)
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: ethProvider.Address,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("eth provider before balanceRes: ", balanceRes)
-	}
-
+	// START THE TESTS
 	for start := time.Now(); time.Since(start) < testDuration; {
 		fmt.Println("pairingClient: ", pairingClient)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
@@ -871,16 +835,18 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		fmt.Println("AFTER providerCU[providerAddr]: ", providerCU[providerAddr])
 	}
 
-	// Waiting for couple of epochs
-	fmt.Println("Waiting for TWO MINUTES")
-	time.Sleep(time.Minute * 2)
-	fmt.Println("Waiting is DONE")
-	//
+	// // Waiting for couple of epochs
+	// fmt.Println("Waiting for A MINUTE")
+	// time.Sleep(time.Minute)
+	// fmt.Println("Waiting is DONE")
+	// //
 
 	for provider, totalCU := range providerCU {
 		fmt.Printf("provider[%s] totalCU[%d]\n", provider, totalCU)
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
+		// expectedBurn := pairingTypes.DefaultBurnCoinsPerCU.MulInt64(int64(totalCU))
+		// fmt.Println("expectedBurn: ", expectedBurn)
 		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
 		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
 			Address: provider,
@@ -890,6 +856,88 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			panic(err)
 		}
 		fmt.Println("balanceRes: ", balanceRes)
+
+		// Compare the balances:
+		if providerBalances[provider] != nil {
+			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjust balance checks
+				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
+				fmt.Println("netAmount GETH case for provider: ", netAmount)
+				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					fmt.Println("ERROR ON GETH CASE ")
+				}
+			} else {
+				netAmount := balanceRes.GetBalance().Amount.Int64()
+				fmt.Println("netAmount ETH case for provider: ", netAmount)
+				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					fmt.Println("ERROR ON LAVA CASE for provider: ", provider)
+				}
+			}
+		}
+	}
+	fmt.Println("BALANCE CHECK IS DONE")
+}
+
+func (lt *lavaTest) isGethProvider(providerAddr string) bool {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "GTH1",
+	})
+	gethProviders := gethProvidersResponse.GetStakeEntry()
+	for _, gethProvider := range gethProviders {
+		if gethProvider.Address == providerAddr {
+			return true
+		}
+	}
+	return false
+}
+
+func (lt *lavaTest) assignInitialProviderBalances() {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	// Before going into the tests, check before balances for all providers
+	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		panic(err)
+	}
+	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "ETH1",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	lavaProviders := lavaProvidersResponse.GetStakeEntry()
+	ethProviders := ethProvidersResponse.GetStakeEntry()
+	fmt.Println("lavaProviders: ", lavaProviders)
+	fmt.Println("ethProviders: ", ethProviders)
+
+	for _, lavaProvider := range lavaProviders {
+		fmt.Println("lavaProvider: ", lavaProvider)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: lavaProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("lava provider initial balanceRes: ", balanceRes)
+		providerBalances[lavaProvider.Address] = balanceRes
+	}
+
+	for _, ethProvider := range ethProviders {
+		fmt.Println("lavaProvider: ", ethProvider)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: ethProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("eth provider initial balanceRes: ", balanceRes)
+		providerBalances[ethProvider.Address] = balanceRes
 	}
 }
 
@@ -944,7 +992,9 @@ func runE2E() {
 	// scripts/init_e2e.sh adds spec_add_{ethereum,cosmoshub,lava}, which
 	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
-
+	//
+	lt.assignInitialProviderBalances()
+	//
 	utils.LavaFormatInfo("RUNNING TESTS")
 
 	// ETH1 flow
