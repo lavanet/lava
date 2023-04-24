@@ -256,7 +256,9 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	cp := &GrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"))
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(nodeUrl.Url, "/") // remove suffix if exists
+	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +289,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	// TODO: improve functionality, this is reading descriptors every send
