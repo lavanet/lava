@@ -57,6 +57,7 @@ type lavaTest struct {
 }
 
 var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
+var clientBalances = make(map[string]*bankTypes.QueryBalanceResponse)
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
@@ -754,12 +755,6 @@ func (lt *lavaTest) saveLogs() {
 }
 
 func (lt *lavaTest) checkPayments(testDuration time.Duration) {
-
-	// TESTS TO ADD:
-	// 1- Check if correct amount is paid
-	// 2- Check if payment is made inside 2 epochs
-	// 3- Check CU updates from both consumer & provider
-
 	utils.LavaFormatInfo("Checking Payments")
 	ethPaid := false
 	lavaPaid := false
@@ -815,6 +810,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 	// Check CU usage:
 	providerCU := make(map[string]uint64)
+	clientCU := make(map[string]uint64)
 	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
 	fmt.Println("paymentStorageClientRes: ", paymentStorageClientRes)
 	if err != nil {
@@ -825,28 +821,27 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
 		fmt.Println("uniquePaymentStorageClientProvider: ", uniquePaymentStorageClientProvider)
-		providerAddr := DecodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
+		clientAddr, providerAddr := DecodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
 		fmt.Println("providerAddr: ", providerAddr)
+		fmt.Println("clientAddr: ", clientAddr)
 
 		cu := uniquePaymentStorageClientProvider.UsedCU
 		fmt.Println("cu: ", cu)
 		fmt.Println("BEFORE providerCU[providerAddr]: ", providerCU[providerAddr])
 		providerCU[providerAddr] += cu
 		fmt.Println("AFTER providerCU[providerAddr]: ", providerCU[providerAddr])
+
+		fmt.Println("BEFORE clientCU[clientAddr]: ", clientCU[clientAddr])
+		clientCU[clientAddr] += cu
+		fmt.Println("AFTER clientCU[clientAddr]: ", clientCU[clientAddr])
 	}
 
-	// // Waiting for couple of epochs
-	// fmt.Println("Waiting for A MINUTE")
-	// time.Sleep(time.Minute)
-	// fmt.Println("Waiting is DONE")
-	// //
-
+	// CHECK PROVIDER BALANCES:
 	for provider, totalCU := range providerCU {
 		fmt.Printf("provider[%s] totalCU[%d]\n", provider, totalCU)
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
-		// expectedBurn := pairingTypes.DefaultBurnCoinsPerCU.MulInt64(int64(totalCU))
-		// fmt.Println("expectedBurn: ", expectedBurn)
+
 		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
 		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
 			Address: provider,
@@ -874,9 +869,33 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			}
 		}
 	}
+
+	// WAIT FOR A MIN
+	fmt.Println("Wait for a min")
+	time.Sleep(time.Minute)
+	fmt.Println("Wait over")
+
+	// CHECK CLIENT BALANCES
+	for client, totalCU := range clientCU {
+		fmt.Printf("client[%s] totalCU[%d]\n", client, totalCU)
+		expectedBurn := pairingTypes.DefaultBurnCoinsPerCU.MulInt64(int64(totalCU))
+		fmt.Println("expectedBurn: ", expectedBurn)
+
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: client,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("balanceRes: ", balanceRes)
+	}
+
 	fmt.Println("BALANCE CHECK IS DONE")
 }
 
+// This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
 func (lt *lavaTest) isGethProvider(providerAddr string) bool {
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
@@ -891,9 +910,56 @@ func (lt *lavaTest) isGethProvider(providerAddr string) bool {
 	return false
 }
 
-func (lt *lavaTest) assignInitialProviderBalances() {
+func (lt *lavaTest) setInitialClientBalances() {
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	// Before going into the tests, check before balances for all providers
+	lavaClientResponse, err := pairingClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		panic(err)
+	}
+	ethClientResponse, err := pairingClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
+		ChainID: "ETH1",
+	})
+	if err != nil {
+		panic(err)
+	}
+	lavaClients := lavaClientResponse.GetStakeEntry()
+	ethClients := ethClientResponse.GetStakeEntry()
+	fmt.Println("lavaClients: ", lavaClients)
+	fmt.Println("ethClients: ", ethClients)
+
+	for _, lavaClient := range lavaClients {
+		fmt.Println("lavaClient: ", lavaClient)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: lavaClient.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("lava client initial balanceRes: ", balanceRes)
+		clientBalances[lavaClient.Address] = balanceRes
+	}
+
+	for _, ethClient := range ethClients {
+		fmt.Println("ethClient: ", ethClient)
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: ethClient.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("eth client initial balanceRes: ", balanceRes)
+		clientBalances[ethClient.Address] = balanceRes
+	}
+}
+
+func (lt *lavaTest) setInitialProviderBalances() {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
 		ChainID: "LAV1",
 	})
@@ -941,18 +1007,18 @@ func (lt *lavaTest) assignInitialProviderBalances() {
 	}
 }
 
-func DecodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (providerAddr string) {
+func DecodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
 	// Find the indices of the "lava@" separators
 	firstIndex := strings.Index(inputStr, "lava@")
 	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
 	// thirdIndex := secondIndex + 44
 
-	// clientAddr = inputStr[firstIndex:secondIndex]
+	clientAddr = inputStr[firstIndex:secondIndex]
 	providerAddr = inputStr[secondIndex : secondIndex+44]
 	// uniqueIdentifier = inputStr[thirdIndex : thirdIndex+16]
 	// chainID = inputStr[thirdIndex+16:]
 
-	return providerAddr
+	return clientAddr, providerAddr
 }
 
 func runE2E() {
@@ -993,7 +1059,8 @@ func runE2E() {
 	// produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1
 	lt.checkStakeLava(5, 5, 1, checkedSpecsE2E, "Staking Lava OK")
 	//
-	lt.assignInitialProviderBalances()
+	lt.setInitialProviderBalances()
+	lt.setInitialClientBalances()
 	//
 	utils.LavaFormatInfo("RUNNING TESTS")
 
