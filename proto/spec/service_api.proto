@@ -14,6 +14,7 @@ message ServiceApi {
   repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
   SpecCategory reserved = 6;
   Parsing parsing = 7 [(gogoproto.nullable) = false];
+  string internal_path = 8;
 }
 
 message Parsing {
@@ -27,7 +28,6 @@ message ApiInterface {
   uint64 extra_compute_units = 3;
   SpecCategory category = 4;
   BlockParser overwrite_block_parsing = 5;
-  string internal_path = 6;
 }
 
 message BlockParser {

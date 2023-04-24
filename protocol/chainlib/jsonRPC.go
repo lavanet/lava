@@ -115,6 +115,14 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
+func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
+	internalPaths := map[string]struct{}{}
+	for _, api := range apip.serverApis {
+		internalPaths[api.InternalPath] = struct{}{}
+	}
+	return internalPaths
+}
+
 // getSupportedApi fetches service api from spec by name
 func (apip *JsonRPCChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
 	// Guard that the JsonRPCChainParser instance exists
@@ -340,40 +348,53 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 
 type JrpcChainProxy struct {
 	BaseChainProxy
-	conn *chainproxy.Connector
+	conn map[string]*chainproxy.Connector
 }
 
-func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration, chainParser ChainParser) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl},
+		conn:           map[string]*chainproxy.Connector{},
 	}
 	verifyRPCEndpoint(nodeUrl.Url)
-	return cp, cp.start(ctx, nConns, nodeUrl)
+	internalPaths := map[string]struct{}{}
+	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
+	if ok {
+		internalPaths = jsonRPCChainParser.GetInternalPaths()
+	}
+	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
 }
 
-func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
-	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-	if err != nil {
-		return err
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
+	if len(internalPaths) == 0 {
+		internalPaths = map[string]struct{}{"": struct{}{}} // add default path
 	}
-	cp.conn = conn
-	if cp.conn == nil {
-		return errors.New("g_conn == nil")
+	for path, _ := range internalPaths {
+		nodeUrl.Url += path
+		conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+		if err != nil {
+			return err
+		}
+		cp.conn[path] = conn
+		if cp.conn == nil {
+			return errors.New("g_conn == nil")
+		}
 	}
 	return nil
 }
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
-	rpc, err := cp.conn.GetRpc(ctx, true)
+	internalPath := chainMessage.GetServiceApi().InternalPath
+	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer cp.conn.ReturnRpc(rpc)
+	defer cp.conn[internalPath].ReturnRpc(rpc)
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
