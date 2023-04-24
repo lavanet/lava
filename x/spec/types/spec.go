@@ -82,7 +82,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				if _, ok := availavleEncodings[api.Parsing.ResultParsing.Encoding]; !ok {
 					return details, fmt.Errorf("unsupported api encoding %s in api %v ", api.Parsing.ResultParsing.Encoding, api)
 				}
-
 			}
 		}
 	}

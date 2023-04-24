@@ -152,13 +152,12 @@ func parseResponseByEncoding(rawResult []byte, encoding string) (string, error) 
 		}
 		hexBytes, err := hex.DecodeString(hexString)
 		if err != nil {
-			return "", utils.LavaFormatError("tried decoding a hex response in parseResponseByEncoding but failed", err, utils.Attribute{Key: "data", Value: string(hexString)})
+			return "", utils.LavaFormatError("tried decoding a hex response in parseResponseByEncoding but failed", err, utils.Attribute{Key: "data", Value: hexString})
 		}
 		return base64.StdEncoding.EncodeToString(hexBytes), nil
 	default:
 		return string(rawResult), nil
 	}
-
 }
 
 // Move to RPCInput
