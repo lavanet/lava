@@ -1375,7 +1375,7 @@
                         "internal_path": "/C/rpc",
                         "block_parsing": {
                             "parser_arg": [
-                                1
+                                "1"
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
@@ -1397,31 +1397,6 @@
                     },
                     {
                         "name": "eth_baseFee",
-                        "internal_path": "/C/rpc",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "15",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "jsonrpc",
-                                "type": "POST",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "eth_maxPriorityFeePerGas",
                         "internal_path": "/C/rpc",
                         "block_parsing": {
                             "parser_arg": [
