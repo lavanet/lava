@@ -304,7 +304,8 @@
                                     "0",
                                     "block_height"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "hex"
                             }
                         }
                     },
