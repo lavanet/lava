@@ -392,7 +392,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			relayTimeout += cp.averageBlockTime
 		}
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
+		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
 	}

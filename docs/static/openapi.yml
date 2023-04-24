@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29930,6 +29940,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31154,18 +31174,6 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
-                  compute_units:
-                    type: string
-                    format: uint64
-                    title: max CU for the whole plan duration
-                  compute_units_per_epoch:
-                    type: string
-                    format: uint64
-                    title: max CU per epoch for the whole plan duration
-                  max_providers_to_pair:
-                    type: string
-                    format: uint64
-                    title: max providers to be paired in an epoch
                   allow_overuse:
                     type: boolean
                     title: allow CU overuse flag
@@ -31183,6 +31191,35 @@ paths:
                     type: string
                     format: uint64
                     title: discount for buying the plan for a year
+                  plan_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -31225,7 +31262,7 @@ paths:
                   properties:
                     index:
                       type: string
-                    name:
+                    description:
                       type: string
                     price:
                       type: object
@@ -31350,7 +31387,7 @@ paths:
                             the vrf public key used to calculate data
                             reliability
                     title: list of the projects keys
-                  policy:
+                  admin_policy:
                     type: object
                     properties:
                       chain_policies:
@@ -31376,9 +31413,41 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
                   used_cu:
                     type: string
                     format: uint64
+                  subscription_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -31456,7 +31525,7 @@ paths:
                             the vrf public key used to calculate data
                             reliability
                     title: list of the projects keys
-                  policy:
+                  admin_policy:
                     type: object
                     properties:
                       chain_policies:
@@ -31482,9 +31551,41 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
                   used_cu:
                     type: string
                     format: uint64
+                  subscription_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -31729,9 +31830,11 @@ paths:
                                   - PARSE_CANONICAL
                                   - PARSE_DICTIONARY
                                   - PARSE_DICTIONARY_OR_ORDERED
-                                  - PARSE_DICTIONARY_OR_DEFAULT
                                   - DEFAULT
                                 default: EMPTY
+                                description: >-
+                                  means parameters are non related to block, and
+                                  should fetch latest block args: "latest"
                                 title: >-
                                   - PARSE_BY_ARG: means parameters are ordered
                                   and flat expected arguments are: [param index]
@@ -31740,8 +31843,17 @@ paths:
                                    - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                    - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                   - DEFAULT: reserved
+                              default_value:
+                                type: string
+                                title: >-
+                                  default value when set allows parsing failures
+                                  to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -31788,9 +31900,12 @@ paths:
                                         - PARSE_CANONICAL
                                         - PARSE_DICTIONARY
                                         - PARSE_DICTIONARY_OR_ORDERED
-                                        - PARSE_DICTIONARY_OR_DEFAULT
                                         - DEFAULT
                                       default: EMPTY
+                                      description: >-
+                                        means parameters are non related to
+                                        block, and should fetch latest block
+                                        args: "latest"
                                       title: >-
                                         - PARSE_BY_ARG: means parameters are
                                         ordered and flat expected arguments are:
@@ -31799,8 +31914,17 @@ paths:
                                          - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                         - DEFAULT: reserved
+                                    default_value:
+                                      type: string
+                                      title: >-
+                                        default value when set allows parsing
+                                        failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                           reserved:
                             type: object
                             properties:
@@ -31837,9 +31961,12 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
-                                      - PARSE_DICTIONARY_OR_DEFAULT
                                       - DEFAULT
                                     default: EMPTY
+                                    description: >-
+                                      means parameters are non related to block,
+                                      and should fetch latest block args:
+                                      "latest"
                                     title: >-
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
@@ -31848,8 +31975,17 @@ paths:
                                        - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                       - DEFAULT: reserved
+                                  default_value:
+                                    type: string
+                                    title: >-
+                                      default value when set allows parsing
+                                      failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32055,9 +32191,11 @@ paths:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
-                                - PARSE_DICTIONARY_OR_DEFAULT
                                 - DEFAULT
                               default: EMPTY
+                              description: >-
+                                means parameters are non related to block, and
+                                should fetch latest block args: "latest"
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
@@ -32066,8 +32204,15 @@ paths:
                                  - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                  - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                 - DEFAULT: reserved
+                            default_value:
+                              type: string
+                              title: >-
+                                default value when set allows parsing failures
+                                to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32114,9 +32259,12 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
-                                      - PARSE_DICTIONARY_OR_DEFAULT
                                       - DEFAULT
                                     default: EMPTY
+                                    description: >-
+                                      means parameters are non related to block,
+                                      and should fetch latest block args:
+                                      "latest"
                                     title: >-
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
@@ -32125,8 +32273,17 @@ paths:
                                        - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                       - DEFAULT: reserved
+                                  default_value:
+                                    type: string
+                                    title: >-
+                                      default value when set allows parsing
+                                      failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                         reserved:
                           type: object
                           properties:
@@ -32163,9 +32320,11 @@ paths:
                                     - PARSE_CANONICAL
                                     - PARSE_DICTIONARY
                                     - PARSE_DICTIONARY_OR_ORDERED
-                                    - PARSE_DICTIONARY_OR_DEFAULT
                                     - DEFAULT
                                   default: EMPTY
+                                  description: >-
+                                    means parameters are non related to block,
+                                    and should fetch latest block args: "latest"
                                   title: >-
                                     - PARSE_BY_ARG: means parameters are ordered
                                     and flat expected arguments are: [param
@@ -32174,8 +32333,17 @@ paths:
                                      - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                     - DEFAULT: reserved
+                                default_value:
+                                  type: string
+                                  title: >-
+                                    default value when set allows parsing
+                                    failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -32304,9 +32472,11 @@ paths:
                                   - PARSE_CANONICAL
                                   - PARSE_DICTIONARY
                                   - PARSE_DICTIONARY_OR_ORDERED
-                                  - PARSE_DICTIONARY_OR_DEFAULT
                                   - DEFAULT
                                 default: EMPTY
+                                description: >-
+                                  means parameters are non related to block, and
+                                  should fetch latest block args: "latest"
                                 title: >-
                                   - PARSE_BY_ARG: means parameters are ordered
                                   and flat expected arguments are: [param index]
@@ -32315,8 +32485,17 @@ paths:
                                    - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                    - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                   - DEFAULT: reserved
+                              default_value:
+                                type: string
+                                title: >-
+                                  default value when set allows parsing failures
+                                  to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -32363,9 +32542,12 @@ paths:
                                         - PARSE_CANONICAL
                                         - PARSE_DICTIONARY
                                         - PARSE_DICTIONARY_OR_ORDERED
-                                        - PARSE_DICTIONARY_OR_DEFAULT
                                         - DEFAULT
                                       default: EMPTY
+                                      description: >-
+                                        means parameters are non related to
+                                        block, and should fetch latest block
+                                        args: "latest"
                                       title: >-
                                         - PARSE_BY_ARG: means parameters are
                                         ordered and flat expected arguments are:
@@ -32374,8 +32556,17 @@ paths:
                                          - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                         - DEFAULT: reserved
+                                    default_value:
+                                      type: string
+                                      title: >-
+                                        default value when set allows parsing
+                                        failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                           reserved:
                             type: object
                             properties:
@@ -32412,9 +32603,12 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
-                                      - PARSE_DICTIONARY_OR_DEFAULT
                                       - DEFAULT
                                     default: EMPTY
+                                    description: >-
+                                      means parameters are non related to block,
+                                      and should fetch latest block args:
+                                      "latest"
                                     title: >-
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
@@ -32423,8 +32617,17 @@ paths:
                                        - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                       - DEFAULT: reserved
+                                  default_value:
+                                    type: string
+                                    title: >-
+                                      default value when set allows parsing
+                                      failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32630,9 +32833,11 @@ paths:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
-                                - PARSE_DICTIONARY_OR_DEFAULT
                                 - DEFAULT
                               default: EMPTY
+                              description: >-
+                                means parameters are non related to block, and
+                                should fetch latest block args: "latest"
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
@@ -32641,8 +32846,15 @@ paths:
                                  - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                  - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                 - DEFAULT: reserved
+                            default_value:
+                              type: string
+                              title: >-
+                                default value when set allows parsing failures
+                                to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32689,9 +32901,12 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
-                                      - PARSE_DICTIONARY_OR_DEFAULT
                                       - DEFAULT
                                     default: EMPTY
+                                    description: >-
+                                      means parameters are non related to block,
+                                      and should fetch latest block args:
+                                      "latest"
                                     title: >-
                                       - PARSE_BY_ARG: means parameters are
                                       ordered and flat expected arguments are:
@@ -32700,8 +32915,17 @@ paths:
                                        - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                       - DEFAULT: reserved
+                                  default_value:
+                                    type: string
+                                    title: >-
+                                      default value when set allows parsing
+                                      failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                         reserved:
                           type: object
                           properties:
@@ -32738,9 +32962,11 @@ paths:
                                     - PARSE_CANONICAL
                                     - PARSE_DICTIONARY
                                     - PARSE_DICTIONARY_OR_ORDERED
-                                    - PARSE_DICTIONARY_OR_DEFAULT
                                     - DEFAULT
                                   default: EMPTY
+                                  description: >-
+                                    means parameters are non related to block,
+                                    and should fetch latest block args: "latest"
                                   title: >-
                                     - PARSE_BY_ARG: means parameters are ordered
                                     and flat expected arguments are: [param
@@ -32749,8 +32975,17 @@ paths:
                                      - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                     - DEFAULT: reserved
+                                default_value:
+                                  type: string
+                                  title: >-
+                                    default value when set allows parsing
+                                    failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -55503,18 +55738,6 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
-      compute_units:
-        type: string
-        format: uint64
-        title: max CU for the whole plan duration
-      compute_units_per_epoch:
-        type: string
-        format: uint64
-        title: max CU per epoch for the whole plan duration
-      max_providers_to_pair:
-        type: string
-        format: uint64
-        title: max providers to be paired in an epoch
       allow_overuse:
         type: boolean
         title: allow CU overuse flag
@@ -55532,6 +55755,33 @@ definitions:
         type: string
         format: uint64
         title: discount for buying the plan for a year
+      plan_policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
@@ -55560,18 +55810,6 @@ definitions:
               method
 
               signatures required by gogoproto.
-          compute_units:
-            type: string
-            format: uint64
-            title: max CU for the whole plan duration
-          compute_units_per_epoch:
-            type: string
-            format: uint64
-            title: max CU per epoch for the whole plan duration
-          max_providers_to_pair:
-            type: string
-            format: uint64
-            title: max providers to be paired in an epoch
           allow_overuse:
             type: boolean
             title: allow CU overuse flag
@@ -55589,6 +55827,35 @@ definitions:
             type: string
             format: uint64
             title: discount for buying the plan for a year
+          plan_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.plans.QueryListResponse:
     type: object
     properties:
@@ -55599,7 +55866,7 @@ definitions:
           properties:
             index:
               type: string
-            name:
+            description:
               type: string
             price:
               type: object
@@ -55628,7 +55895,7 @@ definitions:
     properties:
       index:
         type: string
-      name:
+      description:
         type: string
       price:
         type: object
@@ -55651,13 +55918,6 @@ definitions:
         type: array
         items:
           type: string
-  lavanet.lava.projects.MsgAddProjectKeysResponse:
-    type: object
-  lavanet.lava.projects.MsgSetProjectPolicyResponse:
-    type: object
-  lavanet.lava.projects.Params:
-    type: object
-    description: Params defines the parameters for the module.
   lavanet.lava.projects.Policy:
     type: object
     properties:
@@ -55684,6 +55944,16 @@ definitions:
       max_providers_to_pair:
         type: string
         format: uint64
+    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.projects.MsgAddProjectKeysResponse:
+    type: object
+  lavanet.lava.projects.MsgSetAdminPolicyResponse:
+    type: object
+  lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
+    type: object
+  lavanet.lava.projects.Params:
+    type: object
+    description: Params defines the parameters for the module.
   lavanet.lava.projects.Project:
     type: object
     properties:
@@ -55724,7 +55994,7 @@ definitions:
               type: string
               title: the vrf public key used to calculate data reliability
         title: list of the projects keys
-      policy:
+      admin_policy:
         type: object
         properties:
           chain_policies:
@@ -55750,9 +56020,37 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       used_cu:
         type: string
         format: uint64
+      subscription_policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.ProjectKey:
     type: object
     properties:
@@ -55824,7 +56122,7 @@ definitions:
                   type: string
                   title: the vrf public key used to calculate data reliability
             title: list of the projects keys
-          policy:
+          admin_policy:
             type: object
             properties:
               chain_policies:
@@ -55850,9 +56148,41 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
           used_cu:
             type: string
             format: uint64
+          subscription_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.projects.QueryInfoResponse:
     type: object
     properties:
@@ -55896,7 +56226,7 @@ definitions:
                   type: string
                   title: the vrf public key used to calculate data reliability
             title: list of the projects keys
-          policy:
+          admin_policy:
             type: object
             properties:
               chain_policies:
@@ -55922,9 +56252,41 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
           used_cu:
             type: string
             format: uint64
+          subscription_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.projects.QueryParamsResponse:
     type: object
     properties:
@@ -55971,9 +56333,11 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
-              - PARSE_DICTIONARY_OR_DEFAULT
               - DEFAULT
             default: EMPTY
+            description: >-
+              means parameters are non related to block, and should fetch latest
+              block args: "latest"
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
@@ -55981,8 +56345,15 @@ definitions:
                - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+               - DEFAULT: reserved
+          default_value:
+            type: string
+            title: >-
+              default value when set allows parsing failures to assume the
+              default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -55998,9 +56369,11 @@ definitions:
           - PARSE_CANONICAL
           - PARSE_DICTIONARY
           - PARSE_DICTIONARY_OR_ORDERED
-          - PARSE_DICTIONARY_OR_DEFAULT
           - DEFAULT
         default: EMPTY
+        description: >-
+          means parameters are non related to block, and should fetch latest
+          block args: "latest"
         title: >-
           - PARSE_BY_ARG: means parameters are ordered and flat expected
           arguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
@@ -56008,8 +56381,15 @@ definitions:
            - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
            - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+           - DEFAULT: reserved
+      default_value:
+        type: string
+        title: >-
+          default value when set allows parsing failures to assume the default
+          value
+      encoding:
+        type: string
+        title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -56018,17 +56398,18 @@ definitions:
       - PARSE_CANONICAL
       - PARSE_DICTIONARY
       - PARSE_DICTIONARY_OR_ORDERED
-      - PARSE_DICTIONARY_OR_DEFAULT
       - DEFAULT
     default: EMPTY
+    description: >-
+      means parameters are non related to block, and should fetch latest block
+      args: "latest"
     title: >-
       - PARSE_BY_ARG: means parameters are ordered and flat expected arguments
       are: [param index] (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
        - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-       - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-       - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+       - DEFAULT: reserved
   lavanet.lava.spec.Params:
     type: object
     properties:
@@ -56061,9 +56442,11 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
-              - PARSE_DICTIONARY_OR_DEFAULT
               - DEFAULT
             default: EMPTY
+            description: >-
+              means parameters are non related to block, and should fetch latest
+              block args: "latest"
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
@@ -56071,8 +56454,15 @@ definitions:
                - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+               - DEFAULT: reserved
+          default_value:
+            type: string
+            title: >-
+              default value when set allows parsing failures to assume the
+              default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
     properties:
@@ -56111,9 +56501,11 @@ definitions:
                           - PARSE_CANONICAL
                           - PARSE_DICTIONARY
                           - PARSE_DICTIONARY_OR_ORDERED
-                          - PARSE_DICTIONARY_OR_DEFAULT
                           - DEFAULT
                         default: EMPTY
+                        description: >-
+                          means parameters are non related to block, and should
+                          fetch latest block args: "latest"
                         title: >-
                           - PARSE_BY_ARG: means parameters are ordered and flat
                           expected arguments are: [param index] (example:
@@ -56121,8 +56513,15 @@ definitions:
                            - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                            - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                           - DEFAULT: reserved
+                      default_value:
+                        type: string
+                        title: >-
+                          default value when set allows parsing failures to
+                          assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
                   compute_units:
                     type: string
                     format: uint64
@@ -56169,9 +56568,11 @@ definitions:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
-                                - PARSE_DICTIONARY_OR_DEFAULT
                                 - DEFAULT
                               default: EMPTY
+                              description: >-
+                                means parameters are non related to block, and
+                                should fetch latest block args: "latest"
                               title: >-
                                 - PARSE_BY_ARG: means parameters are ordered and
                                 flat expected arguments are: [param index]
@@ -56180,8 +56581,15 @@ definitions:
                                  - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                  - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                                 - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                                 - DEFAULT: reserved
+                            default_value:
+                              type: string
+                              title: >-
+                                default value when set allows parsing failures
+                                to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                   reserved:
                     type: object
                     properties:
@@ -56218,9 +56626,11 @@ definitions:
                               - PARSE_CANONICAL
                               - PARSE_DICTIONARY
                               - PARSE_DICTIONARY_OR_ORDERED
-                              - PARSE_DICTIONARY_OR_DEFAULT
                               - DEFAULT
                             default: EMPTY
+                            description: >-
+                              means parameters are non related to block, and
+                              should fetch latest block args: "latest"
                             title: >-
                               - PARSE_BY_ARG: means parameters are ordered and
                               flat expected arguments are: [param index]
@@ -56228,8 +56638,15 @@ definitions:
                                - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                               - DEFAULT: reserved
+                          default_value:
+                            type: string
+                            title: >-
+                              default value when set allows parsing failures to
+                              assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
             enabled:
               type: boolean
             reliability_threshold:
@@ -56349,9 +56766,11 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
-                        - PARSE_DICTIONARY_OR_DEFAULT
                         - DEFAULT
                       default: EMPTY
+                      description: >-
+                        means parameters are non related to block, and should
+                        fetch latest block args: "latest"
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
                         expected arguments are: [param index] (example: PARAMS:
@@ -56359,8 +56778,15 @@ definitions:
                          - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                         - DEFAULT: reserved
+                    default_value:
+                      type: string
+                      title: >-
+                        default value when set allows parsing failures to assume
+                        the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
                 compute_units:
                   type: string
                   format: uint64
@@ -56407,9 +56833,11 @@ definitions:
                               - PARSE_CANONICAL
                               - PARSE_DICTIONARY
                               - PARSE_DICTIONARY_OR_ORDERED
-                              - PARSE_DICTIONARY_OR_DEFAULT
                               - DEFAULT
                             default: EMPTY
+                            description: >-
+                              means parameters are non related to block, and
+                              should fetch latest block args: "latest"
                             title: >-
                               - PARSE_BY_ARG: means parameters are ordered and
                               flat expected arguments are: [param index]
@@ -56417,8 +56845,15 @@ definitions:
                                - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                               - DEFAULT: reserved
+                          default_value:
+                            type: string
+                            title: >-
+                              default value when set allows parsing failures to
+                              assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
                 reserved:
                   type: object
                   properties:
@@ -56455,9 +56890,11 @@ definitions:
                             - PARSE_CANONICAL
                             - PARSE_DICTIONARY
                             - PARSE_DICTIONARY_OR_ORDERED
-                            - PARSE_DICTIONARY_OR_DEFAULT
                             - DEFAULT
                           default: EMPTY
+                          description: >-
+                            means parameters are non related to block, and
+                            should fetch latest block args: "latest"
                           title: >-
                             - PARSE_BY_ARG: means parameters are ordered and
                             flat expected arguments are: [param index] (example:
@@ -56465,8 +56902,15 @@ definitions:
                              - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                              - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                              - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                             - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                             - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                             - DEFAULT: reserved
+                        default_value:
+                          type: string
+                          title: >-
+                            default value when set allows parsing failures to
+                            assume the default value
+                        encoding:
+                          type: string
+                          title: 'used to parse byte responses: base64,hex,bech32'
           enabled:
             type: boolean
           reliability_threshold:
@@ -56595,9 +57039,11 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
-              - PARSE_DICTIONARY_OR_DEFAULT
               - DEFAULT
             default: EMPTY
+            description: >-
+              means parameters are non related to block, and should fetch latest
+              block args: "latest"
             title: >-
               - PARSE_BY_ARG: means parameters are ordered and flat expected
               arguments are: [param index] (example: PARAMS:
@@ -56605,8 +57051,15 @@ definitions:
                - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-               - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-               - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+               - DEFAULT: reserved
+          default_value:
+            type: string
+            title: >-
+              default value when set allows parsing failures to assume the
+              default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
       compute_units:
         type: string
         format: uint64
@@ -56653,9 +57106,11 @@ definitions:
                     - PARSE_CANONICAL
                     - PARSE_DICTIONARY
                     - PARSE_DICTIONARY_OR_ORDERED
-                    - PARSE_DICTIONARY_OR_DEFAULT
                     - DEFAULT
                   default: EMPTY
+                  description: >-
+                    means parameters are non related to block, and should fetch
+                    latest block args: "latest"
                   title: >-
                     - PARSE_BY_ARG: means parameters are ordered and flat
                     expected arguments are: [param index] (example: PARAMS:
@@ -56663,8 +57118,15 @@ definitions:
                      - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                     - DEFAULT: reserved
+                default_value:
+                  type: string
+                  title: >-
+                    default value when set allows parsing failures to assume the
+                    default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
       reserved:
         type: object
         properties:
@@ -56701,9 +57163,11 @@ definitions:
                   - PARSE_CANONICAL
                   - PARSE_DICTIONARY
                   - PARSE_DICTIONARY_OR_ORDERED
-                  - PARSE_DICTIONARY_OR_DEFAULT
                   - DEFAULT
                 default: EMPTY
+                description: >-
+                  means parameters are non related to block, and should fetch
+                  latest block args: "latest"
                 title: >-
                   - PARSE_BY_ARG: means parameters are ordered and flat expected
                   arguments are: [param index] (example: PARAMS:
@@ -56711,8 +57175,15 @@ definitions:
                    - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                    - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                   - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                   - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                   - DEFAULT: reserved
+              default_value:
+                type: string
+                title: >-
+                  default value when set allows parsing failures to assume the
+                  default value
+              encoding:
+                type: string
+                title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -56746,9 +57217,11 @@ definitions:
                     - PARSE_CANONICAL
                     - PARSE_DICTIONARY
                     - PARSE_DICTIONARY_OR_ORDERED
-                    - PARSE_DICTIONARY_OR_DEFAULT
                     - DEFAULT
                   default: EMPTY
+                  description: >-
+                    means parameters are non related to block, and should fetch
+                    latest block args: "latest"
                   title: >-
                     - PARSE_BY_ARG: means parameters are ordered and flat
                     expected arguments are: [param index] (example: PARAMS:
@@ -56756,8 +57229,15 @@ definitions:
                      - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                     - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                     - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                     - DEFAULT: reserved
+                default_value:
+                  type: string
+                  title: >-
+                    default value when set allows parsing failures to assume the
+                    default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
             compute_units:
               type: string
               format: uint64
@@ -56804,9 +57284,11 @@ definitions:
                           - PARSE_CANONICAL
                           - PARSE_DICTIONARY
                           - PARSE_DICTIONARY_OR_ORDERED
-                          - PARSE_DICTIONARY_OR_DEFAULT
                           - DEFAULT
                         default: EMPTY
+                        description: >-
+                          means parameters are non related to block, and should
+                          fetch latest block args: "latest"
                         title: >-
                           - PARSE_BY_ARG: means parameters are ordered and flat
                           expected arguments are: [param index] (example:
@@ -56814,8 +57296,15 @@ definitions:
                            - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                            - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                           - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                           - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                           - DEFAULT: reserved
+                      default_value:
+                        type: string
+                        title: >-
+                          default value when set allows parsing failures to
+                          assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
             reserved:
               type: object
               properties:
@@ -56852,9 +57341,11 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
-                        - PARSE_DICTIONARY_OR_DEFAULT
                         - DEFAULT
                       default: EMPTY
+                      description: >-
+                        means parameters are non related to block, and should
+                        fetch latest block args: "latest"
                       title: >-
                         - PARSE_BY_ARG: means parameters are ordered and flat
                         expected arguments are: [param index] (example: PARAMS:
@@ -56862,8 +57353,15 @@ definitions:
                          - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
-                         - PARSE_DICTIONARY_OR_DEFAULT: means parameters are named, expected arguments are [prop_name,separator,default value] (example: PARAMS: {prop_name:<#BlockNum>} or /prop_name=blockNum) args: "prop_name","latest"
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block args: "latest"
+                         - DEFAULT: reserved
+                    default_value:
+                      type: string
+                      title: >-
+                        default value when set allows parsing failures to assume
+                        the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
       enabled:
         type: boolean
       reliability_threshold:
@@ -56956,6 +57454,67 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.projects.ProjectData:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      projectKeys:
+        type: array
+        items:
+          type: object
+          properties:
+            key:
+              type: string
+              title: the address of the project key
+            types:
+              type: array
+              items:
+                type: string
+                enum:
+                  - NONE
+                  - ADMIN
+                  - DEVELOPER
+                default: NONE
+                title: 'bitmap, must only be power of 2'
+              title: 'the key type, determines the privilages of the key'
+            vrfpk:
+              type: string
+              title: the vrf public key used to calculate data reliability
+      policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+    title: used as a container struct for the subscription module
+  lavanet.lava.subscription.MsgAddProjectResponse:
+    type: object
   lavanet.lava.subscription.MsgBuyResponse:
     type: object
   lavanet.lava.subscription.Params:

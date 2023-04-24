@@ -1076,7 +1076,8 @@
                                     "block_id",
                                     "hash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "base64"
                             }
                         }
                     },
@@ -3311,7 +3312,8 @@
                                     "blockId",
                                     "hash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "base64"
                             }
                         }
                     },
@@ -4842,7 +4844,8 @@
                                     "block_id",
                                     "hash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "hex"
                             }
                         }
                     },
