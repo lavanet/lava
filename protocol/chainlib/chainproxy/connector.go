@@ -250,7 +250,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
+			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}, {Key: "nodeUrl", Value: connector.addr}}...)
 			cancel()
 			continue
 		}
@@ -389,7 +389,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 		if err != nil {
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
 				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
-			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}}...)
+			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.addr}}...)
 			cancel()
 			continue
 		}
