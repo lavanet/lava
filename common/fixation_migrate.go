@@ -45,7 +45,7 @@ func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 	indices := fs.GetAllEntryIndices(ctx)
 	for _, index := range indices {
-		safeIndex, err := sanitizeIndex(index)
+		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
 			return fmt.Errorf("%s: failed to sanitize index: %s", prefixForErrors(1), index)
 		}

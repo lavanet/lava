@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/common/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,7 +59,7 @@ func TestMigrate1to2(t *testing.T) {
 	// verify entries before migration
 	for _, tt := range templates {
 		what := fmt.Sprintf("before: index: %s, block: %d, count: %d", tt.index, tt.block, tt.count)
-		safeIndex, err := sanitizeIndex(tt.index)
+		safeIndex, err := types.SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		entry := fs.getEntry(ctx, safeIndex, tt.block)
 		if tt.head {
@@ -76,7 +77,7 @@ func TestMigrate1to2(t *testing.T) {
 	// verify entries after migration
 	for _, tt := range templates {
 		what := fmt.Sprintf("after: index: %s, block: %d, count: %d", tt.index, tt.block, tt.count)
-		safeIndex, err := sanitizeIndex(tt.index)
+		safeIndex, err := types.SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		entry := fs.getEntry(ctx, safeIndex, tt.block)
 		require.Equal(t, tt.after, entry.Refcount, what)

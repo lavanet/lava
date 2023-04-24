@@ -88,7 +88,7 @@ func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint6
 	byteKey := types.EncodeKey(block)
 	b := store.Get(byteKey)
 	if b == nil {
-		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d", desanitizeIndex(safeIndex), block))
+		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d", types.DesanitizeIndex(safeIndex), block))
 	}
 	fs.cdc.MustUnmarshal(b, &entry)
 	return entry
