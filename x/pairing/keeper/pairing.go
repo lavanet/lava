@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -84,9 +86,8 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 		return projectstypes.Project{}, "", err
 	}
 
-	err = project.VerifyProject(chainID)
-	if err != nil {
-		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index, "error": err.Error()}, "the developers project is invalid")
+	if !project.Enabled {
+		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index}, "the developers project is disabled")
 	}
 
 	return project, vrfpk, nil
@@ -111,12 +112,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	project, vrfpk_proj, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
-		geolocation = project.Policy.GeolocationProfile
-		providersToPair = project.Policy.MaxProvidersToPair
-		projectToPair = project.Index
-		allowedCU = project.Policy.EpochCuLimit
 		vrfk = vrfpk_proj
 		legacyStake = false
+		geolocation, providersToPair, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		if err != nil {
+			return nil, "", 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		}
 	} else {
 		// legacy staked client
 		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
@@ -151,6 +152,75 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
 
 	return providers, vrfk, allowedCU, legacyStake, err
+}
+
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, error) {
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	if err != nil {
+		return 0, 0, "", 0, err
+	}
+
+	planPolicy := plan.GetPlanPolicy()
+	policies := []*projectstypes.Policy{project.AdminPolicy, project.SubscriptionPolicy, &planPolicy}
+	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
+		return 0, 0, "", 0, fmt.Errorf("chain ID not found in any of the policies")
+	}
+
+	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
+
+	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+	if !found {
+		return 0, 0, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	}
+	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+
+	projectToPair := project.Index
+	return geolocation, providersToPair, projectToPair, allowedCU, nil
+}
+
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectstypes.Policy) uint64 {
+	geolocation := uint64(math.MaxUint64)
+
+	// geolocation is a bitmap. common denominator can be calculated with logical AND
+	for _, policy := range policies {
+		if policy != nil {
+			geolocation &= policy.GetGeolocationProfile()
+		}
+	}
+
+	return geolocation
+}
+
+func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
+	var providersToPairValues []uint64
+
+	for _, policy := range policies {
+		if policy != nil {
+			providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+		}
+	}
+
+	return commontypes.FindMin(providersToPairValues)
+}
+
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+	var policyEpochCuLimit []uint64
+	var policyTotalCuLimit []uint64
+	for _, policy := range policies {
+		if policy != nil {
+			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
+			policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
+		}
+	}
+
+	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
+	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
+
+	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+
+	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, vrfk string, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
