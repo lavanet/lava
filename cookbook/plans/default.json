@@ -12,11 +12,30 @@
                     "amount": "100000"
                 },
                 "annual_discount_percentage": "20",
-                "compute_units": "10000000000",
-                "compute_units_per_epoch": "1000",
-                "max_providers_to_pair": "5",
                 "allow_overuse": false,
-                "overuse_rate": "0"
+                "overuse_rate": "0",
+                "plan_policy": {
+                    "chain_policies": [
+                        {
+                            "chain_id": "ETH1",
+                            "apis": [
+                                "eth_blockNumber",
+                                "eth_accounts"
+                            ]
+                        },
+                        {
+                            "chain_id": "FTM250",
+                            "apis": [
+                                "ftm_chainId",
+                                "ftm_blockNumber"
+                            ]
+                        }
+                    ],
+                    "geolocation_profile": "1",
+                    "total_cu_limit": "1000",
+                    "epoch_cu_limit": "10",
+                    "max_providers_to_pair": "3"
+                }
             }
         ]
     },

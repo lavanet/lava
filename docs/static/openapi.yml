@@ -31174,18 +31174,6 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
-                  compute_units:
-                    type: string
-                    format: uint64
-                    title: max CU for the whole plan duration
-                  compute_units_per_epoch:
-                    type: string
-                    format: uint64
-                    title: max CU per epoch for the whole plan duration
-                  max_providers_to_pair:
-                    type: string
-                    format: uint64
-                    title: max providers to be paired in an epoch
                   allow_overuse:
                     type: boolean
                     title: allow CU overuse flag
@@ -31203,6 +31191,35 @@ paths:
                     type: string
                     format: uint64
                     title: discount for buying the plan for a year
+                  plan_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -31245,7 +31262,7 @@ paths:
                   properties:
                     index:
                       type: string
-                    name:
+                    description:
                       type: string
                     price:
                       type: object
@@ -31370,7 +31387,7 @@ paths:
                             the vrf public key used to calculate data
                             reliability
                     title: list of the projects keys
-                  policy:
+                  admin_policy:
                     type: object
                     properties:
                       chain_policies:
@@ -31396,9 +31413,41 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
                   used_cu:
                     type: string
                     format: uint64
+                  subscription_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -31476,7 +31525,7 @@ paths:
                             the vrf public key used to calculate data
                             reliability
                     title: list of the projects keys
-                  policy:
+                  admin_policy:
                     type: object
                     properties:
                       chain_policies:
@@ -31502,9 +31551,41 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
                   used_cu:
                     type: string
                     format: uint64
+                  subscription_policy:
+                    type: object
+                    properties:
+                      chain_policies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            chain_id:
+                              type: string
+                            apis:
+                              type: array
+                              items:
+                                type: string
+                      geolocation_profile:
+                        type: string
+                        format: uint64
+                      total_cu_limit:
+                        type: string
+                        format: uint64
+                      epoch_cu_limit:
+                        type: string
+                        format: uint64
+                      max_providers_to_pair:
+                        type: string
+                        format: uint64
+                    title: >-
+                      protobuf expected in YAML format: used "moretags" to
+                      simplify parsing
         default:
           description: An unexpected error response.
           schema:
@@ -55657,18 +55738,6 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
-      compute_units:
-        type: string
-        format: uint64
-        title: max CU for the whole plan duration
-      compute_units_per_epoch:
-        type: string
-        format: uint64
-        title: max CU per epoch for the whole plan duration
-      max_providers_to_pair:
-        type: string
-        format: uint64
-        title: max providers to be paired in an epoch
       allow_overuse:
         type: boolean
         title: allow CU overuse flag
@@ -55686,6 +55755,33 @@ definitions:
         type: string
         format: uint64
         title: discount for buying the plan for a year
+      plan_policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
@@ -55714,18 +55810,6 @@ definitions:
               method
 
               signatures required by gogoproto.
-          compute_units:
-            type: string
-            format: uint64
-            title: max CU for the whole plan duration
-          compute_units_per_epoch:
-            type: string
-            format: uint64
-            title: max CU per epoch for the whole plan duration
-          max_providers_to_pair:
-            type: string
-            format: uint64
-            title: max providers to be paired in an epoch
           allow_overuse:
             type: boolean
             title: allow CU overuse flag
@@ -55743,6 +55827,35 @@ definitions:
             type: string
             format: uint64
             title: discount for buying the plan for a year
+          plan_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.plans.QueryListResponse:
     type: object
     properties:
@@ -55753,7 +55866,7 @@ definitions:
           properties:
             index:
               type: string
-            name:
+            description:
               type: string
             price:
               type: object
@@ -55782,7 +55895,7 @@ definitions:
     properties:
       index:
         type: string
-      name:
+      description:
         type: string
       price:
         type: object
@@ -55805,13 +55918,6 @@ definitions:
         type: array
         items:
           type: string
-  lavanet.lava.projects.MsgAddProjectKeysResponse:
-    type: object
-  lavanet.lava.projects.MsgSetProjectPolicyResponse:
-    type: object
-  lavanet.lava.projects.Params:
-    type: object
-    description: Params defines the parameters for the module.
   lavanet.lava.projects.Policy:
     type: object
     properties:
@@ -55838,6 +55944,16 @@ definitions:
       max_providers_to_pair:
         type: string
         format: uint64
+    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.projects.MsgAddProjectKeysResponse:
+    type: object
+  lavanet.lava.projects.MsgSetAdminPolicyResponse:
+    type: object
+  lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
+    type: object
+  lavanet.lava.projects.Params:
+    type: object
+    description: Params defines the parameters for the module.
   lavanet.lava.projects.Project:
     type: object
     properties:
@@ -55878,7 +55994,7 @@ definitions:
               type: string
               title: the vrf public key used to calculate data reliability
         title: list of the projects keys
-      policy:
+      admin_policy:
         type: object
         properties:
           chain_policies:
@@ -55904,9 +56020,37 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       used_cu:
         type: string
         format: uint64
+      subscription_policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.ProjectKey:
     type: object
     properties:
@@ -55978,7 +56122,7 @@ definitions:
                   type: string
                   title: the vrf public key used to calculate data reliability
             title: list of the projects keys
-          policy:
+          admin_policy:
             type: object
             properties:
               chain_policies:
@@ -56004,9 +56148,41 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
           used_cu:
             type: string
             format: uint64
+          subscription_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.projects.QueryInfoResponse:
     type: object
     properties:
@@ -56050,7 +56226,7 @@ definitions:
                   type: string
                   title: the vrf public key used to calculate data reliability
             title: list of the projects keys
-          policy:
+          admin_policy:
             type: object
             properties:
               chain_policies:
@@ -56076,9 +56252,41 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
           used_cu:
             type: string
             format: uint64
+          subscription_policy:
+            type: object
+            properties:
+              chain_policies:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chain_id:
+                      type: string
+                    apis:
+                      type: array
+                      items:
+                        type: string
+              geolocation_profile:
+                type: string
+                format: uint64
+              total_cu_limit:
+                type: string
+                format: uint64
+              epoch_cu_limit:
+                type: string
+                format: uint64
+              max_providers_to_pair:
+                type: string
+                format: uint64
+            title: >-
+              protobuf expected in YAML format: used "moretags" to simplify
+              parsing
   lavanet.lava.projects.QueryParamsResponse:
     type: object
     properties:
@@ -57246,6 +57454,67 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.projects.ProjectData:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      projectKeys:
+        type: array
+        items:
+          type: object
+          properties:
+            key:
+              type: string
+              title: the address of the project key
+            types:
+              type: array
+              items:
+                type: string
+                enum:
+                  - NONE
+                  - ADMIN
+                  - DEVELOPER
+                default: NONE
+                title: 'bitmap, must only be power of 2'
+              title: 'the key type, determines the privilages of the key'
+            vrfpk:
+              type: string
+              title: the vrf public key used to calculate data reliability
+      policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+    title: used as a container struct for the subscription module
+  lavanet.lava.subscription.MsgAddProjectResponse:
+    type: object
   lavanet.lava.subscription.MsgBuyResponse:
     type: object
   lavanet.lava.subscription.Params:

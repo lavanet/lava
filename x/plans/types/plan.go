@@ -24,12 +24,12 @@ func (p Plan) ValidatePlan() error {
 	}
 
 	// check the compute units field are non-zero
-	if p.GetComputeUnits() == 0 || p.GetComputeUnitsPerEpoch() == 0 {
+	if p.PlanPolicy.GetTotalCuLimit() == 0 || p.PlanPolicy.GetEpochCuLimit() == 0 {
 		return sdkerrors.Wrap(ErrInvalidPlanComputeUnits, "plan's compute units fields can't be zero")
 	}
 
 	// check that the plan's servicersToPair is larger than 1
-	if p.GetMaxProvidersToPair() <= 1 {
+	if p.PlanPolicy.GetMaxProvidersToPair() <= 1 {
 		return sdkerrors.Wrap(ErrInvalidPlanServicersToPair, "plan's servicersToPair field can't be one or lower")
 	}
 

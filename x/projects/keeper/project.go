@@ -52,40 +52,53 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
-	// check that those keys are unique for developers
 	for _, projectKey := range projectKeys {
-		err := k.RegisterDeveloperKey(ctx, projectKey.Key, project.Index, uint64(ctx.BlockHeight()), projectKey.Vrfpk)
+		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return err
+			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
 		}
-
-		project.AppendKey(projectKey)
 	}
 
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy types.Policy, err error) {
-	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
-	if err != nil {
-		return types.Policy{}, err
-	}
-
-	return project.Policy, nil
+func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
+	project.UsedCu += cu
+	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error) {
-	project, _, err := k.GetProjectForDeveloper(ctx, developerKey, blockHeight)
-	if err != nil {
-		return err
+func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+	for _, projectID := range projectIDs {
+		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		}
+		// for admin policy - check if the key is an address of a project admin.
+		// Note, the subscription key is also considered an admin key
+		if setPolicyEnum == types.SET_ADMIN_POLICY {
+			if !project.IsAdminKey(key) {
+				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_admin", map[string]string{"project": projectID, "key": key}, "cannot set admin policy because the requesting key is not admin key")
+			} else {
+				project.AdminPolicy = policy
+			}
+		} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
+			// for subscription policy - check if the key is an address of the project's subscription consumer
+			if key != project.GetSubscription() {
+				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_subscription_consumer", map[string]string{"project": projectID, "key": key}, "cannot set subscription policy because the requesting key is not subscription consumer key")
+			} else {
+				project.SubscriptionPolicy = policy
+			}
+		}
+
+		nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return utils.LavaError(ctx, k.Logger(ctx), "SetPolicy_cant_get_next_epoch", map[string]string{"block": strconv.FormatUint(uint64(ctx.BlockHeight()), 10)}, "can't get next epoch")
+		}
+		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = project.VerifyCuUsage()
-	if err != nil {
-		return err
-	}
-
-	project.UsedCu += cu
-
-	return k.projectsFS.ModifyEntry(ctx, project.Index, blockHeight, &project)
+	return nil
 }

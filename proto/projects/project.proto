@@ -2,7 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
-
+option (gogoproto.equal_all) = true;
 option go_package = "github.com/lavanet/lava/x/projects/types";
 
 message Project {
@@ -11,8 +11,9 @@ message Project {
     string description = 3; // the description of the project for the users convinient
     bool enabled = 4; // enabled flag
     repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
-    Policy policy = 6 [(gogoproto.nullable) = false];
+    Policy admin_policy = 6;
     uint64 used_cu = 7;
+    Policy subscription_policy = 8;
 }
 
 message ProjectKey {
@@ -27,20 +28,30 @@ message ProjectKey {
     string vrfpk = 3; // the vrf public key used to calculate data reliability
 }
 
+// protobuf expected in YAML format: used "moretags" to simplify parsing
 message Policy {
-    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false];
-    uint64 geolocation_profile = 2;
-    uint64 total_cu_limit = 3;
-    uint64 epoch_cu_limit = 4;
-    uint64 max_providers_to_pair = 5;
+    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"chain_policies\""];
+    uint64 geolocation_profile = 2 [(gogoproto.moretags) = "mapstructure:\"geolocation_profile\"", (gogoproto.jsontag) = "geolocation_profile"];
+    uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\"", (gogoproto.jsontag) = "total_cu_limit"];
+    uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\"", (gogoproto.jsontag) = "epoch_cu_limit"];
+    uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair", (gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
 }
 
 message ChainPolicy {
-    string chain_id = 1;
-    repeated string apis = 2 [(gogoproto.nullable) = false];
+    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\""];
+    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
 }
 
 message ProtoDeveloperData {
     string projectID = 1;
     string vrfpk = 2;
 }
+
+// used as a container struct for the subscription module
+message ProjectData {
+    string name = 1;
+    string description = 2;
+    bool enabled = 3;
+    repeated ProjectKey projectKeys = 4 [(gogoproto.nullable) = false];
+    Policy policy = 5;
+  }

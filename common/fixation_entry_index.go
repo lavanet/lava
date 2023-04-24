@@ -28,7 +28,7 @@ func (fs *FixationStore) getEntryIndexStore(ctx sdk.Context) *prefix.Store {
 
 // setEntryIndex stores an Entry index in the store
 func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string) {
-	fs.assertSanitizedIndex(safeIndex)
+	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
 	appendedValue := []byte(safeIndex) // convert the index value to a byte array
 	store.Set(types.KeyPrefix(types.EntryIndexKey+fs.prefix+safeIndex), appendedValue)
@@ -36,7 +36,7 @@ func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string) {
 
 // removeEntryIndex removes an Entry index from the store
 func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
-	fs.assertSanitizedIndex(safeIndex)
+	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
 	store.Delete(types.KeyPrefix(fs.createEntryIndexKey(safeIndex)))
 }
@@ -52,8 +52,8 @@ func (fs FixationStore) GetAllEntryIndicesWithPrefix(ctx sdk.Context, prefix str
 	indexList := []string{}
 	for ; iterator.Valid(); iterator.Next() {
 		safeIndex := string(iterator.Value())
-		fs.assertSanitizedIndex(safeIndex)
-		indexList = append(indexList, desanitizeIndex(safeIndex))
+		types.AssertSanitizedIndex(safeIndex, fs.prefix)
+		indexList = append(indexList, types.DesanitizeIndex(safeIndex))
 	}
 
 	return indexList
@@ -67,7 +67,7 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 // GetAllEntryVersions returns a list of all versions (blocks) of an entry.
 // If stale == true, then the output will include stale versions (for testing).
 func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
-	safeIndex, err := sanitizeIndex(index)
+	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
 		utils.LavaError(ctx, ctx.Logger(), "GetAllEntryVersions", details, "invalid non-ascii entry")

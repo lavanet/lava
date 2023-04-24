@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -340,13 +341,15 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 
 	// use the subscription and the project
-	keeper.ChargeSubscription(ts.ctx, creator, 1000)
+	keeper.ChargeComputeUnitsToSubscription(ts.ctx, creator, 1000)
 	require.Equal(t, sub.PrevCuLeft, sub.MonthCuTotal-1000)
-	err = projectKeeper.AddComputeUnitsToProject(ts.ctx, creator, block1, 1000)
+	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	require.Nil(t, err)
+	err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, 1000)
 	require.Nil(t, err)
 
 	// verify that project used the CU
-	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
 
@@ -355,7 +358,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	// force fixation entry (by adding project key)
 	projKey := []projectstypes.ProjectKey{
 		{
-			Key: common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
+			Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
 			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
 		},
 	}
@@ -493,6 +496,70 @@ func TestPrice(t *testing.T) {
 			// TODO: remove when RemoveSubscriptions properly removes projects
 			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
 			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
+		})
+	}
+}
+
+func TestAddProjectToSubscription(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
+	plan := ts.plans[0]
+
+	subPayer := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	consumer := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	regularAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+
+	subPayerAddr := subPayer.Addr.String()
+	consumerAddr := consumer.Addr.String()
+	regularAccountAddr := regularAccount.Addr.String()
+
+	err := keeper.CreateSubscription(ts.ctx, subPayerAddr, consumerAddr, plan.Index, 1, "")
+	require.Nil(t, err)
+
+	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
+	longProjectName := strings.Repeat(defaultProjectName, projectstypes.MAX_PROJECT_NAME_LEN)
+
+	projectDescription := "test project"
+	longProjectDescription := strings.Repeat(projectDescription, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
+
+	template := []struct {
+		name               string
+		subscription       string
+		anotherAdmin       string
+		projectName        string
+		projectDescription string
+		success            bool
+	}{
+		{"project admin = regular account", consumerAddr, regularAccountAddr, "test1", projectDescription, true},
+		{"project admin = subscription payer account", consumerAddr, subPayerAddr, "test2", projectDescription, true},
+		{"bad subscription account (regular account)", regularAccountAddr, consumerAddr, "test4", projectDescription, false},
+		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", projectDescription, false},
+		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, projectDescription, false},
+		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, projectDescription, false},
+		{"bad projectDescription (too long)", consumerAddr, regularAccountAddr, "test6", longProjectDescription, false},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			projectData := projectstypes.ProjectData{
+				Name:        tt.projectName,
+				Description: tt.projectDescription,
+				Enabled:     true,
+				ProjectKeys: []projectstypes.ProjectKey{{
+					Key:   tt.anotherAdmin,
+					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+					Vrfpk: "",
+				}},
+			}
+			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)
+			if tt.success {
+				require.Nil(t, err)
+				proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subscription, tt.projectName), uint64(ts.ctx.BlockHeight()))
+				require.Nil(t, err)
+				require.Equal(t, tt.subscription, proj.Subscription)
+			} else {
+				require.NotNil(t, err)
+			}
 		})
 	}
 }
