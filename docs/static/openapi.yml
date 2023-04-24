@@ -31768,6 +31768,11 @@ paths:
                                 title: >-
                                   default value when set allows parsing failures
                                   to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -31834,6 +31839,11 @@ paths:
                                       title: >-
                                         default value when set allows parsing
                                         failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                           reserved:
                             type: object
                             properties:
@@ -31890,6 +31900,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32114,6 +32129,9 @@ paths:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32180,6 +32198,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                         reserved:
                           type: object
                           properties:
@@ -32235,6 +32258,11 @@ paths:
                                   title: >-
                                     default value when set allows parsing
                                     failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -32382,6 +32410,11 @@ paths:
                                 title: >-
                                   default value when set allows parsing failures
                                   to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -32448,6 +32481,11 @@ paths:
                                       title: >-
                                         default value when set allows parsing
                                         failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                           reserved:
                             type: object
                             properties:
@@ -32504,6 +32542,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32728,6 +32771,9 @@ paths:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32794,6 +32840,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                         reserved:
                           type: object
                           properties:
@@ -32849,6 +32900,11 @@ paths:
                                   title: >-
                                     default value when set allows parsing
                                     failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -56087,6 +56143,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -56120,6 +56179,9 @@ definitions:
         title: >-
           default value when set allows parsing failures to assume the default
           value
+      encoding:
+        type: string
+        title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -56190,6 +56252,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
     properties:
@@ -56246,6 +56311,9 @@ definitions:
                         title: >-
                           default value when set allows parsing failures to
                           assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
                   compute_units:
                     type: string
                     format: uint64
@@ -56311,6 +56379,9 @@ definitions:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                   reserved:
                     type: object
                     properties:
@@ -56365,6 +56436,9 @@ definitions:
                             title: >-
                               default value when set allows parsing failures to
                               assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
             enabled:
               type: boolean
             reliability_threshold:
@@ -56502,6 +56576,9 @@ definitions:
                       title: >-
                         default value when set allows parsing failures to assume
                         the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
                 compute_units:
                   type: string
                   format: uint64
@@ -56566,6 +56643,9 @@ definitions:
                             title: >-
                               default value when set allows parsing failures to
                               assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
                 reserved:
                   type: object
                   properties:
@@ -56620,6 +56700,9 @@ definitions:
                           title: >-
                             default value when set allows parsing failures to
                             assume the default value
+                        encoding:
+                          type: string
+                          title: 'used to parse byte responses: base64,hex,bech32'
           enabled:
             type: boolean
           reliability_threshold:
@@ -56766,6 +56849,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
       compute_units:
         type: string
         format: uint64
@@ -56830,6 +56916,9 @@ definitions:
                   title: >-
                     default value when set allows parsing failures to assume the
                     default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
       reserved:
         type: object
         properties:
@@ -56884,6 +56973,9 @@ definitions:
                 title: >-
                   default value when set allows parsing failures to assume the
                   default value
+              encoding:
+                type: string
+                title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -56935,6 +57027,9 @@ definitions:
                   title: >-
                     default value when set allows parsing failures to assume the
                     default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
             compute_units:
               type: string
               format: uint64
@@ -56999,6 +57094,9 @@ definitions:
                         title: >-
                           default value when set allows parsing failures to
                           assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
             reserved:
               type: object
               properties:
@@ -57053,6 +57151,9 @@ definitions:
                       title: >-
                         default value when set allows parsing failures to assume
                         the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
       enabled:
         type: boolean
       reliability_threshold:

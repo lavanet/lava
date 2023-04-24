@@ -3,6 +3,9 @@ package parser
 import (
 	"reflect"
 	"testing"
+
+	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/stretchr/testify/require"
 )
 
 // TestAppendInterfaceToInterfaceArray tests append interface function
@@ -90,4 +93,17 @@ func TestParseArrayOfInterfaces(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseResponseByEncoding(t *testing.T) {
+	type data struct {
+		bytes    []byte
+		encoding string
+	}
+	testData := []data{{bytes: []byte("9291EDC036AE254F9A6E0237F0EF13C452E7F08722E8DBD68B2F34CC8132C91D"), encoding: spectypes.EncodingHex}, {bytes: []byte("kpHtwDauJU+abgI38O8TxFLn8Ici6NvWiy80zIEyyR0="), encoding: spectypes.EncodingBase64}}
+	result0, err := parseResponseByEncoding(testData[0].bytes, testData[0].encoding)
+	require.NoError(t, err)
+	result1, err := parseResponseByEncoding(testData[1].bytes, testData[1].encoding)
+	require.NoError(t, err)
+	require.Equal(t, result0, result1)
 }

@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -125,8 +127,38 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 }
 
 // this function returns the block that was requested,
-func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser) ([]interface{}, error) {
-	return Parse(rpcInput, resultParser, PARSE_RESULT)
+func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser) (string, error) {
+	parsedResults, err := Parse(rpcInput, resultParser, PARSE_RESULT)
+	if err != nil {
+		return "", err
+	}
+	rawResult, ok := parsedResults[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, utils.Attribute{Key: "blockData", Value: parsedResults[spectypes.DEFAULT_PARSED_RESULT_INDEX]})
+	}
+	return parseResponseByEncoding([]byte(rawResult), resultParser.Encoding)
+}
+
+// align hash encoding to base64 string, to save up on space and allow comparisons
+func parseResponseByEncoding(rawResult []byte, encoding string) (string, error) {
+	switch encoding {
+	case spectypes.EncodingBase64:
+		return string(rawResult), nil
+	case spectypes.EncodingHex:
+		hexString := strings.TrimPrefix(string(rawResult), "0x") // some protocols return 0x in their hex responses
+		if len(hexString)%2 != 0 {
+			// some hashes are hex but can't be encoded as base 64 without passing
+			hexString = "0" + hexString
+		}
+		hexBytes, err := hex.DecodeString(hexString)
+		if err != nil {
+			return "", utils.LavaFormatError("tried decoding a hex response in parseResponseByEncoding but failed", err, utils.Attribute{Key: "data", Value: string(hexString)})
+		}
+		return base64.StdEncoding.EncodeToString(hexBytes), nil
+	default:
+		return string(rawResult), nil
+	}
+
 }
 
 // Move to RPCInput
