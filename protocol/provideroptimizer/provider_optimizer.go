@@ -136,7 +136,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 	return latencyScore*latencyWeight+syncScore*(1-latencyWeight) > latencyScoreCurrent*latencyWeight+syncScoreCurrent*(1-latencyWeight)
 }
 
-func (po *ProviderOptimizer) calculateSyncScore(SyncScore score.ScoreStore) float64 {
+func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) float64 {
 	// TODO: do the same as latency score
 	return 1
 }

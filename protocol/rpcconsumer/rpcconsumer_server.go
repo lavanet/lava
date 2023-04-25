@@ -273,7 +273,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			reportedProviders := sessionInfo.ReportedProviders
 
 			relayRequest, err := lavaprotocol.ConstructRelayRequest(ctx, privKey, lavaChainID, chainID, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
-
 			if err != nil {
 				responses <- &relayResponse{
 					relayResult: localRelayResult,
@@ -367,8 +366,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				relayResult: localRelayResult,
 				err:         err,
 			}
-			return
-
 		}(providerPublicAddress, sessionInfo)
 	}
 
@@ -378,36 +375,33 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		responsesReceived := 0
 		relayReturned := false
 		for {
-			select {
-			case response := <-responses:
-				// increase responses received
-				fmt.Println("Respons received", response.relayResult.ProviderAddress, response.err)
-				responsesReceived++
-				if response.err == nil && relayReturned == false {
-					// Return the first successful response
-					fmt.Println("Returned response")
+			response := <-responses
+			// increase responses received
+			fmt.Println("Respons received", response.relayResult.ProviderAddress, response.err)
+			responsesReceived++
+			if response.err == nil && !relayReturned {
+				// Return the first successful response
+				fmt.Println("Returned response")
+				result <- response
+				relayReturned = true
+			}
+
+			if responsesReceived == len(sessions) {
+				// Return the last response if all failed before if it wasn't returned
+				if !relayReturned {
+					fmt.Println("Returned last response")
 					result <- response
-					relayReturned = true
 				}
 
-				if responsesReceived == len(sessions) {
-					// Return the last response if all failed before if it wasn't returned
-					if relayReturned == false {
-						fmt.Println("Returned last reponse")
-						result <- response
-					}
-
-					// if it was returned just close this go routine
-					fmt.Println("Closed all routines")
-					return
-				}
+				// if it was returned just close this go routine
+				fmt.Println("Closed all routines")
+				return
 			}
 		}
 	}()
 
 	response := <-result
 	return response.relayResult, response.err
-
 }
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *lavaprotocol.RelayResult, relayTimeout time.Duration) (relayResultRet *lavaprotocol.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {

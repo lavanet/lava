@@ -19,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/common"
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -108,7 +107,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			if !exists {
 				// doesn't exist for this chain create a new one
 				strategy := provideroptimizer.STRATEGY_BALANCED
-				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+				baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 				optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
 				optimizers.Store(rpcEndpoint.ChainID, optimizer)
 			} else {
