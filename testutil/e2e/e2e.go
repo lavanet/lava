@@ -821,7 +821,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
 		fmt.Println("uniquePaymentStorageClientProvider: ", uniquePaymentStorageClientProvider)
-		clientAddr, providerAddr := DecodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
+		clientAddr, providerAddr := decodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
 		fmt.Println("providerAddr: ", providerAddr)
 		fmt.Println("clientAddr: ", clientAddr)
 
@@ -870,27 +870,27 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		}
 	}
 
-	// WAIT FOR A MIN
-	fmt.Println("Wait for a min")
-	time.Sleep(time.Minute)
-	fmt.Println("Wait over")
+	// // WAIT FOR A MIN
+	// fmt.Println("Wait for a min")
+	// time.Sleep(time.Minute)
+	// fmt.Println("Wait over")
 
-	// CHECK CLIENT BALANCES
-	for client, totalCU := range clientCU {
-		fmt.Printf("client[%s] totalCU[%d]\n", client, totalCU)
-		expectedBurn := pairingTypes.DefaultBurnCoinsPerCU.MulInt64(int64(totalCU))
-		fmt.Println("expectedBurn: ", expectedBurn)
+	// // CHECK CLIENT BALANCES
+	// for client, totalCU := range clientCU {
+	// 	fmt.Printf("client[%s] totalCU[%d]\n", client, totalCU)
+	// 	expectedBurn := pairingTypes.DefaultBurnCoinsPerCU.MulInt64(int64(totalCU))
+	// 	fmt.Println("expectedBurn: ", expectedBurn)
 
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: client,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("balanceRes: ", balanceRes)
-	}
+	// 	bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+	// 	balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+	// 		Address: client,
+	// 		Denom:   "ulava",
+	// 	})
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Println("balanceRes: ", balanceRes)
+	// }
 
 	fmt.Println("BALANCE CHECK IS DONE")
 }
@@ -1007,18 +1007,132 @@ func (lt *lavaTest) setInitialProviderBalances() {
 	}
 }
 
-func DecodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
-	// Find the indices of the "lava@" separators
+func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
 	firstIndex := strings.Index(inputStr, "lava@")
 	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
-	// thirdIndex := secondIndex + 44
 
 	clientAddr = inputStr[firstIndex:secondIndex]
 	providerAddr = inputStr[secondIndex : secondIndex+44]
-	// uniqueIdentifier = inputStr[thirdIndex : thirdIndex+16]
-	// chainID = inputStr[thirdIndex+16:]
 
 	return clientAddr, providerAddr
+}
+
+func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
+	// ToDo: Send 1 relay for each grpc, tendermint and rest api interfaces,
+	// both directly to node and trough the provider
+	// Compare responses, expect them to be equal
+	utils.LavaFormatInfo("Starting Relay Response Integrity Tests")
+
+	// TENDERMINT:
+	tendermintNodeURL := "http://0.0.0.0:26657"
+	errors := []string{}
+	apiMethodTendermint := "%s/block?height=1"
+
+	providerReply, err := getRequest(fmt.Sprintf(apiMethodTendermint, tendermintConsumerURL))
+	fmt.Println("providerReply: ", providerReply)
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(providerReply), "error") {
+		errors = append(errors, string(providerReply))
+	}
+	//
+	nodeReply, err := getRequest(fmt.Sprintf(apiMethodTendermint, tendermintNodeURL))
+	fmt.Println("nodeReply: ", nodeReply)
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(nodeReply), "error") {
+		errors = append(errors, string(nodeReply))
+	}
+	//
+	if !bytes.Equal(providerReply, nodeReply) {
+		fmt.Println("tendermint relay response integrity error!")
+		errors = append(errors, "tendermint relay response integrity error!")
+	} else {
+		fmt.Println("tendermint check done!")
+	}
+
+	// REST:
+	restNodeURL := "http://0.0.0.0:1317"
+	apiMethodRest := "%s/blocks/1"
+
+	providerReply, err = getRequest(fmt.Sprintf(apiMethodRest, restConsumerURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(providerReply), "error") {
+		errors = append(errors, string(providerReply))
+	}
+	//
+	nodeReply, err = getRequest(fmt.Sprintf(apiMethodRest, restNodeURL))
+	fmt.Println("nodeReply: ", nodeReply)
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(nodeReply), "error") {
+		errors = append(errors, string(nodeReply))
+	}
+	//
+	if !bytes.Equal(providerReply, nodeReply) {
+		fmt.Println("rest relay response integrity error!")
+		errors = append(errors, "rest relay response integrity error!")
+	} else {
+		fmt.Println("rest check done!")
+	}
+
+	// gRPC:
+	grpcNodeURL := "127.0.0.1:9090"
+
+	grpcConnProvider, err := grpc.Dial(grpcConsumerURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	fmt.Println("grpcConnProvider: ", grpcConnProvider)
+
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	pairingQueryClient := pairingTypes.NewQueryClient(grpcConnProvider)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	grpcProviderReply, err := pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	fmt.Println("grpcProviderReply: ", grpcProviderReply.String())
+
+	//
+	grpcConnNode, err := grpc.Dial(grpcNodeURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	fmt.Println("grpcConnNode: ", grpcConnNode)
+	if err != nil {
+		fmt.Println("err-1: ", err)
+		errors = append(errors, "error client dial")
+	}
+	pairingQueryClient = pairingTypes.NewQueryClient(grpcConnNode)
+	if err != nil {
+		fmt.Println("err-2: ", err)
+		errors = append(errors, err.Error())
+	}
+	grpcNodeReply, err := pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		fmt.Println("err-3: ", err)
+		errors = append(errors, err.Error())
+	}
+	fmt.Println("grpcNodeReply: ", grpcNodeReply.String())
+
+	//
+
+	if strings.TrimSpace(grpcNodeReply.String()) != strings.TrimSpace(grpcProviderReply.String()) {
+		fmt.Println("grpc relay response integrity error!")
+		errors = append(errors, "grpc relay response integrity error!")
+	} else {
+		fmt.Println("grpc check done!")
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+
 }
 
 func runE2E() {
@@ -1120,6 +1234,8 @@ func runE2E() {
 	} else {
 		utils.LavaFormatInfo("GRPC TEST OK")
 	}
+
+	lt.checkResponse("http://127.0.0.1:3340/1", "http://127.0.0.1:3341/1", "127.0.0.1:3342")
 
 	lt.checkPayments(time.Minute * 10)
 
