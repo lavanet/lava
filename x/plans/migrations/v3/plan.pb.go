@@ -24,7 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type Plan struct {
+type PlanV3 struct {
 	Index                    string     `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
 	Block                    uint64     `protobuf:"varint,3,opt,name=block,proto3" json:"block,omitempty"`
 	Price                    types.Coin `protobuf:"bytes,4,opt,name=price,proto3" json:"price"`
@@ -38,16 +38,16 @@ type Plan struct {
 	AnnualDiscountPercentage uint64     `protobuf:"varint,13,opt,name=annual_discount_percentage,json=annualDiscountPercentage,proto3" json:"annual_discount_percentage,omitempty"`
 }
 
-func (m *Plan) Reset()         { *m = Plan{} }
-func (m *Plan) String() string { return proto.CompactTextString(m) }
-func (*Plan) ProtoMessage()    {}
-func (*Plan) Descriptor() ([]byte, []int) {
+func (m *PlanV3) Reset()         { *m = PlanV3{} }
+func (m *PlanV3) String() string { return proto.CompactTextString(m) }
+func (*PlanV3) ProtoMessage()    {}
+func (*PlanV3) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e5909a10cd0e3497, []int{0}
 }
-func (m *Plan) XXX_Unmarshal(b []byte) error {
+func (m *PlanV3) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Plan) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *PlanV3) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Plan.Marshal(b, m, deterministic)
 	} else {
@@ -59,89 +59,89 @@ func (m *Plan) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Plan) XXX_Merge(src proto.Message) {
+func (m *PlanV3) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Plan.Merge(m, src)
 }
-func (m *Plan) XXX_Size() int {
+func (m *PlanV3) XXX_Size() int {
 	return m.Size()
 }
-func (m *Plan) XXX_DiscardUnknown() {
+func (m *PlanV3) XXX_DiscardUnknown() {
 	xxx_messageInfo_Plan.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Plan proto.InternalMessageInfo
 
-func (m *Plan) GetIndex() string {
+func (m *PlanV3) GetIndex() string {
 	if m != nil {
 		return m.Index
 	}
 	return ""
 }
 
-func (m *Plan) GetBlock() uint64 {
+func (m *PlanV3) GetBlock() uint64 {
 	if m != nil {
 		return m.Block
 	}
 	return 0
 }
 
-func (m *Plan) GetPrice() types.Coin {
+func (m *PlanV3) GetPrice() types.Coin {
 	if m != nil {
 		return m.Price
 	}
 	return types.Coin{}
 }
 
-func (m *Plan) GetComputeUnits() uint64 {
+func (m *PlanV3) GetComputeUnits() uint64 {
 	if m != nil {
 		return m.ComputeUnits
 	}
 	return 0
 }
 
-func (m *Plan) GetComputeUnitsPerEpoch() uint64 {
+func (m *PlanV3) GetComputeUnitsPerEpoch() uint64 {
 	if m != nil {
 		return m.ComputeUnitsPerEpoch
 	}
 	return 0
 }
 
-func (m *Plan) GetMaxProvidersToPair() uint64 {
+func (m *PlanV3) GetMaxProvidersToPair() uint64 {
 	if m != nil {
 		return m.MaxProvidersToPair
 	}
 	return 0
 }
 
-func (m *Plan) GetAllowOveruse() bool {
+func (m *PlanV3) GetAllowOveruse() bool {
 	if m != nil {
 		return m.AllowOveruse
 	}
 	return false
 }
 
-func (m *Plan) GetOveruseRate() uint64 {
+func (m *PlanV3) GetOveruseRate() uint64 {
 	if m != nil {
 		return m.OveruseRate
 	}
 	return 0
 }
 
-func (m *Plan) GetDescription() string {
+func (m *PlanV3) GetDescription() string {
 	if m != nil {
 		return m.Description
 	}
 	return ""
 }
 
-func (m *Plan) GetType() string {
+func (m *PlanV3) GetType() string {
 	if m != nil {
 		return m.Type
 	}
 	return ""
 }
 
-func (m *Plan) GetAnnualDiscountPercentage() uint64 {
+func (m *PlanV3) GetAnnualDiscountPercentage() uint64 {
 	if m != nil {
 		return m.AnnualDiscountPercentage
 	}
@@ -149,7 +149,7 @@ func (m *Plan) GetAnnualDiscountPercentage() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*Plan)(nil), "lavanet.lava.plans.Plan")
+	proto.RegisterType((*PlanV3)(nil), "lavanet.lava.plans.PlanV3")
 }
 
 func init() { proto.RegisterFile("plans/plan.proto", fileDescriptor_e5909a10cd0e3497) }
@@ -186,14 +186,14 @@ var fileDescriptor_e5909a10cd0e3497 = []byte{
 	0xc2, 0x6c, 0x02, 0x00, 0x00,
 }
 
-func (this *Plan) Equal(that interface{}) bool {
+func (this *PlanV3) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*Plan)
+	that1, ok := that.(*PlanV3)
 	if !ok {
-		that2, ok := that.(Plan)
+		that2, ok := that.(PlanV3)
 		if ok {
 			that1 = &that2
 		} else {
@@ -240,7 +240,7 @@ func (this *Plan) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (m *Plan) Marshal() (dAtA []byte, err error) {
+func (m *PlanV3) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -250,12 +250,12 @@ func (m *Plan) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Plan) MarshalTo(dAtA []byte) (int, error) {
+func (m *PlanV3) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Plan) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *PlanV3) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -345,7 +345,7 @@ func encodeVarintPlan(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *Plan) Size() (n int) {
+func (m *PlanV3) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -395,7 +395,7 @@ func sovPlan(x uint64) (n int) {
 func sozPlan(x uint64) (n int) {
 	return sovPlan(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *Plan) Unmarshal(dAtA []byte) error {
+func (m *PlanV3) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {

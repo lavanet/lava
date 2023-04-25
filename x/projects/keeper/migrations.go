@@ -35,12 +35,12 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	for _, projectIndex := range projectIndices {
 		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
 		for _, block := range blocks {
-			var oldProjectStruct v3.Project
+			var oldProjectStruct v3.ProjectV3
 			if found := m.keeper.projectsFS.FindEntry(ctx, projectIndex, block, &oldProjectStruct); !found {
 				return fmt.Errorf("could not find project with index %s", projectIndex)
 			}
 
-			// convert project keys from type v3.ProjectKey to types.ProjectKey
+			// convert project keys from type v3.ProjectKeyV3 to types.ProjectKey
 			newProjectKeys := []types.ProjectKey{}
 			for _, oldProjectKey := range oldProjectStruct.ProjectKeys {
 				newProjectKey := types.ProjectKey{
@@ -57,7 +57,7 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 				}
 			}
 
-			// convert chainPolicies from type v3.ChainPolicy to types.Policy
+			// convert chainPolicies from type v3.ChainPolicyV3 to types.Policy
 			var newChainPolicies []types.ChainPolicy
 			for _, oldChainPolicy := range oldProjectStruct.Policy.ChainPolicies {
 				newChainPolicies = append(newChainPolicies, types.ChainPolicy{
@@ -66,7 +66,7 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 				})
 			}
 
-			// convert policy from type v3.Policy to types.Policy
+			// convert policy from type v3.PolicyV3 to types.Policy
 			newPolicy := types.Policy{
 				ChainPolicies:      newChainPolicies,
 				GeolocationProfile: oldProjectStruct.Policy.GeolocationProfile,
@@ -75,7 +75,7 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 				MaxProvidersToPair: oldProjectStruct.Policy.MaxProvidersToPair,
 			}
 
-			// convert project from type v3.Project to types.Project
+			// convert project from type v3.ProjectV3 to types.Project
 			newProjectStruct := types.Project{
 				Index:              oldProjectStruct.Index,
 				Subscription:       oldProjectStruct.Subscription,
@@ -88,6 +88,25 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 			}
 
 			err := m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &newProjectStruct)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	developerDataIndices := m.keeper.developerKeysFS.GetAllEntryIndices(ctx)
+	for _, developerDataIndex := range developerDataIndices {
+		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex, true)
+		for _, block := range blocks {
+			var oldDeveloperDataStruct v3.ProtoDeveloperDataV3
+			m.keeper.developerKeysFS.FindEntry(ctx, developerDataIndex, block, &oldDeveloperDataStruct)
+
+			newDeveloperData := types.ProtoDeveloperData{
+				ProjectID: oldDeveloperDataStruct.ProjectID,
+				Vrfpk:     oldDeveloperDataStruct.Vrfpk,
+			}
+
+			err := m.keeper.developerKeysFS.ModifyEntry(ctx, developerDataIndex, block, &newDeveloperData)
 			if err != nil {
 				return err
 			}

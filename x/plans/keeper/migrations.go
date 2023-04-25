@@ -34,7 +34,7 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	for _, planIndex := range planIndices {
 		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex, true)
 		for _, block := range blocks {
-			var oldPlanStruct v3.Plan
+			var oldPlanStruct v3.PlanV3
 			if found := m.keeper.plansFS.FindEntry(ctx, planIndex, block, &oldPlanStruct); !found {
 				return fmt.Errorf("could not find plan with index %s", planIndex)
 			}
