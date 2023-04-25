@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	// authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	// sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -838,6 +840,52 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 	// CHECK PROVIDER BALANCES:
 	for provider, totalCU := range providerCU {
+		idx := 0
+		// Check QoS report:
+		// providerAcc, err := sdk.AccAddressFromBech32(provider)
+		// authClient := authTypes.NewQueryClient(lt.grpcConn)
+		// accountsRes, err := authClient.Accounts(context.Background(), &authTypes.QueryAccountsRequest{})
+		// if err != nil {
+		// 	panic(err)
+		// }
+		// for k, v := range accountsRes.GetAccounts() {
+		// 	fmt.Println("Key: ", k)
+		// 	var parsedData string
+		// 	err := json.Unmarshal(v.Value, &parsedData)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		// 	fmt.Println("Value: ", parsedData)
+		// }
+		logName := "12_QoS" + fmt.Sprintf("%02d", idx)
+		lt.logs[logName] = new(bytes.Buffer)
+
+		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
+		cmd := exec.CommandContext(context.Background(), "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(txQueryCommand, " ")
+		cmd.Stdout = lt.logs[logName]
+		cmd.Stderr = lt.logs[logName]
+
+		err := cmd.Start()
+		if err != nil {
+			fmt.Println("cmd error!!!")
+		}
+		err = cmd.Wait()
+		if err != nil {
+			fmt.Println("cmd wait error!!!")
+		}
+		buf := []byte{}
+		result := cmd.Stdout
+		fmt.Println("result is: ", result)
+		_, error := result.Write(buf)
+		if error != nil {
+			fmt.Println("cmd wait error!!!")
+		}
+
+		lt.commands[logName] = cmd
+
+		//
 		fmt.Printf("provider[%s] totalCU[%d]\n", provider, totalCU)
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
@@ -868,6 +916,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 				}
 			}
 		}
+		idx++
 	}
 
 	// // WAIT FOR A MIN
