@@ -364,8 +364,10 @@
                                     "0",
                                     "hash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "hex"
                             }
+                            
                         }
                     },
                     {
