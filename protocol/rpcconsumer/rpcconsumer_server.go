@@ -264,6 +264,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		go func(providerPublicAddress string, sessionInfo *SessionInfo) {
 			fmt.Println("Opened new go routine for provider: ", providerPublicAddress)
 
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+			defer goroutineCtxCancel()
+
 			localRelayResult := &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
 			localRelayRequestData := *relayRequestData
 
@@ -272,7 +275,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			epoch := sessionInfo.Epoch
 			reportedProviders := sessionInfo.ReportedProviders
 
-			relayRequest, err := lavaprotocol.ConstructRelayRequest(ctx, privKey, lavaChainID, chainID, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
+			relayRequest, err := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainID, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 			if err != nil {
 				responses <- &relayResponse{
 					relayResult: localRelayResult,
@@ -284,7 +287,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			endpointClient := *singleConsumerSession.Endpoint.Client
 
 			if isSubscription {
-				localRelayResult, err = rpccs.relaySubscriptionInner(ctx, endpointClient, singleConsumerSession, localRelayResult)
+				localRelayResult, err = rpccs.relaySubscriptionInner(goroutineCtx, endpointClient, singleConsumerSession, localRelayResult)
 				if err != nil {
 					responses <- &relayResponse{
 						relayResult: localRelayResult,
@@ -297,7 +300,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			// try using cache before sending relay
 			var reply *pairingtypes.RelayReply
 
-			reply, err = rpccs.cache.GetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+			reply, err = rpccs.cache.GetEntry(goroutineCtx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 			if err == nil && reply != nil {
 				// Info was fetched from cache, so we don't need to change the state
 				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
@@ -321,7 +324,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 			}
 			relayTimeout := extraRelayTimeout + common.GetTimePerCu(singleConsumerSession.LatestRelayCu) + common.AverageWorldLatency
-			localRelayResult, relayLatency, err, backoff := rpccs.relayInner(ctx, singleConsumerSession, localRelayResult, relayTimeout)
+			localRelayResult, relayLatency, err, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout)
 			if err != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
 					backOffDuration := 0 * time.Second
@@ -332,7 +335,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// relay failed need to fail the session advancement
 					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 					if errReport != nil {
-						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
+						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: err.Error()})
 					}
 				}
 				go failRelaySession(err, backoff)
