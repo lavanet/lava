@@ -263,7 +263,7 @@
                         ]
                     },
                     {
-                        "name": "sui_getCheckpointSummary",
+                        "name": "sui_getCheckpoint",
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -287,13 +287,14 @@
                         ],
                         "parsing": {
                             "function_tag": "getBlockByNumber",
-                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpointSummary\",\"params\":[%d],\"id\":1}",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpoint\",\"params\":[\"%d\"],\"id\":1}",
                             "result_parsing": {
                                 "parser_arg": [
                                     "0",
-                                    "content_digest"
+                                    "digest"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "base64"
                             }
                         }
                     },
