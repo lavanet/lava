@@ -26,37 +26,44 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	return nil
 }
 
+// Migrate3to4 implements protobuf migration from v3 to v4:
+// Now the plan protobuf has a plan policy
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	planIndices := m.keeper.GetAllPlanIndices(ctx)
 
 	for _, planIndex := range planIndices {
-		var oldPlanStruct v3.Plan
-		if found := m.keeper.plansFS.FindEntry(ctx, planIndex, uint64(ctx.BlockHeight()), &oldPlanStruct); !found {
-			return fmt.Errorf("could not find plan with index %s", planIndex)
-		}
+		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex, true)
+		for _, block := range blocks {
+			var oldPlanStruct v3.Plan
+			if found := m.keeper.plansFS.FindEntry(ctx, planIndex, block, &oldPlanStruct); !found {
+				return fmt.Errorf("could not find plan with index %s", planIndex)
+			}
 
-		planPolicy := projecttypes.Policy{
-			GeolocationProfile: uint64(1),
-			TotalCuLimit:       oldPlanStruct.ComputeUnits,
-			EpochCuLimit:       oldPlanStruct.ComputeUnitsPerEpoch,
-			MaxProvidersToPair: oldPlanStruct.MaxProvidersToPair,
-		}
+			// create policy struct
+			planPolicy := projecttypes.Policy{
+				GeolocationProfile: uint64(1),
+				TotalCuLimit:       oldPlanStruct.ComputeUnits,
+				EpochCuLimit:       oldPlanStruct.ComputeUnitsPerEpoch,
+				MaxProvidersToPair: oldPlanStruct.MaxProvidersToPair,
+			}
 
-		newPlanStruct := types.Plan{
-			Index:                    oldPlanStruct.Index,
-			Block:                    oldPlanStruct.Block,
-			Price:                    oldPlanStruct.Price,
-			OveruseRate:              oldPlanStruct.OveruseRate,
-			AllowOveruse:             oldPlanStruct.AllowOveruse,
-			Description:              oldPlanStruct.Description,
-			Type:                     oldPlanStruct.Type,
-			AnnualDiscountPercentage: oldPlanStruct.AnnualDiscountPercentage,
-			PlanPolicy:               planPolicy,
-		}
+			// convert plan from type v3.Plan to types.Plan
+			newPlanStruct := types.Plan{
+				Index:                    oldPlanStruct.Index,
+				Block:                    oldPlanStruct.Block,
+				Price:                    oldPlanStruct.Price,
+				OveruseRate:              oldPlanStruct.OveruseRate,
+				AllowOveruse:             oldPlanStruct.AllowOveruse,
+				Description:              oldPlanStruct.Description,
+				Type:                     oldPlanStruct.Type,
+				AnnualDiscountPercentage: oldPlanStruct.AnnualDiscountPercentage,
+				PlanPolicy:               planPolicy,
+			}
 
-		err := m.keeper.plansFS.ModifyEntry(ctx, planIndex, uint64(ctx.BlockHeight()), &newPlanStruct)
-		if err != nil {
-			return err
+			err := m.keeper.plansFS.ModifyEntry(ctx, planIndex, block, &newPlanStruct)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
