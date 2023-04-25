@@ -160,7 +160,8 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	if !found {
 		return 0, providerAddress, utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
 	}
-	probeResp, err := (*endpoint.Client).Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
+	client := *endpoint.Client
+	probeResp, err := client.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
 	relayLatency := time.Since(relaySentTime)
 	if err != nil {
 		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})

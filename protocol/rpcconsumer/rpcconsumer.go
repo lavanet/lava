@@ -77,6 +77,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
+	chainMutexes := map[string]*sync.Mutex{}
+	for _, endpoint := range rpcEndpoints {
+		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
+	}
 	var optimizers sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcEndpoints)
@@ -94,7 +98,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				errCh <- err
 				return err
 			}
-			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
+			chainID := rpcEndpoint.ChainID
+			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -103,21 +108,31 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			allowedBlockLagForSync, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 
-			value, exists := optimizers.Load(rpcEndpoint.ChainID)
-			if !exists {
-				// doesn't exist for this chain create a new one
-				strategy := provideroptimizer.STRATEGY_BALANCED
-				baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-				optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
-				optimizers.Store(rpcEndpoint.ChainID, optimizer)
-			} else {
-				var ok bool
-				optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
-				if !ok {
-					err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-					errCh <- err
-					return err
+			getOrCreateOptimizer := func() error {
+				// this is locked so we don't race optimizers creation
+				chainMutexes[chainID].Lock()
+				defer chainMutexes[chainID].Unlock()
+				value, exists := optimizers.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					strategy := provideroptimizer.STRATEGY_BALANCED
+					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+					optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
+					optimizers.Store(chainID, optimizer)
+				} else {
+					var ok bool
+					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
+					if !ok {
+						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
 				}
+				return nil
+			}
+			err = getOrCreateOptimizer()
+			if err != nil {
+				errCh <- err
+				return err
 			}
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
