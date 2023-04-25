@@ -1,28 +1,27 @@
-package common_test
+package common
 
 import (
 	"strconv"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
 	"github.com/stretchr/testify/require"
 )
 
-func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*common.FixationStore) {
+func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*FixationStore) {
 	ctx, cdc := initCtx(t)
 
-	fs := make([]*common.FixationStore, count)
+	fs := make([]*FixationStore, count)
 	for i := 0; i < count; i++ {
 		fixationKey := "mock_fix_" + strconv.Itoa(i)
-		fs[i] = common.NewFixationStore(mockStoreKey, cdc, fixationKey)
+		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey)
 	}
 
 	return ctx, fs
 }
 
-func initCtxAndFixationStore(t *testing.T) (sdk.Context, *common.FixationStore) {
+func initCtxAndFixationStore(t *testing.T) (sdk.Context, *FixationStore) {
 	ctx, fs := initCtxAndFixationStores(t, 1)
 	return ctx, fs[0]
 }

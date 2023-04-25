@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -17,9 +18,10 @@ const (
 )
 
 type NodeUrl struct {
-	Url          string     `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
-	AuthConfig   AuthConfig `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
-	IpForwarding bool       `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
+	Url          string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	AuthConfig   AuthConfig    `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+	IpForwarding bool          `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
+	Timeout      time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
 }
 
 func (url *NodeUrl) String() string {
@@ -45,6 +47,13 @@ func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter
 		peerAddress := grpcPeer.Addr.String()
 		headerSetter(IP_FORWARDING_HEADER_NAME, peerAddress)
 	}
+}
+
+func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if url == nil || url.Timeout <= 0 {
+		return LowerContextTimeout(ctx, timeout)
+	}
+	return LowerContextTimeout(ctx, timeout+url.Timeout)
 }
 
 type AuthConfig struct {

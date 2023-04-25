@@ -31849,6 +31849,11 @@ paths:
                                 title: >-
                                   default value when set allows parsing failures
                                   to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -31915,8 +31920,27 @@ paths:
                                       title: >-
                                         default value when set allows parsing
                                         failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                                 internal_path:
                                   type: string
+                          reserved:
+                            type: object
+                            properties:
+                              deterministic:
+                                type: boolean
+                              local:
+                                type: boolean
+                              subscription:
+                                type: boolean
+                              stateful:
+                                type: integer
+                                format: int64
+                              hanging_api:
+                                type: boolean
                           parsing:
                             type: object
                             properties:
@@ -31959,6 +31983,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32183,6 +32212,9 @@ paths:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32249,8 +32281,27 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                               internal_path:
                                 type: string
+                        reserved:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                            hanging_api:
+                              type: boolean
                         parsing:
                           type: object
                           properties:
@@ -32292,6 +32343,11 @@ paths:
                                   title: >-
                                     default value when set allows parsing
                                     failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -32439,6 +32495,11 @@ paths:
                                 title: >-
                                   default value when set allows parsing failures
                                   to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
                           compute_units:
                             type: string
                             format: uint64
@@ -32505,8 +32566,27 @@ paths:
                                       title: >-
                                         default value when set allows parsing
                                         failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
                                 internal_path:
                                   type: string
+                          reserved:
+                            type: object
+                            properties:
+                              deterministic:
+                                type: boolean
+                              local:
+                                type: boolean
+                              subscription:
+                                type: boolean
+                              stateful:
+                                type: integer
+                                format: int64
+                              hanging_api:
+                                type: boolean
                           parsing:
                             type: object
                             properties:
@@ -32549,6 +32629,11 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32773,6 +32858,9 @@ paths:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         compute_units:
                           type: string
                           format: uint64
@@ -32839,8 +32927,27 @@ paths:
                                     title: >-
                                       default value when set allows parsing
                                       failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
                               internal_path:
                                 type: string
+                        reserved:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                            hanging_api:
+                              type: boolean
                         parsing:
                           type: object
                           properties:
@@ -32882,6 +32989,11 @@ paths:
                                   title: >-
                                     default value when set allows parsing
                                     failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -56247,6 +56359,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
       internal_path:
         type: string
   lavanet.lava.spec.BlockParser:
@@ -56282,6 +56397,9 @@ definitions:
         title: >-
           default value when set allows parsing failures to assume the default
           value
+      encoding:
+        type: string
+        title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -56352,6 +56470,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
     properties:
@@ -56408,6 +56529,9 @@ definitions:
                         title: >-
                           default value when set allows parsing failures to
                           assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
                   compute_units:
                     type: string
                     format: uint64
@@ -56473,8 +56597,25 @@ definitions:
                               title: >-
                                 default value when set allows parsing failures
                                 to assume the default value
+                            encoding:
+                              type: string
+                              title: 'used to parse byte responses: base64,hex,bech32'
                         internal_path:
                           type: string
+                  reserved:
+                    type: object
+                    properties:
+                      deterministic:
+                        type: boolean
+                      local:
+                        type: boolean
+                      subscription:
+                        type: boolean
+                      stateful:
+                        type: integer
+                        format: int64
+                      hanging_api:
+                        type: boolean
                   parsing:
                     type: object
                     properties:
@@ -56515,6 +56656,9 @@ definitions:
                             title: >-
                               default value when set allows parsing failures to
                               assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
             enabled:
               type: boolean
             reliability_threshold:
@@ -56652,6 +56796,9 @@ definitions:
                       title: >-
                         default value when set allows parsing failures to assume
                         the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
                 compute_units:
                   type: string
                   format: uint64
@@ -56716,8 +56863,25 @@ definitions:
                             title: >-
                               default value when set allows parsing failures to
                               assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
                       internal_path:
                         type: string
+                reserved:
+                  type: object
+                  properties:
+                    deterministic:
+                      type: boolean
+                    local:
+                      type: boolean
+                    subscription:
+                      type: boolean
+                    stateful:
+                      type: integer
+                      format: int64
+                    hanging_api:
+                      type: boolean
                 parsing:
                   type: object
                   properties:
@@ -56758,6 +56922,9 @@ definitions:
                           title: >-
                             default value when set allows parsing failures to
                             assume the default value
+                        encoding:
+                          type: string
+                          title: 'used to parse byte responses: base64,hex,bech32'
           enabled:
             type: boolean
           reliability_threshold:
@@ -56904,6 +57071,9 @@ definitions:
             title: >-
               default value when set allows parsing failures to assume the
               default value
+          encoding:
+            type: string
+            title: 'used to parse byte responses: base64,hex,bech32'
       compute_units:
         type: string
         format: uint64
@@ -56968,8 +57138,25 @@ definitions:
                   title: >-
                     default value when set allows parsing failures to assume the
                     default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
             internal_path:
               type: string
+      reserved:
+        type: object
+        properties:
+          deterministic:
+            type: boolean
+          local:
+            type: boolean
+          subscription:
+            type: boolean
+          stateful:
+            type: integer
+            format: int64
+          hanging_api:
+            type: boolean
       parsing:
         type: object
         properties:
@@ -57010,6 +57197,9 @@ definitions:
                 title: >-
                   default value when set allows parsing failures to assume the
                   default value
+              encoding:
+                type: string
+                title: 'used to parse byte responses: base64,hex,bech32'
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -57061,6 +57251,9 @@ definitions:
                   title: >-
                     default value when set allows parsing failures to assume the
                     default value
+                encoding:
+                  type: string
+                  title: 'used to parse byte responses: base64,hex,bech32'
             compute_units:
               type: string
               format: uint64
@@ -57125,8 +57318,25 @@ definitions:
                         title: >-
                           default value when set allows parsing failures to
                           assume the default value
+                      encoding:
+                        type: string
+                        title: 'used to parse byte responses: base64,hex,bech32'
                   internal_path:
                     type: string
+            reserved:
+              type: object
+              properties:
+                deterministic:
+                  type: boolean
+                local:
+                  type: boolean
+                subscription:
+                  type: boolean
+                stateful:
+                  type: integer
+                  format: int64
+                hanging_api:
+                  type: boolean
             parsing:
               type: object
               properties:
@@ -57167,6 +57377,9 @@ definitions:
                       title: >-
                         default value when set allows parsing failures to assume
                         the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
       enabled:
         type: boolean
       reliability_threshold:
