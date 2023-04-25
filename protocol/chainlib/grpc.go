@@ -28,7 +28,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"google.golang.org/grpc"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
@@ -337,7 +336,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
+	err = conn.Invoke(connectCtx, nodeMessage.Path, msg, response)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
 	}

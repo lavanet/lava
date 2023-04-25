@@ -242,6 +242,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 		var tlsConf tls.Config
 		keyPem, certPem := nodeUrl.AuthConfig.GetLoadingCertificateParams()
 		if keyPem != "" && certPem != "" {
+			utils.LavaFormatDebug("Loading certificate from local path", utils.Attribute{Key: "certPem", Value: certPem}, utils.Attribute{Key: "keyPem", Value: keyPem})
 			cert, err := tls.LoadX509KeyPair(certPem, keyPem)
 			if err != nil {
 				utils.LavaFormatError("Failed setting up tls certificate from local path, continuing with dynamic certificates", err)

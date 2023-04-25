@@ -172,3 +172,33 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 	}
 	require.Equal(t, int(conn.usedClients), 0) // checking we dont have clients used
 }
+
+// func TestGrpcSecured(t *testing.T) {
+// 	certPem := "/home/user/cert.pem"
+// 	keyPem := "/home/user/key.pem"
+// 	caPem := "/home/user/cert.pem"
+// 	utils.LavaFormatDebug("Loading certificate from local path", utils.Attribute{Key: "certPem", Value: certPem}, utils.Attribute{Key: "keyPem", Value: keyPem})
+
+// 	clientCert, err := tls.LoadX509KeyPair(certPem, keyPem)
+// 	require.NoError(t, err)
+
+// 	caCert, err := ioutil.ReadFile(caPem)
+// 	require.NoError(t, err)
+// 	caCertPool := x509.NewCertPool()
+// 	caCertPool.AppendCertsFromPEM(caCert)
+
+// 	tlsConf := &tls.Config{
+// 		Certificates: []tls.Certificate{clientCert},
+// 		RootCAs:      caCertPool,
+// 	}
+// 	credentials := credentials.NewTLS(tlsConf)
+// 	ctx := context.Background()
+// 	nctx, cancel := context.WithTimeout(ctx, DialTimeout)
+// 	defer cancel()
+// 	conn, err := grpc.DialContext(nctx, "localhost:443", grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+// 	require.NoError(t, err)
+// 	response := tm.GetLatestBlockResponse{}
+// 	err = conn.Invoke(nctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock", &tm.GetLatestBlockRequest{}, &response)
+// 	require.NoError(t, err)
+// 	fmt.Println(response)
+// }
