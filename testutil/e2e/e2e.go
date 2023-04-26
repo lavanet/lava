@@ -850,11 +850,11 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 		err = cmd.Start()
 		if err != nil {
-			fmt.Println("cmd error!!!")
+			panic("executing auth accounts failed")
 		}
 		err = cmd.Wait()
 		if err != nil {
-			fmt.Println("cmd wait error!!!")
+			panic("executing auth accounts failed")
 		}
 		// fmt.Println("lt.logs[logName] is : ", lt.logs[logName])
 
@@ -876,8 +876,6 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 		lt.commands[logName] = cmd
 
-		//
-		fmt.Printf("provider[%s] totalCU[%d]\n", provider, totalCU)
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
 
@@ -889,28 +887,24 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("balanceRes: ", balanceRes)
 
-		// Compare the balances:
+		// Comparing the balances after payment with the initial balances
 		if providerBalances[provider] != nil {
 			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjust balance checks
 				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
-				fmt.Println("netAmount GETH case for provider: ", netAmount)
 				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
-					panic("PAYMENT CHECK FAILED")
+					panic("PROVIDER PAYMENT CHECK FAILED")
 				}
 			} else {
 				netAmount := balanceRes.GetBalance().Amount.Int64()
-				fmt.Println("netAmount ETH case for provider: ", netAmount)
 				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
-					fmt.Println("ERROR ON LAVA CASE for provider: ", provider)
+					panic("PROVIDER PAYMENT CHECK FAILED")
 				}
 			}
 		}
 		idx++
 	}
-
-	utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR LAVA")
+	utils.LavaFormatInfo("PROVIDER PAYMENT CHECK SUCCESSFUL")
 }
 
 // This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
