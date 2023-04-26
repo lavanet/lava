@@ -14,6 +14,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -43,18 +44,22 @@ func CreateMockSpec() spectypes.Spec {
 }
 
 func CreateMockPlan() plantypes.Plan {
+	policy := projectstypes.Policy{
+		TotalCuLimit:       1000,
+		EpochCuLimit:       100,
+		MaxProvidersToPair: 3,
+		GeolocationProfile: 1,
+	}
 	plan := plantypes.Plan{
 		Index:                    "mockPlan",
 		Description:              "plan for testing",
 		Type:                     "rpc",
 		Block:                    100,
 		Price:                    sdk.NewCoin("ulava", sdk.NewInt(100)),
-		ComputeUnits:             1000,
-		ComputeUnitsPerEpoch:     100,
-		MaxProvidersToPair:       3,
 		AllowOveruse:             true,
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,
+		PlanPolicy:               policy,
 	}
 
 	return plan

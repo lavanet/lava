@@ -13,6 +13,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -1222,4 +1223,82 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	ans, err := ts.keepers.Pairing.EpochPaymentsAll(ts.ctx, &types.QueryAllEpochPaymentsRequest{})
 	require.Nil(t, err)
 	require.Equal(t, 0, len(ans.EpochPayments))
+}
+
+// Test that checks that after the consumer uses some CU it's updated in its project and subscription
+func TestCuUsageInProjectsAndSubscription(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+	subkeeper := ts.keepers.Subscription
+	projKeeper := ts.keepers.Projects
+
+	err := ts.addClient(1)
+	require.Nil(t, err)
+
+	subscriptionOwner := ts.providers[0].Addr.String()
+	projectAdmin1 := ts.clients[0].Addr.String()
+	projectAdmin2 := ts.clients[1].Addr.String()
+
+	err = subkeeper.CreateSubscription(_ctx, subscriptionOwner, subscriptionOwner, ts.plan.Index, 1, "")
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectData := projecttypes.ProjectData{
+		Name:        "proj1",
+		Description: "description",
+		Enabled:     true,
+		ProjectKeys: []projecttypes.ProjectKey{
+			{
+				Key:   projectAdmin1,
+				Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
+			}},
+		Policy: &projecttypes.Policy{
+			GeolocationProfile: uint64(1),
+			MaxProvidersToPair: 3,
+			TotalCuLimit:       1000,
+			EpochCuLimit:       100,
+		},
+	}
+	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
+	require.Nil(t, err)
+
+	projectData.Name = "proj2"
+	projectData.ProjectKeys = []projecttypes.ProjectKey{{
+		Key:   projectAdmin2,
+		Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
+	}}
+	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
+	require.Nil(t, err)
+
+	// create a signed relay request
+	cuSum := uint64(1)
+	QoS := types.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
+	}
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, &QoS)
+
+	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relaySession)
+	require.Nil(t, err)
+
+	// Request payment (helper function validates the balances and verifies if we should get an error through valid)
+	var Relays []*types.RelaySession
+	Relays = append(Relays, relaySession)
+	relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
+
+	sub, found := subkeeper.GetSubscription(_ctx, subscriptionOwner)
+	require.True(t, found)
+
+	proj1, _, err := projKeeper.GetProjectForDeveloper(_ctx, projectAdmin1, uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	require.Equal(t, sub.MonthCuTotal-sub.MonthCuLeft, proj1.UsedCu)
+
+	proj2, _, err := projKeeper.GetProjectForDeveloper(_ctx, projectAdmin2, uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	require.NotEqual(t, sub.MonthCuTotal-sub.MonthCuLeft, proj2.UsedCu)
 }

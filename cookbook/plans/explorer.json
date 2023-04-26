@@ -12,11 +12,13 @@
                     "amount": "5000000000"
                 },
                 "annual_discount_percentage": "0",
-                "compute_units": "10000000",
-                "compute_units_per_epoch": "100000",
-                "max_providers_to_pair": "5",
                 "allow_overuse": false,
-                "overuse_rate": "0"
+                "overuse_rate": "0",
+                "plan_policy": {
+                    "total_cu_limit": "10000000",
+                    "epoch_cu_limit": "100000",
+                    "max_providers_to_pair": "5"
+                }
             }
         ]
     },

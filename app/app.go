@@ -455,6 +455,7 @@ func New(
 		keys[projectsmoduletypes.StoreKey],
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.EpochstorageKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
@@ -469,6 +470,7 @@ func New(
 		app.SpecKeeper,
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
+		app.SubscriptionKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
