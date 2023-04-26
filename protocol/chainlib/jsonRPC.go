@@ -371,7 +371,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
 	if len(internalPaths) == 0 {
-		internalPaths = map[string]struct{}{"": struct{}{}} // add default path
+		internalPaths = map[string]struct{}{"": {}} // add default path
 	}
 	basePath := nodeUrl.Url
 	for path, _ := range internalPaths {
