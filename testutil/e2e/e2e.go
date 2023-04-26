@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/build"
@@ -19,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	// authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -851,32 +851,51 @@ func (lt *lavaTest) checkQoS() error {
 
 	providerIdx := 0
 	for provider := range providerCU {
-		// // Check QoS report:
-		// // Get sequence number of provider
-		// logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
-		// lt.logs[logNameAcc] = new(bytes.Buffer)
+		// Check QoS report:
+		// Get sequence number of provider
+		logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
+		lt.logs[logNameAcc] = new(bytes.Buffer)
 
-		// fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
-		// cmdAcc := exec.CommandContext(context.Background(), "", "")
-		// cmdAcc.Path = lt.lavadPath
-		// cmdAcc.Args = strings.Split(fetchAccCommand, " ")
-		// cmdAcc.Stdout = lt.logs[logNameAcc]
-		// cmdAcc.Stderr = lt.logs[logNameAcc]
-		// err = cmdAcc.Start()
-		// if err != nil {
-		// 	errors = append(errors, fmt.Sprintf("%s", err))
-		// }
-		// err = cmdAcc.Wait()
-		// if err != nil {
-		// 	errors = append(errors, fmt.Sprintf("%s", err))
-		// }
-		// fmt.Println("lt.logs[logNameAcc] is : ", lt.logs[logNameAcc])
+		fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
+		cmdAcc := exec.CommandContext(context.Background(), "", "")
+		cmdAcc.Path = lt.lavadPath
+		cmdAcc.Args = strings.Split(fetchAccCommand, " ")
+		cmdAcc.Stdout = lt.logs[logNameAcc]
+		cmdAcc.Stderr = lt.logs[logNameAcc]
+		err = cmdAcc.Start()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		lt.commands[logNameAcc] = cmdAcc
+		err = cmdAcc.Wait()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		fmt.Println("lt.logs[logNameAcc] is : ", lt.logs[logNameAcc])
 
+		var obj map[string]interface{}
+		err := json.Unmarshal([]byte(lt.logs[logNameAcc].Bytes()), &obj)
+		if err != nil {
+			panic(err)
+		}
+
+		sequence, ok := obj["sequence"].(string)
+		if !ok {
+			panic("sequence field is not a string")
+		}
+		sequenceInt, err := strconv.ParseInt(sequence, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		sequenceInt = sequenceInt - 1
+		sequence = strconv.Itoa(int(sequenceInt))
 		//
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
 		lt.logs[logName] = new(bytes.Buffer)
 
-		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
+		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
+		fmt.Println("txQueryCommand : ", txQueryCommand)
+
 		cmd := exec.CommandContext(context.Background(), "", "")
 		cmd.Path = lt.lavadPath
 		cmd.Args = strings.Split(txQueryCommand, " ")
@@ -901,12 +920,15 @@ func (lt *lavaTest) checkQoS() error {
 				fmt.Println("!!!!!!!!!!!!! QoSScore-2 : ", lines[idx+1])
 				startIndex := strings.Index(lines[idx+1], "\"") + 1
 				endIndex := strings.LastIndex(lines[idx+1], "\"")
-				numberString := lines[idx+1][startIndex:endIndex]
-				number, err := strconv.ParseFloat(numberString, 64)
+				qosScoreStr := lines[idx+1][startIndex:endIndex]
+				qosScore, err := strconv.ParseFloat(qosScoreStr, 64)
 				if err != nil {
 					errors = append(errors, fmt.Sprintf("%s", err))
 				}
-				fmt.Println("QoSScore: ", number)
+				fmt.Println("QoSScore: ", qosScore)
+				if qosScore != 1 {
+					fmt.Println("QoS score is less than 1 !!")
+				}
 			}
 		}
 		providerIdx++
