@@ -846,12 +846,11 @@ func (lt *lavaTest) checkQoS() error {
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	providerCU, err := calculateProviderCU(pairingClient)
 	if err != nil {
-		panic("PROVIDER CU CALCULATION ERROR")
+		panic("Provider CU calculation error!")
 	}
 
 	providerIdx := 0
 	for provider := range providerCU {
-		// Check QoS report:
 		// Get sequence number of provider
 		logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
 		lt.logs[logNameAcc] = new(bytes.Buffer)
@@ -871,30 +870,28 @@ func (lt *lavaTest) checkQoS() error {
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
-		fmt.Println("lt.logs[logNameAcc] is : ", lt.logs[logNameAcc])
 
 		var obj map[string]interface{}
-		err := json.Unmarshal([]byte(lt.logs[logNameAcc].Bytes()), &obj)
+		err := json.Unmarshal((lt.logs[logNameAcc].Bytes()), &obj)
 		if err != nil {
 			panic(err)
 		}
 
 		sequence, ok := obj["sequence"].(string)
 		if !ok {
-			panic("sequence field is not a string")
+			panic("Sequence field is not valid!")
 		}
 		sequenceInt, err := strconv.ParseInt(sequence, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		sequenceInt = sequenceInt - 1
+		sequenceInt--
 		sequence = strconv.Itoa(int(sequenceInt))
 		//
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
 		lt.logs[logName] = new(bytes.Buffer)
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
-		fmt.Println("txQueryCommand : ", txQueryCommand)
 
 		cmd := exec.CommandContext(context.Background(), "", "")
 		cmd.Path = lt.lavadPath
@@ -911,13 +908,10 @@ func (lt *lavaTest) checkQoS() error {
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
-		// fmt.Println("lt.logs[logName] is : ", lt.logs[logName])
 
 		lines := strings.Split(lt.logs[logName].String(), "\n")
 		for idx, line := range lines {
 			if strings.Contains(line, "key: QoSScore") {
-				fmt.Println("!!!!!!!!!!!!! QoSScore-1 : ", line)
-				fmt.Println("!!!!!!!!!!!!! QoSScore-2 : ", lines[idx+1])
 				startIndex := strings.Index(lines[idx+1], "\"") + 1
 				endIndex := strings.LastIndex(lines[idx+1], "\"")
 				qosScoreStr := lines[idx+1][startIndex:endIndex]
@@ -925,14 +919,12 @@ func (lt *lavaTest) checkQoS() error {
 				if err != nil {
 					errors = append(errors, fmt.Sprintf("%s", err))
 				}
-				fmt.Println("QoSScore: ", qosScore)
-				if qosScore != 1 {
-					fmt.Println("QoS score is less than 1 !!")
+				if qosScore < 1 {
+					errors = append(errors, "QoS score is less than 1 !")
 				}
 			}
 		}
 		providerIdx++
-
 	}
 	utils.LavaFormatInfo("QOS CHECK OK")
 
@@ -998,7 +990,6 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	grpcNodeURL := "127.0.0.1:9090"
 
 	grpcConnProvider, err := grpc.Dial(grpcConsumerURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
 	if err != nil {
 		errors = append(errors, "error client dial")
 	}
@@ -1034,14 +1025,12 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 		errors = append(errors, "grpc relay response integrity error!")
 	} else {
 		utils.LavaFormatInfo("GRPC RESPONSE CROSS VERIFICATION OK")
-
 	}
 
 	if len(errors) > 0 {
 		return fmt.Errorf(strings.Join(errors, ",\n"))
 	}
 	return nil
-
 }
 
 // This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
