@@ -3,6 +3,7 @@ package chainlib
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/jsonpb"
@@ -313,12 +314,11 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			if err != nil {
 				return nil, "", nil, err
 			}
-			buf := new(bytes.Buffer)
-			err = (&jsonpb.Marshaler{}).Marshal(buf, msgLocal)
+			jsonBytes, err := marshalJSON(msgLocal)
 			if err != nil {
 				return nil, "", nil, err
 			}
-			reader = buf
+			reader = bytes.NewReader(jsonBytes)
 		} else {
 			reader = bytes.NewReader(nodeMessage.Msg)
 		}
@@ -347,7 +347,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg-hex", Value: hex.EncodeToString(nodeMessage.Msg)})
 	}
 
 	var respBytes []byte
@@ -360,4 +360,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		Data: respBytes,
 	}
 	return reply, "", nil, nil
+}
+
+func marshalJSON(msg proto.Message) ([]byte, error) {
+	if dyn, ok := msg.(*dynamic.Message); ok {
+		return dyn.MarshalJSON()
+	}
+	buf := new(bytes.Buffer)
+	err := (&jsonpb.Marshaler{}).Marshal(buf, msg)
+	return buf.Bytes(), err
 }

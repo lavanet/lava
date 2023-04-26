@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net/http"
-	"os"
 )
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, error)
@@ -39,13 +38,11 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 		if !ok {
 			return status.Error(codes.Unavailable, "unable to get method name")
 		}
-		fmt.Fprintf(os.Stderr, "processing: %s", methodName)
 		var reqBytes []byte
 		err := stream.RecvMsg(&reqBytes)
 		if err != nil {
 			return err
 		}
-
 		respBytes, err := callBack(stream.Context(), methodName[1:], reqBytes) // strip first '/' of the method name
 		if err != nil {
 			return err
