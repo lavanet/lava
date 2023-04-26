@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/lavanet/lava/grpcproxy"
 	"io"
 	"net/http"
 	"strings"
@@ -23,7 +24,6 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -225,7 +225,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return relayReply.Data, nil
 	}
 
-	_, httpServer, err := thirdparty.RegisterServer(apil.endpoint.ChainID, sendRelayCallback)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
