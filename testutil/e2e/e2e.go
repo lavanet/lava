@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	// authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -836,7 +836,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			}
 		}
 	}
-	utils.LavaFormatInfo("PROVIDER BALANCE CHECK AFTER PAYMENT SUCCESSFUL")
+	utils.LavaFormatInfo("PROVIDER BALANCE CHECK AFTER PAYMENT OK")
 }
 
 func (lt *lavaTest) checkQoS() error {
@@ -851,22 +851,29 @@ func (lt *lavaTest) checkQoS() error {
 
 	providerIdx := 0
 	for provider := range providerCU {
-		// Check QoS report:
-		// Get sequence number of provider
-		authClient := authTypes.NewQueryClient(lt.grpcConn)
-		accountsRes, err := authClient.Account(context.Background(), &authTypes.QueryAccountRequest{
-			Address: provider,
-		})
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("%s", err))
-		}
-		fmt.Println("accountsRes : ", accountsRes)
-		fmt.Println("accountsRes.Account : ", accountsRes.Account)
-		fmt.Println("accountsRes.Account.Value : ", accountsRes.Account.Value)
+		// // Check QoS report:
+		// // Get sequence number of provider
+		// logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
+		// lt.logs[logNameAcc] = new(bytes.Buffer)
 
-		fmt.Println("accountsRes Unmarshalled: ")
+		// fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
+		// cmdAcc := exec.CommandContext(context.Background(), "", "")
+		// cmdAcc.Path = lt.lavadPath
+		// cmdAcc.Args = strings.Split(fetchAccCommand, " ")
+		// cmdAcc.Stdout = lt.logs[logNameAcc]
+		// cmdAcc.Stderr = lt.logs[logNameAcc]
+		// err = cmdAcc.Start()
+		// if err != nil {
+		// 	errors = append(errors, fmt.Sprintf("%s", err))
+		// }
+		// err = cmdAcc.Wait()
+		// if err != nil {
+		// 	errors = append(errors, fmt.Sprintf("%s", err))
+		// }
+		// fmt.Println("lt.logs[logNameAcc] is : ", lt.logs[logNameAcc])
 
-		logName := "8_QoS" + fmt.Sprintf("%02d", providerIdx)
+		//
+		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
 		lt.logs[logName] = new(bytes.Buffer)
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
@@ -880,6 +887,7 @@ func (lt *lavaTest) checkQoS() error {
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
+		lt.commands[logName] = cmd
 		err = cmd.Wait()
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
@@ -902,8 +910,9 @@ func (lt *lavaTest) checkQoS() error {
 			}
 		}
 		providerIdx++
-		lt.commands[logName] = cmd
+
 	}
+	utils.LavaFormatInfo("QOS CHECK OK")
 
 	if len(errors) > 0 {
 		return fmt.Errorf(strings.Join(errors, ",\n"))
@@ -936,7 +945,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	if !bytes.Equal(providerReply, nodeReply) {
 		errors = append(errors, "tendermint relay response integrity error!")
 	} else {
-		utils.LavaFormatInfo("TENDERMINT RESPONSE CROSS VERIFICATIN IS DONE!")
+		utils.LavaFormatInfo("TENDERMINT RESPONSE CROSS VERIFICATION OK")
 	}
 
 	// REST:
@@ -960,7 +969,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	if !bytes.Equal(providerReply, nodeReply) {
 		errors = append(errors, "rest relay response integrity error!")
 	} else {
-		utils.LavaFormatInfo("REST RESPONSE CROSS VERIFICATIN IS DONE!")
+		utils.LavaFormatInfo("REST RESPONSE CROSS VERIFICATION OK")
 	}
 
 	// gRPC:
@@ -1002,7 +1011,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	if strings.TrimSpace(grpcNodeReply.String()) != strings.TrimSpace(grpcProviderReply.String()) {
 		errors = append(errors, "grpc relay response integrity error!")
 	} else {
-		utils.LavaFormatInfo("GRPC RESPONSE CROSS VERIFICATIN IS DONE!")
+		utils.LavaFormatInfo("GRPC RESPONSE CROSS VERIFICATION OK")
 
 	}
 
