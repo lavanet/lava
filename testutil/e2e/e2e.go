@@ -59,7 +59,6 @@ type lavaTest struct {
 }
 
 var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
-var clientBalances = make(map[string]*bankTypes.QueryBalanceResponse)
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
@@ -802,80 +801,14 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		panic("PAYMENT FAILED FOR LAVA")
 	}
 
-	// Check CU usage:
-	providerCU := make(map[string]uint64)
-	clientCU := make(map[string]uint64)
-	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+	// Get CU usage:
+	providerCU, err := calculateProviderCU(pairingClient)
 	if err != nil {
-		panic(err)
-	}
-	uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
-
-	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
-		clientAddr, providerAddr := decodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
-
-		cu := uniquePaymentStorageClientProvider.UsedCU
-		providerCU[providerAddr] += cu
-
-		clientCU[clientAddr] += cu
+		panic("PROVIDER CU CALCULATION ERROR")
 	}
 
-	// CHECK PROVIDER BALANCES:
+	// Checking the provider payments
 	for provider, totalCU := range providerCU {
-		idx := 0
-		// Check QoS report:
-		// Get sequence number of provider
-		authClient := authTypes.NewQueryClient(lt.grpcConn)
-		accountsRes, err := authClient.Account(context.Background(), &authTypes.QueryAccountRequest{
-			Address: provider,
-		})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("accountsRes : ", accountsRes)
-		fmt.Println("accountsRes.Account : ", accountsRes.Account)
-		fmt.Println("accountsRes.Account.Value : ", accountsRes.Account.Value)
-
-		fmt.Println("accountsRes Unmarshalled: ")
-
-		logName := "8_QoS" + fmt.Sprintf("%02d", idx)
-		lt.logs[logName] = new(bytes.Buffer)
-
-		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
-		cmd := exec.CommandContext(context.Background(), "", "")
-		cmd.Path = lt.lavadPath
-		cmd.Args = strings.Split(txQueryCommand, " ")
-		cmd.Stdout = lt.logs[logName]
-		cmd.Stderr = lt.logs[logName]
-
-		err = cmd.Start()
-		if err != nil {
-			panic("executing auth accounts failed")
-		}
-		err = cmd.Wait()
-		if err != nil {
-			panic("executing auth accounts failed")
-		}
-		// fmt.Println("lt.logs[logName] is : ", lt.logs[logName])
-
-		lines := strings.Split(lt.logs[logName].String(), "\n")
-		for idx, line := range lines {
-			if strings.Contains(line, "key: QoSScore") {
-				fmt.Println("!!!!!!!!!!!!! QoSScore-1 : ", line)
-				fmt.Println("!!!!!!!!!!!!! QoSScore-2 : ", lines[idx+1])
-				startIndex := strings.Index(lines[idx+1], "\"") + 1
-				endIndex := strings.LastIndex(lines[idx+1], "\"")
-				numberString := lines[idx+1][startIndex:endIndex]
-				number, err := strconv.ParseFloat(numberString, 64)
-				if err != nil {
-					// Handle the error
-				}
-				fmt.Println("QoSScore: ", number)
-			}
-		}
-
-		lt.commands[logName] = cmd
-
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
 		fmt.Println("expectedPayment: ", expectedPayment)
 
@@ -890,7 +823,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 
 		// Comparing the balances after payment with the initial balances
 		if providerBalances[provider] != nil {
-			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjust balance checks
+			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjusting balance checks accordingly
 				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
 				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
 					panic("PROVIDER PAYMENT CHECK FAILED")
@@ -902,77 +835,80 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 				}
 			}
 		}
-		idx++
 	}
-	utils.LavaFormatInfo("PROVIDER PAYMENT CHECK SUCCESSFUL")
+	utils.LavaFormatInfo("PROVIDER BALANCE CHECK AFTER PAYMENT SUCCESSFUL")
 }
 
-// This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
-func (lt *lavaTest) isGethProvider(providerAddr string) bool {
+func (lt *lavaTest) checkQoS() error {
+	utils.LavaFormatInfo("Starting QoS Tests")
+	errors := []string{}
+
 	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "GTH1",
-	})
-	gethProviders := gethProvidersResponse.GetStakeEntry()
-	for _, gethProvider := range gethProviders {
-		if gethProvider.Address == providerAddr {
-			return true
-		}
-	}
-	return false
-}
-
-func (lt *lavaTest) setInitialProviderBalances() {
-	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "LAV1",
-	})
+	providerCU, err := calculateProviderCU(pairingClient)
 	if err != nil {
-		panic(err)
-	}
-	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "ETH1",
-	})
-	if err != nil {
-		panic(err)
+		panic("PROVIDER CU CALCULATION ERROR")
 	}
 
-	lavaProviders := lavaProvidersResponse.GetStakeEntry()
-	ethProviders := ethProvidersResponse.GetStakeEntry()
-
-	for _, lavaProvider := range lavaProviders {
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: lavaProvider.Address,
-			Denom:   "ulava",
+	providerIdx := 0
+	for provider := range providerCU {
+		// Check QoS report:
+		// Get sequence number of provider
+		authClient := authTypes.NewQueryClient(lt.grpcConn)
+		accountsRes, err := authClient.Account(context.Background(), &authTypes.QueryAccountRequest{
+			Address: provider,
 		})
 		if err != nil {
-			panic(err)
+			errors = append(errors, fmt.Sprintf("%s", err))
 		}
-		providerBalances[lavaProvider.Address] = balanceRes
-	}
+		fmt.Println("accountsRes : ", accountsRes)
+		fmt.Println("accountsRes.Account : ", accountsRes.Account)
+		fmt.Println("accountsRes.Account.Value : ", accountsRes.Account.Value)
 
-	for _, ethProvider := range ethProviders {
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: ethProvider.Address,
-			Denom:   "ulava",
-		})
+		fmt.Println("accountsRes Unmarshalled: ")
+
+		logName := "8_QoS" + fmt.Sprintf("%02d", providerIdx)
+		lt.logs[logName] = new(bytes.Buffer)
+
+		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
+		cmd := exec.CommandContext(context.Background(), "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(txQueryCommand, " ")
+		cmd.Stdout = lt.logs[logName]
+		cmd.Stderr = lt.logs[logName]
+
+		err = cmd.Start()
 		if err != nil {
-			panic(err)
+			errors = append(errors, fmt.Sprintf("%s", err))
 		}
-		providerBalances[ethProvider.Address] = balanceRes
+		err = cmd.Wait()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		// fmt.Println("lt.logs[logName] is : ", lt.logs[logName])
+
+		lines := strings.Split(lt.logs[logName].String(), "\n")
+		for idx, line := range lines {
+			if strings.Contains(line, "key: QoSScore") {
+				fmt.Println("!!!!!!!!!!!!! QoSScore-1 : ", line)
+				fmt.Println("!!!!!!!!!!!!! QoSScore-2 : ", lines[idx+1])
+				startIndex := strings.Index(lines[idx+1], "\"") + 1
+				endIndex := strings.LastIndex(lines[idx+1], "\"")
+				numberString := lines[idx+1][startIndex:endIndex]
+				number, err := strconv.ParseFloat(numberString, 64)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", err))
+				}
+				fmt.Println("QoSScore: ", number)
+			}
+		}
+		providerIdx++
+		lt.commands[logName] = cmd
 	}
-}
 
-func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
-	firstIndex := strings.Index(inputStr, "lava@")
-	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
-
-	clientAddr = inputStr[firstIndex:secondIndex]
-	providerAddr = inputStr[secondIndex : secondIndex+44]
-
-	return clientAddr, providerAddr
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
 }
 
 func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
@@ -1077,6 +1013,91 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 
 }
 
+// This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
+func (lt *lavaTest) isGethProvider(providerAddr string) bool {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "GTH1",
+	})
+	gethProviders := gethProvidersResponse.GetStakeEntry()
+	for _, gethProvider := range gethProviders {
+		if gethProvider.Address == providerAddr {
+			return true
+		}
+	}
+	return false
+}
+
+func (lt *lavaTest) setInitialProviderBalances() {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		panic(err)
+	}
+	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "ETH1",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	lavaProviders := lavaProvidersResponse.GetStakeEntry()
+	ethProviders := ethProvidersResponse.GetStakeEntry()
+
+	for _, lavaProvider := range lavaProviders {
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: lavaProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		providerBalances[lavaProvider.Address] = balanceRes
+	}
+
+	for _, ethProvider := range ethProviders {
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: ethProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		providerBalances[ethProvider.Address] = balanceRes
+	}
+}
+
+func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
+	providerCU := make(map[string]uint64)
+	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+	if err != nil {
+		return nil, err
+	}
+	uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
+
+	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
+		_, providerAddr := decodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
+
+		cu := uniquePaymentStorageClientProvider.UsedCU
+		providerCU[providerAddr] += cu
+	}
+	return providerCU, nil
+}
+
+func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
+	firstIndex := strings.Index(inputStr, "lava@")
+	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
+
+	clientAddr = inputStr[firstIndex:secondIndex]
+	providerAddr = inputStr[secondIndex : secondIndex+44]
+
+	return clientAddr, providerAddr
+}
+
 func runE2E() {
 	os.RemoveAll(logsFolder)
 	gopath := os.Getenv("GOPATH")
@@ -1179,6 +1200,8 @@ func runE2E() {
 	lt.checkResponse("http://127.0.0.1:3340/1", "http://127.0.0.1:3341/1", "127.0.0.1:3342")
 
 	lt.checkPayments(time.Minute * 10)
+
+	lt.checkQoS()
 
 	jsonCTX.Done()
 	rpcCtx.Done()
