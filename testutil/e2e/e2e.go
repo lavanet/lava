@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -810,7 +810,9 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	// Checking the provider payments
 	for provider, totalCU := range providerCU {
 		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
-		fmt.Println("expectedPayment: ", expectedPayment)
+		if expectedPayment == sdk.ZeroDec() {
+			panic("EXPECTED PAYMENT ERROR")
+		}
 
 		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
 		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
