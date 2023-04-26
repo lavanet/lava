@@ -20,8 +20,8 @@ import (
 	"time"
 
 	// authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	// sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -841,23 +841,22 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	// CHECK PROVIDER BALANCES:
 	for provider, totalCU := range providerCU {
 		idx := 0
-		// Check QoS report:
-		// providerAcc, err := sdk.AccAddressFromBech32(provider)
+		// // Check QoS report:
+		// // Get sequence number of provider
 		// authClient := authTypes.NewQueryClient(lt.grpcConn)
-		// accountsRes, err := authClient.Accounts(context.Background(), &authTypes.QueryAccountsRequest{})
+		// accountsRes, err := authClient.Account(context.Background(), &authTypes.QueryAccountRequest{
+		// 	Address: provider,
+		// })
 		// if err != nil {
 		// 	panic(err)
 		// }
-		// for k, v := range accountsRes.GetAccounts() {
-		// 	fmt.Println("Key: ", k)
-		// 	var parsedData string
-		// 	err := json.Unmarshal(v.Value, &parsedData)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	fmt.Println("Value: ", parsedData)
-		// }
-		logName := "12_QoS" + fmt.Sprintf("%02d", idx)
+		// fmt.Println("accountsRes : ", accountsRes)
+		// fmt.Println("accountsRes.Account : ", accountsRes.Account)
+		// fmt.Println("accountsRes.Account.Value : ", accountsRes.Account.Value)
+
+		// fmt.Println("accountsRes Unmarshalled: ")
+
+		logName := "8_QoS" + fmt.Sprintf("%02d", idx)
 		lt.logs[logName] = new(bytes.Buffer)
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/1"
@@ -867,7 +866,7 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		cmd.Stdout = lt.logs[logName]
 		cmd.Stderr = lt.logs[logName]
 
-		err := cmd.Start()
+		err = cmd.Start()
 		if err != nil {
 			fmt.Println("cmd error!!!")
 		}
@@ -875,12 +874,22 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		if err != nil {
 			fmt.Println("cmd wait error!!!")
 		}
-		buf := []byte{}
-		result := cmd.Stdout
-		fmt.Println("result is: ", result)
-		_, error := result.Write(buf)
-		if error != nil {
-			fmt.Println("cmd wait error!!!")
+		// fmt.Println("lt.logs[logName] is : ", lt.logs[logName])
+
+		lines := strings.Split(lt.logs[logName].String(), "\n")
+		for idx, line := range lines {
+			if strings.Contains(line, "key: QoSScore") {
+				fmt.Println("!!!!!!!!!!!!! QoSScore-1 : ", line)
+				fmt.Println("!!!!!!!!!!!!! QoSScore-2 : ", lines[idx+1])
+				startIndex := strings.Index(lines[idx+1], "\"") + 1
+				endIndex := strings.LastIndex(lines[idx+1], "\"")
+				numberString := lines[idx+1][startIndex:endIndex]
+				number, err := strconv.ParseFloat(numberString, 64)
+				if err != nil {
+					// Handle the error
+				}
+				fmt.Println("QoSScore: ", number)
+			}
 		}
 
 		lt.commands[logName] = cmd
