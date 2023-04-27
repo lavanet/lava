@@ -337,7 +337,6 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 }
 
 func TestPSMDataReliabilityEpochChange(t *testing.T) {
-
 	ctx := context.Background()
 	// prepare data reliability session
 	psm, sps := prepareDRSession(t, ctx)
@@ -446,6 +445,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
 }
+
 func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testing.T) {
 	// init test
 	psm, sps := prepareSession(t, context.Background())

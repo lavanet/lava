@@ -27,7 +27,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	// Simulate QosWeight to be 0.5 - the default value in the time of this writing
 	initQos := sdk.NewDecWithPrec(5, 1)
 	initQosBytes, _ := initQos.MarshalJSON()
-	initQosStr := string(initQosBytes[:])
+	initQosStr := string(initQosBytes)
 
 	// change the QoS weight parameter to 0.5
 	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyQoSWeight), initQosStr)
@@ -40,7 +40,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	// Create new QosWeight value (=0.7) for SimulateParamChange() for testing
 	newQos := sdk.NewDecWithPrec(7, 1)
 	newQosBytes, _ := newQos.MarshalJSON()
-	newQosStr := string(newQosBytes[:])
+	newQosStr := string(newQosBytes)
 
 	// change the QoS weight parameter to 0.7
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyQoSWeight), newQosStr)
@@ -447,7 +447,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, MaxComputeUnits: 9999999999},
 	}}
 	stakeToMaxCUListBytes, _ := DefaultStakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+	stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 	require.Nil(t, err)
 
@@ -472,7 +472,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 
 	// change the stakeToMaxCUList parameter
 	stakeToMaxCUListBytes, _ = stakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr = string(stakeToMaxCUListBytes[:])
+	stakeToMaxCUListStr = string(stakeToMaxCUListBytes)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 	require.Nil(t, err)
 
@@ -538,7 +538,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, MaxComputeUnits: 9999999999},
 	}}
 	stakeToMaxCUListBytes, _ := DefaultStakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+	stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 	require.Nil(t, err)
 
@@ -563,7 +563,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 
 	// change the stakeToMaxCUList parameter
 	stakeToMaxCUListBytes, _ = stakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr = string(stakeToMaxCUListBytes[:])
+	stakeToMaxCUListStr = string(stakeToMaxCUListBytes)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 	require.Nil(t, err)
 
@@ -661,7 +661,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// change the EpochBlocks parameter according to the epoch test values
-			epochBlocksNew := uint64(epochTests[ti].epochBlocksNewValues)
+			epochBlocksNew := epochTests[ti].epochBlocksNewValues
 			err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksNew, 10)+"\"")
 			require.Nil(t, err)
 
@@ -721,7 +721,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, MaxComputeUnits: 9999999999},
 	}}
 	stakeToMaxCUListBytes, _ := DefaultStakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+	stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 	require.Nil(t, err)
 
@@ -755,7 +755,6 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 	}
 
 	for ti, tt := range tests {
-
 		// Get current StakeToMaxCU list
 		stakeToMaxCUList = ts.keepers.Pairing.StakeToMaxCUListRaw(sdk.UnwrapSDKContext(ts.ctx))
 
@@ -765,7 +764,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 
 		// change the stakeToMaxCUList parameter
 		stakeToMaxCUListBytes, _ := stakeToMaxCUList.MarshalJSON()
-		stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+		stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
 		err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
 
 		// Advance an epoch (only then the parameter change will be applied) and get current epoch
@@ -776,7 +775,6 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 		} else {
 			require.NotNil(t, err)
 		}
-
 	}
 }
 
@@ -808,7 +806,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 		SessionId:   uint64(1),
 		SpecId:      ts.spec.Name,
 		CuSum:       uint64(10000),
-		Epoch:       int64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
+		Epoch:       sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 		RelayNum:    0,
 	}
 
@@ -848,7 +846,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 	}
 
 	for _, tt := range tests {
-
 		// setup testnet with mock spec, a staked client and a staked provider
 		ts := setupForPaymentTest(t)
 
@@ -916,7 +913,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		// try to get payment again - shouldn't work (relay payment object should not exist and if it exists, the code shouldn't allow double spending)
 		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
-
 	}
 }
 
