@@ -187,20 +187,24 @@ func TestGrpcSecured(t *testing.T) {
 	// caCertPool := x509.NewCertPool()
 	// caCertPool.AppendCertsFromPEM(caCert)
 	// tlsConf := &tls.Config{
-	// Certificates: []tls.Certificate{clientCert},
-	// RootCAs:      caCertPool,
+	// 	Certificates:       []tls.Certificate{clientCert},
+	// 	RootCAs:            caCertPool,
+	// 	InsecureSkipVerify: true,
 	// }
-
-	// tm "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
-	// tlsConf := &tls.Config{}
+	// // tm "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
+	// // tlsConf := &tls.Config{}
 	// credentials := credentials.NewTLS(tlsConf)
 	// ctx := context.Background()
 	// nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 	// defer cancel()
-	// conn, err := grpc.DialContext(nctx, GRPC_SECURED_SERVER_ADDRESS, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	// fmt.Println("dialing")
+	// conn, err := grpc.DialContext(nctx, "localhost:443", grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	// fmt.Println("finished dialing")
 	// require.NoError(t, err)
-	// response := tm.GetLatestBlockResponse{}
-	// err = conn.Invoke(nctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock", &tm.GetLatestBlockRequest{}, &response)
+	// // client := tm.NewServiceClient(conn)
+	// // response, err := client.GetLatestBlock(nctx, &tm.GetLatestBlockRequest{})
+	// response := &tm.GetLatestBlockResponse{}
+	// err = conn.Invoke(nctx, "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock", &tm.GetLatestBlockRequest{}, response)
 	// require.NoError(t, err)
 	// fmt.Println(response)
 }
