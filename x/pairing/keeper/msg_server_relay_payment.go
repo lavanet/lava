@@ -36,8 +36,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	if err != nil {
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
+	// aggregate all successful relays into one event
+	successDetails := map[string]string{}
 
-	for _, relay := range msg.Relays {
+	for relayIdx, relay := range msg.Relays {
 		if relay.LavaChainId != lavaChainID {
 			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
 		}
@@ -206,7 +208,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
+			// TODO: QoSReport is deprecated remove after version 0.12.0
 			details["QoSReport"] = "Latency: " + relay.QosReport.Latency.String() + ", Availability: " + relay.QosReport.Availability.String() + ", Sync: " + relay.QosReport.Sync.String()
+			// allow easier extraction of components
+			details["QoSLatency"] = relay.QosReport.Latency.String()
+			details["QoSAvailability"] = relay.QosReport.Availability.String()
+			details["QoSSync"] = relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
 			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
@@ -263,7 +270,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
-		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
+		appendRelayPaymentDetailsToEvent(details, successDetails, uint64(relayIdx))
 
 		if !legacy {
 			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
@@ -288,6 +295,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	if len(dataReliabilityStore) > 0 {
 		return nil, utils.LavaError(ctx, k.Logger(ctx), "invalid relay payment with unused data reliability proofs", map[string]string{"dataReliabilityProofs": fmt.Sprintf("%+v", dataReliabilityStore)}, "didn't find a usage match for each relay")
 	}
+	utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
@@ -409,4 +417,11 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 	}
 
 	return nil
+}
+
+func appendRelayPaymentDetailsToEvent(from map[string]string, to map[string]string, uniqueIdentifier uint64) {
+	sessionIDStr := strconv.FormatUint(uniqueIdentifier, 10)
+	for key, value := range from {
+		to[key+"."+sessionIDStr] = value
+	}
 }
