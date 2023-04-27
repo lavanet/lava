@@ -31966,6 +31966,8 @@ paths:
                                     title: >-
                                       used to parse byte responses:
                                       base64,hex,bech32
+                          internal_path:
+                            type: string
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32324,6 +32326,8 @@ paths:
                                   title: >-
                                     used to parse byte responses:
                                     base64,hex,bech32
+                        internal_path:
+                          type: string
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -32608,6 +32612,8 @@ paths:
                                     title: >-
                                       used to parse byte responses:
                                       base64,hex,bech32
+                          internal_path:
+                            type: string
                     enabled:
                       type: boolean
                     reliability_threshold:
@@ -32966,6 +32972,8 @@ paths:
                                   title: >-
                                     used to parse byte responses:
                                     base64,hex,bech32
+                        internal_path:
+                          type: string
                   enabled:
                     type: boolean
                   reliability_threshold:
@@ -56627,6 +56635,8 @@ definitions:
                           encoding:
                             type: string
                             title: 'used to parse byte responses: base64,hex,bech32'
+                  internal_path:
+                    type: string
             enabled:
               type: boolean
             reliability_threshold:
@@ -56891,6 +56901,8 @@ definitions:
                         encoding:
                           type: string
                           title: 'used to parse byte responses: base64,hex,bech32'
+                internal_path:
+                  type: string
           enabled:
             type: boolean
           reliability_threshold:
@@ -57164,6 +57176,8 @@ definitions:
               encoding:
                 type: string
                 title: 'used to parse byte responses: base64,hex,bech32'
+      internal_path:
+        type: string
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -57342,6 +57356,8 @@ definitions:
                     encoding:
                       type: string
                       title: 'used to parse byte responses: base64,hex,bech32'
+            internal_path:
+              type: string
       enabled:
         type: boolean
       reliability_threshold:
