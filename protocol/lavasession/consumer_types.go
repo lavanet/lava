@@ -294,7 +294,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			} else if endpoint.connection.GetState() == connectivity.Shutdown {
 				// connection was shut down, so we need to create a new one
 				endpoint.connection.Close()
-				endpoint.Client = nil
 				connected_ := connectEndpoint(cswp, ctx, endpoint)
 				if !connected_ {
 					continue

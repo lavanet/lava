@@ -257,7 +257,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	}
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
-	newBlockCallback := func(arg int64) {
+	newBlockCallback := func(arg int64, hash string) {
 		utils.LavaFormatDebug("new latest callback called")
 		callbackCalledNewLatest = true
 	}
