@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	seperator = "--------------------------------------------\n"
+	separator = "--------------------------------------------\n"
 )
 
 var _ = strconv.Itoa(0)
@@ -59,6 +59,9 @@ func CmdAccountInfo() *cobra.Command {
 			projectQuerier := projecttypes.NewQueryClient(clientCtx)
 			epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 			resultStatus, err := clientCtx.Client.Status(ctx)
+			if err != nil {
+				return err
+			}
 			currentBlock := resultStatus.SyncInfo.LatestBlockHeight
 
 			// gather information for printing
@@ -139,14 +142,14 @@ func CmdAccountInfo() *cobra.Command {
 					}
 				}
 				if len(activeChains) > 0 {
-					output += seperator + "Active Provider Chains\n" + seperator
+					output += separator + "Active Provider Chains\n" + separator
 					for _, entry := range activeChains {
 						output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
 					}
 					output += "\n\n"
 				}
 				if len(frozenChains) > 0 {
-					output += seperator + "Frozen Provider Chains\n" + seperator
+					output += separator + "Frozen Provider Chains\n" + separator
 					for _, entry := range frozenChains {
 						output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
 					}
@@ -154,7 +157,7 @@ func CmdAccountInfo() *cobra.Command {
 				}
 			}
 			if len(unstakingProviderChains) > 0 {
-				output += seperator + "Unstaking Chains\n" + seperator
+				output += separator + "Unstaking Chains\n" + separator
 				for _, entry := range unstakingProviderChains {
 					output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
 				}
@@ -166,7 +169,7 @@ func CmdAccountInfo() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				output += seperator + "Active Project\n" + seperator
+				output += separator + "Active Project\n" + separator
 				output += data + "\n\n"
 			}
 			if subsc != nil {
@@ -175,12 +178,12 @@ func CmdAccountInfo() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				output += seperator + "Active Subscription\n" + seperator
+				output += separator + "Active Subscription\n" + separator
 				output += data + "\n\n"
 			}
 
 			if len(stakedConsumerChains) > 0 {
-				output += seperator + "Active Consumer Chains\n" + seperator
+				output += separator + "Active Consumer Chains\n" + separator
 				for _, entry := range stakedConsumerChains {
 					output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
 				}
