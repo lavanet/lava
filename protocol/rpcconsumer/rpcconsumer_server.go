@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -116,7 +115,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
-	// TODO question: do we need retry if we are sending to multiple and none returns
+
 	for retries := 0; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
@@ -210,7 +209,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Iterate until enough provider sessions are collected
 	for {
-		// Get Session. we get session here, so we can use the epoch in the callbacks
+		// Get provider consumer sessions
 		singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders)
 		relayResult = &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
 
@@ -220,7 +219,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return relayResult, err
 			}
 
-			// If pairing list empty and we have sessions, break and continue sending
+			// If pairing list empty, and we have sessions, break and continue
 			if err == lavasession.PairingListEmptyError {
 				break
 			}
@@ -237,8 +236,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			ReportedProviders: reportedProviders,
 		}
 
-		fmt.Println("Got one valid provider: ", providerPublicAddress)
-
 		// Add provider to the ignore list, so we would not fetch it again
 		(*unwantedProviders)[providerPublicAddress] = struct{}{}
 
@@ -248,22 +245,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		}
 	}
 
-	fmt.Println("Total providers: ", len(sessions))
-
 	type relayResponse struct {
 		relayResult *lavaprotocol.RelayResult
 		err         error
 	}
 
-	// Make a channel for all providers to talk
+	// Make a channel for all providers to send responses
 	responses := make(chan *relayResponse, len(sessions))
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *SessionInfo) {
-			fmt.Println("Opened new go routine for provider: ", providerPublicAddress)
-
 			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
 			defer goroutineCtxCancel()
 
@@ -340,7 +333,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 				go failRelaySession(err, backoff)
 
-				fmt.Println("Successfully got response from: ", providerPublicAddress)
 				responses <- &relayResponse{
 					relayResult: localRelayResult,
 					err:         err,
@@ -380,24 +372,20 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		for {
 			response := <-responses
 			// increase responses received
-			fmt.Println("Respons received", response.relayResult.ProviderAddress, response.err)
 			responsesReceived++
 			if response.err == nil && !relayReturned {
 				// Return the first successful response
-				fmt.Println("Returned response")
 				result <- response
 				relayReturned = true
 			}
 
 			if responsesReceived == len(sessions) {
-				// Return the last response if all failed before if it wasn't returned
+				// Return the last response if all previous responses were error
 				if !relayReturned {
-					fmt.Println("Returned last response")
 					result <- response
 				}
 
-				// if it was returned just close this go routine
-				fmt.Println("Closed all routines")
+				// if it was returned, just close this go routine
 				return
 			}
 		}
