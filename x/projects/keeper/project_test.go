@@ -234,6 +234,8 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	templates := []struct {
 		name                 string
 		creator              string
+		projectID            string
+		geolocation          uint64
 		chainPolicies        []types.ChainPolicy
 		totalCuLimit         uint64
 		epochCuLimit         uint64
@@ -241,32 +243,40 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		validateBasicSuccess bool
 		setPolicySuccess     bool
 	}{
-		{"valid policy (admin account)", adminAcc.Addr.String(),
+		{"valid policy (admin account)", adminAcc.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true},
 
-		{"valid policy (subscription account)", subAccount.Addr.String(),
+		{"valid policy (subscription account)", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true},
 
-		{"bad creator (developer account -- not admin)", developerAcc.Addr.String(),
+		{"bad creator (developer account -- not admin)", developerAcc.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false},
 
-		{"bad chainID (doesn't exist)", subAccount.Addr.String(),
+		{"bad projectID (doesn't exist)", developerAcc.Addr.String(), "fakeProjectId", uint64(1),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, false},
+
+		{"invalid geolocation (0)", developerAcc.Addr.String(), "fakeProjectId", uint64(0),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, false},
+
+		{"bad chainID (doesn't exist)", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 
-		{"bad API (doesn't exist)", subAccount.Addr.String(),
+		{"bad API (doesn't exist)", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
-		{"chainID and API not supported (exist in Lava's specs)", subAccount.Addr.String(),
+		{"chainID and API not supported (exist in Lava's specs)", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
 			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
-		{"epoch CU larger than total CU", subAccount.Addr.String(),
+		{"epoch CU larger than total CU", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, false},
-		{"bad maxProvidersToPair", subAccount.Addr.String(),
+		{"bad maxProvidersToPair", subAccount.Addr.String(), projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 1, false, false},
 	}
@@ -275,7 +285,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		t.Run(tt.name, func(t *testing.T) {
 			newPolicy := types.Policy{
 				ChainPolicies:      tt.chainPolicies,
-				GeolocationProfile: uint64(1),
+				GeolocationProfile: tt.geolocation,
 				TotalCuLimit:       tt.totalCuLimit,
 				EpochCuLimit:       tt.epochCuLimit,
 				MaxProvidersToPair: tt.maxProvidersToPair,
@@ -285,7 +295,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				setAdminPolicyMessage := types.MsgSetAdminPolicy{
 					Creator: tt.creator,
 					Policy:  newPolicy,
-					Project: projectID,
+					Project: tt.projectID,
 				}
 
 				err = setAdminPolicyMessage.ValidateBasic()
@@ -301,7 +311,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 					require.Nil(t, err)
 					ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-					proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+					proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), tt.projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 					require.Nil(t, err)
 
 					require.Equal(t, newPolicy, *proj.AdminPolicy)
@@ -313,7 +323,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				setSubscriptionPolicyMessage := types.MsgSetSubscriptionPolicy{
 					Creator:  tt.creator,
 					Policy:   newPolicy,
-					Projects: []string{projectID},
+					Projects: []string{tt.projectID},
 				}
 
 				err = setSubscriptionPolicyMessage.ValidateBasic()
@@ -333,7 +343,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 						require.Nil(t, err)
 						ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-						proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+						proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), tt.projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 						require.Nil(t, err)
 
 						require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
