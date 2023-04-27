@@ -31,7 +31,7 @@ func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
 	appendedValue := []byte(safeIndex) // convert the index value to a byte array
-	store.Set(types.KeyPrefix(types.EntryIndexKey+fs.prefix+safeIndex), appendedValue)
+	store.Set(types.KeyPrefix(fs.createEntryIndexKey(safeIndex)), appendedValue)
 }
 
 // removeEntryIndex removes an Entry index from the store
@@ -92,9 +92,9 @@ func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stal
 }
 
 func (fs FixationStore) createEntryIndexStoreKey() string {
-	return types.EntryIndexKey + fs.prefix
+	return types.EntryIndexPrefix + fs.prefix
 }
 
 func (fs FixationStore) createEntryIndexKey(safeIndex string) string {
-	return types.EntryIndexKey + fs.prefix + safeIndex
+	return types.EntryIndexPrefix + fs.prefix + safeIndex
 }

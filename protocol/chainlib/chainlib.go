@@ -81,10 +81,11 @@ type ChainProxy interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
-func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
+	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	switch rpcProviderEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+		return NewJrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime, chainParser)
 	case spectypes.APIInterfaceTendermintRPC:
 		return NewtendermintRpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
 	case spectypes.APIInterfaceRest:

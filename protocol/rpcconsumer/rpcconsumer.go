@@ -218,7 +218,6 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(app.DefaultNodeHome)
 			var rpcEndpoints []*lavasession.RPCEndpoint
-			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
 				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
@@ -245,7 +244,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			rpcEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				return utils.LavaFormatError("invalid endpoints definition", err)
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()

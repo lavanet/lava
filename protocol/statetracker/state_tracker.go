@@ -44,7 +44,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	return cst, err
 }
 
-func (cst *StateTracker) newLavaBlock(latestBlock int64) {
+func (cst *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	// go over the registered updaters and trigger update
 	cst.registrationLock.RLock()
 	defer cst.registrationLock.RUnlock()

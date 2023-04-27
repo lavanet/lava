@@ -312,16 +312,16 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 type RestChainProxy struct {
 	BaseChainProxy
-	nodeUrl string
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0]},
-		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"),
 	}
 	return rcp, nil
 }
@@ -347,7 +347,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
-	url := rcp.nodeUrl + nodeMessage.Path
+	url := rcp.NodeUrl.Url + nodeMessage.Path
 
 	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -355,7 +355,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		relayTimeout += rcp.averageBlockTime
 	}
 
-	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {

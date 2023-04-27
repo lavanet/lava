@@ -140,39 +140,48 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 			providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
+			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 			}
 
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+			var chainTracker *chaintracker.ChainTracker
 
 			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
-			chainMutexes[chainID].Lock()
-			var chainTracker *chaintracker.ChainTracker
-			chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
-			if !found {
-				blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
-				chainTrackerConfig := chaintracker.ChainTrackerConfig{
-					BlocksToSave:      blocksToSaveChainTracker,
-					AverageBlockTime:  averageBlockTime,
-					ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+			chainCommonSetup := func() error {
+				chainMutexes[chainID].Lock()
+				defer chainMutexes[chainID].Unlock()
+				chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
+				if !found {
+					blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+					chainTrackerConfig := chaintracker.ChainTrackerConfig{
+						BlocksToSave:      blocksToSaveChainTracker,
+						AverageBlockTime:  averageBlockTime,
+						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+					}
+					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+					if err != nil {
+						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+					}
+					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
+				} else {
+					var ok bool
+					chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
+					if !ok {
+						utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
+					}
+					utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 				}
-				chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
-				chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
-				if err != nil {
-					disabledEndpoints <- rpcProviderEndpoint
-					return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-				}
-				stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
-			} else {
-				var ok bool
-				chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
-				if !ok {
-					utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
-				}
-				utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+
+				return nil
+			}
+			err = chainCommonSetup()
+			if err != nil {
+				disabledEndpoints <- rpcProviderEndpoint
+				return err
 			}
 			chainMutexes[chainID].Unlock()
 
