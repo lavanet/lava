@@ -260,6 +260,9 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		{"bad API (doesn't exist)", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
+		{"chainID and API not supported (exist in Lava's specs)", subAccount.Addr.String(),
+			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
+			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
 		{"epoch CU larger than total CU", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, false},
