@@ -327,63 +327,107 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	projectKeeper := ts.keepers.Projects
 
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	anotherAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 2, "")
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3, "")
 	require.Nil(t, err)
 
-	block1 := uint64(ts.ctx.BlockHeight())
-
-	sub, found := keeper.GetSubscription(ts.ctx, creator)
-	require.True(t, found)
-
-	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
-	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
-
-	// use the subscription and the project
-	keeper.ChargeComputeUnitsToSubscription(ts.ctx, creator, 1000)
-	require.Equal(t, sub.PrevCuLeft, sub.MonthCuTotal-1000)
-	proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
-	require.Nil(t, err)
-	err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, 1000)
-	require.Nil(t, err)
-
-	// verify that project used the CU
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
-	require.Nil(t, err)
-	require.Equal(t, uint64(1000), proj.UsedCu)
-
-	block2 := uint64(ts.ctx.BlockHeight())
-
-	// force fixation entry (by adding project key)
-	projKey := []projectstypes.ProjectKey{
-		{
-			Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
-			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+	// add another project under the subcscription
+	projectData := projectstypes.ProjectData{
+		Name:        "anotherProject",
+		Description: "dummyDesc",
+		Enabled:     true,
+		ProjectKeys: []projectstypes.ProjectKey{
+			{
+				Key:   anotherAccount.Addr.String(),
+				Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
+				Vrfpk: "",
+			},
+		},
+		Policy: &projectstypes.Policy{
+			GeolocationProfile: uint64(1),
+			TotalCuLimit:       1000,
+			EpochCuLimit:       100,
+			MaxProvidersToPair: 3,
 		},
 	}
-	projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, creator, projKey)
-
-	// fast-forward one months
-	sub = ts.expireSubscription(sub)
-	require.Equal(t, uint64(1), sub.DurationLeft)
-
-	block3 := uint64(ts.ctx.BlockHeight())
-
-	// check that subscription and project have renewed CUs, and that the
-	// project created a snapshot for last month
-	sub, found = keeper.GetSubscription(ts.ctx, creator)
-	require.True(t, found)
-	require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block1)
+	err = keeper.AddProjectToSubscription(ts.ctx, creator, projectData)
 	require.Nil(t, err)
-	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block2)
-	require.Nil(t, err)
-	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, creator, block3)
-	require.Nil(t, err)
-	require.Equal(t, uint64(0), proj.UsedCu)
+
+	// we'll test both the default project and the second project, which differ in their developers
+	template := []struct {
+		name             string
+		subscription     string
+		developer        string
+		usedCuPerProject uint64 // total CU in sub is 1000 -- let each project use 500
+	}{
+		{"default project", creator, creator, 500},
+		{"second project (non-default)", creator, anotherAccount.Addr.String(), 500},
+	}
+	for ti, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			block1 := uint64(ts.ctx.BlockHeight())
+
+			ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+			ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+
+			// charge the subscription
+			err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, tt.subscription, tt.usedCuPerProject)
+			require.Nil(t, err)
+
+			sub, found := keeper.GetSubscription(ts.ctx, tt.subscription)
+			require.True(t, found)
+
+			// verify the CU charge of the subscription is updated correctly
+			// it depends on the iteration index since the same subscription is charged for all projects
+			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal-tt.usedCuPerProject)
+			proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			require.Nil(t, err)
+
+			// charge the project
+			err = projectKeeper.ChargeComputeUnitsToProject(ts.ctx, proj, tt.usedCuPerProject)
+			require.Nil(t, err)
+
+			// verify that project used the CU
+			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			require.Nil(t, err)
+			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
+
+			block2 := uint64(ts.ctx.BlockHeight())
+
+			// force fixation entry (by adding project key)
+			projKey := []projectstypes.ProjectKey{
+				{
+					Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
+					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+				},
+			}
+			projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
+
+			// fast-forward one month (since we expire the subscription in every iteration, it depends on the iteration number)
+			sub = ts.expireSubscription(sub)
+			require.Equal(t, sub.DurationTotal-uint64(ti+1), sub.DurationLeft)
+
+			block3 := uint64(ts.ctx.BlockHeight())
+
+			// check that subscription and project have renewed CUs, and that the
+			// project created a snapshot for last month
+			sub, found = keeper.GetSubscription(ts.ctx, tt.subscription)
+			require.True(t, found)
+			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
+
+			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			require.Nil(t, err)
+			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
+			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block2)
+			require.Nil(t, err)
+			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
+			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block3)
+			require.Nil(t, err)
+			require.Equal(t, uint64(0), proj.UsedCu)
+		})
+	}
 }
 
 func TestExpiryTime(t *testing.T) {
