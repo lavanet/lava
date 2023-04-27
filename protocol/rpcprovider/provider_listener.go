@@ -93,6 +93,9 @@ type RelayReceiver interface {
 }
 
 func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	if request.RelayData == nil || request.RelaySession == nil {
+		return nil, utils.LavaFormatError("invalid relay request, internal fields are nil", nil)
+	}
 	relayReceiver, err := rs.findReceiver(request)
 	if err != nil {
 		return nil, err
