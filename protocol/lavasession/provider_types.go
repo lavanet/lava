@@ -103,19 +103,26 @@ type ProviderSessionsWithConsumer struct {
 	epochData         *ProviderSessionsEpochData
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
+	pairedProviders   int64
 	selfProviderIndex int64
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex int64) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex, pairedProviders int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
 		isDataReliability: isDataReliability,
+		pairedProviders:   pairedProviders,
 		selfProviderIndex: selfProviderIndex,
 	}
 	return pswc
+}
+
+// reads the pairedProviders data atomically for DR
+func (pswc *ProviderSessionsWithConsumer) atomicReadPairedProviders() int64 {
+	return atomic.LoadInt64(&pswc.pairedProviders)
 }
 
 // reads the selfProviderIndex data atomically for DR
@@ -201,7 +208,7 @@ func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx con
 }
 
 // this function returns the session locked to be used
-func (pswc *ProviderSessionsWithConsumer) GetExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) getExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {

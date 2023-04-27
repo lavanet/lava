@@ -79,7 +79,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2")
 	assert.Error(t, err)
-	assert.Equal(t, "rest api not supported", err.Error())
+	assert.Equal(t, "rest api not supported API2", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
@@ -111,8 +111,9 @@ func TestRestParseMessage(t *testing.T) {
 	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
 
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:  []byte("test message"),
-		Path: "API1",
+		Msg:      []byte("test message"),
+		Path:     "API1",
+		SpecPath: "API1",
 	}
 
 	assert.Equal(t, restMessage, msg.GetRPCMessage())

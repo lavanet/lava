@@ -8,6 +8,7 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	subtypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
@@ -15,32 +16,55 @@ import (
 func TestGetPairingForSubscription(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	var balance int64 = 10000
-	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
+
+	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
 	vrfpk_stub := "testvrfpk"
-	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumer.Addr.String(), Consumer: consumer.Addr.String(), Index: ts.plan.Index, Duration: 1, Vrfpk: vrfpk_stub})
+	msgBuy := &subtypes.MsgBuy{
+		Creator:  consumer,
+		Consumer: consumer,
+		Index:    ts.plan.Index,
+		Duration: 1,
+		Vrfpk:    vrfpk_stub,
+	}
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, msgBuy)
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx := sdk.UnwrapSDKContext(ts.ctx)
 
-	pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String()}
+	pairingReq := types.QueryGetPairingRequest{
+		ChainID: ts.spec.Index,
+		Client:  consumer,
+	}
 	pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.Nil(t, err)
 
-	verifyPairingQuery := &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())}
+	verifyPairingQuery := &types.QueryVerifyPairingRequest{
+		ChainID:  ts.spec.Index,
+		Client:   consumer,
+		Provider: pairing.Providers[0].Address,
+		Block:    uint64(ctx.BlockHeight()),
+	}
 	vefiry, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(ctx, consumer, uint64(ctx.BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, vrfpk, vrfpk_stub)
-	err = ts.keepers.Projects.DeleteProject(sdk.UnwrapSDKContext(ts.ctx), project.Index)
+
+	err = ts.keepers.Projects.DeleteProject(ctx, project.Index)
 	require.Nil(t, err)
 
 	_, err = ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.NotNil(t, err)
 
-	verifyPairingQuery = &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())}
+	verifyPairingQuery = &types.QueryVerifyPairingRequest{
+		ChainID:  ts.spec.Index,
+		Client:   consumer,
+		Provider: pairing.Providers[0].Address,
+		Block:    uint64(ctx.BlockHeight()),
+	}
 	vefiry, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.NotNil(t, err)
 	require.False(t, vefiry.Valid)
@@ -65,8 +89,13 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	_, _, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
+
+	policies := []*projectstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
+	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.GetSubscription())
+	require.True(t, found)
+	allowedCu := ts.keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, proj.GetUsedCu(), sub.GetMonthCuLeft())
 
 	tests := []struct {
 		name  string
@@ -74,7 +103,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 		valid bool
 	}{
 		{"happyflow", ts.spec.Apis[0].ComputeUnits, true},
-		{"epochCULimit", ts.plan.ComputeUnitsPerEpoch, false},
+		{"epochCULimit", allowedCu + 1, false},
 	}
 
 	for i, tt := range tests {
@@ -112,9 +141,9 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.Nil(t, err)
 
 	i := 0
-	for ; uint64(i) < ts.plan.ComputeUnits/ts.plan.ComputeUnitsPerEpoch; i++ {
+	for ; uint64(i) < ts.plan.PlanPolicy.GetTotalCuLimit()/ts.plan.PlanPolicy.GetEpochCuLimit(); i++ {
 
-		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.ComputeUnitsPerEpoch, ts.spec.Name, nil)
+		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
 		require.Nil(t, err)
@@ -124,8 +153,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//last iteration should finish the plan quota
-	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.ComputeUnitsPerEpoch, ts.spec.Name, nil)
+	// last iteration should finish the plan quota
+	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 	relayRequest.SessionId = uint64(i + 1)
 	relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
 	require.Nil(t, err)

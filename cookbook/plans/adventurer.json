@@ -12,14 +12,15 @@
                     "amount": "600000000000"
                 },
                 "annual_discount_percentage": "0",
-                "compute_units": "1000000000",
-                "compute_units_per_epoch": "5000000",
-                "max_providers_to_pair": "5",
                 "allow_overuse": false,
-                "overuse_rate": "0"
+                "overuse_rate": "0",
+                "plan_policy": {
+                    "total_cu_limit": "1000000000",
+                    "epoch_cu_limit": "5000000",
+                    "max_providers_to_pair": "5"
+                }
             }
         ]
     },
     "deposit": "10000000ulava"
 }
-

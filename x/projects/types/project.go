@@ -2,23 +2,47 @@ package types
 
 import (
 	"fmt"
+	"strings"
+
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
-const ADMIN_PROJECT_NAME = "admin"
+const (
+	ADMIN_PROJECT_NAME        = "admin"
+	ADMIN_PROJECT_DESCRIPTION = "default admin project"
+)
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func CreateProject(subscriptionAddress string, projectName string) Project {
-	return Project{
-		Index:        ProjectIndex(subscriptionAddress, projectName),
-		Subscription: subscriptionAddress,
-		Description:  "",
-		ProjectKeys:  []ProjectKey{},
-		Policy:       Policy{},
-		UsedCu:       0,
+func NewProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
+	if !ValidateProjectNameAndDescription(projectName, description) {
+		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d."+
+			" Name: %s. The project's description must also be ASCII and its length must be less than %d",
+			MAX_PROJECT_NAME_LEN, projectName, MAX_PROJECT_DESCRIPTION_LEN)
 	}
+
+	return Project{
+		Index:              ProjectIndex(subscriptionAddress, projectName),
+		Subscription:       subscriptionAddress,
+		Description:        description,
+		ProjectKeys:        []ProjectKey{},
+		AdminPolicy:        nil,
+		SubscriptionPolicy: nil,
+		UsedCu:             0,
+		Enabled:            enable,
+	}, nil
+}
+
+func ValidateProjectNameAndDescription(name string, description string) bool {
+	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
+		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
+		name == "" {
+		return false
+	}
+
+	return true
 }
 
 func (project *Project) GetKey(projectKey string) ProjectKey {
@@ -63,25 +87,4 @@ func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_
 
 func (project *Project) IsAdminKey(projectKey string) bool {
 	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
-}
-
-func (project *Project) VerifyProject(chainID string) error {
-	if !project.Enabled {
-		return fmt.Errorf("the developers project is disabled")
-	}
-
-	if !project.Policy.ContainsChainID(chainID) {
-		return fmt.Errorf("the developers project policy does not include the chain")
-	}
-
-	err := project.VerifyCuUsage()
-	return err
-}
-
-func (project *Project) VerifyCuUsage() error {
-	// TODO: when overuse is added, change here to take that into account
-	if project.Policy.TotalCuLimit <= project.UsedCu {
-		return fmt.Errorf("the developers project policy used all the allowed cu for this project")
-	}
-	return nil
 }

@@ -90,6 +90,9 @@ import (
 	"github.com/lavanet/lava/app/upgrades/v0_5_1"
 	"github.com/lavanet/lava/app/upgrades/v0_5_2"
 	"github.com/lavanet/lava/app/upgrades/v0_9_1"
+	"github.com/lavanet/lava/app/upgrades/v0_9_6"
+	"github.com/lavanet/lava/app/upgrades/v0_9_7"
+	"github.com/lavanet/lava/app/upgrades/v0_9_8"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -148,6 +151,10 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_9_2,
 	upgrades.Upgrade_0_9_3,
 	upgrades.Upgrade_0_9_5,
+	v0_9_6.Upgrade,
+	v0_9_7.Upgrade,
+	v0_9_8.Upgrade,
+	upgrades.Upgrade_0_10_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -449,6 +456,7 @@ func New(
 		keys[projectsmoduletypes.StoreKey],
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.EpochstorageKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
@@ -463,6 +471,7 @@ func New(
 		app.SpecKeeper,
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
+		app.SubscriptionKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

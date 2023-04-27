@@ -16,7 +16,7 @@ type (
 	Keeper struct {
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
-		plansFs    common.FixationStore
+		plansFS    common.FixationStore
 	}
 )
 
@@ -31,11 +31,17 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	fs := *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix)
+
 	return &Keeper{
 		memKey:     memKey,
 		paramstore: ps,
-		plansFs:    *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix),
+		plansFS:    fs,
 	}
+}
+
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.plansFS.AdvanceBlock(ctx)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

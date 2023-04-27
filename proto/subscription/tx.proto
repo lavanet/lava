@@ -2,12 +2,14 @@ syntax = "proto3";
 package lavanet.lava.subscription;
 
 // this line is used by starport scaffolding # proto/tx/import
-
+import "projects/project.proto";
+import "gogoproto/gogo.proto";  
 option go_package = "github.com/lavanet/lava/x/subscription/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc Buy(MsgBuy) returns (MsgBuyResponse);
+  rpc Buy(MsgBuy) returns (MsgBuyResponse);
+  rpc AddProject(MsgAddProject) returns (MsgAddProjectResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -22,4 +24,11 @@ message MsgBuy {
 message MsgBuyResponse {
 }
 
+message MsgAddProject {
+  string creator = 1;
+  lavanet.lava.projects.ProjectData project_data = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgAddProjectResponse {
+}
 // this line is used by starport scaffolding # proto/tx/message

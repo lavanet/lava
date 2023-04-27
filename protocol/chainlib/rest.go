@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -63,6 +64,9 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, err
 	}
 
+	// Extract default block parser
+	blockParser := serviceApi.BlockParsing
+
 	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
@@ -80,9 +84,16 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 			Path: url + string(data),
 		}
 	}
+	// add spec path to rest message so we can extract the requested block.
+	restMessage.SpecPath = serviceApi.Name
 
-	// TODO fix requested block
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, restMessage)
+	// Fetch requested block, it is used for data reliability
+	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
+	if err != nil {
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	}
+
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, restMessage)
 	return nodeMsg, nil
 }
 
@@ -112,7 +123,7 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("rest api not supported")
+		return nil, errors.New("rest api not supported " + name)
 	}
 
 	// Return an error if api is disabled
@@ -301,16 +312,16 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 type RestChainProxy struct {
 	BaseChainProxy
-	nodeUrl string
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0]},
-		nodeUrl:        strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"),
 	}
 	return rcp, nil
 }
@@ -336,7 +347,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
-	url := rcp.nodeUrl + nodeMessage.Path
+	url := rcp.NodeUrl.Url + nodeMessage.Path
 
 	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -344,7 +355,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		relayTimeout += rcp.averageBlockTime
 	}
 
-	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {

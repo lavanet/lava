@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
@@ -45,7 +46,6 @@ type ConsumerStateTrackerInf interface {
 
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
-	rpcConsumerServers   map[string]*RPCConsumerServer
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -60,7 +60,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
-	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -77,28 +76,55 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
+
+	var wg sync.WaitGroup
+	parallelJobs := len(rpcEndpoints)
+	wg.Add(parallelJobs)
+	errCh := make(chan error)
+
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
-	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(len(rpcEndpoints))})
+	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 	for _, rpcEndpoint := range rpcEndpoints {
-		strategy := provideroptimizer.STRATEGY_QOS
-		optimizer := provideroptimizer.NewProviderOptimizer(strategy)
-		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
-		key := rpcEndpoint.Key()
-		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
-		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
-		if err != nil {
-			return err
-		}
-		err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
-		if err != nil {
-			return err
-		}
-		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
-		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
-		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
+			defer wg.Done()
+			strategy := provideroptimizer.STRATEGY_QOS
+			optimizer := provideroptimizer.NewProviderOptimizer(strategy)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
+			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+			chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
+			if err != nil {
+				err = utils.LavaFormatError("failed creating chain parser", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
+			if err != nil {
+				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
+			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+			rpcConsumerServer := &RPCConsumerServer{}
+			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			if err != nil {
+				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			return nil
+		}(rpcEndpoint)
 	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		return err
+	}
+
+	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -157,7 +183,6 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(app.DefaultNodeHome)
 			var rpcEndpoints []*lavasession.RPCEndpoint
-			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
 				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
@@ -184,7 +209,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			rpcEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcEndpoints) == 0 {
-				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+				return utils.LavaFormatError("invalid endpoints definition", err)
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()

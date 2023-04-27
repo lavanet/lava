@@ -9,6 +9,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -40,7 +42,7 @@ func (k Keeper) RemoveSubscription(ctx sdk.Context, consumer string) {
 
 	// (PlanIndex is empty only in testing of RemoveSubscription)
 	if sub.PlanIndex != "" {
-		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.Block)
+		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	}
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
@@ -162,11 +164,11 @@ func (k Keeper) CreateSubscription(
 			PlanBlock: plan.Block,
 		}
 
-		sub.MonthCuTotal = plan.GetComputeUnits()
-		sub.MonthCuLeft = plan.GetComputeUnits()
+		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
+		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan, vrfpk)
 		if err != nil {
 			details := map[string]string{
 				"err": err.Error(),
@@ -245,6 +247,62 @@ func (k Keeper) CreateSubscription(
 			"error":   err.Error(),
 		}
 		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
+	}
+
+	k.SetSubscription(ctx, sub)
+
+	return nil
+}
+
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+	sub, found := k.GetSubscription(ctx, consumer)
+	if !found {
+		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_subscription", map[string]string{"consumer": consumer}, "can't find subscription with consumer address")
+	}
+
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.Block)
+	if !found {
+		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_plan", map[string]string{"consumer": consumer, "planId": sub.PlanIndex}, "can't find plan from subscription with consumer address")
+	}
+
+	return plan, nil
+}
+
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, projectData projectstypes.ProjectData) error {
+	sub, found := k.GetSubscription(ctx, subscription)
+	if !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
+	}
+
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.GetPlanIndex(), sub.GetBlock())
+	if !found {
+		details := map[string]string{
+			"subscription": sub.GetCreator(),
+			"planIndex":    sub.GetPlanIndex(),
+		}
+		err := utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
+		panic(err)
+	}
+
+	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
+}
+
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
+	sub, found := k.GetSubscription(ctx, subscription)
+	if !found {
+		details := map[string]string{
+			"subscription": subscription,
+		}
+		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
+	}
+
+	// TODO: if subscription is exhausted, should we push back (and the provider
+	// may not be paid?
+
+	if sub.MonthCuLeft < cuAmount {
+		sub.MonthCuLeft = 0
+	} else {
+		sub.MonthCuLeft -= cuAmount
 	}
 
 	k.SetSubscription(ctx, sub)

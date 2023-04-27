@@ -3,6 +3,9 @@ package parser
 import (
 	"reflect"
 	"testing"
+
+	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/stretchr/testify/require"
 )
 
 // TestAppendInterfaceToInterfaceArray tests append interface function
@@ -90,4 +93,25 @@ func TestParseArrayOfInterfaces(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseResponseByEncoding(t *testing.T) {
+	type data struct {
+		bytes    []byte
+		encoding string
+	}
+
+	testInputs := func(testData []data) {
+		result0, err := parseResponseByEncoding(testData[0].bytes, testData[0].encoding)
+		require.NoError(t, err)
+		result1, err := parseResponseByEncoding(testData[1].bytes, testData[1].encoding)
+		require.NoError(t, err)
+		require.Equal(t, result0, result1)
+	}
+	// returned from lava blockchain rest vs tendermintrpc
+	testData := []data{{bytes: []byte("9291EDC036AE254F9A6E0237F0EF13C452E7F08722E8DBD68B2F34CC8132C91D"), encoding: spectypes.EncodingHex}, {bytes: []byte("kpHtwDauJU+abgI38O8TxFLn8Ici6NvWiy80zIEyyR0="), encoding: spectypes.EncodingBase64}}
+	testInputs(testData)
+	// returned form evmos evm-jsonrpc vs rest
+	testData = []data{{bytes: []byte("0x968ec00fd34eedc03b0577ee8116f74c75127b7d775e51c7a72519f760b821a8"), encoding: spectypes.EncodingHex}, {bytes: []byte("lo7AD9NO7cA7BXfugRb3THUSe313XlHHpyUZ92C4Iag="), encoding: spectypes.EncodingBase64}}
+	testInputs(testData)
 }
