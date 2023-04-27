@@ -183,7 +183,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				disabledEndpoints <- rpcProviderEndpoint
 				return err
 			}
-			chainMutexes[chainID].Unlock()
 
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
