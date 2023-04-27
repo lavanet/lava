@@ -94,14 +94,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "stakeAppliedBlock": strconv.FormatUint(stakeAppliedBlock, 10), "stake": amount.String()}
 		details["moniker"] = moniker
 		if amount.IsGTE(existingEntry.Stake) {
-			// increasing stake is allowed
-			err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
-			if err != nil {
-				details["error"] = err.Error()
-				details["neededStake"] = amount.Sub(existingEntry.Stake).String()
-				return utils.LavaError(ctx, logger, "stake_"+stake_type+"_update_amount", details, "insufficient funds to pay for difference in stake")
+			// support modifying with the same stake or greater only
+			if !amount.Equal(existingEntry.Stake) {
+				// needs to charge additional tokens
+				err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
+				if err != nil {
+					details["error"] = err.Error()
+					details["neededStake"] = amount.Sub(existingEntry.Stake).String()
+					return utils.LavaError(ctx, logger, "stake_"+stake_type+"_update_amount", details, "insufficient funds to pay for difference in stake")
+				}
 			}
-
 			// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
 			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
