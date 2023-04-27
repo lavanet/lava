@@ -63,9 +63,9 @@ func CmdModifyProvider() *cobra.Command {
 				return utils.LavaFormatError("provider isn't staked on chainID, no providers at all", nil)
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
-			for _, provider := range response.StakeEntry {
+			for idx, provider := range response.StakeEntry {
 				if provider.Address == address {
-					providerEntry = &provider
+					providerEntry = &response.StakeEntry[idx]
 					break
 				}
 			}
