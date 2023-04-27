@@ -44,10 +44,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			checkOneProvider := func() (time.Duration, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
-				defer conn.Close()
 				if err != nil {
 					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
+				defer conn.Close()
 				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
