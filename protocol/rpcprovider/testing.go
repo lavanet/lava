@@ -2,9 +2,11 @@ package rpcprovider
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -32,6 +35,8 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	goodChains := []string{}
+	badChains := []string{}
 	for _, providerEntry := range providerEntries {
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain})
 
@@ -72,21 +77,27 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			}
 			probeLatency, err := checkOneProvider()
 			if err != nil {
+				badChains = append(badChains, providerEntry.Chain+" "+endpoint.UseType)
 				continue
 			}
 			utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
+			goodChains = append(goodChains, providerEntry.Chain+"-"+endpoint.UseType)
 		}
 	}
+	fmt.Printf("----------------------------------------SUMMARY----------------------------------------\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
 	return nil
 }
 
 func CreateTestRPCProviderCobraCommand() *cobra.Command {
 	cmdTestRPCProvider := &cobra.Command{
-		Use:   `rpcprovider {provider_address | --from <wallet>}`,
+		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,api-interface,spec-chain-id ..."]`,
 		Short: `test an rpc provider by reading stake entries and querying it directly in all api interfaces`,
-		Long:  `sets up a test-consumer that probes the rpc provider in all staked chains`,
+		Long: `sets up a test-consumer that probes the rpc provider in all staked chains
+		need to provider either provider_address or --from wallet_name
+		optional flag: --endpoints in order to validate provider process before submitting a stake command`,
 		Example: `rpcprovider lava@myprovideraddress
-		rpcprovider --from providerWallet`,
+		rpcprovider --from providerWallet
+		rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
 		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -136,20 +147,40 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 			}
 			pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
 			stakedProviderChains := []epochstoragetypes.StakeEntry{}
-			for _, chainStructInfo := range allChains.ChainInfoList {
-				chainID := chainStructInfo.ChainID
-				response, err := pairingQuerier.Providers(ctx, &pairingtypes.QueryProvidersRequest{
-					ChainID:    chainID,
-					ShowFrozen: true,
-				})
-				if err == nil && len(response.StakeEntry) > 0 {
-					for _, provider := range response.StakeEntry {
-						if provider.Address == address {
-							if provider.StakeAppliedBlock > uint64(currentBlock+1) {
-								utils.LavaFormatWarning("provider is Frozen", nil, utils.Attribute{Key: "chainID", Value: provider.Chain})
+			endpointConf, err := cmd.Flags().GetString(common.EndpointsConfigName)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read endpoints flag", err)
+			}
+			if endpointConf != "" {
+				tmpArg := strings.Fields(endpointConf)
+				for _, endpointStr := range tmpArg {
+					splitted := strings.Split(endpointStr, ",")
+					if len(splitted) != 3 {
+						return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,chainid HOST:PORT,useType,chainid, received: %s", endpointStr)
+					}
+					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1]}
+					providerEntry := epochstoragetypes.StakeEntry{
+						Endpoints: []epochstoragetypes.Endpoint{endpoint},
+						Chain:     splitted[2],
+					}
+					stakedProviderChains = append(stakedProviderChains, providerEntry)
+				}
+			} else {
+				for _, chainStructInfo := range allChains.ChainInfoList {
+					chainID := chainStructInfo.ChainID
+					response, err := pairingQuerier.Providers(ctx, &pairingtypes.QueryProvidersRequest{
+						ChainID:    chainID,
+						ShowFrozen: true,
+					})
+					if err == nil && len(response.StakeEntry) > 0 {
+						for _, provider := range response.StakeEntry {
+							if provider.Address == address {
+								if provider.StakeAppliedBlock > uint64(currentBlock+1) {
+									utils.LavaFormatWarning("provider is Frozen", nil, utils.Attribute{Key: "chainID", Value: provider.Chain})
+								}
+								stakedProviderChains = append(stakedProviderChains, provider)
+								break
 							}
-							stakedProviderChains = append(stakedProviderChains, provider)
-							break
 						}
 					}
 				}
@@ -164,6 +195,6 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
 	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-
+	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
 }
