@@ -46,19 +46,25 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 			stateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcProviderEndpoint.ChainID)
-			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
+			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
-
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 			}
-
+			printOnNewLatestCallback := func(block int64, hash string) {
+				utils.LavaFormatInfo("Received a new Block",
+					utils.Attribute{Key: "block", Value: block},
+					utils.Attribute{Key: "hash", Value: hash},
+					utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+			}
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
 				BlocksToSave:      blocksToSaveChainTracker,
 				AverageBlockTime:  averageBlockTime,
 				ServerBlockMemory: rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback: printOnNewLatestCallback,
 			}
 			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
