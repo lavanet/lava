@@ -7,6 +7,7 @@ const (
 	EarliestEpochEventName       = "earliest_epoch"
 	FixatedParamChangeEventName  = "fixated_params_change"
 	FixatedParamCleanedEventName = "fixated_params_clean"
+	StakeStorageKeyUnstakeConst  = "Unstake"
 )
 
 // returns a deep copy of the stake storage with the same index

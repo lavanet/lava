@@ -287,7 +287,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 // -------------------------------------------------- unstaking list --------------------------------------------
 
 func (k Keeper) stakeStorageKeyUnstake(storageType string) string {
-	return storageType + "Unstake"
+	return storageType + types.StakeStorageKeyUnstakeConst
 }
 
 // used to get the unstaking entries
