@@ -292,15 +292,35 @@ func TestRenewSubscription(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12, "")
 	require.NotNil(t, err)
 
-	// but asking for additional 10 is fine
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10, "")
+	// but asking for additional 9 months (10 would also be fine)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 9, "")
 	require.Nil(t, err)
 
 	sub, found = keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
-	require.Equal(t, uint64(13), sub.DurationLeft)
-	require.Equal(t, uint64(10), sub.DurationTotal)
+	require.Equal(t, uint64(12), sub.DurationLeft)
+	require.Equal(t, uint64(9), sub.DurationTotal)
+
+	// edit the subscription's plan
+	subPlan, found := ts.keepers.Plans.FindPlan(ts.ctx, sub.PlanIndex, sub.PlanBlock)
+	require.True(t, found)
+	oldPlanGeoLocation := subPlan.PlanPolicy.GeolocationProfile
+	subPlan.PlanPolicy.GeolocationProfile += 1
+	err = ts.keepers.Plans.AddPlan(ts.ctx, subPlan)
+	require.Nil(t, err)
+
+	// try extending the subscription (normally we could extend with 1 more month, but since the
+	// subscription's plan changed, the extension should fail)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1, "")
+	require.NotNil(t, err)
+	require.Equal(t, uint64(12), sub.DurationLeft)
+	require.Equal(t, uint64(9), sub.DurationTotal)
+
+	// get the subscription's plan and make sure it uses the old plan
+	subPlan, found = ts.keepers.Plans.FindPlan(ts.ctx, sub.PlanIndex, sub.PlanBlock)
+	require.True(t, found)
+	require.Equal(t, oldPlanGeoLocation, subPlan.PlanPolicy.GeolocationProfile)
 }
 
 func TestSubscriptionAdminProject(t *testing.T) {
