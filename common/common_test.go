@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	mockStoreKey    *sdk.KVStoreKey = sdk.NewKVStoreKey("storeKey")
+	mockStoreKey    *sdk.KVStoreKey     = sdk.NewKVStoreKey("storeKey")
 	mockMemStoreKey *sdk.MemoryStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )
 
