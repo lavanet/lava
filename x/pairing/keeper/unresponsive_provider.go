@@ -61,12 +61,13 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
-		existingProviders := uint64(len(providerStakeEntriesForChain))
+		existingProviders := map[uint64]uint64{}
+		// count providers per geolocation
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
-			if existingProviders <= minimumProvidersCount {
-				// not enough providers, skip jailing any more providers
-				break
-			}
+			existingProviders[providerStakeEntry.Geolocation]++
+		}
+
+		for _, providerStakeEntry := range providerStakeEntriesForChain {
 			if minHistoryBlock < providerStakeEntry.StakeAppliedBlock {
 				// this staked provider has too short history (either since staking
 				// or since it was last unfrozen) - do not consider for jailing
@@ -79,9 +80,9 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 {
+			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > minimumProvidersCount {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
-				existingProviders--
+				existingProviders[providerStakeEntry.Geolocation]--
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
 				}
