@@ -26,7 +26,7 @@ var _ = strconv.Itoa(0)
 
 func CmdAccountInfo() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "account-info [lava_address] | --from wallet",
+		Use:   "account-info {[lava_address] | --from wallet}",
 		Short: "Query account information on an address",
 		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -52,7 +52,7 @@ func CmdAccountInfo() *cobra.Command {
 			ctx := context.Background()
 			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
 			if err != nil {
-				return utils.LavaFormatError("could not get the list of all chains, in order to construct the transaction", err)
+				return utils.LavaFormatError("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
 			}
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)
