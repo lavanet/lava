@@ -344,6 +344,8 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	testClientAmount := 1
 	testProviderAmount := 2
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	err := ts.addProviderGeolocation(2, 2)
+	require.Nil(t, err)
 
 	// get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
