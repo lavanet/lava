@@ -95,7 +95,28 @@ func TestCreateProject(t *testing.T) {
 	}
 
 	// continue testing traits that are not related to the project's name/description
-	// subscription key is not a developer
+	// try creating a project with invalid project keys
+	invalidKeysProjectData := projectData
+	invalidKeysProjectData.Name = "nonDuplicateProjectName"
+	invalidKeysProjectData.ProjectKeys = []projectstypes.ProjectKey{
+		{
+			Key:   subAccount.Addr.String(),
+			Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		},
+		{
+			Key:   adminAcc.Addr.String(),
+			Types: []projectstypes.ProjectKey_KEY_TYPE{4},
+			Vrfpk: "",
+		},
+	}
+
+	// should fail because there's an invalid key
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), invalidKeysProjectData, plan)
+	require.NotNil(t, err)
+
+	// get project by developer - subscription key is not a developer, should fail (if it succeeds, it means that the valid project key
+	// from invalidKeysProjectData was registered, which is not desired!)
 	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.NotNil(t, err)
 
@@ -160,6 +181,11 @@ func TestAddKeys(t *testing.T) {
 	pk := types.ProjectKey{Key: developerAcc.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
 	// try adding myself as admin, should fail
 	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: developerAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	require.NotNil(t, err)
+
+	// admin key adding an invalid key
+	pk = types.ProjectKey{Key: developerAcc2.Addr.String(), Types: []types.ProjectKey_KEY_TYPE{4}}
+	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: adminAcc.Addr.String(), Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin key adding a developer

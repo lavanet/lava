@@ -82,6 +82,12 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 					return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
 				}
 			}
+		default:
+			details := map[string]string{
+				"key":      key.GetKey(),
+				"keyTypes": string(key.GetTypes()),
+			}
+			return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_invalid_key_type", details, "requested key has an invalid type")
 		}
 	}
 
