@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/projects/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,8 +35,8 @@ func TestCreateDefaultProject(t *testing.T) {
 
 func TestCreateProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	projectName := "mockName"
 
-	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	plan := common.CreateMockPlan()
@@ -56,10 +57,44 @@ func TestCreateProject(t *testing.T) {
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
-	require.NotNil(t, err)
+	// test invalid project name/description
+	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
+	longProjectName := strings.Repeat(defaultProjectName, projectstypes.MAX_PROJECT_NAME_LEN)
+	projectNameWithComma := "projectName,"
+	nonAsciiProjectName := "projectName¢"
 
+	projectDescription := "test project"
+	longProjectDescription := strings.Repeat(projectDescription, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
+	nonAsciiProjectDescription := "projectDesc¢"
+
+	nameDescriptionTestProjectData := projectData
+	nameDescriptionTestProjectData.ProjectKeys = []projectstypes.ProjectKey{}
+
+	nameAndDescriptionTests := []struct {
+		name               string
+		projectName        string
+		projectDescription string
+	}{
+		{"bad projectName (duplicate)", projectName, projectDescription},
+		{"bad projectName (too long)", longProjectName, projectDescription},
+		{"bad projectName (contains comma)", projectNameWithComma, projectDescription},
+		{"bad projectName (non ascii)", nonAsciiProjectName, projectDescription},
+		{"bad projectName (empty)", "", projectDescription},
+		{"bad projectDescription (too long)", "test1", longProjectDescription},
+		{"bad projectDescription (non ascii)", "test2", nonAsciiProjectDescription},
+	}
+
+	for _, tt := range nameAndDescriptionTests {
+		t.Run(tt.name, func(t *testing.T) {
+			nameDescriptionTestProjectData.Name = tt.projectName
+			nameDescriptionTestProjectData.Description = tt.projectDescription
+
+			err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), nameDescriptionTestProjectData, plan)
+			require.NotNil(t, err)
+		})
+	}
+
+	// continue testing traits that are not related to the project's name/description
 	// subscription key is not a developer
 	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.NotNil(t, err)

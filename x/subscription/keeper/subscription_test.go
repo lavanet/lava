@@ -562,9 +562,12 @@ func TestAddProjectToSubscription(t *testing.T) {
 
 	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
 	longProjectName := strings.Repeat(defaultProjectName, projectstypes.MAX_PROJECT_NAME_LEN)
+	projectNameWithComma := "projectName,"
+	nonAsciiProjectName := "projectName¢"
 
 	projectDescription := "test project"
 	longProjectDescription := strings.Repeat(projectDescription, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
+	nonAsciiProjectDescription := "projectDesc¢"
 
 	template := []struct {
 		name               string
@@ -580,7 +583,11 @@ func TestAddProjectToSubscription(t *testing.T) {
 		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", projectDescription, false},
 		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, projectDescription, false},
 		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, projectDescription, false},
+		{"bad projectName (contains comma)", consumerAddr, regularAccountAddr, projectNameWithComma, projectDescription, false},
+		{"bad projectName (non ascii)", consumerAddr, regularAccountAddr, nonAsciiProjectName, projectDescription, false},
+		{"bad projectName (empty)", consumerAddr, regularAccountAddr, "", projectDescription, false},
 		{"bad projectDescription (too long)", consumerAddr, regularAccountAddr, "test6", longProjectDescription, false},
+		{"bad projectDescription (non ascii)", consumerAddr, regularAccountAddr, "test7", nonAsciiProjectDescription, false},
 	}
 
 	for _, tt := range template {
