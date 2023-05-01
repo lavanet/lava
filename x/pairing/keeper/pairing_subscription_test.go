@@ -433,12 +433,14 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 			if tt.useMostOfProjectCu {
 				for i := 0; uint64(i) < adminPolicy.TotalCuLimit/ts.plan.PlanPolicy.GetEpochCuLimit(); i++ {
 					cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
+
 					proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx),
 						ts.clients[0].Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 					require.Nil(t, err)
 					if proj.UsedCu >= 900 {
 						cuSum = 90
 					}
+
 					relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
 					relayRequest.SessionId = uint64(i)
 					relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)

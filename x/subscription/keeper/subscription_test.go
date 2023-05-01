@@ -302,11 +302,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(12), sub.DurationLeft)
 	require.Equal(t, uint64(9), sub.DurationTotal)
 
-	// edit the subscription's plan
+	// edit the subscription's plan (allow more CU)
 	subPlan, found := ts.keepers.Plans.FindPlan(ts.ctx, sub.PlanIndex, sub.PlanBlock)
 	require.True(t, found)
-	oldPlanGeoLocation := subPlan.PlanPolicy.GeolocationProfile
-	subPlan.PlanPolicy.GeolocationProfile += 1
+	oldPlanCuPerEpoch := subPlan.PlanPolicy.EpochCuLimit
+	subPlan.PlanPolicy.EpochCuLimit += 100
 	err = ts.keepers.Plans.AddPlan(ts.ctx, subPlan)
 	require.Nil(t, err)
 
@@ -320,7 +320,7 @@ func TestRenewSubscription(t *testing.T) {
 	// get the subscription's plan and make sure it uses the old plan
 	subPlan, found = ts.keepers.Plans.FindPlan(ts.ctx, sub.PlanIndex, sub.PlanBlock)
 	require.True(t, found)
-	require.Equal(t, oldPlanGeoLocation, subPlan.PlanPolicy.GeolocationProfile)
+	require.Equal(t, oldPlanCuPerEpoch, subPlan.PlanPolicy.EpochCuLimit)
 }
 
 func TestSubscriptionAdminProject(t *testing.T) {
