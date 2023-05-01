@@ -92,9 +92,9 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 	cmdTestRPCProvider := &cobra.Command{
 		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,api-interface,spec-chain-id ..."]`,
 		Short: `test an rpc provider by reading stake entries and querying it directly in all api interfaces`,
-		Long: `sets up a test-consumer that probes the rpc provider in all staked chains
-		need to provider either provider_address or --from wallet_name
-		optional flag: --endpoints in order to validate provider process before submitting a stake command`,
+		Long: `sets up a test-client that probes the rpc provider in all staked chains
+		you need to provider either provider_address or --from wallet_name
+		optional flag: --endpoints in order to validate a provider process before submitting a stake command`,
 		Example: `rpcprovider lava@myprovideraddress
 		rpcprovider --from providerWallet
 		rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
@@ -118,7 +118,7 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 			if len(args) == 0 {
 				keyName, err := sigs.GetKeyName(clientCtx)
 				if err != nil {
-					utils.LavaFormatFatal("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
+					utils.LavaFormatFatal("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 				}
 				clientKey, err := clientCtx.Keyring.Key(keyName)
 				if err != nil {
@@ -143,7 +143,7 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 			specQuerier := spectypes.NewQueryClient(clientCtx)
 			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
 			if err != nil {
-				return utils.LavaFormatError("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
+				return utils.LavaFormatError("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 			}
 			pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
 			stakedProviderChains := []epochstoragetypes.StakeEntry{}
