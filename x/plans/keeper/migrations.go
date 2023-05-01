@@ -30,9 +30,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex, true)
 		for _, block := range blocks {
 			var plan_v2 v2.PlanV2
-			if found := m.keeper.plansFS.FindEntry(ctx, planIndex, block, &plan_v2); !found {
-				return fmt.Errorf("could not find plan with index %s", planIndex)
-			}
+			m.keeper.plansFS.ReadEntry(ctx, planIndex, block, &plan_v2)
 
 			// create policy struct
 			planPolicy := projecttypes.Policy{
@@ -55,10 +53,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 				PlanPolicy:               planPolicy,
 			}
 
-			err := m.keeper.plansFS.ModifyEntry(ctx, planIndex, block, &plan_v3)
-			if err != nil {
-				return err
-			}
+			m.keeper.plansFS.ModifyEntry(ctx, planIndex, block, &plan_v3)
 		}
 	}
 

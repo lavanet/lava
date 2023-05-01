@@ -66,7 +66,7 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 
 func TestGRPCGetSupportedApi(t *testing.T) {
 	// Test case 1: Successful scenario, returns a supported API
-	var apip = &GrpcChainParser{
+	apip := &GrpcChainParser{
 		rwLock:     sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
 	}
@@ -98,7 +98,7 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 }
 
 func TestGRPCParseMessage(t *testing.T) {
-	var apip = &GrpcChainParser{
+	apip := &GrpcChainParser{
 		rwLock: sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{
 			"API1": {

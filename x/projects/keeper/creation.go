@@ -125,6 +125,7 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	}
 
 	project.UsedCu = 0
+	project.Snapshot += 1
 
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }

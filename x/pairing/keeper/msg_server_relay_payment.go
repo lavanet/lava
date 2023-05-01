@@ -398,7 +398,7 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 		return fmt.Errorf("failed to get project for client")
 	}
 
-	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, relay.CuSum)
+	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, uint64(ctx.BlockHeight()), relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the project")
 	}

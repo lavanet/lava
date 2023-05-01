@@ -17,7 +17,29 @@ endpoints:
       chain-id: LAV1
       network-address: 127.0.0.1:2221
       node-urls: 
-        url: 127.0.0.1:9090
+        - url: 127.0.0.1:9090
+          auth-config:
+            use-tls: true
+            # selected key and cert
+            key-pem: /home/user/key.pem
+            cert-pem: /home/user/cert.pem
+    - api-interface: grpc
+      chain-id: COS3
+      network-address: 127.0.0.1:2221
+      node-urls: 
+        - url: 127.0.0.1:9093
+          auth-config:
+            # default tls cert
+            use-tls: true 
+    - api-interface: grpc
+      chain-id: COS5
+      network-address: 127.0.0.1:2221
+      node-urls: 
+        - url: 127.0.0.1:9096
+          auth-config:
+            use-tls: true 
+            # root trusted certificate
+            cacert-pem: /home/user/cert.pem 
     - api-interface: rest
       chain-id: LAV1
       network-address: 127.0.0.1:2221

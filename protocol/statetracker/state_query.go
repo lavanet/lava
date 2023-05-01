@@ -110,13 +110,33 @@ func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID stri
 	return UserEntryRes.GetMaxCU(), nil
 }
 
+type EpochStateQuery struct {
+	StateQuery
+}
+
+func (esq *EpochStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
+	epochDetails, err := esq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+	if err != nil {
+		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err)
+	}
+	details := epochDetails.GetEpochDetails()
+	return details.StartBlock, nil
+}
+
+func NewEpochStateQuery(stateQuery *StateQuery) *EpochStateQuery {
+	return &EpochStateQuery{StateQuery: *stateQuery}
+}
+
 type ProviderStateQuery struct {
 	StateQuery
+	EpochStateQuery
 	clientCtx client.Context
 }
 
 func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *ProviderStateQuery {
-	csq := &ProviderStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx}
+	sq := NewStateQuery(ctx, clientCtx)
+	esq := NewEpochStateQuery(sq)
+	csq := &ProviderStateQuery{StateQuery: *sq, EpochStateQuery: *esq, clientCtx: clientCtx}
 	return csq
 }
 
@@ -148,15 +168,6 @@ func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, cons
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, epoch uint64, providerAddress string) string {
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
-}
-
-func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
-	epochDetails, err := psq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
-	if err != nil {
-		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err)
-	}
-	details := epochDetails.GetEpochDetails()
-	return details.StartBlock, nil
 }
 
 func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {

@@ -253,12 +253,13 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
-		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... }`,
+		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 		Short: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply`,
 		Long: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply
 		all configs should be located in` + app.DefaultNodeHome + "/config or the local running directory" + ` 
 		if no arguments are passed, assumes default config file: ` + DefaultRPCProviderFileName + `
 		if one argument is passed, its assumed the config file name
+		--gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE are necessary to send reward transactions, according to the current lava gas price set in validators
 		`,
 		Example: `required flags: --geolocation 1 --from alice
 optional: --save-conf

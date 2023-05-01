@@ -68,7 +68,7 @@ type BankKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, cu uint64) (err error)
+	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, block uint64, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, vrfpk string, errRet error)
 }
 
