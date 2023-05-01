@@ -93,11 +93,11 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,api-interface,spec-chain-id ..."]`,
 		Short: `test an rpc provider by reading stake entries and querying it directly in all api interfaces`,
 		Long: `sets up a test-consumer that probes the rpc provider in all staked chains
-		need to provider either provider_address or --from wallet_name
-		optional flag: --endpoints in order to validate provider process before submitting a stake command`,
+need to provider either provider_address or --from wallet_name
+optional flag: --endpoints in order to validate provider process before submitting a stake command`,
 		Example: `rpcprovider lava@myprovideraddress
-		rpcprovider --from providerWallet
-		rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
+rpcprovider --from providerWallet
+rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
 		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
