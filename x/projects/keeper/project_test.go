@@ -470,3 +470,75 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 
 	require.Equal(t, 3, len(proj.ProjectKeys))
 }
+
+func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
+	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	plan := common.CreateMockPlan()
+
+	subAccount1 := common.CreateNewAccount(ctx, *keepers, 10000)
+	subAccount2 := common.CreateNewAccount(ctx, *keepers, 10000)
+	devAcc := common.CreateNewAccount(ctx, *keepers, 10000)
+
+	projectName1 := "mockname1"
+	projectName2 := "mockname2"
+
+	projectID1 := types.ProjectIndex(subAccount1.Addr.String(), projectName1)
+	projectID2 := types.ProjectIndex(subAccount2.Addr.String(), projectName2)
+
+	projectData1 := types.ProjectData{
+		Name:        projectName1,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   subAccount1.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}},
+		Policy: &plan.PlanPolicy,
+	}
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount1.Addr.String(), projectData1, plan)
+	require.Nil(t, err)
+
+	projectData2 := types.ProjectData{
+		Name:        projectName2,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   subAccount2.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}},
+		Policy: &plan.PlanPolicy,
+	}
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount2.Addr.String(), projectData2, plan)
+	require.Nil(t, err)
+
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID1, subAccount1.Addr.String(),
+		[]types.ProjectKey{{
+			Key:   devAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}})
+	require.Nil(t, err)
+
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID2, subAccount2.Addr.String(),
+		[]types.ProjectKey{{
+			Key:   devAcc.Addr.String(),
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Vrfpk: "",
+		}})
+	require.NotNil(t, err) // should fail since this developer was already added to the first project
+
+	proj1, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAccount1.Addr.String(),
+		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	proj2, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAccount2.Addr.String(),
+		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	require.Equal(t, 2, len(proj1.ProjectKeys))
+	require.Equal(t, 1, len(proj2.ProjectKeys))
+}
