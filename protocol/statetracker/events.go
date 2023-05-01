@@ -67,7 +67,6 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, e
 				if eventName == "" || event.Type == eventName {
 					for _, attribute := range event.Attributes {
 						if value == "" || string(attribute.Value) == value {
-
 							utils.LavaFormatInfo("Found a matching event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
 						}
 					}
