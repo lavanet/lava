@@ -36,8 +36,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	if err != nil {
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
-	// aggregate all successful relays into one event
-	successDetails := map[string]string{}
 
 	for relayIdx, relay := range msg.Relays {
 		if relay.LavaChainId != lavaChainID {
@@ -270,8 +268,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
-		appendRelayPaymentDetailsToEvent(details, successDetails, uint64(relayIdx))
-
+		// differentiate between different relays by providing the index in the keys
+		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
+		// calling the same event repeatedly within a transaction just appends the new keys to the event
+		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 		if !legacy {
 			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
 			if err != nil {
@@ -295,7 +295,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	if len(dataReliabilityStore) > 0 {
 		return nil, utils.LavaError(ctx, k.Logger(ctx), "invalid relay payment with unused data reliability proofs", map[string]string{"dataReliabilityProofs": fmt.Sprintf("%+v", dataReliabilityStore)}, "didn't find a usage match for each relay")
 	}
-	utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
@@ -419,9 +418,10 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 	return nil
 }
 
-func appendRelayPaymentDetailsToEvent(from map[string]string, to map[string]string, uniqueIdentifier uint64) {
+func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier uint64) (to map[string]string) {
 	sessionIDStr := strconv.FormatUint(uniqueIdentifier, 10)
 	for key, value := range from {
 		to[key+"."+sessionIDStr] = value
 	}
+	return to
 }
