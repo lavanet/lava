@@ -198,7 +198,10 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projec
 
 	for _, policy := range policies {
 		if policy != nil {
-			providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+			providersToPair := policy.GetMaxProvidersToPair()
+			if providersToPair > 1 {
+				providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+			}
 		}
 	}
 
