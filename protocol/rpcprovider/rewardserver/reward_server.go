@@ -317,7 +317,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if len(attributesList) <= idx {
 			attributesList = append(attributesList, map[string]string{})
 		}
-		attributesList[int(idx)] = map[string]string{key: value}
+		attributesList[idx] = map[string]string{key: value}
 	}
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
