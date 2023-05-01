@@ -314,7 +314,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
 	attributesList := []map[string]string{}
 	appendToAttributeList := func(attributesList []map[string]string, idx int, key string, value string) {
-		if len(attributesList) <= idx {
+		for len(attributesList) <= idx {
 			attributesList = append(attributesList, map[string]string{})
 		}
 		attributesList[idx] = map[string]string{key: value}
@@ -327,7 +327,10 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			var err error
 			index, err = strconv.Atoi(splittedAttrs[1])
 			if err != nil {
-				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Key)})
+				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: attribute.Key})
+			}
+			if index < 0 || index > len(event.Attributes) {
+				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
 		}
 		appendToAttributeList(attributesList, index, attrKey, string(attribute.Value))
