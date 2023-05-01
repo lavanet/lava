@@ -419,6 +419,7 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 }
 
 func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier uint64) (to map[string]string) {
+	to = map[string]string{}
 	sessionIDStr := strconv.FormatUint(uniqueIdentifier, 10)
 	for key, value := range from {
 		to[key+"."+sessionIDStr] = value
