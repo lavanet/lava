@@ -2,7 +2,6 @@ package chainproxy
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -159,10 +158,6 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 		rpcList[i] = rpc
 		response := &pb_pkg.QueryShowChainInfoResponse{}
 		err = grpc.Invoke(ctx, "lavanet.lava.spec.Query/ShowChainInfo", &pb_pkg.QueryShowChainInfoRequest{}, response, rpc)
-		md, _ := metadata.FromIncomingContext(ctx)
-		fmt.Println(md)
-		md, _ = metadata.FromOutgoingContext(ctx)
-		fmt.Println(md)
 		require.Equal(t, "Test", response.ChainID)
 		require.Nil(t, err)
 	}
