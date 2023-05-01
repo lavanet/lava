@@ -14,6 +14,7 @@ message Project {
     Policy admin_policy = 6;
     uint64 used_cu = 7;
     Policy subscription_policy = 8;
+    uint64 snapshot = 9; // snapshot id to uniquely identify snapshots
 }
 
 message ProjectKey {
@@ -54,4 +55,4 @@ message ProjectData {
     bool enabled = 3;
     repeated ProjectKey projectKeys = 4 [(gogoproto.nullable) = false];
     Policy policy = 5;
-  }
+}
