@@ -42,7 +42,6 @@ type ChainTracker struct {
 	forkCallback            func(int64)         // a function to be called when a fork is detected
 	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
 	serverBlockMemory       uint64
-	quit                    chan bool
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
@@ -305,7 +304,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 					}
 					fetchFails = 0
 				}
-			case <-cs.quit:
+			case <-ctx.Done():
 				cs.ticker.Stop()
 				return
 			}
