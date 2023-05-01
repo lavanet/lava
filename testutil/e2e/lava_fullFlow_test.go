@@ -10,7 +10,7 @@ func TestLava(t *testing.T) {
 	timeout := time.Minute * 10
 
 	if deadline, ok := t.Deadline(); ok {
-		timeout = deadline.Sub(time.Now()).Round(10*time.Second)
+		timeout = time.Until(deadline).Round(10 * time.Second)
 	}
 
 	runE2E(timeout)

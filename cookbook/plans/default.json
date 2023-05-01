@@ -17,6 +17,11 @@
                 "plan_policy": {
                     "chain_policies": [
                         {
+                            "chain_id": "LAV1",
+                            "apis": [
+                            ]
+                        },
+                        {
                             "chain_id": "ETH1",
                             "apis": [
                                 "eth_blockNumber",
@@ -33,7 +38,7 @@
                     ],
                     "geolocation_profile": "18446744073709551615",
                     "total_cu_limit": "1000000",
-                    "epoch_cu_limit": "10000",
+                    "epoch_cu_limit": "20000",
                     "max_providers_to_pair": "3"
                 }
             }
