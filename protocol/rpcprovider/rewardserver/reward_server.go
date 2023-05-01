@@ -322,7 +322,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
 		attrKey := splittedAttrs[0]
-		var index = 0
+		index := 0
 		if len(splittedAttrs) > 1 {
 			var err error
 			index, err = strconv.Atoi(splittedAttrs[1])
