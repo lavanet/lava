@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const projectName = "mockname1"
+const projectName = "mockname"
 
 func TestCreateDefaultProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)

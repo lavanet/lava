@@ -30,6 +30,7 @@ func setupForConflictTests(t *testing.T, numOfProviders int) testStruct {
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 	// init keepers state
 	var balance int64 = 100000
+
 	// setup consumer
 	ts.consumer = common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 

@@ -38,6 +38,7 @@ func main() {
 	}
 	rootCmd.AddCommand(testCmd)
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
+	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:

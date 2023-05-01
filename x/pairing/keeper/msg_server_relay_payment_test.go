@@ -62,6 +62,10 @@ func (ts *testStruct) addClient(amount int) error {
 }
 
 func (ts *testStruct) addProvider(amount int) error {
+	return ts.addProviderGeolocation(amount, 1)
+}
+
+func (ts *testStruct) addProviderGeolocation(amount int, geolocation uint64) error {
 	for i := 0; i < amount; i++ {
 		sk, address := sigs.GenerateFloatingKey()
 		ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
@@ -70,8 +74,8 @@ func (ts *testStruct) addProvider(amount int) error {
 			return err
 		}
 		endpoints := []epochstoragetypes.Endpoint{}
-		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
-		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: geolocation})
+		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: geolocation, Endpoints: endpoints})
 		if err != nil {
 			return err
 		}
