@@ -38,6 +38,7 @@ func (mcf *MockChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, er
 	defer mcf.mutex.Unlock()
 	return mcf.latestBlock, nil
 }
+
 func (mcf *MockChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	mcf.mutex.Lock()
 	defer mcf.mutex.Unlock()
@@ -65,6 +66,7 @@ func (mcf *MockChainFetcher) AdvanceBlock() int64 {
 	mcf.blockHashes = append(mcf.blockHashes[1:], &chaintracker.BlockStore{Block: mcf.latestBlock, Hash: newHash})
 	return mcf.latestBlock
 }
+
 func (mcf *MockChainFetcher) SetBlock(latestBlock int64) {
 	mcf.latestBlock = latestBlock
 	newHash := mcf.hashKey(mcf.latestBlock)
@@ -257,7 +259,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	}
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
-	newBlockCallback := func(arg int64) {
+	newBlockCallback := func(arg int64, hash string) {
 		utils.LavaFormatDebug("new latest callback called")
 		callbackCalledNewLatest = true
 	}
@@ -315,7 +317,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	fetcherBlocks := 50
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
 	requestBlockTo := spectypes.LATEST_BLOCK - 4
-	specificBlock := spectypes.LATEST_BLOCK - 30 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
+	specificBlock := spectypes.LATEST_BLOCK - 30 // needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
 	tests := []struct {
 		name        string
 		advancement int64
@@ -385,7 +387,6 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[idx].Hash, requestedHashes[idx].Block))
 			}
 			require.False(t, callbackCalledFork)
-
 		}
 	})
 }

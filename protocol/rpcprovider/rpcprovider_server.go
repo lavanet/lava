@@ -217,7 +217,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		pairingEpoch := relaySession.PairingEpoch
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum) // TODO: when we pay as u go on subscription this will need to change
 		if relayError != nil {
-			err = sdkerrors.Wrapf(relayError, "OnSession Done failure: "+err.Error())
+			return rpcps.handleRelayErrorStatus(relayError)
 		} else {
 			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
@@ -231,9 +231,9 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		// we didn't even manage to subscribe
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 		if relayFailureError != nil {
-			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "onSessionFailureError", Value: relayFailureError.Error()})
+			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "onSessionFailureError", Value: relayFailureError.Error()}, utils.Attribute{Key: "error", Value: err})
 		} else {
-			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx})
+			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
 		}
 	}
 	return rpcps.handleRelayErrorStatus(err)
@@ -325,7 +325,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		if request.RelaySession.Epoch > latestBlock {
 			errorMessage = "provider is behind user's block height"
 		}
-		return nil, nil, utils.LavaFormatError(errorMessage, nil,
+		return nil, nil, utils.LavaFormatError(errorMessage, lavasession.EpochMismatchError,
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
@@ -631,6 +631,8 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 	}
 	if lavasession.SessionOutOfSyncError.Is(err) {
 		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
+	} else if lavasession.EpochMismatchError.Is(err) {
+		err = status.Error(codes.Code(lavasession.EpochMismatchError.ABCICode()), err.Error())
 	}
 	return err
 }

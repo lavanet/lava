@@ -101,7 +101,8 @@
                                     "0",
                                     "blockhash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "base64"
                             }
                         }
                     },

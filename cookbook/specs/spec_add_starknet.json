@@ -186,7 +186,8 @@
                                     "0",
                                     "block_hash"
                                 ],
-                                "parser_func": "PARSE_CANONICAL"
+                                "parser_func": "PARSE_CANONICAL",
+                                "encoding": "hex"
                             }
                         },
                         "block_parsing": {

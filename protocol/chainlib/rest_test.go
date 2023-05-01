@@ -79,7 +79,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2")
 	assert.Error(t, err)
-	assert.Equal(t, "rest api not supported", err.Error())
+	assert.Equal(t, "rest api not supported API2", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
@@ -92,7 +92,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 }
 
 func TestRestParseMessage(t *testing.T) {
-	var apip = &RestChainParser{
+	apip := &RestChainParser{
 		rwLock: sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{
 			"API1": {

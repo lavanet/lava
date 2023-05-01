@@ -11,7 +11,6 @@ import (
 	"errors"
 	"log"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,7 +24,6 @@ import (
 )
 
 const (
-	DialTimeout                                = 500 * time.Millisecond
 	ParallelConnectionsFlag                    = "parallel-connections"
 	MaximumNumberOfParallelConnectionsAttempts = 10
 )
@@ -104,7 +102,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 			connector.Close()
 			return nil, ctx.Err()
 		}
-		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
+		nctx, cancel := nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
 		// add auth path
 		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
 		if err != nil {
@@ -156,7 +154,7 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = rpcclient.DialContext(nctx, connector.nodeUrl.Url)
 		if err != nil {
 			utils.LavaFormatDebug(
@@ -225,16 +223,15 @@ type GRPCConnector struct {
 	lock        sync.RWMutex
 	freeClients []*grpc.ClientConn
 	usedClients int64
-	addr        string
 	credentials credentials.TransportCredentials
+	nodeUrl     common.NodeUrl
 }
 
 func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*GRPCConnector, error) {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
-	addr := strings.TrimSuffix(nodeUrl.Url, "/")
 	connector := &GRPCConnector{
 		freeClients: make([]*grpc.ClientConn, 0, nConns),
-		addr:        addr,
+		nodeUrl:     nodeUrl,
 	}
 
 	// in the case the grpc server needs to connect using tls.
@@ -253,12 +250,12 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 		connector.credentials = credentials.NewTLS(&tlsConf)
 	}
 
-	rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
+	rpcClient, err := connector.createConnection(ctx, nodeUrl.Url, connector.numberOfFreeClients())
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: addr})
+		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.Url})
 	}
 	connector.addClient(rpcClient)
-	go addClientsAsynchronouslyGrpc(ctx, connector, nConns-1, addr)
+	go addClientsAsynchronouslyGrpc(ctx, connector, nConns-1, nodeUrl.Url)
 	return connector, nil
 }
 
@@ -271,14 +268,14 @@ func (connector *GRPCConnector) getTransportCredentials() grpc.DialOption {
 
 func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
 	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients},
-		utils.Attribute{Key: "url", Value: connector.addr})
+		utils.Attribute{Key: "url", Value: connector.nodeUrl.Url})
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), connector.getTransportCredentials())
+		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		grpcClient, err = grpc.DialContext(nctx, connector.nodeUrl.Url, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}}...)
+			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}, {Key: "nodeUrl", Value: connector.nodeUrl.Url}}...)
 			cancel()
 			continue
 		}
@@ -412,12 +409,12 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 			connector.Close()
 			return nil, ctx.Err()
 		}
-		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
-		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
+		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{{
 				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
-			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}}...)
+			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.Url}}...)
 			cancel()
 			continue
 		}

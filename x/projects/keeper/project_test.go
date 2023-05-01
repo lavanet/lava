@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const projectName = "mockname"
+
 func TestCreateDefaultProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
@@ -35,7 +37,6 @@ func TestCreateDefaultProject(t *testing.T) {
 func TestCreateProject(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	plan := common.CreateMockPlan()
@@ -61,10 +62,10 @@ func TestCreateProject(t *testing.T) {
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
-	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
+	_, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.NotNil(t, err)
 
-	response1, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
+	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.Nil(t, err)
 
 	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
@@ -89,7 +90,6 @@ func TestCreateProject(t *testing.T) {
 func TestAddKeys(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	projectName := "mockname"
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
 	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
@@ -110,7 +110,8 @@ func TestAddKeys(t *testing.T) {
 				Key:   developerAcc.Addr.String(),
 				Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 				Vrfpk: "",
-			}},
+			},
+		},
 		Policy: nil,
 	}
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
@@ -149,14 +150,13 @@ func TestAddKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	// fetch project with new developer
-	projectRes, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc3.Addr.String()})
+	_, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: developerAcc3.Addr.String()})
 	require.Nil(t, err)
 }
 
 func TestAddAdminInTwoProjects(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 	// he should be a developer only in the first project
-	projectName := "mockname"
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
@@ -182,9 +182,9 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	testkeeper.AdvanceEpoch(ctx, keepers)
 
-	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
+	_, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: adminAcc.Addr.String()})
 	require.NotNil(t, err)
-	response, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
+	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAccount.Addr.String()})
 	require.Nil(t, err)
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAccount.Addr.String(), types.ADMIN_PROJECT_NAME))
 }
@@ -241,31 +241,45 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		validateBasicSuccess bool
 		setPolicySuccess     bool
 	}{
-		{"valid policy (admin account)", adminAcc.Addr.String(),
+		{
+			"valid policy (admin account)", adminAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true},
+			100, 10, 3, true, true,
+		},
 
-		{"valid policy (subscription account)", subAccount.Addr.String(),
+		{
+			"valid policy (subscription account)", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true},
+			100, 10, 3, true, true,
+		},
 
-		{"bad creator (developer account -- not admin)", developerAcc.Addr.String(),
+		{
+			"bad creator (developer account -- not admin)", developerAcc.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false},
+			100, 10, 3, true, false,
+		},
 
-		{"bad chainID (doesn't exist)", subAccount.Addr.String(),
+		{
+			"bad chainID (doesn't exist)", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
+			100, 10, 3, true, true,
+		}, // note: currently, we don't verify the chain policies
 
-		{"bad API (doesn't exist)", subAccount.Addr.String(),
+		{
+			"bad API (doesn't exist)", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
-			100, 10, 3, true, true}, // note: currently, we don't verify the chain policies
-		{"epoch CU larger than total CU", subAccount.Addr.String(),
+			100, 10, 3, true, true,
+		}, // note: currently, we don't verify the chain policies
+		{
+			"epoch CU larger than total CU", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			10, 100, 3, false, false},
-		{"bad maxProvidersToPair", subAccount.Addr.String(),
+			10, 100, 3, false, false,
+		},
+		{
+			"bad maxProvidersToPair", subAccount.Addr.String(),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 1, false, false},
+			100, 10, 1, false, false,
+		},
 	}
 
 	for _, tt := range templates {
@@ -305,7 +319,6 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				} else {
 					require.NotNil(t, err)
 				}
-
 			} else {
 				setSubscriptionPolicyMessage := types.MsgSetSubscriptionPolicy{
 					Creator:  tt.creator,

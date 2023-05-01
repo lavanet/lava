@@ -79,18 +79,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		return "", err
 	}
 
-	blockData, err := parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
-	if err != nil {
-		return "", err
-	}
-
-	// blockData is an interface array with the parsed result in index 0.
-	// we know to expect a string result for a hash.
-	ret, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
-	if !ok {
-		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, utils.Attribute{Key: "blockData", Value: blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX]})
-	}
-	return ret, nil
+	return parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
 }
 
 func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {

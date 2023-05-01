@@ -138,7 +138,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -162,7 +162,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -186,7 +186,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -210,7 +210,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -234,7 +234,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]

@@ -108,6 +108,16 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
 	}
+
+	// pre loop to handle synchronous actions
+	chainMutexes := map[string]*sync.Mutex{}
+	for idx, endpoint := range rpcProviderEndpoints {
+		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
+		if idx > 0 && endpoint.NetworkAddress == "" {  // handle undefined addresses as the previous endpoint for shared listeners
+			endpoint.NetworkAddress = rpcProviderEndpoints[idx-1].NetworkAddress
+		}
+	}
+	var stateTrackersPerChain sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
@@ -120,6 +130,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
+			chainID := rpcProviderEndpoint.ChainID
 			providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
 			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
@@ -127,54 +138,69 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
-			providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcProviderEndpoint.ChainID)
-			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, averageBlockTime)
+			providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
+
+			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 			}
 
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
-			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:      blocksToSaveChainTracker,
-				AverageBlockTime:  averageBlockTime,
-				ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+			var chainTracker *chaintracker.ChainTracker
+
+			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
+			chainCommonSetup := func() error {
+				chainMutexes[chainID].Lock()
+				defer chainMutexes[chainID].Unlock()
+				chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
+				if !found {
+					blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+					chainTrackerConfig := chaintracker.ChainTrackerConfig{
+						BlocksToSave:      blocksToSaveChainTracker,
+						AverageBlockTime:  averageBlockTime,
+						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+					}
+					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+					if err != nil {
+						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+					}
+					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
+				} else {
+					var ok bool
+					chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
+					if !ok {
+						utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
+					}
+					utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+				}
+
+				return nil
 			}
-			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
-			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+			err = chainCommonSetup()
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
-				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+				return err
 			}
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rpcProviderServer := &RPCProviderServer{}
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU)
-
 			// set up grpc listener
 			var listener *ProviderListener
-			if rpcProviderEndpoint.NetworkAddress == "" && len(rpcp.rpcProviderListeners) > 0 {
-				// handle case only one network address was defined
-				for _, listener_p := range rpcp.rpcProviderListeners {
-					listener = listener_p
-					break
+			func() {
+				rpcp.lock.Lock()
+				defer rpcp.lock.Unlock()
+				var ok bool
+				listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress]
+				if !ok {
+					utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
+					listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+					rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress] = listener
 				}
-			} else {
-				func() {
-					rpcp.lock.Lock()
-					defer rpcp.lock.Unlock()
-					var ok bool
-					listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress]
-					if !ok {
-						utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
-						listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
-						rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress] = listener
-					}
-				}()
-			}
+			}()
 			if listener == nil {
 				utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
 			}
@@ -226,12 +252,13 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
-		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... }`,
+		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 		Short: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply`,
 		Long: `rpcprovider sets up a server to listen for rpc-consumers requests from the lava protocol send them to a configured node and respond with the reply
 		all configs should be located in` + app.DefaultNodeHome + "/config or the local running directory" + ` 
 		if no arguments are passed, assumes default config file: ` + DefaultRPCProviderFileName + `
 		if one argument is passed, its assumed the config file name
+		--gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE are necessary to send reward transactions, according to the current lava gas price set in validators
 		`,
 		Example: `required flags: --geolocation 1 --from alice
 optional: --save-conf

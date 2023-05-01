@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -79,6 +80,18 @@ func (fs *FixationStore) getStore(ctx sdk.Context, index string) *prefix.Store {
 		ctx.KVStore(fs.storeKey),
 		types.KeyPrefix(fs.createStoreKey(index)))
 	return &store
+}
+
+// getEntry returns an existing entry in the store
+func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint64) (entry types.Entry) {
+	store := fs.getStore(ctx, safeIndex)
+	byteKey := types.EncodeKey(block)
+	b := store.Get(byteKey)
+	if b == nil {
+		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d", types.DesanitizeIndex(safeIndex), block))
+	}
+	fs.cdc.MustUnmarshal(b, &entry)
+	return entry
 }
 
 // setEntry modifies an existing entry in the store
@@ -349,18 +362,37 @@ func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64
 }
 
 func (fs *FixationStore) createStoreKey(index string) string {
-	return types.EntryKey + fs.prefix + index
+	return types.EntryPrefix + fs.prefix + index
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
 	fs.tstore.Tick(ctx)
 }
 
+func (fs *FixationStore) getVersion(ctx sdk.Context) uint64 {
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
+
+	b := store.Get(types.KeyPrefix(types.FixationVersionKey))
+	if b == nil {
+		return 1
+	}
+
+	return types.DecodeKey(b)
+}
+
+func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
+	b := types.EncodeKey(val)
+	store.Set(types.KeyPrefix(types.FixationVersionKey), b)
+}
+
 // NewFixationStore returns a new FixationStore object
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
+
 	callback := func(ctx sdk.Context, data string) { fs.deleteStaleEntries(ctx, data) }
 	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
+
 	return &fs
 }

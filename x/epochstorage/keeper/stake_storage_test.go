@@ -15,8 +15,10 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-const advanceFewEpochs = 4
-const stakeStorageSlots = 10
+const (
+	advanceFewEpochs  = 4
+	stakeStorageSlots = 10
+)
 
 func createNStakeStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []epochstoragetypes.StakeStorage {
 	items := make([]epochstoragetypes.StakeStorage, n)
@@ -42,6 +44,7 @@ func TestStakeStorageGet(t *testing.T) {
 		)
 	}
 }
+
 func TestStakeStorageRemove(t *testing.T) {
 	keeper, ctx := testkeeper.EpochstorageKeeper(t)
 	items := createNStakeStorage(keeper, ctx, stakeStorageSlots)

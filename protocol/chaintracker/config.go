@@ -8,9 +8,9 @@ const (
 )
 
 type ChainTrackerConfig struct {
-	ForkCallback             func(int64) // a function to be called when a fork is detected
-	NewLatestCallback        func(int64) // a function to be called when a new block is detected
-	ServerAddress            string      // if not empty will open up a grpc server for that address
+	ForkCallback             func(block int64)              // a function to be called when a fork is detected
+	NewLatestCallback        func(block int64, hash string) // a function to be called when a new block is detected
+	ServerAddress            string                         // if not empty will open up a grpc server for that address
 	BlocksToSave             uint64
 	AverageBlockTime         time.Duration // how often to query latest block
 	ServerBlockMemory        uint64

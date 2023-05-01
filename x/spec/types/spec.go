@@ -19,6 +19,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		APIInterfaceRest:          {},
 		APIInterfaceGrpc:          {},
 	}
+	availavleEncodings := map[string]struct{}{
+		EncodingBase64: {},
+		EncodingHex:    {},
+	}
 
 	if spec.ReliabilityThreshold == 0 {
 		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
@@ -73,6 +77,11 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			if !result {
 				details["api"] = api.Name
 				return details, fmt.Errorf("unsupported function tag")
+			}
+			if api.Parsing.ResultParsing.Encoding != "" {
+				if _, ok := availavleEncodings[api.Parsing.ResultParsing.Encoding]; !ok {
+					return details, fmt.Errorf("unsupported api encoding %s in api %v ", api.Parsing.ResultParsing.Encoding, api)
+				}
 			}
 		}
 	}

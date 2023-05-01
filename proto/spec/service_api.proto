@@ -14,6 +14,7 @@ message ServiceApi {
   repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
   SpecCategory reserved = 6;
   Parsing parsing = 7 [(gogoproto.nullable) = false];
+  string internal_path = 8;
 }
 
 message Parsing {
@@ -33,6 +34,7 @@ message BlockParser {
   repeated string parser_arg = 1;
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
+  string encoding =4; // used to parse byte responses: base64,hex,bech32
 }
 
 enum PARSER_FUNC{

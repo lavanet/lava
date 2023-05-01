@@ -6,7 +6,6 @@ import (
 )
 
 func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
-
 	// setup
 	metricService := MetricService{
 		AggregatedMetricMap: &map[string]map[string]map[string]*AggregatedMetric{},
@@ -55,7 +54,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		}
 	})
 
-	//Scenario 2 (success relay,Check data that will be added to the previously added data)
+	// Scenario 2 (success relay,Check data that will be added to the previously added data)
 	t.Run("SuccessRelay_NonEmptyMap", func(t *testing.T) {
 		expectedMetricData = RelayAnalyticsDTO{
 			ProjectHash:  "1",
@@ -94,7 +93,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		}
 	})
 
-	//Scenario 4 (another project id)
+	// Scenario 4 (another project id)
 	t.Run("SuccessRelay_WithNewProject_NonEmptyMap", func(t *testing.T) {
 		metricData.Success = true
 		metricData.ProjectHash = "2"
@@ -115,7 +114,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		}
 	})
 
-	//Scenario 5 (another chain id)
+	// Scenario 5 (another chain id)
 	t.Run("SuccessRelay_WithNewChainId_NonEmptyMap", func(t *testing.T) {
 		metricData.Success = true
 		metricData.ChainID = "testChain2"
@@ -136,7 +135,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		}
 	})
 
-	//Scenario 6 (another chain id)
+	// Scenario 6 (another chain id)
 	t.Run("SuccessRelay_WithNewApiType_NonEmptyMap", func(t *testing.T) {
 		metricData.Success = true
 		metricData.APIType = "testApiType2"
@@ -160,7 +159,6 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 
 func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 	t.Run("Check_PrepareArrayForProject", func(t *testing.T) {
-
 		// setup
 		projectData := map[string]map[string]*AggregatedMetric{
 			"testChain": {
@@ -227,7 +225,7 @@ func checkThatMetricDtoInAggregatedMetricMap(mapData map[string]map[string]map[s
 	if apiTypeData.RelaysCount != expectedData.RelayCounts {
 		return fmt.Errorf("Invalid relayCounts data. expected: '%d' got: '%d'! ", expectedData.RelayCounts, apiTypeData.RelaysCount)
 	}
-	if apiTypeData.TotalLatency != uint64(expectedData.Latency) {
+	if apiTypeData.TotalLatency != expectedData.Latency {
 		return fmt.Errorf("Invalid latency data. expected: '%d' got: '%d'! ", expectedData.Latency, apiTypeData.TotalLatency)
 	}
 	if apiTypeData.SuccessCount != expectedData.SuccessCount {
