@@ -36,9 +36,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -67,9 +68,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -98,9 +100,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -260,7 +263,6 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestExtractDappIDFromFiberContext(t *testing.T) {
@@ -441,5 +443,4 @@ func TestGetServiceApis(t *testing.T) {
 	if len(serverApis) != 2 {
 		t.Errorf("Expected serverApis length to be 2, but got %d", len(serverApis))
 	}
-
 }

@@ -130,7 +130,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	epoch, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 
-	clientStakeEntry, err := keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
+	_, err = keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
 	require.Nil(t, err)
 
 	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
@@ -141,7 +141,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	epoch, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 
-	clientStakeEntry, err = keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
+	clientStakeEntry, err := keepers.Pairing.VerifyClientStake(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()), epoch)
 	require.Nil(t, err)
 
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))

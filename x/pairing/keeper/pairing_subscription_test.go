@@ -170,7 +170,6 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	// waste all the subscription's CU on project A
 	i := 0
 	for ; uint64(i) < ts.plan.PlanPolicy.GetTotalCuLimit()/ts.plan.PlanPolicy.GetEpochCuLimit(); i++ {
-
 		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(consumerA.SK, *relayRequest)
@@ -401,7 +400,6 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				require.Nil(t, err)
 
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
 			}
 
 			adminPolicy := &projectstypes.Policy{

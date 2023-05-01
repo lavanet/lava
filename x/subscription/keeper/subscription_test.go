@@ -553,7 +553,7 @@ func TestPrice(t *testing.T) {
 			require.True(t, found)
 
 			balance := ts.keepers.BankKeeper.GetBalance(ts.ctx, address, epochstoragetypes.TokenDenom)
-			require.Equal(t, balance.Amount.Int64(), int64(10000-tt.cost))
+			require.Equal(t, balance.Amount.Int64(), 10000-tt.cost)
 
 			keeper.RemoveSubscription(ts.ctx, creator)
 

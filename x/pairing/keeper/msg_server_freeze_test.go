@@ -41,7 +41,8 @@ func TestFreeze(t *testing.T) {
 	_, err = ts.servers.PairingServer.FreezeProvider(ts.ctx, &types.MsgFreezeProvider{
 		Creator:  providerToFreeze.Address,
 		ChainIds: []string{ts.spec.GetIndex()},
-		Reason:   "dummyReason"})
+		Reason:   "dummyReason",
+	})
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
@@ -108,7 +109,8 @@ func TestProvidersQuery(t *testing.T) {
 	_, err = ts.servers.PairingServer.FreezeProvider(ts.ctx, &types.MsgFreezeProvider{
 		Creator:  providerToFreeze.Address,
 		ChainIds: []string{ts.spec.GetIndex()},
-		Reason:   "dummyReason"})
+		Reason:   "dummyReason",
+	})
 	require.Nil(t, err)
 
 	// get providers without frozen providers and verify that providerToFreeze is not shown
@@ -132,7 +134,6 @@ func TestProvidersQuery(t *testing.T) {
 		if providerToFreeze.Address == provider.Address {
 			foundFrozenProvider = true
 		}
-
 	}
 	require.True(t, foundFrozenProvider)
 }
@@ -155,7 +156,8 @@ func TestUnstakeFrozen(t *testing.T) {
 	_, err = ts.servers.PairingServer.FreezeProvider(ts.ctx, &types.MsgFreezeProvider{
 		Creator:  providerToFreeze.Address,
 		ChainIds: []string{ts.spec.GetIndex()},
-		Reason:   "dummyReason"})
+		Reason:   "dummyReason",
+	})
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
@@ -224,7 +226,8 @@ func TestPaymentFrozen(t *testing.T) {
 	_, err = ts.servers.PairingServer.FreezeProvider(ts.ctx, &types.MsgFreezeProvider{
 		Creator:  providerToFreeze.Address,
 		ChainIds: []string{ts.spec.GetIndex()},
-		Reason:   "dummyReason"})
+		Reason:   "dummyReason",
+	})
 	require.Nil(t, err)
 
 	// check that the provider is still shown in the pairing list
