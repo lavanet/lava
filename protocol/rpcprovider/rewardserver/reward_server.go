@@ -313,18 +313,24 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
 	attributesList := []map[string]string{}
+	appendToAttributeList := func(attributesList []map[string]string, idx int, key string, value string) {
+		if len(attributesList) <= idx {
+			attributesList = append(attributesList, map[string]string{})
+		}
+		attributesList[int(idx)] = map[string]string{key: value}
+	}
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
 		attrKey := splittedAttrs[0]
+		var index int = 0
 		if len(splittedAttrs) > 1 {
-			index, err := strconv.ParseUint(splittedAttrs[1], 0, 64)
+			var err error
+			index, err = strconv.Atoi(splittedAttrs[1])
 			if err != nil {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Key)})
 			}
-			attributesList[int(index)][attrKey] = string(attribute.Value)
-		} else {
-			attributesList[0][attrKey] = string(attribute.Value)
 		}
+		appendToAttributeList(attributesList, index, attrKey, string(attribute.Value))
 	}
 	payments := []*PaymentRequest{}
 	for _, attributes := range attributesList {
