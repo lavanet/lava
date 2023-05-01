@@ -325,7 +325,6 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		} else {
 			attributesList[0][attrKey] = string(attribute.Value)
 		}
-
 	}
 	payments := []*PaymentRequest{}
 	for _, attributes := range attributesList {
