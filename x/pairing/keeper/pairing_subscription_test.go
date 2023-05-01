@@ -460,3 +460,68 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 		})
 	}
 }
+
+func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	err := ts.addProvider(100)
+	require.Nil(t, err)
+
+	// advance epoch to get pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
+		Creator:  ts.clients[0].Addr.String(),
+		Consumer: ts.clients[0].Addr.String(),
+		Index:    ts.plan.Index,
+		Duration: 11,
+		Vrfpk:    "",
+	})
+	require.Nil(t, err)
+
+	for i := 0; i < int(ts.plan.PlanPolicy.TotalCuLimit)/int(ts.plan.PlanPolicy.EpochCuLimit); i++ {
+		res, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+			ChainID: ts.spec.Index,
+			Client:  ts.clients[0].Addr.String(),
+		})
+		require.Nil(t, err)
+
+		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
+		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+		relayRequest.SessionId = uint64(i)
+		relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+		require.Nil(t, err)
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: res.Providers[0].Address, Relays: []*types.RelaySession{relayRequest}})
+		require.Nil(t, err)
+
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	res, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+		ChainID: ts.spec.Index,
+		Client:  ts.clients[0].Addr.String(),
+	})
+	require.Nil(t, err)
+	firstPairing := res.Providers
+
+	// advance an epoch block by block. On each one try to spend more than it's allowed and check the pairing hasn't changed
+	epochBlocks := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
+	for i := 0; i < int(epochBlocks)-1; i++ {
+		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+
+		res, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+			ChainID: ts.spec.Index,
+			Client:  ts.clients[0].Addr.String(),
+		})
+		require.Nil(t, err)
+
+		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
+		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+		relayRequest.SessionId = uint64(i)
+		relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+		require.Nil(t, err)
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: res.Providers[0].Address, Relays: []*types.RelaySession{relayRequest}})
+		require.NotNil(t, err)
+
+		require.Equal(t, firstPairing, res.Providers)
+	}
+}
