@@ -523,3 +523,77 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		require.Equal(t, firstPairing, res.Providers)
 	}
 }
+
+func TestAddProjectAfterPlanUpdate(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+
+	// advance epoch to get pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
+		Creator:  ts.clients[0].Addr.String(),
+		Consumer: ts.clients[0].Addr.String(),
+		Index:    ts.plan.Index,
+		Duration: 11,
+		Vrfpk:    "",
+	})
+	require.Nil(t, err)
+
+	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr.String())
+	require.True(t, found)
+
+	// advance epoch so the plan edit will be on a different block than the subscription purchase
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// edit the plan the subscription purchased (allow less CU per epoch)
+	subPlan, found := ts.keepers.Plans.FindPlan(sdk.UnwrapSDKContext(ts.ctx), sub.PlanIndex, sub.PlanBlock)
+	require.True(t, found)
+	oldEpochCuLimit := subPlan.PlanPolicy.EpochCuLimit
+	subPlan.PlanPolicy.EpochCuLimit -= 50
+	err = ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), subPlan)
+	require.Nil(t, err)
+
+	// add another project under the subcscription
+	projectData := projectstypes.ProjectData{
+		Name:        "anotherProject",
+		Description: "dummyDesc",
+		Enabled:     true,
+		ProjectKeys: []projectstypes.ProjectKey{
+			{
+				Key: ts.clients[1].Addr.String(),
+				Types: []projectstypes.ProjectKey_KEY_TYPE{
+					projectstypes.ProjectKey_DEVELOPER,
+					projectstypes.ProjectKey_ADMIN,
+				},
+				Vrfpk: "",
+			},
+		},
+		Policy: nil,
+	}
+	err = ts.keepers.Subscription.AddProjectToSubscription(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr.String(), projectData)
+	require.Nil(t, err)
+
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), ts.clients[1].Addr.String(),
+		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	// set a new policy to the second project, making it more strict than the old plan but less strict than the new plan
+	adminPolicy := ts.plan.PlanPolicy
+	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
+
+	err = ts.keepers.Projects.SetPolicy(sdk.UnwrapSDKContext(ts.ctx), []string{proj.Index}, &adminPolicy,
+		ts.clients[1].Addr.String(), projectstypes.SET_ADMIN_POLICY)
+	require.Nil(t, err)
+
+	// advance epoch to set the new policy
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ts.ctx),
+		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	// in terms of strictness: newPlan < adminPolicy < oldPlan but newPlan should not apply to the second project (since it's under a subscription that uses the old plan)
+	require.Equal(t, adminPolicy.EpochCuLimit, cuPerEpochLimit)
+}
