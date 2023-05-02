@@ -180,12 +180,12 @@ func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock in
 		events := tx.Events
 		for _, event := range events {
 			if event.Type == "lava_relay_payment" {
-				payment, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
+				paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: payment})
-				payments = append(payments, payment)
+				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+				payments = append(payments, paymentList...)
 			}
 		}
 	}

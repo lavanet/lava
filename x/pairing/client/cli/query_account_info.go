@@ -56,7 +56,7 @@ func CmdAccountInfo() *cobra.Command {
 			ctx := context.Background()
 			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
 			if err != nil {
-				return utils.LavaFormatError("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
+				return utils.LavaFormatError("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 			}
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)

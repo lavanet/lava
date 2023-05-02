@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -310,62 +311,85 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 	return rws
 }
 
-func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) (*PaymentRequest, error) {
-	attributes := map[string]string{}
+func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
+	attributesList := []map[string]string{}
+	appendToAttributeList := func(attributesList []map[string]string, idx int, key string, value string) {
+		for len(attributesList) <= idx {
+			attributesList = append(attributesList, map[string]string{})
+		}
+		attributesList[idx] = map[string]string{key: value}
+	}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
+		attrKey := splittedAttrs[0]
+		index := 0
+		if len(splittedAttrs) > 1 {
+			var err error
+			index, err = strconv.Atoi(splittedAttrs[1])
+			if err != nil {
+				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: attribute.Key})
+			}
+			if index < 0 || index > len(event.Attributes) {
+				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
+			}
+		}
+		appendToAttributeList(attributesList, index, attrKey, string(attribute.Value))
 	}
-	chainID, ok := attributes["chainID"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	mint, ok := attributes["Mint"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	mintedCoins, err := sdk.ParseCoinNormalized(mint)
-	if err != nil {
-		return nil, err
-	}
-	cu_str, ok := attributes["CU"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	cu, err := strconv.ParseUint(cu_str, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	consumer, ok := attributes["client"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	consumerAddr, err := sdk.AccAddressFromBech32(consumer)
-	if err != nil {
-		return nil, err
-	}
+	payments := []*PaymentRequest{}
+	for _, attributes := range attributesList {
+		chainID, ok := attributes["chainID"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		mint, ok := attributes["Mint"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		mintedCoins, err := sdk.ParseCoinNormalized(mint)
+		if err != nil {
+			return nil, err
+		}
+		cu_str, ok := attributes["CU"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		cu, err := strconv.ParseUint(cu_str, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		consumer, ok := attributes["client"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		consumerAddr, err := sdk.AccAddressFromBech32(consumer)
+		if err != nil {
+			return nil, err
+		}
 
-	uniqueIdentifier, ok := attributes["uniqueIdentifier"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		uniqueIdentifier, ok := attributes["uniqueIdentifier"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		uniqueID, err := strconv.ParseUint(uniqueIdentifier, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		description, ok := attributes["descriptionString"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+		}
+		payment := &PaymentRequest{
+			CU:                  cu,
+			BlockHeightDeadline: block,
+			Amount:              mintedCoins,
+			Client:              consumerAddr,
+			Description:         description,
+			UniqueIdentifier:    uniqueID,
+			ChainID:             chainID,
+		}
+		payments = append(payments, payment)
 	}
-	uniqueID, err := strconv.ParseUint(uniqueIdentifier, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	description, ok := attributes["descriptionString"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	payment := &PaymentRequest{
-		CU:                  cu,
-		BlockHeightDeadline: block,
-		Amount:              mintedCoins,
-		Client:              consumerAddr,
-		Description:         description,
-		UniqueIdentifier:    uniqueID,
-		ChainID:             chainID,
-	}
-	return payment, nil
+	return payments, nil
 }
 
 func getKeyForConsumerRewards(specId string, apiInterface string, consumerAddress string) string {

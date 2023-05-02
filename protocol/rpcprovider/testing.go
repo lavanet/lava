@@ -44,10 +44,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			checkOneProvider := func() (time.Duration, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
-				defer conn.Close()
 				if err != nil {
 					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
+				defer conn.Close()
 				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
@@ -92,7 +92,7 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 	cmdTestRPCProvider := &cobra.Command{
 		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,api-interface,spec-chain-id ..."]`,
 		Short: `test an rpc provider by reading stake entries and querying it directly in all api interfaces`,
-		Long: `sets up a test-consumer that probes the rpc provider in all staked chains
+		Long: `sets up a test-client that probes the rpc provider in all staked chains
 need to provider either provider_address or --from wallet_name
 optional flag: --endpoints in order to validate provider process before submitting a stake command`,
 		Example: `rpcprovider lava@myprovideraddress
@@ -118,7 +118,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if len(args) == 0 {
 				keyName, err := sigs.GetKeyName(clientCtx)
 				if err != nil {
-					utils.LavaFormatFatal("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
+					utils.LavaFormatFatal("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 				}
 				clientKey, err := clientCtx.Keyring.Key(keyName)
 				if err != nil {
@@ -143,7 +143,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			specQuerier := spectypes.NewQueryClient(clientCtx)
 			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
 			if err != nil {
-				return utils.LavaFormatError("failed getting key name from clientCtx, either provider the address in an argument or verify the --from wallet exists", err)
+				return utils.LavaFormatError("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 			}
 			pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
 			stakedProviderChains := []epochstoragetypes.StakeEntry{}
