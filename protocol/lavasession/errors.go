@@ -9,7 +9,7 @@ var ( // Consumer Side Errors
 	UnreachableCodeError                                 = sdkerrors.New("UnreachableCode Error", 666, "Should not get here.")
 	AllProviderEndpointsDisabledError                    = sdkerrors.New("AllProviderEndpointsDisabled Error", 667, "All endpoints are not available.") // a provider is completely unresponsive all endpoints are not available
 	MaximumNumberOfSessionsExceededError                 = sdkerrors.New("MaximumNumberOfSessionsExceeded Error", 668, "Provider reached maximum number of active sessions.")
-	MaxComputeUnitsExceededError                         = sdkerrors.New("MaxComputeUnitsExceeded Error", 669, "Consumer is trying to exceed the maximum number of compute uints available.")
+	MaxComputeUnitsExceededError                         = sdkerrors.New("MaxComputeUnitsExceeded Error", 669, "Consumer is trying to exceed the maximum number of compute units available.")
 	EpochMismatchError                                   = sdkerrors.New("ReportingAnOldEpoch Error", 670, "Tried to Report to an older epoch")
 	AddressIndexWasNotFoundError                         = sdkerrors.New("AddressIndexWasNotFound Error", 671, "address index was not found in list")
 	LockMisUseDetectedError                              = sdkerrors.New("LockMisUseDetected Error", 672, "Faulty use of locks detected")
