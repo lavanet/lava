@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	CacheMaxCost               = 100  // each item cost would be 1
+	CacheMaxCost               = 1000 // each item cost would be 1
 	CacheNumCounters           = 1000 // expect 100 items
 	INITIAL_DATA_STALENESS     = 24
 	HALF_LIFE_TIME             = time.Hour
@@ -158,7 +158,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (u
 }
 
 func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
-	if currentNumProvders > po.wantedNumProvidersInConcurrency {
+	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -215,7 +215,10 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	} else {
 		historicalLatency = baseLatency * time.Duration(providerData.Latency.Num/providerData.Latency.Denom)
 	}
-
+	if historicalLatency > timeoutDuration {
+		// can't have a bigger latency than timeout
+		historicalLatency = timeoutDuration
+	}
 	probabilityBlockError := po.CalculateProbabilityOfBlockError(requestedBlock, providerData)
 	probabilityOfTimeout := po.CalculateProbabilityOfTimeout(providerData.Availability)
 	probabilityOfNoError := (1 - probabilityBlockError) * (1 - probabilityOfTimeout)
@@ -243,7 +246,8 @@ func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int
 		// requested a specific block, so calculate a probability of provider having that block
 		averageBlockTime := po.averageBlockTime.Seconds()
 		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock
-		eventRate := 1 / averageBlockTime                                                       // a new block every average block time
+		timeSinceSyncReceived := time.Since(providerData.Sync.Time).Seconds()
+		eventRate := timeSinceSyncReceived / averageBlockTime                                   // a new block every average block time, numerator is time passed
 		probabilityBlockError = 1 - probValueAfterRepetitions(blockDistanceRequired, eventRate) // we need greater than or equal not less than so complementary probability
 	}
 	return probabilityBlockError
@@ -340,12 +344,12 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, allowedBlockLagForQosSync int64, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
+	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
@@ -359,9 +363,21 @@ func NewProviderOptimizer(strategy Strategy, allowedBlockLagForQosSync int64, av
 // calculate the probability a random variable with a poisson distribution
 // poisson distribution calculates the probability of K events, in this case the probability enough blocks pass and the request will be accessible in the block
 func probValueAfterRepetitions(occurrences uint64, lambda float64) float64 {
+	if occurrences > 60 {
+		// large values of occurences lose precision so we will use a normal distribution approximation instead
+		return logPoisson(occurrences, lambda)
+	}
 	// calculate probability of observing k events
 	prob := (math.Pow(lambda, float64(occurrences)) * math.Exp(-lambda)) / math.Gamma(float64(occurrences)+1)
 	return prob
+}
+
+func logPoisson(occurrences uint64, lambda float64) float64 {
+	logGamma, _ := math.Lgamma(float64(occurrences) + 1)
+	logLambda := math.Log(lambda)
+	logOcc := math.Log(float64(occurrences))
+	logProb := logOcc + logLambda - logGamma
+	return math.Exp(logProb)
 }
 
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
