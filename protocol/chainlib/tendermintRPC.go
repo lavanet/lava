@@ -577,7 +577,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	if err != nil {
 		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 			// Not an rpc error, return provider error without disclosing the endpoint address
-			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded)
+			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
 		}
 		id, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
 		if idErr != nil {

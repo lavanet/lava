@@ -372,6 +372,10 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		}
 		return nil, "", nil, err
 	}
 
