@@ -3,7 +3,6 @@ package provideroptimizer
 import (
 	"math"
 	"math/rand"
-
 	"sync"
 	"time"
 
@@ -200,12 +199,12 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 	return latencyScore*latencyWeight+syncScore*(1-latencyWeight) > latencyScoreCurrent*latencyWeight+syncScoreCurrent*(1-latencyWeight)
 }
 
-func (po *ProviderOptimizer) calculateSyncScore(SyncScore score.ScoreStore) float64 {
+func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) float64 {
 	var historicalSyncLatency time.Duration
-	if SyncScore.Denom == 0 {
+	if syncScore.Denom == 0 {
 		historicalSyncLatency = 0
 	} else {
-		historicalSyncLatency = time.Duration(SyncScore.Num/SyncScore.Denom) * po.averageBlockTime // give it units of block time
+		historicalSyncLatency = time.Duration(syncScore.Num/syncScore.Denom) * po.averageBlockTime // give it units of block time
 	}
 	return historicalSyncLatency.Seconds()
 }
