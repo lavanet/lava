@@ -31,9 +31,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
 		for _, block := range blocks {
 			var project_v2 v2.ProjectV2
-			if found := m.keeper.projectsFS.FindEntry(ctx, projectIndex, block, &project_v2); !found {
-				return fmt.Errorf("could not find project with index %s", projectIndex)
-			}
+			m.keeper.projectsFS.ReadEntry(ctx, projectIndex, block, &project_v2)
 
 			// convert project keys from type v2.ProjectKeyv2 to types.ProjectKey
 			projectKeys_v3 := []types.ProjectKey{}
@@ -82,10 +80,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 				UsedCu:             project_v2.UsedCu,
 			}
 
-			err := m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &projectStruct_v3)
-			if err != nil {
-				return err
-			}
+			m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &projectStruct_v3)
 		}
 	}
 
@@ -94,17 +89,14 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex, true)
 		for _, block := range blocks {
 			var developerDataStruct_v2 v2.ProtoDeveloperDataV2
-			m.keeper.developerKeysFS.FindEntry(ctx, developerDataIndex, block, &developerDataStruct_v2)
+			m.keeper.developerKeysFS.ReadEntry(ctx, developerDataIndex, block, &developerDataStruct_v2)
 
 			developerData_v3 := types.ProtoDeveloperData{
 				ProjectID: developerDataStruct_v2.ProjectID,
 				Vrfpk:     developerDataStruct_v2.Vrfpk,
 			}
 
-			err := m.keeper.developerKeysFS.ModifyEntry(ctx, developerDataIndex, block, &developerData_v3)
-			if err != nil {
-				return err
-			}
+			m.keeper.developerKeysFS.ModifyEntry(ctx, developerDataIndex, block, &developerData_v3)
 		}
 	}
 

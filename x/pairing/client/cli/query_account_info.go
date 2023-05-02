@@ -30,17 +30,21 @@ func CmdAccountInfo() *cobra.Command {
 		Short: "Query account information on an address",
 		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
 			var address string
 			if len(args) == 0 {
-				keyName, err := sigs.GetKeyName(clientCtx)
+				clientCtxForTx, err := client.GetClientTxContext(cmd)
+				if err != nil {
+					return err
+				}
+				keyName, err := sigs.GetKeyName(clientCtxForTx)
 				if err != nil {
 					utils.LavaFormatFatal("failed getting key name from clientCtx", err)
 				}
-				clientKey, err := clientCtx.Keyring.Key(keyName)
+				clientKey, err := clientCtxForTx.Keyring.Key(keyName)
 				if err != nil {
 					return err
 				}

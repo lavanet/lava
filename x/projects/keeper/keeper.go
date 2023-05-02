@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	common "github.com/lavanet/lava/common"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
