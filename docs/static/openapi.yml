@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29930,6 +29940,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31428,6 +31448,10 @@ paths:
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
+                  snapshot:
+                    type: string
+                    format: uint64
+                    title: snapshot id to uniquely identify snapshots
         default:
           description: An unexpected error response.
           schema:
@@ -31566,6 +31590,10 @@ paths:
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
+                  snapshot:
+                    type: string
+                    format: uint64
+                    title: snapshot id to uniquely identify snapshots
         default:
           description: An unexpected error response.
           schema:
@@ -56039,6 +56067,10 @@ definitions:
             type: string
             format: uint64
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+      snapshot:
+        type: string
+        format: uint64
+        title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.ProjectKey:
     type: object
     properties:
@@ -56171,6 +56203,10 @@ definitions:
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
+          snapshot:
+            type: string
+            format: uint64
+            title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.QueryInfoResponse:
     type: object
     properties:
@@ -56275,6 +56311,10 @@ definitions:
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
+          snapshot:
+            type: string
+            format: uint64
+            title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.QueryParamsResponse:
     type: object
     properties:
