@@ -1,5 +1,6 @@
 import subprocess
 import os
+from inheritence_merger import get_inherited_rest_apis
 
 TEMPLATE = """
     ,{
@@ -11,8 +12,8 @@ TEMPLATE = """
 # must have rest api already implemented
 
 # Lava:
-# grpc_server = "public-rpc.lavanet.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_lava.json"
+grpc_server = "public-rpc.lavanet.xyz:9090"
+spec_current_file_path = "/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/cookbook/specs/spec_add_lava.json"
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
@@ -22,8 +23,13 @@ TEMPLATE = """
 # grpc_server = "gaia-node-1.lavapro.xyz:9090"
 # spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_cosmoshub.json" 
 
-grpc_server = "juno-node-1.lavapro.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_juno.json" 
+# Juno
+# grpc_server = "juno-node-1.lavapro.xyz:9090"
+# spec_current_file_path = "/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/cookbook/specs/spec_add_juno.json" 
+
+# grpc_server = "https://grpc-evmos-ia.cosmosia.notional.ventures/"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_evmos.json" 
+
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
@@ -46,11 +52,12 @@ with open(spec_current_file_path, 'r') as f:
         print("splitting")
         spec_data = spec_data.rsplit("chainid",1)[0]
 
-all_rest_apis = spec_data.split('"name": "/')[1:]
+# all_rest_apis = spec_data.split('"name": "/')[1:]
 rest_api_list = []
-for rest_api in all_rest_apis:
-    rest_api = rest_api.split("\"",1)[0]
-    rest_api_list.append("/"+rest_api)
+# for rest_api in all_rest_apis:
+#     rest_api = rest_api.split("\"",1)[0]
+#     rest_api_list.append("/"+rest_api)
+rest_api_list = get_inherited_rest_apis('LAV1')
 
 original_api_list = rest_api_list[:]
 total_number_of_descriptors = 0
@@ -105,10 +112,11 @@ for service in arr:
         else:
             rest_api_list.remove(rest_line)
 
-        if (rest_line+"\",") not in spec_data:
-            rest_lines_not_in_spec.append(rest_line)
-            continue
-            # raise ValueError("rest_line not in spec:\n" + rest_line)
+        # if (rest_line+"\",") not in spec_data:
+        #     print(rest_line+"\",")
+        #     rest_lines_not_in_spec.append(rest_line)
+        #     continue
+        #     # raise ValueError("rest_line not in spec:\n" + rest_line)
         spec_body = spec_data.split(rest_line+"\",",1)[-1].split('"name":',1)[0].rsplit("},",1)[0].strip()
         spec_body = spec_body.replace('"interface": "rest",','"interface": "grpc",',2)
         if '"interface": "rest"' in spec_body:
@@ -131,7 +139,7 @@ if len(special_cases_descriptors_with_no_rest_api) > 0:
     print("Special cases rpc:")
     [print(x) for x in special_cases_descriptors_with_no_rest_api]
 
-with open("/home/user/go/src/lava/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
+with open("/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
     json_file.write(spec_res)
 
 
