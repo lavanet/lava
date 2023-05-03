@@ -26,10 +26,10 @@ import (
 const (
 	FlagTimeout   = "timeout"
 	FlagValue     = "value"
-	FlagEventName = "--event"
+	FlagEventName = "event"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, eventName string, value string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, fromBlock int64, eventName string, value string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -76,8 +76,11 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, e
 	}
 
 	if blocks > 0 {
+		if fromBlock <= 0 {
+			fromBlock = latestHeight - blocks
+		}
 		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: latestHeight}, utils.Attribute{Key: "to", Value: latestHeight - blocks})
-		for block := latestHeight; block >= latestHeight-blocks; block-- {
+		for block := fromBlock; block < fromBlock+blocks; block++ {
 			readEventsFromBlock(block, "")
 		}
 	}
@@ -114,7 +117,7 @@ optional flag: --endpoints in order to validate provider process before submitti
 		Example: `rpcprovider lava@myprovideraddress
 		rpcprovider --from providerWallet
 		rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -168,6 +171,15 @@ optional flag: --endpoints in order to validate provider process before submitti
 			if blocks < 0 {
 				blocks = 0
 			}
+
+			fromBlock := int64(-1)
+			if len(args) == 2 {
+				fromBlock, err = strconv.ParseInt(args[1], 0, 64)
+				if err != nil {
+					utils.LavaFormatFatal("failed to parse blocks as a number", err)
+				}
+			}
+
 			timeout, err := cmd.Flags().GetDuration(FlagTimeout)
 			if err != nil {
 				utils.LavaFormatFatal("failed to fetch timeout flag", err)
@@ -180,7 +192,7 @@ optional flag: --endpoints in order to validate provider process before submitti
 			rand.Seed(time.Now().UnixNano())
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			return eventsLookup(ctx, clientCtx, blocks, eventName, value)
+			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
