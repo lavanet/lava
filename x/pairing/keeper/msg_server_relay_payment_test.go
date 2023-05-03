@@ -15,6 +15,7 @@ import (
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -156,7 +157,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			var Relays []*types.RelaySession
 			Relays = append(Relays, relaySession)
 			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
 			verifyRelayPaymentObjects(t, ts, relaySession, tt.valid)
@@ -1147,7 +1148,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 }
 
 // Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
-func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, valid bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
+func payAndVerifyBalanceLegacy(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, valid bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
 	// Get provider's and consumer's before payment
 	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
 	stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
@@ -1169,6 +1170,53 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 	} else {
 		// payment is not valid, should result in an error
 		require.NotNil(t, err)
+	}
+}
+
+// Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
+func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, validConsumer bool, validPayment bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
+	for _, relay := range relayPaymentMessage.Relays {
+		sub := subscriptiontypes.Subscription{}
+		found := false
+		originalProjectUsedCu := uint64(0)
+		originalSubCuLeft := uint64(0)
+
+		// Get provider's stake and consumer's project before payment
+		balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
+		proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), clientAddress.String(), uint64(relay.Epoch))
+		if validConsumer {
+			require.Nil(t, err)
+			originalProjectUsedCu = proj.UsedCu
+
+			sub, found = ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
+			require.True(t, found)
+			originalSubCuLeft = sub.MonthCuLeft
+		} else {
+			require.NotNil(t, err)
+		}
+
+		// perform payment
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
+		if validPayment {
+			require.Nil(t, err)
+			// payment is valid, provider's balance should increase
+			mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
+			want := mint.MulInt64(int64(relay.CuSum)) // The compensation for a single query
+			require.Equal(t, balance+want.TruncateInt64(),
+				ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
+
+			// payment is valid, consumer's project used cu increased and the subscription cu left decreased
+			proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), clientAddress.String(), uint64(relay.Epoch))
+			require.Nil(t, err)
+			require.Equal(t, originalProjectUsedCu+relay.CuSum, proj.UsedCu)
+
+			sub, found = ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
+			require.True(t, found)
+			require.Equal(t, originalSubCuLeft-relay.CuSum, sub.MonthCuLeft)
+		} else {
+			// payment is not valid, should result in an error
+			require.NotNil(t, err)
+		}
 	}
 }
 
@@ -1285,7 +1333,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	var Relays []*types.RelaySession
 	Relays = append(Relays, relaySession)
 	relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
+	payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 	sub, found := subkeeper.GetSubscription(_ctx, subscriptionOwner)
 	require.True(t, found)
@@ -1299,4 +1347,75 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	require.NotEqual(t, sub.MonthCuTotal-sub.MonthCuLeft, proj2.UsedCu)
+}
+
+func TestBadgeBasicValidation(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	subkeeper := ts.keepers.Subscription
+
+	// apply pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectDeveloper := *ts.clients[0]
+	badgeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 100000)
+
+	err := subkeeper.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String(), projectDeveloper.Addr.String(), ts.plan.Index, 1, "")
+	require.Nil(t, err)
+
+	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
+
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits, ts.spec.Name, QoS)
+
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	// make the context's lava chain ID a non-empty string (as usually defined in most tests)
+	lavaChainID := "lavanet"
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+	_ctxBlockHeader := _ctx.BlockHeader()
+	_ctxBlockHeader.ChainID = lavaChainID
+	_ctx = _ctx.WithBlockHeader(_ctxBlockHeader)
+	ts.ctx = sdk.WrapSDKContext(_ctx)
+
+	tests := []struct {
+		name         string
+		badgeAddress sdk.AccAddress // should be the badge user (in happy flow)
+		relaySigner  common.Account // should be the badge user (in happy flow)
+		badgeSigner  common.Account // should be the badge granter, i.e. project developer (in happy flow)
+		epoch        uint64
+		lavaChainID  string
+		cuAllocation uint64
+		valid        bool
+	}{
+		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
+		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			badge := utils.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
+			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
+			require.Nil(t, err)
+			badge.ProjectSig = sig
+
+			relaySession.Badge = badge
+			relaySession.LavaChainId = tt.lavaChainID
+
+			relaySession.Sig, err = sigs.SignRelay(tt.relaySigner.SK, *relaySession)
+			require.Nil(t, err)
+
+			var Relays []*types.RelaySession
+			Relays = append(Relays, relaySession)
+			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
+
+			validConsumer := true
+			if !tt.badgeSigner.Addr.Equals(projectDeveloper.Addr) {
+				validConsumer = false
+			}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, validConsumer, tt.valid, tt.badgeSigner.Addr, ts.providers[0].Addr)
+		})
+	}
 }

@@ -64,47 +64,24 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		if relay.Badge != nil {
-			if !utils.IsBadgeValid(*relay.Badge, clientAddr.String(), relay.SpecId, uint64(relay.Epoch)) {
+			if !utils.IsBadgeValid(*relay.Badge, clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch), relay.CuSum) {
 				details := map[string]string{
-					"badgeAddress": relay.Badge.Address,
-					"badgeSpecId":  relay.Badge.SpecId,
-					"badgeEpoch":   strconv.FormatUint(relay.Badge.Epoch, 10),
-					"relayAddress": clientAddr.String(),
-					"relaySpecId":  relay.SpecId,
-					"relayEpoch":   strconv.FormatUint(uint64(relay.Epoch), 10),
+					"badgeAddress":      relay.Badge.Address,
+					"badgeLavaChainId":  relay.Badge.LavaChainId,
+					"badgeEpoch":        strconv.FormatUint(relay.Badge.Epoch, 10),
+					"badgeCuAllocation": strconv.FormatUint(relay.Badge.CuAllocation, 10),
+					"relayAddress":      clientAddr.String(),
+					"relayLavaChainId":  relay.LavaChainId,
+					"relayEpoch":        strconv.FormatUint(uint64(relay.Epoch), 10),
+					"relayCuSum":        strconv.FormatUint(relay.CuSum, 10),
 				}
 				return errorLogAndFormat("relay_payment_badge", details, "invalid badge - must match traits in relay request")
 			}
 
-			// badge passed basic checks -> extract address of badge granter (developer key)
+			// badge is valid -> extract address of badge granter (developer key) and continue with payment
 			clientAddr, err = utils.ExtractSignerAddressFromBadge(*relay.Badge)
 			if err != nil {
 				return errorLogAndFormat("relay_payment_badge", nil, "could not extract badge signer")
-			}
-
-			// check CU allocation is valid (enough CU in the project)
-			proj, _, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
-			if err != nil {
-				details := map[string]string{
-					"developerKey": clientAddr.String(),
-					"block":        strconv.FormatUint(uint64(relay.Epoch), 10),
-				}
-				return errorLogAndFormat("relay_payment_badge", details, "could not get project for developer key and block")
-			}
-			_, _, _, allowedCuInProjectPerEpoch, err := k.getProjectStrictestPolicy(ctx, proj, relay.SpecId)
-			if err != nil {
-				details := map[string]string{
-					"projectID":    proj.Index,
-					"projectBlock": strconv.FormatUint(uint64(relay.Epoch), 10),
-				}
-				return errorLogAndFormat("relay_payment_badge", details, "could not get project allowed CU for epoch")
-			}
-			if relay.Badge.GetCuAllocation() > allowedCuInProjectPerEpoch {
-				details := map[string]string{
-					"allowedCuInProjectForEpoch": strconv.FormatUint(allowedCuInProjectPerEpoch, 10),
-					"badgeCuAllocation":          strconv.FormatUint(relay.Badge.GetCuAllocation(), 10),
-				}
-				return errorLogAndFormat("relay_payment_badge", details, "badge CU allocation is larger than the allowed CU of the project for this epoch")
 			}
 		}
 
