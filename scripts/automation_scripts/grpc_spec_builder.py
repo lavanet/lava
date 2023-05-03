@@ -30,15 +30,14 @@ TEMPLATE = """
 # chainId = "JUN1"
 
 # Evmos
-grpc_server = "evmos-node-1.lavapro.xyz:9090"
-spec_file_name = "spec_add_evmos.json"
-chainId = "EVMOS"
+# grpc_server = "evmos-node-1.lavapro.xyz:9090"
+# spec_file_name = "spec_add_evmos.json"
+# chainId = "EVMOS"
 
-# grpc_server = "https://grpc-evmos-ia.cosmosia.notional.ventures/"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_evmos.json" 
-
-## 
-spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
+# Axelar
+grpc_server = "grpc-axelar.stakerun.com:9090"
+spec_file_name = "spec_add_axelar.json"
+chainId = "AXELAR"
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
@@ -48,7 +47,10 @@ spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
 # # --- #
 # grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COS5T
 # grpcurl -plaintext juno-node-1.lavapro.xyz:9092 list # JUNO-TEST
+# grpcurl -plaintext grpc-axelar.stakerun.com:9090 list # AXELAR
 
+## 
+spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
 
 special_cases_descriptors_with_no_rest_api = []
 
@@ -61,7 +63,6 @@ with open(spec_current_file_path, 'r') as f:
         print("splitting")
         spec_data = spec_data.rsplit("chainid",1)[0]
 
-# all_rest_apis = spec_data.split('"name": "/')[1:]
 rest_api_list = []
 
 rest_api_list = get_inherited_rest_apis(chainId)
@@ -73,7 +74,6 @@ rest_lines_not_in_spec = []
 skip_services = ["tendermint.liquidity.v1beta1.Query","testdata","reflection"]
 
 def check_skip(service):
-    # print("checking serice skip on: %s" % service)
     if service == "":
         return True
     for s in skip_services:
@@ -148,6 +148,5 @@ if len(special_cases_descriptors_with_no_rest_api) > 0:
 with open("/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
     json_file.write(spec_res)
 
-
-    
+print("SUCCESS! gRPC spec interface created for:", chainId) 
 

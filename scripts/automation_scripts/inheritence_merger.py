@@ -2,12 +2,9 @@ import json
 import os
 
 ## Checks if a spec inherits another spec (recursively) and creates an array that includes all supported rest api calls.
-# Edit spec file name that we want to fetch all rest apis including inheritence
-spec_file_name = "spec_add_lava.json"
 
 ## Constants (Do not edit)
 specs_dir = os.getcwd() + "/cookbook/specs/"
-spec_current_file_path = specs_dir + spec_file_name
 rest_api_list = []
 
 def get_inherited_rest_apis(importName):
