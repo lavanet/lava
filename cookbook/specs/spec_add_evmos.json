@@ -963,7 +963,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.Account",
+                        "name": "ethermint.evm.v1.Query/Account",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -987,7 +987,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.Balance",
+                        "name": "ethermint.evm.v1.Query/Balance",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1011,7 +1011,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.BaseFee",
+                        "name": "ethermint.evm.v1.Query/BaseFee",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1035,7 +1035,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.Code",
+                        "name": "ethermint.evm.v1.Query/Code",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1059,7 +1059,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.CosmosAccount",
+                        "name": "ethermint.evm.v1.Query/CosmosAccount",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1083,7 +1083,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.EstimateGas",
+                        "name": "ethermint.evm.v1.Query/EstimateGas",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1107,7 +1107,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.EthCall",
+                        "name": "ethermint.evm.v1.Query/EthCall",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1131,7 +1131,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.Params",
+                        "name": "ethermint.evm.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1155,7 +1155,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.Storage",
+                        "name": "ethermint.evm.v1.Query/Storage",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1179,7 +1179,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.TraceBlock",
+                        "name": "ethermint.evm.v1.Query/TraceBlock",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1203,7 +1203,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.TraceTx",
+                        "name": "ethermint.evm.v1.Query/TraceTx",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1227,7 +1227,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.evm.v1.Query.ValidatorAccount",
+                        "name": "ethermint.evm.v1.Query/ValidatorAccount",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1251,7 +1251,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.feemarket.v1.Query.BaseFee",
+                        "name": "ethermint.feemarket.v1.Query/BaseFee",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1275,7 +1275,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.feemarket.v1.Query.BlockGas",
+                        "name": "ethermint.feemarket.v1.Query/BlockGas",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1299,7 +1299,7 @@
                         ]
                     },
                     {
-                        "name": "ethermint.feemarket.v1.Query.Params",
+                        "name": "ethermint.feemarket.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1323,7 +1323,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.claims.v1.Query.ClaimsRecord",
+                        "name": "evmos.claims.v1.Query/ClaimsRecord",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1347,7 +1347,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.claims.v1.Query.ClaimsRecords",
+                        "name": "evmos.claims.v1.Query/ClaimsRecords",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1371,7 +1371,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.claims.v1.Query.Params",
+                        "name": "evmos.claims.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1395,7 +1395,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.claims.v1.Query.TotalUnclaimed",
+                        "name": "evmos.claims.v1.Query/TotalUnclaimed",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1419,7 +1419,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.epochs.v1.Query.CurrentEpoch",
+                        "name": "evmos.epochs.v1.Query/CurrentEpoch",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1443,7 +1443,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.epochs.v1.Query.EpochInfos",
+                        "name": "evmos.epochs.v1.Query/EpochInfos",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1467,7 +1467,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.erc20.v1.Query.Params",
+                        "name": "evmos.erc20.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1491,7 +1491,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.erc20.v1.Query.TokenPair",
+                        "name": "evmos.erc20.v1.Query/TokenPair",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1515,7 +1515,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.erc20.v1.Query.TokenPairs",
+                        "name": "evmos.erc20.v1.Query/TokenPairs",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1539,7 +1539,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.AllocationMeter",
+                        "name": "evmos.incentives.v1.Query/AllocationMeter",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1563,7 +1563,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.AllocationMeters",
+                        "name": "evmos.incentives.v1.Query/AllocationMeters",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1587,7 +1587,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.GasMeter",
+                        "name": "evmos.incentives.v1.Query/GasMeter",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1611,7 +1611,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.GasMeters",
+                        "name": "evmos.incentives.v1.Query/GasMeters",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1635,7 +1635,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.Incentive",
+                        "name": "evmos.incentives.v1.Query/Incentive",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1659,7 +1659,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.Incentives",
+                        "name": "evmos.incentives.v1.Query/Incentives",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1683,7 +1683,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.incentives.v1.Query.Params",
+                        "name": "evmos.incentives.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1707,7 +1707,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.CirculatingSupply",
+                        "name": "evmos.inflation.v1.Query/CirculatingSupply",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1731,7 +1731,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.EpochMintProvision",
+                        "name": "evmos.inflation.v1.Query/EpochMintProvision",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1755,7 +1755,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.InflationRate",
+                        "name": "evmos.inflation.v1.Query/InflationRate",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1779,7 +1779,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.Params",
+                        "name": "evmos.inflation.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1803,7 +1803,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.Period",
+                        "name": "evmos.inflation.v1.Query/Period",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1827,7 +1827,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.inflation.v1.Query.SkippedEpochs",
+                        "name": "evmos.inflation.v1.Query/SkippedEpochs",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1851,7 +1851,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.recovery.v1.Query.Params",
+                        "name": "evmos.recovery.v1.Query/Params",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1875,7 +1875,7 @@
                         ]
                     },
                     {
-                        "name": "evmos.vesting.v1.Query.Balances",
+                        "name": "evmos.vesting.v1.Query/Balances",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
