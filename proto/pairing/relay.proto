@@ -45,7 +45,7 @@ message Badge {
     uint64 cu_allocation =1;
     uint64 epoch = 2;
     string address = 3;
-    string spec_id = 4;
+    string lava_chain_id = 4;
     bytes project_sig = 5;
 }
 
