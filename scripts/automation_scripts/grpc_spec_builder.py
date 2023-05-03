@@ -12,8 +12,9 @@ TEMPLATE = """
 # must have rest api already implemented
 
 # Lava:
-grpc_server = "public-rpc.lavanet.xyz:9090"
-spec_current_file_path = "/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/cookbook/specs/spec_add_lava.json"
+# grpc_server = "public-rpc.lavanet.xyz:9090"
+# spec_file_name = "spec_add_lava.json"
+# chainId = "JUN1"
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
@@ -25,11 +26,19 @@ spec_current_file_path = "/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/c
 
 # Juno
 # grpc_server = "juno-node-1.lavapro.xyz:9090"
-# spec_current_file_path = "/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/cookbook/specs/spec_add_juno.json" 
+# spec_file_name = "spec_add_juno.json"
+# chainId = "JUN1"
+
+# Evmos
+grpc_server = "evmos-node-1.lavapro.xyz:9090"
+spec_file_name = "spec_add_evmos.json"
+chainId = "EVMOS"
 
 # grpc_server = "https://grpc-evmos-ia.cosmosia.notional.ventures/"
 # spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_evmos.json" 
 
+## 
+spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
@@ -54,10 +63,8 @@ with open(spec_current_file_path, 'r') as f:
 
 # all_rest_apis = spec_data.split('"name": "/')[1:]
 rest_api_list = []
-# for rest_api in all_rest_apis:
-#     rest_api = rest_api.split("\"",1)[0]
-#     rest_api_list.append("/"+rest_api)
-rest_api_list = get_inherited_rest_apis('LAV1')
+
+rest_api_list = get_inherited_rest_apis(chainId)
 
 original_api_list = rest_api_list[:]
 total_number_of_descriptors = 0
@@ -112,16 +119,17 @@ for service in arr:
         else:
             rest_api_list.remove(rest_line)
 
-        # if (rest_line+"\",") not in spec_data:
-        #     print(rest_line+"\",")
-        #     rest_lines_not_in_spec.append(rest_line)
-        #     continue
-        #     # raise ValueError("rest_line not in spec:\n" + rest_line)
+        if (rest_line+"\",") not in spec_data:
+            print(rest_line+"\",")
+            rest_lines_not_in_spec.append(rest_line)
+            continue
+
         spec_body = spec_data.split(rest_line+"\",",1)[-1].split('"name":',1)[0].rsplit("},",1)[0].strip()
         spec_body = spec_body.replace('"interface": "rest",','"interface": "grpc",',2)
         if '"interface": "rest"' in spec_body:
             raise ValueError("parsing error", "\nDescriptor\n",descriptor,"\nFullname\n",full_name )
         final_part = TEMPLATE.replace("###METHOD###",full_name).replace("###RESTPART###",spec_body).strip()
+        final_part = final_part.replace('"type": "GET",','"type": "",',2)
         print("final_part",final_part)
         spec_res += final_part
 
@@ -132,9 +140,7 @@ print("total number of api's added:", total_number_of_descriptors)
 print("rest apis that werent added from rest:")
 [print(x) for x in rest_api_list]
 print("@@@@@@@@@@@@@@\n\n")
-if len(rest_lines_not_in_spec) > 0:
-    [print(x) for x in rest_lines_not_in_spec]
-    raise ValueError("not all lines were found in spec, missing lines")
+
 if len(special_cases_descriptors_with_no_rest_api) > 0:
     print("Special cases rpc:")
     [print(x) for x in special_cases_descriptors_with_no_rest_api]
