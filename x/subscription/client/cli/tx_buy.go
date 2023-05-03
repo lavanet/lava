@@ -4,7 +4,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -38,20 +37,11 @@ func CmdBuy() *cobra.Command {
 				argDuration = cast.ToUint64(args[2])
 			}
 
-			_, vrfpk, err := utils.GetOrCreateVRFKey(clientCtx)
-			if err != nil {
-				return err
-			}
-			vrfpk_str, err := vrfpk.EncodeBech32()
-			if err != nil {
-				return err
-			}
 			msg := types.NewMsgBuy(
 				creator,
 				argConsumer,
 				argIndex,
 				argDuration,
-				vrfpk_str,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

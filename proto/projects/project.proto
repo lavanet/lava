@@ -26,7 +26,6 @@ message ProjectKey {
     }    
 
     repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
-    string vrfpk = 3; // the vrf public key used to calculate data reliability
 }
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing
@@ -45,7 +44,6 @@ message ChainPolicy {
 
 message ProtoDeveloperData {
     string projectID = 1;
-    string vrfpk = 2;
 }
 
 // used as a container struct for the subscription module

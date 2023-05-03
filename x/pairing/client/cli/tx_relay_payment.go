@@ -28,7 +28,6 @@ func CmdRelayPayment() *cobra.Command {
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
 				[]*types.RelaySession{},
-				[]*types.VRFData{},
 				"",
 			)
 			if err := msg.ValidateBasic(); err != nil {

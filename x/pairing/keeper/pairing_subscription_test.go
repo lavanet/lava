@@ -18,13 +18,11 @@ func TestGetPairingForSubscription(t *testing.T) {
 	var balance int64 = 10000
 
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
-	vrfpk_stub := "testvrfpk"
 	msgBuy := &subtypes.MsgBuy{
 		Creator:  consumer,
 		Consumer: consumer,
 		Index:    ts.plan.Index,
 		Duration: 1,
-		Vrfpk:    vrfpk_stub,
 	}
 	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, msgBuy)
 	require.Nil(t, err)
@@ -49,9 +47,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(ctx, consumer, uint64(ctx.BlockHeight()))
+	project, err := ts.keepers.Projects.GetProjectForDeveloper(ctx, consumer, uint64(ctx.BlockHeight()))
 	require.Nil(t, err)
-	require.Equal(t, vrfpk, vrfpk_stub)
 
 	err = ts.keepers.Projects.DeleteProject(ctx, project.Index)
 	require.Nil(t, err)
@@ -89,7 +86,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
 
 	policies := []*projectstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
@@ -137,7 +134,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	_, _, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	_, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 	require.Nil(t, err)
 
 	i := 0

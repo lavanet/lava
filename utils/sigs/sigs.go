@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -50,8 +49,7 @@ func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) ([]byte, error) {
-	msgData := []byte(vrfData.String())
+func SignVRFData(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
 	if err != nil {
@@ -155,65 +153,13 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	return (secp256k1.PubKey)(pk), nil
 }
 
-func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, error) {
-	signature := vrfData.Sig
-	vrfData.Sig = nil
-	msgDataHash := HashMsg([]byte(vrfData.String()))
-	pubKey, err := RecoverPubKey(signature, msgDataHash)
-	if err != nil {
-		return nil, err
-	}
-	return pubKey, nil
-}
-
-func GetSignerForVRF(dataReliability pairingtypes.VRFData) (signer sdk.AccAddress, err error) {
-	pubKey, err := RecoverPubKeyFromVRFData(dataReliability)
-	if err != nil {
-		return nil, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
-	}
-	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) // signer
-	if err != nil {
-		return nil, fmt.Errorf("AccAddressFromHex : %w", err)
-	}
-	return signerAccAddress, nil
-}
-
-func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes.VRFData) (valid bool, err error) {
-	signerAccAddress, err := GetSignerForVRF(dataReliability)
-	if err != nil {
-		return false, err
-	}
-	if !signerAccAddress.Equals(signer) {
-		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), signer.String())
-	}
-	return true, nil
-}
-
-func RecoverProviderPubKeyFromVrfDataOnly(dataReliability *pairingtypes.VRFData) (providerAccAddress sdk.AccAddress, err error) {
-	queryHash := dataReliability.QueryHash
-	data_hash := dataReliability.AllDataHash
-	dataToSign := bytes.Join([][]byte{data_hash, queryHash}, nil)
-	dataToSign = HashMsg(dataToSign)
-	pubKey, err := RecoverPubKey(dataReliability.ProviderSig, dataToSign)
-	if err != nil {
-		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, dataReliability)
-	}
-	providerAccAddress, err = sdk.AccAddressFromHex(pubKey.Address().String()) // consumer signer
-	return
-}
-
 func RecoverProviderPubKeyFromQueryAndAllDataHash(request *pairingtypes.RelayRequest, allDataHash []byte, providerSig []byte) (secp256k1.PubKey, error) {
 	dataToSign := DataToVerifyProviderSig(request, allDataHash)
 	pubKey, err := RecoverPubKey(providerSig, dataToSign)
 	if err != nil {
-		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, request.DataReliability)
+		return nil, err
 	}
 	return pubKey, nil
-}
-
-func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	// we take the all data hash from reliability
-	return RecoverProviderPubKeyFromQueryAndAllDataHash(request, request.DataReliability.AllDataHash, request.DataReliability.ProviderSig)
 }
 
 func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, error) {

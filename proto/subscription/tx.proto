@@ -18,7 +18,6 @@ message MsgBuy {
   string consumer = 2;
   string index = 3;
   uint64 duration = 4; // in months
-  string vrfpk = 5;
 }
 
 message MsgBuyResponse {
