@@ -78,6 +78,18 @@ func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelaySession)
 	return sig, nil
 }
 
+func SignBadge(pkey *btcSecp256k1.PrivateKey, badge pairingtypes.Badge) ([]byte, error) {
+	badge.ProjectSig = []byte{}
+	msgData := []byte(badge.String())
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
 func AllDataHash(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (data_hash []byte) {
 	nonceBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)

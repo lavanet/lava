@@ -8,12 +8,12 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
-func CreateBadge(cuAllocation uint64, epoch uint64, address string, chainID string, sig []byte) *pairingtypes.Badge {
+func CreateBadge(cuAllocation uint64, epoch uint64, address sdk.AccAddress, lavaChainID string, sig []byte) *pairingtypes.Badge {
 	badge := pairingtypes.Badge{
 		CuAllocation: cuAllocation,
 		Epoch:        epoch,
-		Address:      address,
-		SpecId:       chainID,
+		Address:      address.String(),
+		LavaChainId:  lavaChainID,
 		ProjectSig:   sig,
 	}
 
@@ -21,16 +21,19 @@ func CreateBadge(cuAllocation uint64, epoch uint64, address string, chainID stri
 }
 
 // check badge's basic attributes compared to the same traits from the relay request
-func IsBadgeValid(badge pairingtypes.Badge, clientAddr string, chainID string, epoch uint64) bool {
-	if badge.GetAddress() != clientAddr || badge.GetSpecId() != chainID || badge.GetEpoch() != epoch {
+func IsBadgeValid(badge pairingtypes.Badge, clientAddr string, lavaChainID string, epoch uint64, cuSum uint64) bool {
+	if badge.Address != clientAddr || badge.LavaChainId != lavaChainID ||
+		badge.Epoch != epoch || badge.CuAllocation < cuSum {
 		return false
 	}
 	return true
 }
 
 func ExtractSignerAddressFromBadge(badge pairingtypes.Badge) (sdk.AccAddress, error) {
+	sig := badge.ProjectSig
+	badge.ProjectSig = nil
 	hash := HashMsg([]byte(badge.String()))
-	pubKey, err := RecoverPubKey(badge.ProjectSig, hash)
+	pubKey, err := RecoverPubKey(sig, hash)
 	if err != nil {
 		return nil, err
 	}
