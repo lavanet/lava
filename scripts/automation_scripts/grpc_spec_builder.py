@@ -39,6 +39,11 @@ grpc_server = "grpc-axelar.stakerun.com:9090"
 spec_file_name = "spec_add_axelar.json"
 chainId = "AXELAR"
 
+# Canto
+grpc_server = "canto-grpc.polkachu.com:15590"
+spec_file_name = "spec_add_canto.json"
+chainId = "CANTO"
+
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
 # grpcurl -plaintext public-rpc.lavanet.xyz:9090 list # LAV1
@@ -48,6 +53,8 @@ chainId = "AXELAR"
 # grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COS5T
 # grpcurl -plaintext juno-node-1.lavapro.xyz:9092 list # JUNO-TEST
 # grpcurl -plaintext grpc-axelar.stakerun.com:9090 list # AXELAR
+# grpcurl -plaintext canto-grpc.polkachu.com:15590 list # CANTO
+
 
 ## 
 spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
@@ -94,7 +101,7 @@ for service in arr:
         if descriptor.strip() == "": 
             continue
         method_name = descriptor.split(" ")[0]
-        full_name = f"{service}.{method_name}"
+        full_name = f"{service}/{method_name}"
         print("Full name: ", full_name)
         if "get:" not in descriptor:
             if "post:" not in descriptor:
