@@ -40,9 +40,9 @@ spec_file_name = "spec_add_axelar.json"
 chainId = "AXELAR"
 
 # Canto
-grpc_server = "canto-grpc.polkachu.com:15590"
-spec_file_name = "spec_add_canto.json"
-chainId = "CANTO"
+# grpc_server = "canto-grpc.polkachu.com:15590"
+# spec_file_name = "spec_add_canto.json"
+# chainId = "CANTO"
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
