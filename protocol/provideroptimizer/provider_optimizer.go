@@ -209,7 +209,7 @@ func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) floa
 	if syncScore.Denom == 0 {
 		historicalSyncLatency = 0
 	} else {
-		historicalSyncLatency = time.Duration(float64(syncScore.Num/syncScore.Denom) * float64(po.averageBlockTime)) // give it units of block time
+		historicalSyncLatency = time.Duration(syncScore.Num / syncScore.Denom * float64(po.averageBlockTime)) // give it units of block time
 	}
 	return historicalSyncLatency.Seconds()
 }

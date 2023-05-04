@@ -299,7 +299,6 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for _, address := range providersGen.providersAddresses {
 			providerOptimizer.AppendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock)
-
 		}
 	}
 	time.Sleep(1 * time.Millisecond)
@@ -350,7 +349,6 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	returnedProviders = providerOptimizer.ChooseProvider(providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[2]: {}}, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[1], returnedProviders[0])
-
 }
 
 func TestProviderOptimizerPerturbation(t *testing.T) {
