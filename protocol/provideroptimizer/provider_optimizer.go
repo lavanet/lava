@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	debug                      = false
 	CacheMaxCost               = 2000  // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
@@ -22,6 +23,7 @@ const (
 	PROBE_UPDATE_WEIGHT        = 0.25
 	RELAY_UPDATE_WEIGHT        = 1
 	DEFAULT_EXPLORATION_CHANCE = 0.1
+	COST_EXPLORATION_CHANCE    = 0.01
 )
 
 type ConcurrentBlockStore struct {
@@ -154,7 +156,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (u
 	latestBlock := po.latestSyncData.Block
 	if latestBlock < providerLatestBlock {
 		// saved latest block is older, so update
-		po.latestSyncData.Block = latestBlock
+		po.latestSyncData.Block = providerLatestBlock
 		po.latestSyncData.Time = time.Now()
 	}
 	return po.latestSyncData.Block, po.latestSyncData.Time
@@ -171,7 +173,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 	case STRATEGY_ACCURACY:
 		return true
 	case STRATEGY_COST:
-		explorationChance = 0.01
+		explorationChance = COST_EXPLORATION_CHANCE
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
@@ -193,6 +195,9 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 	default:
 		latencyWeight = 0.8
 	}
+	if debug {
+		utils.LavaFormatDebug("total scores", utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "total", Value: latencyScoreCurrent*latencyWeight + syncScoreCurrent*(1-latencyWeight)})
+	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
 	}
@@ -204,7 +209,7 @@ func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) floa
 	if syncScore.Denom == 0 {
 		historicalSyncLatency = 0
 	} else {
-		historicalSyncLatency = time.Duration(syncScore.Num/syncScore.Denom) * po.averageBlockTime // give it units of block time
+		historicalSyncLatency = time.Duration(float64(syncScore.Num/syncScore.Denom) * float64(po.averageBlockTime)) // give it units of block time
 	}
 	return historicalSyncLatency.Seconds()
 }
@@ -224,7 +229,7 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	}
 	probabilityBlockError := po.CalculateProbabilityOfBlockError(requestedBlock, providerData)
 	probabilityOfTimeout := po.CalculateProbabilityOfTimeout(providerData.Availability)
-	probabilityOfNoError := (1 - probabilityBlockError) * (1 - probabilityOfTimeout)
+	probabilityOfSuccess := (1 - probabilityBlockError) * (1 - probabilityOfTimeout)
 
 	// base latency is how much time it would cost to an average performing provider
 	// timeoutDuration is the extra time we pay for a non responsive provider
@@ -237,7 +242,7 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	// on success we are paying the time cost of this provider
 	costSuccess := historicalLatency.Seconds()
 
-	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfNoError*costSuccess
+	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfSuccess*costSuccess
 }
 
 func (po *ProviderOptimizer) CalculateProbabilityOfTimeout(availabilityScore score.ScoreStore) float64 {
@@ -387,5 +392,6 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 }
 
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
-	return orig + rand.NormFloat64()*percentage*orig
+	perturb := rand.NormFloat64() * percentage * orig
+	return orig + perturb
 }
