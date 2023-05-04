@@ -1393,9 +1393,14 @@ func TestBadgeBasicValidation(t *testing.T) {
 		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
 		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
 		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
+		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "badge epoch != relay epoch (epoch passed)" {
+				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+			}
 			badge := utils.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
 			require.Nil(t, err)
