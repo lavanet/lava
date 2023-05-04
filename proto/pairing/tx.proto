@@ -34,6 +34,7 @@ message MsgStakeProviderResponse {
 }
 
 message MsgStakeClient {
+  reserved 5;
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];

@@ -36,6 +36,7 @@ message RelayPrivateData {
 }
 
 message RelayRequest {
+    reserved 3;
     RelaySession relay_session = 1;
     RelayPrivateData relay_data= 2;
 }
