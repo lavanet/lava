@@ -1349,7 +1349,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.NotEqual(t, sub.MonthCuTotal-sub.MonthCuLeft, proj2.UsedCu)
 }
 
-func TestBadgeBasicValidation(t *testing.T) {
+func TestBadge(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	subkeeper := ts.keepers.Subscription
 
@@ -1393,13 +1393,19 @@ func TestBadgeBasicValidation(t *testing.T) {
 		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
 		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
 		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
-		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
+		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// this test was put to make sure that we only compare the relay's and badge's epoch fields (without any
+			// relation to the advancement of blocks). So this test should have no errors
 			if tt.name == "badge epoch != relay epoch (epoch passed)" {
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+
+				// remove past payments to avoid double spending error (first test had a successful payment)
+				err = ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
+				require.Nil(t, err)
 			}
 			badge := utils.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
