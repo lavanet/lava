@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/lavanet/lava/grpcproxy/testproto"
+	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
