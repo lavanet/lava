@@ -10,7 +10,7 @@ import (
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgAddKeys{}, "projects/AddKeys", nil)
-	cdc.RegisterConcrete(&MsgSetAdminPolicy{}, "projects/SetAdminPolicy", nil)
+	cdc.RegisterConcrete(&MsgSetPolicy{}, "projects/SetPolicy", nil)
 	cdc.RegisterConcrete(&MsgSetSubscriptionPolicy{}, "projects/SetSubscriptionPolicy", nil)
 	// this line is used by starport scaffolding # 2
 }
@@ -20,7 +20,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgAddKeys{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgSetAdminPolicy{},
+		&MsgSetPolicy{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgSetSubscriptionPolicy{},

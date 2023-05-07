@@ -79,7 +79,7 @@ func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Proje
 	return nil
 }
 
-func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {

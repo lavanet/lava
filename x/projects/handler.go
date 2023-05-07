@@ -20,8 +20,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		case *types.MsgAddKeys:
 			res, err := msgServer.AddKeys(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgSetAdminPolicy:
-			res, err := msgServer.SetAdminPolicy(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgSetPolicy:
+			res, err := msgServer.SetPolicy(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgSetSubscriptionPolicy:
 			res, err := msgServer.SetSubscriptionPolicy(sdk.WrapSDKContext(ctx), msg)

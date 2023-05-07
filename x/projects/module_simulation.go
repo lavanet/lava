@@ -28,9 +28,9 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgAddKeys int = 100
 
-	opWeightMsgSetAdminPolicy = "op_weight_msg_set_admin_policy"
+	opWeightMsgSetPolicy = "op_weight_msg_set_admin_policy"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSetAdminPolicy int = 100
+	defaultWeightMsgSetPolicy int = 100
 
 	opWeightMsgSetSubscriptionPolicy = "op_weight_msg_set_subscription_policy"
 	// TODO: Determine the simulation weight value
@@ -80,15 +80,15 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 		projectssimulation.SimulateMsgAddKeys(am.keeper),
 	))
 
-	var weightMsgSetAdminPolicy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetAdminPolicy, &weightMsgSetAdminPolicy, nil,
+	var weightMsgSetPolicy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetPolicy, &weightMsgSetPolicy, nil,
 		func(_ *rand.Rand) {
-			weightMsgSetAdminPolicy = defaultWeightMsgSetAdminPolicy
+			weightMsgSetPolicy = defaultWeightMsgSetPolicy
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSetAdminPolicy,
-		projectssimulation.SimulateMsgSetAdminPolicy(am.keeper),
+		weightMsgSetPolicy,
+		projectssimulation.SimulateMsgSetPolicy(am.keeper),
 	))
 
 	var weightMsgSetSubscriptionPolicy int

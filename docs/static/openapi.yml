@@ -55963,7 +55963,7 @@ definitions:
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
-  lavanet.lava.projects.MsgSetAdminPolicyResponse:
+  lavanet.lava.projects.MsgSetPolicyResponse:
     type: object
   lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
     type: object

@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/x/projects/types";
 // Msg defines the Msg service.
 service Msg {
   rpc AddKeys(MsgAddKeys) returns (MsgAddKeysResponse);
-  rpc SetAdminPolicy(MsgSetAdminPolicy) returns (MsgSetAdminPolicyResponse);
+  rpc SetPolicy(MsgSetPolicy) returns (MsgSetPolicyResponse);
   rpc SetSubscriptionPolicy(MsgSetSubscriptionPolicy) returns (MsgSetSubscriptionPolicyResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
@@ -25,13 +25,13 @@ message MsgAddKeys {
 message MsgAddKeysResponse {
 }
 
-message MsgSetAdminPolicy {
+message MsgSetPolicy {
   string creator = 1;
   string project = 2;
   Policy policy = 3 [(gogoproto.nullable) = false];
 }
 
-message MsgSetAdminPolicyResponse {
+message MsgSetPolicyResponse {
 }
 
 message MsgSetSubscriptionPolicy {

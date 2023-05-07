@@ -210,7 +210,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAddr, types.ADMIN_PROJECT_NAME))
 }
 
-func TestSetAdminPolicy(t *testing.T) {
+func TestSetPolicy(t *testing.T) {
 	SetPolicyTest(t, true)
 }
 
@@ -300,13 +300,13 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 			}
 
 			if testAdminPolicy {
-				setAdminPolicyMessage := types.MsgSetAdminPolicy{
+				SetPolicyMessage := types.MsgSetPolicy{
 					Creator: tt.creator,
 					Policy:  newPolicy,
 					Project: projectID,
 				}
 
-				err = setAdminPolicyMessage.ValidateBasic()
+				err = SetPolicyMessage.ValidateBasic()
 				if tt.validateBasicSuccess {
 					require.Nil(t, err)
 				} else {
@@ -314,7 +314,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 					return
 				}
 
-				_, err := servers.ProjectServer.SetAdminPolicy(_ctx, &setAdminPolicyMessage)
+				_, err := servers.ProjectServer.SetPolicy(_ctx, &SetPolicyMessage)
 				if tt.setPolicySuccess {
 					require.Nil(t, err)
 					_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
