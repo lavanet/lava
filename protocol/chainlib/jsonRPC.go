@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -418,16 +417,16 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
+		if err != nil && connectCtx.Err() == context.DeadlineExceeded {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		}
 	}
 
 	var replyMsg rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
-			// Not an rpc error, return provider error without disclosing the endpoint address
-			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
-		}
 		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
 			Version: nodeMessage.Version,
 			ID:      nodeMessage.ID,

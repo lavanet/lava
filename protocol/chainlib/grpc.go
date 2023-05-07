@@ -341,7 +341,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
 	if err != nil {
-		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+		if connectCtx.Err() == context.DeadlineExceeded {
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
 		}
