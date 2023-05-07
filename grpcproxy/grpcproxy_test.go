@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func newTestGRPCServer(t *testing.T, grpcSrv *grpc.Server) *grpc.ClientConn {
@@ -22,7 +23,7 @@ func newTestGRPCServer(t *testing.T, grpcSrv *grpc.Server) *grpc.ClientConn {
 	}()
 
 	// returns the listening port
-	conn, err := grpc.Dial(lis.Addr().String(), grpc.WithInsecure())
+	conn, err := grpc.Dial(lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	return conn
 }
