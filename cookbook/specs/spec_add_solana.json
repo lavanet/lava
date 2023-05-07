@@ -1536,7 +1536,7 @@
             },
             {
                 "index": "SOLANAT",
-                "name": "Solana test net",
+                "name": "solana test net",
                 "enabled": true,
                 "imports": [
                     "SOLANA"

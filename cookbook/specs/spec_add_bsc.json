@@ -27,7 +27,7 @@
             },
             {
                 "index": "BSCT",
-                "name": "BSC testnet",
+                "name": "bsc testnet",
                 "enabled": true,
                 "imports": [
                     "BSC"
