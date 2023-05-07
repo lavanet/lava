@@ -33,6 +33,7 @@ message BlockParser {
   repeated string parser_arg = 1;
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
+  string encoding =4; // used to parse byte responses: base64,hex,bech32
 }
 
 enum PARSER_FUNC{

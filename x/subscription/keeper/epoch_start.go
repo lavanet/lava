@@ -41,6 +41,7 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 		sub.PrevCuLeft = sub.MonthCuLeft
 
 		// subscription has been dead for EpochsToSave epochs: delete
+		// TODO: disable all projects registered in this subscription
 		// TODO: THIS WILL BE HANDLED AUTOMATICALLY BY FIXATION-STORE
 		// (WHICH WILL BE ADDED IN SUBSEQUENT PR)
 		if sub.IsStale(block - blocksToSave) {

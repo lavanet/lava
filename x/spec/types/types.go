@@ -19,6 +19,11 @@ const (
 )
 
 const (
+	EncodingBase64 = "base64"
+	EncodingHex    = "hex"
+)
+
+const (
 	NOT_APPLICABLE  int64 = -1
 	LATEST_BLOCK    int64 = -2
 	EARLIEST_BLOCK  int64 = -3

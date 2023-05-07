@@ -26,7 +26,12 @@ type GrpcMessage struct {
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {
-	return nil
+	var parsedData interface{}
+	err := json.Unmarshal(gm.Msg, &parsedData)
+	if err != nil {
+		utils.LavaFormatError("GetParams Failed to unmarshal grpc message", err, utils.Attribute{Key: "message", Value: string(gm.Msg)})
+	}
+	return parsedData
 }
 
 // GetResult will be deprecated after we remove old client

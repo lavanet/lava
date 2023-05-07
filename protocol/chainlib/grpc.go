@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -71,6 +72,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
 	}
 
+	// Extract default block parser
+	blockParser := serviceApi.BlockParsing
+
 	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
@@ -82,8 +86,13 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path: url,
 	}
 
-	// TODO: fix requested block
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
+	// Fetch requested block, it is used for data reliability
+	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
+	if err != nil {
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	}
+
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, &grpcMessage)
 	return nodeMsg, nil
 }
 
@@ -109,7 +118,7 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	api, ok := matchSpecApiByName(name, apip.serverApis)
+	api, ok := apip.serverApis[name]
 
 	// Return an error if spec does not exist
 	if !ok {
@@ -249,7 +258,9 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	cp := &GrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
-	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/"))
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(nodeUrl.Url, "/") // remove suffix if exists
+	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +291,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	connectCtx, cancel := common.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
 	// TODO: improve functionality, this is reading descriptors every send

@@ -2,20 +2,20 @@ package rpcInterfaceMessages
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRestMessage(t *testing.T) {
 	// Test GetParams method
 	restMessage := RestMessage{
-		Path: "eth_getTransactionByHash",
-		Msg:  []byte{1, 2, 3, 4, 5},
+		Path:     "blocks/latest",
+		SpecPath: "blocks/latest",
 	}
 
 	// Test GetParams method
 	params := restMessage.GetParams()
-	if params != nil {
-		t.Errorf("Expected nil, but got %v", params)
-	}
+	require.Nil(t, params)
 
 	// Test GetResult method
 	result := restMessage.GetResult()
