@@ -37,6 +37,39 @@ var (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 )
 
+type strategyValue struct {
+	provideroptimizer.Strategy
+}
+
+var strategyNames = []string{
+	"balanced",
+	"latency",
+	"sync-freshness",
+	"cost",
+	"privacy",
+	"accuracy",
+}
+
+var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
+
+func (s *strategyValue) String() string {
+	return strategyNames[int(s.Strategy)]
+}
+
+func (s *strategyValue) Set(str string) error {
+	for i, name := range strategyNames {
+		if strings.EqualFold(str, name) {
+			s.Strategy = provideroptimizer.Strategy(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid strategy: %s", str)
+}
+
+func (s *strategyValue) Type() string {
+	return "string"
+}
+
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
@@ -49,7 +82,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache, strategy provideroptimizer.Strategy) (err error) {
 	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -115,9 +148,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				value, exists := optimizers.Load(chainID)
 				if !exists {
 					// doesn't exist for this chain create a new one
-					strategy := provideroptimizer.STRATEGY_BALANCED
 					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 3)
+					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 1)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
@@ -299,7 +331,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache, strategyFlag.Strategy)
 			return err
 		},
 	}
@@ -314,7 +347,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-
+	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	return cmdRPCConsumer
 }
 

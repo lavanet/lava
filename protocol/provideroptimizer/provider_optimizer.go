@@ -60,7 +60,15 @@ const (
 	STRATEGY_ACCURACY
 )
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
+func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0)
+}
+
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64) {
+	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock)
+}
+
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
 	latestSync, timeSync := po.updateLatestSyncData(syncBlock)
 	providerData, _ := po.getProviderData(providerAddress)
 	halfTime := po.calculateHalfTime(providerAddress)
@@ -266,7 +274,8 @@ func (po *ProviderOptimizer) CalculateProbabilityOfTimeout(availabilityScore sco
 
 func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int64, providerData ProviderData) float64 {
 	probabilityBlockError := float64(0)
-	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) {
+	// if there is no syncBlock data we assume successful relays so we don't over fit providers who were lucky to update
+	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) && providerData.SyncBlock > 0 {
 		// requested a specific block, so calculate a probability of provider having that block
 		averageBlockTime := po.averageBlockTime.Seconds()
 		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock

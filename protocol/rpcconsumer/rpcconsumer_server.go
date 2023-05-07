@@ -192,7 +192,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	isSubscription := chainMessage.GetInterface().Category.Subscription
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders)
+	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
 	relayResult = &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
 	if err != nil {
 		return relayResult, err
@@ -254,7 +254,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
 	pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 	latestBlock := relayResult.Reply.LatestBlock
-	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen) // session done successfully
+	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetInterface().Category.HangingApi) // session done successfully
 
 	// set cache in a non blocking call
 	go func() {
