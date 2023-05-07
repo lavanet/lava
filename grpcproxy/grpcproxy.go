@@ -2,19 +2,20 @@ package grpcproxy
 
 import (
 	"context"
-	"fmt"
+	"net/http"
+
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
 )
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, error)
 
-func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, http.Server, error) {
+func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, *http.Server, error) {
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(rawBytesCodec{}))
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
@@ -25,7 +26,7 @@ func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, http.Server, error) {
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
-	httpServer := http.Server{
+	httpServer := &http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
 	return s, httpServer, nil
@@ -56,7 +57,7 @@ type rawBytesCodec struct{}
 func (rawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 	bytes, ok := v.([]byte)
 	if !ok {
-		return nil, fmt.Errorf("cannot encode type: %T", v)
+		return nil, utils.LavaFormatError("cannot encode type", nil, utils.Attribute{Key: "v", Value: v})
 	}
 	return bytes, nil
 }
@@ -64,7 +65,7 @@ func (rawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 func (rawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	bufferPtr, ok := v.(*[]byte)
 	if !ok {
-		return fmt.Errorf("cannot decode into type: %T", v)
+		return utils.LavaFormatError("cannot decode into type", nil, utils.Attribute{Key: "v", Value: v})
 	}
 	*bufferPtr = data
 	return nil

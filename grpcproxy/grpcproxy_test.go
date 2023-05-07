@@ -2,11 +2,12 @@ package grpcproxy
 
 import (
 	"context"
+	"net"
+	"testing"
+
 	"github.com/lavanet/lava/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"net"
-	"testing"
 )
 
 func newTestGRPCServer(t *testing.T, grpcSrv *grpc.Server) *grpc.ClientConn {
