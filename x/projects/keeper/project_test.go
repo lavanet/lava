@@ -59,16 +59,16 @@ func TestCreateProject(t *testing.T) {
 
 	// test invalid project name/description
 	defaultProjectName := types.ADMIN_PROJECT_NAME
-	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN)
+	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
 	projectNameWithComma := "projectName,"
 	nonAsciiProjectName := "projectName¢"
 
 	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN)
+	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
 	nonAsciiProjectDescription := "projectDesc¢"
 
-	nameDescriptionTestProjectData := projectData
-	nameDescriptionTestProjectData.ProjectKeys = []types.ProjectKey{}
+	testProjectData := projectData
+	testProjectData.ProjectKeys = []types.ProjectKey{}
 
 	nameAndDescriptionTests := []struct {
 		name               string
@@ -86,10 +86,10 @@ func TestCreateProject(t *testing.T) {
 
 	for _, tt := range nameAndDescriptionTests {
 		t.Run(tt.name, func(t *testing.T) {
-			nameDescriptionTestProjectData.Name = tt.projectName
-			nameDescriptionTestProjectData.Description = tt.projectDescription
+			testProjectData.Name = tt.projectName
+			testProjectData.Description = tt.projectDescription
 
-			err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), nameDescriptionTestProjectData, plan)
+			err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), testProjectData, plan)
 			require.NotNil(t, err)
 		})
 	}
@@ -260,10 +260,10 @@ func TestSetSubscriptionPolicy(t *testing.T) {
 func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
-	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	developerAcc := common.CreateNewAccount(ctx, *keepers, 10000)
-	projectID := types.ProjectIndex(subAccount.Addr.String(), projectName)
+	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	admAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	devAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	projectID := types.ProjectIndex(subAddr, projectName)
 	plan := common.CreateMockPlan()
 
 	projectData := types.ProjectData{
@@ -271,18 +271,18 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
-			Key:   adminAcc.Addr.String(),
+			Key:   admAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
 			Vrfpk: "",
 		}},
 		Policy: &types.Policy{GeolocationProfile: math.MaxUint64},
 	}
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, adminAcc.Addr.String(),
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, admAddr,
 		[]types.ProjectKey{{
-			Key:   developerAcc.Addr.String(),
+			Key:   devAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}})
@@ -304,58 +304,58 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		setPolicySuccess     bool
 	}{
 		{
-			"valid policy (admin account)", adminAcc.Addr.String(), projectID, uint64(1),
+			"valid policy (admin account)", admAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
-			"valid policy (subscription account)", subAccount.Addr.String(), projectID, uint64(1),
+			"valid policy (subscription account)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
-			"bad creator (developer account -- not admin)", developerAcc.Addr.String(), projectID, uint64(1),
+			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
-			"bad projectID (doesn't exist)", developerAcc.Addr.String(), "fakeProjectId", uint64(1),
+			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
-			"invalid geolocation (0)", developerAcc.Addr.String(), "fakeProjectId", uint64(0),
+			"invalid geolocation (0)", devAddr, "fakeProjectId", uint64(0),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
-			"bad chainID (doesn't exist)", subAccount.Addr.String(), projectID, uint64(1),
+			"bad chainID (doesn't exist)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		}, // note: currently, we don't verify the chain policies
 
 		{
-			"bad API (doesn't exist)", subAccount.Addr.String(), projectID, uint64(1),
+			"bad API (doesn't exist)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true,
 		}, // note: currently, we don't verify the chain policies
 		{
-			"chainID and API not supported (exist in Lava's specs)", subAccount.Addr.String(), projectID, uint64(1),
+			"chainID and API not supported (exist in Lava's specs)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
 			100, 10, 3, true, true,
 		}, // note: currently, we don't verify the chain policies
 		{
-			"epoch CU larger than total CU", subAccount.Addr.String(), projectID, uint64(1),
+			"epoch CU larger than total CU", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, false,
 		},
 		{
-			"bad maxProvidersToPair", subAccount.Addr.String(), projectID, uint64(1),
+			"bad maxProvidersToPair", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 1, false, false,
 		},
@@ -414,7 +414,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				}
 
 				_, err := servers.ProjectServer.SetSubscriptionPolicy(ctx, &setSubscriptionPolicyMessage)
-				if tt.creator == subAccount.Addr.String() {
+				if tt.creator == subAddr {
 					// only the subscription consumer should be able to set subscription policy
 					require.Nil(t, err)
 
@@ -441,10 +441,10 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	projectName := "mockname1"
-	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
-	devAcc1 := common.CreateNewAccount(ctx, *keepers, 10000)
-	devAcc2 := common.CreateNewAccount(ctx, *keepers, 10000)
-	projectID := types.ProjectIndex(subAccount.Addr.String(), projectName)
+	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	dev1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	projectID := types.ProjectIndex(subAddr, projectName)
 	plan := common.CreateMockPlan()
 
 	projectData := types.ProjectData{
@@ -452,20 +452,20 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
-			Key:   subAccount.Addr.String(),
+			Key:   subAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAccount.Addr.String(),
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAddr,
 		[]types.ProjectKey{{
-			Key:   devAcc1.Addr.String(),
+			Key:   dev1Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}})
@@ -473,15 +473,15 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAccount.Addr.String(),
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAddr,
 		[]types.ProjectKey{{
-			Key:   devAcc2.Addr.String(),
+			Key:   dev2Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}})
 	require.Nil(t, err)
 
-	proj, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(),
+	proj, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAddr,
 		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 
@@ -492,28 +492,28 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 	plan := common.CreateMockPlan()
 
-	subAccount1 := common.CreateNewAccount(ctx, *keepers, 10000)
-	subAccount2 := common.CreateNewAccount(ctx, *keepers, 10000)
-	devAcc := common.CreateNewAccount(ctx, *keepers, 10000)
+	sub1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	sub2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	devAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 
 	projectName1 := "mockname1"
 	projectName2 := "mockname2"
 
-	projectID1 := types.ProjectIndex(subAccount1.Addr.String(), projectName1)
-	projectID2 := types.ProjectIndex(subAccount2.Addr.String(), projectName2)
+	projectID1 := types.ProjectIndex(sub1Addr, projectName1)
+	projectID2 := types.ProjectIndex(sub2Addr, projectName2)
 
 	projectData1 := types.ProjectData{
 		Name:        projectName1,
 		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
-			Key:   subAccount1.Addr.String(),
+			Key:   sub1Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount1.Addr.String(), projectData1, plan)
+	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), sub1Addr, projectData1, plan)
 	require.Nil(t, err)
 
 	projectData2 := types.ProjectData{
@@ -521,38 +521,38 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
-			Key:   subAccount2.Addr.String(),
+			Key:   sub2Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount2.Addr.String(), projectData2, plan)
+	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), sub2Addr, projectData2, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID1, subAccount1.Addr.String(),
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID1, sub1Addr,
 		[]types.ProjectKey{{
-			Key:   devAcc.Addr.String(),
+			Key:   devAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}})
 	require.Nil(t, err)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID2, subAccount2.Addr.String(),
+	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID2, sub2Addr,
 		[]types.ProjectKey{{
-			Key:   devAcc.Addr.String(),
+			Key:   devAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}})
 	require.NotNil(t, err) // should fail since this developer was already added to the first project
 
-	proj1, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAccount1.Addr.String(),
+	proj1, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), sub1Addr,
 		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 
-	proj2, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAccount2.Addr.String(),
+	proj2, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), sub2Addr,
 		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	require.Nil(t, err)
 

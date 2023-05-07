@@ -49,6 +49,12 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		if err != nil {
 			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address in project key (%s)", err)
 		}
+
+		for _, projectKeyType := range projectKey.Types {
+			if projectKeyType != projectstypes.ProjectKey_ADMIN && projectKeyType != projectstypes.ProjectKey_DEVELOPER {
+				return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "invalid type in project key (should be 1 or 2)")
+			}
+		}
 	}
 
 	if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {

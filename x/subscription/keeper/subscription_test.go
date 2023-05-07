@@ -307,7 +307,7 @@ func TestRenewSubscription(t *testing.T) {
 	require.True(t, found)
 	oldPlanCuPerEpoch := subPlan.PlanPolicy.EpochCuLimit
 	subPlan.PlanPolicy.EpochCuLimit += 100
-	err = ts.keepers.Plans.AddPlan(ts.ctx, subPlan)
+	err = keepertest.SimulatePlansProposal(ts.ctx, ts.keepers.Plans, []planstypes.Plan{subPlan})
 	require.Nil(t, err)
 
 	// try extending the subscription (normally we could extend with 1 more month, but since the
