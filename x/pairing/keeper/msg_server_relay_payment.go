@@ -49,22 +49,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
-		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
-		if err != nil {
-			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
-		}
-		if !providerAddr.Equals(creator) {
-			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg, creator and signed provider mismatch")
-		}
 
-		// TODO: add support for spec changes
-		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
-		if !found || !spec.Enabled {
-			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecId}, "invalid spec ID specified in proof")
-		}
-
+		// if badge is not nil, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if relay.Badge != nil {
-			if !utils.IsBadgeValid(*relay.Badge, clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch), relay.CuSum) {
+			if !relay.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch), relay.CuSum) {
 				details := map[string]string{
 					"badgeAddress":      relay.Badge.Address,
 					"badgeLavaChainId":  relay.Badge.LavaChainId,
@@ -79,10 +67,27 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 
 			// badge is valid -> extract address of badge granter (developer key) and continue with payment
-			clientAddr, err = utils.ExtractSignerAddressFromBadge(*relay.Badge)
+			clientAddr, err = sigs.ExtractSignerAddressFromBadge(*relay.Badge)
 			if err != nil {
-				return errorLogAndFormat("relay_payment_badge", nil, "could not extract badge signer")
+				details := map[string]string{
+					"Error": err.Error(),
+				}
+				return errorLogAndFormat("relay_payment_badge", details, "could not extract badge signer")
 			}
+		}
+
+		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
+		if err != nil {
+			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
+		}
+		if !providerAddr.Equals(creator) {
+			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg, creator and signed provider mismatch")
+		}
+
+		// TODO: add support for spec changes
+		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
+		if !found || !spec.Enabled {
+			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecId}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, vrfk, thisProviderIndex, allowedCU, providersToPair, legacy, err := k.Keeper.ValidatePairingForClient(

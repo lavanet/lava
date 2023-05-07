@@ -15,7 +15,6 @@ import (
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1176,24 +1175,22 @@ func payAndVerifyBalanceLegacy(t *testing.T, ts *testStruct, relayPaymentMessage
 // Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
 func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, validConsumer bool, validPayment bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
 	for _, relay := range relayPaymentMessage.Relays {
-		sub := subscriptiontypes.Subscription{}
-		found := false
-		originalProjectUsedCu := uint64(0)
-		originalSubCuLeft := uint64(0)
-
 		// Get provider's stake and consumer's project before payment
 		balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
 		proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), clientAddress.String(), uint64(relay.Epoch))
-		if validConsumer {
-			require.Nil(t, err)
-			originalProjectUsedCu = proj.UsedCu
-
-			sub, found = ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
-			require.True(t, found)
-			originalSubCuLeft = sub.MonthCuLeft
-		} else {
+		if !validConsumer {
 			require.NotNil(t, err)
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
+			require.NotNil(t, err)
+			continue
 		}
+		// valid consumer
+		require.Nil(t, err)
+		originalProjectUsedCu := proj.UsedCu
+
+		sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
+		require.True(t, found)
+		originalSubCuLeft := sub.MonthCuLeft
 
 		// perform payment
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
@@ -1407,7 +1404,7 @@ func TestBadge(t *testing.T) {
 				err = ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
 				require.Nil(t, err)
 			}
-			badge := utils.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
+			badge := types.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
