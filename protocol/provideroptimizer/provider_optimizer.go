@@ -241,7 +241,16 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
 	// on success we are paying the time cost of this provider
 	costSuccess := historicalLatency.Seconds()
-
+	if debug {
+		utils.LavaFormatDebug("latency calculation breakdown",
+			utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError},
+			utils.Attribute{Key: "costBlockError", Value: costBlockError},
+			utils.Attribute{Key: "probabilityOfTimeout", Value: probabilityOfTimeout},
+			utils.Attribute{Key: "costTimeout", Value: costTimeout},
+			utils.Attribute{Key: "probabilityOfSuccess", Value: probabilityOfSuccess},
+			utils.Attribute{Key: "costSuccess", Value: costSuccess},
+		)
+	}
 	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfSuccess*costSuccess
 }
 
@@ -285,9 +294,9 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 		}
 	} else {
 		providerData = ProviderData{
-			Availability: score.NewScoreStore(1, 2, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score
-			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score (twice the time)
-			Sync:         score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score (twice the time)
+			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
+			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
+			Sync:         score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
 			SyncBlock:    0,
 		}
 	}

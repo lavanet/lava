@@ -54,6 +54,7 @@ func TestProviderOptimizerSetGet(t *testing.T) {
 			utils.LavaFormatDebug("successfully set", utils.Attribute{Key: "entry", Value: address})
 		}
 	}
+	time.Sleep(2 * time.Millisecond)
 	for i := 0; i < 100; i++ {
 		address := providerAddress + strconv.Itoa(i)
 		providerData, found := providerOptimizer.getProviderData(address)
@@ -73,10 +74,12 @@ func TestProviderOptimizerBasic(t *testing.T) {
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[1], TEST_BASE_WORLD_LATENCY*3, true)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[1]) // we shouldn't pick the wrong provider
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[0], TEST_BASE_WORLD_LATENCY/2, true)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[0], returnedProviders[0]) // we should pick the best provider
@@ -118,7 +121,7 @@ func TestProviderOptimizerAvailability(t *testing.T) {
 		}
 		providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false)
 	}
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[skipIndex], returnedProviders[0])
@@ -144,7 +147,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 		}
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, false, requestCU, syncBlock)
 	}
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[skipIndex], returnedProviders[0])
@@ -164,7 +167,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	syncBlock := uint64(requestBlock)
 	chosenIndex := rand.Intn(providersCount)
 	for i := range providersGen.providersAddresses {
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		// give all providers a worse availability score
 		if i == chosenIndex {
 			// give better syncBlock, worse latency by a little
@@ -173,7 +176,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		}
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock-1) // update that he doesn't have the latest requested block
 	}
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[0])
@@ -196,7 +199,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 		providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found)
 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
@@ -207,7 +210,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 		providerOptimizer.AppendRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found)
 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
@@ -227,8 +230,8 @@ func TestProviderOptimizerStrategiesProviderCount(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for _, address := range providersGen.providersAddresses {
 			providerOptimizer.AppendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock)
-			time.Sleep(1 * time.Millisecond)
 		}
+		time.Sleep(2 * time.Millisecond)
 	}
 	testProvidersCount := func(iterations int) float64 {
 		exploration := 0.0
@@ -277,7 +280,7 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		}
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock) // update that he doesn't have the latest requested block
 	}
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
 	require.Equal(t, 1, len(returnedProviders))
 	require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[0]) // we should pick the best sync score
@@ -300,22 +303,23 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 		for _, address := range providersGen.providersAddresses {
 			providerOptimizer.AppendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock)
 		}
+		time.Sleep(2 * time.Millisecond)
 	}
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	// provider 2 doesn't get a probe availability hit, this is the most meaningful factor
 	for idx, address := range providersGen.providersAddresses {
 		if idx != 2 {
 			providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, false)
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(2 * time.Millisecond)
 		}
 		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, false)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 		providerOptimizer.AppendProbeRelayData(address, TEST_BASE_WORLD_LATENCY*2, true)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 
 	// provider 0 gets a good latency
@@ -326,7 +330,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	// provider 1 gets a good sync
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[1], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock+100)
 
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	providerOptimizer.strategy = STRATEGY_BALANCED
 	// a balanced strategy should pick provider 0
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
