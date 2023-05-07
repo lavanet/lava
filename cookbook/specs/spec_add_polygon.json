@@ -33,7 +33,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -57,7 +57,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -105,7 +105,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -129,7 +129,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -153,7 +153,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -177,7 +177,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -201,7 +201,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "20",
+                        "compute_units": "5000",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -225,7 +225,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -249,7 +249,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
