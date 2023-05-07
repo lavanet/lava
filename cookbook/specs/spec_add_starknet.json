@@ -196,7 +196,7 @@
                                 "block_number"
                             ],
                             "parser_func": "PARSE_CANONICAL",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "1",
                         "enabled": true,
@@ -222,7 +222,7 @@
                                 "block_number"
                             ],
                             "parser_func": "PARSE_CANONICAL",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "1",
                         "enabled": true,
