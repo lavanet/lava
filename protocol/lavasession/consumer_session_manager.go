@@ -42,11 +42,8 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
-	// if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
-	// 	// we have enough valid providers, probe before updating the pairing
-	// 	csm.probeProviders(pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
-	// } else {
-	// }
+	// TODO: we can block updating until some of the probing is done, this can prevent failed attempts on epoch change when we have no information on the providers,
+	// and all of them are new (less effective on big pairing lists or a process that runs for a few epochs)
 	defer func() {
 		// run this after done updating pairing
 		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // sleep up to 500ms in order to scatter different chains probe triggers
