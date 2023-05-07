@@ -17,8 +17,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		_ = ctx.WithEventManager(sdk.NewEventManager())
 
 		switch msg := msg.(type) {
-		case *types.MsgAddProjectKeys:
-			res, err := msgServer.AddProjectKeys(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgAddKeys:
+			res, err := msgServer.AddKeys(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgSetAdminPolicy:
 			res, err := msgServer.SetAdminPolicy(sdk.WrapSDKContext(ctx), msg)

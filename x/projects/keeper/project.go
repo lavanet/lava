@@ -45,18 +45,18 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
 	// check if the admin key is valid
 	if !project.IsAdminKey(adminKey) {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
 	for _, projectKey := range projectKeys {
 		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+			return utils.LavaError(ctx, ctx.Logger(), "AddKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
 		}
 	}
 

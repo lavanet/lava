@@ -155,27 +155,27 @@ func TestAddKeys(t *testing.T) {
 	project := projectRes.Project
 	pk := types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
 	// try adding myself as admin, should fail
-	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin key adding a developer
 	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// developer tries to add the second developer as admin
 	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
-	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin adding admin
 	pk = types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
-	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// new admin adding another developer
 	pk = types.ProjectKey{Key: dev3Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddProjectKeys(ctx, &types.MsgAddProjectKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// fetch project with new developer
@@ -394,7 +394,7 @@ func TestChargeComputeUnits(t *testing.T) {
 
 	// add developer key (created fixation)
 	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddProjectKeys(_ctx, &types.MsgAddProjectKeys{
+	_, err = servers.ProjectServer.AddKeys(_ctx, &types.MsgAddKeys{
 		Creator:     subAddr,
 		Project:     project.Index,
 		ProjectKeys: []types.ProjectKey{pk},
