@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "BSC",
-                "name": "BSC mainnet",
+                "name": "bsc mainnet",
                 "enabled": true,
                 "imports": [
                     "ETH1"
