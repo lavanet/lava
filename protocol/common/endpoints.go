@@ -59,6 +59,37 @@ func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Durati
 type AuthConfig struct {
 	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
 	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+	UseTLS      bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
+	KeyPem      string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem     string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	CaCert      string            `yaml:"cacert-pem,omitempty" json:"cacert-pem,omitempty" mapstructure:"cacert-pem"`
+}
+
+func (ac *AuthConfig) GetUseTls() bool {
+	if ac == nil {
+		return false
+	}
+	return ac.UseTLS
+}
+
+// File containing client certificate (public key), to present to the
+// server. + File containing client private key, to present to the server.
+func (ac *AuthConfig) GetLoadingCertificateParams() (string, string) {
+	if ac == nil {
+		return "", ""
+	}
+	if ac.KeyPem == "" || ac.CertPem == "" {
+		return "", ""
+	}
+	return ac.KeyPem, ac.CertPem
+}
+
+// File containing trusted root certificates for verifying the server.
+func (ac *AuthConfig) GetCaCertificateParams() string {
+	if ac == nil {
+		return ""
+	}
+	return ac.CaCert
 }
 
 func (ac *AuthConfig) AddAuthPath(url string) string {

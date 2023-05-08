@@ -37,7 +37,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
 
-	for _, relay := range msg.Relays {
+	for relayIdx, relay := range msg.Relays {
 		if relay.LavaChainId != lavaChainID {
 			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
 		}
@@ -206,7 +206,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
+			// TODO: QoSReport is deprecated remove after version 0.12.0
 			details["QoSReport"] = "Latency: " + relay.QosReport.Latency.String() + ", Availability: " + relay.QosReport.Availability.String() + ", Sync: " + relay.QosReport.Sync.String()
+			// allow easier extraction of components
+			details["QoSLatency"] = relay.QosReport.Latency.String()
+			details["QoSAvailability"] = relay.QosReport.Availability.String()
+			details["QoSSync"] = relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
 			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
@@ -263,8 +268,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
-		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
-
+		// differentiate between different relays by providing the index in the keys
+		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
+		// calling the same event repeatedly within a transaction just appends the new keys to the event
+		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 		if !legacy {
 			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
 			if err != nil {
@@ -409,4 +416,13 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 	}
 
 	return nil
+}
+
+func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier uint64) (to map[string]string) {
+	to = map[string]string{}
+	sessionIDStr := strconv.FormatUint(uniqueIdentifier, 10)
+	for key, value := range from {
+		to[key+"."+sessionIDStr] = value
+	}
+	return to
 }

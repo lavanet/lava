@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "COSMOSSDKFULL",
-                "name": "Full Cosmos SDK",
+                "name": "full cosmos sdk",
                 "enabled": false,
                 "imports": [
                     "COSMOSSDK",
