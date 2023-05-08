@@ -152,7 +152,7 @@ if len(special_cases_descriptors_with_no_rest_api) > 0:
     print("Special cases rpc:")
     [print(x) for x in special_cases_descriptors_with_no_rest_api]
 
-with open("/Users/candostyavuz/Projects/Lava/tasks/PRT-639/lava/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
+with open(os.getcwd() + "/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
     json_file.write(spec_res)
 
 print("SUCCESS! gRPC spec interface created for:", chainId) 
