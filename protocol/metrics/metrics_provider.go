@@ -16,16 +16,11 @@ const (
 type ProviderMetrics struct {
 	specID                    string
 	apiInterface              string
-	totalCUServiced           uint64
-	totalCUPaid               uint64
-	totalRelaysServiced       uint64
-	totalErrored              uint64
-	currentConsumers          uint64
 	lock                      sync.Mutex
-	totalCUServicedMetric     *prometheus.GaugeVec
-	totalCUPaidMetric         *prometheus.GaugeVec
-	totalRelaysServicedMetric *prometheus.GaugeVec
-	totalErroredMetric        *prometheus.GaugeVec
+	totalCUServicedMetric     *prometheus.CounterVec
+	totalCUPaidMetric         *prometheus.CounterVec
+	totalRelaysServicedMetric *prometheus.CounterVec
+	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
 }
 
@@ -35,10 +30,8 @@ func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pair
 	}
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	pm.totalCUServiced += cu
-	pm.totalRelaysServiced += 1
-	pm.totalCUServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(float64(pm.totalCUServiced))
-	pm.totalRelaysServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(float64(pm.totalRelaysServiced))
+	pm.totalCUServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(float64(cu))
+	pm.totalRelaysServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
 	if qos == nil {
 		return
 	}
@@ -62,8 +55,7 @@ func (pm *ProviderMetrics) AddPayment(cu uint64) {
 	}
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	pm.totalCUPaid += cu
-	pm.totalCUPaidMetric.WithLabelValues(pm.specID).Set(float64(pm.totalCUPaid))
+	pm.totalCUPaidMetric.WithLabelValues(pm.specID).Add(float64(cu))
 }
 
 func (pm *ProviderMetrics) AddError() {
@@ -72,24 +64,18 @@ func (pm *ProviderMetrics) AddError() {
 	}
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	pm.totalErrored += 1
-	pm.totalErroredMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(float64(pm.totalErrored))
+	pm.totalErroredMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
 }
 
-func NewProviderMetrics(specID string, apiInterface string, totalCUServicedMetric *prometheus.GaugeVec,
-	totalCUPaidMetric *prometheus.GaugeVec,
-	totalRelaysServicedMetric *prometheus.GaugeVec,
-	totalErroredMetric *prometheus.GaugeVec,
+func NewProviderMetrics(specID string, apiInterface string, totalCUServicedMetric *prometheus.CounterVec,
+	totalCUPaidMetric *prometheus.CounterVec,
+	totalRelaysServicedMetric *prometheus.CounterVec,
+	totalErroredMetric *prometheus.CounterVec,
 	consumerQoSMetric *prometheus.GaugeVec,
 ) *ProviderMetrics {
 	pm := &ProviderMetrics{
 		specID:                    specID,
 		apiInterface:              apiInterface,
-		totalCUServiced:           0,
-		totalCUPaid:               0,
-		totalRelaysServiced:       0,
-		totalErrored:              0,
-		currentConsumers:          0,
 		lock:                      sync.Mutex{},
 		totalCUServicedMetric:     totalCUServicedMetric,
 		totalCUPaidMetric:         totalCUPaidMetric,

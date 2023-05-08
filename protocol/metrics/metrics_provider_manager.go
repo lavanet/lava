@@ -18,11 +18,12 @@ const (
 type ProviderMetricsManager struct {
 	providerMetrics           map[string]*ProviderMetrics
 	lock                      sync.RWMutex
-	totalCUServicedMetric     *prometheus.GaugeVec
-	totalCUPaidMetric         *prometheus.GaugeVec
-	totalRelaysServicedMetric *prometheus.GaugeVec
-	totalErroredMetric        *prometheus.GaugeVec
+	totalCUServicedMetric     *prometheus.CounterVec
+	totalCUPaidMetric         *prometheus.CounterVec
+	totalRelaysServicedMetric *prometheus.CounterVec
+	totalErroredMetric        *prometheus.CounterVec
 	consumerQoSMetric         *prometheus.GaugeVec
+	blockMetric               *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -30,39 +31,45 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
 	}
-	totalCUServicedMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	totalCUServicedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "provider_total_cu_serviced",
 		Help: "The total number of CUs serviced by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	// Create a new GaugeVec metric to represent the TotalCUPaid over time.
-	totalCUPaidMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	totalCUPaidMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "provider_total_cu_paid",
 		Help: "The total number of CUs paid to the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	// Create a new GaugeVec metric to represent the TotalRelaysServiced over time.
-	totalRelaysServicedMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	totalRelaysServicedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "provider_total_relays_serviced",
 		Help: "The total number of relays serviced by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
-	totalErroredMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	totalErroredMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "provider_total_errored",
 		Help: "The total number of errors encountered by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	consumerQoSMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "Consumer_QoS",
+		Name: "consumer_QoS",
 		Help: "The latest QoS score from a consumer",
 	}, []string{"spec", "consumer_address", "qos_metric"})
+
+	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "latest_block",
+		Help: "The latest block measured",
+	}, []string{"spec"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
 	prometheus.MustRegister(totalRelaysServicedMetric)
 	prometheus.MustRegister(totalErroredMetric)
 	prometheus.MustRegister(consumerQoSMetric)
+	prometheus.MustRegister(blockMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -75,6 +82,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		totalRelaysServicedMetric: totalRelaysServicedMetric,
 		totalErroredMetric:        totalErroredMetric,
 		consumerQoSMetric:         consumerQoSMetric,
+		blockMetric:               blockMetric,
 	}
 }
 
@@ -99,6 +107,15 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID string, apiInterfac
 		pme.setProviderMetric(providerMetric)
 	}
 	return pme.getProviderMetric(specID, apiInterface)
+}
+
+func (pme *ProviderMetricsManager) SetLatestBlock(specID string, block uint64) {
+	if pme == nil {
+		return
+	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	pme.blockMetric.WithLabelValues(specID).Set(float64(block))
 }
 
 func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {

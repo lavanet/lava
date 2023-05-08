@@ -16,6 +16,10 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
+const (
+	debug = false
+)
+
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
 	rpcEndpoint    *RPCEndpoint // used to filter out endpoints
@@ -324,6 +328,15 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			consumerSession.LatestRelayCu = cuNeededForSession // set latestRelayCu
 			consumerSession.RelayNum += RelayNumberIncrement   // increase relayNum
 			// Successfully created/got a consumerSession.
+			if debug {
+				utils.LavaFormatDebug("Consumer get session",
+					utils.Attribute{Key: "provider", Value: providerAddress},
+					utils.Attribute{Key: "sessionEpoch", Value: sessionEpoch},
+					utils.Attribute{Key: "consumerSession.CUSum", Value: consumerSession.CuSum},
+					utils.Attribute{Key: "consumerSession.RelayNum", Value: consumerSession.RelayNum},
+					utils.Attribute{Key: "consumerSession.SessionId", Value: consumerSession.SessionId},
+				)
+			}
 			return consumerSession, sessionEpoch, providerAddress, reportedProviders, nil
 		}
 		utils.LavaFormatFatal("Unreachable Error", UnreachableCodeError)

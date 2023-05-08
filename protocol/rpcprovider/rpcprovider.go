@@ -149,7 +149,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			var chainTracker *chaintracker.ChainTracker
-
+			// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
+			recordMetricsOnNewBlock := func(block int64, hash string) {
+				providerMetricsManager.SetLatestBlock(chainID, uint64(block))
+			}
 			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 			chainCommonSetup := func() error {
 				chainMutexes[chainID].Lock()
@@ -161,6 +164,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						BlocksToSave:      blocksToSaveChainTracker,
 						AverageBlockTime:  averageBlockTime,
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+						NewLatestCallback: recordMetricsOnNewBlock,
 					}
 					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
