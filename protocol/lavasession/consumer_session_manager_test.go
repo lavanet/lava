@@ -28,7 +28,7 @@ const (
 	firstEpochHeight                   = 20
 	secondEpochHeight                  = 40
 	cuForFirstRequest                  = uint64(10)
-	grpcListener                       = "localhost:48353"
+	grpcListener                       = "localhost:28353"
 	servicedBlockNumber                = int64(30)
 	relayNumberAfterFirstCall          = uint64(1)
 	relayNumberAfterFirstFail          = uint64(1)
