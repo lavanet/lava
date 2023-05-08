@@ -344,7 +344,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		// Else return an error
 		return nil, ValueNotSetError
 	default:
-		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}
 }
 
@@ -405,7 +405,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		// Else return not set error
 		return nil, ValueNotSetError
 	default:
-		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}
 }
 
