@@ -3,6 +3,7 @@ package types
 import (
 	fmt "fmt"
 	"strconv"
+	"unicode"
 
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -24,6 +25,12 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		EncodingHex:    {},
 	}
 
+	for _, char := range spec.Name {
+		if !unicode.IsLower(char) && char != ' ' {
+			return details, fmt.Errorf("spec name must contain lowercase characters only")
+		}
+	}
+
 	if spec.ReliabilityThreshold == 0 {
 		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
 	}
@@ -41,11 +48,11 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	}
 
 	if spec.MinStakeClient.Denom != epochstoragetypes.TokenDenom || spec.MinStakeClient.Amount.IsZero() {
-		return details, fmt.Errorf("MinStakeClient can't be zero andmust have denom of ulava")
+		return details, fmt.Errorf("MinStakeClient can't be zero and must have denom of ulava")
 	}
 
 	if spec.MinStakeProvider.Denom != epochstoragetypes.TokenDenom || spec.MinStakeProvider.Amount.IsZero() {
-		return details, fmt.Errorf("MinStakeProvider can't be zero andmust have denom of ulava")
+		return details, fmt.Errorf("MinStakeProvider can't be zero and must have denom of ulava")
 	}
 
 	for _, api := range spec.Apis {
