@@ -44,20 +44,5 @@ func (msg *MsgAddProject) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	for _, projectKey := range msg.GetProjectData().ProjectKeys {
-		_, err = sdk.AccAddressFromBech32(projectKey.GetKey())
-		if err != nil {
-			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address in project key (%s)", err)
-		}
-	}
-
-	if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid project name/description (name: %s, description: %s). Either name empty, name contains \",\", or name/description long (name_max_len = %d, description_max_len = %d)", msg.GetProjectData().Name, msg.GetProjectData().Description, projectstypes.MAX_PROJECT_NAME_LEN, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
-	}
-
-	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
-		return sdkerrors.Wrapf(ErrInvalidParameter, "project maxProvidersToPair field is invalid (maxProvidersToPair = %v). This field must be greater than 1", msg.GetProjectData().Policy.MaxProvidersToPair)
-	}
-
 	return nil
 }

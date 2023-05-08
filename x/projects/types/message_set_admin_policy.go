@@ -44,9 +44,5 @@ func (msg *MsgSetAdminPolicy) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	err = msg.GetPolicy().ValidateBasicPolicy()
-	if err != nil {
-		return sdkerrors.Wrapf(ErrInvalidPolicy, "invalid policy")
-	}
 	return nil
 }

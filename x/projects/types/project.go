@@ -38,7 +38,7 @@ func NewProject(subscriptionAddress string, projectName string, description stri
 func ValidateProjectNameAndDescription(name string, description string) bool {
 	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
 		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
-		name == "" {
+		name == "" || !commontypes.IsASCII(description) {
 		return false
 	}
 
