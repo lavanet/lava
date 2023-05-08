@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -38,6 +39,7 @@ type RPCProviderServer struct {
 	providerAddress           sdk.AccAddress
 	lavaChainID               string
 	allowedMissingCUThreshold float64
+	metrics                   *metrics.ProviderMetrics
 }
 
 type ReliabilityManagerInf interface {
@@ -71,6 +73,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerAddress sdk.AccAddress,
 	lavaChainID string,
 	allowedMissingCUThreshold float64,
+	providerMetrics *metrics.ProviderMetrics,
 ) {
 	rpcps.cache = cache
 	rpcps.chainProxy = chainProxy
@@ -84,6 +87,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.providerAddress = providerAddress
 	rpcps.lavaChainID = lavaChainID
 	rpcps.allowedMissingCUThreshold = allowedMissingCUThreshold
+	rpcps.metrics = providerMetrics
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
@@ -125,10 +129,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 		)
+		rpcps.metrics.AddError()
 	} else {
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
+		rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
 			utils.LavaFormatError("OnSession Done failure: ", relayError)

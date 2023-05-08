@@ -20,3 +20,4 @@ endpoints:
       network-address: 127.0.0.1:2221
       node-urls: 
         url: wss://ethereum-rpc.com/ws/
+metrics-listen-address: ":7780"
