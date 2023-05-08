@@ -80,8 +80,8 @@ func NewProviderMetrics(specID string, apiInterface string, totalCUServicedMetri
 	totalCUPaidMetric *prometheus.GaugeVec,
 	totalRelaysServicedMetric *prometheus.GaugeVec,
 	totalErroredMetric *prometheus.GaugeVec,
-	consumerQoSMetric *prometheus.GaugeVec) *ProviderMetrics {
-
+	consumerQoSMetric *prometheus.GaugeVec,
+) *ProviderMetrics {
 	pm := &ProviderMetrics{
 		specID:                    specID,
 		apiInterface:              apiInterface,

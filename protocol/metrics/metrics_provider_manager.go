@@ -77,6 +77,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		consumerQoSMetric:         consumerQoSMetric,
 	}
 }
+
 func (pme *ProviderMetricsManager) getProviderMetric(specID string, apiInterface string) *ProviderMetrics {
 	return pme.providerMetrics[specID+apiInterface]
 }
