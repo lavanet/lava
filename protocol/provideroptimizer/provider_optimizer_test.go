@@ -358,7 +358,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 
 func TestProviderOptimizerPerturbation(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
-	providersCount := 10
+	providersCount := 100
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	requestCU := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK

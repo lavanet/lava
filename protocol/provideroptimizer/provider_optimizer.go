@@ -115,6 +115,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	returnedProviders := make([]string, 1) // location 0 is always the best score
 	latencyScore := math.MaxFloat64        // smaller = better i.e less latency
 	syncScore := math.MaxFloat64           // smaller = better i.e less sync lag
+	numProviders := len(allAddresses)
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -140,7 +141,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders)) {
+			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders), numProviders) {
 				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
 				returnedProviders = append(returnedProviders, returnedProviders[0])
 			}
@@ -149,7 +150,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScore = syncScoreCurrent
 			continue
 		}
-		if po.shouldExplore(len(returnedProviders)) {
+		if po.shouldExplore(len(returnedProviders), numProviders) {
 			returnedProviders = append(returnedProviders, providerAddress)
 		}
 	}
@@ -182,7 +183,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (u
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
-func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
+func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
 	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
@@ -197,7 +198,8 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
-	return rand.Float64() < explorationChance
+	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
+	return rand.Float64() < explorationChance/float64(numProviders)
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
