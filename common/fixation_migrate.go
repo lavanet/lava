@@ -3,7 +3,9 @@ package common
 import (
 	"fmt"
 	"math"
+	"strings"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
 )
@@ -14,6 +16,7 @@ func prefixForErrors(from uint64) string {
 
 var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 	1: fixationMigrate1to2,
+	2: fixationMigrate2to3,
 }
 
 func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
@@ -36,6 +39,39 @@ func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 
 	fs.setVersion(ctx, to)
 	return nil
+}
+
+// MigratePrefix replaces objects' prefixes from `oldPrefix` to the current `fs.prefix`
+// NOTE: it first tries to perform fs.MigrateVersion() with the old prefix.
+func (fs *FixationStore) MigratePrefix(ctx sdk.Context, oldPrefix string) (err error) {
+	newPrefix := fs.prefix
+
+	// first check if version upgrade is due - must use old prefix
+	fs.prefix = oldPrefix
+	err = fs.MigrateVersion(ctx)
+	fs.prefix = newPrefix
+
+	if err != nil {
+		return err
+	}
+
+	// prefix migration
+	fs.doMigratePrefix(ctx, oldPrefix, newPrefix)
+	return nil
+}
+
+// doMigratePrefix replaces objects prefix from `oldPrefix` to `newPrefix`
+func (fs *FixationStore) doMigratePrefix(ctx sdk.Context, oldPrefix, newPrefix string) {
+	store_V1 := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(oldPrefix))
+	store_V2 := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(newPrefix))
+
+	iterator := sdk.KVStorePrefixIterator(store_V1, []byte{})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store_V2.Set(iterator.Key(), iterator.Value())
+		store_V1.Delete(iterator.Key())
+	}
 }
 
 // fixationMigrate1to2: fix refcounts
@@ -75,5 +111,28 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 			}
 		}
 	}
+	return nil
+}
+
+// fixationMigrate2to3: fix refcounts
+//   - instead of "EntryPrefix + fs.prefix" -> "fs.prefix + EntryPrefix"
+//   - instead of "EntryIndexPrefix + fs.prefix"(x2) -> "fs.prefix + EntryIndexPrefix"
+func fixationMigrate2to3(ctx sdk.Context, fs *FixationStore) error {
+	const (
+		// copy of old values
+		V2_EntryIndexPrefix string = "Entry_Index_"
+		V2_EntryPrefix      string = "Entry_Value_"
+	)
+
+	// copy EntryIndex
+	v1 := strings.Repeat(V2_EntryIndexPrefix+fs.prefix, 2)
+	v2 := fs.prefix + types.EntryIndexPrefix
+	fs.doMigratePrefix(ctx, v1, v2)
+
+	// copy Entry
+	v1 = V2_EntryPrefix + fs.prefix
+	v2 = fs.prefix + types.EntryPrefix
+	fs.doMigratePrefix(ctx, v1, v2)
+
 	return nil
 }
