@@ -418,8 +418,8 @@ func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stal
 	return fs.getEntryVersionsFilter(ctx, index, 0, filter)
 }
 
-func (fs *FixationStore) createStoreKey(index string) string {
-	return types.EntryPrefix + fs.prefix + index
+func (fs *FixationStore) createEntryStoreKey(index string) string {
+	return fs.prefix + types.EntryPrefix + index
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {

@@ -64,5 +64,5 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 }
 
 func (fs FixationStore) createEntryIndexStoreKey() string {
-	return types.EntryIndexPrefix + fs.prefix
+	return fs.prefix + types.EntryIndexPrefix
 }
