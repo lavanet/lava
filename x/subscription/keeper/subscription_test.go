@@ -355,8 +355,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
-		Name:        "anotherProject",
-		Description: "dummyDesc",
+		Name:        "another_project",
+		Description: "dummy_desc",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			{

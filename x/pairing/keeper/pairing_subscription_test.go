@@ -30,7 +30,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	ctx := sdk.UnwrapSDKContext(ts.ctx)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
 	pairingReq := types.QueryGetPairingRequest{
 		ChainID: ts.spec.Index,
@@ -43,17 +43,17 @@ func TestGetPairingForSubscription(t *testing.T) {
 		ChainID:  ts.spec.Index,
 		Client:   consumer,
 		Provider: pairing.Providers[0].Address,
-		Block:    uint64(ctx.BlockHeight()),
+		Block:    uint64(_ctx.BlockHeight()),
 	}
 	vefiry, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(ctx, consumer, uint64(ctx.BlockHeight()))
+	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, vrfpk, vrfpk_stub)
 
-	err = ts.keepers.Projects.DeleteProject(ctx, project.Index)
+	err = ts.keepers.Projects.DeleteProject(_ctx, project.Index)
 	require.Nil(t, err)
 
 	_, err = ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
@@ -63,7 +63,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 		ChainID:  ts.spec.Index,
 		Client:   consumer,
 		Provider: pairing.Providers[0].Address,
-		Block:    uint64(ctx.BlockHeight()),
+		Block:    uint64(_ctx.BlockHeight()),
 	}
 	vefiry, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.NotNil(t, err)
@@ -79,6 +79,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
 	pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String()}
 	pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
@@ -89,11 +90,11 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumer.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	policies := []*projectstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
-	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.GetSubscription())
+	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.GetSubscription())
 	require.True(t, found)
 	allowedCu := ts.keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, proj.GetUsedCu(), sub.GetMonthCuLeft())
 
@@ -120,6 +121,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 
 func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 	var balance int64 = 10000
 
 	consumerA := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
@@ -131,7 +133,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.Nil(t, err)
 
 	consumerBProjectData := projectstypes.ProjectData{
-		Name:        "consumerBProject",
+		Name:        "consumer_b_project",
 		Description: "",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{{
@@ -144,16 +146,17 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		}},
 		Policy: &ts.plan.PlanPolicy,
 	}
-	err = ts.keepers.Subscription.AddProjectToSubscription(sdk.UnwrapSDKContext(ts.ctx), consumerA.Addr.String(), consumerBProjectData)
+	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, consumerA.Addr.String(), consumerBProjectData)
 	require.Nil(t, err)
 
 	// verify both projects exist
-	projA, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumerA.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	projA, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
-	projB, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumerB.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	projB, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerB.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	// verify that both consumers are paired
 	for _, consumer := range consumers {
@@ -161,7 +164,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 		require.Nil(t, err)
 
-		verifyPairingQuery := &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())}
+		verifyPairingQuery := &types.QueryVerifyPairingRequest{ChainID: ts.spec.Index, Client: consumer.Addr.String(), Provider: pairing.Providers[0].Address, Block: uint64(_ctx.BlockHeight())}
 		verify, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 		require.Nil(t, err)
 		require.True(t, verify.Valid)
@@ -179,6 +182,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		require.Nil(t, err)
 
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		_ctx = sdk.UnwrapSDKContext(ts.ctx)
 	}
 
 	// last iteration should finish the plan and subscription quota
@@ -190,10 +194,10 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.NotNil(t, err)
 
 	// verify that project A wasted all of the subscription's CU
-	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), projA.Subscription)
+	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, projA.Subscription)
 	require.True(t, found)
 	require.Equal(t, uint64(0), sub.MonthCuLeft)
-	projA, _, err = ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), consumerA.Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	projA, _, err = ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, sub.MonthCuTotal, projA.UsedCu)
 	require.Equal(t, uint64(0), projB.UsedCu)
@@ -208,18 +212,19 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 func TestStrictestPolicyGeolocation(t *testing.T) {
 	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
 	// make the plan policy's geolocation 7(=111)
 	ts.plan.PlanPolicy.GeolocationProfile = 7
-	err := ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
+	err := ts.keepers.Plans.AddPlan(_ctx, ts.plan)
 	require.Nil(t, err)
 
-	err = ts.keepers.Subscription.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx),
+	err = ts.keepers.Subscription.CreateSubscription(_ctx,
 		ts.clients[0].Addr.String(), ts.clients[0].Addr.String(), ts.plan.Index, 10, "")
 	require.Nil(t, err)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx),
-		ts.clients[0].Addr.String(), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx,
+		ts.clients[0].Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -241,9 +246,11 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			adminPolicy := &projectstypes.Policy{
 				GeolocationProfile: tt.geolocationAdminPolicy,
+				MaxProvidersToPair: 2,
 			}
 			subscriptionPolicy := &projectstypes.Policy{
 				GeolocationProfile: tt.geolocationSubPolicy,
+				MaxProvidersToPair: 2,
 			}
 
 			_, err = ts.servers.ProjectServer.SetAdminPolicy(ts.ctx, &projectstypes.MsgSetAdminPolicy{
@@ -310,10 +317,12 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 		providersToPairAdminPolicy uint64
 		providersToPairSubPolicy   uint64
 		effectiveProvidersToPair   int
+		adminPolicyValid           bool
+		subscriptionPolicyValid    bool
 	}{
-		{"effective providersToPair = 2", uint64(4), uint64(2), 2},
-		{"sub policy providersToPair = 1", uint64(1), uint64(3), 3},
-		{"admin policy providersToPair = 1", uint64(3), uint64(1), 3},
+		{"effective providersToPair = 2", uint64(4), uint64(2), 2, true, true},
+		{"admin policy providersToPair = 1", uint64(1), uint64(3), 3, false, true},
+		{"sub policy providersToPair = 1", uint64(3), uint64(1), 3, true, false},
 	}
 
 	for _, tt := range providersToPairTestTemplates {
@@ -332,6 +341,10 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 				Project: proj.Index,
 				Policy:  *adminPolicy,
 			})
+			if !tt.adminPolicyValid {
+				require.NotNil(t, err)
+				return
+			}
 			require.Nil(t, err)
 
 			// apply the policy setting
@@ -342,6 +355,10 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 				Projects: []string{proj.Index},
 				Policy:   *subscriptionPolicy,
 			})
+			if !tt.subscriptionPolicyValid {
+				require.NotNil(t, err)
+				return
+			}
 			require.Nil(t, err)
 
 			// apply the policy setting
@@ -359,13 +376,12 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 
 func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 	ts := setupForPaymentTest(t)
-
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
 		Creator:  ts.clients[0].Addr.String(),
 		Consumer: ts.clients[0].Addr.String(),
 		Index:    ts.plan.Index,
 		Duration: 10,
-		Vrfpk:    "",
 	})
 	require.Nil(t, err)
 
@@ -404,10 +420,11 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 				// pair new client with provider
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 				projectData := projectstypes.ProjectData{
-					Name:        "lowCuProject",
-					Description: "project with low CU limit (per epoch)",
+					Name:        "low_cu_project",
+					Description: "project with low cu limit (per epoch)",
 					Enabled:     true,
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key: consumerToWasteCu.Addr.String(),
@@ -425,7 +442,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				})
 				require.Nil(t, err)
 
-				sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
+				sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.Subscription)
 				require.True(t, found)
 
 				relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), sub.MonthCuLeft, ts.spec.Name, nil)
@@ -436,17 +453,20 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				require.Nil(t, err)
 
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				_ctx = sdk.UnwrapSDKContext(ts.ctx)
 			}
 
 			adminPolicy := &projectstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochAdminPolicy,
 				TotalCuLimit:       1000,
+				MaxProvidersToPair: 2,
 			}
 			subscriptionPolicy := &projectstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochSubPolicy,
 				TotalCuLimit:       1000,
+				MaxProvidersToPair: 2,
 			}
 
 			_, err = ts.servers.ProjectServer.SetAdminPolicy(ts.ctx, &projectstypes.MsgSetAdminPolicy{
@@ -458,6 +478,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 			// apply the policy setting
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 			_, err = ts.servers.ProjectServer.SetSubscriptionPolicy(ts.ctx, &projectstypes.MsgSetSubscriptionPolicy{
 				Creator:  ts.clients[0].Addr.String(),
@@ -468,6 +489,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 			// apply the policy setting
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 			// leave 10 CU in the project
 			if tt.useMostOfProjectCu {
@@ -491,11 +513,12 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					require.Nil(t, err)
 
 					ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+					_ctx = sdk.UnwrapSDKContext(ts.ctx)
 				}
 			}
 
-			_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Index,
-				consumer.Addr, ts.providers[0].Addr, uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+			_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
+				consumer.Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 			require.Nil(t, err)
 
 			require.Equal(t, tt.effectiveCuPerEpochLimit, cuPerEpochLimit)
@@ -575,6 +598,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 
 	// advance epoch to get pairing
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
 	_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
 		Creator:  ts.clients[0].Addr.String(),
@@ -585,24 +609,25 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr.String())
+	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, ts.clients[0].Addr.String())
 	require.True(t, found)
 
 	// advance epoch so the plan edit will be on a different block than the subscription purchase
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	// edit the plan the subscription purchased (allow less CU per epoch)
-	subPlan, found := ts.keepers.Plans.FindPlan(sdk.UnwrapSDKContext(ts.ctx), sub.PlanIndex, sub.PlanBlock)
+	subPlan, found := ts.keepers.Plans.FindPlan(_ctx, sub.PlanIndex, sub.PlanBlock)
 	require.True(t, found)
 	oldEpochCuLimit := subPlan.PlanPolicy.EpochCuLimit
 	subPlan.PlanPolicy.EpochCuLimit -= 50
-	err = ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), subPlan)
+	err = ts.keepers.Plans.AddPlan(_ctx, subPlan)
 	require.Nil(t, err)
 
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
-		Name:        "anotherProject",
-		Description: "dummyDesc",
+		Name:        "another_project",
+		Description: "dummy_desc",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			{
@@ -616,26 +641,27 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 		},
 		Policy: nil,
 	}
-	err = ts.keepers.Subscription.AddProjectToSubscription(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr.String(), projectData)
+	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, ts.clients[0].Addr.String(), projectData)
 	require.Nil(t, err)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), ts.clients[1].Addr.String(),
-		uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, ts.clients[1].Addr.String(),
+		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	// set a new policy to the second project, making it more strict than the old plan but less strict than the new plan
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
-	err = ts.keepers.Projects.SetPolicy(sdk.UnwrapSDKContext(ts.ctx), []string{proj.Index}, &adminPolicy,
+	err = ts.keepers.Projects.SetPolicy(_ctx, []string{proj.Index}, &adminPolicy,
 		ts.clients[1].Addr.String(), projectstypes.SET_ADMIN_POLICY)
 	require.Nil(t, err)
 
 	// advance epoch to set the new policy
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
-	_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ts.ctx),
-		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
+		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	// in terms of strictness: newPlan < adminPolicy < oldPlan but newPlan should not apply to the second project (since it's under a subscription that uses the old plan)

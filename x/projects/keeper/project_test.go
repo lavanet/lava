@@ -28,16 +28,16 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
-		{Key: adm1Addr, Types: typeAdmin, Vrfpk: ""},
+		{Key: adm1Addr, Types: typeAdmin},
 	}
 	// developer key
 	keys_1_admin_dev := []types.ProjectKey{
-		{Key: adm2Addr, Types: typeBoth, Vrfpk: ""},
+		{Key: adm2Addr, Types: typeBoth},
 	}
 	// both (admin+developer) key
 	keys_2_admin_and_dev := []types.ProjectKey{
-		{Key: adm3Addr, Types: typeAdmin, Vrfpk: ""},
-		{Key: dev3Addr, Types: typeDevel, Vrfpk: ""},
+		{Key: adm3Addr, Types: typeAdmin},
+		{Key: dev3Addr, Types: typeDevel},
 	}
 
 	policy1 := &types.Policy{
@@ -113,12 +113,11 @@ func TestCreateProject(t *testing.T) {
 	// test invalid project name/description
 	defaultProjectName := types.ADMIN_PROJECT_NAME
 	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
-	projectNameWithComma := "projectName,"
-	nonAsciiProjectName := "projectName¢"
+	invalidProjectName := "projectName,"
 
 	projectDescription := "test project"
 	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
-	nonAsciiProjectDescription := "projectDesc¢"
+	invalidProjectDescription := "projectDesc¢"
 
 	testProjectData := projectData
 	testProjectData.ProjectKeys = []types.ProjectKey{}
@@ -128,13 +127,12 @@ func TestCreateProject(t *testing.T) {
 		projectName        string
 		projectDescription string
 	}{
-		{"bad projectName (duplicate)", projectName, projectDescription},
+		{"bad projectName (duplicate)", projectData.Name, projectDescription},
 		{"bad projectName (too long)", longProjectName, projectDescription},
-		{"bad projectName (contains comma)", projectNameWithComma, projectDescription},
-		{"bad projectName (non ascii)", nonAsciiProjectName, projectDescription},
+		{"bad projectName (contains comma)", invalidProjectName, projectDescription},
 		{"bad projectName (empty)", "", projectDescription},
 		{"bad projectDescription (too long)", "test1", longProjectDescription},
-		{"bad projectDescription (non ascii)", "test2", nonAsciiProjectDescription},
+		{"bad projectDescription (non ascii)", "test2", invalidProjectDescription},
 	}
 
 	for _, tt := range nameAndDescriptionTests {
@@ -146,7 +144,6 @@ func TestCreateProject(t *testing.T) {
 			require.NotNil(t, err)
 		})
 	}
-	// _ctx = sdk.WrapSDKContext(ctx)
 
 	// continue testing traits that are not related to the project's name/description
 	// try creating a project with invalid project keys
@@ -156,12 +153,10 @@ func TestCreateProject(t *testing.T) {
 		{
 			Key:   subAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		},
 		{
 			Key:   admAddr,
 			Types: []types.ProjectKey_KEY_TYPE{4},
-			Vrfpk: "",
 		},
 	}
 
@@ -200,7 +195,7 @@ func TestCreateProject(t *testing.T) {
 
 func TestAddKeys(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	projectData := prepareProjectsData(ctx, keepers)[2]
 	plan := common.CreateMockPlan()
 
@@ -210,7 +205,7 @@ func TestAddKeys(t *testing.T) {
 	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	dev3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
+	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -256,19 +251,19 @@ func TestAddKeys(t *testing.T) {
 
 func TestAddAdminInTwoProjects(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	projectData := prepareProjectsData(ctx, keepers)[0]
 	plan := common.CreateMockPlan()
 
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	admAddr := projectData.ProjectKeys[0].Key
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan, "")
+	err := keepers.Projects.CreateAdminProject(_ctx, subAddr, plan, "")
 	require.Nil(t, err)
 
 	// this is not supposed to fail because you can use the same admin key for two different projects
 	// creating a regular project (not admin project) so subAccount won't be a developer there
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
+	err = keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -516,7 +511,7 @@ func TestChargeComputeUnits(t *testing.T) {
 
 func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	projectName := "mockname1"
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	dev1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
@@ -531,35 +526,34 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 		ProjectKeys: []types.ProjectKey{{
 			Key:   subAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
+	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAddr,
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
 		[]types.ProjectKey{{
 			Key:   dev1Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}})
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID, subAddr,
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
 		[]types.ProjectKey{{
 			Key:   dev2Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}})
 	require.Nil(t, err)
 
-	proj, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), subAddr,
-		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	proj, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, subAddr,
+		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	require.Equal(t, 3, len(proj.ProjectKeys))
@@ -567,6 +561,7 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	plan := common.CreateMockPlan()
 
 	sub1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
@@ -586,11 +581,10 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		ProjectKeys: []types.ProjectKey{{
 			Key:   sub1Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), sub1Addr, projectData1, plan)
+	err := keepers.Projects.CreateProject(_ctx, sub1Addr, projectData1, plan)
 	require.Nil(t, err)
 
 	projectData2 := types.ProjectData{
@@ -600,37 +594,35 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		ProjectKeys: []types.ProjectKey{{
 			Key:   sub2Addr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}},
 		Policy: &plan.PlanPolicy,
 	}
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), sub2Addr, projectData2, plan)
+	err = keepers.Projects.CreateProject(_ctx, sub2Addr, projectData2, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID1, sub1Addr,
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{{
 			Key:   devAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}})
 	require.Nil(t, err)
 
-	err = keepers.Projects.AddKeysToProject(sdk.UnwrapSDKContext(ctx), projectID2, sub2Addr,
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID2, sub2Addr,
 		[]types.ProjectKey{{
 			Key:   devAddr,
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-			Vrfpk: "",
 		}})
 	require.NotNil(t, err) // should fail since this developer was already added to the first project
 
-	proj1, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), sub1Addr,
-		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	proj1, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub1Addr,
+		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	proj2, _, err := keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ctx), sub2Addr,
-		uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	proj2, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub2Addr,
+		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	require.Equal(t, 2, len(proj1.ProjectKeys))
