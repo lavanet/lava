@@ -42,12 +42,24 @@ func CreateConsumerSessionManager() *ConsumerSessionManager {
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1))
 }
 
-func createGRPCServer(t *testing.T) *grpc.Server {
+var grpcServer *grpc.Server
+
+func TestMain(t *testing.M) {
+	createGRPCServer()
+}
+
+func createGRPCServer() (*grpc.Server, error) {
+	if grpcServer != nil {
+		return grpcServer, nil
+	}
 	lis, err := net.Listen("tcp", grpcListener)
-	require.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	s := grpc.NewServer()
 	go s.Serve(lis) // serve in a different thread
-	return s
+	grpcServer = s
+	return s, nil
 }
 
 func createPairingList(providerPrefixAddress string) map[uint64]*ConsumerSessionsWithProvider {
@@ -70,8 +82,9 @@ func createPairingList(providerPrefixAddress string) map[uint64]*ConsumerSession
 
 // Test the basic functionality of the consumerSessionManager
 func TestHappyFlow(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -91,8 +104,9 @@ func TestHappyFlow(t *testing.T) {
 }
 
 func TestPairingReset(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -115,8 +129,9 @@ func TestPairingReset(t *testing.T) {
 }
 
 func TestPairingResetWithFailures(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -143,8 +158,9 @@ func TestPairingResetWithFailures(t *testing.T) {
 }
 
 func TestPairingResetWithMultipleFailures(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -189,8 +205,9 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -294,8 +311,9 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 func TestHappyFlowMultiThreaded(t *testing.T) {
 	utils.LavaFormatInfo("Parallel test:")
 
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -341,8 +359,9 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 	utils.LavaFormatInfo("Parallel test:")
 
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -396,8 +415,9 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSessionFailureAndGetReportedProviders(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -432,8 +452,9 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSessionFailureEpochMisMatch(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -492,8 +513,9 @@ func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -516,8 +538,9 @@ func TestContext(t *testing.T) {
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
