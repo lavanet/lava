@@ -129,12 +129,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 		)
-		rpcps.metrics.AddError()
+		go rpcps.metrics.AddError()
 	} else {
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
-		rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
+		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
 			utils.LavaFormatError("OnSession Done failure: ", relayError)

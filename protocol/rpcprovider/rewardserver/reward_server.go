@@ -295,7 +295,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 	if serverID == rws.serverID {
 		rws.updateCUPaid(payment.CU)
-		rws.providerMetrics.AddPayment(payment.ChainID, payment.CU)
+		go rws.providerMetrics.AddPayment(payment.ChainID, payment.CU)
 		removedPayment := rws.RemoveExpectedPayment(payment.CU, payment.Client, payment.BlockHeightDeadline, payment.UniqueIdentifier, payment.ChainID)
 		if !removedPayment {
 			utils.LavaFormatWarning("tried removing payment that wasn;t expected", nil, utils.Attribute{Key: "payment", Value: payment})

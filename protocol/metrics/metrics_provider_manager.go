@@ -113,7 +113,7 @@ func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 	for _, apiInterface := range availableAPIInterface {
 		providerMetrics := pme.getProviderMetric(specID, apiInterface)
 		if providerMetrics != nil {
-			providerMetrics.AddPayment(cu)
+			go providerMetrics.AddPayment(cu)
 		}
 	}
 }
