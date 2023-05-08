@@ -30,14 +30,14 @@ TEMPLATE = """
 # chainId = "JUN1"
 
 # Evmos
-grpc_server = "evmos-node-1.lavapro.xyz:9090"
-spec_file_name = "spec_add_evmos.json"
-chainId = "EVMOS"
+# grpc_server = "evmos-node-1.lavapro.xyz:9090"
+# spec_file_name = "spec_add_evmos.json"
+# chainId = "EVMOS"
 
 # Axelar
-# grpc_server = "grpc-axelar.stakerun.com:9090"
-# spec_file_name = "spec_add_axelar.json"
-# chainId = "AXELAR"
+grpc_server = "grpc-axelar.stakerun.com:9090"
+spec_file_name = "spec_add_axelar.json"
+chainId = "AXELAR"
 
 # Canto
 # grpc_server = "canto-grpc.polkachu.com:15590"
