@@ -24,13 +24,13 @@ var (
 )
 
 const (
-	opWeightMsgAddProjectKeys = "op_weight_msg_add_project_keys"
+	opWeightMsgAddKeys = "op_weight_msg_add_keys"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgAddProjectKeys int = 100
+	defaultWeightMsgAddKeys int = 100
 
-	opWeightMsgSetAdminPolicy = "op_weight_msg_set_admin_policy"
+	opWeightMsgSetPolicy = "op_weight_msg_set_admin_policy"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSetAdminPolicy int = 100
+	defaultWeightMsgSetPolicy int = 100
 
 	opWeightMsgSetSubscriptionPolicy = "op_weight_msg_set_subscription_policy"
 	// TODO: Determine the simulation weight value
@@ -69,26 +69,26 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
 
-	var weightMsgAddProjectKeys int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddProjectKeys, &weightMsgAddProjectKeys, nil,
+	var weightMsgAddKeys int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddKeys, &weightMsgAddKeys, nil,
 		func(_ *rand.Rand) {
-			weightMsgAddProjectKeys = defaultWeightMsgAddProjectKeys
+			weightMsgAddKeys = defaultWeightMsgAddKeys
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgAddProjectKeys,
-		projectssimulation.SimulateMsgAddProjectKeys(am.keeper),
+		weightMsgAddKeys,
+		projectssimulation.SimulateMsgAddKeys(am.keeper),
 	))
 
-	var weightMsgSetAdminPolicy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetAdminPolicy, &weightMsgSetAdminPolicy, nil,
+	var weightMsgSetPolicy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetPolicy, &weightMsgSetPolicy, nil,
 		func(_ *rand.Rand) {
-			weightMsgSetAdminPolicy = defaultWeightMsgSetAdminPolicy
+			weightMsgSetPolicy = defaultWeightMsgSetPolicy
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSetAdminPolicy,
-		projectssimulation.SimulateMsgSetAdminPolicy(am.keeper),
+		weightMsgSetPolicy,
+		projectssimulation.SimulateMsgSetPolicy(am.keeper),
 	))
 
 	var weightMsgSetSubscriptionPolicy int
