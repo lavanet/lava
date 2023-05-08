@@ -13,7 +13,7 @@ func CmdCurrent() *cobra.Command {
 		Short: "Query the current subscription of a consumer to a service plan",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}

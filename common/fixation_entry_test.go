@@ -44,7 +44,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i+1))})
+		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i + 1))})
 	}
 
 	for _, play := range playbook {
@@ -71,12 +71,9 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 				require.NotNil(t, err, what)
 			}
 		case "modify":
-			err := fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
-			if !play.fail {
-				require.Nil(t, err, what)
-			} else {
-				require.NotNil(t, err, what)
-			}
+			fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
+		case "read":
+			fs[play.store].ReadEntry(ctx, index, block, &dummy)
 		case "find":
 			found := fs[play.store].FindEntry(ctx, index, block, &dummy)
 			if !play.fail {
@@ -114,15 +111,17 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 // Test API calls with invalid entry index
 func TestEntryInvalidIndex(t *testing.T) {
 	invalid := "index" + string('\001')
+	unknown := "unknown"
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "modify", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "find", name: "with invalid index (fail)", index: invalid, fail: true },
-		{ op: "get", name: "with invalid index (fail)", index: invalid, fail: true },
+		{op: "append", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "find", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "get", name: "with invalid index (fail)", index: invalid, fail: true},
+		{op: "find", name: "with unknown index (fail)", index: unknown, fail: true},
+		{op: "get", name: "with unknown index (fail)", index: unknown, fail: true},
 	}
 
-	testWithFixationTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 1, 1)
 }
 
 // Test addition and auto-removal of a fixation entry
@@ -131,17 +130,17 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	block1 := block0 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "getall", name: "to check exactly one index", count: 1},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1 (not stale yet)", count: block0 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1 (not stale yet)", count: block0},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
-		{ op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true },
-		{ op: "find", name: "latest entry", coin: 1 },
-		{ op: "getall", name: "to check again exactly one index", count: 1 },
+		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},
+		{op: "find", name: "latest entry", coin: 1},
+		{op: "getall", name: "to check again exactly one index", count: 1},
 	}
 
 	testWithFixationTemplate(t, playbook, 2, 1)
@@ -152,10 +151,10 @@ func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	block0 := int64(10)
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block0, coin: 1 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
-		{ op: "find", name: "entry #2", count: block0, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block0, coin: 1},
+		{op: "getall", name: "to check exactly one index", count: 1},
+		{op: "find", name: "entry #2", count: block0, coin: 1},
 	}
 
 	testWithFixationTemplate(t, playbook, 2, 1)
@@ -167,10 +166,10 @@ func TestEntryVersions(t *testing.T) {
 	block1 := block0 + int64(10)
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "getall", name: "to check exactly one index", count: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "getall", name: "to check exactly one index", count: 1},
 	}
 
 	testWithFixationTemplate(t, playbook, 2, 1)
@@ -180,23 +179,23 @@ func TestEntryVersions(t *testing.T) {
 func TestEntryStale(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME+1
+	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "get", name: "refcount entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "get", name: "refcount entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// entry #1 should not be deleted because it has refcount != zero);
 		// entry #2 (refcount = zero) also not deleted because it is not oldest
-		{ op: "find", name: "entry #1", count: block0+1, coin: 0 },
-		{ op: "find", name: "entry #2", count: block1+1, coin: 1 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
+		{op: "find", name: "entry #2", count: block1 + 1, coin: 1},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #2 now stale and therefore should not be visible
-		{ op: "find", name: "entry #2", count: block1+1, fail: true },
+		{op: "find", name: "entry #2", count: block1 + 1, fail: true},
 		// entry #3 (refcount = zero) is old, but being the latest it always
 		// remains visible (despite of refcount and age).
-		{ op: "find", name: "entry #3", count: block2+1, coin: 2 },
+		{op: "find", name: "entry #3", count: block2 + 1, coin: 2},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)
@@ -206,23 +205,23 @@ func TestEntryStale(t *testing.T) {
 func TestDifferentFixationKeys(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + types.STALE_ENTRY_TIME+1
+	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1 },
-		{ op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1 },
-		{ op: "getall", name: "for exactly one index (store #2)", store: 1, count: 1 },
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
-		{ op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2 },
+		{op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1},
+		{op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1},
+		{op: "getall", name: "for exactly one index (store #2)", store: 1, count: 1},
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
+		{op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0 },
-		{ op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME+1 },
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
+		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		// entry #2 in store#2 remains unaffected
-		{ op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true },
-		{ op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1 },
+		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true},
+		{op: "find", name: "entry #2 (store #2)", store: 1, count: block1, coin: 1},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 2)
@@ -230,21 +229,21 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 func TestGetAndPutEntry(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME+1
-	block2 := block1 + types.STALE_ENTRY_TIME+1
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block2 := block1 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "get", name: "refcount entry #1", coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "get", name: "refcount entry #1", coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 should not be deleted because it has refcount != zero);
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "put", name: "refcount entry #1", count: block0 },
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "put", name: "refcount entry #1", count: block0},
 		// entry #1 not deleted because not enough time with refcount = zero
-		{ op: "find", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
-		{ op: "find", name: "entry #1", count: block0, fail: true },
+		{op: "find", name: "entry #1", count: block0, fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)
@@ -252,32 +251,64 @@ func TestGetAndPutEntry(t *testing.T) {
 
 func TestDoublePutEntry(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME+1
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1 version 0", count: block0, coin: 0 },
-		{ op: "append", name: "entry #1 version 1", count: block1, coin: 0 },
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
 		// entry #1 with block zero now has refcount = zero
-		{ op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false },
+		{op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false},
 	}
 
-	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 3, 1) })
+	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 1, 1) })
+}
+
+func TestExactEntryMethods(t *testing.T) {
+	invalid := "index" + string('\001')
+	unknown := "unknown"
+
+	block0 := int64(10)
+	block1 := block0 + types.STALE_ENTRY_TIME + 1
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 1, 1)
+
+	playbooks := [][]fixationTemplate{
+		{{op: "read", name: "with invalid index (fail)", index: invalid}},
+		{{op: "modify", name: "with invalid index (fail)", index: invalid}},
+		{{op: "put", name: "with invalid index (fail)", index: invalid}},
+		{{op: "read", name: "with unknown index (fail)", index: unknown}},
+		{{op: "modify", name: "with unknown index (fail)", index: unknown}},
+		{{op: "put", name: "with unknown index (fail)", index: unknown}},
+		{{op: "read", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+		{{op: "modify", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+		{{op: "put", name: "entry #1 version 0", count: block0 + 1, coin: 0}},
+	}
+
+	for _, p := range playbooks {
+		what := p[0].op + " " + p[0].name
+		require.Panics(t, func() { testWithFixationTemplate(t, p, 1, 1) }, what)
+	}
 }
 
 func TestDeleteTwoEntries(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
-	block3 := block2 + types.STALE_ENTRY_TIME+1
+	block3 := block2 + types.STALE_ENTRY_TIME + 1
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// this update triggers deletion of entry #1, #2
-		{ op: "append", name: "entry #4", count: block3, coin: 3 },
-		{ op: "find", name: "entry #1", count: block0, fail: true },
-		{ op: "find", name: "entry #2", count: block1, fail: true },
+		{op: "append", name: "entry #4", count: block3, coin: 3},
+		{op: "find", name: "entry #1", count: block0, fail: true},
+		{op: "find", name: "entry #2", count: block1, fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 4, 1)
@@ -296,32 +327,32 @@ func TestRemoveStaleEntries(t *testing.T) {
 	block9 := block8 + types.STALE_ENTRY_TIME/2 + 2
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "get", name: "refcount entry #1", coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "get", name: "refcount entry #2", coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
-		{ op: "get", name: "refcount entry #3", coin: 2 },
-		{ op: "append", name: "entry #4", count: block3, coin: 3 },
-		{ op: "get", name: "refcount entry #4", coin: 3 },
-		{ op: "append", name: "entry #5", count: block4, coin: 4 },
-		{ op: "get", name: "refcount entry #5", coin: 4 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "get", name: "refcount entry #1", coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "get", name: "refcount entry #2", coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
+		{op: "get", name: "refcount entry #3", coin: 2},
+		{op: "append", name: "entry #4", count: block3, coin: 3},
+		{op: "get", name: "refcount entry #4", coin: 3},
+		{op: "append", name: "entry #5", count: block4, coin: 4},
+		{op: "get", name: "refcount entry #5", coin: 4},
 		// release an entry
-		{ op: "block", name: "advance a bit", count: block5-block4 },
-		{ op: "put", name: "refcount entry #1", count: block0 },
-		{ op: "block", name: "wait entry #1 staled", count: block6-block5 },
+		{op: "block", name: "advance a bit", count: block5 - block4},
+		{op: "put", name: "refcount entry #1", count: block0},
+		{op: "block", name: "wait entry #1 staled", count: block6 - block5},
 		// expect 5 entry versions left
-		{ op: "getvers", name: "to check 5 versions left", count: 4 },
+		{op: "getvers", name: "to check 5 versions left", count: 4},
 		// release more entries
-		{ op: "put", name: "refcount entry #4", count: block3 },
-		{ op: "block", name: "wait entry #1 half staled", count: block7-block6 },
-		{ op: "put", name: "refcount entry #3", count: block2 },
-		{ op: "block", name: "wait another #1 half staled", count: block8-block7 },
+		{op: "put", name: "refcount entry #4", count: block3},
+		{op: "block", name: "wait entry #1 half staled", count: block7 - block6},
+		{op: "put", name: "refcount entry #3", count: block2},
+		{op: "block", name: "wait another #1 half staled", count: block8 - block7},
 		// entry #4 is stale but un-removable because entry #3 sill alive
-		{ op: "getvers", name: "to check 4 versions remain", count: 4 },
-		{ op: "block", name: "wait another #1 half staled", count: block9-block8 },
+		{op: "getvers", name: "to check 4 versions remain", count: 4},
+		{op: "block", name: "wait another #1 half staled", count: block9 - block8},
 		// entry #3 became stale, so (stale) entry #4 was removed
-		{ op: "getvers", name: "to check 3 versions remain", count: 3 },
+		{op: "getvers", name: "to check 3 versions remain", count: 3},
 	}
 
 	testWithFixationTemplate(t, playbook, 5, 1)
@@ -333,14 +364,14 @@ func TestRemoveLastEntry(t *testing.T) {
 	block2 := block1 + types.STALE_ENTRY_TIME
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "block", name: "advance a bit", count: block1-block0 },
-		{ op: "put", name: "refcount entry #1", count: block0 },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "block", name: "advance a bit", count: block1 - block0},
+		{op: "put", name: "refcount entry #1", count: block0},
 		// expect 1 (stale) entry versions left
-		{ op: "getvers", name: "to check 1 versions left", count: 1 },
-		{ op: "block", name: "wait for entry #1 stale", count: block2-block1 },
+		{op: "getvers", name: "to check 1 versions left", count: 1},
+		{op: "block", name: "wait for entry #1 stale", count: block2 - block1},
 		// expect entry #1 gone now
-		{ op: "find", name: "try to find entry #1", count: block0, coin: 0, fail: true},
+		{op: "find", name: "try to find entry #1", count: block0, coin: 0, fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 1, 1)
@@ -353,13 +384,13 @@ func TestEntriesSort(t *testing.T) {
 	block2 := block1 + int64(10)
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", count: block0, coin: 0 },
-		{ op: "append", name: "entry #2", count: block1, coin: 1 },
-		{ op: "append", name: "entry #3", count: block2, coin: 2 },
-		{ op: "find", name: "entry #3", count: block2+int64(5), coin: 2 },
-		{ op: "find", name: "entry #2", count: block1+int64(5), coin: 1 },
-		{ op: "find", name: "entry #1", count: block0+int64(5), coin: 0 },
-		{ op: "find", name: "no entry", count: block0-int64(5), fail: true },
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "append", name: "entry #3", count: block2, coin: 2},
+		{op: "find", name: "entry #3", count: block2 + int64(5), coin: 2},
+		{op: "find", name: "entry #2", count: block1 + int64(5), coin: 1},
+		{op: "find", name: "entry #1", count: block0 + int64(5), coin: 0},
+		{op: "find", name: "no entry", count: block0 - int64(5), fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)
@@ -369,17 +400,17 @@ func TestGetAllEntries(t *testing.T) {
 	block0 := int64(10)
 
 	playbook := []fixationTemplate{
-		{ op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0 },
-		{ op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1 },
-		{ op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2 },
-		{ op: "append", name: "entry #1", index: "prefix2_a", count: block0, coin: 3 },
-		{ op: "append", name: "entry #1", index: "prefix2_b", count: block0, coin: 4 },
-		{ op: "append", name: "entry #1", index: "prefix3_a", count: block0, coin: 5 },
-		{ op: "getall", name: "to check all indices", count: 6 },
-		{ op: "getallprefix", name: "to check all indices with prefix", index: "prefix", count: 6 },
-		{ op: "getallprefix", name: "to check indices with prefix1", index: "prefix1", count: 3 },
-		{ op: "getallprefix", name: "to check indices with prefix2", index: "prefix2", count: 2 },
-		{ op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1 },
+		{op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0},
+		{op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1},
+		{op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2},
+		{op: "append", name: "entry #1", index: "prefix2_a", count: block0, coin: 3},
+		{op: "append", name: "entry #1", index: "prefix2_b", count: block0, coin: 4},
+		{op: "append", name: "entry #1", index: "prefix3_a", count: block0, coin: 5},
+		{op: "getall", name: "to check all indices", count: 6},
+		{op: "getallprefix", name: "to check all indices with prefix", index: "prefix", count: 6},
+		{op: "getallprefix", name: "to check indices with prefix1", index: "prefix1", count: 3},
+		{op: "getallprefix", name: "to check indices with prefix2", index: "prefix2", count: 2},
+		{op: "getallprefix", name: "to check indices with prefix3", index: "prefix3", count: 1},
 	}
 
 	testWithFixationTemplate(t, playbook, 6, 1)

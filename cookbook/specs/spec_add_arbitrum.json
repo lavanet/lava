@@ -7,7 +7,9 @@
                 "index": "ARB1",
                 "name": "arbitrum mainnet",
                 "enabled": true,
-                "imports": [ "ETH1" ],
+                "imports": [
+                    "ETH1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
@@ -27,7 +29,9 @@
                 "index": "ARBN",
                 "name": "arbitrum nova testnet",
                 "enabled": true,
-                "imports": [ "ARB1" ],
+                "imports": [
+                    "ARB1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
@@ -42,7 +46,7 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 }
-			}
+            }
         ]
     },
     "deposit": "10000000ulava"

@@ -8,9 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	TestError = sdkerrors.New("test Error", 123, "error for tests")
-)
+var TestError = sdkerrors.New("test Error", 123, "error for tests")
 
 func TestErrorTypeChecks(t *testing.T) {
 	var err error = TestError

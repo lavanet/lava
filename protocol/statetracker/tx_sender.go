@@ -19,9 +19,12 @@ import (
 )
 
 const (
-	defaultGasPrice          = "0.000000001ulava"
-	defaultGasAdjustment     = 1.5
-	RETRY_INCORRECT_SEQUENCE = 5
+	defaultGasPrice      = "0.000000001ulava"
+	defaultGasAdjustment = 1.5
+	// same account can continue failing the more providers you have under the same account
+	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
+	// therefore currently our best solution is to continue retrying increasing sequence number until successful
+	RETRY_INCORRECT_SEQUENCE = 100
 )
 
 type TxSender struct {
@@ -42,7 +45,9 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	for _, txEvent := range txEvents {
 		if txEvent.Type == "lava_relay_payment" {
 			for _, attribute := range txEvent.Attributes {
-				if string(attribute.Key) == "BasePay" {
+				eventStr := string(attribute.Key)
+				eventStr = strings.SplitN(eventStr, ".", 2)[0]
+				if eventStr == "BasePay" {
 					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
 					if err != nil {
 						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Value)})

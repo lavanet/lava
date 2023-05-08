@@ -99,5 +99,6 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 
 	errData := &ErrorData{}
 	err = json.Unmarshal([]byte(errObject.ErrorReceived), errData)
+	assert.Nil(t, err)
 	assert.Equal(t, errData.GUID, "seed")
 }

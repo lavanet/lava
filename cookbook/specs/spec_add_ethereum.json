@@ -88,7 +88,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "26",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -112,7 +112,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -136,7 +136,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -208,7 +208,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "87",
+                        "compute_units": "100",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -256,7 +256,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "19",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -280,7 +280,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "19",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -304,7 +304,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "21",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -328,7 +328,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "16",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -412,7 +412,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "19",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -484,7 +484,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "75",
+                        "compute_units": "60",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -509,7 +509,7 @@
                             ],
                             "parser_func": "PARSE_CANONICAL"
                         },
-                        "compute_units": "75",
+                        "compute_units": "80",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -533,7 +533,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "21",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -557,7 +557,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "17",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -581,7 +581,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "15",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -605,7 +605,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "15",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -629,7 +629,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "17",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -653,7 +653,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "26",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -677,7 +677,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -749,7 +749,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -773,7 +773,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "15",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -821,7 +821,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -869,7 +869,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -966,7 +966,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -990,7 +990,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "250",
+                        "compute_units": "290",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -1110,7 +1110,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -1182,7 +1182,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -1206,7 +1206,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -1230,7 +1230,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -1278,7 +1278,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": true,
                         "api_interfaces": [
                             {

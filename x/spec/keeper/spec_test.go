@@ -67,6 +67,7 @@ func TestSpecGet(t *testing.T) {
 		)
 	}
 }
+
 func TestSpecRemove(t *testing.T) {
 	keeper, ctx := keepertest.SpecKeeper(t)
 	items := createNSpec(keeper, ctx, 10)

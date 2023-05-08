@@ -325,7 +325,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		if request.RelaySession.Epoch > latestBlock {
 			errorMessage = "provider is behind user's block height"
 		}
-		return nil, nil, utils.LavaFormatError(errorMessage, nil,
+		return nil, nil, utils.LavaFormatError(errorMessage, lavasession.EpochMismatchError,
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
@@ -631,6 +631,8 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 	}
 	if lavasession.SessionOutOfSyncError.Is(err) {
 		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
+	} else if lavasession.EpochMismatchError.Is(err) {
+		err = status.Error(codes.Code(lavasession.EpochMismatchError.ABCICode()), err.Error())
 	}
 	return err
 }

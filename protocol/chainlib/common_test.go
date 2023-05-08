@@ -2,7 +2,7 @@ package chainlib
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -36,9 +36,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -67,9 +68,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -98,9 +100,10 @@ func TestMatchSpecApiByName(t *testing.T) {
 					ComputeUnits: 10,
 					Enabled:      true,
 					ApiInterfaces: []spectypes.ApiInterface{
-						{Interface: "REST",
-							Type:     "GET",
-							Category: &spectypes.SpecCategory{Deterministic: true},
+						{
+							Interface: "REST",
+							Type:      "GET",
+							Category:  &spectypes.SpecCategory{Deterministic: true},
 						},
 					},
 					Parsing: spectypes.Parsing{
@@ -260,7 +263,6 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestExtractDappIDFromFiberContext(t *testing.T) {
@@ -305,7 +307,7 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 			req := httptest.NewRequest("GET", testCase.route, nil)
 
 			resp, _ := app.Test(req, 1)
-			body, _ := ioutil.ReadAll(resp.Body)
+			body, _ := io.ReadAll(resp.Body)
 			responseString := string(body)
 			if responseString != testCase.expected {
 				t.Errorf("Expected %s but got %s", testCase.expected, responseString)
@@ -441,5 +443,4 @@ func TestGetServiceApis(t *testing.T) {
 	if len(serverApis) != 2 {
 		t.Errorf("Expected serverApis length to be 2, but got %d", len(serverApis))
 	}
-
 }

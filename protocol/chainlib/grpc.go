@@ -11,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/lavanet/lava/grpcproxy"
+
 	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
@@ -21,7 +24,6 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -29,7 +31,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"google.golang.org/grpc"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
@@ -232,7 +233,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return relayReply.Data, nil
 	}
 
-	_, httpServer, err := thirdparty.RegisterServer(apil.endpoint.ChainID, sendRelayCallback)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
@@ -316,7 +317,21 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
 	formatMessage := false
 	if len(nodeMessage.Msg) > 0 {
-		reader = bytes.NewReader(nodeMessage.Msg)
+		// guess if json or binary
+		if nodeMessage.Msg[0] != '{' && nodeMessage.Msg[0] != '[' {
+			msgLocal := msgFactory.NewMessage(methodDescriptor.GetInputType())
+			err = proto.Unmarshal(nodeMessage.Msg, msgLocal)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			jsonBytes, err := marshalJSON(msgLocal)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			reader = bytes.NewReader(jsonBytes)
+		} else {
+			reader = bytes.NewReader(nodeMessage.Msg)
+		}
 		formatMessage = true
 	}
 
@@ -340,8 +355,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
+	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
 	if err != nil {
+		if connectCtx.Err() == context.DeadlineExceeded {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		}
 		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
 	}
 
@@ -355,4 +374,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		Data: respBytes,
 	}
 	return reply, "", nil, nil
+}
+
+func marshalJSON(msg proto.Message) ([]byte, error) {
+	if dyn, ok := msg.(*dynamic.Message); ok {
+		return dyn.MarshalJSON()
+	}
+	buf := new(bytes.Buffer)
+	err := (&jsonpb.Marshaler{}).Marshal(buf, msg)
+	return buf.Bytes(), err
 }

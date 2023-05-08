@@ -93,7 +93,7 @@ func TestJSONGetSupportedApi(t *testing.T) {
 }
 
 func TestJSONParseMessage(t *testing.T) {
-	var apip = &JsonRPCChainParser{
+	apip := &JsonRPCChainParser{
 		rwLock: sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{
 			"API1": {

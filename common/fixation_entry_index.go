@@ -64,31 +64,68 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 	return fs.GetAllEntryIndicesWithPrefix(ctx, "")
 }
 
-// GetAllEntryVersions returns a list of all versions (blocks) of an entry.
-// If stale == true, then the output will include stale versions (for testing).
-func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
+func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "GetAllEntryVersions", details, "invalid non-ascii entry")
+		utils.LavaError(ctx, ctx.Logger(), "getEntryVersionsFilter", details, "invalid non-ascii entry")
 		return nil
 	}
 
 	store := fs.getStore(ctx, safeIndex)
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.Entry
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
-		if !stale && entry.IsStale(ctx) {
-			continue
+
+		if filter(&entry) {
+			blocks = append(blocks, entry.Block)
 		}
-		blocks = append(blocks, entry.Block)
+
+		if entry.Block <= block {
+			break
+		}
+	}
+
+	// reverse the result slice to return the block in ascending order
+	length := len(blocks)
+	for i := 0; i < length/2; i++ {
+		blocks[i], blocks[length-i-1] = blocks[length-i-1], blocks[i]
 	}
 
 	return blocks
+}
+
+// GetEntryVersionsRange returns a list of versions from nearest-smaller block
+// and onward, and not more than delta blocks further (skip stale entries).
+func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, block, delta uint64) (blocks []uint64) {
+	filter := func(entry *types.Entry) bool {
+		if entry.IsStale(ctx) {
+			return false
+		}
+		if entry.Block > block+delta {
+			return false
+		}
+		return true
+	}
+
+	return fs.getEntryVersionsFilter(ctx, index, block, filter)
+}
+
+// GetAllEntryVersions returns a list of all versions (blocks) of an entry.
+// If stale == true, then the output will include stale versions (for testing).
+func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
+	filter := func(entry *types.Entry) bool {
+		if !stale && entry.IsStale(ctx) {
+			return false
+		}
+		return true
+	}
+
+	return fs.getEntryVersionsFilter(ctx, index, 0, filter)
 }
 
 func (fs FixationStore) createEntryIndexStoreKey() string {

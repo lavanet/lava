@@ -35,7 +35,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
-	epochUpdater := NewEpochUpdater(pst.stateQuery)
+	epochUpdater := NewEpochUpdater(&pst.stateQuery.EpochStateQuery)
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*EpochUpdater)
 	if !ok {

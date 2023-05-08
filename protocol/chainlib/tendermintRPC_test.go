@@ -93,7 +93,7 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 }
 
 func TestTendermintParseMessage(t *testing.T) {
-	var apip = &TendermintChainParser{
+	apip := &TendermintChainParser{
 		rwLock: sync.RWMutex{},
 		serverApis: map[string]spectypes.ServiceApi{
 			"API1": {
