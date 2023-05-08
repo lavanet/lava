@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/projects/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,7 +36,7 @@ func TestCreateDefaultProject(t *testing.T) {
 }
 
 func TestCreateProject(t *testing.T) {
-	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	subAccount := common.CreateNewAccount(ctx, *keepers, 10000)
 	adminAcc := common.CreateNewAccount(ctx, *keepers, 10000)
@@ -50,7 +51,7 @@ func TestCreateProject(t *testing.T) {
 			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER},
 			Vrfpk: "",
 		}},
-		Policy: nil,
+		Policy: &types.Policy{MaxProvidersToPair: 2},
 	}
 	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), projectData, plan)
 	require.Nil(t, err)
@@ -112,7 +113,10 @@ func TestCreateProject(t *testing.T) {
 	}
 
 	// should fail because there's an invalid key
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAccount.Addr.String(), invalidKeysProjectData, plan)
+	_, err = servers.SubscriptionServer.AddProject(ctx, &subscriptiontypes.MsgAddProject{
+		Creator:     subAccount.Addr.String(),
+		ProjectData: invalidKeysProjectData,
+	})
 	require.NotNil(t, err)
 
 	// get project by developer - subscription key is not a developer, should fail (if it succeeds, it means that the valid project key
@@ -292,21 +296,21 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	templates := []struct {
-		name                 string
-		creator              string
-		projectID            string
-		geolocation          uint64
-		chainPolicies        []types.ChainPolicy
-		totalCuLimit         uint64
-		epochCuLimit         uint64
-		maxProvidersToPair   uint64
-		validateBasicSuccess bool
-		setPolicySuccess     bool
+		name                         string
+		creator                      string
+		projectID                    string
+		geolocation                  uint64
+		chainPolicies                []types.ChainPolicy
+		totalCuLimit                 uint64
+		epochCuLimit                 uint64
+		maxProvidersToPair           uint64
+		setAdminPolicySuccess        bool
+		setSubscriptionPolicySuccess bool
 	}{
 		{
 			"valid policy (admin account)", admAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true,
+			100, 10, 3, true, false,
 		},
 
 		{
@@ -318,19 +322,19 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		{
 			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false,
+			100, 10, 3, false, false,
 		},
 
 		{
 			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false,
+			100, 10, 3, false, false,
 		},
 
 		{
-			"invalid geolocation (0)", devAddr, "fakeProjectId", uint64(0),
+			"invalid geolocation (0)", devAddr, projectID, uint64(0),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, false,
+			100, 10, 3, false, false,
 		},
 
 		{
@@ -379,15 +383,10 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				}
 
 				err = setAdminPolicyMessage.ValidateBasic()
-				if tt.validateBasicSuccess {
-					require.Nil(t, err)
-				} else {
-					require.NotNil(t, err)
-					return
-				}
+				require.Nil(t, err)
 
 				_, err := servers.ProjectServer.SetAdminPolicy(ctx, &setAdminPolicyMessage)
-				if tt.setPolicySuccess {
+				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -406,29 +405,17 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				}
 
 				err = setSubscriptionPolicyMessage.ValidateBasic()
-				if tt.validateBasicSuccess {
-					require.Nil(t, err)
-				} else {
-					require.NotNil(t, err)
-					return
-				}
+				require.Nil(t, err)
 
 				_, err := servers.ProjectServer.SetSubscriptionPolicy(ctx, &setSubscriptionPolicyMessage)
-				if tt.creator == subAddr {
-					// only the subscription consumer should be able to set subscription policy
+				if tt.setSubscriptionPolicySuccess {
+					require.Nil(t, err)
+					ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+					proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), tt.projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 					require.Nil(t, err)
 
-					if tt.setPolicySuccess {
-						require.Nil(t, err)
-						ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-
-						proj, err := keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ctx), tt.projectID, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-						require.Nil(t, err)
-
-						require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
-					} else {
-						require.NotNil(t, err)
-					}
+					require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
 				} else {
 					require.NotNil(t, err)
 				}

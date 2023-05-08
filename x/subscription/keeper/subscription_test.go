@@ -292,7 +292,7 @@ func TestRenewSubscription(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12, "")
 	require.NotNil(t, err)
 
-	// but asking for additional 9 months (10 would also be fine)
+	// but asking for additional 9 months (10 would also be fine (the extra month extension below))
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 9, "")
 	require.Nil(t, err)
 

@@ -176,7 +176,7 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
-	if providersToPair == 0 {
+	if providersToPair == uint64(math.MaxUint64) {
 		return 0, 0, "", 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
 	}
 
@@ -204,15 +204,16 @@ func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectsty
 }
 
 func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
-	var providersToPairValues []uint64
+	providersToPair := uint64(math.MaxUint64)
 
 	for _, policy := range policies {
-		if policy != nil {
-			providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+		val := policy.GetMaxProvidersToPair()
+		if policy != nil && val < providersToPair {
+			providersToPair = val
 		}
 	}
 
-	return commontypes.FindMin(providersToPairValues)
+	return providersToPair
 }
 
 func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
