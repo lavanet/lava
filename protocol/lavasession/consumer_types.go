@@ -18,7 +18,7 @@ import (
 )
 
 type ProviderOptimizer interface {
-	AppendRelayData(providerAddress string, latency time.Duration, failure bool)
+	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 }
 
 type ignoredProviders struct {
@@ -294,7 +294,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			} else if endpoint.connection.GetState() == connectivity.Shutdown {
 				// connection was shut down, so we need to create a new one
 				endpoint.connection.Close()
-				endpoint.Client = nil
 				connected_ := connectEndpoint(cswp, ctx, endpoint)
 				if !connected_ {
 					continue

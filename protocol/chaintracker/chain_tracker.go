@@ -329,7 +329,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 	}
 	_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
-		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
 		_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	}
 	if err != nil {
