@@ -39,7 +39,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
 	if err != nil {
@@ -47,7 +47,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	blockNum, err := parser.ParseBlockFromReply(parserInput, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning("Failed To Parse FetchLatestBlockNum", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: serviceApi.GetName()},
 			{Key: "Response", Value: string(reply.Data)},
@@ -72,7 +72,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return "", utils.LavaFormatWarning(spectypes.GET_BLOCK_BY_NUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
 	if err != nil {
@@ -86,7 +86,7 @@ func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainM
 	var parserInput parser.RPCInput
 	respData := reply.Data
 	if len(respData) == 0 {
-		return nil, utils.LavaFormatError("result (reply.Data) is empty, can't be formatted for parsing", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil, utils.LavaFormatWarning("result (reply.Data) is empty, can't be formatted for parsing", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	rpcMessage := chainMessage.GetRPCMessage()
 	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {
