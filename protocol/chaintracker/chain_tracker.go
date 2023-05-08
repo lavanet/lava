@@ -25,6 +25,7 @@ import (
 const (
 	initRetriesCount = 4
 	BACKOFF_MAX_TIME = 10 * time.Minute
+	maxFails         = 10
 )
 
 type ChainFetcher interface {
@@ -166,7 +167,7 @@ func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, block
 		blockNumToFetch := latestBlock - idx
 		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
 		if err != nil {
-			return 0, 0, 0, utils.LavaFormatError("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+			return 0, 0, 0, utils.LavaFormatWarning("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
 		}
 		var foundOverlap bool
 		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
@@ -296,7 +297,9 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 				if err != nil {
 					fetchFails += 1
 					cs.updateTicker(tickerTime, fetchFails)
-					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails})
+					if fetchFails > maxFails {
+						utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+					}
 				} else {
 					if fetchFails != 0 {
 						// means we had failures and they are gone, need to reset the ticker
@@ -415,8 +418,8 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 }
 
 func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
-	if fails > 10 {
-		fails = 10
+	if fails > maxFails {
+		fails = maxFails
 	}
 	maxIncrease := BACKOFF_MAX_TIME
 	backoff := baseTime * (1 << fails)

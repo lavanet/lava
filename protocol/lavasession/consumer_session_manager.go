@@ -244,7 +244,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
-				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, utils.Attribute{Key: "providerAddress", Value: providerAddress})
+				utils.LavaFormatWarning("Max Compute Units Exceeded For provider", err, utils.Attribute{Key: "providerAddress", Value: providerAddress})
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
