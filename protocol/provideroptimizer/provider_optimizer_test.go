@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -362,7 +363,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 	requestCU := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
 	syncBlock := uint64(1000)
-	pertrubationPercentage := 0.05
+	pertrubationPercentage := lavasession.OptimizerPerturbation
 	// set a basic state for all of them
 	for i := 0; i < 10; i++ {
 		for idx, address := range providersGen.providersAddresses {

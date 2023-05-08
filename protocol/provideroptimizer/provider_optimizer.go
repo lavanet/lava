@@ -3,6 +3,7 @@ package provideroptimizer
 import (
 	"math"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -90,6 +91,9 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress)
+	if debug {
+		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
+	}
 }
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
@@ -101,6 +105,9 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
+	if debug {
+		utils.LavaFormatDebug("probe update", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
+	}
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
@@ -128,6 +135,9 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
 
+		if debug {
+			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent})
+		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
 			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders)) {
@@ -143,7 +153,9 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			returnedProviders = append(returnedProviders, providerAddress)
 		}
 	}
-
+	if debug {
+		utils.LavaFormatDebug("returned providers", utils.Attribute{Key: "providers", Value: strings.Join(returnedProviders, ",")}, utils.Attribute{Key: "cu", Value: cu})
+	}
 	return returnedProviders
 }
 
@@ -200,11 +212,9 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 		if rand.Intn(2) == 0 {
 			return true
 		}
+		return false
 	default:
 		latencyWeight = 0.8
-	}
-	if debug {
-		utils.LavaFormatDebug("total scores", utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "total", Value: latencyScoreCurrent*latencyWeight + syncScoreCurrent*(1-latencyWeight)})
 	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
