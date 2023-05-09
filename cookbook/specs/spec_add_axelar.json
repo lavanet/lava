@@ -770,7 +770,7 @@
                         ]
                     },
                     {
-                        "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
+                        "name": "axelar.axelarnet.v1beta1.QueryService/PendingIBCTransferCount",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -787,14 +787,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
+                        "name": "axelar.evm.v1beta1.QueryService/BatchedCommands",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -811,14 +811,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/interfaces",
+                        "name": "axelar.evm.v1beta1.QueryService/BurnerInfo",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -835,14 +835,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/interfaces/{interface_name}/implementations",
+                        "name": "axelar.evm.v1beta1.QueryService/Bytecode",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -859,14 +859,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/authn",
+                        "name": "axelar.evm.v1beta1.QueryService/Chains",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -883,14 +883,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/chain",
+                        "name": "axelar.evm.v1beta1.QueryService/ConfirmationHeight",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -907,14 +907,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/codec",
+                        "name": "axelar.evm.v1beta1.QueryService/DepositState",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -931,14 +931,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/configuration",
+                        "name": "axelar.evm.v1beta1.QueryService/ERC20Tokens",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -955,14 +955,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/query_services",
+                        "name": "axelar.evm.v1beta1.QueryService/Event",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -979,14 +979,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/base/reflection/v1beta1/app_descriptor/tx_descriptor",
+                        "name": "axelar.evm.v1beta1.QueryService/GatewayAddress",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1003,14 +1003,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
+                        "name": "axelar.evm.v1beta1.QueryService/KeyAddress",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1027,14 +1027,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/cosmos/tx/v1beta1/txs/block/{height}",
+                        "name": "axelar.evm.v1beta1.QueryService/PendingCommands",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1051,14 +1051,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address",
+                        "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1075,14 +1075,14 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
-                        "name": "/ibc/core/client/v1/consensus_states/{client_id}/heights",
+                        "name": "axelar.multisig.v1beta1.QueryService/Key",
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1099,8 +1099,368 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.multisig.v1beta1.QueryService/KeyID",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.multisig.v1beta1.QueryService/KeygenSession",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.multisig.v1beta1.QueryService/NextKeyID",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/Assets",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/ChainMaintainers",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/ChainState",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/Chains",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/ChainsByAsset",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/FeeInfo",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/LatestDepositAddress",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/TransferFee",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/TransferRateLimit",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "axelar.permission.v1beta1.Query/GovernanceKey",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
                                 "extra_compute_units": "0"
                             }
                         ]

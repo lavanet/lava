@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/build"
@@ -15,9 +16,12 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -56,6 +60,8 @@ type lavaTest struct {
 	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 }
+
+var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
@@ -682,6 +688,7 @@ func (lt *lavaTest) saveLogs() {
 	}
 	errorLineCount := 0
 	errorFiles := []string{}
+	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
 		file, err := os.Create(logsFolder + fileName + ".log")
 		if err != nil {
@@ -716,6 +723,7 @@ func (lt *lavaTest) saveLogs() {
 		}
 		errorFiles = append(errorFiles, fileName)
 		errors := strings.Join(errorLines, "\n")
+		errorPrint[fileName] = errorLines[0] + errorLines[1]
 		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
 		if err != nil {
 			panic(err)
@@ -727,6 +735,9 @@ func (lt *lavaTest) saveLogs() {
 	}
 
 	if errorLineCount != 0 {
+		for _, errLine := range errorPrint {
+			fmt.Println("ERROR: ", errLine)
+		}
 		panic("Error found in logs " + strings.Join(errorFiles, ", "))
 	}
 }
@@ -735,8 +746,8 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	utils.LavaFormatInfo("Checking Payments")
 	ethPaid := false
 	lavaPaid := false
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	for start := time.Now(); time.Since(start) < testDuration; {
-		pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
 		if err != nil {
 			panic(err)
@@ -776,6 +787,324 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 	} else {
 		panic("PAYMENT FAILED FOR LAVA")
 	}
+
+	// Get CU usage:
+	providerCU, err := calculateProviderCU(pairingClient)
+	if err != nil {
+		panic("PROVIDER CU CALCULATION ERROR")
+	}
+
+	// Checking the provider payments
+	for provider, totalCU := range providerCU {
+		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
+		if expectedPayment == sdk.ZeroDec() {
+			panic("EXPECTED PAYMENT ERROR")
+		}
+
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: provider,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		// Comparing the balances after payment with the initial balances
+		if providerBalances[provider] != nil {
+			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjusting balance checks accordingly
+				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
+				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					panic("PROVIDER PAYMENT CHECK FAILED")
+				}
+			} else {
+				netAmount := balanceRes.GetBalance().Amount.Int64()
+				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					panic("PROVIDER PAYMENT CHECK FAILED")
+				}
+			}
+		}
+	}
+	utils.LavaFormatInfo("PROVIDER BALANCE CHECK AFTER PAYMENT OK")
+}
+
+func (lt *lavaTest) checkQoS() error {
+	utils.LavaFormatInfo("Starting QoS Tests")
+	errors := []string{}
+
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	providerCU, err := calculateProviderCU(pairingClient)
+	if err != nil {
+		panic("Provider CU calculation error!")
+	}
+
+	providerIdx := 0
+	for provider := range providerCU {
+		// Get sequence number of provider
+		logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
+		lt.logs[logNameAcc] = new(bytes.Buffer)
+
+		fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
+		cmdAcc := exec.CommandContext(context.Background(), "", "")
+		cmdAcc.Path = lt.lavadPath
+		cmdAcc.Args = strings.Split(fetchAccCommand, " ")
+		cmdAcc.Stdout = lt.logs[logNameAcc]
+		cmdAcc.Stderr = lt.logs[logNameAcc]
+		err = cmdAcc.Start()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		lt.commands[logNameAcc] = cmdAcc
+		err = cmdAcc.Wait()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+
+		var obj map[string]interface{}
+		err := json.Unmarshal((lt.logs[logNameAcc].Bytes()), &obj)
+		if err != nil {
+			panic(err)
+		}
+
+		sequence, ok := obj["sequence"].(string)
+		if !ok {
+			panic("Sequence field is not valid!")
+		}
+		sequenceInt, err := strconv.ParseInt(sequence, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		sequenceInt--
+		sequence = strconv.Itoa(int(sequenceInt))
+		//
+		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
+		lt.logs[logName] = new(bytes.Buffer)
+
+		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
+
+		cmd := exec.CommandContext(context.Background(), "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(txQueryCommand, " ")
+		cmd.Stdout = lt.logs[logName]
+		cmd.Stderr = lt.logs[logName]
+
+		err = cmd.Start()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		lt.commands[logName] = cmd
+		err = cmd.Wait()
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+
+		lines := strings.Split(lt.logs[logName].String(), "\n")
+		for idx, line := range lines {
+			if strings.Contains(line, "key: QoSScore") {
+				startIndex := strings.Index(lines[idx+1], "\"") + 1
+				endIndex := strings.LastIndex(lines[idx+1], "\"")
+				qosScoreStr := lines[idx+1][startIndex:endIndex]
+				qosScore, err := strconv.ParseFloat(qosScoreStr, 64)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", err))
+				}
+				if qosScore < 1 {
+					errors = append(errors, "QoS score is less than 1 !")
+				}
+			}
+		}
+		providerIdx++
+	}
+	utils.LavaFormatInfo("QOS CHECK OK")
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
+func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
+	utils.LavaFormatInfo("Starting Relay Response Integrity Tests")
+
+	// TENDERMINT:
+	tendermintNodeURL := "http://0.0.0.0:26657"
+	errors := []string{}
+	apiMethodTendermint := "%s/block?height=1"
+
+	providerReply, err := getRequest(fmt.Sprintf(apiMethodTendermint, tendermintConsumerURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(providerReply), "error") {
+		errors = append(errors, string(providerReply))
+	}
+	//
+	nodeReply, err := getRequest(fmt.Sprintf(apiMethodTendermint, tendermintNodeURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(nodeReply), "error") {
+		errors = append(errors, string(nodeReply))
+	}
+	//
+	if !bytes.Equal(providerReply, nodeReply) {
+		errors = append(errors, "tendermint relay response integrity error!")
+	} else {
+		utils.LavaFormatInfo("TENDERMINT RESPONSE CROSS VERIFICATION OK")
+	}
+
+	// REST:
+	restNodeURL := "http://0.0.0.0:1317"
+	apiMethodRest := "%s/blocks/1"
+
+	providerReply, err = getRequest(fmt.Sprintf(apiMethodRest, restConsumerURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(providerReply), "error") {
+		errors = append(errors, string(providerReply))
+	}
+	//
+	nodeReply, err = getRequest(fmt.Sprintf(apiMethodRest, restNodeURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(nodeReply), "error") {
+		errors = append(errors, string(nodeReply))
+	}
+	//
+	if !bytes.Equal(providerReply, nodeReply) {
+		errors = append(errors, "rest relay response integrity error!")
+	} else {
+		utils.LavaFormatInfo("REST RESPONSE CROSS VERIFICATION OK")
+	}
+
+	// gRPC:
+	grpcNodeURL := "127.0.0.1:9090"
+
+	grpcConnProvider, err := grpc.Dial(grpcConsumerURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	pairingQueryClient := pairingTypes.NewQueryClient(grpcConnProvider)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	grpcProviderReply, err := pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	//
+	grpcConnNode, err := grpc.Dial(grpcNodeURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	pairingQueryClient = pairingTypes.NewQueryClient(grpcConnNode)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	grpcNodeReply, err := pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	//
+
+	if strings.TrimSpace(grpcNodeReply.String()) != strings.TrimSpace(grpcProviderReply.String()) {
+		errors = append(errors, "grpc relay response integrity error!")
+	} else {
+		utils.LavaFormatInfo("GRPC RESPONSE CROSS VERIFICATION OK")
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
+// This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
+func (lt *lavaTest) isGethProvider(providerAddr string) bool {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "GTH1",
+	})
+	gethProviders := gethProvidersResponse.GetStakeEntry()
+	for _, gethProvider := range gethProviders {
+		if gethProvider.Address == providerAddr {
+			return true
+		}
+	}
+	return false
+}
+
+func (lt *lavaTest) setInitialProviderBalances() {
+	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "LAV1",
+	})
+	if err != nil {
+		panic(err)
+	}
+	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+		ChainID: "ETH1",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	lavaProviders := lavaProvidersResponse.GetStakeEntry()
+	ethProviders := ethProvidersResponse.GetStakeEntry()
+
+	for _, lavaProvider := range lavaProviders {
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: lavaProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		providerBalances[lavaProvider.Address] = balanceRes
+	}
+
+	for _, ethProvider := range ethProviders {
+		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
+		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
+			Address: ethProvider.Address,
+			Denom:   "ulava",
+		})
+		if err != nil {
+			panic(err)
+		}
+		providerBalances[ethProvider.Address] = balanceRes
+	}
+}
+
+func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
+	providerCU := make(map[string]uint64)
+	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+	if err != nil {
+		return nil, err
+	}
+	uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
+
+	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
+		_, providerAddr := decodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
+
+		cu := uniquePaymentStorageClientProvider.UsedCU
+		providerCU[providerAddr] += cu
+	}
+	return providerCU, nil
+}
+
+func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
+	firstIndex := strings.Index(inputStr, "lava@")
+	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
+
+	clientAddr = inputStr[firstIndex:secondIndex]
+	providerAddr = inputStr[secondIndex : secondIndex+44]
+
+	return clientAddr, providerAddr
 }
 
 func runE2E(timeout time.Duration) {
@@ -822,6 +1151,8 @@ func runE2E(timeout time.Duration) {
 	// - produce 1 subscription (for both ETH1, LAV1)
 
 	lt.checkStakeLava(1, 5, 5, 1, checkedPlansE2E, checkedSpecsE2E, "Staking Lava OK")
+
+	lt.setInitialProviderBalances()
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -903,8 +1234,6 @@ func runE2E(timeout time.Duration) {
 	})
 	utils.LavaFormatInfo("REST TEST OK")
 
-	lt.checkPayments(time.Minute * 10)
-
 	// staked client then with subscription
 	// TODO: if set to 30 secs fails e2e need to investigate why. currently blocking PR's
 	repeat(1, func(n int) {
@@ -914,6 +1243,12 @@ func runE2E(timeout time.Duration) {
 		}
 	})
 	utils.LavaFormatInfo("GRPC TEST OK")
+
+	lt.checkResponse("http://127.0.0.1:3340/1", "http://127.0.0.1:3341/1", "127.0.0.1:3342")
+
+	lt.checkPayments(time.Minute * 10)
+
+	lt.checkQoS()
 
 	lt.finishTestSuccessfully()
 }

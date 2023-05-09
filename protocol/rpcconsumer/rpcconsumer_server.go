@@ -227,7 +227,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if chainMessage.GetInterface().Category.HangingApi {
 		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 	}
-	relayTimeout := extraRelayTimeout + lavaprotocol.GetTimePerCu(singleConsumerSession.LatestRelayCu) + lavasession.AverageWorldLatency
+	relayTimeout := extraRelayTimeout + common.GetTimePerCu(singleConsumerSession.LatestRelayCu) + common.AverageWorldLatency
 	relayResult, relayLatency, err, backoff := rpccs.relayInner(ctx, singleConsumerSession, relayResult, relayTimeout)
 	if err != nil {
 		failRelaySession := func(origErr error, backoff_ bool) {
@@ -254,7 +254,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// set cache in a non blocking call
 	go func() {
 		new_ctx := context.Background()
-		new_ctx, cancel := context.WithTimeout(new_ctx, chainlib.DataReliabilityTimeoutIncrease)
+		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
 		err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {

@@ -43,7 +43,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                 "interface": "jsonrpc",
+                                "interface": "jsonrpc",
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
@@ -57,7 +57,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -67,7 +67,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                 "interface": "jsonrpc",
+                                "interface": "jsonrpc",
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
@@ -91,7 +91,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                 "interface": "jsonrpc",
+                                "interface": "jsonrpc",
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
@@ -115,7 +115,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                 "interface": "jsonrpc",
+                                "interface": "jsonrpc",
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
@@ -139,7 +139,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                 "interface": "jsonrpc",
+                                "interface": "jsonrpc",
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
