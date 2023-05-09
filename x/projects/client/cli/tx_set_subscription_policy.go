@@ -18,7 +18,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-subscription-policy [project-index] [policy-file-path]",
 		Short: "set subscription policy to a project",
-		Long:  `The set-subscription-policy command allows the project's subscription consumer to set a new policy to its subscription which will affect some/all of the subscription's projects. The policy file is a YAML file (see cookbook/project-policies/example.yml for reference). The new policy will be applied from the next epoch.`,
+		Long:  `The set-subscription-policy command allows the project's subscription consumer to set a new policy to its subscription which will affect some/all of the subscription's projects. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch.`,
 		Example: `required flags: --from <creator-address>
 		lavad tx project set-subscription-policy [project-indices] [policy-file-path] --from <creator_address>`,
 		Args: cobra.ExactArgs(2),

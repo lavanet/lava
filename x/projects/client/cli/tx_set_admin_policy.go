@@ -17,7 +17,7 @@ func CmdSetPolicy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-policy [project-index] [policy-file-path]",
 		Short: "set policy to a project",
-		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/project-policies/example.yml for reference). The new policy will be applied from the next epoch.`,
+		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch.`,
 		Example: `required flags: --from <creator-address>
 		lavad tx project set-policy [project-index] [policy-file-path] --from <creator_address>`,
 		Args: cobra.ExactArgs(2),
