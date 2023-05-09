@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -329,10 +330,18 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			var networkChainId string
+			clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
 			if err != nil {
 				return err
 			}
+			if clientTomlConfig.ChainID != "" {
+				networkChainId = clientTomlConfig.ChainID
+			} else {
+				networkChainId = app.Name
+			}
+			cmd.Flags().String(flags.FlagChainID, networkChainId, "network chain id")
+
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
@@ -388,7 +397,6 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
 	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
-	cmdRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
