@@ -140,7 +140,6 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 				st_val = strconv.FormatUint(value, 10)
 			case error:
 				st_val = value.Error()
-
 			case fmt.Stringer:
 				st_val = value.String()
 			// needs to come after stringer so byte inheriting objects will use their string method if implemented (like AccAddress)

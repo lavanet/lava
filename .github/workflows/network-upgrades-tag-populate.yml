@@ -1,0 +1,68 @@
+name: 'Network upgrade - Populate tags'
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: write-all
+
+jobs:
+  upgrade:
+    name: 'Network upgrade - Populate tags'
+    runs-on: ubuntu-latest
+    environment: default
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Confirm tag is in main branch
+      id: tag_main
+      run: |
+        branches=$(git branch -r --contains tags/$GITHUB_REF_NAME)
+        for branch in $branches; do
+          if [[ $branch == "origin/main" ]]; then
+            echo "CHECK=true" >> $GITHUB_OUTPUT
+          fi
+        done
+
+        if [ "$onProtectedBranch" == false ]; then
+          echo "Tag not in main branch."
+          echo "CHECK=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Get last 10 tags
+      id: tags_populate
+      run: |
+        new_tags=$(git tag --sort=-version:refname | head -n 10)
+        new_tags_array=$(echo "$new_tags" | tr '\n' ' ')
+        echo "$new_tags_array"
+        echo "new_tags_array=$new_tags_array" >> $GITHUB_OUTPUT
+
+    - name: Checkout DevOps repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GIT_TOKEN }}
+        repository: "lavanet/devops"
+
+    - name: Populate DevOps repository with new tags
+      run: |
+        new_tags_array=$(echo '${{ steps.tags_populate.outputs.new_tags_array }}' | tr '\n' ' ')
+
+        index=0
+        for version in $new_tags_array; do
+          echo "$version"
+          index="$index" version="$version" yq -i '.on.workflow_dispatch.inputs.tag_to_deploy.options[env(index)] = env(version)' .github/workflows/network-upgrades-receiver.yml
+          index=$((index+1))
+        done
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add .
+        git commit -m "(Bot) Update list of tags for CI/CD"
+        git push

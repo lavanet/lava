@@ -61,4 +61,4 @@ jobs:
     ### Run protocol unitests
     ######################################################
     - name: Run Lava Protocol Tests
-      run: go test ./protocol/...  -v
+      run: go test ./protocol/...
