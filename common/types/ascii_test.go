@@ -30,7 +30,7 @@ func TestStringValidation(t *testing.T) {
 		{"valid_description_with_dot", "hello.s", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"valid_description_with_underscore", "hello_s", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"valid_description_with_digit", "hello2s", DESCRIPTION_RESTRICTIONS, nil, true},
-		{"valid_description_with_paranthesis", "hello()s", DESCRIPTION_RESTRICTIONS, nil, true},
+		{"valid_description_with_parenthesis", "hello()s", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"invalid_description_not_lowercase", "hEllo,s", DESCRIPTION_RESTRICTIONS, nil, false},
 		{"invalid_description_not_ascii", "h¢llo,s", DESCRIPTION_RESTRICTIONS, nil, false},
 		{"invalid_description_with_disallowed_char", "heallo", DESCRIPTION_RESTRICTIONS, []rune{'a'}, false},
