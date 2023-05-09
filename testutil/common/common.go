@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -18,8 +20,10 @@ import (
 )
 
 type Account struct {
-	SK   *btcSecp256k1.PrivateKey
-	Addr sdk.AccAddress
+	SK    *btcSecp256k1.PrivateKey
+	Addr  sdk.AccAddress
+	VrfSk vrf.PrivateKey
+	VrfPk vrf.PublicKey
 }
 
 func CreateMockSpec() spectypes.Spec {
@@ -74,7 +78,10 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 		require.Nil(t, err)
 	} else {
-		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1})
+		_, pk, _ := utils.GeneratePrivateVRFKey()
+		vrfPk := &utils.VrfPubKey{}
+		vrfPk.Unmarshal(pk)
+		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 		require.Nil(t, err)
 	}
 }
@@ -120,6 +127,8 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 		RelayNum:    0,
 		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
+
+	msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = nil
 
 	sig, err := sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
 	if err != nil {

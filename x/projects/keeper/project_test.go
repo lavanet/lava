@@ -24,16 +24,16 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
-		{Key: adm1Addr, Types: typeAdmin},
+		{Key: adm1Addr, Types: typeAdmin, Vrfpk: ""},
 	}
 	// developer key
 	keys_1_admin_dev := []types.ProjectKey{
-		{Key: adm2Addr, Types: typeBoth},
+		{Key: adm2Addr, Types: typeBoth, Vrfpk: ""},
 	}
 	// both (admin+developer) key
 	keys_2_admin_and_dev := []types.ProjectKey{
-		{Key: adm3Addr, Types: typeAdmin},
-		{Key: dev3Addr, Types: typeDevel},
+		{Key: adm3Addr, Types: typeAdmin, Vrfpk: ""},
+		{Key: dev3Addr, Types: typeDevel, Vrfpk: ""},
 	}
 
 	policy1 := &types.Policy{GeolocationProfile: math.MaxUint64}
@@ -72,7 +72,7 @@ func TestCreateDefaultProject(t *testing.T) {
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	plan := common.CreateMockPlan()
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan)
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan, "")
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
@@ -192,7 +192,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	admAddr := projectData.ProjectKeys[0].Key
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan)
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan, "")
 	require.Nil(t, err)
 
 	// this is not supposed to fail because you can use the same admin key for two different projects

@@ -33,6 +33,9 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if !bytes.Equal(conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data) {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data)
 	}
+	if conflictData.ConflictRelayData0.Request.RelayData.ApiUrl != conflictData.ConflictRelayData1.Request.RelayData.ApiUrl {
+		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ApiUrl, conflictData.ConflictRelayData1.Request.RelayData.ApiUrl)
+	}
 	if conflictData.ConflictRelayData0.Request.RelayData.RequestBlock != conflictData.ConflictRelayData1.Request.RelayData.RequestBlock {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RelayData.RequestBlock, conflictData.ConflictRelayData1.Request.RelayData.RequestBlock)
 	}
@@ -62,7 +65,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return err
 	}
 
-	_, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
+	_, _, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
 	if err != nil {
 		// support legacy
 		_, err = k.pairingKeeper.VerifyClientStake(ctx, chainID, clientAddr, uint64(block), epochStart)

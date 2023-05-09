@@ -91,7 +91,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, foundIndex, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, foundIndex, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
 			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
 				foundIndexMap[providers11[i].Address] = foundIndex
@@ -134,7 +134,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		for idx, provider := range pairedProviders {
 			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
 			require.Nil(t, err)
-			valid, foundIndex, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			valid, _, foundIndex, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
 			require.Nil(t, errPairing)
 			require.Equal(t, idx, foundIndex, "Failed ValidatePairingForClient", provider, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)

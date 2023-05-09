@@ -28,7 +28,7 @@ func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry 
 }
 
 func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) error {
-	project, err := k.GetProjectData(ctx, clientAddr, chainID, epoch)
+	project, _, err := k.GetProjectData(ctx, clientAddr, chainID, epoch)
 	// if client is not legacy (works through a project), the CU verification is different
 	if err == nil {
 		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())

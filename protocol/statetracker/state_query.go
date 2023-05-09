@@ -23,7 +23,7 @@ const (
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"
-	MaxCuResponseKey            = "max-cu-resp"
+	VrfPkAndMaxCuResponseKey    = "vrf-and-max-cu-resp"
 )
 
 type StateQuery struct {
@@ -140,9 +140,9 @@ func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *Provi
 	return csq
 }
 
-func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, "")
-	cachedInterface, found := psq.ResponsesCache.Get(MaxCuResponseKey + key)
+	cachedInterface, found := psq.ResponsesCache.Get(VrfPkAndMaxCuResponseKey + key)
 	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
 	if found && cachedInterface != nil {
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
@@ -154,12 +154,16 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 	if userEntryRes == nil {
 		userEntryRes, err = psq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: consumerAddress, Block: epoch})
 		if err != nil {
-			return 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch})
+			return nil, 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch})
 		}
-		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
+		psq.ResponsesCache.SetWithTTL(VrfPkAndMaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
-
-	return userEntryRes.GetMaxCU(), err
+	vrfPk = &utils.VrfPubKey{}
+	vrfPk, err = vrfPk.DecodeFromBech32(userEntryRes.GetConsumer().Vrfpk)
+	if err != nil {
+		err = utils.LavaFormatError("decoding vrfpk from bech32", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch}, utils.Attribute{Key: "UserEntryRes", Value: userEntryRes})
+	}
+	return vrfPk, userEntryRes.GetMaxCU(), err
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, epoch uint64, providerAddress string) string {

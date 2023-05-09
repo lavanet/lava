@@ -37,7 +37,8 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			projectKeys_v3 := []types.ProjectKey{}
 			for _, projectKey_v2 := range project_v2.ProjectKeys {
 				projectKey_v3 := types.ProjectKey{
-					Key: projectKey_v2.Key,
+					Key:   projectKey_v2.Key,
+					Vrfpk: projectKey_v2.Vrfpk,
 				}
 
 				for _, projectKeyType_v2 := range projectKey_v2.Types {
@@ -92,6 +93,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 			developerData_v3 := types.ProtoDeveloperData{
 				ProjectID: developerDataStruct_v2.ProjectID,
+				Vrfpk:     developerDataStruct_v2.Vrfpk,
 			}
 
 			m.keeper.developerKeysFS.ModifyEntry(ctx, developerDataIndex, block, &developerData_v3)

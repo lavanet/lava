@@ -10,12 +10,12 @@ import (
 )
 
 // add a default project to a subscription, add the subscription key as
-func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan plantypes.Plan) error {
+func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan plantypes.Plan, vrfpk string) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
 		Description: types.ADMIN_PROJECT_DESCRIPTION,
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}},
+		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk}},
 		Policy:      nil,
 	}
 	return k.CreateProject(ctx, subscriptionAddress, projectData, plan)
@@ -42,7 +42,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	project.SubscriptionPolicy = project.AdminPolicy
 
 	for _, projectKey := range projectData.GetProjectKeys() {
-		err = k.RegisterKey(ctx, types.ProjectKey{Key: projectKey.GetKey(), Types: projectKey.GetTypes()}, &project, blockHeight)
+		err = k.RegisterKey(ctx, types.ProjectKey{Key: projectKey.GetKey(), Types: projectKey.GetTypes(), Vrfpk: projectKey.GetVrfpk()}, &project, blockHeight)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 	for _, keyType := range key.GetTypes() {
 		switch keyType {
 		case types.ProjectKey_ADMIN:
-			k.AddAdminKey(project, key.GetKey())
+			k.AddAdminKey(project, key.GetKey(), "")
 		case types.ProjectKey_DEVELOPER:
 			// try to find the developer key
 			var developerData types.ProtoDeveloperData
@@ -72,7 +72,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 			}
 
 			if !found {
-				err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight)
+				err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight, key.GetVrfpk())
 				if err != nil {
 					details := map[string]string{
 						"developerKey": key.GetKey(),
@@ -88,19 +88,20 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 	return nil
 }
 
-func (k Keeper) AddAdminKey(project *types.Project, adminKey string) {
-	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
+func (k Keeper) AddAdminKey(project *types.Project, adminKey string, vrfpk string) {
+	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}, Vrfpk: vrfpk})
 }
 
-func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64) error {
+func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64, vrfpk string) error {
 	var developerData types.ProtoDeveloperData
 	developerData.ProjectID = project.GetIndex()
+	developerData.Vrfpk = vrfpk
 	err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &developerData)
 	if err != nil {
 		return err
 	}
 
-	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}})
+	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}, Vrfpk: vrfpk})
 
 	return nil
 }

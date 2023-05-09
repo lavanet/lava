@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, vrfpk string, moniker string) error {
 	logger := k.Logger(ctx)
 	var stake_type string
 	if provider {
@@ -68,6 +68,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			details := map[string]string{stake_type: creator, "error": err.Error(), "endpoints": fmt.Sprintf("%v", endpoints), "Chain": specChainID, "geolocation": strconv.FormatUint(geolocation, 10)}
 			return utils.LavaError(ctx, logger, "stake_"+stake_type+"_endpoints", details, "invalid "+stake_type+" endpoints implementation for the given spec")
 		}
+	} else {
+		// clients need to provide their VRF PK before running to limit brute forcing the random functions
+		err := utils.VerifyVRF(vrfpk)
+		if err != nil {
+			details := map[string]string{stake_type: creator, "error": err.Error()}
+			return utils.LavaError(ctx, logger, "stake_"+stake_type+"_vrfpk", details, "invalid "+stake_type+" stake: invalid vrf pk, must provide a valid verification key")
+		}
 	}
 
 	// new staking takes effect from the next block
@@ -103,7 +110,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 			// paid the difference to module
 			existingEntry.Stake = amount
-			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+			// we dont change vrfpk, stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
 			existingEntry.Moniker = moniker
@@ -123,7 +130,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_new_amount", details, "insufficient amount to pay for stake")
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type, chainID, stakeEntry)
 	appended := false
 	if !provider {

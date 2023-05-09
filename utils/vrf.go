@@ -7,7 +7,6 @@ import (
 
 	"github.com/99designs/keyring"
 	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -34,6 +33,28 @@ func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint
 		err = VRFValueAboveReliabilityThresholdError.Wrapf("Vrf Does not meet threshold: %d VS threshold: %d", vrf_num, reliabilityThreshold)
 	}
 	return
+}
+
+func verifyVRF(queryHash []byte, reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
+	providerSig := reliabilityData.ProviderSig
+	differentiator := []uint8{0}
+	if reliabilityData.Differentiator {
+		differentiator = []uint8{1}
+	}
+	relayEpochStartBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(relayEpochStartBytes, relayEpochStart)
+	vrf_data := bytes.Join([][]byte{queryHash, relayEpochStartBytes, providerSig, differentiator}, nil)
+	return vrf_pk.pk.Verify(vrf_data, reliabilityData.VrfValue, reliabilityData.VrfProof)
+}
+
+func VerifyVrfProofFromVRFData(reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
+	queryHash := reliabilityData.QueryHash
+	return verifyVRF(queryHash, reliabilityData, vrf_pk, relayEpochStart)
+}
+
+func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
+	queryHash := CalculateQueryHash(*request.RelayData)
+	return verifyVRF(queryHash, request.DataReliability, vrf_pk, relayEpochStart)
 }
 
 func CalculateVrfOnRelay(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, currentEpoch uint64) ([]byte, []byte) {
