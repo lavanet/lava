@@ -5,9 +5,11 @@
         "specs": [
             {
                 "index": "COSMOSSDK",
-                "name": "Cosmos SDK",
+                "name": "cosmos sdk",
                 "enabled": false,
-                "imports": [ "IBC" ],
+                "imports": [
+                    "IBC"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
@@ -2847,6 +2849,30 @@
                         ]
                     },
                     {
+                        "name": "grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "grpc",
+                                "type": "",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
                         "name": "cosmos.auth.v1beta1.Query/Accounts",
                         "block_parsing": {
                             "parser_arg": [
@@ -4791,7 +4817,7 @@
                                 "2"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4818,7 +4844,7 @@
                                 "0"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4882,7 +4908,7 @@
                                 "0"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4933,7 +4959,7 @@
                                 "1"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5082,7 +5108,7 @@
                                 "0"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5109,7 +5135,7 @@
                                 "0"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5460,7 +5486,7 @@
                                 "0"
                             ],
                             "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value":"latest"
+                            "default_value": "latest"
                         },
                         "compute_units": "10",
                         "enabled": true,

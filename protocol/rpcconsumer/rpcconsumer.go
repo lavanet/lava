@@ -105,7 +105,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				errCh <- err
 				return err
 			}
-			allowedBlockLagForSync, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 
 			getOrCreateOptimizer := func() error {
@@ -117,7 +117,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 					// doesn't exist for this chain create a new one
 					strategy := provideroptimizer.STRATEGY_BALANCED
 					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(strategy, allowedBlockLagForSync, averageBlockTime, baseLatency, 3)
+					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 3)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool

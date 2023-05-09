@@ -29,11 +29,9 @@ func TestPairingUniqueness(t *testing.T) {
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
 
-	providers := []common.Account{}
 	for i := 1; i <= 1000; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
-		providers = append(providers, provider)
 	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -101,7 +99,6 @@ func TestPairingUniqueness(t *testing.T) {
 				require.Equal(t, foundIndexMap[providers11[i].Address], foundIndex)
 			}
 		}
-
 	}
 }
 
@@ -122,11 +119,9 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
 
-	providers := []common.Account{}
 	for i := 1; i <= 10; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
-		providers = append(providers, provider)
 	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -150,12 +145,10 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		blockToSave, err := keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ctx), i)
 		require.Nil(t, err)
 		return blockToSave
-
 	})(); i++ {
 		ctx = testkeeper.AdvanceBlock(ctx, keepers)
 		testAllProviders()
 	}
-
 }
 
 // Test that verifies that new get-pairing return values (CurrentEpoch, TimeLeftToNextPairing, SpecLastUpdatedBlock) is working properly

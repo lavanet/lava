@@ -30,7 +30,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < uint64(largerConst)+recommendedEpochNumToCollectPayment; i++ {
+	for i := uint64(0); i < largerConst+recommendedEpochNumToCollectPayment; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -50,6 +50,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 		// Get pairing for the client to pick a valid provider
 		providersStakeEntries, err := ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[clientIndex].Addr)
+		require.Nil(t, err)
 		providerIndex := rand.Intn(len(providersStakeEntries))
 		providerAddress := providersStakeEntries[providerIndex].Address
 		providerSdkAddress, err := sdk.AccAddressFromBech32(providerAddress)
@@ -126,7 +127,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < uint64(largerConst)+recommendedEpochNumToCollectPayment; i++ {
+	for i := uint64(0); i < largerConst+recommendedEpochNumToCollectPayment; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -235,7 +236,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < uint64(largerConst)+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
+	for i := uint64(0); i < largerConst+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -343,6 +344,8 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	testClientAmount := 1
 	testProviderAmount := 2
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	err := ts.addProviderGeolocation(2, 2)
+	require.Nil(t, err)
 
 	// get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
@@ -354,7 +357,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < uint64(largerConst)+recommendedEpochNumToCollectPayment; i++ {
+	for i := uint64(0); i < largerConst+recommendedEpochNumToCollectPayment; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -405,5 +408,4 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	require.False(t, unstakeStoragefound)
 	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, provider1_addr)
 	require.True(t, stakeStorageFound)
-
 }

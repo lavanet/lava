@@ -110,13 +110,33 @@ func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID stri
 	return UserEntryRes.GetMaxCU(), nil
 }
 
+type EpochStateQuery struct {
+	StateQuery
+}
+
+func (esq *EpochStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
+	epochDetails, err := esq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+	if err != nil {
+		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err)
+	}
+	details := epochDetails.GetEpochDetails()
+	return details.StartBlock, nil
+}
+
+func NewEpochStateQuery(stateQuery *StateQuery) *EpochStateQuery {
+	return &EpochStateQuery{StateQuery: *stateQuery}
+}
+
 type ProviderStateQuery struct {
 	StateQuery
+	EpochStateQuery
 	clientCtx client.Context
 }
 
 func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *ProviderStateQuery {
-	csq := &ProviderStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx}
+	sq := NewStateQuery(ctx, clientCtx)
+	esq := NewEpochStateQuery(sq)
+	csq := &ProviderStateQuery{StateQuery: *sq, EpochStateQuery: *esq, clientCtx: clientCtx}
 	return csq
 }
 
@@ -150,15 +170,6 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, 
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
 }
 
-func (psq *ProviderStateQuery) CurrentEpochStart(ctx context.Context) (uint64, error) {
-	epochDetails, err := psq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
-	if err != nil {
-		return 0, utils.LavaFormatError("Failed Querying EpochDetails", err)
-	}
-	details := epochDetails.GetEpochDetails()
-	return details.StartBlock, nil
-}
-
 func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {
 	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
 	if err != nil {
@@ -169,12 +180,12 @@ func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock in
 		events := tx.Events
 		for _, event := range events {
 			if event.Type == "lava_relay_payment" {
-				payment, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
+				paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: payment})
-				payments = append(payments, payment)
+				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+				payments = append(payments, paymentList...)
 			}
 		}
 	}

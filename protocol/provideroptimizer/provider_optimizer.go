@@ -3,34 +3,43 @@ package provideroptimizer
 import (
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/score"
+	"gonum.org/v1/gonum/mathext"
 )
 
 const (
-	CacheMaxCost               = 100  // each item cost would be 1
-	CacheNumCounters           = 1000 // expect 100 items
+	debug                      = false
+	CacheMaxCost               = 2000  // each item cost would be 1
+	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
 	HALF_LIFE_TIME             = time.Hour
 	MAX_HALF_TIME              = 14 * 24 * time.Hour
 	PROBE_UPDATE_WEIGHT        = 0.25
 	RELAY_UPDATE_WEIGHT        = 1
-	ASSUMED_VARIANCE           = 0.33
 	DEFAULT_EXPLORATION_CHANCE = 0.1
+	COST_EXPLORATION_CHANCE    = 0.01
 )
+
+type ConcurrentBlockStore struct {
+	Lock  sync.Mutex
+	Time  time.Time
+	Block uint64
+}
 
 type ProviderOptimizer struct {
 	strategy                        Strategy
 	providersStorage                *ristretto.Cache
-	providerRelayStats              *ristretto.Cache
+	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
-	allowedBlockLagForQosSync       int64
 	wantedNumProvidersInConcurrency int
+	latestSyncData                  ConcurrentBlockStore
 }
 
 type ProviderData struct {
@@ -51,6 +60,41 @@ const (
 	STRATEGY_ACCURACY
 )
 
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
+	latestSync, timeSync := po.updateLatestSyncData(syncBlock)
+	providerData, _ := po.getProviderData(providerAddress)
+	halfTime := po.calculateHalfTime(providerAddress)
+	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime)
+	if success {
+		if latency > 0 {
+			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)
+			if isHangingApi {
+				baseLatency += po.averageBlockTime // hanging apis take longer
+			}
+			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime)
+		}
+		if syncBlock > providerData.SyncBlock {
+			// do not allow providers to go back
+			providerData.SyncBlock = syncBlock
+		}
+		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock)
+		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime)
+	}
+	po.providersStorage.Set(providerAddress, providerData, 1)
+	po.updateRelayTime(providerAddress)
+}
+
+func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
+	providerData, _ := po.getProviderData(providerAddress)
+	halfTime := po.calculateHalfTime(providerAddress)
+	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime)
+	if success && latency > 0 {
+		// base latency for a probe is the world latency
+		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime)
+	}
+	po.providersStorage.Set(providerAddress, providerData, 1)
+}
+
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string) {
 	returnedProviders := make([]string, 1) // location 0 is always the best score
@@ -61,8 +105,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			// ignored provider, skip it
 			continue
 		}
-		providerData := po.getProviderData(providerAddress)
-
+		providerData, _ := po.getProviderData(providerAddress)
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
 		// latency perturbation
@@ -96,8 +139,31 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	return returnedProviders
 }
 
+// calculate the expected average time until this provider catches up with the given latestSync block
+func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64) time.Duration {
+	if latestSync < providerBlock {
+		return 0
+	}
+	timeLag := time.Since(timeSync)                                            // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
+	blocksGap := time.Duration(latestSync-providerBlock) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
+	timeLag += blocksGap
+	return timeLag
+}
+
+func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (uint64, time.Time) {
+	po.latestSyncData.Lock.Lock()
+	defer po.latestSyncData.Lock.Unlock()
+	latestBlock := po.latestSyncData.Block
+	if latestBlock < providerLatestBlock {
+		// saved latest block is older, so update
+		po.latestSyncData.Block = providerLatestBlock
+		po.latestSyncData.Time = time.Now()
+	}
+	return po.latestSyncData.Block, po.latestSyncData.Time
+}
+
 func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
-	if currentNumProvders > po.wantedNumProvidersInConcurrency {
+	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -107,7 +173,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 	case STRATEGY_ACCURACY:
 		return true
 	case STRATEGY_COST:
-		explorationChance = 0.01
+		explorationChance = COST_EXPLORATION_CHANCE
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
@@ -115,7 +181,6 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
-	// TODO: change into score_latency^a * sync_score^b (do log for computation performance)
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
@@ -130,6 +195,9 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 	default:
 		latencyWeight = 0.8
 	}
+	if debug {
+		utils.LavaFormatDebug("total scores", utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "total", Value: latencyScoreCurrent*latencyWeight + syncScoreCurrent*(1-latencyWeight)})
+	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
 	}
@@ -137,8 +205,13 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 }
 
 func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) float64 {
-	// TODO: do the same as latency score
-	return 1
+	var historicalSyncLatency time.Duration
+	if syncScore.Denom == 0 {
+		historicalSyncLatency = 0
+	} else {
+		historicalSyncLatency = time.Duration(syncScore.Num / syncScore.Denom * float64(po.averageBlockTime)) // give it units of block time
+	}
+	return historicalSyncLatency.Seconds()
 }
 
 func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu uint64, requestedBlock int64) float64 {
@@ -148,18 +221,37 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	if providerData.Latency.Denom == 0 {
 		historicalLatency = baseLatency
 	} else {
-		historicalLatency = baseLatency * time.Duration(providerData.Latency.Num/providerData.Latency.Denom)
+		historicalLatency = time.Duration(float64(baseLatency) * providerData.Latency.Num / providerData.Latency.Denom)
 	}
-
+	if historicalLatency > timeoutDuration {
+		// can't have a bigger latency than timeout
+		historicalLatency = timeoutDuration
+	}
 	probabilityBlockError := po.CalculateProbabilityOfBlockError(requestedBlock, providerData)
 	probabilityOfTimeout := po.CalculateProbabilityOfTimeout(providerData.Availability)
-	probabilityOfNoError := (1 - probabilityBlockError) * (1 - probabilityOfTimeout)
+	probabilityOfSuccess := (1 - probabilityBlockError) * (1 - probabilityOfTimeout)
 
+	// base latency is how much time it would cost to an average performing provider
+	// timeoutDuration is the extra time we pay for a non responsive provider
+	// historicalLatency is how much we are paying for the processing of this provider
+
+	// in case of block error we are paying the time cost of this provider and the time cost of the next provider on retry
 	costBlockError := historicalLatency.Seconds() + baseLatency.Seconds()
+	// in case of a time out we are paying the time cost of a timeout and the time cost of the next provider on retry
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
+	// on success we are paying the time cost of this provider
 	costSuccess := historicalLatency.Seconds()
-
-	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfNoError*costSuccess
+	if debug {
+		utils.LavaFormatDebug("latency calculation breakdown",
+			utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError},
+			utils.Attribute{Key: "costBlockError", Value: costBlockError},
+			utils.Attribute{Key: "probabilityOfTimeout", Value: probabilityOfTimeout},
+			utils.Attribute{Key: "costTimeout", Value: costTimeout},
+			utils.Attribute{Key: "probabilityOfSuccess", Value: probabilityOfSuccess},
+			utils.Attribute{Key: "costSuccess", Value: costSuccess},
+		)
+	}
+	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfSuccess*costSuccess
 }
 
 func (po *ProviderOptimizer) CalculateProbabilityOfTimeout(availabilityScore score.ScoreStore) float64 {
@@ -178,45 +270,20 @@ func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int
 		// requested a specific block, so calculate a probability of provider having that block
 		averageBlockTime := po.averageBlockTime.Seconds()
 		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock
-		repetitions := time.Since(providerData.Sync.Time).Seconds() / averageBlockTime
-		probabilityBlockError = 1 - probValueAfterRepetitions(averageBlockTime, ASSUMED_VARIANCE, float64(blockDistanceRequired), repetitions) // we need greater than or equal not less than so complementary probability
+		if blockDistanceRequired > 0 {
+			timeSinceSyncReceived := time.Since(providerData.Sync.Time).Seconds()
+			eventRate := timeSinceSyncReceived / averageBlockTime // a new block every average block time, numerator is time passed, gamma=rt
+			// probValueAfterRepetitions(k,lambda) calculates the probability for k events or less meaning p(x<=k),
+			// an error occurs if we didn't have enough blocks, so the chance of error is p(x<k) where k is the required number of blocks so we do p(x<=k-1)
+			probabilityBlockError = cumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
+		} else {
+			probabilityBlockError = 0
+		}
 	}
 	return probabilityBlockError
 }
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64, syncLag uint64) {
-	providerData := po.getProviderData(providerAddress)
-	halfTime := po.calculateHalfTime(providerAddress)
-	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime)
-	if success {
-		if latency > 0 {
-			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)
-			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime)
-		}
-		if syncBlock > providerData.SyncBlock {
-			// do not allow providers to go back
-			providerData.SyncBlock = syncBlock
-		}
-		providerData = po.updateProbeEntrySync(providerData, syncLag, uint64(po.allowedBlockLagForQosSync), halfTime)
-	}
-	po.providersStorage.Set(providerAddress, providerData, 1)
-	po.updateRelayTime(providerAddress)
-}
-
-func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
-	providerData := po.getProviderData(providerAddress)
-	halfTime := po.calculateHalfTime(providerAddress)
-	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime)
-	if success && latency > 0 {
-		// base latency for a probe is the world latency
-		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime)
-	}
-	po.providersStorage.Set(providerAddress, providerData, 1)
-}
-
-func (po *ProviderOptimizer) getProviderData(providerAddress string) ProviderData {
-	var providerData ProviderData
-
+func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerData ProviderData, found bool) {
 	storedVal, found := po.providersStorage.Get(providerAddress)
 	if found {
 		var ok bool
@@ -227,17 +294,17 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) ProviderDat
 		}
 	} else {
 		providerData = ProviderData{
-			Availability: score.NewScoreStore(1, 2, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score
-			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score (twice the time)
-			Sync:         score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of half score (twice the diff)
+			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
+			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
+			Sync:         score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
 			SyncBlock:    0,
 		}
 	}
-	return providerData
+	return providerData, found
 }
 
-func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync uint64, baseSync uint64, halfTime time.Duration) ProviderData {
-	newScore := score.NewScoreStore(float64(sync), float64(baseSync), time.Now())
+func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync time.Duration, baseSync time.Duration, halfTime time.Duration) ProviderData {
+	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), time.Now())
 	oldScore := providerData.Sync
 	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT)
 	return providerData
@@ -305,12 +372,12 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, allowedBlockLagForQosSync int64, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
+	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
-	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	relayCache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
@@ -318,41 +385,22 @@ func NewProviderOptimizer(strategy Strategy, allowedBlockLagForQosSync int64, av
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
-	return &ProviderOptimizer{strategy: strategy, providersStorage: cache, averageBlockTime: averageBlockTIme, allowedBlockLagForQosSync: allowedBlockLagForQosSync, baseWorldLatency: baseWorldLatency, providerRelayStats: relayCache, wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency}
+	return &ProviderOptimizer{strategy: strategy, providersStorage: cache, averageBlockTime: averageBlockTIme, baseWorldLatency: baseWorldLatency, providerRelayStats: relayCache, wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency}
 }
 
-func zScore(mean float64, variance float64, value float64) float64 {
-	stdDev := math.Sqrt(variance)
-	return (value - mean) / stdDev
-}
+// calculate the probability a random variable with a poisson distribution
+// poisson distribution calculates the probability of K events, in this case the probability enough blocks pass and the request will be accessible in the block
 
-// calculate the probability a random variable with a given average and variance with Z repetitions will be less than or equal to value
-func probValueAfterRepetitions(mean float64, variance float64, value float64, repetitions float64) float64 {
-	// TODO: do a poisson probability calculation instead of a repetition of a normal distribution with a given mean and variance
-	// Calculate the mean and variance of the sum of the random variables
-	sumMean := mean * repetitions
-	sumVariance := variance * repetitions
-
-	// Calculate the integer and fractional parts of the repetitions
-	intPart := math.Floor(repetitions)
-	fracPart := repetitions - intPart
-
-	// Calculate the mean and variance of the fractional part of the sum of the random variables
-	fracSumMean := mean * fracPart
-	fracSumVariance := variance * fracPart
-
-	// Calculate the z-score of the fractional part of the sum of the random variables
-	fracSumZ := zScore(fracSumMean, fracSumVariance, value)
-
-	// Calculate the z-score of the integer part of the sum of the random variables
-	intSumZ := zScore(sumMean, sumVariance, value)
-
-	// Calculate the probability using the cumulative distribution function of the standard normal distribution
-	prob := 1.0 - (1.0-math.Pow(0.5, intPart))*0.5*(1.0+math.Erf(intSumZ/math.Sqrt2)) - 0.5*(1.0+math.Erf(fracSumZ/math.Sqrt2))
-
-	return prob
+func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64) float64 {
+	// calculate cumulative probability of observing k events (having k or more events):
+	// GammaIncReg is the lower incomplete gamma function GammaIncReg(a,x) = (1/ Γ(a)) \int_0^x e^{-t} t^{a-1} dt
+	// the CPF for k events (less than equal k) is the regularized upper incomplete gamma function
+	// so to get the CPF we need to return 1 - prob
+	prob := mathext.GammaIncReg(float64(k_events+1), lambda)
+	return 1 - prob
 }
 
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
-	return orig + rand.NormFloat64()*percentage*orig
+	perturb := rand.NormFloat64() * percentage * orig
+	return orig + perturb
 }

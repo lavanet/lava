@@ -15,10 +15,10 @@ type EpochUpdatable interface {
 type EpochUpdater struct {
 	epochUpdatables []*EpochUpdatable
 	currentEpoch    uint64
-	stateQuery      *ProviderStateQuery
+	stateQuery      *EpochStateQuery
 }
 
-func NewEpochUpdater(stateQuery *ProviderStateQuery) *EpochUpdater {
+func NewEpochUpdater(stateQuery *EpochStateQuery) *EpochUpdater {
 	return &EpochUpdater{epochUpdatables: []*EpochUpdatable{}, stateQuery: stateQuery}
 }
 

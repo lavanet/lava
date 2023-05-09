@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/projects/types"
 )
@@ -44,30 +45,41 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
 	}
 
 	// check if the admin key is valid
 	if !project.IsAdminKey(adminKey) {
-		return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
 	}
 
 	for _, projectKey := range projectKeys {
 		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddProjectKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+			return utils.LavaError(ctx, ctx.Logger(), "AddKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
 		}
 	}
 
 	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
 }
 
-func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, cu uint64) (err error) {
-	project.UsedCu += cu
-	return k.projectsFS.ModifyEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, blockHeight uint64, cu uint64) (err error) {
+	blocks := k.projectsFS.GetEntryVersionsRange(ctx, project.Index, blockHeight, uint64(commontypes.STALE_ENTRY_TIME))
+
+	for _, block := range blocks {
+		var proj types.Project
+		k.projectsFS.ReadEntry(ctx, project.Index, block, &proj)
+		if proj.Snapshot != project.Snapshot {
+			break
+		}
+		proj.UsedCu += cu
+		k.projectsFS.ModifyEntry(ctx, project.Index, block, &proj)
+	}
+
+	return nil
 }
 
-func (k Keeper) SetPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {

@@ -724,7 +724,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -748,7 +748,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -927,7 +927,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -951,7 +951,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -975,7 +975,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "15",
+                        "compute_units": "20",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -999,7 +999,7 @@
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "15",
+                        "compute_units": "10",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -1071,7 +1071,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -1120,7 +1120,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -1144,7 +1144,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "1",
+                        "compute_units": "10",
                         "enabled": false,
                         "api_interfaces": [
                             {

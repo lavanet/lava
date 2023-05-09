@@ -26,21 +26,25 @@ var _ = strconv.Itoa(0)
 
 func CmdAccountInfo() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "account-info [lava_address] | --from wallet",
+		Use:   "account-info {[lava_address] | --from wallet}",
 		Short: "Query account information on an address",
 		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
 			var address string
 			if len(args) == 0 {
-				keyName, err := sigs.GetKeyName(clientCtx)
+				clientCtxForTx, err := client.GetClientTxContext(cmd)
+				if err != nil {
+					return err
+				}
+				keyName, err := sigs.GetKeyName(clientCtxForTx)
 				if err != nil {
 					utils.LavaFormatFatal("failed getting key name from clientCtx", err)
 				}
-				clientKey, err := clientCtx.Keyring.Key(keyName)
+				clientKey, err := clientCtxForTx.Keyring.Key(keyName)
 				if err != nil {
 					return err
 				}
@@ -52,7 +56,7 @@ func CmdAccountInfo() *cobra.Command {
 			ctx := context.Background()
 			allChains, err := specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
 			if err != nil {
-				return utils.LavaFormatError("could not get the list of all chains, in order to construct the transaction", err)
+				return utils.LavaFormatError("failed getting key name from clientCtx, either provide the address in an argument or verify the --from wallet exists", err)
 			}
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)

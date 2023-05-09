@@ -22,14 +22,19 @@ import (
 //
 // Once instantiated with NewFixationStore(), it offers the following methods:
 //    - AppendEntry(index, block, *entry): add a new "block" version of an entry "index".
-//    - ModifyEntry(index, block, *entry): modify existing entry with "index" and "block"
-//    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry
+//    - ModifyEntry(index, block, *entry): modify an existing entry with "index" and exact "block" (*)
+//    - ReadEntry(index, block, *entry): copy an existing entry with "index" and exact "block" (*)
+//    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry (**)
 //    - GetEntry(index, *entry): get a copy (and reference) of the latest version of an entry
-//    - PutEntry(index, block): drop a reference of a version of an entry
+//    - PutEntry(index, block): drop reference to an existing entry with "index" and exact "block" (*)
 //    - [TBD] RemoveEntry(index): mark an entry as unavailable for new GetEntry() calls
 //    - GetAllEntryIndices(): get all the entries indices (without versions)
 //    - GetAllEntryVersions(index): get all the versions of an entry (for testing)
+//    - GetEntryVersionsRange(index, block, delta): get range of entry versions (**)
 //    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
+// Note:
+//    - methods marked with (*) expect an exact existing method, or otherwise will panic
+//    - methods marked with (**) will match an entry with the nearest-smaller block version
 //
 // Entry names (index) must contain only visible ascii characters (ascii values 32-125).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
@@ -134,7 +139,8 @@ func (fs *FixationStore) AppendEntry(
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
 		if block == latestEntry.Block {
-			return fs.ModifyEntry(ctx, index, block, entryData)
+			fs.ModifyEntry(ctx, index, block, entryData)
+			return nil
 		}
 
 		fs.putEntry(ctx, latestEntry)
@@ -218,31 +224,27 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 	}
 }
 
-// ModifyEntry modifies an existing entry in the store
-func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) error {
+// ReadEntry returns and existing entry with index and specific block
+func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "ModifyEntry_invalid_index", details, "invalid non-ascii entry")
+		panic("ReadEntry invalid non-ascii entry: " + index)
 	}
 
-	// get the entry from the store
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
-	if !found {
-		details := map[string]string{
-			"fs.prefix": fs.prefix,
-			"index":     index,
-			"block":     strconv.FormatUint(block, 10),
-		}
-		return utils.LavaError(ctx, ctx.Logger(), "SetEntry_cant_find_entry", details, "entry does not exist")
+	entry := fs.getEntry(ctx, safeIndex, block)
+	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
+}
+
+// ModifyEntry modifies an existing entry in the store
+func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
+	safeIndex, err := types.SanitizeIndex(index)
+	if err != nil {
+		panic("ModifyEntry with non-ascii index: " + index)
 	}
 
-	// update entry data
-	marshaledEntryData := fs.cdc.MustMarshal(entryData)
-	entry.Data = marshaledEntryData
-
+	entry := fs.getEntry(ctx, safeIndex, block)
+	entry.Data = fs.cdc.MustMarshal(entryData)
 	fs.setEntry(ctx, entry)
-	return nil
 }
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
@@ -339,19 +341,10 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("PutEntry with non-ascii index: " + index)
+		panic("PutEntry invalid non-ascii entry: " + index)
 	}
 
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
-	if !found {
-		panic("PutEntry with unknown index: " + index)
-	}
-
-	if entry.Block != block {
-		panic("PutEntry with block mismatch index: " + index +
-			" got " + strconv.Itoa(int(entry.Block)) + " expected " + strconv.Itoa(int(block)))
-	}
-
+	entry := fs.getEntry(ctx, safeIndex, block)
 	fs.putEntry(ctx, entry)
 }
 

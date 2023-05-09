@@ -89,7 +89,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	if request.RelayData == nil || request.RelaySession == nil {
-		return nil, utils.LavaFormatError("invalid relay request, internal fields are nil", nil)
+		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay request",
@@ -325,7 +325,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		if request.RelaySession.Epoch > latestBlock {
 			errorMessage = "provider is behind user's block height"
 		}
-		return nil, nil, utils.LavaFormatError(errorMessage, nil,
+		return nil, nil, utils.LavaFormatWarning(errorMessage, lavasession.EpochMismatchError,
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
@@ -336,12 +336,12 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	// Check data
 	err = rpcps.verifyRelayRequestMetaData(ctx, request.RelaySession)
 	if err != nil {
-		return nil, nil, utils.LavaFormatError("did not pass relay validation", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return nil, nil, utils.LavaFormatWarning("did not pass relay validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	// check signature
 	extractedConsumerAddress, err = sigs.ExtractSignerAddress(request.RelaySession)
 	if err != nil {
-		return nil, nil, utils.LavaFormatError("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 
 	// handle non data reliability relays
@@ -631,6 +631,8 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 	}
 	if lavasession.SessionOutOfSyncError.Is(err) {
 		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
+	} else if lavasession.EpochMismatchError.Is(err) {
+		err = status.Error(codes.Code(lavasession.EpochMismatchError.ABCICode()), err.Error())
 	}
 	return err
 }

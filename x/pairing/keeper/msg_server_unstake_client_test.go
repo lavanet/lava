@@ -56,7 +56,6 @@ func TestUnstakeClient(t *testing.T) {
 
 				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 				require.Equal(t, amount, balance)
-
 			} else {
 				require.NotNil(t, err)
 			}

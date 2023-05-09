@@ -23,7 +23,7 @@ type testStruct struct {
 }
 
 func (ts *testStruct) advanceEpochUntilStale() {
-	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + int64(commontypes.STALE_ENTRY_TIME+1)
+	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + commontypes.STALE_ENTRY_TIME + 1
 	for block > sdk.UnwrapSDKContext(ts.ctx).BlockHeight() {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}

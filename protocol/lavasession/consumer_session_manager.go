@@ -40,23 +40,17 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
 }
 
-// Update the provider pairing list for the ConsumerSessionManager
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	ctx := context.Background()
 	pairingListLength := len(pairingList)
-	if csm.validAddressesLen() > MinValidAddressesForBlockingProbing {
-		// we have enough valid providers, probe before updating the pairing
-		time.Sleep(time.Duration(rand.Int63n(int64(BLOCKING_PROBE_SLEEP_TIME)))) // sleep in order to scatter different chains probe triggers
-		probeCtx, cancel := context.WithTimeout(ctx, BLOCKING_PROBE_TIMEOUT)     // limit probing block
-		csm.probeProviders(probeCtx, pairingList, epoch)                         // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are as long as it's blocking
-		cancel()
-	} else {
-		defer func() {
-			// run this after done updating pairing
-			time.Sleep(time.Duration(rand.Int63n(int64(BLOCKING_PROBE_SLEEP_TIME))))
-			go csm.probeProviders(context.Background(), pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
-		}()
-	}
+	// TODO: we can block updating until some of the probing is done, this can prevent failed attempts on epoch change when we have no information on the providers,
+	// and all of them are new (less effective on big pairing lists or a process that runs for a few epochs)
+	defer func() {
+		// run this after done updating pairing
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // sleep up to 500ms in order to scatter different chains probe triggers
+		ctx := context.Background()
+		go csm.probeProviders(ctx, pairingList, epoch) // probe providers to eliminate offline ones from affecting relays, pairingList is thread safe it's members are not (accessed through csm.pairing)
+	}()
 	csm.lock.Lock()         // start by locking the class lock.
 	defer csm.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
@@ -162,7 +156,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 	}
 	client := *endpoint.Client
-	probeResp, err := client.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
+	probeResp, err := client.Probe(connectCtx, &wrapperspb.UInt64Value{Value: guid})
 	relayLatency := time.Since(relaySentTime)
 	if err != nil {
 		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
@@ -251,7 +245,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
-				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, utils.Attribute{Key: "providerAddress", Value: providerAddress})
+				utils.LavaFormatWarning("Max Compute Units Exceeded For provider", err, utils.Attribute{Key: "providerAddress", Value: providerAddress})
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {

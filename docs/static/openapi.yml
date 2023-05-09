@@ -31448,6 +31448,10 @@ paths:
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
+                  snapshot:
+                    type: string
+                    format: uint64
+                    title: snapshot id to uniquely identify snapshots
         default:
           description: An unexpected error response.
           schema:
@@ -31586,6 +31590,10 @@ paths:
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
+                  snapshot:
+                    type: string
+                    format: uint64
+                    title: snapshot id to uniquely identify snapshots
         default:
           description: An unexpected error response.
           schema:
@@ -55953,9 +55961,9 @@ definitions:
         type: string
         format: uint64
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
-  lavanet.lava.projects.MsgAddProjectKeysResponse:
+  lavanet.lava.projects.MsgAddKeysResponse:
     type: object
-  lavanet.lava.projects.MsgSetAdminPolicyResponse:
+  lavanet.lava.projects.MsgSetPolicyResponse:
     type: object
   lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
     type: object
@@ -56059,6 +56067,10 @@ definitions:
             type: string
             format: uint64
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+      snapshot:
+        type: string
+        format: uint64
+        title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.ProjectKey:
     type: object
     properties:
@@ -56191,6 +56203,10 @@ definitions:
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
+          snapshot:
+            type: string
+            format: uint64
+            title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.QueryInfoResponse:
     type: object
     properties:
@@ -56295,6 +56311,10 @@ definitions:
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
+          snapshot:
+            type: string
+            format: uint64
+            title: snapshot id to uniquely identify snapshots
   lavanet.lava.projects.QueryParamsResponse:
     type: object
     properties:

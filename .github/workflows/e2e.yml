@@ -96,12 +96,12 @@ jobs:
 
     - name: JSON Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/04_jsonConsumer.log
+      run: grep "" testutil/e2e/logs/04_jsonConsumer* --exclude="*errors*"
 
     - name: JSON Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/04_jsonConsumer_errors.log
+      run: grep "" testutil/e2e/logs/04_jsonConsumer* --include="*errors*"
 
     - name: Lava Provider All Logs
       if: always()
@@ -123,11 +123,9 @@ jobs:
 
     - name: RPCConsumer Consumer All Logs
       if: always()
-      run: cat testutil/e2e/logs/06_RPCConsumer.log
+      run: grep "" testutil/e2e/logs/06_RPCConsumer* --exclude="*errors*"
 
     - name: RPCConsumer Consumer Error Only Logs
       if: always()
       continue-on-error: true
-      run: cat testutil/e2e/logs/06_RPCConsumer_errors.log
-
- 
+      run: grep "" testutil/e2e/logs/06_RPCConsumer* --include="*errors*"
