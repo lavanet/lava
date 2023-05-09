@@ -14,11 +14,11 @@ service Msg {
 }
 
 message MsgBuy {
+  reserved 5;
   string creator = 1;
   string consumer = 2;
   string index = 3;
   uint64 duration = 4; // in months
-  string vrfpk = 5;
 }
 
 message MsgBuyResponse {

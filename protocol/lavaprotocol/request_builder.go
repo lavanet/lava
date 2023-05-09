@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"strconv"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -13,10 +12,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-)
-
-const (
-	SupportedNumberOfVRFs = 2
 )
 
 type RelayRequestCommonData struct {
@@ -100,9 +95,8 @@ func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingty
 
 func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID string, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
 	relayRequest := &pairingtypes.RelayRequest{
-		RelayData:       relayRequestData,
-		RelaySession:    ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
-		DataReliability: nil,
+		RelayData:    relayRequestData,
+		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
 	}
 	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 	if err != nil {
@@ -131,46 +125,14 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, reliabilityThreshold uint32, originalProvidersCount uint32) (indexes map[int64]bool) {
-	// check for the VRF thresholds and if holds true send a relay to the provider
-	// TODO: improve with blocklisted address, and the module-1
-	indexes = make(map[int64]bool, len(vrfs))
-	for vrfIndex, vrf := range vrfs {
-		index, err := utils.GetIndexForVrf(vrf, originalProvidersCount, reliabilityThreshold)
-		if index == -1 || err != nil {
-			continue // no reliability this time.
-		}
-		if _, ok := indexes[index]; !ok {
-			indexes[index] = uniqueIdentifiers[vrfIndex]
-		}
-	}
-	return
-}
-
-func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
-	dataReliability := &pairingtypes.VRFData{
-		ChainId:        request.RelaySession.SpecId,
-		Epoch:          request.RelaySession.Epoch,
-		Differentiator: differentiator,
-		VrfValue:       vrf_res,
-		VrfProof:       vrf_proof,
-		ProviderSig:    reply.Sig,
-		AllDataHash:    sigs.AllDataHash(reply, request),
-		QueryHash:      utils.CalculateQueryHash(*request.RelayData),
-		Sig:            nil,
-	}
-	return dataReliability
-}
-
-func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte, relayNum uint64) (*pairingtypes.RelayRequest, error) {
+func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte, relayNum uint64) (*pairingtypes.RelayRequest, error) {
 	if relayRequestData.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
 			utils.Attribute{Key: "requested_common_data", Value: relayRequestData}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "chainID", Value: chainID})
 	}
 	relayRequest := &pairingtypes.RelayRequest{
-		RelayData:       relayRequestData,
-		RelaySession:    dataReliabilityRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, epoch, relayNum),
-		DataReliability: vrfData,
+		RelayData:    relayRequestData,
+		RelaySession: dataReliabilityRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, epoch, relayNum),
 	}
 	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
 	if err != nil {
@@ -178,46 +140,16 @@ func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID strin
 	}
 	relayRequest.RelaySession.Sig = sig
 
-	sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
-	if err != nil {
-		return nil, err
-	}
-	relayRequest.DataReliability.Sig = sig
 	return relayRequest, nil
 }
 
-func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResults []*RelayResult, totalNumberOfSessions int) (conflict bool, conflicts []*conflicttypes.ResponseConflict) {
-	verificationsLength := len(dataReliabilityResults)
-	participatingProviders := make([]utils.Attribute, verificationsLength+1) // only used for logging
-	participatingProviders = append(participatingProviders, utils.Attribute{Key: "originalAddress", Value: originalResult.ProviderAddress})
-	for idx, dataReliabilityResult := range dataReliabilityResults {
-		add := dataReliabilityResult.ProviderAddress
-		participatingProviders = append(participatingProviders, utils.Attribute{Key: "address" + strconv.Itoa(idx), Value: add})
-		conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
-		if conflict_now {
-			conflicts = []*conflicttypes.ResponseConflict{detectionMessage}
-			conflict = true
-		}
+func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResult *RelayResult) (conflicts *conflicttypes.ResponseConflict) {
+	conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
+	if conflict_now {
+		utils.LavaFormatInfo("Reliability verified successfully!")
+		return detectionMessage
 	}
-	if conflict {
-		// CompareRelaysAndReportConflict to each one of the data reliability relays to confirm that the first relay was'nt ok
-		for idx1 := 0; idx1 < verificationsLength; idx1++ {
-			for idx2 := (idx1 + 1); idx2 < verificationsLength; idx2++ {
-				conflict_responses, moreDetectionMessages := compareRelaysFindConflict(dataReliabilityResults[idx1], dataReliabilityResults[idx2])
-				if conflict_responses {
-					conflicts = append(conflicts, moreDetectionMessages)
-				}
-			}
-		}
-	}
-
-	if !conflict && totalNumberOfSessions == verificationsLength { // if no conflict was detected data reliability was successful
-		// all reliability sessions succeeded
-		utils.LavaFormatInfo("Reliability verified successfully!", participatingProviders...)
-	} else {
-		utils.LavaFormatInfo("Data is not Reliability verified!", participatingProviders...)
-	}
-	return conflict, conflicts
+	return nil
 }
 
 func compareRelaysFindConflict(result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {

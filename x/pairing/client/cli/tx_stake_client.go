@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -36,20 +35,11 @@ func CmdStakeClient() *cobra.Command {
 				return err
 			}
 
-			_, vrfpk, err := utils.GetOrCreateVRFKey(clientCtx)
-			if err != nil {
-				return err
-			}
-			vrfpkStr, err := vrfpk.EncodeBech32()
-			if err != nil {
-				return err
-			}
 			msg := types.NewMsgStakeClient(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
 				argAmount,
 				argGeolocation,
-				vrfpkStr,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

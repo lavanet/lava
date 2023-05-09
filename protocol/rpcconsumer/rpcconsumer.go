@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -49,7 +48,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache) (err error) {
 	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -141,7 +140,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -283,10 +282,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
-			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
-			if err != nil {
-				utils.LavaFormatFatal("failed getting or creating a VRF key", err)
-			}
+
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
@@ -299,7 +295,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache)
 			return err
 		},
 	}
