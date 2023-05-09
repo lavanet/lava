@@ -55961,9 +55961,9 @@ definitions:
         type: string
         format: uint64
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
-  lavanet.lava.projects.MsgAddProjectKeysResponse:
+  lavanet.lava.projects.MsgAddKeysResponse:
     type: object
-  lavanet.lava.projects.MsgSetAdminPolicyResponse:
+  lavanet.lava.projects.MsgSetPolicyResponse:
     type: object
   lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
     type: object
