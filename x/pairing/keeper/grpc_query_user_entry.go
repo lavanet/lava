@@ -31,7 +31,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	}
 
 	// support legacy
-	project, err := k.GetProjectData(ctx, userAddr, req.ChainID, epochStart)
+	project, vrfpk_proj, err := k.GetProjectData(ctx, userAddr, req.ChainID, epochStart)
 	if err == nil {
 		plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 		if err != nil {
@@ -57,6 +57,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 			Geolocation: geolocation,
 			Address:     req.Address,
 			Chain:       req.ChainID,
+			Vrfpk:       vrfpk_proj,
 		}, MaxCU: allowedCU}, nil
 	}
 

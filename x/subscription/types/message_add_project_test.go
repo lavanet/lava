@@ -25,6 +25,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   "invalid address",
 						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Vrfpk: "",
 					}},
 				},
 			},
@@ -39,6 +40,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   sample.AccAddress(),
 						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Vrfpk: "",
 					}},
 				},
 			},

@@ -47,11 +47,11 @@ type ProviderStateTrackerInf interface {
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 	LatestBlock() int64
-	GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (maxCu uint64, err error)
+	GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error)
 	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 	GetEpochSize(ctx context.Context) (uint64, error)

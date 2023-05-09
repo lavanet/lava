@@ -24,7 +24,7 @@ type ConsumerSessionManager struct {
 	currentEpoch   uint64
 	numberOfResets uint64
 	// pairingAddresses for Data reliability
-	pairingAddresses       map[uint64]string // contains all addresses from the initial pairing. and the keys are the indexes
+	pairingAddresses       map[uint64]string // contains all addresses from the initial pairing. and the keys are the vrf indexes
 	pairingAddressesLength uint64
 
 	validAddresses        []string            // contains all addresses that are currently valid
