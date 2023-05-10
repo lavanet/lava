@@ -37,6 +37,17 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
 
+	addressEpochBadgeMap := map[string]types.Badge{}
+	for _, relay := range msg.Relays {
+		if relay.Badge != nil {
+			mapKey := relay.Badge.Address + "_" + strconv.FormatUint(relay.Badge.Epoch, 10)
+			_, ok := addressEpochBadgeMap[mapKey]
+			if !ok {
+				addressEpochBadgeMap[mapKey] = *relay.Badge
+			}
+		}
+	}
+
 	for relayIdx, relay := range msg.Relays {
 		if relay.LavaChainId != lavaChainID {
 			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
@@ -50,24 +61,24 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
 
-		// if badge is not nil, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
-		if relay.Badge != nil {
-			if !relay.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch), relay.CuSum) {
+		addressEpochBadgeMapKey := clientAddr.String() + "_" + strconv.FormatUint(uint64(relay.Epoch), 10)
+		badge, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
+		if ok {
+			if !badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
 				details := map[string]string{
-					"badgeAddress":      relay.Badge.Address,
-					"badgeLavaChainId":  relay.Badge.LavaChainId,
-					"badgeEpoch":        strconv.FormatUint(relay.Badge.Epoch, 10),
-					"badgeCuAllocation": strconv.FormatUint(relay.Badge.CuAllocation, 10),
-					"relayAddress":      clientAddr.String(),
-					"relayLavaChainId":  relay.LavaChainId,
-					"relayEpoch":        strconv.FormatUint(uint64(relay.Epoch), 10),
-					"relayCuSum":        strconv.FormatUint(relay.CuSum, 10),
+					"badgeAddress":     badge.Address,
+					"badgeLavaChainId": badge.LavaChainId,
+					"badgeEpoch":       strconv.FormatUint(badge.Epoch, 10),
+					"relayAddress":     clientAddr.String(),
+					"relayLavaChainId": relay.LavaChainId,
+					"relayEpoch":       strconv.FormatUint(uint64(relay.Epoch), 10),
 				}
 				return errorLogAndFormat("relay_payment_badge", details, "invalid badge - must match traits in relay request")
 			}
 
 			// badge is valid -> extract address of badge granter (developer key) and continue with payment
-			clientAddr, err = sigs.ExtractSignerAddressFromBadge(*relay.Badge)
+			clientAddr, err = sigs.ExtractSignerAddressFromBadge(badge)
 			if err != nil {
 				details := map[string]string{
 					"Error": err.Error(),

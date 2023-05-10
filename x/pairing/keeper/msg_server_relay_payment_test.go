@@ -1174,47 +1174,54 @@ func payAndVerifyBalanceLegacy(t *testing.T, ts *testStruct, relayPaymentMessage
 
 // Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
 func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, validConsumer bool, validPayment bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
-	for _, relay := range relayPaymentMessage.Relays {
-		// Get provider's stake and consumer's project before payment
-		balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
-		proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), clientAddress.String(), uint64(relay.Epoch))
-		if !validConsumer {
-			require.NotNil(t, err)
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
-			require.NotNil(t, err)
-			continue
-		}
-		// valid consumer
-		require.Nil(t, err)
-		originalProjectUsedCu := proj.UsedCu
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
-		sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
-		require.True(t, found)
-		originalSubCuLeft := sub.MonthCuLeft
-
-		// perform payment
+	// Get provider's stake and consumer's project before payment
+	balance := ts.keepers.BankKeeper.GetBalance(_ctx, providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
+	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, clientAddress.String(), uint64(_ctx.BlockHeight()))
+	originalProjectUsedCu := proj.UsedCu
+	if !validConsumer {
+		require.NotNil(t, err)
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
-		if validPayment {
-			require.Nil(t, err)
-			// payment is valid, provider's balance should increase
-			mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-			want := mint.MulInt64(int64(relay.CuSum)) // The compensation for a single query
-			require.Equal(t, balance+want.TruncateInt64(),
-				ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
-
-			// payment is valid, consumer's project used cu increased and the subscription cu left decreased
-			proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(sdk.UnwrapSDKContext(ts.ctx), clientAddress.String(), uint64(relay.Epoch))
-			require.Nil(t, err)
-			require.Equal(t, originalProjectUsedCu+relay.CuSum, proj.UsedCu)
-
-			sub, found = ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
-			require.True(t, found)
-			require.Equal(t, originalSubCuLeft-relay.CuSum, sub.MonthCuLeft)
-		} else {
-			// payment is not valid, should result in an error
-			require.NotNil(t, err)
-		}
+		require.NotNil(t, err)
+		return
 	}
+	// valid consumer
+	require.Nil(t, err)
+
+	sub, found := ts.keepers.Subscription.GetSubscription(sdk.UnwrapSDKContext(ts.ctx), proj.Subscription)
+	require.True(t, found)
+	originalSubCuLeft := sub.MonthCuLeft
+
+	// perform payment
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
+	if !validPayment {
+		require.NotNil(t, err)
+		return
+	}
+	// valid payment
+	require.Nil(t, err)
+
+	// calculate total used CU
+	var totalCuUsed uint64
+	for _, relay := range relayPaymentMessage.Relays {
+		totalCuUsed += relay.CuSum
+	}
+
+	// verify provider's balance
+	mint := ts.keepers.Pairing.MintCoinsPerCU(_ctx)
+	want := mint.MulInt64(int64(totalCuUsed))
+	require.Equal(t, balance+want.TruncateInt64(),
+		ts.keepers.BankKeeper.GetBalance(_ctx, providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
+
+	// verify each project balance (project used cu should increase and its corresponding subscription cu left should decrease)
+	proj, _, err = ts.keepers.Projects.GetProjectForDeveloper(_ctx, clientAddress.String(), uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+	require.Equal(t, originalProjectUsedCu+totalCuUsed, proj.UsedCu)
+
+	sub, found = ts.keepers.Subscription.GetSubscription(_ctx, proj.Subscription)
+	require.True(t, found)
+	require.Equal(t, originalSubCuLeft-totalCuUsed, sub.MonthCuLeft)
 }
 
 func TestEpochPaymentDeletion(t *testing.T) {
@@ -1346,7 +1353,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.NotEqual(t, sub.MonthCuTotal-sub.MonthCuLeft, proj2.UsedCu)
 }
 
-func TestBadge(t *testing.T) {
+func TestBadgeValidation(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	subkeeper := ts.keepers.Subscription
 
@@ -1426,4 +1433,44 @@ func TestBadge(t *testing.T) {
 			payAndVerifyBalance(t, ts, relayPaymentMessage, validConsumer, tt.valid, tt.badgeSigner.Addr, ts.providers[0].Addr)
 		})
 	}
+}
+
+func TestAddressEpochBadgeMap(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	subkeeper := ts.keepers.Subscription
+
+	// apply pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectDeveloper := *ts.clients[0]
+	badgeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 100000)
+
+	err := subkeeper.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String(), projectDeveloper.Addr.String(), ts.plan.Index, 1, "")
+	require.Nil(t, err)
+
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	badge := types.CreateBadge(10, currentEpoch, badgeUser.Addr, "", []byte{})
+	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
+
+	// create 5 identical relays. Assign the badge only to the first one
+	var relays []*types.RelaySession
+	for i := 0; i < 5; i++ {
+		QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), 1, ts.spec.Name, QoS)
+		if i == 0 {
+			relaySession.Badge = badge
+		}
+
+		// change session ID to avoid double spending
+		relaySession.SessionId += uint64(i)
+		relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
+		require.Nil(t, err)
+
+		relays = append(relays, relaySession)
+	}
+	relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: relays}
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true, true, projectDeveloper.Addr, ts.providers[0].Addr)
 }
