@@ -58,7 +58,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.SpecId}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, _, allowedCU, _, legacy, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, servicersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			clientAddr,
@@ -161,6 +161,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["clientFee"] = burnAmount.String()
 		}
 
+		details["reliabilityPay"] = "false"
 		details["Mint"] = details["BasePay"]
 
 		// Mint to module
@@ -192,12 +193,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_failed", details, "")
 			}
-		}
-
-		// Get servicersToPair param
-		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
-		if err != nil {
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochStart)}, "couldn't get servicers to pair")
 		}
 
 		// update provider payment storage with complainer's CU

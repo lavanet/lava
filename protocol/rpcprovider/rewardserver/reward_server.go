@@ -91,26 +91,6 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 	return 0, true
 }
 
-func (rws *RewardServer) SendNewDataReliabilityProof(ctx context.Context, epoch uint64, consumerAddr string, specId string, apiInterface string) (updatedWithProof bool) {
-	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
-	defer rws.lock.Unlock()
-	consumerRewardsKey := getKeyForConsumerRewards(specId, apiInterface, consumerAddr)
-	epochRewards, ok := rws.rewards[epoch]
-	if !ok {
-		consumerRewardsMap := map[string]*ConsumerRewards{(consumerRewardsKey): {epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelaySession{}}}
-		rws.rewards[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewardsMap}
-		return true
-	}
-	_, ok = epochRewards.consumerRewards[consumerRewardsKey]
-	if !ok {
-		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: map[uint64]*pairingtypes.RelaySession{}}
-		epochRewards.consumerRewards[consumerRewardsKey] = consumerRewards
-		return true
-	}
-
-	return false // currently support only one per epoch
-}
-
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 	ctx := context.Background()
 	_ = rws.sendRewardsClaim(ctx, epoch)

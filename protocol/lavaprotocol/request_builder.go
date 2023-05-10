@@ -125,30 +125,12 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func ConstructDataReliabilityRelayRequest(ctx context.Context, lavaChainID string, privKey *btcec.PrivateKey, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, epoch int64, reportedProviders []byte, relayNum uint64) (*pairingtypes.RelayRequest, error) {
-	if relayRequestData.RequestBlock < 0 {
-		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
-			utils.Attribute{Key: "requested_common_data", Value: relayRequestData}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "chainID", Value: chainID})
-	}
-	relayRequest := &pairingtypes.RelayRequest{
-		RelayData:    relayRequestData,
-		RelaySession: dataReliabilityRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, epoch, relayNum),
-	}
-	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
-	if err != nil {
-		return nil, err
-	}
-	relayRequest.RelaySession.Sig = sig
-
-	return relayRequest, nil
-}
-
 func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResult *RelayResult) (conflicts *conflicttypes.ResponseConflict) {
 	conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
 	if conflict_now {
-		utils.LavaFormatInfo("Reliability verified successfully!")
 		return detectionMessage
 	}
+	utils.LavaFormatInfo("Reliability verified successfully!")
 	return nil
 }
 

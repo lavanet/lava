@@ -49,16 +49,6 @@ func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func SignVRFData(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
-	// Sign
-	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
-	if err != nil {
-		return nil, err
-	}
-
-	return sig, nil
-}
-
 func prepareRelaySessionForSignature(request *pairingtypes.RelaySession) {
 	request.Badge = nil // its not a part of the signature, its a separate part
 	request.Sig = []byte{}

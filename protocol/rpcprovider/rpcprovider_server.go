@@ -46,7 +46,6 @@ type ReliabilityManagerInf interface {
 
 type RewardServerInf interface {
 	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool)
-	SendNewDataReliabilityProof(ctx context.Context, epoch uint64, consumerAddr string, specId string, apiInterface string) (updatedWithProof bool)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
 }
@@ -54,7 +53,7 @@ type RewardServerInf interface {
 type StateTrackerInf interface {
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (maxCu uint64, err error)
-	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error)
+	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
 	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 }
 
@@ -335,7 +334,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
-			valid, selfProviderIndex, pairedProviders, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
+			valid, pairedProviders, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
 				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError,
 					utils.Attribute{Key: "GUID", Value: ctx},
@@ -367,7 +366,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				)
 			}
 			// After validating the consumer we can register it with provider session manager.
-			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex, pairedProviders)
+			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, pairedProviders)
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err,
 					utils.Attribute{Key: "GUID", Value: ctx},

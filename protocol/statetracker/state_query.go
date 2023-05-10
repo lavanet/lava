@@ -234,7 +234,7 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 	return votes, err
 }
 
-func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error) {
+func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
 	extractedResultFromCache := false
 	cachedInterface, found := psq.ResponsesCache.Get(VerifyPairingRespKey + key)
@@ -255,14 +255,14 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 			Block:    epoch,
 		})
 		if err != nil {
-			return false, 0, 0, err
+			return false, 0, err
 		}
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
 	}
-	return verifyResponse.Valid, verifyResponse.GetIndex(), int64(verifyResponse.GetPairedProviders()), nil
+	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), nil
 }
 
 func (psq *ProviderStateQuery) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {

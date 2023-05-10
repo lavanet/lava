@@ -15,8 +15,6 @@ import (
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-const INVALID_INDEX = -2
-
 func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error) {
 	logger := k.Logger(ctx)
 	// TODO: add support for spec changes
@@ -221,29 +219,29 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*proj
 	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, foundIndex int, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, epoch)
 	if err != nil {
-		return false, INVALID_INDEX, allowedCU, 0, legacyStake, err
+		return false, allowedCU, 0, legacyStake, err
 	}
 
 	validAddresses, allowedCU, legacyStake, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
 	if err != nil {
-		return false, INVALID_INDEX, allowedCU, 0, legacyStake, err
+		return false, allowedCU, 0, legacyStake, err
 	}
 
-	for idx, possibleAddr := range validAddresses {
+	for _, possibleAddr := range validAddresses {
 		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Address)
 		if err != nil {
 			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAccAddr, err))
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
-			return true, idx, allowedCU, uint64(len(validAddresses)), legacyStake, nil
+			return true, allowedCU, uint64(len(validAddresses)), legacyStake, nil
 		}
 	}
 
-	return false, INVALID_INDEX, allowedCU, 0, legacyStake, nil
+	return false, allowedCU, 0, legacyStake, nil
 }
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {

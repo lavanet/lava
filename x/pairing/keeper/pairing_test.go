@@ -79,7 +79,6 @@ func TestPairingUniqueness(t *testing.T) {
 
 	// test that get pairing gives the same results for the whole epoch
 	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	foundIndexMap := map[string]int{}
 	for i := uint64(0); i < epochBlocks-1; i++ {
 		ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
@@ -88,16 +87,10 @@ func TestPairingUniqueness(t *testing.T) {
 
 		for i := range providers1 {
 			require.Equal(t, providers11[i].Address, providers111[i].Address)
-
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, foundIndex, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
-			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
-				foundIndexMap[providers11[i].Address] = foundIndex
-			} else {
-				require.Equal(t, foundIndexMap[providers11[i].Address], foundIndex)
-			}
 		}
 	}
 }
@@ -131,12 +124,11 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	require.Nil(t, err)
 	verifyPairingOncurrentBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 	testAllProviders := func() {
-		for idx, provider := range pairedProviders {
+		for _, provider := range pairedProviders {
 			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
 			require.Nil(t, err)
-			valid, foundIndex, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			valid, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
 			require.Nil(t, errPairing)
-			require.Equal(t, idx, foundIndex, "Failed ValidatePairingForClient", provider, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
 		}
 	}

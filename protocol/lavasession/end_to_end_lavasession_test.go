@@ -50,7 +50,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Client.PairingEpoch, uint64(cs.SessionId), cs.RelayNum, cs.Client.MaxComputeUnits, selfProviderIndex, pairedProviders)
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Client.PairingEpoch, uint64(cs.SessionId), cs.RelayNum, cs.Client.MaxComputeUnits, pairedProviders)
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
 	require.Nil(t, err)
@@ -61,7 +61,6 @@ func TestHappyFlowE2E(t *testing.T) {
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
-	require.Equal(t, sps.userSessionsParent.atomicReadProviderIndex(), selfProviderIndex)
 	require.Equal(t, cs.LatestRelayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, cs.LatestRelayCu)
 	require.Equal(t, sps.SessionID, uint64(cs.SessionId))
