@@ -249,19 +249,24 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			// handle flags, pass necessary fields
 			ctx := context.Background()
 			var networkChainId string
-			cmdChainIdFlag, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
-			}
+			cmdChainIdFlag := viper.GetString(flags.FlagChainID)
 			clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
 			if err != nil {
 				return err
 			}
-			if clientTomlConfig.ChainID != "" {
-				networkChainId = clientTomlConfig.ChainID
-			} else {
+			if cmdChainIdFlag != app.Name {
 				networkChainId = cmdChainIdFlag
+			} else {
+				if clientTomlConfig.ChainID != "" {
+					networkChainId = clientTomlConfig.ChainID
+				} else {
+					networkChainId = app.Name
+				}
 			}
+			if networkChainId != app.Name {
+				utils.LavaFormatInfo("ChainID is different from " + app.Name)
+			}
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
