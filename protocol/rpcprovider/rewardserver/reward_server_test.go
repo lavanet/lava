@@ -15,7 +15,6 @@ import (
 
 func stubPaymentEvents(num int) (tos []map[string]string) {
 	generateOne := func(uniqueIdentifier uint64) (to map[string]string) {
-
 		// stub data
 		relay := pairingtypes.RelaySession{
 			SpecId:      "stub-spec",
@@ -61,7 +60,7 @@ func stubPaymentEvents(num int) (tos []map[string]string) {
 		generateOne(uint64(idx))
 		tos = append(tos, generateOne(uint64(idx)))
 	}
-	return
+	return tos
 }
 
 func TestPayments(t *testing.T) {
