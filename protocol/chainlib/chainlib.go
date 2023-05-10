@@ -14,12 +14,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	TimePerCU                      = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay       = time.Second
-	DataReliabilityTimeoutIncrease = 5 * time.Second
-)
-
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -100,8 +94,4 @@ func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavase
 		return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
-}
-
-func LocalNodeTimePerCu(cu uint64) time.Duration {
-	return time.Duration(cu*TimePerCU) + lavasession.AverageWorldLatency // TODO: remove average world latency once our providers run locally, or allow a flag that says local to make it tight, tighter timeouts are better
 }

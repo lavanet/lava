@@ -139,7 +139,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 			providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
-
 			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
@@ -183,6 +182,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				disabledEndpoints <- rpcProviderEndpoint
 				return err
 			}
+
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 

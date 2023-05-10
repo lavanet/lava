@@ -5,27 +5,27 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const TypeMsgAddProjectKeys = "add_project_keys"
+const TypeMsgAddKeys = "add_keys"
 
-var _ sdk.Msg = &MsgAddProjectKeys{}
+var _ sdk.Msg = &MsgAddKeys{}
 
-func NewMsgAddProjectKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgAddProjectKeys {
-	return &MsgAddProjectKeys{
+func NewMsgAddKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgAddKeys {
+	return &MsgAddKeys{
 		Creator:     creator,
 		Project:     projectID,
 		ProjectKeys: projectKeys,
 	}
 }
 
-func (msg *MsgAddProjectKeys) Route() string {
+func (msg *MsgAddKeys) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgAddProjectKeys) Type() string {
-	return TypeMsgAddProjectKeys
+func (msg *MsgAddKeys) Type() string {
+	return TypeMsgAddKeys
 }
 
-func (msg *MsgAddProjectKeys) GetSigners() []sdk.AccAddress {
+func (msg *MsgAddKeys) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -33,12 +33,12 @@ func (msg *MsgAddProjectKeys) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgAddProjectKeys) GetSignBytes() []byte {
+func (msg *MsgAddKeys) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgAddProjectKeys) ValidateBasic() error {
+func (msg *MsgAddKeys) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)

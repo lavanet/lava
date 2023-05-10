@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -37,7 +38,8 @@ const (
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_QOS))
+	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 3))
 }
 
 func createGRPCServer(t *testing.T) *grpc.Server {

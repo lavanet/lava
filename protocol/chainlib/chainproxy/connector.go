@@ -151,8 +151,7 @@ func (connector *Connector) Close() {
 }
 
 func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
-	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients},
-		utils.Attribute{Key: "url", Value: connector.nodeUrl.Url})
+	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients}, utils.Attribute{Key: "url", Value: connector.nodeUrl.Url})
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
