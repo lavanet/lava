@@ -318,12 +318,25 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
-	attributesList := []map[string]string{}
+	type mapCont struct {
+		attributes map[string]string
+		index      int
+	}
+	attributesList := []*mapCont{}
 	appendToAttributeList := func(idx int, key string, value string) {
-		for len(attributesList) <= idx {
-			attributesList = append(attributesList, map[string]string{})
+		var mapContToChange *mapCont
+		for _, mapCont := range attributesList {
+			if mapCont.index != idx {
+				continue
+			}
+			mapContToChange = mapCont
+			break
 		}
-		attributesList[idx][key] = value
+		if mapContToChange == nil {
+			mapContToChange = &mapCont{attributes: map[string]string{}, index: idx}
+			attributesList = append(attributesList, mapContToChange)
+		}
+		mapContToChange.attributes[key] = value
 	}
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
@@ -342,10 +355,15 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		appendToAttributeList(index, attrKey, string(attribute.Value))
 	}
 	payments := []*PaymentRequest{}
-	for idx, attributes := range attributesList {
+	for idx, mapCont := range attributesList {
+		attributes := mapCont.attributes
 		chainID, ok := attributes["chainID"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: attributesList})
+			errStringAllAttrs := ""
+			for _, mapCont := range attributesList {
+				errStringAllAttrs += fmt.Sprintf("%#v,", *mapCont)
+			}
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs})
 		}
 		mint, ok := attributes["Mint"]
 		if !ok {
