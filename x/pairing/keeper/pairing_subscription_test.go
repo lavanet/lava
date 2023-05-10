@@ -253,7 +253,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 				MaxProvidersToPair: 2,
 			}
 
-			_, err = ts.servers.ProjectServer.SetAdminPolicy(ts.ctx, &projectstypes.MsgSetAdminPolicy{
+			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
 				Creator: ts.clients[0].Addr.String(),
 				Project: proj.Index,
 				Policy:  *adminPolicy,
@@ -336,7 +336,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 				MaxProvidersToPair: tt.providersToPairSubPolicy,
 			}
 
-			_, err = ts.servers.ProjectServer.SetAdminPolicy(ts.ctx, &projectstypes.MsgSetAdminPolicy{
+			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
 				Creator: ts.clients[0].Addr.String(),
 				Project: proj.Index,
 				Policy:  *adminPolicy,
@@ -469,7 +469,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				MaxProvidersToPair: 2,
 			}
 
-			_, err = ts.servers.ProjectServer.SetAdminPolicy(ts.ctx, &projectstypes.MsgSetAdminPolicy{
+			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
 				Creator: consumer.Addr.String(),
 				Project: proj.Index,
 				Policy:  *adminPolicy,
@@ -652,7 +652,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
-	err = ts.keepers.Projects.SetPolicy(_ctx, []string{proj.Index}, &adminPolicy,
+	err = ts.keepers.Projects.SetProjectPolicy(_ctx, []string{proj.Index}, &adminPolicy,
 		ts.clients[1].Addr.String(), projectstypes.SET_ADMIN_POLICY)
 	require.Nil(t, err)
 
