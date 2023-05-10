@@ -248,8 +248,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			//
 			var networkChainId string
+			cmdChainIdFlag, err := cmd.Flags().GetString(flags.FlagChainID)
+			if err != nil {
+				return err
+			}
 			clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
 			if err != nil {
 				return err
@@ -257,9 +260,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if clientTomlConfig.ChainID != "" {
 				networkChainId = clientTomlConfig.ChainID
 			} else {
-				networkChainId = app.Name
+				networkChainId = cmdChainIdFlag
 			}
-			cmd.Flags().String(flags.FlagChainID, networkChainId, "network chain id")
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
@@ -316,6 +318,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
