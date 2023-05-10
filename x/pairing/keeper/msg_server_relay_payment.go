@@ -40,10 +40,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	addressEpochBadgeMap := map[string]types.Badge{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
-			mapKey := relay.Badge.Address + "_" + strconv.FormatUint(relay.Badge.Epoch, 10)
+			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
 			_, ok := addressEpochBadgeMap[mapKey]
 			if !ok {
 				addressEpochBadgeMap[mapKey] = *relay.Badge
+			} else {
+				return nil, utils.LavaFormatError("address already exist in addressEpochBadgeMap", nil,
+					utils.Attribute{Key: "address", Value: relay.Badge.Address},
+					utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
+				)
 			}
 		}
 	}
@@ -61,7 +66,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
 
-		addressEpochBadgeMapKey := clientAddr.String() + "_" + strconv.FormatUint(uint64(relay.Epoch), 10)
+		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
 		badge, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if ok {

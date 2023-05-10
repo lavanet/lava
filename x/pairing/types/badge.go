@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -14,6 +16,10 @@ func CreateBadge(cuAllocation uint64, epoch uint64, address sdk.AccAddress, lava
 	}
 
 	return &badge
+}
+
+func CreateAddressEpochBadgeMapKey(address string, epoch uint64) string {
+	return address + "_" + strconv.FormatUint(epoch, 10)
 }
 
 // check badge's basic attributes compared to the same traits from the relay request
