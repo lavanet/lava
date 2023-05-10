@@ -14,6 +14,11 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
+type BadgeData struct {
+	Badge       types.Badge
+	BadgeSigner sdk.AccAddress
+}
+
 const (
 	maxComplaintsPerEpoch                     = 3
 	collectPaymentsFromNumberOfPreviousEpochs = 2
@@ -37,7 +42,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
 
-	addressEpochBadgeMap := map[string]types.BadgeData{}
+	addressEpochBadgeMap := map[string]BadgeData{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
 			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
@@ -50,7 +55,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 						utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
 					)
 				}
-				badgeData := types.BadgeData{
+				badgeData := BadgeData{
 					Badge:       *relay.Badge,
 					BadgeSigner: badgeSigner,
 				}

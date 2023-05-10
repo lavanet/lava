@@ -6,11 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type BadgeData struct {
-	Badge       Badge
-	BadgeSigner sdk.AccAddress
-}
-
 func CreateBadge(cuAllocation uint64, epoch uint64, address sdk.AccAddress, lavaChainID string, sig []byte) *Badge {
 	badge := Badge{
 		CuAllocation: cuAllocation,
