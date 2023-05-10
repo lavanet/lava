@@ -2,6 +2,7 @@ package rewardserver
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -24,6 +25,11 @@ type PaymentRequest struct {
 	UniqueIdentifier    uint64
 	Description         string
 	ChainID             string
+}
+
+func (pr *PaymentRequest) String() string {
+	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s",
+		pr.CU, pr.BlockHeightDeadline, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID)
 }
 
 type ConsumerRewards struct {

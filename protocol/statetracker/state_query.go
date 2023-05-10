@@ -184,7 +184,7 @@ func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock in
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+				utils.LavaFormatDebug("identified relay_payment_event", utils.Attribute{Key: "payments_len", Value: len(payments)})
 				payments = append(payments, paymentList...)
 			}
 		}
