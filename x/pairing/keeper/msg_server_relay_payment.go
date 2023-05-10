@@ -37,13 +37,24 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
 
-	addressEpochBadgeMap := map[string]types.Badge{}
+	addressEpochBadgeMap := map[string]types.BadgeData{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
 			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
 			_, ok := addressEpochBadgeMap[mapKey]
 			if !ok {
-				addressEpochBadgeMap[mapKey] = *relay.Badge
+				badgeSigner, err := sigs.ExtractSignerAddressFromBadge(*relay.Badge)
+				if err != nil {
+					return nil, utils.LavaFormatError("can't extract badge's signer from badge's project signature", err,
+						utils.Attribute{Key: "badgeUserAddress", Value: relay.Badge.Address},
+						utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
+					)
+				}
+				badgeData := types.BadgeData{
+					Badge:       *relay.Badge,
+					BadgeSigner: badgeSigner,
+				}
+				addressEpochBadgeMap[mapKey] = badgeData
 			} else {
 				return nil, utils.LavaFormatError("address already exist in addressEpochBadgeMap", nil,
 					utils.Attribute{Key: "address", Value: relay.Badge.Address},
@@ -67,14 +78,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
-		badge, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if ok {
-			if !badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
+			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
 				details := map[string]string{
-					"badgeAddress":     badge.Address,
-					"badgeLavaChainId": badge.LavaChainId,
-					"badgeEpoch":       strconv.FormatUint(badge.Epoch, 10),
+					"badgeAddress":     badgeData.Badge.Address,
+					"badgeLavaChainId": badgeData.Badge.LavaChainId,
+					"badgeEpoch":       strconv.FormatUint(badgeData.Badge.Epoch, 10),
 					"relayAddress":     clientAddr.String(),
 					"relayLavaChainId": relay.LavaChainId,
 					"relayEpoch":       strconv.FormatUint(uint64(relay.Epoch), 10),
@@ -82,14 +93,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_payment_badge", details, "invalid badge - must match traits in relay request")
 			}
 
-			// badge is valid -> extract address of badge granter (developer key) and continue with payment
-			clientAddr, err = sigs.ExtractSignerAddressFromBadge(badge)
-			if err != nil {
-				details := map[string]string{
-					"Error": err.Error(),
-				}
-				return errorLogAndFormat("relay_payment_badge", details, "could not extract badge signer")
-			}
+			// badge is valid -> switch address to badge signer (developer key) and continue with payment
+			clientAddr = badgeData.BadgeSigner
 		}
 
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
