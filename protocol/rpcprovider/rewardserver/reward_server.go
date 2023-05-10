@@ -342,14 +342,14 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		appendToAttributeList(index, attrKey, string(attribute.Value))
 	}
 	payments := []*PaymentRequest{}
-	for _, attributes := range attributesList {
+	for idx, attributes := range attributesList {
 		chainID, ok := attributes["chainID"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: attributesList})
 		}
 		mint, ok := attributes["Mint"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field Mint", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field Mint", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		mintedCoins, err := sdk.ParseCoinNormalized(mint)
 		if err != nil {
@@ -357,7 +357,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		cu_str, ok := attributes["CU"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field CU", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field CU", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		cu, err := strconv.ParseUint(cu_str, 10, 64)
 		if err != nil {
@@ -365,7 +365,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		consumer, ok := attributes["client"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field client", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field client", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		consumerAddr, err := sdk.AccAddressFromBech32(consumer)
 		if err != nil {
@@ -374,7 +374,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 
 		uniqueIdentifier, ok := attributes["uniqueIdentifier"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field uniqueIdentifier", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field uniqueIdentifier", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		uniqueID, err := strconv.ParseUint(uniqueIdentifier, 10, 64)
 		if err != nil {
@@ -382,7 +382,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		description, ok := attributes["descriptionString"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field descriptionString", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field descriptionString", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		payment := &PaymentRequest{
 			CU:                  cu,
