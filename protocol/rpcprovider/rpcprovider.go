@@ -44,7 +44,7 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
-	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
+	RegisterForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainId string, apiInterface string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error
@@ -138,7 +138,13 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
-			providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
+
+			err = providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, chainID, rpcProviderEndpoint.ApiInterface)
+			if err != nil {
+				disabledEndpoints <- rpcProviderEndpoint
+				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+			}
+
 			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint

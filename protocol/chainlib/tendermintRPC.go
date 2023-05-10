@@ -160,7 +160,6 @@ func (apip *TendermintChainParser) getSupportedApi(name string) (*spectypes.Serv
 
 	// Fetch server api by name
 	api, ok := apip.serverApis[name]
-
 	// Return an error if spec does not exist
 	if !ok {
 		return nil, errors.New("tendermintRPC api not supported")

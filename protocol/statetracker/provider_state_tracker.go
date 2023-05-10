@@ -44,17 +44,19 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error {
-	spec, err := pst.stateQuery.GetSpec(ctx, chainID)
-	if err != nil {
-		return err
+func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainId string, apiInterface string) error {
+	// register for spec updates when a spec has been modified
+	specUpdater := NewSpecUpdater(chainId, chainParser, pst.stateQuery, pst.eventTracker, apiInterface)
+	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
-	chainParser.SetSpec(*spec)
-	return nil
+	return specUpdater.InitSpec(ctx)
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := NewVoteUpdater(pst.stateQuery)
+	voteUpdater := NewVoteUpdater(pst.stateQuery, pst.eventTracker)
 	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
 	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
 	if !ok {
@@ -65,7 +67,7 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.stateQuery)
+	payemntUpdater := NewPaymentUpdater(pst.stateQuery, pst.eventTracker)
 	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
 	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
 	if !ok {

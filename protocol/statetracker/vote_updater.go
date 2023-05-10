@@ -17,10 +17,11 @@ type VoteUpdatable interface {
 type VoteUpdater struct {
 	voteUpdatables map[string]*VoteUpdatable
 	stateQuery     *ProviderStateQuery
+	eventTracker   *EventTracker
 }
 
-func NewVoteUpdater(stateQuery *ProviderStateQuery) *VoteUpdater {
-	return &VoteUpdater{voteUpdatables: map[string]*VoteUpdatable{}, stateQuery: stateQuery}
+func NewVoteUpdater(stateQuery *ProviderStateQuery, eventTracker *EventTracker) *VoteUpdater {
+	return &VoteUpdater{voteUpdatables: map[string]*VoteUpdatable{}, stateQuery: stateQuery, eventTracker: eventTracker}
 }
 
 func (vu *VoteUpdater) RegisterVoteUpdatable(ctx context.Context, voteUpdatable *VoteUpdatable, endpoint lavasession.RPCEndpoint) {
@@ -32,8 +33,7 @@ func (vu *VoteUpdater) UpdaterKey() string {
 }
 
 func (vu *VoteUpdater) Update(latestBlock int64) {
-	ctx := context.Background()
-	votes, err := vu.stateQuery.VoteEvents(ctx, latestBlock)
+	votes, err := vu.eventTracker.getLatestVoteEvents()
 	if err != nil {
 		return
 	}

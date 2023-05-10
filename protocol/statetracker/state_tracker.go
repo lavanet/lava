@@ -21,6 +21,7 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
+	eventTracker         *EventTracker
 }
 
 type Updater interface {
@@ -29,7 +30,7 @@ type Updater interface {
 }
 
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}}
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: &EventTracker{clientCtx: clientCtx}}
 	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
 	if err != nil {
 		return nil, err
@@ -44,21 +45,24 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	return cst, err
 }
 
-func (cst *StateTracker) newLavaBlock(latestBlock int64, hash string) {
+func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	// go over the registered updaters and trigger update
-	cst.registrationLock.RLock()
-	defer cst.registrationLock.RUnlock()
-	for _, updater := range cst.newLavaBlockUpdaters {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+	// first update event tracker
+	st.eventTracker.updateBlockResults(latestBlock)
+	// after events were updated we can trigger updaters
+	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
 	}
 }
 
-func (cst *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {
-	cst.registrationLock.Lock()
-	defer cst.registrationLock.Unlock()
-	existingUpdater, ok := cst.newLavaBlockUpdaters[updater.UpdaterKey()]
+func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {
+	st.registrationLock.Lock()
+	defer st.registrationLock.Unlock()
+	existingUpdater, ok := st.newLavaBlockUpdaters[updater.UpdaterKey()]
 	if !ok {
-		cst.newLavaBlockUpdaters[updater.UpdaterKey()] = updater
+		st.newLavaBlockUpdaters[updater.UpdaterKey()] = updater
 		existingUpdater = updater
 	}
 	return existingUpdater

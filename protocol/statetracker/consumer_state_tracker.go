@@ -48,6 +48,17 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	}
 }
 
+func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainId string, apiInterface string) error {
+	// register for spec updates when a spec has been modified
+	specUpdater := NewSpecUpdater(chainId, chainParser, cst.stateQuery, cst.eventTracker, apiInterface)
+	specUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
+	}
+	return specUpdater.InitSpec(ctx)
+}
+
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
 	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.stateQuery)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
@@ -56,16 +67,6 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: finalizationConsensusUpdaterRaw})
 	}
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
-}
-
-func (cst *ConsumerStateTracker) RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error {
-	// TODO: handle spec changes
-	spec, err := cst.stateQuery.GetSpec(ctx, chainID)
-	if err != nil {
-		return err
-	}
-	chainParser.SetSpec(*spec)
-	return nil
 }
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
