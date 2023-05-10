@@ -47,6 +47,9 @@ func (vu *VoteUpdater) Update(latestBlock int64) {
 	for _, vote := range votes {
 		endpoint := lavasession.RPCEndpoint{ChainID: vote.ChainID, ApiInterface: vote.ApiInterface}
 		updatable := vu.voteUpdatables[endpoint.Key()]
+		if updatable == nil {
+			continue
+		}
 		(*updatable).VoteHandler(vote, uint64(latestBlock))
 	}
 }
