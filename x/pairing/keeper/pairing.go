@@ -161,7 +161,14 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 
 	planPolicy := plan.GetPlanPolicy()
-	policies := []*projectstypes.Policy{project.AdminPolicy, project.SubscriptionPolicy, &planPolicy}
+	policies := []*projectstypes.Policy{&planPolicy}
+	if project.SubscriptionPolicy != nil {
+		policies = append(policies, project.SubscriptionPolicy)
+	}
+	if project.AdminPolicy != nil {
+		policies = append(policies, project.AdminPolicy)
+	}
+
 	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
 		return 0, 0, "", 0, fmt.Errorf("chain ID not found in any of the policies")
 	}
@@ -169,6 +176,9 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+	if providersToPair == uint64(math.MaxUint64) {
+		return 0, 0, "", 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
@@ -194,15 +204,16 @@ func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectsty
 }
 
 func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
-	var providersToPairValues []uint64
+	providersToPair := uint64(math.MaxUint64)
 
 	for _, policy := range policies {
-		if policy != nil {
-			providersToPairValues = append(providersToPairValues, policy.GetMaxProvidersToPair())
+		val := policy.GetMaxProvidersToPair()
+		if policy != nil && val < providersToPair {
+			providersToPair = val
 		}
 	}
 
-	return commontypes.FindMin(providersToPairValues)
+	return providersToPair
 }
 
 func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {

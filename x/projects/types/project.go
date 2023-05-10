@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 
 	commontypes "github.com/lavanet/lava/common/types"
 )
@@ -36,9 +35,9 @@ func NewProject(subscriptionAddress string, projectName string, description stri
 }
 
 func ValidateProjectNameAndDescription(name string, description string) bool {
-	if strings.Contains(name, ",") || !commontypes.IsASCII(name) ||
+	if !commontypes.ValidateString(name, commontypes.NAME_RESTRICTIONS, nil) ||
 		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
-		name == "" {
+		!commontypes.ValidateString(description, commontypes.DESCRIPTION_RESTRICTIONS, nil) {
 		return false
 	}
 
