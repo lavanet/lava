@@ -87,10 +87,14 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 }
 
 func (pme *ProviderMetricsManager) getProviderMetric(specID string, apiInterface string) *ProviderMetrics {
+	pme.lock.RLock()
+	defer pme.lock.RUnlock()
 	return pme.providerMetrics[specID+apiInterface]
 }
 
 func (pme *ProviderMetricsManager) setProviderMetric(metrics *ProviderMetrics) {
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
 	specID := metrics.specID
 	apiInterface := metrics.apiInterface
 	pme.providerMetrics[specID+apiInterface] = metrics
@@ -100,8 +104,6 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID string, apiInterfac
 	if pme == nil {
 		return nil
 	}
-	pme.lock.Lock()
-	defer pme.lock.Unlock()
 	if pme.getProviderMetric(specID, apiInterface) == nil {
 		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric)
 		pme.setProviderMetric(providerMetric)
