@@ -30,7 +30,12 @@ type Updater interface {
 }
 
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: &EventTracker{clientCtx: clientCtx}}
+	eventTracker := &EventTracker{clientCtx: clientCtx}
+	err = eventTracker.updateBlockResults(0)
+	if err != nil {
+		return nil, err
+	}
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
 	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
 	if err != nil {
 		return nil, err

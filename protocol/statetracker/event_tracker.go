@@ -21,9 +21,17 @@ type EventTracker struct {
 	latestUpdatedBlock int64
 }
 
-func (et *EventTracker) updateBlockResults(latestBlock int64) error {
+func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
-	blockResults, err := et.clientCtx.Client.BlockResults(ctx, &latestBlock)
+	var blockResults *ctypes.ResultBlockResults
+	if latestBlock == 0 {
+		res, err := et.clientCtx.Client.Status(ctx)
+		if err != nil {
+			return utils.LavaFormatWarning("could not get latest block height and requested latestBlock = 0", err)
+		}
+		latestBlock = res.SyncInfo.LatestBlockHeight
+	}
+	blockResults, err = et.clientCtx.Client.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return err
 	}
