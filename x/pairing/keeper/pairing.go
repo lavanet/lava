@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
@@ -18,7 +17,6 @@ import (
 const INVALID_INDEX = -2
 
 func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error) {
-	logger := k.Logger(ctx)
 	// TODO: add support for spec changes
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
@@ -36,7 +34,11 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 	currentEpochStart := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	if requestedEpochStart > currentEpochStart {
-		return 0, utils.LavaError(ctx, logger, "verify_pairing_block_sync", map[string]string{"requested block": strconv.FormatUint(block, 10), "requested epoch": strconv.FormatUint(requestedEpochStart, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "VerifyPairing requested epoch is too new")
+		return 0, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
+			utils.Attribute{Key: "requested block", Value: block},
+			utils.Attribute{Key: "requested epoch", Value: requestedEpochStart},
+			utils.Attribute{Key: "current epoch", Value: currentEpochStart},
+		)
 	}
 
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
@@ -51,13 +53,16 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 }
 
 func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
-	logger := ctx.Logger()
 	verifiedUser := false
 
 	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
 	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ClientKey, chainID)
 	if !found {
-		return nil, utils.LavaError(ctx, logger, "client_entries_pairing", map[string]string{"chainID": chainID, "query Epoch": strconv.FormatUint(epoch, 10), "query block": strconv.FormatUint(block, 10), "current epoch": strconv.FormatUint(epoch, 10)}, "no EpochStakeEntries entries at all for this spec")
+		return nil, utils.LavaFormatWarning("no EpochStakeEntries entries at all for this spec", fmt.Errorf("user stake entries not found"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "query Epoch", Value: epoch},
+			utils.Attribute{Key: "query block", Value: block},
+		)
 	}
 	for i, clientStakeEntry := range userStakedEntries {
 		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
@@ -87,7 +92,9 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 	}
 
 	if !project.Enabled {
-		return projectstypes.Project{}, "", utils.LavaError(ctx, ctx.Logger(), "pairing_project_invalid", map[string]string{"project": project.Index}, "the developers project is disabled")
+		return projectstypes.Project{}, "", utils.LavaFormatWarning("the developers project is disabled", fmt.Errorf("cannot get project data"),
+			utils.Attribute{Key: "project", Value: project.Index},
+		)
 	}
 
 	return project, vrfpk, nil

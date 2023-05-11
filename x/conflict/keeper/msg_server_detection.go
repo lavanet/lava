@@ -21,22 +21,30 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	logger := k.Keeper.Logger(ctx)
 	clientAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return nil, utils.LavaError(ctx, logger, "conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "parsing client address")
+		return nil, utils.LavaFormatWarning("parsing client address", err,
+			utils.Attribute{Key: "client", Value: msg.Creator},
+		)
 	}
 	if msg.FinalizationConflict != nil && msg.ResponseConflict == nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateFinalizationConflict(ctx, msg.FinalizationConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "Finalization_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: finalization conflict detection error")
+			return nil, utils.LavaFormatWarning("Simulation: finalization conflict detection error", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+			)
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict == nil && msg.SameProviderConflict != nil {
 		err := k.Keeper.ValidateSameProviderConflict(ctx, msg.SameProviderConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "same_provider_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: same provider conflict detection error")
+			return nil, utils.LavaFormatWarning("Simulation: same provider conflict detection error", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+			)
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict != nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateResponseConflict(ctx, msg.ResponseConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: response conflict detection error")
+			return nil, utils.LavaFormatWarning("Simulation: response conflict detection error", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+			)
 		}
 
 		// the conflict detection transaction is valid!, start a vote
@@ -47,12 +55,20 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		// 5. majority wins, minority gets penalised
 		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch))
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get EpochStart for specific block")
+			return nil, utils.LavaFormatWarning("Simulation: could not get EpochStart for specific block", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
 		}
 		index := DetectionIndex(msg, epochStart)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: conflict with is already open for this client and providers in this epoch")
+			return nil, utils.LavaFormatWarning("Simulation: conflict with is already open for this client and providers in this epoch", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
 		}
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
@@ -60,12 +76,20 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Epoch)
 		epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get epochblocks")
+			return nil, utils.LavaFormatError("Simulation: could not get epochblocks", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
 		}
 
 		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+k.VotePeriod(ctx)*epochBlocks)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider}, "Simulation: could not get NextEpoch")
+			return nil, utils.LavaFormatError("Simulation: could not get NextEpoch", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
 		}
 		conflictVote.VoteDeadline = voteDeadline
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiUrl

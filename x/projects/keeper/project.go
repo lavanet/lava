@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
@@ -14,7 +13,10 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 	var project types.Project
 
 	if found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project); !found {
-		return project, utils.LavaError(ctx, ctx.Logger(), "GetProjectForBlock_not_found", map[string]string{"project": projectID, "blockHeight": strconv.FormatUint(blockHeight, 10)}, "project not found")
+		return project, utils.LavaFormatWarning("could not get project for block", fmt.Errorf("project not found"),
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "blockHeight", Value: blockHeight},
+		)
 	}
 
 	return project, nil
@@ -36,7 +38,10 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 	}
 
 	if found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project); !found {
-		return project, "", utils.LavaError(ctx, ctx.Logger(), "GetProjectForDeveloper_project_not_found", map[string]string{"developer": developerKey, "project": projectDeveloperData.ProjectID}, "the developers project was not found")
+		return project, "", utils.LavaFormatWarning("the developer's project was not found", fmt.Errorf("project not found"),
+			utils.Attribute{Key: "developer", Value: developerKey},
+			utils.Attribute{Key: "project", Value: projectDeveloperData.ProjectID},
+		)
 	}
 
 	return project, projectDeveloperData.Vrfpk, nil
@@ -45,18 +50,26 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_project_not_found", map[string]string{"project": projectID}, "project id not found")
+		return utils.LavaFormatWarning("could not add keys to project", fmt.Errorf("project not found"),
+			utils.Attribute{Key: "project", Value: projectID},
+		)
 	}
 
 	// check if the admin key is valid
 	if !project.IsAdminKey(adminKey) {
-		return utils.LavaError(ctx, ctx.Logger(), "AddKeys_not_admin", map[string]string{"project": projectID}, "the requesting key is not admin key")
+		return utils.LavaFormatWarning("could not add keys to project", fmt.Errorf("the requesting key is not admin key"),
+			utils.Attribute{Key: "project", Value: projectID},
+		)
 	}
 
 	for _, projectKey := range projectKeys {
 		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+			return utils.LavaFormatError("failed to register key to project", err,
+				utils.Attribute{Key: "project", Value: projectID},
+				utils.Attribute{Key: "key", Value: projectKey.Key},
+				utils.Attribute{Key: "keyTypes", Value: projectKey.Types},
+			)
 		}
 	}
 
@@ -83,20 +96,28 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *t
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_project_not_found", map[string]string{"project": projectID}, "project id not found")
+			return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("project not found"),
+				utils.Attribute{Key: "project", Value: projectID},
+			)
 		}
 		// for admin policy - check if the key is an address of a project admin.
 		// Note, the subscription key is also considered an admin key
 		if setPolicyEnum == types.SET_ADMIN_POLICY {
 			if !project.IsAdminKey(key) {
-				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_admin", map[string]string{"project": projectID, "key": key}, "cannot set admin policy because the requesting key is not admin key")
+				return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("the requesting key is not admin key"),
+					utils.Attribute{Key: "project", Value: projectID},
+					utils.Attribute{Key: "key", Value: key},
+				)
 			} else {
 				project.AdminPolicy = policy
 			}
 		} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
 			// for subscription policy - check if the key is an address of the project's subscription consumer
 			if key != project.GetSubscription() {
-				return utils.LavaError(ctx, ctx.Logger(), "SetPolicy_not_subscription_consumer", map[string]string{"project": projectID, "key": key}, "cannot set subscription policy because the requesting key is not subscription consumer key")
+				return utils.LavaFormatWarning("could not set subscription policy", fmt.Errorf("the requesting key is not subscription key"),
+					utils.Attribute{Key: "project", Value: projectID},
+					utils.Attribute{Key: "key", Value: key},
+				)
 			} else {
 				project.SubscriptionPolicy = policy
 			}
@@ -104,7 +125,7 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *t
 
 		nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, k.Logger(ctx), "SetPolicy_cant_get_next_epoch", map[string]string{"block": strconv.FormatUint(uint64(ctx.BlockHeight()), 10)}, "can't get next epoch")
+			panic("could not set policy. can't get next epoch")
 		}
 		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
 		if err != nil {

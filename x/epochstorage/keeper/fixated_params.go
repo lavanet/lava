@@ -79,7 +79,10 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 		return
 	}
 	if latestParamChange > block {
-		utils.LavaError(ctx, k.Logger(ctx), "invalid_latest_param_change", map[string]string{"error": "latestParamChange > block", "latestParamChange": strconv.FormatUint(latestParamChange, 10)}, "latest param change cant be in the future")
+		utils.LavaFormatError("latest param change cant be in the future", fmt.Errorf("latestParamChange > block"),
+			utils.Attribute{Key: "latestParamChange", Value: latestParamChange},
+			utils.Attribute{Key: "block", Value: block},
+		)
 		return
 	}
 	earliestEpochStart := k.GetEarliestEpochStart(ctx) // this is the previous epoch start, before we update it to the current block
@@ -93,7 +96,9 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 	// we have a param change, is it in the last epoch?
 	prevEpochStart, err := k.GetPreviousEpochStartForBlock(ctx, block)
 	if err != nil {
-		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
+		utils.LavaFormatError("can't get previous epoch start block", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
 	} else if latestParamChange >= prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedParams(ctx, block, earliestEpochStart)
@@ -161,9 +166,14 @@ func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, bl
 		if !found {
 			earliestEpochStart := k.GetEarliestEpochStart(ctx)
 			if block < earliestEpochStart {
-				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_too_early", map[string]string{"error": "tried to read for block that is earlier than earliest_epoch_start", "block": strconv.FormatUint(block, 10), "earliest": strconv.FormatUint(earliestEpochStart, 10)}, "invalid block requested, that is lower than earliest block in memory")
+				err = utils.LavaFormatError("invalid block requested, that is lower than earliest block in memory", fmt.Errorf("tried to read for block that is earlier than earliest_epoch_start"),
+					utils.Attribute{Key: "block", Value: block},
+					utils.Attribute{Key: "earliest", Value: earliestEpochStart},
+				)
 			} else {
-				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_for_block_empty", map[string]string{"error": "tried to read index: " + thisIdxKey + " but wasn't found", "block": strconv.FormatUint(block, 10)}, "invalid block requested, that is lower than saved fixation memory")
+				err = utils.LavaFormatError("invalid block requested, that is lower than saved fixation memory", fmt.Errorf("tried to read index: "+thisIdxKey+" but wasn't found"),
+					utils.Attribute{Key: "block", Value: block},
+				)
 			}
 			break
 		}

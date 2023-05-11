@@ -85,7 +85,7 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	currentBlock := uint64(ctx.BlockHeight())
 	blockInEpoch, err := k.BlockInEpoch(ctx, currentBlock)
 	if err != nil {
-		utils.LavaError(ctx, k.Logger(ctx), "IsEpochStart", map[string]string{"error": err.Error()}, "can't get block in epoch")
+		utils.LavaFormatError("can't get block in epoch", err)
 		return false
 	}
 	return blockInEpoch == 0

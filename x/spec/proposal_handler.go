@@ -1,8 +1,8 @@
 package spec
 
 import (
+	"fmt"
 	"log"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -37,18 +37,28 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 		}
 
 		logger := k.Logger(ctx)
-		details := map[string]string{"param": c.Key, "value": c.Value}
+		details := []utils.Attribute{
+			{Key: "param", Value: c.Key},
+			{Key: "value", Value: c.Value},
+		}
 		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
-			details["error"] = "tried to modify " + string(epochstoragetypes.KeyLatestParamChange)
-			return utils.LavaError(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Param Change Error")
+			return utils.LavaFormatError("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
+				details...,
+			)
 		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
-			details["error"] = err.Error()
-			return utils.LavaError(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Param Change Error")
+			return utils.LavaFormatError("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
+				details...,
+			)
 		}
 
-		details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
-		utils.LogLavaEvent(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Accepted Param Changed")
+		details = append(details, utils.Attribute{Key: epochstoragetypes.ModuleName, Value: ctx.BlockHeight()})
+
+		detailsMap := map[string]string{}
+		for _, atr := range details {
+			detailsMap[atr.Key] = fmt.Sprint(atr.Value)
+		}
+		utils.LogLavaEvent(ctx, logger, types.ParamChangeEventName, detailsMap, "Gov Proposal Accepted Param Changed")
 	}
 
 	ss, ok := k.GetSubspace(epochstoragetypes.ModuleName)
@@ -81,8 +91,14 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 		_, found := k.GetSpec(ctx, spec.Index)
 
 		details, err := k.ValidateSpec(ctx, spec)
+		detailsList := []utils.Attribute{}
+		for key, val := range details {
+			detailsList = append(detailsList, utils.Attribute{Key: key, Value: val})
+		}
 		if err != nil {
-			return utils.LavaError(ctx, logger, "invalid_spec", details, err.Error())
+			return utils.LavaFormatWarning("invalid spec", err,
+				detailsList...,
+			)
 		}
 
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
@@ -103,7 +119,13 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 	for _, spec := range k.GetAllSpec(ctx) {
 		if details, err := k.ValidateSpec(ctx, spec); err != nil {
 			details["invalidates"] = spec.Index
-			return utils.LavaError(ctx, logger, "invalidated_spec", details, err.Error())
+			detailsList := []utils.Attribute{}
+			for key, val := range details {
+				detailsList = append(detailsList, utils.Attribute{Key: key, Value: val})
+			}
+			return utils.LavaFormatError("invalidated_spec", err,
+				detailsList...,
+			)
 		}
 	}
 

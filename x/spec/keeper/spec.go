@@ -73,8 +73,9 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 
 	details, err := k.doExpandSpec(ctx, &spec, depends, spec.Index)
 	if err != nil {
-		details := map[string]string{"imports": details}
-		return spec, utils.LavaError(ctx, k.Logger(ctx), "spec expand failed", details, err.Error())
+		return spec, utils.LavaFormatError("spec expand failed", err,
+			utils.Attribute{Key: "imports", Value: details},
+		)
 	}
 	return spec, nil
 }

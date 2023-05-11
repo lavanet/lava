@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"strconv"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -33,7 +33,9 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 	blockHeight := uint64(ctx.BlockHeight())
 	if found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject); found {
 		// the project with the same name already exists if no error has returned
-		return utils.LavaError(ctx, ctx.Logger(), "CreateEmptyProject_already_exist", map[string]string{"subscription": subscriptionAddress}, "project already exist for the current subscription with the same name")
+		return utils.LavaFormatWarning("project already exist for the current subscription with the same name", fmt.Errorf("could not create project"),
+			utils.Attribute{Key: "subscription", Value: subscriptionAddress},
+		)
 	}
 
 	project.AdminPolicy = projectData.GetPolicy()
@@ -53,7 +55,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, proje
 
 func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
 	if project == nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_project_is_nil", nil, "project is nil")
+		return utils.LavaFormatError("project is nil", fmt.Errorf("could not register key to project"))
 	}
 
 	for _, keyType := range key.GetTypes() {
@@ -67,19 +69,20 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 			// if we find the developer key and it belongs to a different project, return error
 			if found && developerData.ProjectID != project.GetIndex() {
-				details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
-				return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
+				return utils.LavaFormatWarning("key already exists", fmt.Errorf("could not register key to project"),
+					utils.Attribute{Key: "key", Value: key.Key},
+					utils.Attribute{Key: "keyTypes", Value: key.Types},
+				)
 			}
 
 			if !found {
 				err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight, key.GetVrfpk())
 				if err != nil {
-					details := map[string]string{
-						"developerKey": key.GetKey(),
-						"projectIndex": project.GetIndex(),
-						"blockHeight":  strconv.FormatUint(blockHeight, 10),
-					}
-					return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_add_dev_key_failed", details, "adding developer key failed")
+					return utils.LavaFormatError("adding developer key to project failed", err,
+						utils.Attribute{Key: "developerKey", Value: key.Key},
+						utils.Attribute{Key: "projectIndex", Value: project.Index},
+						utils.Attribute{Key: "blockHeight", Value: blockHeight},
+					)
 				}
 			}
 		}
@@ -121,7 +124,9 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaError(ctx, ctx.Logger(), "SnapshotProject_project_not_found", map[string]string{"projectID": projectID}, "snapshot of project failed, project does not exist")
+		return utils.LavaFormatWarning("snapshot of project failed, project does not exist", fmt.Errorf("project not found"),
+			utils.Attribute{Key: "projectID", Value: projectID},
+		)
 	}
 
 	project.UsedCu = 0
@@ -133,7 +138,9 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaError(ctx, ctx.Logger(), "DeleteProject_project_not_found", map[string]string{"projectID": projectID}, "project to delete was not found")
+		return utils.LavaFormatWarning("project to delete was not found", fmt.Errorf("project not found"),
+			utils.Attribute{Key: "projectID", Value: projectID},
+		)
 	}
 
 	project.Enabled = false
