@@ -1,6 +1,8 @@
 package statetracker
 
 import (
+	"sync"
+
 	"golang.org/x/net/context"
 )
 
@@ -13,6 +15,7 @@ type EpochUpdatable interface {
 }
 
 type EpochUpdater struct {
+	lock            sync.RWMutex
 	epochUpdatables []*EpochUpdatable
 	currentEpoch    uint64
 	stateQuery      *EpochStateQuery
@@ -23,6 +26,8 @@ func NewEpochUpdater(stateQuery *EpochStateQuery) *EpochUpdater {
 }
 
 func (eu *EpochUpdater) RegisterEpochUpdatable(ctx context.Context, epochUpdatable EpochUpdatable) {
+	eu.lock.Lock()
+	defer eu.lock.Unlock()
 	eu.epochUpdatables = append(eu.epochUpdatables, &epochUpdatable)
 }
 
@@ -31,6 +36,8 @@ func (eu *EpochUpdater) UpdaterKey() string {
 }
 
 func (eu *EpochUpdater) Update(latestBlock int64) {
+	eu.lock.RLock()
+	defer eu.lock.RUnlock()
 	ctx := context.Background()
 	currentEpoch, err := eu.stateQuery.CurrentEpochStart(ctx)
 	if err != nil {
@@ -41,6 +48,9 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 	}
 	eu.currentEpoch = currentEpoch
 	for _, epochUpdatable := range eu.epochUpdatables {
+		if epochUpdatable == nil {
+			continue
+		}
 		(*epochUpdatable).UpdateEpoch(currentEpoch)
 	}
 }

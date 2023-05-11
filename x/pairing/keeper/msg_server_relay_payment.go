@@ -14,6 +14,11 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
+type BadgeData struct {
+	Badge       types.Badge
+	BadgeSigner sdk.AccAddress
+}
+
 const (
 	maxComplaintsPerEpoch                     = 3
 	collectPaymentsFromNumberOfPreviousEpochs = 2
@@ -37,6 +42,33 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return errorLogAndFormat("data_reliability_claim", map[string]string{"error": err.Error()}, "error creating dataReliabilityByConsumer")
 	}
 
+	addressEpochBadgeMap := map[string]BadgeData{}
+	for _, relay := range msg.Relays {
+		if relay.Badge != nil {
+			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
+			_, ok := addressEpochBadgeMap[mapKey]
+			if !ok {
+				badgeSigner, err := sigs.ExtractSignerAddressFromBadge(*relay.Badge)
+				if err != nil {
+					return nil, utils.LavaFormatError("can't extract badge's signer from badge's project signature", err,
+						utils.Attribute{Key: "badgeUserAddress", Value: relay.Badge.Address},
+						utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
+					)
+				}
+				badgeData := BadgeData{
+					Badge:       *relay.Badge,
+					BadgeSigner: badgeSigner,
+				}
+				addressEpochBadgeMap[mapKey] = badgeData
+			} else {
+				return nil, utils.LavaFormatError("address already exist in addressEpochBadgeMap", nil,
+					utils.Attribute{Key: "address", Value: relay.Badge.Address},
+					utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
+				)
+			}
+		}
+	}
+
 	for relayIdx, relay := range msg.Relays {
 		if relay.LavaChainId != lavaChainID {
 			return errorLogAndFormat("relay_payment_lava_chain_id", map[string]string{"relay.LavaChainId": relay.LavaChainId, "expected_ChainID": lavaChainID}, "relay request for the wrong lava chain")
@@ -49,6 +81,27 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
+
+		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
+		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
+		if ok {
+			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
+				details := map[string]string{
+					"badgeAddress":     badgeData.Badge.Address,
+					"badgeLavaChainId": badgeData.Badge.LavaChainId,
+					"badgeEpoch":       strconv.FormatUint(badgeData.Badge.Epoch, 10),
+					"relayAddress":     clientAddr.String(),
+					"relayLavaChainId": relay.LavaChainId,
+					"relayEpoch":       strconv.FormatUint(uint64(relay.Epoch), 10),
+				}
+				return errorLogAndFormat("relay_payment_badge", details, "invalid badge - must match traits in relay request")
+			}
+
+			// badge is valid -> switch address to badge signer (developer key) and continue with payment
+			clientAddr = badgeData.BadgeSigner
+		}
+
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
 			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
