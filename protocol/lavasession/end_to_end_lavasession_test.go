@@ -9,8 +9,9 @@ import (
 )
 
 func TestHappyFlowE2E(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 
 	// Consumer Side:
@@ -35,7 +36,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
@@ -71,7 +72,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	// Consumer Side:
-	err = csm.OnSessionDone(cs, epoch1, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1)
+	err = csm.OnSessionDone(cs, epoch1, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
