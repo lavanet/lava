@@ -67,12 +67,10 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	const V4_PlanFixationStorePrefix = "plan"
 
-	// Note: MigratePrefix() already calls MigrateVersion() and thus will perform
-	// FixationStore version migration if needed, using the old prefix first.
-	// (This is required because otherwise the usual fixation-store MigrateVersion
-	// would wrongly use the new prefix).
+	// MigrateVersionAndPrefix() will take care of calling MigrateVersion()
+	// with the old prefix first, before changing to the new (current) prefix.
 
-	if err := m.keeper.plansFS.MigratePrefix(ctx, V4_PlanFixationStorePrefix); err != nil {
+	if err := m.keeper.plansFS.MigrateVersionAndPrefix(ctx, V4_PlanFixationStorePrefix); err != nil {
 		return fmt.Errorf("%w: plans fixation-store", err)
 	}
 

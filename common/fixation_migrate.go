@@ -19,6 +19,7 @@ var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 	2: fixationMigrate2to3,
 }
 
+// MigrateVerrsion performs pending internal version migration(s), if any.
 func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	from := fs.getVersion(ctx)
 	to := types.FixationVersion()
@@ -41,9 +42,10 @@ func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	return nil
 }
 
-// MigratePrefix replaces objects' prefixes from `oldPrefix` to the current `fs.prefix`
-// NOTE: it first tries to perform fs.MigrateVersion() with the old prefix.
-func (fs *FixationStore) MigratePrefix(ctx sdk.Context, oldPrefix string) (err error) {
+// MigrateVersionAndPrefix performs pending internal version migration(s),
+// if any, and then replaces the old prefix with a new (current) one. (For
+// the version migration(s) it uses the old prefix).
+func (fs *FixationStore) MigrateVersionAndPrefix(ctx sdk.Context, oldPrefix string) (err error) {
 	newPrefix := fs.prefix
 
 	// first check if version upgrade is due - must use old prefix
