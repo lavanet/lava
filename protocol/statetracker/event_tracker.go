@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -41,7 +42,7 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 	for _, tx := range transactionResults {
 		events := tx.Events
 		for _, event := range events {
-			if event.Type == "lava_relay_payment" {
+			if event.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 				paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, et.latestUpdatedBlock)
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})

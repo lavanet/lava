@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -168,28 +167,6 @@ func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, cons
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, epoch uint64, providerAddress string) string {
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
-}
-
-func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {
-	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
-	if err != nil {
-		return nil, err
-	}
-	transactionResults := blockResults.TxsResults
-	for _, tx := range transactionResults {
-		events := tx.Events
-		for _, event := range events {
-			if event.Type == "lava_relay_payment" {
-				paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
-				if err != nil {
-					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-				payments = append(payments, paymentList...)
-			}
-		}
-	}
-	return payments, nil
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
