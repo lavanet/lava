@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -67,7 +68,7 @@ type RPCProvider struct {
 	lock                 sync.Mutex
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
+func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -75,6 +76,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	providerMetricsManager := metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -84,7 +86,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcp.providerStateTracker = providerStateTracker
 	// single reward server
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 	keyName, err := sigs.GetKeyName(clientCtx)
@@ -147,7 +149,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			var chainTracker *chaintracker.ChainTracker
-
+			// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
+			recordMetricsOnNewBlock := func(block int64, hash string) {
+				providerMetricsManager.SetLatestBlock(chainID, uint64(block))
+			}
 			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 			chainCommonSetup := func() error {
 				chainMutexes[chainID].Lock()
@@ -159,6 +164,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						BlocksToSave:      blocksToSaveChainTracker,
 						AverageBlockTime:  averageBlockTime,
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+						NewLatestCallback: recordMetricsOnNewBlock,
 					}
 					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
@@ -183,11 +189,13 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 
+			providerMetrics := providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
+
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rpcProviderServer := &RPCProviderServer{}
-			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU)
+			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
 			// set up grpc listener
 			var listener *ProviderListener
 			func() {
@@ -360,10 +368,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			var cache *performance.Cache = nil
-			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
-			if err != nil {
-				utils.LavaFormatError("Failed To Get Cache Address flag", err, utils.Attribute{Key: "flags", Value: cmd.Flags()})
-			} else if cacheAddr != "" {
+			cacheAddr := viper.GetString(performance.CacheFlagName)
+			if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
 					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{Key: "address", Value: cacheAddr})
@@ -378,8 +384,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			for _, endpoint := range rpcProviderEndpoints {
 				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
+			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr)
 			return err
 		},
 	}
@@ -395,6 +402,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
+	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 
 	return cmdRPCProvider
 }

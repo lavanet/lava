@@ -11,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -69,6 +70,7 @@ type RewardServer struct {
 	expectedPayments []PaymentRequest
 	totalCUServiced  uint64
 	totalCUPaid      uint64
+	providerMetrics  *metrics.ProviderMetricsManager
 }
 
 type RewardsTxSender interface {
@@ -299,6 +301,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 	if serverID == rws.serverID {
 		rws.updateCUPaid(payment.CU)
+		go rws.providerMetrics.AddPayment(payment.ChainID, payment.CU)
 		removedPayment := rws.RemoveExpectedPayment(payment.CU, payment.Client, payment.BlockHeightDeadline, payment.UniqueIdentifier, payment.ChainID)
 		if !removedPayment {
 			utils.LavaFormatWarning("tried removing payment that wasn;t expected", nil, utils.Attribute{Key: "payment", Value: payment})
@@ -306,7 +309,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager) *RewardServer {
 	//
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
@@ -314,6 +317,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 	rws.expectedPayments = []PaymentRequest{}
 	// TODO: load this from persistency
 	rws.rewards = map[uint64]*EpochRewards{}
+	rws.providerMetrics = providerMetrics
 	return rws
 }
 
