@@ -34,7 +34,13 @@ func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	return nil, fmt.Errorf("chainParser for apiInterface (%s) not found", apiInterface)
 }
 
-func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *common.RPCConsumerLogs) (ChainListener, error) {
+func NewChainListener(
+	ctx context.Context,
+	listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender,
+	rpcConsumerLogs *common.RPCConsumerLogs,
+	chainParser ChainParser,
+) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
@@ -43,7 +49,7 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs, chainParser), nil
 	}
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
@@ -97,7 +103,7 @@ func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavase
 	case spectypes.APIInterfaceRest:
 		return NewRestChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+		return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime, chainParser)
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
 }

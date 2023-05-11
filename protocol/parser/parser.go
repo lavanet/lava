@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -375,6 +376,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
 	}
 
+	fmt.Fprintf(os.Stderr, "ParseDictionaryOrOrdered: unmarshalledData: %s\n", unmarshalledData)
 	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		// If value attribute with propName exists in array return it

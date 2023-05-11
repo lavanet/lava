@@ -70,7 +70,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, pLogs)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, pLogs, chainParser)
 	if err != nil {
 		return err
 	}

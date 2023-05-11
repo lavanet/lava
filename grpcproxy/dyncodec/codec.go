@@ -81,7 +81,7 @@ func NewCodec(registry *Registry) *Codec {
 			Multiline:       false,
 			Indent:          "",
 			AllowPartial:    false,
-			UseProtoNames:   false,
+			UseProtoNames:   true,
 			UseEnumNumbers:  false,
 			EmitUnpopulated: false,
 			Resolver:        registry,

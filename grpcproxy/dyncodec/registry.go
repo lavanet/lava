@@ -115,7 +115,9 @@ func (r *Registry) FindFileByPath(s string) (protoreflect.FileDescriptor, error)
 		return nil, err
 	}
 
-	fd, err = protodesc.NewFile(dpb, r)
+	fd, err = protodesc.FileOptions{
+		AllowUnresolvable: true,
+	}.New(dpb, r)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +142,9 @@ func (r *Registry) FindDescriptorByName(name protoreflect.FullName) (protoreflec
 	if err != nil {
 		return nil, err
 	}
-	fd, err := protodesc.NewFile(dpb, r)
+	fd, err := protodesc.FileOptions{
+		AllowUnresolvable: true,
+	}.New(dpb, r)
 	if err != nil {
 		return nil, err
 	}
