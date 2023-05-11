@@ -55,7 +55,7 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := NewVoteUpdater(pst.stateQuery, pst.eventTracker)
+	voteUpdater := NewVoteUpdater(pst.eventTracker)
 	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
 	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
 	if !ok {
@@ -66,7 +66,7 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.stateQuery, pst.eventTracker)
+	payemntUpdater := NewPaymentUpdater(pst.eventTracker)
 	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
 	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
 	if !ok {

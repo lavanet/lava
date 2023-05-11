@@ -19,12 +19,11 @@ type PaymentUpdatable interface {
 type PaymentUpdater struct {
 	lock             sync.RWMutex
 	paymentUpdatable map[string]*PaymentUpdatable
-	stateQuery       *ProviderStateQuery
 	eventTracker     *EventTracker
 }
 
-func NewPaymentUpdater(stateQuery *ProviderStateQuery, eventTracker *EventTracker) *PaymentUpdater {
-	return &PaymentUpdater{paymentUpdatable: map[string]*PaymentUpdatable{}, stateQuery: stateQuery, eventTracker: eventTracker}
+func NewPaymentUpdater(eventTracker *EventTracker) *PaymentUpdater {
+	return &PaymentUpdater{paymentUpdatable: map[string]*PaymentUpdatable{}, eventTracker: eventTracker}
 }
 
 func (pu *PaymentUpdater) RegisterPaymentUpdatable(ctx context.Context, paymentUpdatable *PaymentUpdatable) {
