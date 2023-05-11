@@ -39,7 +39,7 @@ var (
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainId string, apiInterface string) error
+	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
@@ -99,6 +99,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 			chainID := rpcEndpoint.ChainID
+			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
+			if err != nil {
+				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 
@@ -135,13 +141,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 
 			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
-
-			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, chainID, rpcEndpoint.ApiInterface)
-			if err != nil {
-				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
-				errCh <- err
-				return err
-			}
 
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})

@@ -5,7 +5,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
@@ -44,15 +43,15 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainId string, apiInterface string) error {
-	// register for spec updates when a spec has been modified
-	specUpdater := NewSpecUpdater(chainId, chainParser, pst.stateQuery, pst.eventTracker, apiInterface)
+func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+	// register for spec updates sets spec and updates when a spec has been modified
+	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.eventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
-	return specUpdater.InitSpec(ctx)
+	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {

@@ -2,8 +2,9 @@ package statetracker
 
 import (
 	"context"
+	"sync"
 
-	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -16,50 +17,54 @@ type SpecGetter interface {
 	GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error)
 }
 
-type SpecUpdater struct {
-	eventTracker     *EventTracker
-	chainParser      chainlib.ChainParser
-	chainId          string
-	apiInterface     string
-	specGetter       SpecGetter
-	blockLastUpdated uint64
+type SpecUpdatable interface {
+	SetSpec(spectypes.Spec)
 }
 
-func NewSpecUpdater(chainId string, chainParser chainlib.ChainParser, specGetter SpecGetter, eventTracker *EventTracker, apiInterface string) *SpecUpdater {
-	return &SpecUpdater{chainId: chainId, chainParser: chainParser, specGetter: specGetter, eventTracker: eventTracker, apiInterface: apiInterface}
+type SpecUpdater struct {
+	lock             sync.RWMutex
+	eventTracker     *EventTracker
+	chainId          string
+	specGetter       SpecGetter
+	blockLastUpdated uint64
+	specUpdatables   map[string]*SpecUpdatable
+}
+
+func NewSpecUpdater(chainId string, specGetter SpecGetter, eventTracker *EventTracker) *SpecUpdater {
+	return &SpecUpdater{chainId: chainId, specGetter: specGetter, eventTracker: eventTracker, specUpdatables: map[string]*SpecUpdatable{}}
 }
 
 func (su *SpecUpdater) UpdaterKey() string {
-	utils.LavaFormatDebug("UpdaterKey: " + CallbackKeyForSpecUpdate + su.chainId + su.apiInterface)
-	return CallbackKeyForSpecUpdate + su.chainId + su.apiInterface
+	return CallbackKeyForSpecUpdate + su.chainId
+}
+
+func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable *SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+	su.lock.Lock()
+	defer su.lock.Unlock()
+	spec, err := su.specGetter.GetSpec(ctx, su.chainId)
+	if err != nil {
+		utils.LavaFormatFatal("could not get chain spec failed registering", err, utils.Attribute{Key: "chainID", Value: su.chainId})
+	}
+	(*specUpdatable).SetSpec(*spec)
+	su.specUpdatables[endpoint.Key()] = specUpdatable
+	return nil
 }
 
 func (su *SpecUpdater) Update(latestBlock int64) {
+	su.lock.RLock()
+	defer su.lock.RUnlock()
 	specUpdated := su.eventTracker.getLatestSpecModifyEvents()
 	if specUpdated {
 		spec, err := su.specGetter.GetSpec(context.Background(), su.chainId)
 		if err != nil {
-			utils.LavaFormatError("Failed getting spec", err)
+			utils.LavaFormatError("could not get spec when updated, did not update specs and needed to", err)
 			return
 		}
-		if su.blockLastUpdated < spec.BlockLastUpdated {
-			utils.LavaFormatDebug("Spec has been modified, updating spec", utils.Attribute{Key: "Chain", Value: su.chainId}, utils.Attribute{Key: "ApiInterface", Value: su.apiInterface})
-			su.setSpec(spec)
+		if spec.BlockLastUpdated > su.blockLastUpdated {
+			su.blockLastUpdated = spec.BlockLastUpdated
+		}
+		for _, specUpdatable := range su.specUpdatables {
+			(*specUpdatable).SetSpec(*spec)
 		}
 	}
-}
-
-func (su *SpecUpdater) setSpec(spec *spectypes.Spec) {
-	// set blockLastUpdated
-	su.blockLastUpdated = spec.BlockLastUpdated
-	su.chainParser.SetSpec(*spec)
-}
-
-func (su *SpecUpdater) InitSpec(ctx context.Context) error {
-	spec, err := su.specGetter.GetSpec(ctx, su.chainId)
-	if err != nil {
-		return err
-	}
-	su.setSpec(spec)
-	return nil
 }
