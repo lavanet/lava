@@ -214,6 +214,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// Info was fetched from cache, so we don't need to change the state
 		// so we can return here, no need to update anything and calculate as this info was fetched from the cache
 		relayResult.Reply = reply
+		lavaprotocol.UpdateRequestedBlock(relayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 		err = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
 		return relayResult, err
 	}
@@ -349,6 +350,13 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 
+	if relayResult.Request.RelayData.RequestBlock <= spectypes.NOT_APPLICABLE {
+		if relayResult.Request.RelayData.RequestBlock <= spectypes.LATEST_BLOCK {
+			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: relayResult.Request.RelayData.RequestBlock})
+		}
+		return nil
+	}
+
 	if rand.Uint32() < dataReliabilityThreshold {
 		// decided not to do data reliability
 		return nil
@@ -364,7 +372,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		}
 		return utils.LavaFormatWarning("failed data reliability relay to provider", err, errAttributes...)
 	}
-	conflict := lavaprotocol.VerifyReliabilityResults(relayResult, relayResultDataReliability)
+	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDataReliability)
 	if conflict != nil {
 		err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
 		if err != nil {

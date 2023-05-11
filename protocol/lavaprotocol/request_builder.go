@@ -125,26 +125,26 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResult *RelayResult) (conflicts *conflicttypes.ResponseConflict) {
-	conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
+func VerifyReliabilityResults(ctx context.Context, originalResult *RelayResult, dataReliabilityResult *RelayResult) (conflicts *conflicttypes.ResponseConflict) {
+	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, originalResult, dataReliabilityResult)
 	if conflict_now {
 		return detectionMessage
 	}
-	utils.LavaFormatInfo("Reliability verified successfully!")
+	utils.LavaFormatInfo("Reliability verified successfully!", utils.Attribute{Key: "GUID", Value: ctx})
 	return nil
 }
 
-func compareRelaysFindConflict(result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
+func compareRelaysFindConflict(ctx context.Context, result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
 	compare_result := bytes.Compare(result1.Reply.Data, result2.Reply.Data)
 	if compare_result == 0 {
 		// they have equal data
 		return false, nil
 	}
 	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "Data0", Value: string(result1.Reply.Data)}, utils.Attribute{Key: "Data1", Value: result2.Reply.Data})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(result1.Reply.Data)}, utils.Attribute{Key: "Data1", Value: result2.Reply.Data})
 	responseConflict = &conflicttypes.ResponseConflict{
 		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},
 	}
-	return
+	return true, responseConflict
 }
