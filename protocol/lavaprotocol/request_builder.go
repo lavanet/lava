@@ -62,6 +62,12 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 }
 
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
+	var pQOS *pairingtypes.QualityOfServiceReport = nil
+	if singleConsumerSession.QoSInfo.LastQoSReport != nil {
+		QOS := *singleConsumerSession.QoSInfo.LastQoSReport
+		pQOS = &QOS
+	}
+
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
 		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
@@ -69,27 +75,12 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		CuSum:                 singleConsumerSession.CuSum + singleConsumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
 		RelayNum:              singleConsumerSession.RelayNum, // RelayNum is always incremented
-		QosReport:             singleConsumerSession.QoSInfo.LastQoSReport,
+		QosReport:             pQOS,
 		Epoch:                 epoch,
 		UnresponsiveProviders: reportedProviders,
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
-	}
-}
-
-func dataReliabilityRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, epoch int64, relayNum uint64) *pairingtypes.RelaySession {
-	return &pairingtypes.RelaySession{
-		SpecId:                chainID,
-		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
-		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
-		CuSum:                 lavasession.DataReliabilityCuSum,     // consumerSession.CuSum == 0
-		Provider:              providerPublicAddress,
-		RelayNum:              relayNum,
-		QosReport:             nil,
-		Epoch:                 epoch,
-		UnresponsiveProviders: nil,
-		LavaChainId:           lavaChainID,
-		Sig:                   nil,
+		Badge:                 nil,
 	}
 }
 
