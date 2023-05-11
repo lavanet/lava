@@ -91,11 +91,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	}
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData0)
 	if err != nil {
-		return err
+		return fmt.Errorf("conflict data 0: %s", err)
 	}
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData1)
 	if err != nil {
-		return err
+		return fmt.Errorf("conflict data 1: %s", err)
 	}
 	// 3. validate providers signatures and stakeEntry for that epoch
 	providerAddressFromRelayReplyAndVerifyStakeEntry := func(request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply, first bool) (providerAddress sdk.AccAddress, err error) {
