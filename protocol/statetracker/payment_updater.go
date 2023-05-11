@@ -1,6 +1,8 @@
 package statetracker
 
 import (
+	"sync"
+
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"golang.org/x/net/context"
 )
@@ -15,6 +17,7 @@ type PaymentUpdatable interface {
 }
 
 type PaymentUpdater struct {
+	lock             sync.RWMutex
 	paymentUpdatable map[string]*PaymentUpdatable
 	stateQuery       *ProviderStateQuery
 }
@@ -24,6 +27,8 @@ func NewPaymentUpdater(stateQuery *ProviderStateQuery) *PaymentUpdater {
 }
 
 func (pu *PaymentUpdater) RegisterPaymentUpdatable(ctx context.Context, paymentUpdatable *PaymentUpdatable) {
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
 	pu.paymentUpdatable[(*paymentUpdatable).Description()] = paymentUpdatable
 }
 
@@ -32,6 +37,8 @@ func (pu *PaymentUpdater) UpdaterKey() string {
 }
 
 func (pu *PaymentUpdater) Update(latestBlock int64) {
+	pu.lock.RLock()
+	defer pu.lock.RUnlock()
 	ctx := context.Background()
 	payments, err := pu.stateQuery.PaymentEvents(ctx, latestBlock)
 	if err != nil {
