@@ -2,6 +2,7 @@ package rewardserver
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -24,6 +26,11 @@ type PaymentRequest struct {
 	UniqueIdentifier    uint64
 	Description         string
 	ChainID             string
+}
+
+func (pr *PaymentRequest) String() string {
+	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s",
+		pr.CU, pr.BlockHeightDeadline, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID)
 }
 
 type ConsumerRewards struct {
@@ -52,6 +59,7 @@ type RewardServer struct {
 	expectedPayments []PaymentRequest
 	totalCUServiced  uint64
 	totalCUPaid      uint64
+	providerMetrics  *metrics.ProviderMetricsManager
 }
 
 type RewardsTxSender interface {
@@ -258,6 +266,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 	if serverID == rws.serverID {
 		rws.updateCUPaid(payment.CU)
+		go rws.providerMetrics.AddPayment(payment.ChainID, payment.CU)
 		removedPayment := rws.RemoveExpectedPayment(payment.CU, payment.Client, payment.BlockHeightDeadline, payment.UniqueIdentifier, payment.ChainID)
 		if !removedPayment {
 			utils.LavaFormatWarning("tried removing payment that wasn;t expected", nil, utils.Attribute{Key: "payment", Value: payment})
@@ -265,7 +274,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager) *RewardServer {
 	//
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
@@ -273,16 +282,30 @@ func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
 	rws.expectedPayments = []PaymentRequest{}
 	// TODO: load this from persistency
 	rws.rewards = map[uint64]*EpochRewards{}
+	rws.providerMetrics = providerMetrics
 	return rws
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
-	attributesList := []map[string]string{}
-	appendToAttributeList := func(attributesList []map[string]string, idx int, key string, value string) {
-		for len(attributesList) <= idx {
-			attributesList = append(attributesList, map[string]string{})
+	type mapCont struct {
+		attributes map[string]string
+		index      int
+	}
+	attributesList := []*mapCont{}
+	appendToAttributeList := func(idx int, key string, value string) {
+		var mapContToChange *mapCont
+		for _, mapCont := range attributesList {
+			if mapCont.index != idx {
+				continue
+			}
+			mapContToChange = mapCont
+			break
 		}
-		attributesList[idx] = map[string]string{key: value}
+		if mapContToChange == nil {
+			mapContToChange = &mapCont{attributes: map[string]string{}, index: idx}
+			attributesList = append(attributesList, mapContToChange)
+		}
+		mapContToChange.attributes[key] = value
 	}
 	for _, attribute := range event.Attributes {
 		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
@@ -298,17 +321,22 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
 		}
-		appendToAttributeList(attributesList, index, attrKey, string(attribute.Value))
+		appendToAttributeList(index, attrKey, string(attribute.Value))
 	}
 	payments := []*PaymentRequest{}
-	for _, attributes := range attributesList {
+	for idx, mapCont := range attributesList {
+		attributes := mapCont.attributes
 		chainID, ok := attributes["chainID"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			errStringAllAttrs := ""
+			for _, mapCont := range attributesList {
+				errStringAllAttrs += fmt.Sprintf("%#v,", *mapCont)
+			}
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event  missing field chainID", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx}, utils.Attribute{Key: "attributesList", Value: errStringAllAttrs})
 		}
 		mint, ok := attributes["Mint"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field Mint", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		mintedCoins, err := sdk.ParseCoinNormalized(mint)
 		if err != nil {
@@ -316,7 +344,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		cu_str, ok := attributes["CU"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field CU", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		cu, err := strconv.ParseUint(cu_str, 10, 64)
 		if err != nil {
@@ -324,7 +352,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		consumer, ok := attributes["client"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field client", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		consumerAddr, err := sdk.AccAddressFromBech32(consumer)
 		if err != nil {
@@ -333,7 +361,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 
 		uniqueIdentifier, ok := attributes["uniqueIdentifier"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field uniqueIdentifier", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		uniqueID, err := strconv.ParseUint(uniqueIdentifier, 10, 64)
 		if err != nil {
@@ -341,7 +369,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		}
 		description, ok := attributes["descriptionString"]
 		if !ok {
-			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event", nil, utils.Attribute{Key: "attributes", Value: attributes})
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field descriptionString", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
 		payment := &PaymentRequest{
 			CU:                  cu,

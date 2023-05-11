@@ -3,14 +3,18 @@ package keeper_test
 import (
 	"context"
 	"math"
+	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/projects/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
+
+const projectName = "mockname"
 
 func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (projects []types.ProjectData) {
 	adm1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
@@ -36,7 +40,10 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 		{Key: dev3Addr, Types: typeDevel},
 	}
 
-	policy1 := &types.Policy{GeolocationProfile: math.MaxUint64}
+	policy1 := &types.Policy{
+		GeolocationProfile: math.MaxUint64,
+		MaxProvidersToPair: 2,
+	}
 
 	templates := []struct {
 		name    string
@@ -46,8 +53,8 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 	}{
 		// project with admin key, enabled, has policy
 		{"mock_project_1", true, keys_1_admin, policy1},
-		// project with "both" key, disabled, no policy
-		{"mock_project_2", false, keys_1_admin_dev, nil},
+		// project with "both" key, disabled, with policy
+		{"mock_project_2", false, keys_1_admin_dev, policy1},
 		// project with 2 keys (one admin, one developer) disabled, no policy
 		{"mock_project_3", false, keys_2_admin_and_dev, nil},
 	}
@@ -88,7 +95,7 @@ func TestCreateDefaultProject(t *testing.T) {
 }
 
 func TestCreateProject(t *testing.T) {
-	_, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
 	projectData := prepareProjectsData(_ctx, keepers)[1]
@@ -103,11 +110,65 @@ func TestCreateProject(t *testing.T) {
 	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
 	ctx = sdk.UnwrapSDKContext(_ctx)
 
-	// create another project with the same name, should fail as this is unique
-	err = keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
+	// test invalid project name/description
+	defaultProjectName := types.ADMIN_PROJECT_NAME
+	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
+	invalidProjectName := "projectName,"
+
+	projectDescription := "test project"
+	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
+	invalidProjectDescription := "projectDesc¢"
+
+	testProjectData := projectData
+	testProjectData.ProjectKeys = []types.ProjectKey{}
+
+	nameAndDescriptionTests := []struct {
+		name               string
+		projectName        string
+		projectDescription string
+	}{
+		{"bad projectName (duplicate)", projectData.Name, projectDescription},
+		{"bad projectName (too long)", longProjectName, projectDescription},
+		{"bad projectName (contains comma)", invalidProjectName, projectDescription},
+		{"bad projectName (empty)", "", projectDescription},
+		{"bad projectDescription (too long)", "test1", longProjectDescription},
+		{"bad projectDescription (non ascii)", "test2", invalidProjectDescription},
+	}
+
+	for _, tt := range nameAndDescriptionTests {
+		t.Run(tt.name, func(t *testing.T) {
+			testProjectData.Name = tt.projectName
+			testProjectData.Description = tt.projectDescription
+
+			err = keepers.Projects.CreateProject(ctx, subAddr, testProjectData, plan)
+			require.NotNil(t, err)
+		})
+	}
+
+	// continue testing traits that are not related to the project's name/description
+	// try creating a project with invalid project keys
+	invalidKeysProjectData := projectData
+	invalidKeysProjectData.Name = "nonDuplicateProjectName"
+	invalidKeysProjectData.ProjectKeys = []types.ProjectKey{
+		{
+			Key:   subAddr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		},
+		{
+			Key:   admAddr,
+			Types: []types.ProjectKey_KEY_TYPE{4},
+		},
+	}
+
+	// should fail because there's an invalid key
+	_, err = servers.SubscriptionServer.AddProject(_ctx, &subscriptiontypes.MsgAddProject{
+		Creator:     subAddr,
+		ProjectData: invalidKeysProjectData,
+	})
 	require.NotNil(t, err)
 
-	// subscription key is not a developer
+	// get project by developer - subscription key is not a developer, should fail (if it succeeds, it means that the valid project key
+	// from invalidKeysProjectData was registered, which is not desired!)
 	_, err = keepers.Projects.Developer(_ctx, &types.QueryDeveloperRequest{Developer: subAddr})
 	require.NotNil(t, err)
 
@@ -134,7 +195,7 @@ func TestCreateProject(t *testing.T) {
 
 func TestAddKeys(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	projectData := prepareProjectsData(ctx, keepers)[2]
 	plan := common.CreateMockPlan()
 
@@ -144,7 +205,7 @@ func TestAddKeys(t *testing.T) {
 	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	dev3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 
-	err := keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
+	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -156,6 +217,11 @@ func TestAddKeys(t *testing.T) {
 	pk := types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
 	// try adding myself as admin, should fail
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	require.NotNil(t, err)
+
+	// admin key adding an invalid key
+	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{4}}
+	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin key adding a developer
@@ -185,19 +251,19 @@ func TestAddKeys(t *testing.T) {
 
 func TestAddAdminInTwoProjects(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-
+	_ctx := sdk.UnwrapSDKContext(ctx)
 	projectData := prepareProjectsData(ctx, keepers)[0]
 	plan := common.CreateMockPlan()
 
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	admAddr := projectData.ProjectKeys[0].Key
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan)
+	err := keepers.Projects.CreateAdminProject(_ctx, subAddr, plan)
 	require.Nil(t, err)
 
 	// this is not supposed to fail because you can use the same admin key for two different projects
 	// creating a regular project (not admin project) so subAccount won't be a developer there
-	err = keepers.Projects.CreateProject(sdk.UnwrapSDKContext(ctx), subAddr, projectData, plan)
+	err = keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -235,55 +301,80 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	require.Nil(t, err)
 
 	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	keepers.Projects.AddKeysToProject(ctx, projectID, admAddr, []types.ProjectKey{pk})
+	err = keepers.Projects.AddKeysToProject(ctx, projectID, admAddr, []types.ProjectKey{pk})
+	require.Nil(t, err)
 
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(ctx, spec)
 
 	templates := []struct {
-		name                 string
-		creator              string
-		chainPolicies        []types.ChainPolicy
-		totalCuLimit         uint64
-		epochCuLimit         uint64
-		maxProvidersToPair   uint64
-		validateBasicSuccess bool
-		setPolicySuccess     bool
+		name                         string
+		creator                      string
+		projectID                    string
+		geolocation                  uint64
+		chainPolicies                []types.ChainPolicy
+		totalCuLimit                 uint64
+		epochCuLimit                 uint64
+		maxProvidersToPair           uint64
+		setAdminPolicySuccess        bool
+		setSubscriptionPolicySuccess bool
 	}{
 		{
-			"valid policy (admin account)", admAddr,
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true,
-		},
-		{
-			"valid policy (subscription account)", subAddr,
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
-			100, 10, 3, true, true,
-		},
-		{
-			"bad creator (developer account -- not admin)", devAddr,
+			"valid policy (admin account)", admAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
+
+		{
+			"valid policy (subscription account)", subAddr, projectID, uint64(1),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, true, true,
+		},
+
+		{
+			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, false, false,
+		},
+
+		{
+			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, false, false,
+		},
+
+		{
+			"invalid geolocation (0)", devAddr, projectID, uint64(0),
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			100, 10, 3, false, false,
+		},
+
 		{
 			// note: currently, we don't verify the chain policies
-			"bad chainID (doesn't exist)", subAddr,
+			"bad chainID (doesn't exist)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
+
 		{
 			// note: currently, we don't verify the chain policies
-			"bad API (doesn't exist)", subAddr,
+			"bad API (doesn't exist)", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true,
 		},
 		{
-			"epoch CU larger than total CU", subAddr,
+			// note: currently, we don't verify the chain policies
+			"chainID and API not supported (exist in Lava's specs)", subAddr, projectID, uint64(1),
+			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
+			100, 10, 3, true, true,
+		},
+		{
+			"epoch CU larger than total CU", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, false,
 		},
 		{
-			"bad maxProvidersToPair", subAddr,
+			"bad maxProvidersToPair", subAddr, projectID, uint64(1),
 			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 1, false, false,
 		},
@@ -293,7 +384,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		t.Run(tt.name, func(t *testing.T) {
 			newPolicy := types.Policy{
 				ChainPolicies:      tt.chainPolicies,
-				GeolocationProfile: uint64(1),
+				GeolocationProfile: tt.geolocation,
 				TotalCuLimit:       tt.totalCuLimit,
 				EpochCuLimit:       tt.epochCuLimit,
 				MaxProvidersToPair: tt.maxProvidersToPair,
@@ -303,24 +394,19 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				SetPolicyMessage := types.MsgSetPolicy{
 					Creator: tt.creator,
 					Policy:  newPolicy,
-					Project: projectID,
+					Project: tt.projectID,
 				}
 
 				err = SetPolicyMessage.ValidateBasic()
-				if tt.validateBasicSuccess {
-					require.Nil(t, err)
-				} else {
-					require.NotNil(t, err)
-					return
-				}
+				require.Nil(t, err)
 
 				_, err := servers.ProjectServer.SetPolicy(_ctx, &SetPolicyMessage)
-				if tt.setPolicySuccess {
+				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-					ctx := sdk.UnwrapSDKContext(_ctx)
+					ctx = sdk.UnwrapSDKContext(_ctx)
 
-					proj, err := keepers.Projects.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
+					proj, err := keepers.Projects.GetProjectForBlock(ctx, tt.projectID, uint64(ctx.BlockHeight()))
 					require.Nil(t, err)
 
 					require.Equal(t, newPolicy, *proj.AdminPolicy)
@@ -331,35 +417,22 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				setSubscriptionPolicyMessage := types.MsgSetSubscriptionPolicy{
 					Creator:  tt.creator,
 					Policy:   newPolicy,
-					Projects: []string{projectID},
+					Projects: []string{tt.projectID},
 				}
 
 				err = setSubscriptionPolicyMessage.ValidateBasic()
-				if tt.validateBasicSuccess {
-					require.Nil(t, err)
-				} else {
-					require.NotNil(t, err)
-					return
-				}
+				require.Nil(t, err)
 
 				_, err := servers.ProjectServer.SetSubscriptionPolicy(_ctx, &setSubscriptionPolicyMessage)
-				if tt.creator == subAddr {
-					// only the subscription consumer should be able to set subscription policy
+				if tt.setSubscriptionPolicySuccess {
+					require.Nil(t, err)
+					_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
+					ctx = sdk.UnwrapSDKContext(_ctx)
+
+					proj, err := keepers.Projects.GetProjectForBlock(ctx, tt.projectID, uint64(ctx.BlockHeight()))
 					require.Nil(t, err)
 
-					if tt.setPolicySuccess {
-						require.Nil(t, err)
-
-						_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-						ctx := sdk.UnwrapSDKContext(_ctx)
-
-						proj, err := keepers.Projects.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
-						require.Nil(t, err)
-
-						require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
-					} else {
-						require.NotNil(t, err)
-					}
+					require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
 				} else {
 					require.NotNil(t, err)
 				}
@@ -434,4 +507,124 @@ func TestChargeComputeUnits(t *testing.T) {
 	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
+}
+
+func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
+	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	_ctx := sdk.UnwrapSDKContext(ctx)
+	projectName := "mockname1"
+	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	dev1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	projectID := types.ProjectIndex(subAddr, projectName)
+	plan := common.CreateMockPlan()
+
+	projectData := types.ProjectData{
+		Name:        projectName,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   subAddr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}},
+		Policy: &plan.PlanPolicy,
+	}
+	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
+	require.Nil(t, err)
+
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
+
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
+		[]types.ProjectKey{{
+			Key:   dev1Addr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}})
+	require.Nil(t, err)
+
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
+
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
+		[]types.ProjectKey{{
+			Key:   dev2Addr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}})
+	require.Nil(t, err)
+
+	proj, err := keepers.Projects.GetProjectForDeveloper(_ctx, subAddr,
+		uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	require.Equal(t, 3, len(proj.ProjectKeys))
+}
+
+func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
+	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	_ctx := sdk.UnwrapSDKContext(ctx)
+	plan := common.CreateMockPlan()
+
+	sub1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	sub2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	devAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+
+	projectName1 := "mockname1"
+	projectName2 := "mockname2"
+
+	projectID1 := types.ProjectIndex(sub1Addr, projectName1)
+	projectID2 := types.ProjectIndex(sub2Addr, projectName2)
+
+	projectData1 := types.ProjectData{
+		Name:        projectName1,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   sub1Addr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}},
+		Policy: &plan.PlanPolicy,
+	}
+	err := keepers.Projects.CreateProject(_ctx, sub1Addr, projectData1, plan)
+	require.Nil(t, err)
+
+	projectData2 := types.ProjectData{
+		Name:        projectName2,
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{
+			Key:   sub2Addr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}},
+		Policy: &plan.PlanPolicy,
+	}
+	err = keepers.Projects.CreateProject(_ctx, sub2Addr, projectData2, plan)
+	require.Nil(t, err)
+
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	_ctx = sdk.UnwrapSDKContext(ctx)
+
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID1, sub1Addr,
+		[]types.ProjectKey{{
+			Key:   devAddr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}})
+	require.Nil(t, err)
+
+	err = keepers.Projects.AddKeysToProject(_ctx, projectID2, sub2Addr,
+		[]types.ProjectKey{{
+			Key:   devAddr,
+			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+		}})
+	require.NotNil(t, err) // should fail since this developer was already added to the first project
+
+	proj1, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub1Addr,
+		uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	proj2, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub2Addr,
+		uint64(_ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	require.Equal(t, 2, len(proj1.ProjectKeys))
+	require.Equal(t, 1, len(proj2.ProjectKeys))
 }
