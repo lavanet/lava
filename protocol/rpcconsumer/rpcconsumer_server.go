@@ -357,7 +357,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	if rand.Uint32() < dataReliabilityThreshold {
+	if rand.Uint32() > dataReliabilityThreshold {
 		// decided not to do data reliability
 		return nil
 	}
