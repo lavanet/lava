@@ -36,12 +36,6 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "The total number of CUs serviced by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
-	// Create a new GaugeVec metric to represent the TotalCUPaid over time.
-	totalCUPaidMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "provider_total_cu_paid",
-		Help: "The total number of CUs paid to the provider over time.",
-	}, []string{"spec", "apiInterface"})
-
 	// Create a new GaugeVec metric to represent the TotalRelaysServiced over time.
 	totalRelaysServicedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "provider_total_relays_serviced",
@@ -63,6 +57,13 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "latest_block",
 		Help: "The latest block measured",
 	}, []string{"spec"})
+
+	// Create a new GaugeVec metric to represent the TotalCUPaid over time.
+	totalCUPaidMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "provider_total_cu_paid",
+		Help: "The total number of CUs paid to the provider over time.",
+	}, []string{"spec"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -134,6 +135,7 @@ func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 		providerMetrics := pme.getProviderMetric(specID, apiInterface)
 		if providerMetrics != nil {
 			go providerMetrics.AddPayment(cu)
+			break // we need to increase the metric only once
 		}
 	}
 }

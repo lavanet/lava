@@ -264,7 +264,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			if cs.newLatestCallback != nil {
 				for i := prev_latest + 1; i <= newLatestBlock; i++ {
 					// on catch up of several blocks we don't want to miss any callbacks
-					cs.newLatestCallback(i, latestHash)
+					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
 				}
 			}
 		}
