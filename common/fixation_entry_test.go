@@ -99,7 +99,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			indexList := fs[play.store].GetAllEntryIndices(ctx)
 			require.Equal(t, int(play.count), len(indexList), what)
 		case "getvers":
-			indexList := fs[play.store].GetAllEntryVersions(ctx, index, true)
+			indexList := fs[play.store].GetAllEntryVersions(ctx, index)
 			require.Equal(t, int(play.count), len(indexList), what)
 		case "getallprefix":
 			indexList := fs[play.store].GetAllEntryIndicesWithPrefix(ctx, index)

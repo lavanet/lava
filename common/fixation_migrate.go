@@ -88,7 +88,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 		if err != nil {
 			return fmt.Errorf("%s: failed to sanitize index: %s", prefixForErrors(1), index)
 		}
-		blocks := fs.GetAllEntryVersions(ctx, index, true)
+		blocks := fs.GetAllEntryVersions(ctx, index)
 		if len(blocks) < 1 {
 			return fmt.Errorf("%s: no versions for index: %s", prefixForErrors(1), index)
 		}

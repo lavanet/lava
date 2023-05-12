@@ -408,16 +408,10 @@ func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, bl
 	return fs.getEntryVersionsFilter(ctx, index, block, filter)
 }
 
-// GetAllEntryVersions returns a list of all versions (blocks) of an entry.
-// If stale == true, then the output will include stale versions (for testing).
-func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
-	filter := func(entry *types.Entry) bool {
-		if !stale && entry.IsStale(ctx) {
-			return false
-		}
-		return true
-	}
-
+// GetAllEntryVersions returns a list of all versions (blocks) of an entry, for
+// use in testing and migrations (includes stale and deleted entry versions).
+func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string) (blocks []uint64) {
+	filter := func(entry *types.Entry) bool { return true }
 	return fs.getEntryVersionsFilter(ctx, index, 0, filter)
 }
 
