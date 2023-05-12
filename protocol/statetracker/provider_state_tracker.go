@@ -76,8 +76,8 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error {
-	return pst.txSender.TxRelayPayment(ctx, relayRequests, dataReliabilityProofs, description)
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error {
+	return pst.txSender.TxRelayPayment(ctx, relayRequests, description)
 }
 
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
@@ -92,11 +92,11 @@ func (pst *ProviderStateTracker) LatestBlock() int64 {
 	return pst.StateTracker.chainTracker.GetLatestBlockNum()
 }
 
-func (pst *ProviderStateTracker) GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
-	return pst.stateQuery.GetVrfPkAndMaxCuForUser(ctx, consumerAddress, chainID, epoch)
+func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (maxCu uint64, err error) {
+	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
-func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error) {
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 

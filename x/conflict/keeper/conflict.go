@@ -33,9 +33,6 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if !bytes.Equal(conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data) {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data)
 	}
-	if conflictData.ConflictRelayData0.Request.RelayData.ApiUrl != conflictData.ConflictRelayData1.Request.RelayData.ApiUrl {
-		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ApiUrl, conflictData.ConflictRelayData1.Request.RelayData.ApiUrl)
-	}
 	if conflictData.ConflictRelayData0.Request.RelayData.RequestBlock != conflictData.ConflictRelayData1.Request.RelayData.RequestBlock {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RelayData.RequestBlock, conflictData.ConflictRelayData1.Request.RelayData.RequestBlock)
 	}
@@ -65,7 +62,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return err
 	}
 
-	_, _, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
+	_, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
 	if err != nil {
 		// support legacy
 		_, err = k.pairingKeeper.VerifyClientStake(ctx, chainID, clientAddr, uint64(block), epochStart)
@@ -94,11 +91,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	}
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData0)
 	if err != nil {
-		return err
+		return fmt.Errorf("conflict data 0: %s", err)
 	}
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData1)
 	if err != nil {
-		return err
+		return fmt.Errorf("conflict data 1: %s", err)
 	}
 	// 3. validate providers signatures and stakeEntry for that epoch
 	providerAddressFromRelayReplyAndVerifyStakeEntry := func(request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply, first bool) (providerAddress sdk.AccAddress, err error) {

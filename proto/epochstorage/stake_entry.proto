@@ -7,13 +7,12 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto"; 
 
 message StakeEntry {
-  
+  reserved 7;
   cosmos.base.v1beta1.Coin stake = 1 [(gogoproto.nullable) = false]; 
   string address = 2; 
   uint64 stake_applied_block = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
   uint64 geolocation = 5; 
   string chain = 6;
-  string vrfpk = 7;
   string moniker = 8;
 }

@@ -29834,8 +29834,6 @@ paths:
                             format: uint64
                           chain:
                             type: string
-                          vrfpk:
-                            type: string
                           moniker:
                             type: string
                     epochBlockHash:
@@ -29993,8 +29991,6 @@ paths:
                           format: uint64
                         chain:
                           type: string
-                        vrfpk:
-                          type: string
                         moniker:
                           type: string
                   epochBlockHash:
@@ -30076,8 +30072,6 @@ paths:
                       type: string
                       format: uint64
                     chain:
-                      type: string
-                    vrfpk:
                       type: string
                     moniker:
                       type: string
@@ -30328,8 +30322,6 @@ paths:
                       type: string
                       format: uint64
                     chain:
-                      type: string
-                    vrfpk:
                       type: string
                     moniker:
                       type: string
@@ -30680,8 +30672,6 @@ paths:
                       format: uint64
                     chain:
                       type: string
-                    vrfpk:
-                      type: string
                     moniker:
                       type: string
               output:
@@ -30766,8 +30756,6 @@ paths:
                       type: string
                       format: uint64
                     chain:
-                      type: string
-                    vrfpk:
                       type: string
                     moniker:
                       type: string
@@ -31018,8 +31006,6 @@ paths:
                     type: string
                     format: uint64
                   chain:
-                    type: string
-                  vrfpk:
                     type: string
                   moniker:
                     type: string
@@ -31361,11 +31347,6 @@ paths:
                             default: NONE
                             title: 'bitmap, must only be power of 2'
                           title: 'the key type, determines the privilages of the key'
-                        vrfpk:
-                          type: string
-                          title: >-
-                            the vrf public key used to calculate data
-                            reliability
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -31503,11 +31484,6 @@ paths:
                             default: NONE
                             title: 'bitmap, must only be power of 2'
                           title: 'the key type, determines the privilages of the key'
-                        vrfpk:
-                          type: string
-                          title: >-
-                            the vrf public key used to calculate data
-                            reliability
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -54582,35 +54558,6 @@ definitions:
           salt:
             type: string
             format: byte
-      data_reliability:
-        type: object
-        properties:
-          chain_id:
-            type: string
-          epoch:
-            type: string
-            format: int64
-          differentiator:
-            type: boolean
-          vrf_value:
-            type: string
-            format: byte
-          vrf_proof:
-            type: string
-            format: byte
-          provider_sig:
-            type: string
-            format: byte
-          all_data_hash:
-            type: string
-            format: byte
-          query_hash:
-            type: string
-            format: byte
-            title: we only need it for payment later
-          sig:
-            type: string
-            format: byte
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -54635,18 +54582,6 @@ definitions:
       sig:
         type: string
         format: byte
-      chain_id:
-        type: string
-      epoch:
-        type: string
-        format: int64
-      all_data_hash:
-        type: string
-        format: byte
-      query_hash:
-        type: string
-        format: byte
-        title: we only need it for payment later
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -54794,8 +54729,6 @@ definitions:
                     format: uint64
                   chain:
                     type: string
-                  vrfpk:
-                    type: string
                   moniker:
                     type: string
             epochBlockHash:
@@ -54907,8 +54840,6 @@ definitions:
                   format: uint64
                 chain:
                   type: string
-                vrfpk:
-                  type: string
                 moniker:
                   type: string
           epochBlockHash:
@@ -54974,8 +54905,6 @@ definitions:
         format: uint64
       chain:
         type: string
-      vrfpk:
-        type: string
       moniker:
         type: string
   lavanet.lava.epochstorage.StakeStorage:
@@ -55024,8 +54953,6 @@ definitions:
               type: string
               format: uint64
             chain:
-              type: string
-            vrfpk:
               type: string
             moniker:
               type: string
@@ -55305,8 +55232,6 @@ definitions:
               format: uint64
             chain:
               type: string
-            vrfpk:
-              type: string
             moniker:
               type: string
       output:
@@ -55367,8 +55292,6 @@ definitions:
               type: string
               format: uint64
             chain:
-              type: string
-            vrfpk:
               type: string
             moniker:
               type: string
@@ -55501,8 +55424,6 @@ definitions:
               format: uint64
             chain:
               type: string
-            vrfpk:
-              type: string
             moniker:
               type: string
       output:
@@ -55552,8 +55473,6 @@ definitions:
               format: uint64
             chain:
               type: string
-            vrfpk:
-              type: string
             moniker:
               type: string
   lavanet.lava.pairing.QueryUserEntryResponse:
@@ -55598,8 +55517,6 @@ definitions:
             type: string
             format: uint64
           chain:
-            type: string
-          vrfpk:
             type: string
           moniker:
             type: string
@@ -55986,9 +55903,6 @@ definitions:
                 default: NONE
                 title: 'bitmap, must only be power of 2'
               title: 'the key type, determines the privilages of the key'
-            vrfpk:
-              type: string
-              title: the vrf public key used to calculate data reliability
         title: list of the projects keys
       admin_policy:
         type: object
@@ -56068,9 +55982,6 @@ definitions:
           default: NONE
           title: 'bitmap, must only be power of 2'
         title: 'the key type, determines the privilages of the key'
-      vrfpk:
-        type: string
-        title: the vrf public key used to calculate data reliability
   lavanet.lava.projects.ProjectKey.KEY_TYPE:
     type: string
     enum:
@@ -56118,9 +56029,6 @@ definitions:
                     default: NONE
                     title: 'bitmap, must only be power of 2'
                   title: 'the key type, determines the privilages of the key'
-                vrfpk:
-                  type: string
-                  title: the vrf public key used to calculate data reliability
             title: list of the projects keys
           admin_policy:
             type: object
@@ -56226,9 +56134,6 @@ definitions:
                     default: NONE
                     title: 'bitmap, must only be power of 2'
                   title: 'the key type, determines the privilages of the key'
-                vrfpk:
-                  type: string
-                  title: the vrf public key used to calculate data reliability
             title: list of the projects keys
           admin_policy:
             type: object
@@ -57498,9 +57403,6 @@ definitions:
                 default: NONE
                 title: 'bitmap, must only be power of 2'
               title: 'the key type, determines the privilages of the key'
-            vrfpk:
-              type: string
-              title: the vrf public key used to calculate data reliability
       policy:
         type: object
         properties:

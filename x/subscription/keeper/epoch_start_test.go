@@ -23,7 +23,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	// advance block to reach time > 0
 	ts.advanceBlock()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1, "")
+	err := keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ts.ctx, account.String())
