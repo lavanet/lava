@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -27,13 +28,16 @@ func initCtxAndFixationStore(t *testing.T) (sdk.Context, *FixationStore) {
 }
 
 type fixationTemplate struct {
-	op    string
-	name  string
-	store int
-	index string
-	coin  int
-	fail  bool
-	count int64
+	op    string // op-code
+	name  string // description
+	index string // entry index (name)
+	store int    // which fixation store
+	coin  int    // which data item
+	fail  bool   // should fail?
+	// count = 0 sets target block for ctx
+	// count > 0 is target block for ctx, or actual count
+	// count < 0 is target block for "append" only (not ctx)
+	count int64 // target block or count
 }
 
 // helper to automate testing operations
@@ -49,7 +53,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 
 	for _, play := range playbook {
 		block := uint64(ctx.BlockHeight())
-		if play.count != 0 {
+		if play.count > 0 {
 			block = uint64(play.count)
 		}
 		index := "myindex"
@@ -61,12 +65,14 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			" block: " + strconv.Itoa(int(block))
 		switch play.op {
 		case "append":
-			if block > uint64(ctx.BlockHeight()) {
+			if play.count > 0 && block > uint64(ctx.BlockHeight()) {
 				ctx = ctx.WithBlockHeight(int64(block))
+			} else if play.count < 0 {
+				block = uint64(-play.count) // allow future block with advancing ctx
 			}
 			err := fs[play.store].AppendEntry(ctx, index, block, &coins[play.coin])
 			if !play.fail {
-				require.Nil(t, err, what)
+				require.Nil(t, err, what+fmt.Sprintf(" %v", err))
 			} else {
 				require.NotNil(t, err, what)
 			}
@@ -89,6 +95,13 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 				require.Equal(t, dummy, coins[play.coin], what)
 			} else {
 				require.False(t, found, what)
+			}
+		case "del":
+			err := fs[play.store].DelEntry(ctx, index, block)
+			if !play.fail {
+				require.Nil(t, err, what+fmt.Sprintf(" %v", err))
+			} else {
+				require.NotNil(t, err, what)
 			}
 		case "put":
 			fs[play.store].PutEntry(ctx, index, block)
@@ -136,7 +149,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1 (not stale yet)", count: block0},
-		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},
 		{op: "find", name: "latest entry", coin: 1},
@@ -144,6 +157,28 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	}
 
 	testWithFixationTemplate(t, playbook, 2, 1)
+}
+
+// Test append of future entries
+func TestFixationEntryAppendFuture(t *testing.T) {
+	block0 := int64(100)
+	block1 := int64(200)
+	block2 := int64(300)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #3", count: -block2, coin: 2},
+		{op: "append", name: "entry #2", count: -block1, coin: 1},
+		{op: "getvers", name: "to check 3 versions", count: 3},
+		{op: "get", name: "get entry #1", coin: 0},
+		{op: "block", name: "advance to block1", count: block1 - block0},
+		{op: "get", name: "get entry #2", coin: 1},
+		{op: "block", name: "advance to block2", count: block2 - block1},
+		{op: "get", name: "get entry #3", coin: 2},
+		{op: "getvers", name: "to check 3 versions", count: 3},
+	}
+
+	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
 // Test addition of same entry twice within the same block
@@ -190,7 +225,7 @@ func TestEntryStale(t *testing.T) {
 		// entry #2 (refcount = zero) also not deleted because it is not oldest
 		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
 		{op: "find", name: "entry #2", count: block1 + 1, coin: 1},
-		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #2 now stale and therefore should not be visible
 		{op: "find", name: "entry #2", count: block1 + 1, fail: true},
 		// entry #3 (refcount = zero) is old, but being the latest it always
@@ -217,7 +252,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 		{op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2},
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
-		{op: "block", name: "add STAEL_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		// entry #2 in store#2 remains unaffected
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true},
@@ -257,10 +292,119 @@ func TestDoublePutEntry(t *testing.T) {
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
 		// entry #1 with block zero now has refcount = zero
-		{op: "put", name: "negative refcount entry #1 version 0", count: block0, fail: false},
+		{op: "put", name: "negative refcount entry #1 version 0", count: block0},
 	}
 
 	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 1, 1) })
+}
+
+func TestDelEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + 10
+	block2 := block1 + 10
+	block3 := block2 + 10
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "get", name: "entry #1", coin: 0},
+		{op: "append", name: "entry #1 version 1", count: block1, coin: 1},
+		// entry #1 get-able
+		{op: "getall", name: "count indices before del", count: 1},
+		{op: "get", name: "entry #1", coin: 1},
+		{op: "block", name: "advance to block3", count: block2 - block1},
+		{op: "del", name: "entry #1"},
+		// second del should fail
+		{op: "del", name: "entry #1", fail: true},
+		// entry #1 now gone from: get, append should fail
+		{op: "get", name: "entry #1 gone", coin: 1, fail: true},
+		{op: "append", name: "entry #1 version 2", count: block3, fail: true},
+		{op: "getall", name: "count indices after del", count: 0},
+		// entry #1 find(s) should still work
+		{op: "find", name: "entry #1 version 0", coin: 0, count: block0},
+		{op: "find", name: "entry #1 version 1", coin: 1, count: block1},
+		// entry #1 find beyond the delete should fail
+		{op: "find", name: "entry #1 version 1", count: block2, fail: true},
+	}
+
+	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
+func TestDelEntryWithFuture(t *testing.T) {
+	block0 := int64(100)
+	block1 := int64(200)
+	block2 := int64(300)
+	block3 := int64(2000)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #3", count: -block2, coin: 2},
+		{op: "append", name: "entry #2", count: -block1, coin: 1},
+		{op: "getvers", name: "to check 3 versions", count: 3},
+		{op: "del", name: "between entry #2 and entry #3 ", count: block1 + 50},
+		{op: "block", name: "advance to block1", count: block1 - block0},
+		// now entry #2 is latest, and should have inherited DeleteAt
+		{op: "get", name: "entry #2", coin: 1},
+		{op: "put", name: "entry #2"},
+		{op: "block", name: "advance to block1+50", count: 50},
+		// now entry #2 is deleted, and entry #3 discarded
+		{op: "get", name: "entry #2", fail: true},
+		{op: "getvers", name: "to check 3 versions", count: 2},
+		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME - 50},
+		{op: "block", name: "+1", count: 1},
+		{op: "getvers", name: "to check 2 version", count: 1},
+		{op: "block", name: "advance until entry #2 stale", count: block2 - block1},
+		{op: "getvers", name: "to check 0 version", count: 0},
+		// should be possible to re-append the entry now
+		{op: "append", name: "entry #1", count: block3, coin: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
+// TestDelEntrySameFuture tests the case when a future entry is deleted
+// on the same block it matures.
+func TestDelEntrySameFuture(t *testing.T) {
+	block0 := int64(100)
+	block1 := int64(200)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: -block1, coin: 1},
+		{op: "getvers", name: "to check 2 versions", count: 2},
+		{op: "del", name: "exactly on (future) entry #2 ", count: block1},
+		{op: "block", name: "advance to block1", count: block1 - block0},
+		// now entry #2 is latest, and deleted
+		{op: "get", name: "entry #1 should fail", fail: true},
+		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME},
+		{op: "getvers", name: "to check 0 version", count: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 2, 1)
+}
+
+func TestDeleletdStaleStays(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + 10
+	block2 := block1 + 10
+	block3 := block2 + 10
+	block4 := block3 + 10
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "get", name: "entry #1", coin: 0},
+		{op: "append", name: "entry #1 version 1", count: block1, coin: 1},
+		{op: "append", name: "entry #1 version 2", count: block2, coin: 2},
+		{op: "append", name: "entry #1 version 3", count: block3, coin: 2},
+		{op: "del", name: "entry #1", count: block4},
+		// entry #1 version 1,2,3 are in stale-period now
+		{op: "block", name: "add block4-block3", count: block4 - block3},
+		{op: "getvers", name: "to check 4 versions left", count: 4},
+		// entry #1 version 1,2,3 become stale, version 2 will be gone
+		{op: "block", name: "add STALE_ENTRY_TIME", count: types.STALE_ENTRY_TIME},
+		{op: "getvers", name: "to check 3 versions left", count: 3},
+	}
+
+	testWithFixationTemplate(t, playbook, 4, 1)
 }
 
 func TestExactEntryMethods(t *testing.T) {
@@ -342,7 +486,7 @@ func TestRemoveStaleEntries(t *testing.T) {
 		{op: "put", name: "refcount entry #1", count: block0},
 		{op: "block", name: "wait entry #1 staled", count: block6 - block5},
 		// expect 5 entry versions left
-		{op: "getvers", name: "to check 5 versions left", count: 4},
+		{op: "getvers", name: "to check 4 versions left", count: 4},
 		// release more entries
 		{op: "put", name: "refcount entry #4", count: block3},
 		{op: "block", name: "wait entry #1 half staled", count: block7 - block6},
