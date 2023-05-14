@@ -80,8 +80,19 @@ func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subsp
 	return
 }
 
-func SimulatePlansProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
-	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal for testing", plansToPropose)
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
+	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ type testStruct struct {
 }
 
 func (ts *testStruct) advanceEpochUntilStale() {
-	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + commontypes.STALE_ENTRY_TIME + 1
+	block := sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + commontypes.STALE_ENTRY_TIME
 	for block > sdk.UnwrapSDKContext(ts.ctx).BlockHeight() {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -52,8 +52,8 @@ func TestPlanEntryGet(t *testing.T) {
 	}
 }
 
-// Function to create an array of test plans. Can output an array with plans with the same ID
-func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) []types.Plan {
+// createTestPlans returns a slice of plans for testing
+func createTestPlans(planAmount int, withSameIndex bool, startIndex int) []types.Plan {
 	testPlans := []types.Plan{}
 	policy := projectstypes.Policy{
 		TotalCuLimit:       1000,
@@ -61,13 +61,10 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 		MaxProvidersToPair: 3,
 	}
 
-	// create dummy plans in a loop according to planAmount
 	for i := startIndex; i < startIndex+planAmount; i++ {
-		// create distinct plan index by the loop counter
-		planIndex := "mockPlan" + strconv.FormatUint(i, 10)
+		planIndex := "mockplan" + strconv.Itoa(i)
 		overuseRate := uint64(10)
 
-		// create dummy plan and append to the testPlans array
 		dummyPlan := types.Plan{
 			Index:                    planIndex,
 			Description:              "plan to test",
@@ -79,6 +76,7 @@ func CreateTestPlans(planAmount uint64, withSameIndex bool, startIndex uint64) [
 			OveruseRate:              overuseRate,
 			AnnualDiscountPercentage: 20,
 		}
+
 		testPlans = append(testPlans, dummyPlan)
 
 		// if we need to create a plan with the same index, create an additional one
@@ -102,21 +100,19 @@ func TestPlanAdditionDifferentEpoch(t *testing.T) {
 	ts := &testStruct{}
 	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	// advance an epoch
+	// advance an epoch and create a plan
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	// create plans (both plans have the same ID. They only differ in the overuseRate field)
-	testPlans := CreateTestPlans(1, true, uint64(0))
+	testPlans := createTestPlans(1, true, 0)
 
 	// simulate a plan proposal of the first plans
-	err := testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []types.Plan{testPlans[0]})
+	err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []types.Plan{testPlans[0]})
 	require.Nil(t, err)
 
 	// advance an epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// simulate a plan proposal of the second plans
-	err = testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []types.Plan{testPlans[1]})
+	err = testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []types.Plan{testPlans[1]})
 	require.Nil(t, err)
 
 	// get the plan storage and verify that there are two plans in the plan storage
@@ -139,14 +135,12 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 	ts := &testStruct{}
 	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	// advance an epoch
+	// advance an epoch and create a plan
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	// create plans (both plans have the same ID. They only differ in the overuseRate field)
-	testPlans := CreateTestPlans(1, true, uint64(0))
+	testPlans := createTestPlans(1, true, 0)
 
 	// simulate a proposal of the plans
-	err := testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlans)
+	err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlans)
 	require.Nil(t, err)
 
 	// verify the latest one is kept (testPlans[1] that is the last element in the testPlans array)
@@ -194,8 +188,7 @@ func TestInvalidPlanAddition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// create a test plans
-			planToTest := CreateTestPlans(1, false, uint64(0))
+			planToTest := createTestPlans(1, false, 0)
 
 			// each test, change one field to an invalid value
 			switch tt.fieldIndex {
@@ -217,7 +210,7 @@ func TestInvalidPlanAddition(t *testing.T) {
 			}
 
 			// simulate a plan proposal - should fail
-			err := testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, planToTest)
+			err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, planToTest)
 			require.NotNil(t, err)
 		})
 	}
@@ -238,18 +231,18 @@ func TestMultiplePlansAdditions(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// create plans (both plans which have the same ID and different ID)
-	testPlansWithDifferentIDs := CreateTestPlans(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT, false, uint64(0))
-	testPlansWithSameIDs := CreateTestPlans(TEST_PACKAGES_WITH_SAME_ID_AMOUNT, true, uint64(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT+1))
+	testPlansWithDifferentIDs := createTestPlans(TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT, false, 0)
+	testPlansWithSameIDs := createTestPlans(TEST_PACKAGES_WITH_SAME_ID_AMOUNT, true, TEST_PACKAGES_WITH_DIFFERENT_ID_AMOUNT)
 
 	// simulate a plan proposal of testPlansWithDifferentIDs
-	err := testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlansWithDifferentIDs)
+	err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlansWithDifferentIDs)
 	require.Nil(t, err)
 
 	// advance an epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// simulate a plan proposal of testPlansWithSameIDs
-	err = testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlansWithSameIDs)
+	err = testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlansWithSameIDs)
 	require.Nil(t, err)
 
 	// check there are enough plans in the storage (should not be
@@ -265,36 +258,32 @@ func TestProposeBadAndGoodPlans(t *testing.T) {
 	ts := &testStruct{}
 	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	// advance an epoch
+	// advance an epoch and create a plan
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	// create plans
-	testPlans := CreateTestPlans(3, false, uint64(0))
+	testPlans := createTestPlans(3, false, 0)
 
 	// make one of the plans invalid
 	testPlans[2].PlanPolicy.TotalCuLimit = 0
 
-	// simulate a plan proposal of testPlans (note, inside SimulatePlansProposal
+	// simulate a plan proposal of testPlans (note, inside SimulatePlansAddProposal
 	// it fails the test when a plan is invalid. So we avoid checking the error to
 	// make sure later there are no plans in the storage)
-	_ = testkeeper.SimulatePlansProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlans)
+	_ = testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, testPlans)
 
 	// check there are no plans in the storage
 	plansIndices := ts.keepers.Plans.GetAllPlanIndices(sdk.UnwrapSDKContext(ts.ctx))
 	require.Equal(t, 0, len(plansIndices))
 }
 
-// Test that creates 3 versions of a plan and checks the deletion of the first two
-func TestPlansDeletion(t *testing.T) {
+// Test that creates 3 versions of a plan and checks the removal of the first two
+func TestPlansStaleRemoval(t *testing.T) {
 	// setup the testStruct
 	ts := &testStruct{}
 	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	// advance an epoch
+	// advance an epoch and create a plan
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	// create plans (creates two plans with the same index but different overuse rate)
-	testPlans := CreateTestPlans(1, true, uint64(0))
+	testPlans := createTestPlans(1, true, 0)
 
 	// save the first plan in the KVstore
 	err := ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), testPlans[0])
@@ -367,4 +356,67 @@ func TestPlansDeletion(t *testing.T) {
 	newerPlanFromStore, found := ts.keepers.Plans.FindPlan(sdk.UnwrapSDKContext(ts.ctx), newerPlan.GetIndex(), newerPlanBlockHeight)
 	require.True(t, found)
 	require.Equal(t, newerPlan, newerPlanFromStore)
+}
+
+// Test that creates a plan and then deletes it
+func TestPlansDelete(t *testing.T) {
+	ts := &testStruct{}
+	_, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// advance an epoch and create a plan
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx := sdk.UnwrapSDKContext(ts.ctx)
+
+	testPlans := createTestPlans(1, true, 0)
+	index := testPlans[0].Index
+
+	err := testkeeper.SimulatePlansAddProposal(ctx, ts.keepers.Plans, []types.Plan{testPlans[0]})
+	require.Nil(t, err)
+
+	// advance an epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx = sdk.UnwrapSDKContext(ts.ctx)
+	block1 := uint64(ctx.BlockHeight())
+
+	// verify there is one plan visible
+	plansIndices := ts.keepers.Plans.GetAllPlanIndices(ctx)
+	require.Equal(t, 1, len(plansIndices))
+
+	// advance an epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+	// now delete the plan
+	err = testkeeper.SimulatePlansDelProposal(ctx, ts.keepers.Plans, []string{index})
+	require.Nil(t, err)
+
+	block2 := uint64(ctx.BlockHeight())
+
+	// verify there are zero plans visible
+	plansIndices = ts.keepers.Plans.GetAllPlanIndices(ctx)
+	require.Equal(t, 0, len(plansIndices))
+	_, found := ts.keepers.Plans.GetPlan(ctx, index)
+	require.False(t, found)
+
+	// but the plan is not stale yet, so can be found (until block2)
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block1)
+	require.True(t, found)
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2)
+	require.False(t, found)
+
+	// advance epoch until the plan becomes stale
+	ts.advanceEpochUntilStale()
+	ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+	// because testutils.AdvanceBlock() and testutils.AdvanceEpoch() are sloppy
+	ts.keepers.Plans.BeginBlock(ctx)
+
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block1)
+	require.False(t, found)
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2)
+	require.False(t, found)
+
+	// fail attempt to delete the plan again
+	err = testkeeper.SimulatePlansDelProposal(ctx, ts.keepers.Plans, []string{index})
+	require.NotNil(t, err)
 }
