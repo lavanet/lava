@@ -38,7 +38,7 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 	}
 
 	if found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project); !found {
-		return project, "", utils.LavaFormatWarning("the developer's project was not found", fmt.Errorf("project not found"),
+		return project, utils.LavaFormatWarning("the developer's project was not found", fmt.Errorf("project not found"),
 			utils.Attribute{Key: "developer", Value: developerKey},
 			utils.Attribute{Key: "project", Value: projectDeveloperData.ProjectID},
 		)

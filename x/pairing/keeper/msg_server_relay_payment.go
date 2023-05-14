@@ -87,15 +87,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if ok {
 			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
-				details := map[string]string{
-					"badgeAddress":     badgeData.Badge.Address,
-					"badgeLavaChainId": badgeData.Badge.LavaChainId,
-					"badgeEpoch":       strconv.FormatUint(badgeData.Badge.Epoch, 10),
-					"relayAddress":     clientAddr.String(),
-					"relayLavaChainId": relay.LavaChainId,
-					"relayEpoch":       strconv.FormatUint(uint64(relay.Epoch), 10),
-				}
-				return errorLogAndFormat("relay_payment_badge", details, "invalid badge - must match traits in relay request")
+				return nil, utils.LavaFormatWarning("badge must match traits in relay request", fmt.Errorf("invalid badge"),
+					utils.Attribute{Key: "badgeAddress", Value: badgeData.Badge.Address},
+					utils.Attribute{Key: "badgeLavaChainId", Value: badgeData.Badge.LavaChainId},
+					utils.Attribute{Key: "badgeEpoch", Value: badgeData.Badge.Epoch},
+					utils.Attribute{Key: "relayAddress", Value: clientAddr},
+					utils.Attribute{Key: "relayLavaChainId", Value: relay.LavaChainId},
+					utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
+				)
 			}
 
 			// badge is valid -> switch address to badge signer (developer key) and continue with payment
@@ -150,78 +149,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
 				utils.Attribute{Key: "epochStart", Value: epochStart},
 			)
-		}
-
-		payReliability := false
-		// validate data reliability
-		vrfStoreKey := VRFKey{ChainID: relay.SpecId, Epoch: epochStart, Consumer: clientAddr.String()}
-		if vrfData, ok := dataReliabilityStore[vrfStoreKey]; ok {
-			delete(dataReliabilityStore, vrfStoreKey)
-			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
-			if !spec.DataReliabilityEnabled {
-				details["chainID"] = relay.SpecId
-				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
-			}
-
-			// verify user signed this data reliability
-			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *vrfData)
-			if err != nil || !valid {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
-			}
-			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(vrfData)
-			if err != nil {
-				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
-			}
-			if otherProviderAddress.Equals(providerAddr) {
-				// provider signed his own stuff
-				details["error"] = "provider attempted to claim data reliability sent by himself"
-				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
-			}
-			// check this other provider is indeed legitimate
-			isValidPairing, _, _, _, _, _, err := k.Keeper.ValidatePairingForClient(
-				ctx,
-				relay.SpecId,
-				clientAddr,
-				otherProviderAddress,
-				uint64(relay.Epoch),
-			)
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing error")
-			}
-			if !isValidPairing {
-				details["error"] = "pairing isn't valid"
-				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing mismatch")
-			}
-			vrfPk := &utils.VrfPubKey{}
-			vrfPk, err = vrfPk.DecodeFromBech32(vrfk)
-			if err != nil {
-				details["error"] = err.Error()
-				details["vrf_bech32"] = vrfk
-				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
-			}
-			// signatures valid, validate VRF signing
-			valid = utils.VerifyVrfProofFromVRFData(vrfData, *vrfPk, epochStart)
-			if !valid {
-				details["error"] = "vrf signing is invalid, proof result mismatch"
-				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
-			}
-
-			index, vrfErr := utils.GetIndexForVrf(vrfData.VrfValue, uint32(providersToPair), spec.ReliabilityThreshold)
-			if vrfErr != nil {
-				details["error"] = vrfErr.Error()
-				details["VRF_index"] = strconv.FormatInt(index, 10)
-				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
-			}
-			if index != int64(thisProviderIndex) {
-				details["error"] = "data reliability returned mismatch index"
-				details["VRF_index"] = strconv.FormatInt(index, 10)
-				details["thisProviderIndex"] = strconv.FormatInt(int64(thisProviderIndex), 10)
-				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
-			}
-			// all checks passed
-			payReliability = true
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
@@ -330,21 +257,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 		}
 
-		// Get servicersToPair param
-		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
-		if err != nil {
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochStart)}, "couldn't get servicers to pair")
-		}
-
 		// update provider payment storage with complainer's CU
 		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, clientAddr)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
 	}
-	if len(dataReliabilityStore) > 0 {
-		return nil, utils.LavaError(ctx, k.Logger(ctx), "invalid relay payment with unused data reliability proofs", map[string]string{"dataReliabilityProofs": fmt.Sprintf("%+v", dataReliabilityStore)}, "didn't find a usage match for each relay")
-	}
+
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
