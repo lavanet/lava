@@ -25,7 +25,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		return fmt.Errorf("%w: plans fixation-store", err)
 	}
 
-	planIndices := m.keeper.GetAllPlanIndices(ctx)
+	planIndices := m.keeper.plansFS.AllEntryIndicesFilter(ctx, "", nil)
 
 	for _, planIndex := range planIndices {
 		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex)

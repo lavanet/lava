@@ -37,7 +37,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		return err
 	}
 
-	projectIndices := m.keeper.projectsFS.GetAllEntryIndices(ctx)
+	projectIndices := m.keeper.projectsFS.AllEntryIndicesFilter(ctx, "", nil)
 	for _, projectIndex := range projectIndices {
 		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex)
 		for _, block := range blocks {
@@ -94,7 +94,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		}
 	}
 
-	developerDataIndices := m.keeper.developerKeysFS.GetAllEntryIndices(ctx)
+	developerDataIndices := m.keeper.developerKeysFS.AllEntryIndicesFilter(ctx, "", nil)
 	for _, developerDataIndex := range developerDataIndices {
 		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex)
 		for _, block := range blocks {
