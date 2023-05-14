@@ -48,6 +48,7 @@ func TestMigrate1to2(t *testing.T) {
 
 	// create entries
 	for _, tt := range templates {
+		ctx = ctx.WithBlockHeight(int64(tt.block))
 		err = fs.AppendEntry(ctx, tt.index, tt.block, &coin)
 		require.Nil(t, err)
 		for i := 0; i < tt.count; i++ {

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 
@@ -20,7 +21,7 @@ import (
 // that uses it lives.
 //
 // Once instantiated with NewFixationStore(), it offers the following methods:
-//    - AppendEntry(index, block, *entry): add a new "block" version of an entry "index".
+//    - AppendEntry(index, block, *entry): add a new "block" version of an entry "index"
 //    - ModifyEntry(index, block, *entry): modify an existing entry with "index" and exact "block" (*)
 //    - ReadEntry(index, block, *entry): copy an existing entry with "index" and exact "block" (*)
 //    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry (**)
@@ -115,25 +116,24 @@ func (fs *FixationStore) AppendEntry(
 ) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		return utils.LavaFormatError("AppendEntry failed", err,
+		return utils.LavaFormatError("AppendEntry", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 	}
 
+	if block < uint64(ctx.BlockHeight()) {
+		panic(fmt.Sprintf("AppendEntry for block %d < current ctx block %d", block, ctx.BlockHeight()))
+	}
+
+	// find latest entry, including possible future entries
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
 		fs.setEntryIndex(ctx, safeIndex)
 	} else {
-		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.Block {
-			return utils.LavaFormatError("entry block earlier than latest entry", err,
-				utils.Attribute{Key: "index", Value: index},
-				utils.Attribute{Key: "block", Value: block},
-				utils.Attribute{Key: "fs.prefix", Value: fs.prefix},
-				utils.Attribute{Key: "latestBlock", Value: latestEntry.Block},
-			)
+			panic(fmt.Sprintf("AppendEntry for block %d < latest entry block %d", block, latestEntry.Block))
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
@@ -142,7 +142,16 @@ func (fs *FixationStore) AppendEntry(
 			return nil
 		}
 
-		fs.putEntry(ctx, latestEntry)
+		// if we are superseding a previous latest entry, then drop the latter's refcount;
+		// otherwise we are a future entry version, so set a timer for when it will become
+		// the new latest entry.
+
+		if block == uint64(ctx.BlockHeight()) {
+			fs.putEntry(ctx, latestEntry)
+		} else {
+			key := encodeForTimer(safeIndex, block, callbackFutureEntry)
+			fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
+		}
 	}
 
 	// marshal the new entry's data
@@ -161,8 +170,31 @@ func (fs *FixationStore) AppendEntry(
 	return nil
 }
 
-func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
+func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, data []byte) {
+	safeIndex, block, kind := decodeFromTimer(key)
+
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
+
+	switch kind {
+	case callbackFutureEntry:
+		fs.updateFutureEntry(ctx, safeIndex, block)
+	case callbackStaleEntry:
+		fs.deleteStaleEntries(ctx, safeIndex, block)
+	}
+}
+
+func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, block uint64) {
+	if block != uint64(ctx.BlockHeight()) {
+		panic(fmt.Sprintf("Future entry: future block %d != current block %d", block, ctx.BlockHeight()))
+	}
+
+	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block-1)
+	if found {
+		fs.putEntry(ctx, latestEntry)
+	}
+}
+
+func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _ uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -321,6 +353,26 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec
 	return true
 }
 
+const (
+	callbackFutureEntry = 0x01
+	callbackStaleEntry  = 0x02
+)
+
+func encodeForTimer(index string, block uint64, kind byte) []byte {
+	encodedKey := make([]byte, 8+1+len(index))
+	copy(encodedKey[9:], []byte(index))
+	binary.BigEndian.PutUint64(encodedKey[0:8], block)
+	encodedKey[8] = kind
+	return encodedKey
+}
+
+func decodeFromTimer(encodedKey []byte) (index string, block uint64, kind byte) {
+	index = string(encodedKey[9:])
+	block = binary.BigEndian.Uint64(encodedKey[0:8])
+	kind = encodedKey[8]
+	return index, block, kind
+}
+
 // putEntry decrements the refcount of an entry and marks for staleness if needed
 func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
@@ -332,7 +384,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
 		// never overflows because ctx.BlockHeight is int64
 		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
-		key := types.EncodeBlockAndKey(entry.Block, []byte(entry.Index))
+		key := encodeForTimer(entry.Index, entry.Block, callbackStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
 
@@ -444,10 +496,10 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
-	callback := func(ctx sdk.Context, key []byte, _ []byte) {
-		_, k := types.DecodeBlockAndKey(key)
-		fs.deleteStaleEntries(ctx, string(k))
+	callback := func(ctx sdk.Context, key []byte, data []byte) {
+		fs.entryCallbackBeginBlock(ctx, key, data)
 	}
+
 	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
 
