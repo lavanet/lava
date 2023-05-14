@@ -30,11 +30,11 @@ func (k Keeper) GetProjectDeveloperData(ctx sdk.Context, developerKey string, bl
 	return projectDeveloperData, nil
 }
 
-func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj types.Project, vrfpk string, errRet error) {
+func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj types.Project, errRet error) {
 	var project types.Project
 	projectDeveloperData, err := k.GetProjectDeveloperData(ctx, developerKey, blockHeight)
 	if err != nil {
-		return project, "", err
+		return project, err
 	}
 
 	if found := k.projectsFS.FindEntry(ctx, projectDeveloperData.ProjectID, blockHeight, &project); !found {
@@ -44,7 +44,7 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 		)
 	}
 
-	return project, projectDeveloperData.Vrfpk, nil
+	return project, nil
 }
 
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {

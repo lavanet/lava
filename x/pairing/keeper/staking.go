@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, vrfpk string, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
 	logger := k.Logger(ctx)
 	var stake_type string
 	if provider {
@@ -82,14 +82,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 				utils.Attribute{Key: "geolocation", Value: geolocation},
 			)
 		}
-	} else {
-		// clients need to provide their VRF PK before running to limit brute forcing the random functions
-		err := utils.VerifyVRF(vrfpk)
-		if err != nil {
-			return utils.LavaFormatWarning("invalid "+stake_type+" stake: invalid vrf pk, must provide a valid verification key", err,
-				utils.Attribute{Key: stake_type, Value: creator},
-			)
-		}
 	}
 
 	// new staking takes effect from the next block
@@ -133,7 +125,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 			// paid the difference to module
 			existingEntry.Stake = amount
-			// we dont change vrfpk, stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
 			existingEntry.Moniker = moniker
@@ -166,7 +158,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		)
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type, chainID, stakeEntry)
 	appended := false
 	if !provider {

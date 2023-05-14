@@ -105,7 +105,6 @@ func (k Keeper) CreateSubscription(
 	consumer string,
 	planIndex string,
 	duration uint64,
-	vrfpk string,
 ) error {
 	var err error
 
@@ -163,7 +162,7 @@ func (k Keeper) CreateSubscription(
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
 			return utils.LavaFormatError("failed to create default project", err)
 		}

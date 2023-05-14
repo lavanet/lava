@@ -131,8 +131,8 @@ message QueryVerifyPairingRequest {
 }
 
 message QueryVerifyPairingResponse {
+  reserved 2;
   bool valid = 1;
-  int64 index = 2;
   uint64 paired_providers = 3;
   uint64 cu_per_epoch = 4;
 }
