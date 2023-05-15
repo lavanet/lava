@@ -213,12 +213,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecId, clientAddr, burnAmount, false)
 
 			if err2 != nil {
-				return nil, utils.LavaFormatWarning("BurnUserStake failed on user", err2,
+				return nil, utils.LavaFormatError("BurnUserStake failed on user", err2,
 					utils.Attribute{Key: "amountToBurn", Value: burnAmount},
 				)
 			}
 			if !burnSucceeded {
-				return nil, utils.LavaFormatWarning("BurnUserStake failed on user, did not find user, or insufficient funds", fmt.Errorf("insufficient funds or didn't find user"),
+				return nil, utils.LavaFormatError("BurnUserStake failed on user, did not find user, or insufficient funds", fmt.Errorf("insufficient funds or didn't find user"),
 					utils.Attribute{Key: "amountToBurn", Value: burnAmount},
 				)
 			}
@@ -253,7 +253,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if !legacy {
 			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
 			if err != nil {
-				return nil, utils.LavaFormatError("Failed chaging CU to project and subscription", err)
+				return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 			}
 		}
 

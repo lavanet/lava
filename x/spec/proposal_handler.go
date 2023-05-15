@@ -42,12 +42,12 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 			{Key: "value", Value: c.Value},
 		}
 		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
-			return utils.LavaFormatError("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
+			return utils.LavaFormatWarning("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
 				details...,
 			)
 		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
-			return utils.LavaFormatError("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
+			return utils.LavaFormatWarning("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
 				details...,
 			)
 		}
@@ -123,7 +123,7 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 			for key, val := range details {
 				detailsList = append(detailsList, utils.Attribute{Key: key, Value: val})
 			}
-			return utils.LavaFormatError("invalidated_spec", err,
+			return utils.LavaFormatWarning("invalidated_spec", err,
 				detailsList...,
 			)
 		}

@@ -111,14 +111,14 @@ func (k Keeper) CreateSubscription(
 	block := uint64(ctx.BlockHeight())
 
 	if _, err = sdk.AccAddressFromBech32(consumer); err != nil {
-		return utils.LavaFormatWarning("cannot create subcscription with invalid consumer", err,
+		return utils.LavaFormatWarning("invalid subscription concumer address", err,
 			utils.Attribute{Key: "consumer", Value: consumer},
 		)
 	}
 
 	creatorAcct, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		return utils.LavaFormatWarning("cannot create subcscription with invalid creator", err,
+		return utils.LavaFormatWarning("invalid subscription creator address", err,
 			utils.Attribute{Key: "creator", Value: creator},
 		)
 	}
@@ -164,7 +164,7 @@ func (k Keeper) CreateSubscription(
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
-			return utils.LavaFormatError("failed to create default project", err)
+			return utils.LavaFormatWarning("failed to create default project", err)
 		}
 	} else {
 		// allow renewal with the same plan ("same" means both plan index,block match);

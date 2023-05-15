@@ -28,7 +28,7 @@ func TestNewStakeClient(t *testing.T) {
 		stake sdk.Coin
 		valid bool
 	}{
-		{"InsufficientFunds", sdk.NewCoin(spec.MinStakeClient.Denom, spec.MinStakeClient.Amount.Sub(sdk.NewInt(1))), false},
+		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, spec.MinStakeClient.Amount.Sub(sdk.NewInt(1))), false},
 		{"MinStake", sdk.NewCoin(epochstoragetypes.TokenDenom, spec.MinStakeClient.Amount), true},
 		{"HappyFlow", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), true},
 	}
