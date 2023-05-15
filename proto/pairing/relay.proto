@@ -36,16 +36,16 @@ message RelayPrivateData {
 }
 
 message RelayRequest {
+    reserved 3;
     RelaySession relay_session = 1;
     RelayPrivateData relay_data= 2;
-    VRFData data_reliability = 3;
 }
 
 message Badge {
     uint64 cu_allocation =1;
-    int64 epoch = 2;
-    bytes badge_pk = 3;
-    string spec_id = 4;
+    uint64 epoch = 2;
+    string address = 3;
+    string lava_chain_id = 4;
     bytes project_sig = 5;
 }
 
@@ -56,18 +56,6 @@ message RelayReply {
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
     bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-}
-
-message VRFData {
-    string chain_id = 1;
-    int64 epoch = 2;
-    bool differentiator = 3;
-    bytes vrf_value = 4;
-    bytes vrf_proof = 5;
-    bytes provider_sig = 6;
-    bytes all_data_hash = 7;
-    bytes query_hash = 8; //we only need it for payment later
-    bytes sig = 9;
 }
 
 message QualityOfServiceReport{

@@ -9,13 +9,12 @@ const TypeMsgStakeClient = "stake_client"
 
 var _ sdk.Msg = &MsgStakeClient{}
 
-func NewMsgStakeClient(creator string, chainID string, amount sdk.Coin, geolocation uint64, vrfpk string) *MsgStakeClient {
+func NewMsgStakeClient(creator string, chainID string, amount sdk.Coin, geolocation uint64) *MsgStakeClient {
 	return &MsgStakeClient{
 		Creator:     creator,
 		ChainID:     chainID,
 		Amount:      amount,
 		Geolocation: geolocation,
-		Vrfpk:       vrfpk,
 	}
 }
 

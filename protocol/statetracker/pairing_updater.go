@@ -1,6 +1,8 @@
 package statetracker
 
 import (
+	"sync"
+
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -12,6 +14,7 @@ const (
 )
 
 type PairingUpdater struct {
+	lock                       sync.RWMutex
 	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
@@ -32,6 +35,8 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
 		pu.Update(int64(nextBlockForUpdate))
 	}
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
 	consumerSessionsManagersList, ok := pu.consumerSessionManagersMap[chainID]
 	if !ok {
 		pu.consumerSessionManagersMap[chainID] = []*lavasession.ConsumerSessionManager{consumerSessionManager}
@@ -46,6 +51,8 @@ func (pu *PairingUpdater) UpdaterKey() string {
 }
 
 func (pu *PairingUpdater) Update(latestBlock int64) {
+	pu.lock.RLock()
+	defer pu.lock.RUnlock()
 	ctx := context.Background()
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return

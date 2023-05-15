@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
@@ -12,6 +13,7 @@ const (
 )
 
 type FinalizationConsensusUpdater struct {
+	lock                              sync.RWMutex
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
 	stateQuery                        *ConsumerStateQuery
@@ -23,6 +25,8 @@ func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *Finalizati
 
 func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
 	// TODO: also update here for the first time
+	fcu.lock.Lock()
+	defer fcu.lock.Unlock()
 	fcu.registeredFinalizationConsensuses = append(fcu.registeredFinalizationConsensuses, finalizationConsensus)
 }
 
@@ -31,6 +35,8 @@ func (fcu *FinalizationConsensusUpdater) UpdaterKey() string {
 }
 
 func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
+	fcu.lock.RLock()
+	defer fcu.lock.RUnlock()
 	ctx := context.Background()
 	if int64(fcu.nextBlockForUpdate) > latestBlock {
 		return
@@ -43,6 +49,9 @@ func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
 	}
 	fcu.nextBlockForUpdate = nextBlockForUpdate
 	for _, finalizationConsensus := range fcu.registeredFinalizationConsensuses {
+		if finalizationConsensus == nil {
+			continue
+		}
 		finalizationConsensus.NewEpoch(epoch)
 	}
 }

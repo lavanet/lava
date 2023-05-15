@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -23,7 +22,7 @@ const (
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"
-	VrfPkAndMaxCuResponseKey    = "vrf-and-max-cu-resp"
+	MaxCuResponseKey            = "max-cu-resp"
 )
 
 type StateQuery struct {
@@ -140,9 +139,9 @@ func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *Provi
 	return csq
 }
 
-func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
+func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (maxCu uint64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, "")
-	cachedInterface, found := psq.ResponsesCache.Get(VrfPkAndMaxCuResponseKey + key)
+	cachedInterface, found := psq.ResponsesCache.Get(MaxCuResponseKey + key)
 	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
 	if found && cachedInterface != nil {
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
@@ -154,42 +153,16 @@ func (psq *ProviderStateQuery) GetVrfPkAndMaxCuForUser(ctx context.Context, cons
 	if userEntryRes == nil {
 		userEntryRes, err = psq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: consumerAddress, Block: epoch})
 		if err != nil {
-			return nil, 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch})
+			return 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch})
 		}
-		psq.ResponsesCache.SetWithTTL(VrfPkAndMaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
+		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
-	vrfPk = &utils.VrfPubKey{}
-	vrfPk, err = vrfPk.DecodeFromBech32(userEntryRes.GetConsumer().Vrfpk)
-	if err != nil {
-		err = utils.LavaFormatError("decoding vrfpk from bech32", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "block", Value: epoch}, utils.Attribute{Key: "UserEntryRes", Value: userEntryRes})
-	}
-	return vrfPk, userEntryRes.GetMaxCU(), err
+
+	return userEntryRes.GetMaxCU(), err
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, epoch uint64, providerAddress string) string {
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
-}
-
-func (psq *ProviderStateQuery) PaymentEvents(ctx context.Context, latestBlock int64) (payments []*rewardserver.PaymentRequest, err error) {
-	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
-	if err != nil {
-		return nil, err
-	}
-	transactionResults := blockResults.TxsResults
-	for _, tx := range transactionResults {
-		events := tx.Events
-		for _, event := range events {
-			if event.Type == "lava_relay_payment" {
-				paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, latestBlock)
-				if err != nil {
-					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-				payments = append(payments, paymentList...)
-			}
-		}
-	}
-	return payments, nil
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
@@ -238,7 +211,7 @@ func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64
 	return votes, err
 }
 
-func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, index, total int64, err error) {
+func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
 	extractedResultFromCache := false
 	cachedInterface, found := psq.ResponsesCache.Get(VerifyPairingRespKey + key)
@@ -259,14 +232,14 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 			Block:    epoch,
 		})
 		if err != nil {
-			return false, 0, 0, err
+			return false, 0, err
 		}
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
 	}
-	return verifyResponse.Valid, verifyResponse.GetIndex(), int64(verifyResponse.GetPairedProviders()), nil
+	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), nil
 }
 
 func (psq *ProviderStateQuery) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
