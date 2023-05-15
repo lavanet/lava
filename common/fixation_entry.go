@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -116,8 +115,9 @@ func (fs *FixationStore) AppendEntry(
 ) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_invalid_index", details, "invalid non-ascii entry")
+		return utils.LavaFormatError("AppendEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -128,13 +128,12 @@ func (fs *FixationStore) AppendEntry(
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.Block {
-			details := map[string]string{
-				"latestBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
-				"block":       strconv.FormatUint(block, 10),
-				"index":       index,
-				"fs.prefix":   fs.prefix,
-			}
-			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", details, "entry block earlier than latest entry")
+			return utils.LavaFormatError("entry block earlier than latest entry", err,
+				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "fs.prefix", Value: fs.prefix},
+				utils.Attribute{Key: "latestBlock", Value: latestEntry.Block},
+			)
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
@@ -283,8 +282,9 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry")
+		utils.LavaFormatError("FindEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 		return false
 	}
 
@@ -301,8 +301,9 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry")
+		utils.LavaFormatError("GetEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 		return false
 	}
 
@@ -357,8 +358,9 @@ func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64
 func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "getEntryVersionsFilter", details, "invalid non-ascii entry")
+		utils.LavaFormatError("getEntryVersionsFilter failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 		return nil
 	}
 

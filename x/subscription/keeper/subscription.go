@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -107,33 +108,27 @@ func (k Keeper) CreateSubscription(
 ) error {
 	var err error
 
-	logger := k.Logger(ctx)
 	block := uint64(ctx.BlockHeight())
 
 	if _, err = sdk.AccAddressFromBech32(consumer); err != nil {
-		details := map[string]string{
-			"consumer": consumer,
-			"error":    err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid consumer")
+		return utils.LavaFormatWarning("invalid subscription concumer address", err,
+			utils.Attribute{Key: "consumer", Value: consumer},
+		)
 	}
 
 	creatorAcct, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		details := map[string]string{
-			"creator": creator,
-			"error":   err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid creator")
+		return utils.LavaFormatWarning("invalid subscription creator address", err,
+			utils.Attribute{Key: "creator", Value: creator},
+		)
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
 	if !found {
-		details := map[string]string{
-			"plan":  planIndex,
-			"block": strconv.FormatInt(int64(block), 10),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid plan")
+		return utils.LavaFormatWarning("cannot create subcscription with invalid plan", err,
+			utils.Attribute{Key: "plan", Value: planIndex},
+			utils.Attribute{Key: "block", Value: block},
+		)
 	}
 
 	sub, found := k.GetSubscription(ctx, consumer)
@@ -169,32 +164,31 @@ func (k Keeper) CreateSubscription(
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
-			details := map[string]string{
-				"err": err.Error(),
-			}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "failed to create default project")
+			return utils.LavaFormatWarning("failed to create default project", err)
 		}
 	} else {
 		// allow renewal with the same plan ("same" means both plan index,block match);
 		// otherwise, only one subscription per consumer
 		if !(plan.Index == sub.PlanIndex && plan.Block == sub.PlanBlock) {
-			details := map[string]string{"consumer": consumer}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "consumer has existing subscription with a different plan")
+			return utils.LavaFormatWarning("consumer has existing subscription with a different plan", fmt.Errorf("subscription renewal failed"),
+				utils.Attribute{Key: "consumer", Value: consumer},
+			)
 		}
 
 		// For now, allow renewal only by the same creator.
 		// TODO: after adding fixation, we can allow different creators
 		if creator != sub.Creator {
-			details := map[string]string{"creator": consumer}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "existing subscription has different creator")
+			return utils.LavaFormatWarning("existing subscription has different creator", fmt.Errorf("subscription renewal failed"),
+				utils.Attribute{Key: "consumer", Value: consumer},
+			)
 		}
 
 		// The total duration may not exceed MAX_SUBSCRIPTION_DURATION, but allow an
 		// extra month to account for renwewals before the end of current subscription
 		if sub.DurationLeft+duration > types.MAX_SUBSCRIPTION_DURATION+1 {
-			details := map[string]string{"duration": strconv.FormatInt(int64(sub.DurationLeft), 10)}
-			msg := "duration would exceed limit (" + strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10) + " months)"
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, msg)
+			return utils.LavaFormatWarning("duration would exceed limit ("+strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10)+" months)", fmt.Errorf("subscription renewal failed"),
+				utils.Attribute{Key: "duration", Value: sub.DurationLeft},
+			)
 		}
 	}
 
@@ -213,7 +207,7 @@ func (k Keeper) CreateSubscription(
 	sub.MonthExpiryTime = uint64(expiry.Unix())
 
 	if err := sub.ValidateSubscription(); err != nil {
-		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
+		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
 	// subscription looks good; let's charge the creator
@@ -230,22 +224,18 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
-		details := map[string]string{
-			"creator": creator,
-			"price":   price.String(),
-			"error":   sdkerrors.ErrInsufficientFunds.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSub", details, "insufficient funds")
+		return utils.LavaFormatWarning("create subscription failed", sdkerrors.ErrInsufficientFunds,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "price", Value: price},
+		)
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
 	if err != nil {
-		details := map[string]string{
-			"creator": creator,
-			"price":   price.String(),
-			"error":   err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
+		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "price", Value: price},
+		)
 	}
 
 	k.SetSubscription(ctx, sub)
@@ -256,12 +246,18 @@ func (k Keeper) CreateSubscription(
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
 	sub, found := k.GetSubscription(ctx, consumer)
 	if !found {
-		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_subscription", map[string]string{"consumer": consumer}, "can't find subscription with consumer address")
+		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: consumer},
+		)
 	}
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.Block)
 	if !found {
-		return planstypes.Plan{}, utils.LavaError(ctx, k.Logger(ctx), "GetPlanFromSubscription_cant_find_plan", map[string]string{"consumer": consumer, "planId": sub.PlanIndex}, "can't find plan from subscription with consumer address")
+		err := utils.LavaFormatError("can't find plan from subscription with consumer address", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+		)
+		panic(err)
 	}
 
 	return plan, nil
@@ -275,11 +271,10 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.GetPlanIndex(), sub.GetBlock())
 	if !found {
-		details := map[string]string{
-			"subscription": sub.GetCreator(),
-			"planIndex":    sub.GetPlanIndex(),
-		}
-		err := utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get plan with subscription")
+		err := utils.LavaFormatError("can't get plan with subscription", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "subscription", Value: sub.Creator},
+			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+		)
 		panic(err)
 	}
 
@@ -289,10 +284,9 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
 	sub, found := k.GetSubscription(ctx, subscription)
 	if !found {
-		details := map[string]string{
-			"subscription": subscription,
-		}
-		return utils.LavaError(ctx, k.Logger(ctx), "AddProjectToSubscription", details, "can't get subscription")
+		return utils.LavaFormatError("can't charge cu to subscription", fmt.Errorf("subscription not found"),
+			utils.Attribute{Key: "subscription", Value: subscription},
+		)
 	}
 
 	// TODO: if subscription is exhausted, should we push back (and the provider

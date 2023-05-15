@@ -7,11 +7,9 @@ import (
 
 // Function that calls all the functions that are supposed to run in epoch start
 func (k Keeper) EpochStart(ctx sdk.Context, epochsNumToCheckCuForUnresponsiveProvider uint64, epochsNumToCheckForComplainers uint64) {
-	logger := k.Logger(ctx)
 	logOnErr := func(err error, failingFunc string) {
 		if err != nil {
-			attrs := map[string]string{"error": err.Error()}
-			utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
+			utils.LavaFormatError("failing func: "+failingFunc, err)
 		}
 	}
 	// on session start we need to do:

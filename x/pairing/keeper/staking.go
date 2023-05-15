@@ -23,8 +23,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 	spec, found := k.specKeeper.GetSpec(ctx, specChainID)
 	if !found || !spec.Enabled {
-		details := map[string]string{"spec": specChainID}
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_spec", details, "spec not found or not active")
+		return utils.LavaFormatWarning("spec not found or not active", fmt.Errorf("invalid spec ID"),
+			utils.Attribute{Key: "spec", Value: specChainID},
+		)
 	}
 	var minStake sdk.Coin
 	if provider {
@@ -35,38 +36,51 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	// if we get here, the spec is active and supported
 
 	if amount.IsLT(minStake) { // we count on this to also check the denom
-		details := map[string]string{"spec": specChainID, stake_type: creator, "stake": amount.String(), "minStake": minStake.String()}
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_amount", details, "insufficient "+stake_type+" stake amount")
+		return utils.LavaFormatWarning("insufficient "+stake_type+" stake amount", fmt.Errorf("stake amount smaller than minStake"),
+			utils.Attribute{Key: "spec", Value: specChainID},
+			utils.Attribute{Key: stake_type, Value: creator},
+			utils.Attribute{Key: "stake", Value: amount},
+			utils.Attribute{Key: "minStake", Value: minStake.String()},
+		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		details := map[string]string{stake_type: creator, "error": err.Error()}
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_addr", details, "invalid "+stake_type+" address")
+		return utils.LavaFormatWarning("invalid "+stake_type+" address", err,
+			utils.Attribute{Key: stake_type, Value: creator},
+		)
 	}
 	// define the function here for later use
 	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) error {
 		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
-			return fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
+			return utils.LavaFormatWarning("insufficient balance for staking", fmt.Errorf("insufficient funds"),
+				utils.Attribute{Key: "current balance", Value: k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom)},
+				utils.Attribute{Key: "stake amount", Value: neededAmount},
+			)
 		}
 		if neededAmount.Amount == sdk.ZeroInt() {
 			return nil
 		}
 		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {
-			return fmt.Errorf("invalid transfer coins to module, %s", err)
+			return utils.LavaFormatError("invalid transfer coins to module", err)
 		}
 		return nil
 	}
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 	if geolocation == 0 || geolocation > (1<<geolocations) {
-		details := map[string]string{"geolocation": strconv.FormatUint(geolocation, 10)}
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_geolocation", details, "can't register for no geolocation or geolocation outside zones")
+		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
+			utils.Attribute{Key: "geolocation", Value: geolocation},
+		)
 	}
 	if provider {
 		err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
 		if err != nil {
-			details := map[string]string{stake_type: creator, "error": err.Error(), "endpoints": fmt.Sprintf("%v", endpoints), "Chain": specChainID, "geolocation": strconv.FormatUint(geolocation, 10)}
-			return utils.LavaError(ctx, logger, "stake_"+stake_type+"_endpoints", details, "invalid "+stake_type+" endpoints implementation for the given spec")
+			return utils.LavaFormatWarning("invalid "+stake_type+" endpoints implementation for the given spec", err,
+				utils.Attribute{Key: stake_type, Value: creator},
+				utils.Attribute{Key: "endpoints", Value: endpoints},
+				utils.Attribute{Key: "Chain", Value: chainID},
+				utils.Attribute{Key: "geolocation", Value: geolocation},
+			)
 		}
 	}
 
@@ -81,20 +95,28 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	if entryExists {
 		// modify the entry
 		if existingEntry.Address != creator {
-			details := map[string]string{"spec": specChainID, stake_type: senderAddr.String()}
-			utils.LavaError(ctx, logger, "stake_"+stake_type+"_panic", details, "returned stake entry by address doesn't match sender address!")
+			return utils.LavaFormatWarning("returned stake entry by address doesn't match sender address", fmt.Errorf("sender and stake entry address mismatch"),
+				utils.Attribute{Key: "spec", Value: specChainID},
+				utils.Attribute{Key: stake_type, Value: senderAddr.String()},
+			)
 		}
-		details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "stakeAppliedBlock": strconv.FormatUint(stakeAppliedBlock, 10), "stake": amount.String()}
-		details["moniker"] = moniker
+		details := []utils.Attribute{
+			{Key: "spec", Value: specChainID},
+			{Key: stake_type, Value: senderAddr.String()},
+			{Key: "stakeAppliedBlock", Value: stakeAppliedBlock},
+			{Key: "stake", Value: amount},
+		}
+		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 		if amount.IsGTE(existingEntry.Stake) {
 			// support modifying with the same stake or greater only
 			if !amount.Equal(existingEntry.Stake) {
 				// needs to charge additional tokens
 				err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
 				if err != nil {
-					details["error"] = err.Error()
-					details["neededStake"] = amount.Sub(existingEntry.Stake).String()
-					return utils.LavaError(ctx, logger, "stake_"+stake_type+"_update_amount", details, "insufficient funds to pay for difference in stake")
+					details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+					return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+						details...,
+					)
 				}
 			}
 			// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
@@ -108,19 +130,32 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			existingEntry.Endpoints = endpoints
 			existingEntry.Moniker = moniker
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stake_type, chainID, existingEntry, indexInStakeStorage)
-			utils.LogLavaEvent(ctx, logger, types.StakeUpdateEventName(provider), details, "Changing Staked "+stake_type)
+			detailsMap := map[string]string{}
+			for _, val := range details {
+				detailsMap[val.Key] = fmt.Sprint(val.Value)
+			}
+			utils.LogLavaEvent(ctx, logger, types.StakeUpdateEventName(provider), detailsMap, "Changing Staked "+stake_type)
 			return nil
 		}
-		details["existingStake"] = existingEntry.Stake.String()
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_stake", details, "can't decrease stake for existing "+stake_type)
+		details = append(details, utils.Attribute{Key: "existingStake", Value: existingEntry.Stake.String()})
+		return utils.LavaFormatWarning("can't decrease stake for existing "+stake_type, fmt.Errorf("cant decrease stake"),
+			details...,
+		)
 	}
 
 	// entry isn't staked so add him
-	details := map[string]string{"spec": specChainID, stake_type: senderAddr.String(), "stakeAppliedBlock": strconv.FormatUint(stakeAppliedBlock, 10), "stake": amount.String(), "geolocation": strconv.FormatUint(geolocation, 10)}
+	details := []utils.Attribute{
+		{Key: "spec", Value: specChainID},
+		{Key: stake_type, Value: senderAddr.String()},
+		{Key: "stakeAppliedBlock", Value: stakeAppliedBlock},
+		{Key: "stake", Value: amount.String()},
+		{Key: "geolocation", Value: geolocation},
+	}
 	err = verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
 	if err != nil {
-		details["error"] = err.Error()
-		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_new_amount", details, "insufficient amount to pay for stake")
+		utils.LavaFormatWarning("insufficient amount to pay for stake", err,
+			details...,
+		)
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
@@ -131,13 +166,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type, chainID, stakeEntry)
 
 		if err != nil {
-			details["error"] = err.Error()
-			return utils.LavaError(ctx, logger, "stake_"+stake_type+"_epoch", details, "could not append epoch stake entries")
+			return utils.LavaFormatError("could not append epoch stake entries", err,
+				details...,
+			)
 		}
 	}
-	details["effectiveImmediately"] = strconv.FormatBool(appended)
-	details["moniker"] = moniker
-	utils.LogLavaEvent(ctx, logger, types.StakeNewEventName(provider), details, "Adding Staked "+stake_type)
+	details = append(details, utils.Attribute{Key: "effectiveImmediately", Value: appended})
+	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
+
+	detailsMap := map[string]string{}
+	for _, atr := range details {
+		detailsMap[atr.Key] = fmt.Sprint(atr.Value)
+	}
+	utils.LogLavaEvent(ctx, logger, types.StakeNewEventName(provider), detailsMap, "Adding Staked "+stake_type)
 	return err
 }
 

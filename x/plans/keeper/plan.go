@@ -15,8 +15,9 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 
 	err := k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
 	if err != nil {
-		details := map[string]string{"planToAdd": planToAdd.String()}
-		return utils.LavaError(ctx, k.Logger(ctx), "AddPlan_add_fixated_entry_failed", details, err.Error())
+		return utils.LavaFormatError("failed adding plan to planFS", err,
+			utils.Attribute{Key: "planToAdd", Value: planToAdd},
+		)
 	}
 
 	return nil
