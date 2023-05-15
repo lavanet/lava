@@ -10,8 +10,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -242,7 +242,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 		cacert := nodeUrl.AuthConfig.GetCaCertificateParams()
 		if cacert != "" {
 			utils.LavaFormatDebug("Loading ca certificate from local path", utils.Attribute{Key: "cacert", Value: cacert})
-			caCert, err := ioutil.ReadFile(cacert)
+			caCert, err := os.ReadFile(cacert)
 			if err == nil {
 				caCertPool := x509.NewCertPool()
 				caCertPool.AppendCertsFromPEM(caCert)

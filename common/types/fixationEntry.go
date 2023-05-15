@@ -5,7 +5,7 @@ import (
 )
 
 func FixationVersion() uint64 {
-	return 2
+	return 3
 }
 
 // IsStale tests whether an entry is stale, i.e. has refcount zero _and_
