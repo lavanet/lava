@@ -204,10 +204,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Iterate until enough provider sessions are collected
 	for {
-		// Get provider consumer sessions
-		singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders)
+		// Get Session. we get session here so we can use the epoch in the callbacks
+		singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
 		relayResult = &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
-
 		if err != nil {
 			// If pairing list empty and no session returned, return an error
 			if err == lavasession.PairingListEmptyError && len(sessions) == 0 {
@@ -293,6 +292,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				// Info was fetched from cache, so we don't need to change the state
 				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
 				localRelayResult.Reply = reply
+				lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 				err = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
 
 				responses <- &relayResponse{
@@ -311,6 +311,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if chainMessage.GetInterface().Category.HangingApi {
 				_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 			}
+
 			relayTimeout := extraRelayTimeout + common.GetTimePerCu(singleConsumerSession.LatestRelayCu) + common.AverageWorldLatency
 			localRelayResult, relayLatency, err, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout)
 			if err != nil {
@@ -339,7 +340,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
-			err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen) // session done successfully
+			err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetInterface().Category.HangingApi) // session done successfully
 
 			// set cache in a nonblocking call
 			go func() {
