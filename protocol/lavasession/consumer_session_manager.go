@@ -377,7 +377,6 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if err != nil {
 				return nil, err
 			}
-
 		}
 	}
 }
