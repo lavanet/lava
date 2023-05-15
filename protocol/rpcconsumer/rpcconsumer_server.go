@@ -24,14 +24,6 @@ const (
 	numberOfSessions = 2
 )
 
-type SessionInfo struct {
-	Session           *lavasession.SingleConsumerSession
-	Epoch             uint64
-	ReportedProviders []byte
-}
-
-type ConsumerSessionsMap map[string]*SessionInfo
-
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
 	chainParser            chainlib.ChainParser
@@ -200,43 +192,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	chainID := rpccs.listenEndpoint.ChainID
 	lavaChainID := rpccs.lavaChainID
 
-	sessions := make(ConsumerSessionsMap)
-
-	// Iterate until enough provider sessions are collected
-	for {
-		// Get Session. we get session here so we can use the epoch in the callbacks
-		singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
-		relayResult = &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
-		if err != nil {
-			// If pairing list empty and no session returned, return an error
-			if err == lavasession.PairingListEmptyError && len(sessions) == 0 {
-				return relayResult, err
-			}
-
-			// If pairing list empty, and we have sessions, break and continue
-			if err == lavasession.PairingListEmptyError {
-				break
-			}
-
-			// If some other error, log and continue with the next iteration
-			utils.LavaFormatWarning("One of the quorum providers returned an error", err)
-			continue
-		}
-
-		// If no error, add provider session map
-		sessions[providerPublicAddress] = &SessionInfo{
-			Session:           singleConsumerSession,
-			Epoch:             epoch,
-			ReportedProviders: reportedProviders,
-		}
-
-		// Add provider to the ignore list, so we would not fetch it again
-		(*unwantedProviders)[providerPublicAddress] = struct{}{}
-
-		// If we have enough providers break
-		if len(sessions) == numberOfSessions {
-			break
-		}
+	// Get Session. we get session here so we can use the epoch in the callbacks
+	sessions, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
+	if err != nil {
+		return relayResult, err
 	}
 
 	type relayResponse struct {
@@ -250,7 +209,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
-		go func(providerPublicAddress string, sessionInfo *SessionInfo) {
+		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
 			defer goroutineCtxCancel()
 
