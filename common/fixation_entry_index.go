@@ -67,7 +67,7 @@ func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
 func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		utils.LavaFormatError("invalid non-ascii entry", err,
+		utils.LavaFormatError("getEntryVersionsFilter failed", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 		return nil

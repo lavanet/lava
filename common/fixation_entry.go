@@ -115,7 +115,7 @@ func (fs *FixationStore) AppendEntry(
 ) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		return utils.LavaFormatError("invalid non-ascii entry", err,
+		return utils.LavaFormatError("AppendEntry failed", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 	}
@@ -282,7 +282,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		utils.LavaFormatError("invalid non-ascii entry", err,
+		utils.LavaFormatError("FindEntry failed", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 		return false
@@ -301,7 +301,7 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		utils.LavaFormatError("invalid non-ascii entry", err,
+		utils.LavaFormatError("GetEntry failed", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 		return false

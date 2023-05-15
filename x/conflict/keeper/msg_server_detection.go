@@ -21,28 +21,28 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	logger := k.Keeper.Logger(ctx)
 	clientAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return nil, utils.LavaFormatWarning("parsing client address", err,
+		return nil, utils.LavaFormatWarning("invalid client address", err,
 			utils.Attribute{Key: "client", Value: msg.Creator},
 		)
 	}
 	if msg.FinalizationConflict != nil && msg.ResponseConflict == nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateFinalizationConflict(ctx, msg.FinalizationConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("Simulation: finalization conflict detection error", err,
+			return nil, utils.LavaFormatWarning("Simulation: invalid finalization conflict detection", err,
 				utils.Attribute{Key: "client", Value: msg.Creator},
 			)
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict == nil && msg.SameProviderConflict != nil {
 		err := k.Keeper.ValidateSameProviderConflict(ctx, msg.SameProviderConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("Simulation: same provider conflict detection error", err,
+			return nil, utils.LavaFormatWarning("Simulation: invalid same provider conflict detection", err,
 				utils.Attribute{Key: "client", Value: msg.Creator},
 			)
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict != nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateResponseConflict(ctx, msg.ResponseConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("Simulation: response conflict detection error", err,
+			return nil, utils.LavaFormatWarning("Simulation: invalid response conflict detection", err,
 				utils.Attribute{Key: "client", Value: msg.Creator},
 			)
 		}
