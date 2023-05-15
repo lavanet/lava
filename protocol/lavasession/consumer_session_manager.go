@@ -356,6 +356,9 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 					ReportedProviders: reportedProviders,
 				}
 
+				// We successfully added provider, we should ignore it if we need to fetch new
+				tempIgnoredProviders.providers[providerAddress] = struct{}{}
+
 				if len(sessions) == wantedSession {
 					return sessions, nil
 				}
@@ -430,12 +433,6 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 		// Iterate over providers
 		for _, providerAddress := range providerAddresses {
 			consumerSessionsWithProvider := csm.pairing[providerAddress]
-			if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession); err != nil {
-				// Add to ignored
-				ignoredProviders.providers[providerAddress] = struct{}{}
-				continue
-			}
-			// checking if we even have enough compute units for this provider
 			if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession); err != nil {
 				// Add to ignored
 				ignoredProviders.providers[providerAddress] = struct{}{}
