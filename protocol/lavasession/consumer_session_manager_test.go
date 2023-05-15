@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -47,14 +46,6 @@ var grpcServer *grpc.Server
 
 func TestMain(t *testing.M) {
 	createGRPCServer()
-
-	// Run the tests
-	exitCode := t.Run()
-
-	// Clean up resources or perform any necessary teardown
-
-	// Exit with the appropriate exit code
-	os.Exit(exitCode)
 }
 
 func createGRPCServer() (*grpc.Server, error) {
