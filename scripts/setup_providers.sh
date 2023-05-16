@@ -163,7 +163,7 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer \
 127.0.0.1:3381 SOLANA jsonrpc \
 127.0.0.1:3382 SUIT jsonrpc \
 127.0.0.1:3383 AVAX jsonrpc \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

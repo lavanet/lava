@@ -144,25 +144,25 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 }
 
 func (pl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
+	data.Success = err == nil
 	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
 func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
+	data.Success = err == nil
 	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
 func (pl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, metadataValues *metadata.MD) {
+	data.Success = err == nil
 	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(metadataValues) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }

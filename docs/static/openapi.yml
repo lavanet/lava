@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29928,6 +29938,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31058,9 +31078,6 @@ paths:
             properties:
               valid:
                 type: boolean
-              index:
-                type: string
-                format: int64
               paired_providers:
                 type: string
                 format: uint64
@@ -54528,11 +54545,10 @@ definitions:
                 format: uint64
               epoch:
                 type: string
-                format: int64
-              badge_pk:
+                format: uint64
+              address:
                 type: string
-                format: byte
-              spec_id:
+              lava_chain_id:
                 type: string
               project_sig:
                 type: string
@@ -54967,11 +54983,10 @@ definitions:
         format: uint64
       epoch:
         type: string
-        format: int64
-      badge_pk:
+        format: uint64
+      address:
         type: string
-        format: byte
-      spec_id:
+      lava_chain_id:
         type: string
       project_sig:
         type: string
@@ -55528,9 +55543,6 @@ definitions:
     properties:
       valid:
         type: boolean
-      index:
-        type: string
-        format: int64
       paired_providers:
         type: string
         format: uint64
@@ -55606,11 +55618,10 @@ definitions:
             format: uint64
           epoch:
             type: string
-            format: int64
-          badge_pk:
+            format: uint64
+          address:
             type: string
-            format: byte
-          spec_id:
+          lava_chain_id:
             type: string
           project_sig:
             type: string

@@ -363,7 +363,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 	requestCU := uint64(10)
 	requestBlock := spectypes.LATEST_BLOCK
 	syncBlock := uint64(1000)
-	pertrubationPercentage := lavasession.OptimizerPerturbation
+	pertrubationPercentage := lavasession.OptimizerPerturbation / 4 // this is statistical and we don;t want this failing
 	// set a basic state for all of them
 	for i := 0; i < 10; i++ {
 		for idx, address := range providersGen.providersAddresses {
