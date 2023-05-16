@@ -2,7 +2,7 @@ package dyncodec
 
 import (
 	"context"
-	"github.com/lavanet/lava/grpcproxy"
+	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"

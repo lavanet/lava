@@ -3,7 +3,7 @@ package rpcInterfaceMessages
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lavanet/lava/grpcproxy/dyncodec"
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"strings"

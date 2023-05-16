@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/lavanet/lava/grpcproxy/dyncodec"
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"io"
 	"net/http"
 	"strings"
