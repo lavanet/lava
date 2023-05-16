@@ -1,18 +1,18 @@
 package statetracker
 
-import (
-	"github.com/lavanet/lava/protocol/metrics"
-)
-
 const (
 	CallbackKeyForMetricUpdate = "metric-update"
 )
 
-type MetricsUpdater struct {
-	consumerMetricsManager *metrics.ConsumerMetricsManager
+type MetricsManagerInf interface {
+	SetBlock(int64)
 }
 
-func NewMetricsUpdater(consumerMetricsManager *metrics.ConsumerMetricsManager) *MetricsUpdater {
+type MetricsUpdater struct {
+	consumerMetricsManager MetricsManagerInf
+}
+
+func NewMetricsUpdater(consumerMetricsManager MetricsManagerInf) *MetricsUpdater {
 	return &MetricsUpdater{consumerMetricsManager: consumerMetricsManager}
 }
 

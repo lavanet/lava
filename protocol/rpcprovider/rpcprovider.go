@@ -85,6 +85,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcp.providerStateTracker = providerStateTracker
+	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
