@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -288,10 +289,18 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
+
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
+				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
+				if err == nil {
+					if clientTomlConfig.ChainID != "" {
+						networkChainId = clientTomlConfig.ChainID
+					}
+				}
 			}
+			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
