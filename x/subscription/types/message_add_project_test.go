@@ -22,10 +22,9 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 				ProjectData: projectstypes.ProjectData{
 					Name:   "validName",
 					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
-					ProjectKeys: []projectstypes.ProjectKey{{
-						Key:   "invalid address",
-						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-					}},
+					ProjectKeys: []projectstypes.ProjectKey{
+						projectstypes.ProjectAdminKey("invalid address"),
+					},
 				},
 			},
 			err: sdkerrors.ErrInvalidAddress,
@@ -36,10 +35,9 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 				ProjectData: projectstypes.ProjectData{
 					Name:   "validName",
 					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
-					ProjectKeys: []projectstypes.ProjectKey{{
-						Key:   sample.AccAddress(),
-						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-					}},
+					ProjectKeys: []projectstypes.ProjectKey{
+						projectstypes.ProjectAdminKey(sample.AccAddress()),
+					},
 				},
 			},
 		},

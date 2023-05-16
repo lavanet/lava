@@ -126,20 +126,23 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	consumers := []common.Account{consumerA, consumerB}
 
-	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{Creator: consumerA.Addr.String(), Consumer: consumerA.Addr.String(), Index: ts.plan.Index, Duration: 1})
+	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
+		Creator:  consumerA.Addr.String(),
+		Consumer: consumerA.Addr.String(),
+		Index:    ts.plan.Index,
+		Duration: 1,
+	})
 	require.Nil(t, err)
 
 	consumerBProjectData := projectstypes.ProjectData{
 		Name:        "consumer_b_project",
 		Description: "",
 		Enabled:     true,
-		ProjectKeys: []projectstypes.ProjectKey{{
-			Key: consumerB.Addr.String(),
-			Types: []projectstypes.ProjectKey_KEY_TYPE{
-				projectstypes.ProjectKey_ADMIN,
-				projectstypes.ProjectKey_DEVELOPER,
-			},
-		}},
+		ProjectKeys: []projectstypes.ProjectKey{
+			projectstypes.NewProjectKey(consumerB.Addr.String()).
+				AddType(projectstypes.ProjectKey_ADMIN).
+				AddType(projectstypes.ProjectKey_DEVELOPER),
+		},
 		Policy: &ts.plan.PlanPolicy,
 	}
 	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, consumerA.Addr.String(), consumerBProjectData)
@@ -421,13 +424,11 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					Name:        "low_cu_project",
 					Description: "project with low cu limit (per epoch)",
 					Enabled:     true,
-					ProjectKeys: []projectstypes.ProjectKey{{
-						Key: consumerToWasteCu.Addr.String(),
-						Types: []projectstypes.ProjectKey_KEY_TYPE{
-							projectstypes.ProjectKey_DEVELOPER,
-							projectstypes.ProjectKey_ADMIN,
-						},
-					}},
+					ProjectKeys: []projectstypes.ProjectKey{
+						projectstypes.NewProjectKey(consumerToWasteCu.Addr.String()).
+							AddType(projectstypes.ProjectKey_ADMIN).
+							AddType(projectstypes.ProjectKey_DEVELOPER),
+					},
 					Policy: &ts.plan.PlanPolicy,
 				}
 				_, err = ts.servers.SubscriptionServer.AddProject(ts.ctx, &subtypes.MsgAddProject{
@@ -622,13 +623,9 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 		Description: "dummy_desc",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{
-			{
-				Key: ts.clients[1].Addr.String(),
-				Types: []projectstypes.ProjectKey_KEY_TYPE{
-					projectstypes.ProjectKey_DEVELOPER,
-					projectstypes.ProjectKey_ADMIN,
-				},
-			},
+			projectstypes.NewProjectKey(ts.clients[1].Addr.String()).
+				AddType(projectstypes.ProjectKey_ADMIN).
+				AddType(projectstypes.ProjectKey_DEVELOPER),
 		},
 		Policy: nil,
 	}
