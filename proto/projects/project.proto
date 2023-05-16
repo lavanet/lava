@@ -18,15 +18,18 @@ message Project {
 }
 
 message ProjectKey {
-    reserved 3;
-    string  key = 1; // the address of the project key
-    enum KEY_TYPE{ // bitmap, must only be power of 2
-        NONE = 0;
-        ADMIN = 1;
-        DEVELOPER = 2; 
-    }    
+    string key = 1; // the address of the project key
 
-    repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
+    reserved 2;
+    reserved 3;
+
+    enum Type {
+        NONE = 0x0;
+        ADMIN = 0x1;
+        DEVELOPER = 0x2;
+    }
+
+	uint32 kinds = 4;
 }
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing
