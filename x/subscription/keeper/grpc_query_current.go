@@ -20,7 +20,7 @@ func (k Keeper) Current(goCtx context.Context, req *types.QueryCurrentRequest) (
 	// TODO: should indeed allow anyone to query about anyone?
 	sub, found := k.GetSubscription(ctx, req.Consumer)
 	if found {
-		res.Sub = sub
+		res.Sub = &sub
 	}
 
 	return &res, nil
