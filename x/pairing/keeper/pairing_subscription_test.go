@@ -136,8 +136,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		ProjectKeys: []projectstypes.ProjectKey{{
 			Key: consumerB.Addr.String(),
 			Types: []projectstypes.ProjectKey_KeyType{
-				projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
-				projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
+				{KeyTypes: projectstypes.ProjectKey_ADMIN},
+				{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
 			},
 		}},
 		Policy: &ts.plan.PlanPolicy,
@@ -424,8 +424,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key: consumerToWasteCu.Addr.String(),
 						Types: []projectstypes.ProjectKey_KeyType{
-							projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
-							projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
+							{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
+							{KeyTypes: projectstypes.ProjectKey_ADMIN},
 						},
 					}},
 					Policy: &ts.plan.PlanPolicy,
@@ -625,8 +625,8 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 			{
 				Key: ts.clients[1].Addr.String(),
 				Types: []projectstypes.ProjectKey_KeyType{
-					projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
-					projectstypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
+					{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
+					{KeyTypes: projectstypes.ProjectKey_ADMIN},
 				},
 			},
 		},
