@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -80,16 +79,16 @@ type FixationStore struct {
 	tstore   TimerStore
 }
 
-func (fs *FixationStore) getStore(ctx sdk.Context, index string) *prefix.Store {
+func (fs *FixationStore) getEntryStore(ctx sdk.Context, index string) *prefix.Store {
 	store := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.createStoreKey(index)))
+		types.KeyPrefix(fs.createEntryStoreKey(index)))
 	return &store
 }
 
 // getEntry returns an existing entry in the store
 func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint64) (entry types.Entry) {
-	store := fs.getStore(ctx, safeIndex)
+	store := fs.getEntryStore(ctx, safeIndex)
 	byteKey := types.EncodeKey(block)
 	b := store.Get(byteKey)
 	if b == nil {
@@ -101,7 +100,7 @@ func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint6
 
 // setEntry modifies an existing entry in the store
 func (fs *FixationStore) setEntry(ctx sdk.Context, entry types.Entry) {
-	store := fs.getStore(ctx, entry.Index)
+	store := fs.getEntryStore(ctx, entry.Index)
 	byteKey := types.EncodeKey(entry.Block)
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 	store.Set(byteKey, marshaledEntry)
@@ -116,8 +115,9 @@ func (fs *FixationStore) AppendEntry(
 ) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_invalid_index", details, "invalid non-ascii entry")
+		return utils.LavaFormatError("AppendEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -128,13 +128,12 @@ func (fs *FixationStore) AppendEntry(
 	} else {
 		// make sure the new entry's block is not smaller than the latest entry's block
 		if block < latestEntry.Block {
-			details := map[string]string{
-				"latestBlock": strconv.FormatUint(latestEntry.GetBlock(), 10),
-				"block":       strconv.FormatUint(block, 10),
-				"index":       index,
-				"fs.prefix":   fs.prefix,
-			}
-			return utils.LavaError(ctx, ctx.Logger(), "AppendEntry_block_too_early", details, "entry block earlier than latest entry")
+			return utils.LavaFormatError("entry block earlier than latest entry", err,
+				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "fs.prefix", Value: fs.prefix},
+				utils.Attribute{Key: "latestBlock", Value: latestEntry.Block},
+			)
 		}
 
 		// if the new entry's block is equal to the latest entry, overwrite the latest entry
@@ -164,7 +163,7 @@ func (fs *FixationStore) AppendEntry(
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
-	store := fs.getStore(ctx, safeIndex)
+	store := fs.getEntryStore(ctx, safeIndex)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
@@ -251,7 +250,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 // nearest-smaller block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex string, block uint64) (types.Entry, bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
-	store := fs.getStore(ctx, safeIndex)
+	store := fs.getEntryStore(ctx, safeIndex)
 
 	// init a reverse iterator
 	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
@@ -283,8 +282,9 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "FindEntry_invalid_index", details, "invalid non-ascii entry")
+		utils.LavaFormatError("FindEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 		return false
 	}
 
@@ -301,8 +301,9 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		details := map[string]string{"index": index}
-		utils.LavaError(ctx, ctx.Logger(), "GetEntry_invalid_index", details, "invalid non-ascii entry")
+		utils.LavaFormatError("GetEntry failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
 		return false
 	}
 
@@ -350,12 +351,77 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 
 // removeEntry removes an entry from the store
 func (fs *FixationStore) removeEntry(ctx sdk.Context, index string, block uint64) {
-	store := fs.getStore(ctx, index)
+	store := fs.getEntryStore(ctx, index)
 	store.Delete(types.EncodeKey(block))
 }
 
-func (fs *FixationStore) createStoreKey(index string) string {
-	return types.EntryPrefix + fs.prefix + index
+func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
+	safeIndex, err := types.SanitizeIndex(index)
+	if err != nil {
+		utils.LavaFormatError("getEntryVersionsFilter failed", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
+		return nil
+	}
+
+	store := fs.getEntryStore(ctx, safeIndex)
+
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var entry types.Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
+
+		if filter(&entry) {
+			blocks = append(blocks, entry.Block)
+		}
+
+		if entry.Block <= block {
+			break
+		}
+	}
+
+	// reverse the result slice to return the block in ascending order
+	length := len(blocks)
+	for i := 0; i < length/2; i++ {
+		blocks[i], blocks[length-i-1] = blocks[length-i-1], blocks[i]
+	}
+
+	return blocks
+}
+
+// GetEntryVersionsRange returns a list of versions from nearest-smaller block
+// and onward, and not more than delta blocks further (skip stale entries).
+func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, block, delta uint64) (blocks []uint64) {
+	filter := func(entry *types.Entry) bool {
+		if entry.IsStale(ctx) {
+			return false
+		}
+		if entry.Block > block+delta {
+			return false
+		}
+		return true
+	}
+
+	return fs.getEntryVersionsFilter(ctx, index, block, filter)
+}
+
+// GetAllEntryVersions returns a list of all versions (blocks) of an entry.
+// If stale == true, then the output will include stale versions (for testing).
+func (fs *FixationStore) GetAllEntryVersions(ctx sdk.Context, index string, stale bool) (blocks []uint64) {
+	filter := func(entry *types.Entry) bool {
+		if !stale && entry.IsStale(ctx) {
+			return false
+		}
+		return true
+	}
+
+	return fs.getEntryVersionsFilter(ctx, index, 0, filter)
+}
+
+func (fs *FixationStore) createEntryStoreKey(index string) string {
+	return fs.prefix + types.EntryPrefix + index
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
