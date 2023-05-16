@@ -54,7 +54,7 @@ $PROVIDER1_LISTENER AXELAR tendermintrpc '$AXELAR_RPC_HTTP,$AXELAR_RPC_HTTP' \
 $PROVIDER1_LISTENER AXELAR rest '$AXELAR_REST' \
 $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavad rpcprovider \
 $PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \

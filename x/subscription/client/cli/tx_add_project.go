@@ -19,7 +19,7 @@ func CmdAddProject() *cobra.Command {
 	var disable bool
 	cmd := &cobra.Command{
 		Use:   "add-project [project-name] [optional: project-description]",
-		Short: "Add a new project to a subcsciption",
+		Short: "Add a new project to a subscription",
 		Long: `The add-project command allows the subscription owner to create a new project and associate 
 		it with its subscription.  Optionally, you can determine the policy of the project using a YAML file
 		(see example in cookbook/projects/example_policy.yml. This policy will be both the admin policy and the

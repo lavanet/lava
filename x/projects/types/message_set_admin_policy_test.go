@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMsgSetAdminPolicy_ValidateBasic(t *testing.T) {
+func TestMsgSetPolicy_ValidateBasic(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  MsgSetAdminPolicy
+		msg  MsgSetPolicy
 		err  error
 	}{
 		{
 			name: "invalid address",
-			msg: MsgSetAdminPolicy{
+			msg: MsgSetPolicy{
 				Creator: "invalid_address",
 				Policy: Policy{
 					EpochCuLimit:       100,
@@ -27,7 +27,7 @@ func TestMsgSetAdminPolicy_ValidateBasic(t *testing.T) {
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
-			msg: MsgSetAdminPolicy{
+			msg: MsgSetPolicy{
 				Creator: sample.AccAddress(),
 				Policy: Policy{
 					EpochCuLimit:       100,

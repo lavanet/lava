@@ -331,7 +331,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
 	httpClient := http.Client{
-		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
@@ -349,7 +349,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.NodeUrl.Url + nodeMessage.Path
 
-	relayTimeout := LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
 		relayTimeout += rcp.averageBlockTime

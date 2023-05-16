@@ -31,11 +31,9 @@ func handlePlansProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddProp
 		logger := k.Logger(ctx)
 		err := k.AddPlan(ctx, planElem)
 		if err != nil {
-			details := map[string]string{
-				"planIndex": planElem.GetIndex(),
-				"err":       err.Error(),
-			}
-			return utils.LavaError(ctx, logger, "add_new_plan_to_storage", details, "could not add new plan")
+			return utils.LavaFormatError("could not add new plan", err,
+				utils.Attribute{Key: "planIndex", Value: planElem.Index},
+			)
 		}
 
 		details := map[string]string{"planDetails": planElem.String()}

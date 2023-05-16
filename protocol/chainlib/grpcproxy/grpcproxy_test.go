@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lavanet/lava/grpcproxy/testproto"
+	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
 )
 

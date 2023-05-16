@@ -34,7 +34,7 @@ func (endpoint *RPCProviderEndpoint) UrlsString() string {
 	return strings.Join(st_urls, ", ")
 }
 
-func (endpoint *RPCProviderEndpoint) String() (retStr string) {
+func (endpoint *RPCProviderEndpoint) String() string {
 	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 }
 
@@ -104,10 +104,9 @@ type ProviderSessionsWithConsumer struct {
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 	pairedProviders   int64
-	selfProviderIndex int64
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, selfProviderIndex, pairedProviders int64) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
 		isBlockListed:     0,
@@ -115,7 +114,6 @@ func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSes
 		epochData:         epochData,
 		isDataReliability: isDataReliability,
 		pairedProviders:   pairedProviders,
-		selfProviderIndex: selfProviderIndex,
 	}
 	return pswc
 }
@@ -123,11 +121,6 @@ func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSes
 // reads the pairedProviders data atomically for DR
 func (pswc *ProviderSessionsWithConsumer) atomicReadPairedProviders() int64 {
 	return atomic.LoadInt64(&pswc.pairedProviders)
-}
-
-// reads the selfProviderIndex data atomically for DR
-func (pswc *ProviderSessionsWithConsumer) atomicReadProviderIndex() int64 {
-	return atomic.LoadInt64(&pswc.selfProviderIndex)
 }
 
 // reads the isDataReliability data atomically

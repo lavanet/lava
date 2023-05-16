@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -21,6 +22,7 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
+	eventTracker         *EventTracker
 }
 
 type Updater interface {
@@ -29,7 +31,21 @@ type Updater interface {
 }
 
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}}
+	// validate chainId
+	status, err := clientCtx.Client.Status(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if txFactory.ChainID() != status.NodeInfo.Network {
+		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
+	}
+
+	eventTracker := &EventTracker{clientCtx: clientCtx}
+	err = eventTracker.updateBlockResults(0)
+	if err != nil {
+		return nil, err
+	}
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
 	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
 	if err != nil {
 		return nil, err
@@ -44,21 +60,24 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	return cst, err
 }
 
-func (cst *StateTracker) newLavaBlock(latestBlock int64, hash string) {
+func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	// go over the registered updaters and trigger update
-	cst.registrationLock.RLock()
-	defer cst.registrationLock.RUnlock()
-	for _, updater := range cst.newLavaBlockUpdaters {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+	// first update event tracker
+	st.eventTracker.updateBlockResults(latestBlock)
+	// after events were updated we can trigger updaters
+	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
 	}
 }
 
-func (cst *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {
-	cst.registrationLock.Lock()
-	defer cst.registrationLock.Unlock()
-	existingUpdater, ok := cst.newLavaBlockUpdaters[updater.UpdaterKey()]
+func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {
+	st.registrationLock.Lock()
+	defer st.registrationLock.Unlock()
+	existingUpdater, ok := st.newLavaBlockUpdaters[updater.UpdaterKey()]
 	if !ok {
-		cst.newLavaBlockUpdaters[updater.UpdaterKey()] = updater
+		st.newLavaBlockUpdaters[updater.UpdaterKey()] = updater
 		existingUpdater = updater
 	}
 	return existingUpdater

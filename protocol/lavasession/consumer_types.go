@@ -18,7 +18,10 @@ import (
 )
 
 type ProviderOptimizer interface {
-	AppendRelayData(providerAddress string, latency time.Duration, failure bool)
+	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
+	AppendRelayFailure(providerAddress string)
+	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
 }
 
 type ignoredProviders struct {
@@ -159,7 +162,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
+		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
 	}
 	return nil
 }
@@ -294,7 +297,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			} else if endpoint.connection.GetState() == connectivity.Shutdown {
 				// connection was shut down, so we need to create a new one
 				endpoint.connection.Close()
-				endpoint.Client = nil
 				connected_ := connectEndpoint(cswp, ctx, endpoint)
 				if !connected_ {
 					continue

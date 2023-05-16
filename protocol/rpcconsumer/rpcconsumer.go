@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -37,9 +36,42 @@ var (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 )
 
+type strategyValue struct {
+	provideroptimizer.Strategy
+}
+
+var strategyNames = []string{
+	"balanced",
+	"latency",
+	"sync-freshness",
+	"cost",
+	"privacy",
+	"accuracy",
+}
+
+var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
+
+func (s *strategyValue) String() string {
+	return strategyNames[int(s.Strategy)]
+}
+
+func (s *strategyValue) Set(str string) error {
+	for i, name := range strategyNames {
+		if strings.EqualFold(str, name) {
+			s.Strategy = provideroptimizer.Strategy(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid strategy: %s", str)
+}
+
+func (s *strategyValue) Type() string {
+	return "string"
+}
+
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
+	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
@@ -49,7 +81,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy) (err error) {
 	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -76,7 +108,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
-
+	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
+	chainMutexes := map[string]*sync.Mutex{}
+	for _, endpoint := range rpcEndpoints {
+		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
+	}
+	var optimizers sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
@@ -87,27 +124,58 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
-			strategy := provideroptimizer.STRATEGY_QOS
-			optimizer := provideroptimizer.NewProviderOptimizer(strategy)
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
-			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 			chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
 			if err != nil {
 				err = utils.LavaFormatError("failed creating chain parser", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
 				return err
 			}
-			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, rpcEndpoint.ChainID)
+			chainID := rpcEndpoint.ChainID
+			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
 				return err
 			}
+			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+			var optimizer *provideroptimizer.ProviderOptimizer
+
+			getOrCreateOptimizer := func() error {
+				// this is locked so we don't race optimizers creation
+				chainMutexes[chainID].Lock()
+				defer chainMutexes[chainID].Unlock()
+				value, exists := optimizers.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 1)
+					optimizers.Store(chainID, optimizer)
+				} else {
+					var ok bool
+					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
+					if !ok {
+						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+				return nil
+			}
+			err = getOrCreateOptimizer()
+			if err != nil {
+				errCh <- err
+				return err
+			}
+
+			// Register For Updates
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
+			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+
 			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -249,10 +317,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
-			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
-			if err != nil {
-				utils.LavaFormatFatal("failed getting or creating a VRF key", err)
-			}
+
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
@@ -265,7 +330,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy)
 			return err
 		},
 	}
@@ -280,7 +346,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-
+	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	return cmdRPCConsumer
 }
 

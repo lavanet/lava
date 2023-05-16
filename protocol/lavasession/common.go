@@ -21,15 +21,17 @@ const (
 	GeolocationFlag                                  = "geolocation"
 	TendermintUnsubscribeAll                         = "unsubscribe_all"
 	IndexNotFound                                    = -15
-	AverageWorldLatency                              = 300 * time.Millisecond
 	MinValidAddressesForBlockingProbing              = 2
 	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
+	BLOCKING_PROBE_SLEEP_TIME                        = 1000 * time.Millisecond // maximum amount of time to sleep before triggering probe, to scatter probes uniformly across chains
+	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
 const (
 	PercentileToCalculateLatency = 0.9
 	MinProvidersForSync          = 0.6
+	OptimizerPerturbation        = 0.10
 	LatencyThresholdStatic       = 1 * time.Second
 	LatencyThresholdSlope        = 1 * time.Millisecond
 	StaleEpochDistance           = 3 // relays done 3 epochs back are ready to be rewarded

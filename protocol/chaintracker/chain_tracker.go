@@ -25,6 +25,7 @@ import (
 const (
 	initRetriesCount = 4
 	BACKOFF_MAX_TIME = 10 * time.Minute
+	maxFails         = 10
 )
 
 type ChainFetcher interface {
@@ -166,7 +167,7 @@ func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, block
 		blockNumToFetch := latestBlock - idx
 		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
 		if err != nil {
-			return 0, 0, 0, utils.LavaFormatError("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+			return 0, 0, 0, utils.LavaFormatWarning("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
 		}
 		var foundOverlap bool
 		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
@@ -246,12 +247,12 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
-		return utils.LavaFormatError("could not fetchLatestBlockNum in ChainTracker", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		return utils.LavaFormatWarning("could not fetchLatestBlockNum in ChainTracker", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
-		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		return utils.LavaFormatWarning("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	if gotNewBlock || forked {
 		prev_latest := cs.GetLatestBlockNum()
@@ -263,7 +264,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			if cs.newLatestCallback != nil {
 				for i := prev_latest + 1; i <= newLatestBlock; i++ {
 					// on catch up of several blocks we don't want to miss any callbacks
-					cs.newLatestCallback(i, latestHash)
+					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
 				}
 			}
 		}
@@ -296,7 +297,9 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 				if err != nil {
 					fetchFails += 1
 					cs.updateTicker(tickerTime, fetchFails)
-					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails})
+					if fetchFails > maxFails {
+						utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+					}
 				} else {
 					if fetchFails != 0 {
 						// means we had failures and they are gone, need to reset the ticker
@@ -329,7 +332,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 	}
 	_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
-		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
 		_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	}
 	if err != nil {
@@ -415,8 +418,8 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 }
 
 func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
-	if fails > 10 {
-		fails = 10
+	if fails > maxFails {
+		fails = maxFails
 	}
 	maxIncrease := BACKOFF_MAX_TIME
 	backoff := baseTime * (1 << fails)

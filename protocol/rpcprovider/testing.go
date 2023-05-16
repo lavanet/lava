@@ -61,9 +61,8 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
-					RelaySession:    &pairingtypes.RelaySession{SpecId: providerEntry.Chain},
-					RelayData:       &pairingtypes.RelayPrivateData{ApiInterface: endpoint.UseType},
-					DataReliability: nil,
+					RelaySession: &pairingtypes.RelaySession{SpecId: providerEntry.Chain},
+					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: endpoint.UseType},
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {

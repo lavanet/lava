@@ -10,8 +10,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -151,8 +151,7 @@ func (connector *Connector) Close() {
 }
 
 func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
-	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients},
-		utils.Attribute{Key: "url", Value: connector.nodeUrl.Url})
+	utils.LavaFormatDebug("increasing number of clients", utils.Attribute{Key: "numberOfFreeClients", Value: numberOfFreeClients}, utils.Attribute{Key: "url", Value: connector.nodeUrl.Url})
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
@@ -243,7 +242,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 		cacert := nodeUrl.AuthConfig.GetCaCertificateParams()
 		if cacert != "" {
 			utils.LavaFormatDebug("Loading ca certificate from local path", utils.Attribute{Key: "cacert", Value: cacert})
-			caCert, err := ioutil.ReadFile(cacert)
+			caCert, err := os.ReadFile(cacert)
 			if err == nil {
 				caCertPool := x509.NewCertPool()
 				caCertPool.AppendCertsFromPEM(caCert)

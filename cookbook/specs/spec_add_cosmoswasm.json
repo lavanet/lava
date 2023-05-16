@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "COSMOSWASM",
-                "name": "Cosmos Wasm",
+                "name": "cosmos wasm",
                 "enabled": false,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
