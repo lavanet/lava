@@ -57364,7 +57364,7 @@ definitions:
         type: array
         items:
           type: string
-  lavanet.lava.spec.showAllChainsInfoStruct:
+  lavanet.lava.spec.ShowAllChainsInfoStruct:
     type: object
     properties:
       chainName:
