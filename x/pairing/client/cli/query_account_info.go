@@ -2,12 +2,10 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -69,11 +67,7 @@ func CmdAccountInfo() *cobra.Command {
 			currentBlock := resultStatus.SyncInfo.LatestBlockHeight
 
 			// gather information for printing
-			stakedProviderChains := []epochstoragetypes.StakeEntry{}
-			unstakingProviderChains := []epochstoragetypes.StakeEntry{}
-			stakedConsumerChains := []epochstoragetypes.StakeEntry{}
-			var subsc *subscriptiontypes.Subscription
-			var project *projecttypes.Project
+			var info types.QueryAccountInfoResponse
 
 			// fill the objects
 			for _, chainStructInfo := range allChains.ChainInfoList {
@@ -85,7 +79,11 @@ func CmdAccountInfo() *cobra.Command {
 				if err == nil && len(response.StakeEntry) > 0 {
 					for _, provider := range response.StakeEntry {
 						if provider.Address == address {
-							stakedProviderChains = append(stakedProviderChains, provider)
+							if provider.StakeAppliedBlock > uint64(currentBlock) {
+								info.Frozen = append(info.Frozen, provider)
+							} else {
+								info.Provider = append(info.Provider, provider)
+							}
 							break
 						}
 					}
@@ -99,7 +97,7 @@ func CmdAccountInfo() *cobra.Command {
 				})
 				if err == nil {
 					if userEntry.MaxCU > 0 {
-						stakedConsumerChains = append(stakedConsumerChains, userEntry.Consumer)
+						info.Consumer = append(info.Consumer, userEntry.Consumer)
 					}
 				}
 			}
@@ -111,7 +109,7 @@ func CmdAccountInfo() *cobra.Command {
 				if len(unstakeEntriesAllChains.StakeStorage.StakeEntries) > 0 {
 					for _, unstakingProvider := range unstakeEntriesAllChains.StakeStorage.StakeEntries {
 						if unstakingProvider.Address == address {
-							unstakingProviderChains = append(unstakingProviderChains, unstakingProvider)
+							info.Unstaked = append(info.Unstaked, unstakingProvider)
 						}
 					}
 				}
@@ -122,79 +120,17 @@ func CmdAccountInfo() *cobra.Command {
 			})
 
 			if err == nil {
-				subsc = &response.Sub
+				info.Subscription = response.Sub
 			}
 
 			developer, err := projectQuerier.Developer(cmd.Context(), &projecttypes.QueryDeveloperRequest{Developer: address})
 			if err == nil {
-				project = developer.Project
+				info.Project = developer.Project
 			}
 
 			// we finished gathering information, now print it
 
-			// print staked chains:
-			output := ""
-
-			if len(stakedProviderChains) > 0 {
-				activeChains := []epochstoragetypes.StakeEntry{}
-				frozenChains := []epochstoragetypes.StakeEntry{}
-				for _, entry := range stakedProviderChains {
-					if entry.StakeAppliedBlock > uint64(currentBlock) {
-						frozenChains = append(frozenChains, entry)
-					} else {
-						activeChains = append(activeChains, entry)
-					}
-				}
-				if len(activeChains) > 0 {
-					output += separator + "Active Provider Chains\n" + separator
-					for _, entry := range activeChains {
-						output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
-					}
-					output += "\n\n"
-				}
-				if len(frozenChains) > 0 {
-					output += separator + "Frozen Provider Chains\n" + separator
-					for _, entry := range frozenChains {
-						output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
-					}
-					output += "\n\n"
-				}
-			}
-			if len(unstakingProviderChains) > 0 {
-				output += separator + "Unstaking Chains\n" + separator
-				for _, entry := range unstakingProviderChains {
-					output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
-				}
-				output += "\n\n"
-			}
-			if project != nil {
-				marshaller := &jsonpb.Marshaler{}
-				data, err := marshaller.MarshalToString(project)
-				if err != nil {
-					return err
-				}
-				output += separator + "Active Project\n" + separator
-				output += data + "\n\n"
-			}
-			if subsc != nil {
-				marshaller := &jsonpb.Marshaler{}
-				data, err := marshaller.MarshalToString(subsc)
-				if err != nil {
-					return err
-				}
-				output += separator + "Active Subscription\n" + separator
-				output += data + "\n\n"
-			}
-
-			if len(stakedConsumerChains) > 0 {
-				output += separator + "Active Consumer Chains\n" + separator
-				for _, entry := range stakedConsumerChains {
-					output += fmt.Sprintf("ChainID: %s\n %+v\n\n", entry.Chain, entry)
-				}
-				output += "\n\n"
-			}
-			fmt.Println(output)
-			return nil
+			return clientCtx.PrintProto(&info)
 		},
 	}
 	cmd.Flags().String(flags.FlagFrom, "", "Name or address of private key with which to sign")
