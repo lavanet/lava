@@ -282,20 +282,16 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			var networkChainId string = app.Name
-			cmdChainIdFlag := viper.GetString(flags.FlagChainID)
 
-			if cmdChainIdFlag == app.Name {
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
 				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
 				if err == nil {
 					if clientTomlConfig.ChainID != "" {
 						networkChainId = clientTomlConfig.ChainID
 					}
 				}
-			} else {
-				networkChainId = cmdChainIdFlag
 			}
-
 			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
 
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)

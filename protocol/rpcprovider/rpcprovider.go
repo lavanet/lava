@@ -344,18 +344,15 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			var networkChainId string = app.Name
-			cmdChainIdFlag := viper.GetString(flags.FlagChainID)
 
-			if cmdChainIdFlag == app.Name {
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
 				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
 				if err == nil {
 					if clientTomlConfig.ChainID != "" {
 						networkChainId = clientTomlConfig.ChainID
 					}
 				}
-			} else {
-				networkChainId = cmdChainIdFlag
 			}
 			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
 
