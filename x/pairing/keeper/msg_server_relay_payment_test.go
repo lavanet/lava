@@ -827,10 +827,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		Description: "description",
 		Enabled:     true,
 		ProjectKeys: []projecttypes.ProjectKey{
-			{
-				Key:   projectAdmin1,
-				Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
-			},
+			projecttypes.ProjectDeveloperKey(projectAdmin1),
 		},
 		Policy: &projecttypes.Policy{
 			GeolocationProfile: uint64(1),
@@ -843,10 +840,9 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	projectData.Name = "proj2"
-	projectData.ProjectKeys = []projecttypes.ProjectKey{{
-		Key:   projectAdmin2,
-		Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
-	}}
+	projectData.ProjectKeys = []projecttypes.ProjectKey{
+		projecttypes.ProjectDeveloperKey(projectAdmin2),
+	}
 	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
 	require.Nil(t, err)
 
