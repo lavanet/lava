@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,14 +24,8 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 			return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_key", details, "invalid project key")
 		}
 
-		for _, projectKeyType := range projectKey.Types {
-			if projectKeyType != projectstypes.ProjectKey_ADMIN && projectKeyType != projectstypes.ProjectKey_DEVELOPER {
-				details := map[string]string{
-					"key":  projectKey.Key,
-					"type": strconv.FormatInt(int64(projectKeyType), 10),
-				}
-				return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_key_type", details, "invalid project key type (should be 1 or 2)")
-			}
+		if !projectKey.IsTypeValid() {
+			return nil, fmt.Errorf("invalid project key: %d (must be ADMIN(=1) or DEVELOPER(=2)", projectKey.Kinds)
 		}
 
 		if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {

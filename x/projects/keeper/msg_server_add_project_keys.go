@@ -12,10 +12,8 @@ func (k msgServer) AddKeys(goCtx context.Context, msg *types.MsgAddKeys) (*types
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	for _, projectKey := range msg.GetProjectKeys() {
-		for _, keyType := range projectKey.GetTypes() {
-			if keyType != types.ProjectKey_ADMIN && keyType != types.ProjectKey_DEVELOPER {
-				return nil, fmt.Errorf("project key must be of type ADMIN(=1) or DEVELOPER(=2). projectKey = %d", keyType)
-			}
+		if !projectKey.IsTypeValid() {
+			return nil, fmt.Errorf("invalid project key: %d (must be ADMIN(=1) or DEVELOPER(=2)", projectKey.Kinds)
 		}
 	}
 

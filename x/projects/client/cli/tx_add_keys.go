@@ -43,10 +43,7 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var developerKeys []types.ProjectKey
 				for _, developerFlagValue := range developerFlagsValue {
-					developerKeys = append(developerKeys, types.ProjectKey{
-						Key:   developerFlagValue,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-					})
+					developerKeys = append(developerKeys, types.ProjectDeveloperKey(developerFlagValue))
 				}
 
 				adminAddresses, err := cmd.Flags().GetStringSlice("admin-key")
@@ -55,10 +52,7 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var adminKeys []types.ProjectKey
 				for _, adminAddress := range adminAddresses {
-					adminKeys = append(adminKeys, types.ProjectKey{
-						Key:   adminAddress,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
-					})
+					adminKeys = append(adminKeys, types.ProjectAdminKey(adminAddress))
 				}
 
 				// doing this redundant line to avoid lint issues
