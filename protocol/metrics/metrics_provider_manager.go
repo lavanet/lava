@@ -32,35 +32,35 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		return nil
 	}
 	totalCUServicedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "provider_total_cu_serviced",
+		Name: "lava_provider_total_cu_serviced",
 		Help: "The total number of CUs serviced by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	// Create a new GaugeVec metric to represent the TotalRelaysServiced over time.
 	totalRelaysServicedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "provider_total_relays_serviced",
+		Name: "lava_provider_total_relays_serviced",
 		Help: "The total number of relays serviced by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
 	totalErroredMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "provider_total_errored",
+		Name: "lava_provider_total_errored",
 		Help: "The total number of errors encountered by the provider over time.",
 	}, []string{"spec", "apiInterface"})
 
 	consumerQoSMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "consumer_QoS",
+		Name: "lava_consumer_QoS",
 		Help: "The latest QoS score from a consumer",
 	}, []string{"spec", "consumer_address", "qos_metric"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "latest_block",
+		Name: "lava_latest_block",
 		Help: "The latest block measured",
 	}, []string{"spec"})
 
 	// Create a new GaugeVec metric to represent the TotalCUPaid over time.
 	totalCUPaidMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "provider_total_cu_paid",
+		Name: "lava_provider_total_cu_paid",
 		Help: "The total number of CUs paid to the provider over time.",
 	}, []string{"spec"})
 

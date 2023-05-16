@@ -1,4 +1,4 @@
-package common
+package metrics
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ type ErrorData struct {
 }
 
 func TestGetUniqueGuidResponseForError(t *testing.T) {
-	plog, err := NewRPCConsumerLogs()
+	plog, err := NewRPCConsumerLogs(nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -39,7 +39,7 @@ func TestGetUniqueGuidResponseForError(t *testing.T) {
 }
 
 func TestGetUniqueGuidResponseDeterministic(t *testing.T) {
-	plog, err := NewRPCConsumerLogs()
+	plog, err := NewRPCConsumerLogs(nil)
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
@@ -57,7 +57,7 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
 		mt, _, _ := c.ReadMessage()
-		plog, _ := NewRPCConsumerLogs()
+		plog, _ := NewRPCConsumerLogs(nil)
 		responseError := errors.New("response error")
 		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType")
 	}))
