@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/x/projects/migrations/v2"
-	"github.com/lavanet/lava/x/projects/types"
+	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
 )
 
 type Migrator struct {
@@ -27,7 +27,7 @@ func (m Migrator) migrateFixationsVersion(ctx sdk.Context) error {
 }
 
 // Migrate2to3 implements store migration from v2 to v3:
-// - Trigger version upgrade of the projectsFS, develooperKeysFS fixation stores
+// - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
 // - Update keys contents
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
@@ -38,36 +38,36 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	for _, projectIndex := range projectIndices {
 		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
 		for _, block := range blocks {
-			var project_v2 v2.ProjectV2
+			var project_v2 v2.Project
 			m.keeper.projectsFS.ReadEntry(ctx, projectIndex, block, &project_v2)
 
-			// convert project keys from type v2.ProjectKeyv2 to types.ProjectKey
-			projectKeys_v3 := []types.ProjectKey{}
+			// convert project keys from type v2.ProjectKey to types.ProjectKey
+			var projectKeys_v3 []v3.ProjectKey
 			for _, projectKey_v2 := range project_v2.ProjectKeys {
-				projectKey_v3 := types.ProjectKey{
+				projectKey_v3 := v3.ProjectKey{
 					Key: projectKey_v2.Key,
 				}
 
 				for _, projectKeyType_v2 := range projectKey_v2.Types {
 					if projectKeyType_v2 == v2.ProjectKey_ADMIN {
-						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_ADMIN)
+						projectKey_v3.Types = append(projectKey_v3.Types, v3.ProjectKey_ADMIN)
 					} else if projectKeyType_v2 == v2.ProjectKey_DEVELOPER {
-						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_DEVELOPER)
+						projectKey_v3.Types = append(projectKey_v3.Types, v3.ProjectKey_DEVELOPER)
 					}
 				}
 			}
 
-			// convert chainPolicies from type v2.ChainPolicyv2 to types.Policy
-			var chainPolicies_v3 []types.ChainPolicy
+			// convert chainPolicies from type v2.ChainPolicy to v3.ChainPolicy
+			var chainPolicies_v3 []v3.ChainPolicy
 			for _, chainPolicy_v2 := range project_v2.Policy.ChainPolicies {
-				chainPolicies_v3 = append(chainPolicies_v3, types.ChainPolicy{
+				chainPolicies_v3 = append(chainPolicies_v3, v3.ChainPolicy{
 					ChainId: chainPolicy_v2.ChainId,
 					Apis:    chainPolicy_v2.Apis,
 				})
 			}
 
-			// convert policy from type v2.Policyv2 to types.Policy
-			policy_v3 := types.Policy{
+			// convert policy from type v2.Policy to v3.Policy
+			policy_v3 := v3.Policy{
 				ChainPolicies:      chainPolicies_v3,
 				GeolocationProfile: project_v2.Policy.GeolocationProfile,
 				TotalCuLimit:       project_v2.Policy.TotalCuLimit,
@@ -75,8 +75,8 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 				MaxProvidersToPair: project_v2.Policy.MaxProvidersToPair,
 			}
 
-			// convert project from type v2.Projectv2 to types.Project
-			projectStruct_v3 := types.Project{
+			// convert project from type v2.Project to v3.Project
+			projectStruct_v3 := v3.Project{
 				Index:              project_v2.Index,
 				Subscription:       project_v2.Subscription,
 				Description:        project_v2.Description,
@@ -95,10 +95,10 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	for _, developerDataIndex := range developerDataIndices {
 		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex, true)
 		for _, block := range blocks {
-			var developerDataStruct_v2 v2.ProtoDeveloperDataV2
+			var developerDataStruct_v2 v2.ProtoDeveloperData
 			m.keeper.developerKeysFS.ReadEntry(ctx, developerDataIndex, block, &developerDataStruct_v2)
 
-			developerData_v3 := types.ProtoDeveloperData{
+			developerData_v3 := v3.ProtoDeveloperData{
 				ProjectID: developerDataStruct_v2.ProjectID,
 			}
 
@@ -110,7 +110,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 }
 
 // Migrate3to4 implements store migration from v3 to v4:
-// - Trigger version upgrade of the projectsFS, develooperKeysFS fixation-stores
+// - Trigger version upgrade of the projectsFS, developerKeysFS fixation-stores
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
 		return err
