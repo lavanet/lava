@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/x/projects/migrations/v2"
 	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
+	v4 "github.com/lavanet/lava/x/projects/migrations/v4"
+	v5 "github.com/lavanet/lava/x/projects/migrations/v5"
 )
 
 type Migrator struct {
@@ -115,5 +117,86 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
 		return err
 	}
+	return nil
+}
+
+// Migrate4to5 implements store migration from v4 to v5:
+// - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
+// - Update keys types (from list of types to bitmap)
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	if err := m.migrateFixationsVersion(ctx); err != nil {
+		return err
+	}
+
+	projectIndices := m.keeper.projectsFS.GetAllEntryIndices(ctx)
+	for _, projectIndex := range projectIndices {
+		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
+		for _, block := range blocks {
+			var project_v4 v4.Project
+			m.keeper.projectsFS.ReadEntry(ctx, projectIndex, block, &project_v4)
+
+			// convert project keys from type v4.ProjectKey to v5.ProjectKey
+			var projectKeys_v5 []v5.ProjectKey
+			for _, projectKey_v4 := range project_v4.ProjectKeys {
+				projectKey_v5 := v5.NewProjectKey(projectKey_v4.Key, 0x0)
+
+				for _, projectKeyType_v4 := range projectKey_v4.Types {
+					if projectKeyType_v4 == v4.ProjectKey_ADMIN {
+						projectKey_v5 = projectKey_v5.AddType(v5.ProjectKey_ADMIN)
+					} else if projectKeyType_v4 == v4.ProjectKey_DEVELOPER {
+						projectKey_v5 = projectKey_v5.AddType(v5.ProjectKey_DEVELOPER)
+					}
+				}
+			}
+
+			// convert chainPolicies from type v4.ChainPolicy to v5.ChainPolicy
+			var adminChainPolicies_v5 []v5.ChainPolicy
+			for _, chainPolicy_v4 := range project_v4.AdminPolicy.ChainPolicies {
+				adminChainPolicies_v5 = append(adminChainPolicies_v5, v5.ChainPolicy{
+					ChainId: chainPolicy_v4.ChainId,
+					Apis:    chainPolicy_v4.Apis,
+				})
+			}
+			var subscriptionChainPolicies_v5 []v5.ChainPolicy
+			for _, chainPolicy_v4 := range project_v4.SubscriptionPolicy.ChainPolicies {
+				subscriptionChainPolicies_v5 = append(subscriptionChainPolicies_v5, v5.ChainPolicy{
+					ChainId: chainPolicy_v4.ChainId,
+					Apis:    chainPolicy_v4.Apis,
+				})
+			}
+
+			// convert policy from type v4.Policy to v5.Policy
+			adminPolicy_v5 := v5.Policy{
+				ChainPolicies:      adminChainPolicies_v5,
+				GeolocationProfile: project_v4.AdminPolicy.GeolocationProfile,
+				TotalCuLimit:       project_v4.AdminPolicy.TotalCuLimit,
+				EpochCuLimit:       project_v4.AdminPolicy.EpochCuLimit,
+				MaxProvidersToPair: project_v4.AdminPolicy.MaxProvidersToPair,
+			}
+			subscriptionPolicy_v5 := v5.Policy{
+				ChainPolicies:      subscriptionChainPolicies_v5,
+				GeolocationProfile: project_v4.SubscriptionPolicy.GeolocationProfile,
+				TotalCuLimit:       project_v4.SubscriptionPolicy.TotalCuLimit,
+				EpochCuLimit:       project_v4.SubscriptionPolicy.EpochCuLimit,
+				MaxProvidersToPair: project_v4.SubscriptionPolicy.MaxProvidersToPair,
+			}
+
+			// convert project from type v4.Project to v5.Project
+			projectStruct_v5 := v5.Project{
+				Index:              project_v4.Index,
+				Subscription:       project_v4.Subscription,
+				Description:        project_v4.Description,
+				Enabled:            project_v4.Enabled,
+				ProjectKeys:        projectKeys_v5,
+				AdminPolicy:        &adminPolicy_v5,
+				SubscriptionPolicy: &subscriptionPolicy_v5,
+				UsedCu:             project_v4.UsedCu,
+				Snapshot:           project_v4.Snapshot,
+			}
+
+			m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &projectStruct_v5)
+		}
+	}
+
 	return nil
 }
