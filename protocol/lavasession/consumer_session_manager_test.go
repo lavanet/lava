@@ -28,7 +28,7 @@ const (
 	firstEpochHeight                   = 20
 	secondEpochHeight                  = 40
 	cuForFirstRequest                  = uint64(10)
-	grpcListener                       = "localhost:48353"
+	grpcListener                       = "localhost:28353"
 	servicedBlockNumber                = int64(30)
 	relayNumberAfterFirstCall          = uint64(1)
 	relayNumberAfterFirstFail          = uint64(1)
@@ -39,15 +39,27 @@ const (
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 3))
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1))
 }
 
-func createGRPCServer(t *testing.T) *grpc.Server {
+var grpcServer *grpc.Server
+
+func TestMain(t *testing.M) {
+	createGRPCServer()
+}
+
+func createGRPCServer() (*grpc.Server, error) {
+	if grpcServer != nil {
+		return grpcServer, nil
+	}
 	lis, err := net.Listen("tcp", grpcListener)
-	require.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 	s := grpc.NewServer()
 	go s.Serve(lis) // serve in a different thread
-	return s
+	grpcServer = s
+	return s, nil
 }
 
 func createPairingList(providerPrefixAddress string) map[uint64]*ConsumerSessionsWithProvider {
@@ -70,19 +82,20 @@ func createPairingList(providerPrefixAddress string) map[uint64]*ConsumerSession
 
 // Test the basic functionality of the consumerSessionManager
 func TestHappyFlow(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, cuForFirstRequest)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -91,21 +104,22 @@ func TestHappyFlow(t *testing.T) {
 }
 
 func TestPairingReset(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	csm.validAddresses = []string{}                                     // set valid addresses to zero
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	csm.validAddresses = []string{}                                                          // set valid addresses to zero
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, cuForFirstRequest)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -115,8 +129,9 @@ func TestPairingReset(t *testing.T) {
 }
 
 func TestPairingResetWithFailures(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -127,13 +142,13 @@ func TestPairingResetWithFailures(t *testing.T) {
 		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 			break
 		}
-		cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
-		require.Nil(t, err)                                             // fail test.
+		cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
+		require.Nil(t, err)                                                                  // fail test.
 		err = csm.OnSessionFailure(cs, nil)
 		require.Nil(t, err) // fail test.
 	}
 	require.Equal(t, len(csm.validAddresses), 0)
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 	require.NotNil(t, cs)
@@ -143,8 +158,9 @@ func TestPairingResetWithFailures(t *testing.T) {
 }
 
 func TestPairingResetWithMultipleFailures(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -156,8 +172,8 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 				break
 			}
-			cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
-			if len(csm.validAddresses) == 0 {                               // wait for all pairings to be blocked.
+			cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
+			if len(csm.validAddresses) == 0 {                                                    // wait for all pairings to be blocked.
 				break
 			}
 			require.Nil(t, err)
@@ -165,7 +181,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			require.Nil(t, err)
 		}
 		require.Equal(t, len(csm.validAddresses), 0)
-		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 		require.Nil(t, err)
 		require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 		require.NotNil(t, cs)
@@ -174,12 +190,12 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		require.Equal(t, csm.numberOfResets, uint64(numberOfResets+1)) // verify we had one reset only
 	}
 
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, cuForFirstRequest)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -189,8 +205,9 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -208,7 +225,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	sessionList := make([]session, numberOfAllowedSessionsPerConsumer)
 	sessionListData := make([]SessTestData, numberOfAllowedSessionsPerConsumer)
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 		require.Nil(t, err)
 		require.NotNil(t, cs)
 		require.Equal(t, epoch, csm.currentEpoch)
@@ -223,7 +240,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		require.Equal(t, epoch, csm.currentEpoch)
 
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -241,7 +258,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	}
 
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 		require.Nil(t, err)
 		require.NotNil(t, cs)
 		require.Equal(t, epoch, csm.currentEpoch)
@@ -255,7 +272,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		cs := sessionList[j].cs
 		epoch := sessionList[j].epoch
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.Nil(t, err)
 			require.Equal(t, sessionListData[j].cuSum+cuForFirstRequest, cs.CuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -272,17 +289,17 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 }
 
 func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 	require.Nil(t, err)
 	ch <- p
 }
 
 func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
@@ -294,8 +311,9 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 func TestHappyFlowMultiThreaded(t *testing.T) {
 	utils.LavaFormatInfo("Parallel test:")
 
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -341,8 +359,9 @@ func TestHappyFlowMultiThreaded(t *testing.T) {
 func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 	utils.LavaFormatInfo("Parallel test:")
 
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
@@ -396,14 +415,15 @@ func TestHappyFlowMultiThreadedWithUpdateSession(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSessionFailureAndGetReportedProviders(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
@@ -432,14 +452,15 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 
 // Test the basic functionality of the consumerSessionManager
 func TestSessionFailureEpochMisMatch(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a sesssion
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a sesssion
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
@@ -457,7 +478,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber) // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
@@ -492,14 +513,15 @@ func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("")
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.Nil(t, err)
-	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil)
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil, servicedBlockNumber)
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
@@ -509,15 +531,16 @@ func TestGetSession(t *testing.T) {
 func TestContext(t *testing.T) {
 	ctx := context.Background()
 	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(3 * time.Millisecond)
 	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
 	cancel()
 }
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer s.Stop()           // stop the server when finished.
+	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	require.Nil(t, erro)
+	defer s.Stop() // stop the server when finished.
 	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)

@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -21,10 +20,6 @@ func TestNewStakeClient(t *testing.T) {
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
 
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
-
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
@@ -33,13 +28,13 @@ func TestNewStakeClient(t *testing.T) {
 		stake sdk.Coin
 		valid bool
 	}{
-		{"MinStake", sdk.NewCoin(spec.MinStakeClient.Denom, spec.MinStakeClient.Amount.Sub(sdk.NewInt(1))), false},
-		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount+1)), false},
+		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, spec.MinStakeClient.Amount.Sub(sdk.NewInt(1))), false},
+		{"MinStake", sdk.NewCoin(epochstoragetypes.TokenDenom, spec.MinStakeClient.Amount), true},
 		{"HappyFlow", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: tt.stake, Geolocation: 1, Vrfpk: vrfPk.String()})
+			_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: tt.stake, Geolocation: 1})
 
 			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -64,15 +59,11 @@ func TestAddStakeClient(t *testing.T) {
 	var amount int64 = 1000
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
 
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
-
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
 	firstStake := amount / 10
-	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(firstStake)), Geolocation: 1, Vrfpk: vrfPk.String()})
+	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(firstStake)), Geolocation: 1})
 	require.Nil(t, err)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -88,7 +79,7 @@ func TestAddStakeClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: tt.stake, Geolocation: 1, Vrfpk: vrfPk.String()})
+			_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: tt.stake, Geolocation: 1})
 			ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 			if tt.valid {

@@ -27,7 +27,7 @@ type EpochstorageKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan planstypes.Plan, vrfpk string) error
+	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan planstypes.Plan) error
 	CreateProject(ctx sdk.Context, subscriptionAddress string, projectData projectstypes.ProjectData, plan planstypes.Plan) error
 	DeleteProject(ctx sdk.Context, index string) error
 	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string)

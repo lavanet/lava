@@ -43,7 +43,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	txEvents := simResult.GetResult().Events
 	lavaReward := sdk.NewCoin("ulava", sdk.NewInt(0))
 	for _, txEvent := range txEvents {
-		if txEvent.Type == "lava_relay_payment" {
+		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {
 				eventStr := string(attribute.Key)
 				eventStr = strings.SplitN(eventStr, ".", 2)[0]
@@ -218,8 +218,8 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, dataReliabilityProofs []*pairingtypes.VRFData, description string) error {
-	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, dataReliabilityProofs, description)
+func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error {
+	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description)
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)

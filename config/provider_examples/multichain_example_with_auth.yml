@@ -62,3 +62,4 @@ endpoints:
               AUTH-X-HEADER-2: xxyyzz
           ip-forwarding: true
           timeout: 10000000
+metrics-listen-address: ":7780"

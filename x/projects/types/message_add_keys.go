@@ -44,12 +44,5 @@ func (msg *MsgAddKeys) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	for _, projectKey := range msg.GetProjectKeys() {
-		for _, keyType := range projectKey.GetTypes() {
-			if keyType != ProjectKey_ADMIN && keyType != ProjectKey_DEVELOPER {
-				return sdkerrors.Wrapf(ErrInvalidKeyType, "project key must be of type ADMIN(=1) or DEVELOPER(=2). projectKey = %d", keyType)
-			}
-		}
-	}
 	return nil
 }

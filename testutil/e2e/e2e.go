@@ -688,6 +688,7 @@ func (lt *lavaTest) saveLogs() {
 	}
 	errorLineCount := 0
 	errorFiles := []string{}
+	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
 		file, err := os.Create(logsFolder + fileName + ".log")
 		if err != nil {
@@ -722,6 +723,7 @@ func (lt *lavaTest) saveLogs() {
 		}
 		errorFiles = append(errorFiles, fileName)
 		errors := strings.Join(errorLines, "\n")
+		errorPrint[fileName] = errorLines[0] + errorLines[1]
 		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
 		if err != nil {
 			panic(err)
@@ -733,6 +735,9 @@ func (lt *lavaTest) saveLogs() {
 	}
 
 	if errorLineCount != 0 {
+		for _, errLine := range errorPrint {
+			fmt.Println("ERROR: ", errLine)
+		}
 		panic("Error found in logs " + strings.Join(errorFiles, ", "))
 	}
 }

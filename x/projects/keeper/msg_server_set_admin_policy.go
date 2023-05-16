@@ -11,7 +11,14 @@ func (k msgServer) SetPolicy(goCtx context.Context, msg *types.MsgSetPolicy) (*t
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	policy := msg.GetPolicy()
-	err := k.SetProjectPolicy(ctx, []string{msg.GetProject()}, &policy, msg.GetCreator(), types.SET_ADMIN_POLICY)
+
+	err := policy.ValidateBasicPolicy()
+	if err != nil {
+		return nil, err
+	}
+
+	err = k.SetProjectPolicy(ctx, []string{msg.GetProject()}, &policy, msg.GetCreator(), types.SET_ADMIN_POLICY)
+
 	if err != nil {
 		return nil, err
 	}

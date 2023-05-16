@@ -3,6 +3,7 @@ package provideroptimizer
 import (
 	"math"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,7 +61,15 @@ const (
 	STRATEGY_ACCURACY
 )
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
+func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0)
+}
+
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64) {
+	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock)
+}
+
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
 	latestSync, timeSync := po.updateLatestSyncData(syncBlock)
 	providerData, _ := po.getProviderData(providerAddress)
 	halfTime := po.calculateHalfTime(providerAddress)
@@ -82,6 +91,9 @@ func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency tim
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress)
+	if debug {
+		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
+	}
 }
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
@@ -93,6 +105,9 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
+	if debug {
+		utils.LavaFormatDebug("probe update", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
+	}
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
@@ -100,6 +115,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	returnedProviders := make([]string, 1) // location 0 is always the best score
 	latencyScore := math.MaxFloat64        // smaller = better i.e less latency
 	syncScore := math.MaxFloat64           // smaller = better i.e less sync lag
+	numProviders := len(allAddresses)
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -120,9 +136,12 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
 
+		if debug {
+			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent})
+		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders)) {
+			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders), numProviders) {
 				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
 				returnedProviders = append(returnedProviders, returnedProviders[0])
 			}
@@ -131,11 +150,13 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScore = syncScoreCurrent
 			continue
 		}
-		if po.shouldExplore(len(returnedProviders)) {
+		if po.shouldExplore(len(returnedProviders), numProviders) {
 			returnedProviders = append(returnedProviders, providerAddress)
 		}
 	}
-
+	if debug {
+		utils.LavaFormatDebug("returned providers", utils.Attribute{Key: "providers", Value: strings.Join(returnedProviders, ",")}, utils.Attribute{Key: "cu", Value: cu})
+	}
 	return returnedProviders
 }
 
@@ -162,7 +183,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (u
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
-func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
+func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
 	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
@@ -177,7 +198,8 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int) bool {
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
-	return rand.Float64() < explorationChance
+	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
+	return rand.Float64() < explorationChance/float64(numProviders)
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
@@ -192,11 +214,9 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latency
 		if rand.Intn(2) == 0 {
 			return true
 		}
+		return false
 	default:
 		latencyWeight = 0.8
-	}
-	if debug {
-		utils.LavaFormatDebug("total scores", utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "total", Value: latencyScoreCurrent*latencyWeight + syncScoreCurrent*(1-latencyWeight)})
 	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
@@ -266,7 +286,8 @@ func (po *ProviderOptimizer) CalculateProbabilityOfTimeout(availabilityScore sco
 
 func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int64, providerData ProviderData) float64 {
 	probabilityBlockError := float64(0)
-	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) {
+	// if there is no syncBlock data we assume successful relays so we don't over fit providers who were lucky to update
+	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) && providerData.SyncBlock > 0 {
 		// requested a specific block, so calculate a probability of provider having that block
 		averageBlockTime := po.averageBlockTime.Seconds()
 		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock

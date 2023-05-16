@@ -13,7 +13,10 @@ import (
 func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) error {
 	// check the epochsNum consts
 	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
-		return utils.LavaError(ctx, k.Logger(ctx), "get_unresponsive_providers_to_punish", nil, "epochsNumToCheckCUForUnresponsiveProvider or epochsNumToCheckCUForComplainers are smaller or equal than zero")
+		return utils.LavaFormatError("epochsNumToCheckCUForUnresponsiveProvider or epochsNumToCheckCUForComplainers are smaller or equal than zero", fmt.Errorf("invalid unresponsive provider consts"),
+			utils.Attribute{Key: "epochsNumToCheckCUForUnresponsiveProvider", Value: epochsNumToCheckCUForUnresponsiveProvider},
+			utils.Attribute{Key: "epochsNumToCheckCUForComplainers", Value: epochsNumToCheckCUForComplainers},
+		)
 	}
 
 	// Get current epoch
@@ -55,7 +58,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	// TODO: when we use the policy providers number, this should be updated
 	minimumProvidersCount, err := k.ServicersToPairCount(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "param_reading", map[string]string{"err": err.Error()}, "couldn't read k.ServicersToPairCount(ctx, uint64(ctx.BlockHeight()))")
+		panic("could not get servicers to pair count")
 	}
 
 	// Go over the staked provider entries (on all chains)
@@ -76,7 +79,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
 			providerPaymentStorageKeyList, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
 			if err != nil {
-				return utils.LavaError(ctx, k.Logger(ctx), "count_cu_for_unresponsiveness", map[string]string{"err": err.Error()}, "couldn't count CU for unreponsiveness")
+				return utils.LavaFormatError("couldn't count CU for unreponsiveness", err)
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
@@ -84,7 +87,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				existingProviders[providerStakeEntry.Geolocation]--
 				if err != nil {
-					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
+					return utils.LavaFormatError("couldn't punish unresponsive provider", err)
 				}
 			}
 		}
@@ -155,7 +158,9 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		// Get previous epoch (from epochTemp)
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
+			return nil, utils.LavaFormatWarning("couldn't get previous epoch", err,
+				utils.Attribute{Key: "epoch", Value: epoch},
+			)
 		}
 		// update epochTemp
 		epochTemp = previousEpoch
@@ -238,7 +243,9 @@ func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, provid
 	// Remove the provider's stake entry
 	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
 	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "relay_payment_unstake", map[string]string{"existingEntry": fmt.Sprintf("%+v", existingEntry)}, "tried to unstake unsafe but didnt find entry")
+		return utils.LavaFormatWarning("tried to unstake unsafe but didnt find entry", err,
+			utils.Attribute{Key: "existingEntry", Value: fmt.Sprintf("%+v", existingEntry)},
+		)
 	}
 
 	// get unstakeHoldBlocks

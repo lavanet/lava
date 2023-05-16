@@ -185,7 +185,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -264,7 +264,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -348,7 +348,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -421,7 +421,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -512,7 +512,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -603,7 +603,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -695,7 +695,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			var Relays []*pairingtypes.RelaySession
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
+			payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
 	}
 }
@@ -821,7 +821,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	// get payment
 	relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
+	payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 	// advance another epoch and unstake the provider
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -894,14 +894,14 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		// get payment
 		relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-		payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
+		payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 		// Advance epoch and verify the relay payment objects
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 		verifyRelayPaymentObjects(t, ts, relayRequest, true)
 
 		// try to get payment again - shouldn't work because of double spend (that's why it's called with false)
-		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
+		payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
 
 		// Advance enough epochs so the chain will forget the relay payment object (the chain's memory is limited). Note, we already advanced one epoch since epochAfterEpochBlocksChanged (the relay payment object's creation epoch)
 		for i := 0; i < int(epochsToSave)-1; i++ {
@@ -912,7 +912,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		verifyRelayPaymentObjects(t, ts, relayRequest, true) // TODO: fix bug CNS-83 and turn to false (the real expected value).
 
 		// try to get payment again - shouldn't work (relay payment object should not exist and if it exists, the code shouldn't allow double spending)
-		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
+		payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, false, ts.clients[0].Addr, ts.providers[0].Addr)
 	}
 }
 
