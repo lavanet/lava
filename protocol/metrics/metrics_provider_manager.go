@@ -141,5 +141,8 @@ func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 }
 
 func (pme *ProviderMetricsManager) SetBlock(latestLavaBlock int64) {
+	if pme == nil {
+		return
+	}
 	pme.blockMetric.WithLabelValues("lava").Set(float64(latestLavaBlock))
 }
