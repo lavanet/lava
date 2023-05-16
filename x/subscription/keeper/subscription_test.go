@@ -361,7 +361,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 		ProjectKeys: []projectstypes.ProjectKey{
 			{
 				Key:   anotherAccount.Addr.String(),
-				Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
+				Types: []projectstypes.ProjectKey_KeyType{{KeyTypes: projectstypes.ProjectKey_DEVELOPER}},
 			},
 		},
 		Policy: &projectstypes.Policy{
@@ -419,7 +419,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			projKey := []projectstypes.ProjectKey{
 				{
 					Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+					Types: []projectstypes.ProjectKey_KeyType{{KeyTypes: projectstypes.ProjectKey_ADMIN}},
 				},
 			}
 			projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
@@ -614,7 +614,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 				Enabled:     true,
 				ProjectKeys: []projectstypes.ProjectKey{{
 					Key:   tt.anotherAdmin,
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+					Types: []projectstypes.ProjectKey_KeyType{{KeyTypes: projectstypes.ProjectKey_ADMIN}},
 				}},
 			}
 			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)

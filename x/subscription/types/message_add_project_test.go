@@ -24,7 +24,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   "invalid address",
-						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Types: []projectstypes.ProjectKey_KeyType{{KeyTypes: projectstypes.ProjectKey_ADMIN}},
 					}},
 				},
 			},
@@ -38,7 +38,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key:   sample.AccAddress(),
-						Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
+						Types: []projectstypes.ProjectKey_KeyType{{KeyTypes: projectstypes.ProjectKey_ADMIN}},
 					}},
 				},
 			},

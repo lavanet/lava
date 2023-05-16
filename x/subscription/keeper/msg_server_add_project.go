@@ -24,10 +24,10 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 		}
 
 		for _, projectKeyType := range projectKey.Types {
-			if projectKeyType != projectstypes.ProjectKey_ADMIN && projectKeyType != projectstypes.ProjectKey_DEVELOPER {
+			if projectKeyType.KeyTypes != projectstypes.ProjectKey_ADMIN && projectKeyType.KeyTypes != projectstypes.ProjectKey_DEVELOPER {
 				details := map[string]string{
 					"key":  projectKey.Key,
-					"type": strconv.FormatInt(int64(projectKeyType), 10),
+					"type": strconv.FormatInt(int64(projectKeyType.KeyTypes), 10),
 				}
 				return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_key_type", details, "invalid project key type (should be 1 or 2)")
 			}

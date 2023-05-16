@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,7 +16,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, 
 		Name:        types.ADMIN_PROJECT_NAME,
 		Description: types.ADMIN_PROJECT_DESCRIPTION,
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}},
+		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}}},
 		Policy:      nil,
 	}
 	return k.CreateProject(ctx, subscriptionAddress, projectData, plan)
@@ -57,7 +58,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 	}
 
 	for _, keyType := range key.GetTypes() {
-		switch keyType {
+		switch keyType.KeyTypes {
 		case types.ProjectKey_ADMIN:
 			k.AddAdminKey(project, key.GetKey())
 		case types.ProjectKey_DEVELOPER:
@@ -67,7 +68,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 			// if we find the developer key and it belongs to a different project, return error
 			if found && developerData.ProjectID != project.GetIndex() {
-				details := map[string]string{"key": key.GetKey(), "keyTypes": string(key.GetTypes())}
+				details := map[string]string{"key": key.GetKey(), "keyTypes": fmt.Sprintf("%v", key.GetTypes())}
 				return utils.LavaError(ctx, k.Logger(ctx), "RegisterKey_key_exists", details, "key already exists")
 			}
 
@@ -91,7 +92,7 @@ func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *type
 }
 
 func (k Keeper) AddAdminKey(project *types.Project, adminKey string) {
-	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
+	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}}})
 }
 
 func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64) error {
@@ -102,7 +103,7 @@ func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *t
 		return err
 	}
 
-	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}})
+	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}})
 
 	return nil
 }

@@ -42,9 +42,9 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 				for _, projectKeyType_v2 := range projectKey_v2.Types {
 					if projectKeyType_v2 == v2.ProjectKey_ADMIN {
-						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_ADMIN)
+						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_KeyType{KeyTypes: types.ProjectKey_ADMIN})
 					} else if projectKeyType_v2 == v2.ProjectKey_DEVELOPER {
-						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_DEVELOPER)
+						projectKey_v3.Types = append(projectKey_v3.Types, types.ProjectKey_KeyType{KeyTypes: types.ProjectKey_DEVELOPER})
 					}
 				}
 			}

@@ -20,13 +20,18 @@ message Project {
 message ProjectKey {
     reserved 3;
     string  key = 1; // the address of the project key
-    enum KEY_TYPE{ // bitmap, must only be power of 2
+    
+    enum KEY_TYPE { // bitmap, must only be power of 2
         NONE = 0;
         ADMIN = 1;
         DEVELOPER = 2; 
-    }    
+    }
+    
+    message KeyType {
+        KEY_TYPE key_types = 1;
+    }
 
-    repeated KEY_TYPE types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
+    repeated KeyType types = 2 [(gogoproto.nullable) = false]; // the key type, determines the privilages of the key
 }
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing

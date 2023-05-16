@@ -13,7 +13,7 @@ func (k msgServer) AddKeys(goCtx context.Context, msg *types.MsgAddKeys) (*types
 
 	for _, projectKey := range msg.GetProjectKeys() {
 		for _, keyType := range projectKey.GetTypes() {
-			if keyType != types.ProjectKey_ADMIN && keyType != types.ProjectKey_DEVELOPER {
+			if keyType.KeyTypes != types.ProjectKey_ADMIN && keyType.KeyTypes != types.ProjectKey_DEVELOPER {
 				return nil, fmt.Errorf("project key must be of type ADMIN(=1) or DEVELOPER(=2). projectKey = %d", keyType)
 			}
 		}

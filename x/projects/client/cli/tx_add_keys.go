@@ -45,7 +45,7 @@ func CmdAddKeys() *cobra.Command {
 				for _, developerFlagValue := range developerFlagsValue {
 					developerKeys = append(developerKeys, types.ProjectKey{
 						Key:   developerFlagValue,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+						Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 					})
 				}
 
@@ -57,7 +57,7 @@ func CmdAddKeys() *cobra.Command {
 				for _, adminAddress := range adminAddresses {
 					adminKeys = append(adminKeys, types.ProjectKey{
 						Key:   adminAddress,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
+						Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}},
 					})
 				}
 

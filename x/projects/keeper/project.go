@@ -56,7 +56,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	for _, projectKey := range projectKeys {
 		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaError(ctx, ctx.Logger(), "AddKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": string(projectKey.GetTypes())}, "failed to register key")
+			return utils.LavaError(ctx, ctx.Logger(), "AddKeys_register_key_failed", map[string]string{"err": err.Error(), "project": projectID, "projectKeyAddress": projectKey.GetKey(), "projectKeyTypes": fmt.Sprintf("%v", projectKey.GetTypes())}, "failed to register key")
 		}
 	}
 

@@ -829,7 +829,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		ProjectKeys: []projecttypes.ProjectKey{
 			{
 				Key:   projectAdmin1,
-				Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
+				Types: []projecttypes.ProjectKey_KeyType{{KeyTypes: projecttypes.ProjectKey_DEVELOPER}},
 			},
 		},
 		Policy: &projecttypes.Policy{
@@ -845,7 +845,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	projectData.Name = "proj2"
 	projectData.ProjectKeys = []projecttypes.ProjectKey{{
 		Key:   projectAdmin2,
-		Types: []projecttypes.ProjectKey_KEY_TYPE{projecttypes.ProjectKey_DEVELOPER},
+		Types: []projecttypes.ProjectKey_KeyType{{KeyTypes: projecttypes.ProjectKey_DEVELOPER}},
 	}}
 	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
 	require.Nil(t, err)

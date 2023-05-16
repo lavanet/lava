@@ -22,9 +22,9 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 	adm3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	dev3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 
-	typeAdmin := []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}
-	typeDevel := []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}
-	typeBoth := []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER}
+	typeAdmin := []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}}
+	typeDevel := []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}
+	typeBoth := []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}, {KeyTypes: types.ProjectKey_DEVELOPER}}
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
@@ -152,11 +152,11 @@ func TestCreateProject(t *testing.T) {
 	invalidKeysProjectData.ProjectKeys = []types.ProjectKey{
 		{
 			Key:   subAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		},
 		{
 			Key:   admAddr,
-			Types: []types.ProjectKey_KEY_TYPE{4},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: 4}},
 		},
 	}
 
@@ -214,33 +214,33 @@ func TestAddKeys(t *testing.T) {
 	require.Nil(t, err)
 
 	project := projectRes.Project
-	pk := types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	pk := types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}}}
 	// try adding myself as admin, should fail
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin key adding an invalid key
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{4}}
+	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: 4}}}
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin key adding a developer
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}}
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// developer tries to add the second developer as admin
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}}}
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.NotNil(t, err)
 
 	// admin adding admin
-	pk = types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	pk = types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_ADMIN}}}
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
 	// new admin adding another developer
-	pk = types.ProjectKey{Key: dev3Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	pk = types.ProjectKey{Key: dev3Addr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}}
 	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
 	require.Nil(t, err)
 
@@ -300,7 +300,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	err := keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}}
 	err = keepers.Projects.AddKeysToProject(ctx, projectID, admAddr, []types.ProjectKey{pk})
 	require.Nil(t, err)
 
@@ -466,7 +466,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	require.Nil(t, err)
 
 	// add developer key (created fixation)
-	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
+	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}}}
 	_, err = servers.ProjectServer.AddKeys(_ctx, &types.MsgAddKeys{
 		Creator:     subAddr,
 		Project:     project.Index,
@@ -525,7 +525,7 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
 			Key:   subAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}},
 		Policy: &plan.PlanPolicy,
 	}
@@ -538,7 +538,7 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
 		[]types.ProjectKey{{
 			Key:   dev1Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}})
 	require.Nil(t, err)
 
@@ -548,7 +548,7 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
 		[]types.ProjectKey{{
 			Key:   dev2Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}})
 	require.Nil(t, err)
 
@@ -580,7 +580,7 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
 			Key:   sub1Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}},
 		Policy: &plan.PlanPolicy,
 	}
@@ -593,7 +593,7 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{
 			Key:   sub2Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}},
 		Policy: &plan.PlanPolicy,
 	}
@@ -606,14 +606,14 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 	err = keepers.Projects.AddKeysToProject(_ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{{
 			Key:   devAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}})
 	require.Nil(t, err)
 
 	err = keepers.Projects.AddKeysToProject(_ctx, projectID2, sub2Addr,
 		[]types.ProjectKey{{
 			Key:   devAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
+			Types: []types.ProjectKey_KeyType{{KeyTypes: types.ProjectKey_DEVELOPER}},
 		}})
 	require.NotNil(t, err) // should fail since this developer was already added to the first project
 

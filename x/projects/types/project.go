@@ -53,19 +53,19 @@ func (project *Project) GetKey(projectKey string) ProjectKey {
 	return ProjectKey{}
 }
 
-func (projectKey ProjectKey) IsKeyType(keyTypeToCheck ProjectKey_KEY_TYPE) bool {
-	for _, keytype := range projectKey.Types {
-		if keytype == keyTypeToCheck {
+func (projectKey ProjectKey) IsKeyType(keyTypeToCheck ProjectKey_KeyType) bool {
+	for _, keyType := range projectKey.Types {
+		if keyType.KeyTypes == keyTypeToCheck.KeyTypes {
 			return true
 		}
 	}
 	return false
 }
 
-func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KEY_TYPE) {
-	for _, keytype := range typesToAdd {
-		if !projectKey.IsKeyType(keytype) {
-			projectKey.Types = append(projectKey.Types, keytype)
+func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KeyType) {
+	for _, keyType := range typesToAdd {
+		if !projectKey.IsKeyType(keyType) {
+			projectKey.Types = append(projectKey.Types, keyType)
 		}
 	}
 }
@@ -80,10 +80,10 @@ func (project *Project) AppendKey(keyToAdd ProjectKey) {
 	project.ProjectKeys = append(project.ProjectKeys, keyToAdd)
 }
 
-func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
+func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KeyType) bool {
 	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
 }
 
 func (project *Project) IsAdminKey(projectKey string) bool {
-	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
+	return project.HasKeyType(projectKey, ProjectKey_KeyType{KeyTypes: ProjectKey_ADMIN}) || project.Subscription == projectKey
 }

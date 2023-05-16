@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	projecttypes "github.com/lavanet/lava/x/projects/types"
 	subtypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
@@ -135,9 +136,9 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{{
 			Key: consumerB.Addr.String(),
-			Types: []projectstypes.ProjectKey_KEY_TYPE{
-				projectstypes.ProjectKey_ADMIN,
-				projectstypes.ProjectKey_DEVELOPER,
+			Types: []projectstypes.ProjectKey_KeyType{
+				projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
+				projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
 			},
 		}},
 		Policy: &ts.plan.PlanPolicy,
@@ -423,9 +424,9 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					Enabled:     true,
 					ProjectKeys: []projectstypes.ProjectKey{{
 						Key: consumerToWasteCu.Addr.String(),
-						Types: []projectstypes.ProjectKey_KEY_TYPE{
-							projectstypes.ProjectKey_DEVELOPER,
-							projectstypes.ProjectKey_ADMIN,
+						Types: []projectstypes.ProjectKey_KeyType{
+							projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
+							projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
 						},
 					}},
 					Policy: &ts.plan.PlanPolicy,
@@ -624,9 +625,9 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 		ProjectKeys: []projectstypes.ProjectKey{
 			{
 				Key: ts.clients[1].Addr.String(),
-				Types: []projectstypes.ProjectKey_KEY_TYPE{
-					projectstypes.ProjectKey_DEVELOPER,
-					projectstypes.ProjectKey_ADMIN,
+				Types: []projectstypes.ProjectKey_KeyType{
+					projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_DEVELOPER},
+					projecttypes.ProjectKey_KeyType{KeyTypes: projectstypes.ProjectKey_ADMIN},
 				},
 			},
 		},
