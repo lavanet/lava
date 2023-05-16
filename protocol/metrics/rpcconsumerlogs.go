@@ -1,4 +1,4 @@
-package common
+package metrics
 
 import (
 	"encoding/json"
@@ -11,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
-	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -27,23 +26,24 @@ const (
 
 type RPCConsumerLogs struct {
 	newRelicApplication     *newrelic.Application
-	MetricService           *metrics.MetricService
+	MetricService           *MetricService
 	StoreMetricData         bool
 	excludeMetricsReferrers string
+	consumerMetricsManager  *ConsumerMetricsManager
 }
 
-func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
-		return &RPCConsumerLogs{}, nil
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager}, nil // newRelicApplication is nil safe to use
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables")
-		return &RPCConsumerLogs{}, nil
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager}, nil
 	}
 
 	newRelicApplication, err := newrelic.NewApplication(
@@ -67,14 +67,14 @@ func NewRPCConsumerLogs() (*RPCConsumerLogs, error) {
 		newrelic.ConfigFromEnvironment(),
 	)
 
-	portal := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
+	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
-		portal.StoreMetricData = true
-		portal.MetricService = metrics.NewMetricService()
-		portal.excludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
+		rpcConsumerLogs.StoreMetricData = true
+		rpcConsumerLogs.MetricService = NewMetricService()
+		rpcConsumerLogs.excludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
 	}
-	return portal, err
+	return rpcConsumerLogs, err
 }
 
 func (pl *RPCConsumerLogs) GetMessageSeed() string {
@@ -143,23 +143,26 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForHttp(data *metrics.RelayMetrics, err error, headers map[string]string) {
+func (pl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
+	data.Success = err == nil
+	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *metrics.RelayMetrics, err error, c *websocket.Conn) {
+func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
+	data.Success = err == nil
+	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForGrpc(data *metrics.RelayMetrics, err error, metadataValues *metadata.MD) {
+func (pl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, metadataValues *metadata.MD) {
+	data.Success = err == nil
+	pl.consumerMetricsManager.SetRelayMetrics(data)
 	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(metadataValues) {
-		data.Success = err == nil
 		pl.MetricService.SendData(*data)
 	}
 }

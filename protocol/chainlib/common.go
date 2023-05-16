@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -80,7 +81,7 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
 		if isMetricEnabled {
-			c.Locals(common.RefererHeaderKey, c.Get(common.RefererHeaderKey, ""))
+			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}
