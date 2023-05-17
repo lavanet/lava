@@ -2856,7 +2856,7 @@
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": "1",
                         "enabled": true,
                         "api_interfaces": [
                             {
