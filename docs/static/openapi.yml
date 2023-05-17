@@ -55637,6 +55637,25 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.plans.ListInfoStruct:
+    type: object
+    properties:
+      index:
+        type: string
+      description:
+        type: string
+      price:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
   lavanet.lava.plans.Params:
     type: object
     description: Params defines the parameters for the module.
@@ -55814,25 +55833,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.plans.listInfoStruct:
-    type: object
-    properties:
-      index:
-        type: string
-      description:
-        type: string
-      price:
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
   lavanet.lava.projects.ChainPolicy:
     type: object
     properties:
@@ -56278,6 +56278,15 @@ definitions:
           encoding:
             type: string
             title: 'used to parse byte responses: base64,hex,bech32'
+  lavanet.lava.spec.ApiList:
+    type: object
+    properties:
+      interface:
+        type: string
+      supportedApis:
+        type: array
+        items:
+          type: string
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -57114,6 +57123,17 @@ definitions:
                 title: 'used to parse byte responses: base64,hex,bech32'
       internal_path:
         type: string
+  lavanet.lava.spec.ShowAllChainsInfoStruct:
+    type: object
+    properties:
+      chainName:
+        type: string
+      chainID:
+        type: string
+      enabledApiInterfaces:
+        type: array
+        items:
+          type: string
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -57366,26 +57386,6 @@ definitions:
         format: int64
       hanging_api:
         type: boolean
-  lavanet.lava.spec.apiList:
-    type: object
-    properties:
-      interface:
-        type: string
-      supportedApis:
-        type: array
-        items:
-          type: string
-  lavanet.lava.spec.ShowAllChainsInfoStruct:
-    type: object
-    properties:
-      chainName:
-        type: string
-      chainID:
-        type: string
-      enabledApiInterfaces:
-        type: array
-        items:
-          type: string
   lavanet.lava.projects.ProjectData:
     type: object
     properties:

@@ -3,10 +3,11 @@ package rpcInterfaceMessages
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
-	"strings"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
@@ -39,6 +40,7 @@ func (gm GrpcMessage) GetParams() interface{} {
 			utils.LavaFormatError("failed to unmarshal GetParams", err)
 			return nil
 		}
+		return parsedData
 	}
 	parsedData, err := gm.dynamicResolve()
 	if err != nil {

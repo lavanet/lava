@@ -12,6 +12,7 @@ import (
 	"time"
 
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/protocol/parser"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
@@ -105,13 +106,13 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	// blockParser := serviceApi.BlockParsing
-	// requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
-	// if err != nil {
-	// 	return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
-	// }
+	blockParser := serviceApi.BlockParsing
+	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
+	if err != nil {
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, &grpcMessage)
 	return nodeMsg, nil
 }
 
