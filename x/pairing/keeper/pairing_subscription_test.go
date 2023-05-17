@@ -18,13 +18,11 @@ func TestGetPairingForSubscription(t *testing.T) {
 	var balance int64 = 10000
 
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
-	vrfpk_stub := "testvrfpk"
 	msgBuy := &subtypes.MsgBuy{
 		Creator:  consumer,
 		Consumer: consumer,
 		Index:    ts.plan.Index,
 		Duration: 1,
-		Vrfpk:    vrfpk_stub,
 	}
 	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, msgBuy)
 	require.Nil(t, err)
@@ -49,9 +47,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	project, vrfpk, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer, uint64(_ctx.BlockHeight()))
+	project, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
-	require.Equal(t, vrfpk, vrfpk_stub)
 
 	err = ts.keepers.Projects.DeleteProject(_ctx, project.Index)
 	require.Nil(t, err)
@@ -90,7 +87,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, vefiry.Valid)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer.Addr.String(), uint64(_ctx.BlockHeight()))
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	policies := []*projectstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
@@ -142,7 +139,6 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 				projectstypes.ProjectKey_ADMIN,
 				projectstypes.ProjectKey_DEVELOPER,
 			},
-			Vrfpk: "",
 		}},
 		Policy: &ts.plan.PlanPolicy,
 	}
@@ -150,9 +146,9 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.Nil(t, err)
 
 	// verify both projects exist
-	projA, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
+	projA, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
-	projB, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerB.Addr.String(), uint64(_ctx.BlockHeight()))
+	projB, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerB.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -197,7 +193,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, projA.Subscription)
 	require.True(t, found)
 	require.Equal(t, uint64(0), sub.MonthCuLeft)
-	projA, _, err = ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
+	projA, err = ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 	require.Equal(t, sub.MonthCuTotal, projA.UsedCu)
 	require.Equal(t, uint64(0), projB.UsedCu)
@@ -220,10 +216,10 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 	require.Nil(t, err)
 
 	err = ts.keepers.Subscription.CreateSubscription(_ctx,
-		ts.clients[0].Addr.String(), ts.clients[0].Addr.String(), ts.plan.Index, 10, "")
+		ts.clients[0].Addr.String(), ts.clients[0].Addr.String(), ts.plan.Index, 10)
 	require.Nil(t, err)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx,
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx,
 		ts.clients[0].Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
@@ -300,7 +296,6 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 		Consumer: ts.clients[0].Addr.String(),
 		Index:    ts.plan.Index,
 		Duration: 10,
-		Vrfpk:    "",
 	})
 	require.Nil(t, err)
 
@@ -432,7 +427,6 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 							projectstypes.ProjectKey_DEVELOPER,
 							projectstypes.ProjectKey_ADMIN,
 						},
-						Vrfpk: "",
 					}},
 					Policy: &ts.plan.PlanPolicy,
 				}
@@ -517,7 +511,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				}
 			}
 
-			_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
+			_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
 				consumer.Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 			require.Nil(t, err)
 
@@ -539,7 +533,6 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		Consumer: ts.clients[0].Addr.String(),
 		Index:    ts.plan.Index,
 		Duration: 11,
-		Vrfpk:    "",
 	})
 	require.Nil(t, err)
 
@@ -605,7 +598,6 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 		Consumer: ts.clients[0].Addr.String(),
 		Index:    ts.plan.Index,
 		Duration: 11,
-		Vrfpk:    "",
 	})
 	require.Nil(t, err)
 
@@ -636,7 +628,6 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 					projectstypes.ProjectKey_DEVELOPER,
 					projectstypes.ProjectKey_ADMIN,
 				},
-				Vrfpk: "",
 			},
 		},
 		Policy: nil,
@@ -644,7 +635,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, ts.clients[0].Addr.String(), projectData)
 	require.Nil(t, err)
 
-	proj, _, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, ts.clients[1].Addr.String(),
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, ts.clients[1].Addr.String(),
 		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
@@ -660,7 +651,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
-	_, _, _, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
+	_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
 		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 

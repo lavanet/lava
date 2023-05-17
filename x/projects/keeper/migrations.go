@@ -16,14 +16,22 @@ func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
-// Migrate2to3 implements store migration from v2 to v3:
-// Trigger version upgrade of the projectsFS, develooperKeysFS fixation stores
-func (m Migrator) Migrate2to3(ctx sdk.Context) error {
+func (m Migrator) migrateFixationsVersion(ctx sdk.Context) error {
 	if err := m.keeper.projectsFS.MigrateVersion(ctx); err != nil {
 		return fmt.Errorf("%w: projects fixation-store", err)
 	}
 	if err := m.keeper.developerKeysFS.MigrateVersion(ctx); err != nil {
 		return fmt.Errorf("%w: developerKeys fixation-store", err)
+	}
+	return nil
+}
+
+// Migrate2to3 implements store migration from v2 to v3:
+// - Trigger version upgrade of the projectsFS, develooperKeysFS fixation stores
+// - Update keys contents
+func (m Migrator) Migrate2to3(ctx sdk.Context) error {
+	if err := m.migrateFixationsVersion(ctx); err != nil {
+		return err
 	}
 
 	projectIndices := m.keeper.projectsFS.GetAllEntryIndices(ctx)
@@ -37,8 +45,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			projectKeys_v3 := []types.ProjectKey{}
 			for _, projectKey_v2 := range project_v2.ProjectKeys {
 				projectKey_v3 := types.ProjectKey{
-					Key:   projectKey_v2.Key,
-					Vrfpk: projectKey_v2.Vrfpk,
+					Key: projectKey_v2.Key,
 				}
 
 				for _, projectKeyType_v2 := range projectKey_v2.Types {
@@ -93,12 +100,20 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 			developerData_v3 := types.ProtoDeveloperData{
 				ProjectID: developerDataStruct_v2.ProjectID,
-				Vrfpk:     developerDataStruct_v2.Vrfpk,
 			}
 
 			m.keeper.developerKeysFS.ModifyEntry(ctx, developerDataIndex, block, &developerData_v3)
 		}
 	}
 
+	return nil
+}
+
+// Migrate3to4 implements store migration from v3 to v4:
+// - Trigger version upgrade of the projectsFS, develooperKeysFS fixation-stores
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	if err := m.migrateFixationsVersion(ctx); err != nil {
+		return err
+	}
 	return nil
 }

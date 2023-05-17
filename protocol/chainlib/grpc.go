@@ -187,10 +187,10 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 type GrpcChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
-	logger      *common.RPCConsumerLogs
+	logger      *metrics.RPCConsumerLogs
 }
 
-func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *common.RPCConsumerLogs) (chainListener *GrpcChainListener) {
+func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
 		listenEndpoint,

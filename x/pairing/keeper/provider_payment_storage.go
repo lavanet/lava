@@ -111,7 +111,10 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddre
 		// get the uniquePaymentStorageClientProvider object
 		uniquePayment, found := k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
 		if !found {
-			return 0, utils.LavaError(ctx, k.Logger(ctx), "get_unique_payment_storage_client_provider", map[string]string{"providerAddress": providerAddress, "consumerAddress": consumerAddress}, "could not find uniquePaymentStorageClientProvider object")
+			return 0, utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),
+				utils.Attribute{Key: "providerAddress", Value: providerAddress},
+				utils.Attribute{Key: "consumerAddress", Value: consumerAddress},
+			)
 		}
 
 		// if the uniquePaymentStorageClientProvider object is between the provider and the specific consumer, add the serviced CU

@@ -79,7 +79,7 @@ func TestCreateDefaultProject(t *testing.T) {
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	plan := common.CreateMockPlan()
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan, "")
+	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan)
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
@@ -258,7 +258,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
 	admAddr := projectData.ProjectKeys[0].Key
 
-	err := keepers.Projects.CreateAdminProject(_ctx, subAddr, plan, "")
+	err := keepers.Projects.CreateAdminProject(_ctx, subAddr, plan)
 	require.Nil(t, err)
 
 	// this is not supposed to fail because you can use the same admin key for two different projects
@@ -552,7 +552,7 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 		}})
 	require.Nil(t, err)
 
-	proj, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, subAddr,
+	proj, err := keepers.Projects.GetProjectForDeveloper(_ctx, subAddr,
 		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
@@ -617,11 +617,11 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		}})
 	require.NotNil(t, err) // should fail since this developer was already added to the first project
 
-	proj1, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub1Addr,
+	proj1, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub1Addr,
 		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	proj2, _, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub2Addr,
+	proj2, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub2Addr,
 		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 

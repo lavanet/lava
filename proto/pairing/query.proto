@@ -10,6 +10,8 @@ import "pairing/epoch_payments.proto";
 import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "epochstorage/stake_entry.proto";
+import "subscription/subscription.proto";
+import "projects/project.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -131,8 +133,8 @@ message QueryVerifyPairingRequest {
 }
 
 message QueryVerifyPairingResponse {
+  reserved 2;
   bool valid = 1;
-  int64 index = 2;
   uint64 paired_providers = 3;
   uint64 cu_per_epoch = 4;
 }
@@ -210,4 +212,13 @@ message QueryStaticProvidersListResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
+message QueryAccountInfoResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry provider = 1 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry frozen = 2 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry consumer = 3 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry unstaked = 4 [(gogoproto.nullable) = false];
+	lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true];
+	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
+
+}
 // this line is used by starport scaffolding # 3

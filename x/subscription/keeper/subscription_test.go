@@ -256,7 +256,7 @@ func TestCreateSubscription(t *testing.T) {
 				}
 
 				err := keeper.CreateSubscription(
-					ts.ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration, "")
+					ts.ctx, sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration)
 				if tt.success {
 					require.Nil(t, err, tt.name)
 					_, found := keeper.GetSubscription(ts.ctx, sub.Consumer)
@@ -276,7 +276,7 @@ func TestRenewSubscription(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6, "")
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -289,11 +289,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
 	// with 3 months duration left, asking for 12 more should fail
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12, "")
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 12)
 	require.NotNil(t, err)
 
 	// but asking for additional 9 months (10 would also be fine (the extra month extension below))
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 9, "")
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 9)
 	require.Nil(t, err)
 
 	sub, found = keeper.GetSubscription(ts.ctx, creator)
@@ -312,7 +312,7 @@ func TestRenewSubscription(t *testing.T) {
 
 	// try extending the subscription (normally we could extend with 1 more month, but since the
 	// subscription's plan changed, the extension should fail)
-	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1, "")
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1)
 	require.NotNil(t, err)
 	require.Equal(t, uint64(12), sub.DurationLeft)
 	require.Equal(t, uint64(9), sub.DurationTotal)
@@ -330,7 +330,7 @@ func TestSubscriptionAdminProject(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, "mockPlan1", 1, "")
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, "mockPlan1", 1)
 	require.Nil(t, err)
 
 	block := uint64(ts.ctx.BlockHeight())
@@ -350,7 +350,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	anotherAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3, "")
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3)
 	require.Nil(t, err)
 
 	// add another project under the subcscription
@@ -362,7 +362,6 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			{
 				Key:   anotherAccount.Addr.String(),
 				Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
-				Vrfpk: "",
 			},
 		},
 		Policy: &projectstypes.Policy{
@@ -402,7 +401,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			// verify the CU charge of the subscription is updated correctly
 			// it depends on the iteration index since the same subscription is charged for all projects
 			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal-tt.usedCuPerProject)
-			proj, _, err := projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			proj, err := projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
 			require.Nil(t, err)
 
 			// charge the project
@@ -410,7 +409,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			require.Nil(t, err)
 
 			// verify that project used the CU
-			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			proj, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
 
@@ -437,13 +436,13 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			require.True(t, found)
 			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
 
-			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
+			proj, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block1)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
-			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block2)
+			proj, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block2)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
-			proj, _, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block3)
+			proj, err = projectKeeper.GetProjectForDeveloper(ts.ctx, tt.developer, block3)
 			require.Nil(t, err)
 			require.Equal(t, uint64(0), proj.UsedCu)
 		})
@@ -500,7 +499,7 @@ func TestExpiryTime(t *testing.T) {
 			delta := now.Sub(ts.ctx.BlockTime())
 			ts.advanceBlock(delta)
 
-			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.months, "")
+			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.months)
 			require.Nil(t, err)
 
 			sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -546,7 +545,7 @@ func TestPrice(t *testing.T) {
 			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
 			ts.keepers.Plans.AddPlan(ts.ctx, plan)
 
-			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.duration, "")
+			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.duration)
 			require.Nil(t, err)
 
 			_, found := keeper.GetSubscription(ts.ctx, creator)
@@ -577,7 +576,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 	consumerAddr := consumer.Addr.String()
 	regularAccountAddr := regularAccount.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, subPayerAddr, consumerAddr, plan.Index, 1, "")
+	err := keeper.CreateSubscription(ts.ctx, subPayerAddr, consumerAddr, plan.Index, 1)
 	require.Nil(t, err)
 
 	defaultProjectName := projectstypes.ADMIN_PROJECT_NAME
@@ -616,7 +615,6 @@ func TestAddProjectToSubscription(t *testing.T) {
 				ProjectKeys: []projectstypes.ProjectKey{{
 					Key:   tt.anotherAdmin,
 					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-					Vrfpk: "",
 				}},
 			}
 			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)

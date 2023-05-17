@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -16,36 +15,31 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 	for _, projectKey := range msg.GetProjectData().ProjectKeys {
 		_, err := sdk.AccAddressFromBech32(projectKey.GetKey())
 		if err != nil {
-			details := map[string]string{
-				"key": projectKey.Key,
-				"err": err.Error(),
-			}
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_key", details, "invalid project key")
+			return nil, utils.LavaFormatWarning("cannot add project with invalid project key to subscription", err,
+				utils.Attribute{Key: "key", Value: projectKey.Key},
+			)
 		}
 
 		for _, projectKeyType := range projectKey.Types {
 			if projectKeyType != projectstypes.ProjectKey_ADMIN && projectKeyType != projectstypes.ProjectKey_DEVELOPER {
-				details := map[string]string{
-					"key":  projectKey.Key,
-					"type": strconv.FormatInt(int64(projectKeyType), 10),
-				}
-				return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_key_type", details, "invalid project key type (should be 1 or 2)")
+				return nil, utils.LavaFormatWarning("cannot add project with invalid project key type to subscription", err,
+					utils.Attribute{Key: "type", Value: projectKeyType},
+				)
 			}
 		}
 
 		if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
-			details := map[string]string{
-				"name":        msg.GetProjectData().Name,
-				"description": msg.GetProjectData().Description,
-			}
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_name_or_description", details, "invalid project name or description (might be too long or include disallowed characters)")
+			return nil, utils.LavaFormatWarning("cannot add project with invalid name/description to subscription", err,
+				utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
+				utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
+			)
 		}
 
 		if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
-			details := map[string]string{
-				"maxProvidersToPair": strconv.FormatUint(msg.GetProjectData().Policy.MaxProvidersToPair, 10),
-			}
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "AddProject_invalid_project_providers_to_pair", details, "invalid project providersToPair (must be larger than one)")
+			return nil, utils.LavaFormatWarning("cannot add project with invalid providersToPair to subscription (must be >1)", err,
+				utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
+				utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
+			)
 		}
 	}
 

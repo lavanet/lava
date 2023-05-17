@@ -34,11 +34,11 @@ message MsgStakeProviderResponse {
 }
 
 message MsgStakeClient {
+  reserved 5;
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   uint64 geolocation = 4;
-  string vrfpk = 5;
 }
 
 message MsgStakeClientResponse {
@@ -61,9 +61,9 @@ message MsgUnstakeClientResponse {
 }
 
 message MsgRelayPayment {
+  reserved 3;
   string creator = 1;
   repeated RelaySession relays = 2;
-  repeated VRFData VRFs = 3;
   string descriptionString = 4;
 }
 

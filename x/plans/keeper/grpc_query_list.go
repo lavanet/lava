@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -25,8 +26,9 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 		// get the latest version plans
 		latestVersionPlan, found := k.FindPlan(ctx, planIndex, uint64(ctx.BlockHeight()))
 		if !found {
-			details := map[string]string{"planIndex": planIndex}
-			return nil, utils.LavaError(ctx, ctx.Logger(), "get_plan_latest_version", details, "could not get the latest version of the plan")
+			return nil, utils.LavaFormatError("could not get the latest version of the plan", fmt.Errorf("plan not found"),
+				utils.Attribute{Key: "planIndex", Value: planIndex},
+			)
 		}
 
 		// set the planInfoStruct

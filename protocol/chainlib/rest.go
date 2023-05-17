@@ -191,11 +191,11 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 type RestChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
-	logger      *common.RPCConsumerLogs
+	logger      *metrics.RPCConsumerLogs
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
-func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *common.RPCConsumerLogs) (chainListener *RestChainListener) {
+func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
 		listenEndpoint,

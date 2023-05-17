@@ -5,6 +5,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
 )
@@ -15,25 +16,43 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 
 	conflictVote, found := k.GetConflictVote(ctx, msg.VoteID)
 	if !found {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: invalid vote id")
+		return nil, utils.LavaFormatWarning("Simulation: invalid vote id", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 	if conflictVote.VoteState != types.StateReveal {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: vote is not in reveal state")
+		return nil, utils.LavaFormatWarning("Simulation: vote is not in reveal state", sdkerrors.ErrInvalidRequest,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 	index, ok := FindVote(&conflictVote.Votes, msg.Creator)
 	if !ok {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider is not in the voters list")
+		return nil, utils.LavaFormatWarning("Simulation: provider is not in the voters list", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 	if conflictVote.Votes[index].Hash == nil {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider did not commit")
+		return nil, utils.LavaFormatWarning("Simulation: provider did not commit", sdkerrors.ErrInvalidRequest,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 	if conflictVote.Votes[index].Result != types.Commit {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider already revealed")
+		return nil, utils.LavaFormatWarning("Simulation: provider already revealed", sdkerrors.ErrInvalidRequest,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 
 	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash)
 	if !bytes.Equal(commitHash, conflictVote.Votes[index].Hash) {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider reveal does not match the commit")
+		return nil, utils.LavaFormatWarning("Simulation: provider reveal does not match the commit", sdkerrors.ErrInvalidRequest,
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "voteID", Value: msg.VoteID},
+		)
 	}
 
 	if bytes.Equal(msg.Hash, conflictVote.FirstProvider.Response) {

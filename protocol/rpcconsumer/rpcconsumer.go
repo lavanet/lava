@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,6 +22,7 @@ import (
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -37,9 +38,42 @@ var (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 )
 
+type strategyValue struct {
+	provideroptimizer.Strategy
+}
+
+var strategyNames = []string{
+	"balanced",
+	"latency",
+	"sync-freshness",
+	"cost",
+	"privacy",
+	"accuracy",
+}
+
+var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
+
+func (s *strategyValue) String() string {
+	return strategyNames[int(s.Strategy)]
+}
+
+func (s *strategyValue) Set(str string) error {
+	for i, name := range strategyNames {
+		if strings.EqualFold(str, name) {
+			s.Strategy = provideroptimizer.Strategy(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid strategy: %s", str)
+}
+
+func (s *strategyValue) Type() string {
+	return "string"
+}
+
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error
+	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
@@ -49,7 +83,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string) (err error) {
 	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -60,6 +94,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
+
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -86,7 +121,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
 	errCh := make(chan error)
-
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
+	if err != nil {
+		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
+	}
+	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 	for _, rpcEndpoint := range rpcEndpoints {
@@ -99,7 +139,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 			chainID := rpcEndpoint.ChainID
-			err = consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser, chainID)
+			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -115,9 +155,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				value, exists := optimizers.Load(chainID)
 				if !exists {
 					// doesn't exist for this chain create a new one
-					strategy := provideroptimizer.STRATEGY_BALANCED
 					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 3)
+					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, 1)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
@@ -134,14 +173,17 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				errCh <- err
 				return err
 			}
+
+			// Register For Updates
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, lavaChainID, cache)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -247,10 +289,18 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
+
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
+				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
+				if err == nil {
+					if clientTomlConfig.ChainID != "" {
+						networkChainId = clientTomlConfig.ChainID
+					}
+				}
 			}
+			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
@@ -283,10 +333,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
-			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
-			if err != nil {
-				utils.LavaFormatFatal("failed getting or creating a VRF key", err)
-			}
+
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
@@ -299,7 +346,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr)
 			return err
 		},
 	}
@@ -314,7 +362,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-
+	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
+	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	return cmdRPCConsumer
 }
 

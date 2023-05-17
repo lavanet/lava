@@ -160,7 +160,6 @@ func (apip *TendermintChainParser) getSupportedApi(name string) (*spectypes.Serv
 
 	// Fetch server api by name
 	api, ok := apip.serverApis[name]
-
 	// Return an error if spec does not exist
 	if !ok {
 		return nil, errors.New("tendermintRPC api not supported")
@@ -231,11 +230,11 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 type TendermintRpcChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
-	logger      *common.RPCConsumerLogs
+	logger      *metrics.RPCConsumerLogs
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
-func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *common.RPCConsumerLogs) (chainListener *TendermintRpcChainListener) {
+func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
 		listenEndpoint,
