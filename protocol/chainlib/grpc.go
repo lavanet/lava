@@ -216,6 +216,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+		fmt.Println("metadataValues: ", metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
@@ -279,7 +280,11 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	defer cp.conn.ReturnRpc(conn)
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
+	fmt.Println("rpcInputMessage: ", rpcInputMessage)
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
+	fmt.Println("nodeMessage: ", nodeMessage)
+	fmt.Println("nodeMessage.Msg: ", nodeMessage.Msg)
+	fmt.Println("nodeMessage.Path: ", nodeMessage.Path)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
@@ -306,6 +311,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	fmt.Println("methodDescriptor: ", methodDescriptor)
 	if methodDescriptor == nil {
 		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
 	}
@@ -313,6 +319,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	var reader io.Reader
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
+	fmt.Println("msg: ", msg)
 	formatMessage := false
 	if len(nodeMessage.Msg) > 0 {
 		// guess if json or binary
@@ -352,10 +359,23 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 	}
 
+	md := metadata.New(map[string]string{"x-cosmos-block-height": "2"})
+	ctxNew := metadata.NewOutgoingContext(connectCtx, md)
+
+	fmt.Println("ctxNew: ", ctxNew)
+	fmt.Println("Metadata: ", md)
+	mdp, ok := metadata.FromOutgoingContext(ctxNew)
+	if ok {
+		blockHeight := mdp.Get("x-cosmos-block-height")
+		fmt.Println("Block Height:", blockHeight)
+	}
+
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
+	fmt.Println("/nodeMessage.Path: ", "/"+nodeMessage.Path)
+	// err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
+	err = conn.Invoke(ctxNew, "/"+nodeMessage.Path, msg, response)
 	if err != nil {
-		if connectCtx.Err() == context.DeadlineExceeded {
+		if ctxNew.Err() == context.DeadlineExceeded {
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
 		}
@@ -364,6 +384,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
+	fmt.Println("respBytes: ", respBytes)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -371,6 +392,8 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	reply := &pairingtypes.RelayReply{
 		Data: respBytes,
 	}
+	fmt.Println("reply: ", reply)
+
 	return reply, "", nil, nil
 }
 

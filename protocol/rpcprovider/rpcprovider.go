@@ -68,6 +68,7 @@ type RPCProvider struct {
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
+	fmt.Println("rpcProviderEndpoints: ", rpcProviderEndpoints)
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -124,6 +125,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		fmt.Println("rpcProviderEndpoint: ", rpcProviderEndpoint)
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
 			defer wg.Done()
 			err := rpcProviderEndpoint.Validate()

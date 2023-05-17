@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -102,6 +103,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
+	fmt.Println("relaySession: ", relaySession)
+	fmt.Println("consumerAddress: ", consumerAddress)
+	fmt.Println("chainMessage: ", chainMessage)
+
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
@@ -208,6 +213,10 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		utils.Attribute{Key: "GUID", Value: ctx},
 	)
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
+	fmt.Println("relaySession: ", relaySession)
+	fmt.Println("consumerAddress: ", consumerAddress)
+	fmt.Println("chainMessage: ", chainMessage)
+
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
