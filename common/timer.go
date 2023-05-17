@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -13,42 +14,31 @@ import (
 // can be based on either block-height or block-timestamp. When a timeout occurs,
 // a designated callback function is called with the details (ctx and data).
 //
+// Purpose and API:
+//
 // Once instantiated with NewTimerStore(), it offers the following methods:
 //    - WithCallbackByBlockHeight(callback): sets the callback for block-height timers
 //    - WithCallbackByBlockTime(callback): sets the callback for block-time timers
-//    - AddTimerByBlockHeight(ctx, block, data): add a timer to expire at block height
-//    - AddTimerByBlockTime(ctx, timestamp, data): add timer to expire at block timestamp
+//    - AddTimerByBlockHeight(ctx, block, key, data): add a timer to expire at block height
+//    - AddTimerByBlockTime(ctx, timestamp, key, data): add timer to expire at block timestamp
 //    - Tick(ctx): advance the timer to the ctx's block (height and timestamp)
 //
-// How does it work? The explanation below illustrates how the data is stored, assuming
-// the user is the module "package":
+// Usage and behavior:
 //
-// 1. When instantiated, TimerStore gets a `prefix string` - used as a namespace to
-// separate between instances of TimerStore. For instance, module "package" would
-// use its module name for prefix.
+// A timer store is instantiated using NewTimerStore(). Timeout handlers can be registered
+// using WithCallbackBlockHeight() and WithCallbackBlockTime() for block-height-based and
+// block-time-based timeouts, respectively.
+// A timer is identified by a user defined _key_ and an _expiry block_ (or _block time_), and
+// is associated with user defined _data_.
+// A new timer is added using AddTimerByBlockHeight() and AddTimerByBlockTime(), respectively.
+// When the expiry block (or block time) arrives, the respective callback will be invoked with
+// the timer's _key_ and _data_. Adding the same timer again (i.e. same expiry block/block-time
+// and same key) will overwrite the exiting timer's data.
+// On every new block, Tick() should be called.
 //
-// 2. TimerStore keeps the timers with a special prefix; it uses the timeout value
-// (block height/timestamp) as the key, so that the standard iterator would yield them
-// in the desired chronological order. TimeSStore also keeps the next-timeout values
-// (of block height/timestamp) to efficiently determine if the iterator is needed.
-// For instance, module "packages" may have two (block height) timeouts with their data
-// set to "first" and "second" respectively:
-//
-//     prefix: package_Timer_Next_       key: BlockHeight      value: 150
-//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxInt64
-//     prefix: package_Timer_Value_          key: 150          data: "first"
-//     prefix: package_Entry_Value_          key: 180          data: "second"
-//
-// 3. TimerStore tracks the next-timeout for both block-height/block-timestamp. On
-// every call to Tick(), it tests the current ctx's block height/timestamp against the
-// respective next-timeout:
-//
-// 4. If the next-timeout is reached/passed, then it will iterate through the timer
-// entries and invoke the (respective) callback for those entries; And finally it will
-// advance the (respective) next-timeout.
-// If exact timeouts are needed, the user should call Tick() on every BeginBlock() of
-// its own module. If timeouts may occur with delay (e.g. at start of an epoch), then
-// the user may call Tick() at other deterministic intervals and reduce the workload.
+// The timer's _key_ is effectively the identifier of a timer. It decides whether a timer is
+// new (to add) or existing (to modify), and to select timers to delete. It can also be used,
+// for instance, to encode a timeout "type" using -say- the first byte to specify such "type".
 //
 // Example:
 //     func callback(ctx sdk.Context, data string) {
@@ -61,14 +51,47 @@ import (
 //
 //     ...
 //     // start a new timer, the last argument will be provided to the callback
-//     tstore.AddTimerByBlockHeight(ctx, futureBlock1, "reason1")
-//     tstore.AddTimerByBlockHeight(ctx, futureBlock2, "reason2")
+//     tstore.AddTimerByBlockHeight(ctx, futureBlock1, []byte("reason1"), []byte{0x1})
+//     tstore.AddTimerByBlockHeight(ctx, futureBlock2, []byte("reason2"), []byte{0x2})
 //     ...
 //
 //     // usually called from a module's BeginBlock() callback
 //     tstore.Tick(ctx)
+//
+// Under the hood:
+//
+// The explanation below illustrates how data is stored, assuming module "package is "the user:
+//
+// 1. When instantiated, TimerStore gets a `prefix string` - used as a namespace to
+// separate between instances of TimerStore. For instance, module "package" would
+// use its module name for prefix.
+//
+// 2. TimerStore keeps the timers with a special prefix; it uses the timeout value (block
+// height/timestamp) as the key prefix, so that the standard iterator would yield them
+// in the desired chronological order. TimeSStore also keeps the next-timeout values
+// (of block height/timestamp) to efficiently determine if the iterator is needed.
+// For instance, module "packages" may have three (block height) timeouts with their data
+// set to "first", "second" and "third" respectively:
+//
+//     prefix: package_Timer_Next_       key: BlockHeight      value: 150
+//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxInt64
+//     prefix: package_Timer_Value_      key: 150_first        data: "first"
+//     prefix: package_Timer_Value_      key: 180_second       data: "second"
+//     prefix: package_Timer_Value_      key: 180_third        data: "third"
+//
+// 3. TimerStore tracks the next-timeout for both block-height/block-timestamp. On
+// every call to Tick(), it tests the current ctx's block height/timestamp against the
+// respective next-timeout:
+//
+// 4. If the next-timeout is reached/passed, then it will iterate through the timer
+// entries and invoke the (respective) callback for those entries; And finally it will
+// advance the (respective) next-timeout.
+// If exact timeouts are needed, the user should call Tick() on every BeginBlock() of
+// its own module. If timeouts may occur with delay (e.g. at start of an epoch), then
+// the user may call Tick() at other deterministic intervals and reduce the workload.
 
-type TimerCallback func(ctx sdk.Context, data string)
+// TimerCallback defined the callback handler function
+type TimerCallback func(ctx sdk.Context, key []byte, data []byte)
 
 type TimerStore struct {
 	storeKey  sdk.StoreKey
@@ -77,8 +100,9 @@ type TimerStore struct {
 	callbacks [2]TimerCallback // as per TimerType
 }
 
+// TimerVersion returns the timer library version
 func TimerVersion() uint64 {
-	return 1
+	return 2
 }
 
 // NewTimerStore returns a new TimerStore object
@@ -152,9 +176,10 @@ func (tstore *TimerStore) setNextTimeout(ctx sdk.Context, which types.TimerType,
 	store.Set([]byte(types.NextTimerKey[which]), b)
 }
 
-func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, data string) {
+func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, key []byte, data []byte) {
 	store := tstore.getStoreTimer(ctx, which)
-	store.Set(types.EncodeKey(value), []byte(data))
+	timerKey := types.EncodeBlockAndKey(value, key)
+	store.Set(timerKey, data)
 
 	nextValue := tstore.getNextTimeout(ctx, which)
 	if value < nextValue {
@@ -162,22 +187,31 @@ func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value
 	}
 }
 
-func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value uint64) {
+func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value uint64, key []byte) {
 	store := tstore.getStoreTimer(ctx, which)
-	store.Delete(types.EncodeKey(value))
+	timerKey := types.EncodeBlockAndKey(value, key)
+	if !store.Has(timerKey) {
+		panic(fmt.Sprintf("delTimer which %d block %d key %v: no such timer", which, value, key))
+	}
+	store.Delete(timerKey)
 }
 
-func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, data string) {
-	tstore.addTimer(ctx, types.BlockHeight, block, data)
+// AddTimerByBlockHeight adds a new timer to expire on a given block height.
+// If a timer for that <block, key> tuple exists, it will be overridden.
+func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte, data []byte) {
+	tstore.addTimer(ctx, types.BlockHeight, block, key, data)
 }
 
-func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, data string) {
-	tstore.addTimer(ctx, types.BlockTime, timestamp, data)
+// AddTimerByBlockTime adds a new timer to expire on a future block with the given timestamp.
+// If a timer for that <timestamp, key> tuple exists, it will be overridden.
+func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte, data []byte) {
+	tstore.addTimer(ctx, types.BlockTime, timestamp, key, data)
 }
 
 type timerTuple struct {
 	value uint64
-	data  string
+	key   []byte
+	data  []byte
 }
 
 func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tickValue uint64) {
@@ -198,13 +232,13 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 	// by height/timestamp.
 
 	for ; iterator.Valid(); iterator.Next() {
-		value := types.DecodeKey(iterator.Key())
+		value, key := types.DecodeBlockAndKey(iterator.Key())
 		if value > tickValue {
 			// stop at first not-expired timer (update next timeout)
 			tstore.setNextTimeout(ctx, which, value)
 			break
 		}
-		tuple := timerTuple{value, string(iterator.Value())}
+		tuple := timerTuple{value, key, iterator.Value()}
 		removals = append(removals, tuple)
 	}
 
@@ -215,8 +249,8 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 
 	// iterates over expired timers: remote and invoke callback
 	for _, tuple := range removals {
-		tstore.delTimer(ctx, which, tuple.value)
-		tstore.callbacks[which](ctx, tuple.data)
+		tstore.delTimer(ctx, which, tuple.value, tuple.key)
+		tstore.callbacks[which](ctx, tuple.key, tuple.data)
 	}
 }
 

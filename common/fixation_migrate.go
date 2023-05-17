@@ -109,7 +109,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 			fs.setEntry(ctx, entry)
 			// if StaleAt is set, then start corresponding timer
 			if entry.StaleAt != math.MaxUint {
-				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, entry.Index)
+				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, []byte{}, []byte(entry.Index))
 			}
 		}
 	}
