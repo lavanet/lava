@@ -21,6 +21,8 @@ import (
 //    - WithCallbackByBlockTime(callback): sets the callback for block-time timers
 //    - AddTimerByBlockHeight(ctx, block, key, data): add a timer to expire at block height
 //    - AddTimerByBlockTime(ctx, timestamp, key, data): add timer to expire at block timestamp
+//    - DelTimerByBlockHeight(ctx, block, key): delete a timer to expire at block height
+//    - DelTimerByBlockTime(ctx, timestamp, key): delete timer to expire at block timestamp
 //    - Tick(ctx): advance the timer to the ctx's block (height and timestamp)
 //
 // Usage and behavior:
@@ -34,6 +36,9 @@ import (
 // When the expiry block (or block time) arrives, the respective callback will be invoked with
 // the timer's _key_ and _data_. Adding the same timer again (i.e. same expiry block/block-time
 // and same key) will overwrite the exiting timer's data.
+// An existing timer can be deleted using DelTimerByBlockHeight() and AddTimerByBlockTime(),
+// respectively. The timer to be deleted must exactly match the block/block-time and key. Trying
+// to delete a non-existing timer will cause a panic.
 // On every new block, Tick() should be called.
 //
 // The timer's _key_ is effectively the identifier of a timer. It decides whether a timer is
@@ -93,6 +98,7 @@ import (
 // TimerCallback defined the callback handler function
 type TimerCallback func(ctx sdk.Context, key []byte, data []byte)
 
+// TimerStore represents a timer store to manager timers and timeouts
 type TimerStore struct {
 	storeKey  sdk.StoreKey
 	cdc       codec.BinaryCodec
@@ -128,13 +134,15 @@ func (tstore *TimerStore) setVersion(ctx sdk.Context, val uint64) {
 	store.Set(types.KeyPrefix(types.TimerVersionKey), b)
 }
 
-func (tstore *TimerStore) WithCallbackByBlockHeight(callback func(ctx sdk.Context, data string)) *TimerStore {
+// WithCallbackByBlockHeight sets a callback handler for timeouts (by block height)
+func (tstore *TimerStore) WithCallbackByBlockHeight(callback TimerCallback) *TimerStore {
 	tstoreNew := tstore
 	tstoreNew.callbacks[types.BlockHeight] = callback
 	return tstoreNew
 }
 
-func (tstore *TimerStore) WithCallbackByBlockTime(callback func(ctx sdk.Context, data string)) *TimerStore {
+// WithCallbackByBlockHeight sets a callback handler for timeouts (by block timestamp)
+func (tstore *TimerStore) WithCallbackByBlockTime(callback TimerCallback) *TimerStore {
 	tstoreNew := tstore
 	tstoreNew.callbacks[types.BlockTime] = callback
 	return tstoreNew
@@ -162,11 +170,11 @@ func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which types.TimerType)
 	return types.DecodeKey(b)
 }
 
-func (tstore *TimerStore) GetNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
+func (tstore *TimerStore) getNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
 	return tstore.getNextTimeout(ctx, types.BlockHeight)
 }
 
-func (tstore *TimerStore) GetNextTimeoutBlockTime(ctx sdk.Context) uint64 {
+func (tstore *TimerStore) getNextTimeoutBlockTime(ctx sdk.Context) uint64 {
 	return tstore.getNextTimeout(ctx, types.BlockTime)
 }
 
@@ -206,6 +214,16 @@ func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, k
 // If a timer for that <timestamp, key> tuple exists, it will be overridden.
 func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte, data []byte) {
 	tstore.addTimer(ctx, types.BlockTime, timestamp, key, data)
+}
+
+// DelTimerByBlockHeight removes an eximsting timer for the <block, key> tuple.
+func (tstore *TimerStore) DelTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte) {
+	tstore.delTimer(ctx, types.BlockHeight, block, key)
+}
+
+// DelTimerByBlockHeight removes an eximsting timer for the <timetamp, key> tuple.
+func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte) {
+	tstore.delTimer(ctx, types.BlockTime, timestamp, key)
 }
 
 type timerTuple struct {
@@ -254,6 +272,7 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 	}
 }
 
+// Tick advances the timer by a block. It should be called at the beginning of each block.
 func (tstore *TimerStore) Tick(ctx sdk.Context) {
 	block := uint64(ctx.BlockHeight())
 	tstore.tickValue(ctx, types.BlockHeight, block)

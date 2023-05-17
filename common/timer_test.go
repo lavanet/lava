@@ -181,3 +181,43 @@ func TestMultipleTimers(t *testing.T) {
 
 	testWithTimerTemplate(t, playbook, 1)
 }
+
+// Test delete timers (by block height)
+func TestDeleteTimers(t *testing.T) {
+	playbook := []timerTemplate{
+		{op: "tickheight", name: "tick without timers", value: 100, fire: 0},
+		{op: "addheight", name: "add timer no 1", value: 120, key: "a", data: "no-1."},
+		{op: "addheight", name: "add timer no 2a", value: 130, key: "bx", data: "no-2a."},
+		{op: "addheight", name: "add timer no 2b", value: 130, key: "by", data: "no-2b."},
+		{op: "addheight", name: "add timer no 3", value: 140, key: "c", data: "no-3."},
+		{op: "tickheight", name: "tick before all", value: 110, fire: 0},
+		{op: "delheight", name: "del timer no 2a", value: 130, key: "bx"},
+		{op: "tickheight", name: "tick between no-2,no-3", value: 135, key: "aby", fire: 2, data: "no-1.no-2b."},
+		{op: "delheight", name: "del timer no 3", value: 140, key: "c"},
+		{op: "nextheight", name: "next timeout no-3", value: 140},
+		{op: "tickheight", name: "tick after all", value: 155, fire: 0, key: "", data: ""},
+	}
+
+	testWithTimerTemplate(t, playbook, 1)
+}
+
+// Test delete non-existent timers (by block height)
+func TestBadDeleteTimers(t *testing.T) {
+	playbooks := [][]timerTemplate{
+		{
+			{op: "tickheight", name: "tick without timers", value: 100, fire: 0},
+			{op: "delheight", name: "del non-existing timer", value: 130, key: "bx"},
+		},
+		{
+			{op: "tickheight", name: "tick without timers", value: 100, fire: 0},
+			{op: "addheight", name: "add timer no 1", value: 120, key: "a", data: "no-1."},
+			{op: "delheight", name: "del non-existing timer", value: 120, key: "a"},
+			{op: "delheight", name: "del non-existing timer( again)", value: 120, key: "a"},
+		},
+	}
+
+	for _, p := range playbooks {
+		what := p[0].op + " " + p[0].name
+		require.Panics(t, func() { testWithTimerTemplate(t, p, 1) }, what)
+	}
+}
