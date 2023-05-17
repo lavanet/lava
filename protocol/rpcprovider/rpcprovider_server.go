@@ -24,6 +24,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 type RPCProviderServer struct {
@@ -94,6 +95,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
+	fmt.Println("THE GOOAT request: ", request)
+	fmt.Println("THE GOOAT request.RelayData: ", request.RelayData)
+	fmt.Println("THE GOOAT request.RelaySession: ", request.RelaySession)
+
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay request",
 		utils.Attribute{Key: "GUID", Value: ctx},
@@ -429,6 +434,29 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 }
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
+	// Creating a new context with request metadata - ToDo: Add required checks & position this into more suitable place
+	metadataMap := make(map[string]string)
+	metaDataArr := request.RelayData.GetMetadata()
+	fmt.Println("metaDataArr: ", metaDataArr)
+	for _, metaData := range metaDataArr {
+		// Check if the metadata contains the key "x-cosmos-block-height"
+		if metaData.Name == "x-cosmos-block-height" {
+			// Store the value in the metadata map
+			metadataMap[metaData.Name] = metaData.Value
+		}
+	}
+	fmt.Println("metadataMap: ", metadataMap)
+
+	md := metadata.New(metadataMap)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	fmt.Println("ctxNew: ", ctx)
+	fmt.Println("Metadata: ", md)
+	mdp, ok := metadata.FromOutgoingContext(ctx)
+	if ok {
+		blockHeight := mdp.Get("x-cosmos-block-height")
+		fmt.Println("ZOLAZO Block Height:", blockHeight)
+	}
+
 	// Send
 	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
 	var reqParams interface{}
@@ -499,7 +527,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg)
+		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg) // @audit that's the place!
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

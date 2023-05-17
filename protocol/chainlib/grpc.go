@@ -365,15 +365,15 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 	}
 
-	md := metadata.New(map[string]string{"x-cosmos-block-height": "2"})
-	ctxNew := metadata.NewOutgoingContext(connectCtx, md)
+	// md := metadata.New(map[string]string{"x-cosmos-block-height": "2"})
+	// ctxNew := metadata.NewOutgoingContext(connectCtx, md)
 
-	fmt.Println("ctxNew: ", ctxNew)
-	fmt.Println("Metadata: ", md)
-	mdp, ok := metadata.FromOutgoingContext(ctxNew)
+	// fmt.Println("ctxNew: ", ctxNew)
+	// fmt.Println("Metadata: ", md)
+	mdp, ok := metadata.FromOutgoingContext(connectCtx)
 	if ok {
 		blockHeight := mdp.Get("x-cosmos-block-height")
-		fmt.Println("Block Height:", blockHeight)
+		fmt.Println("AHAHAHAH Block Height:", blockHeight)
 	}
 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
