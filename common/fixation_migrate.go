@@ -17,6 +17,7 @@ func prefixForErrors(from uint64) string {
 var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 	1: fixationMigrate1to2,
 	2: fixationMigrate2to3,
+	3: fixationMigrate3to4,
 }
 
 // MigrateVerrsion performs pending internal version migration(s), if any.
@@ -137,4 +138,9 @@ func fixationMigrate2to3(ctx sdk.Context, fs *FixationStore) error {
 	fs.doMigratePrefix(ctx, v1, v2)
 
 	return nil
+}
+
+// fixationMigrate3to4: call migration of timerstore
+func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
+	return fs.tstore.MigrateVersion(ctx)
 }
