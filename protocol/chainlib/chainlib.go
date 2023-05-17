@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/parser"
@@ -32,7 +31,7 @@ func NewChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
-	rpcConsumerLogs *common.RPCConsumerLogs,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {

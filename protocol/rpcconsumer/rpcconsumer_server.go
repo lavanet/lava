@@ -28,7 +28,7 @@ type RPCConsumerServer struct {
 	chainParser            chainlib.ChainParser
 	consumerSessionManager *lavasession.ConsumerSessionManager
 	listenEndpoint         *lavasession.RPCEndpoint
-	rpcConsumerLogs        *common.RPCConsumerLogs
+	rpcConsumerLogs        *metrics.RPCConsumerLogs
 	cache                  *performance.Cache
 	privKey                *btcec.PrivateKey
 	consumerTxSender       ConsumerTxSender
@@ -50,22 +50,19 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	privKey *btcec.PrivateKey,
 	lavaChainID string,
 	cache *performance.Cache, // optional
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
 	rpccs.cache = cache
 	rpccs.consumerTxSender = consumerStateTracker
 	rpccs.requiredResponses = requiredResponses
-	pLogs, err := common.NewRPCConsumerLogs()
-	if err != nil {
-		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
-	}
 	rpccs.lavaChainID = lavaChainID
-	rpccs.rpcConsumerLogs = pLogs
+	rpccs.rpcConsumerLogs = rpcConsumerLogs
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, pLogs, chainParser)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
 	}

@@ -44,10 +44,10 @@ message QueryListRequest {
 }
 
 message QueryListResponse {
-  repeated listInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
+  repeated ListInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
 }
 
-message listInfoStruct {
+message ListInfoStruct {
 	string index = 1;
 	string description = 2;
 	cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false];

@@ -5,12 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
@@ -208,7 +209,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 type GrpcChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
-	logger      *common.RPCConsumerLogs
+	logger      *metrics.RPCConsumerLogs
 	chainParser *GrpcChainParser
 }
 
@@ -216,7 +217,7 @@ func NewGrpcChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
-	rpcConsumerLogs *common.RPCConsumerLogs,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{

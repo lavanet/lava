@@ -815,11 +815,13 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjusting balance checks accordingly
 				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
 				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					utils.LavaFormatError("GETH Payment Failed ", nil, utils.Attribute{Key: "netAmount", Value: netAmount}, utils.Attribute{Key: "balanceRes.GetBalance().Amount.Int64()", Value: balanceRes.GetBalance().Amount.Int64()})
 					panic("PROVIDER PAYMENT CHECK FAILED")
 				}
 			} else {
 				netAmount := balanceRes.GetBalance().Amount.Int64()
 				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
+					utils.LavaFormatError("Payment Failed ", nil, utils.Attribute{Key: "netAmount", Value: netAmount}, utils.Attribute{Key: "balanceRes.GetBalance().Amount.Int64()", Value: balanceRes.GetBalance().Amount.Int64()})
 					panic("PROVIDER PAYMENT CHECK FAILED")
 				}
 			}
