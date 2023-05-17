@@ -217,6 +217,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
 		fmt.Println("metadataValues: ", metadataValues)
+		// @audit hadi bakalim
+		blockHeader := metadataValues.Get("x-cosmos-block-height") // ToDo: change it into a header variable instead of hardcoded key
+		fmt.Println("blockHeader: ", blockHeader)
+		//
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
@@ -373,9 +377,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	fmt.Println("/nodeMessage.Path: ", "/"+nodeMessage.Path)
 	// err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
-	err = conn.Invoke(ctxNew, "/"+nodeMessage.Path, msg, response)
+	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
 	if err != nil {
-		if ctxNew.Err() == context.DeadlineExceeded {
+		if connectCtx.Err() == context.DeadlineExceeded {
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
 		}
