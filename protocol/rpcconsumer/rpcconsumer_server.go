@@ -3,6 +3,7 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -70,6 +72,16 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	return nil
 }
 
+func convertToMetadata(md map[string][]string) []pairingtypes.Metadata {
+	var metadata []pairingtypes.Metadata
+	for k, v := range md {
+		for _, val := range v {
+			metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: val})
+		}
+	}
+	return metadata
+}
+
 func (rpccs *RPCConsumerServer) SendRelay(
 	ctx context.Context,
 	url string,
@@ -94,7 +106,17 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	unwantedProviders := map[string]struct{}{}
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface)
+	fmt.Println("rpcconsumerserver SendRelay ctx: ", ctx)
+
+	metadataValues, _ := metadata.FromIncomingContext(ctx)
+	blockHeader := metadataValues.Get("x-cosmos-block-height") // ToDo: change it into a header variable instead of hardcoded key
+	fmt.Println("blockHeader in rpcconsumerserver: ", blockHeader)
+
+	convertedMd := convertToMetadata(metadataValues)
+	fmt.Println("METADATA CONVERTED: ", convertedMd)
+
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, convertedMd)
+	fmt.Println("RELAYREQDATA: ", relayRequestData)
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
