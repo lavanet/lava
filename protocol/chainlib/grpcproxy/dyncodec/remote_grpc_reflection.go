@@ -3,6 +3,8 @@ package dyncodec
 import (
 	"context"
 	"fmt"
+
+	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -46,9 +48,8 @@ func (g *GRPCReflectionProtoFileRegistry) ProtoFileByPath(path string) (_ *descr
 	defer stream.CloseSend()
 
 	err = stream.Send(&grpc_reflection_v1alpha.ServerReflectionRequest{
-		MessageRequest: &grpc_reflection_v1alpha.ServerReflectionRequest_FileByFilename{
-			FileByFilename: path,
-		}})
+		MessageRequest: &grpc_reflection_v1alpha.ServerReflectionRequest_FileByFilename{FileByFilename: path},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,11 @@ func (g *GRPCReflectionProtoFileRegistry) ProtoFileContainingSymbol(name protore
 func maybeFileDescriptorResponse(resp *grpc_reflection_v1alpha.ServerReflectionResponse) (*grpc_reflection_v1alpha.ServerReflectionResponse_FileDescriptorResponse, error) {
 	r, ok := resp.MessageResponse.(*grpc_reflection_v1alpha.ServerReflectionResponse_FileDescriptorResponse)
 	if !ok {
-		return nil, fmt.Errorf("%#v", resp.MessageResponse.(*grpc_reflection_v1alpha.ServerReflectionResponse_ErrorResponse).ErrorResponse.ErrorMessage)
+		errorResponse, convertionSuccessful := resp.MessageResponse.(*grpc_reflection_v1alpha.ServerReflectionResponse_ErrorResponse)
+		if convertionSuccessful {
+			return nil, fmt.Errorf("%#v", errorResponse.ErrorResponse.ErrorMessage)
+		}
+		return nil, utils.LavaFormatError("Failed to convert response to ServerReflectionResponse_FileDescriptorResponse and is not an error", nil, utils.Attribute{Key: "resp.MessageResponse", Value: resp.MessageResponse})
 	}
 	return r, nil
 }

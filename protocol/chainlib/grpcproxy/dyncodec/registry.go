@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lavanet/lava/utils"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -55,7 +56,12 @@ func (r *Registry) FindExtensionByName(field protoreflect.FullName) (protoreflec
 		return nil, err
 	}
 
-	xt = dynamicpb.NewExtensionType(xd.(protoreflect.ExtensionDescriptor))
+	xdExtensionDescriptor, ok := xd.(protoreflect.ExtensionDescriptor)
+	if !ok {
+		return nil, utils.LavaFormatError("Failed converting xd.(protoreflect.ExtensionDescriptor)", nil, utils.Attribute{Key: "xd", Value: xd})
+	}
+
+	xt = dynamicpb.NewExtensionType(xdExtensionDescriptor)
 	return xt, r.prefTypes.RegisterExtension(xt)
 }
 
@@ -76,8 +82,12 @@ func (r *Registry) FindMessageByName(message protoreflect.FullName) (protoreflec
 	if err != nil {
 		return nil, err
 	}
+	messageDescriptor, ok := md.(protoreflect.MessageDescriptor)
+	if !ok {
+		return nil, utils.LavaFormatError("Failed converting md.(protoreflect.MessageDescriptor)", nil, utils.Attribute{Key: "md", Value: md})
+	}
 
-	mt = dynamicpb.NewMessageType(md.(protoreflect.MessageDescriptor))
+	mt = dynamicpb.NewMessageType(messageDescriptor)
 	return mt, r.prefTypes.RegisterMessage(mt)
 }
 
@@ -97,7 +107,12 @@ func (r *Registry) FindMessageByURL(url string) (protoreflect.MessageType, error
 		return nil, err
 	}
 
-	mt = dynamicpb.NewMessageType(md.(protoreflect.MessageDescriptor))
+	messageDescriptor, ok := md.(protoreflect.MessageDescriptor)
+	if !ok {
+		return nil, utils.LavaFormatError("Failed converting md.(protoreflect.MessageDescriptor)", nil, utils.Attribute{Key: "md", Value: md})
+	}
+
+	mt = dynamicpb.NewMessageType(messageDescriptor)
 	return mt, r.prefTypes.RegisterMessage(mt)
 }
 

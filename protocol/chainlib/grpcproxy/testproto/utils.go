@@ -1,11 +1,12 @@
 package testproto
 
 import (
+	"net"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net"
-	"testing"
 )
 
 // InMemoryClientConn creates a grpc client connection to a grpc server which is listening on a random port.

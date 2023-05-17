@@ -2,6 +2,8 @@ package dyncodec
 
 import (
 	"context"
+	"testing"
+
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
@@ -13,7 +15,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
-	"testing"
 )
 
 func TestRemotes(t *testing.T) {
@@ -29,7 +30,9 @@ func TestRemotes(t *testing.T) {
 		desc, err := registry.FindDescriptorByName("grpc.reflection.v1alpha.ServerReflectionRequest")
 		require.NoError(t, err)
 		// assert dynamic protobuf works correctly
-		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+		convertedDesc, ok := desc.(protoreflect.MessageDescriptor)
+		require.True(t, ok)
+		msg := dynamicpb.NewMessage(convertedDesc)
 		msg.Set(msg.Descriptor().Fields().ByName("host"), protoreflect.ValueOfString("test"))
 
 		// proto marshalling must be equal

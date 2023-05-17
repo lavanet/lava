@@ -2,6 +2,7 @@ package dyncodec
 
 import (
 	"fmt"
+
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
