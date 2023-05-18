@@ -63,3 +63,12 @@ func (k Keeper) GetAllBadgeUsedCu(ctx sdk.Context) (list []types.BadgeUsedCu) {
 func (k Keeper) CreateBadgeUsedCuMapKey(badgeSig []byte, providerAddress string) []byte {
 	return append(badgeSig, []byte(providerAddress)...)
 }
+
+func (k Keeper) BadgeUsedCuExpiry(ctx sdk.Context, badge types.Badge) uint64 {
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		panic("can't get blocksToSave param. err: " + err.Error())
+	}
+
+	return badge.Epoch + blocksToSave
+}

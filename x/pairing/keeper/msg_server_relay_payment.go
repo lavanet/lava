@@ -37,7 +37,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	addressEpochBadgeMap := map[string]BadgeData{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
-			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
+			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch, relay.SessionId)
 			_, ok := addressEpochBadgeMap[mapKey]
 			if !ok {
 				badgeSigner, err := sigs.ExtractSignerAddressFromBadge(*relay.Badge)
@@ -82,7 +82,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
+		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch), relay.SessionId)
 		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if ok {
@@ -111,25 +111,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				}
 			} else {
 				if relay.CuSum <= badgeData.Badge.CuAllocation {
+					// setting a timer with a callback to delete the badgeUsedCuEntry after epochBlocks*blocksToSave (see keeper.go)
+					badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
+					if badgeUsedCuTimerExpiryBlock < uint64(ctx.BlockHeight()) {
+						return nil, utils.LavaFormatWarning("badge used CU entry expired", fmt.Errorf("could not create badge used CU entry"),
+							utils.Attribute{Key: "badgeUsedCuTimerExpiryBlock", Value: badgeUsedCuTimerExpiryBlock},
+							utils.Attribute{Key: "currentBlock", Value: uint64(ctx.BlockHeight())},
+						)
+					}
+					// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
+					k.badgeTimerStore.AddTimerByBlockHeight(ctx, badgeUsedCuTimerExpiryBlock, badgeUsedCuMapKey, badgeUsedCuMapKey)
+
 					badgeUsedCuMapEntry = types.BadgeUsedCu{
 						BadgeUsedCuMapKey: badgeUsedCuMapKey,
 						UsedCu:            relay.CuSum,
 					}
 					k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
-
-					epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
-					if err != nil {
-						panic("can't get epochBlocks param. err: " + err.Error())
-					}
-					blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
-					if err != nil {
-						panic("can't get blocksToSave param. err: " + err.Error())
-					}
-					badgeUsedCuTimerExpiryBlock := uint64(ctx.BlockHeight()) + epochBlocks*blocksToSave
-
-					// setting a timer with a callback to delete the badgeUsedCuEntry after epochBlocks*blocksToSave (see keeper.go)
-					// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
-					k.badgeTimerStore.AddTimerByBlockHeight(ctx, badgeUsedCuTimerExpiryBlock, badgeUsedCuMapKey, badgeUsedCuMapKey)
 				} else {
 					return nil, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not create badge used CU entry"),
 						utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
