@@ -278,6 +278,7 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 // Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+	ks.Pairing.IncrementTimer(unwrapedCtx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 		ks.Epochstorage.EpochStart(unwrapedCtx)
 		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
