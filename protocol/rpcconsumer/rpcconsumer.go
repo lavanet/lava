@@ -244,18 +244,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// set log format
-			logFormat, err := cmd.Flags().GetString(flags.FlagLogFormat)
-			if err != nil {
-				return err
-			}
-			utils.JsonFormat = logFormat == "json"
-
-			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
+			// set viper
 			config_name := DefaultRPCConsumerFileName
 			if len(args) == 1 {
 				config_name = args[0] // name of config file (without extension)
@@ -265,6 +254,17 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(app.DefaultNodeHome)
+
+			// set log format
+			logFormat := viper.GetString(flags.FlagLogFormat)
+			utils.JsonFormat = logFormat == "json"
+
+			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
