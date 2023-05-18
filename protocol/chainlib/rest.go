@@ -276,6 +276,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		dappID := extractDappIDFromFiberContext(c)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
+		fmt.Println("REST GetReqHeaders: ", c.GetReqHeaders())
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
