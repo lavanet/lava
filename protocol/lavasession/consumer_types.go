@@ -40,7 +40,7 @@ type QoSReport struct {
 
 type SingleConsumerSession struct {
 	CuSum                       uint64
-	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
+	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
 	QoSInfo                     QoSReport
 	SessionId                   int64
 	Client                      *ConsumerSessionsWithProvider

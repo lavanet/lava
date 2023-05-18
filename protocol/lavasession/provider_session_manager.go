@@ -106,7 +106,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64, pairedProviders int64) (*SingleProviderSession, error) {
 	// validate Epoch
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
+		utils.LavaFormatError("GetSessions", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 		return nil, InvalidEpochError
 	}
 
@@ -159,7 +159,7 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 
 func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
+		utils.LavaFormatError("GetSessions", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
 	}
 
@@ -350,7 +350,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	// we already validated the epoch is valid in the GetSession no need to verify again.
+	// we already validated the epoch is valid in the GetSessions no need to verify again.
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch]
 	if !foundEpoch {
 		// this is the first time we subscribe in this epoch

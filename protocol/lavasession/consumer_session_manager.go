@@ -232,9 +232,9 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty() uint64 {
 	return numberOfResets
 }
 
-// GetSession will return a ConsumerSession, given cu needed for that session.
+// GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	// if pairing list is empty we reset the state.

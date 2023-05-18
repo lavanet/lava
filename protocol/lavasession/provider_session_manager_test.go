@@ -649,7 +649,7 @@ func TestPSMUsageSync(t *testing.T) {
 						// this is not a first relay so we expect this to work
 						require.NoError(t, err, "sessionID %d relayNum %d storedRelayNum %d epoch %d, history %s", sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, sessionStoreTest.session.RelayNum, sessionStoreTest.epoch, sessionStoreTest.history)
 						require.Same(t, session, sessionStoreTest.session)
-						sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
+						sessionStoreTest.history = append(sessionStoreTest.history, ",GetSessions")
 					} else {
 						// this can be a first relay or after an error, so allow not registered error
 						if err != nil {
@@ -664,7 +664,7 @@ func TestPSMUsageSync(t *testing.T) {
 							sessionStoreTest.history = append(sessionStoreTest.history, ",RegisterGet")
 						} else {
 							sessionStoreTest.session = session
-							sessionStoreTest.history = append(sessionStoreTest.history, ",GetSession")
+							sessionStoreTest.history = append(sessionStoreTest.history, ",GetSessions")
 						}
 					}
 					choice := rand.Intn(2)
@@ -726,7 +726,7 @@ func TestPSMUsageSync(t *testing.T) {
 		}
 	}
 	// .IsValidEpoch(uint64(request.RelaySession.Epoch))
-	// .GetSession(context.Background(),consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
+	// .GetSessions(context.Background(),consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
 	// on err: lavasession.ConsumerNotRegisteredYet.Is(err)
 	// // .RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex)
 	// .PrepareSessionForUsage(relayCU, request.RelaySession.CuSum, request.RelaySession.RelayNum)
