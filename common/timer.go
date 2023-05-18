@@ -207,12 +207,20 @@ func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value
 // AddTimerByBlockHeight adds a new timer to expire on a given block height.
 // If a timer for that <block, key> tuple exists, it will be overridden.
 func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte, data []byte) {
+	if block <= uint64(ctx.BlockHeight()) {
+		panic(fmt.Sprintf("timer expiry block %d smaller than ctx block %d",
+			block, uint64(ctx.BlockHeight())))
+	}
 	tstore.addTimer(ctx, types.BlockHeight, block, key, data)
 }
 
 // AddTimerByBlockTime adds a new timer to expire on a future block with the given timestamp.
 // If a timer for that <timestamp, key> tuple exists, it will be overridden.
 func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte, data []byte) {
+	if timestamp <= uint64(ctx.BlockTime().UTC().Unix()) {
+		panic(fmt.Sprintf("timer expiry time %d smaller than ctx time %d",
+			timestamp, uint64(ctx.BlockTime().UTC().Unix())))
+	}
 	tstore.addTimer(ctx, types.BlockTime, timestamp, key, data)
 }
 

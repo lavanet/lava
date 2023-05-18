@@ -221,3 +221,22 @@ func TestBadDeleteTimers(t *testing.T) {
 		require.Panics(t, func() { testWithTimerTemplate(t, p, 1) }, what)
 	}
 }
+
+// Test expiry before current block
+func TestTimerEarlyExpiry(t *testing.T) {
+	playbooks := [][]timerTemplate{
+		{
+			{op: "tickheight", name: "tick height without timers", value: 100, fire: 0},
+			{op: "addheight", name: "add timer no 1", value: 100, key: "a", data: "no-1."},
+		},
+		{
+			{op: "ticktime", name: "tick time without timers", value: 100, fire: 0},
+			{op: "addtime", name: "add timer no 1", value: 100, key: "a", data: "no-1."},
+		},
+	}
+
+	for _, p := range playbooks {
+		what := p[0].op + " " + p[0].name
+		require.Panics(t, func() { testWithTimerTemplate(t, p, 1) }, what)
+	}
+}
