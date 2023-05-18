@@ -1035,6 +1035,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 		Availability: sdk.NewDecWithPrec(1, 0),
 		Sync:         sdk.NewDecWithPrec(1, 0),
 	}
+	usedCuSoFar := uint64(0)
 
 	tests := []struct {
 		name  string
@@ -1060,6 +1061,14 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, true, tt.valid, projectDeveloper.Addr, ts.providers[0].Addr)
+
+			if tt.valid {
+				usedCuSoFar += tt.cuSum
+			}
+			badgeUsedCuMapKey := ts.keepers.Pairing.CreateBadgeUsedCuMapKey(badge.ProjectSig, ts.providers[0].Addr.String())
+			badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
+			require.True(t, found)
+			require.Equal(t, usedCuSoFar, badgeUsedCuMapEntry.UsedCu)
 		})
 	}
 }
@@ -1119,7 +1128,9 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 				relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
 				require.Nil(t, err)
 
-				relaySession.Badge = badge
+				if i == 0 {
+					relaySession.Badge = badge
+				}
 
 				relays = append(relays, relaySession)
 			}
@@ -1187,5 +1198,10 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 
 		relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[i].Addr.String(), Relays: []*types.RelaySession{relaySession}}
 		payAndVerifyBalance(t, ts, relayPaymentMessage, true, true, projectDeveloper.Addr, ts.providers[i].Addr)
+
+		badgeUsedCuMapKey := ts.keepers.Pairing.CreateBadgeUsedCuMapKey(badge.ProjectSig, ts.providers[i].Addr.String())
+		badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
+		require.True(t, found)
+		require.Equal(t, cuSum, badgeUsedCuMapEntry.UsedCu)
 	}
 }

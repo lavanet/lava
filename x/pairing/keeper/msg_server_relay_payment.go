@@ -37,7 +37,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	addressEpochBadgeMap := map[string]BadgeData{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
-			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch, relay.SessionId)
+			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
 			_, ok := addressEpochBadgeMap[mapKey]
 			if !ok {
 				badgeSigner, err := sigs.ExtractSignerAddressFromBadge(*relay.Badge)
@@ -82,7 +82,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch), relay.SessionId)
+		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
 		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if ok {
