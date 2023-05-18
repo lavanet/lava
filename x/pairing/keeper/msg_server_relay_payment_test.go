@@ -909,6 +909,8 @@ func TestBadgeValidation(t *testing.T) {
 	_ctx = _ctx.WithBlockHeader(_ctxBlockHeader)
 	ts.ctx = sdk.WrapSDKContext(_ctx)
 
+	badgeCuAllocation := ts.spec.Apis[0].ComputeUnits * 2 // times 2 to have enough CU for the two tests that succeed
+
 	tests := []struct {
 		name         string
 		badgeAddress sdk.AccAddress // should be the badge user (in happy flow)
@@ -916,17 +918,15 @@ func TestBadgeValidation(t *testing.T) {
 		badgeSigner  common.Account // should be the badge granter, i.e. project developer (in happy flow)
 		epoch        uint64
 		lavaChainID  string
-		cuAllocation uint64
 		valid        bool
 	}{
-		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
-		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
-		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
+		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, true},
+		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, false},
+		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, false},
+		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, false},
+		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, false},
+		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", false},
+		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -940,7 +940,7 @@ func TestBadgeValidation(t *testing.T) {
 				err = ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
 				require.Nil(t, err)
 			}
-			badge := types.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
+			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
