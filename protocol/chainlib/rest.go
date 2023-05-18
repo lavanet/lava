@@ -334,7 +334,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
-	var reqMetadata = make(map[string]string)
+	reqMetadata := make(map[string]string)
 	if request != nil {
 		for _, metadata := range request.RelayData.GetMetadata() {
 			reqMetadata[metadata.Name] = metadata.Value
@@ -413,7 +413,6 @@ func convertToMetadataRest(md map[string]string) []pairingtypes.Metadata {
 	var metadata []pairingtypes.Metadata
 	for k, v := range md {
 		metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: v})
-
 	}
 	return metadata
 }
