@@ -280,13 +280,15 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	defer cp.conn.ReturnRpc(conn)
 
 	// Creating a new context with request metadata
-	metadataMap := make(map[string]string)
-	metaDataArr := request.RelayData.GetMetadata()
-	for _, metaData := range metaDataArr {
-		metadataMap[metaData.Name] = metaData.Value
+	if request != nil {
+		metadataMap := make(map[string]string)
+		metaDataArr := request.RelayData.GetMetadata()
+		for _, metaData := range metaDataArr {
+			metadataMap[metaData.Name] = metaData.Value
+		}
+		md := metadata.New(metadataMap)
+		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
-	md := metadata.New(metadataMap)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)

@@ -377,7 +377,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if req != nil {
+	if request != nil {
 		for k, v := range reqMetadata {
 			req.Header.Set(k, v)
 		}
