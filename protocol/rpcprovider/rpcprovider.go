@@ -128,7 +128,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		fmt.Println("rpcProviderEndpoint: ", rpcProviderEndpoint)
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
 			defer wg.Done()
 			err := rpcProviderEndpoint.Validate()

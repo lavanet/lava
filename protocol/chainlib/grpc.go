@@ -201,16 +201,6 @@ func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
-func convertToMetadata(md map[string][]string) []pairingtypes.Metadata {
-	var metadata []pairingtypes.Metadata
-	for k, v := range md {
-		for _, val := range v {
-			metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: val})
-		}
-	}
-	return metadata
-}
-
 // Serve http server for GrpcChainListener
 func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	// Guard that the GrpcChainListener instance exists
@@ -225,21 +215,12 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
-
-		// grpc header
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
-		fmt.Println("metadataValues: ", metadataValues)
-		blockHeader := metadataValues.Get("x-cosmos-block-height") // ToDo: change it into a header variable instead of hardcoded key
-		fmt.Println("blockHeader: ", blockHeader)
-		convertedMd := convertToMetadata(metadataValues)
-		fmt.Println("convertedMd: ", convertedMd)
-
-		//
+		grpcHeaders := convertToMetadata(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, convertedMd)
-		fmt.Println("relayReply.Data: ", relayReply.Data)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, grpcHeaders)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
@@ -298,12 +279,17 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	defer cp.conn.ReturnRpc(conn)
 
+	// Creating a new context with request metadata
+	metadataMap := make(map[string]string)
+	metaDataArr := request.RelayData.GetMetadata()
+	for _, metaData := range metaDataArr {
+		metadataMap[metaData.Name] = metaData.Value
+	}
+	md := metadata.New(metadataMap)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	fmt.Println("rpcInputMessage: ", rpcInputMessage)
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
-	fmt.Println("nodeMessage: ", nodeMessage)
-	fmt.Println("nodeMessage.Msg: ", nodeMessage.Msg)
-	fmt.Println("nodeMessage.Path: ", nodeMessage.Path)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
@@ -330,7 +316,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
-	fmt.Println("methodDescriptor: ", methodDescriptor)
 	if methodDescriptor == nil {
 		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
 	}
@@ -338,7 +323,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	var reader io.Reader
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
-	fmt.Println("msg: ", msg)
 	formatMessage := false
 	if len(nodeMessage.Msg) > 0 {
 		// guess if json or binary
@@ -378,20 +362,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 	}
 
-	// md := metadata.New(map[string]string{"x-cosmos-block-height": "2"})
-	// ctxNew := metadata.NewOutgoingContext(connectCtx, md)
-
-	// fmt.Println("ctxNew: ", ctxNew)
-	// fmt.Println("Metadata: ", md)
-	mdp, ok := metadata.FromOutgoingContext(connectCtx)
-	if ok {
-		blockHeight := mdp.Get("x-cosmos-block-height")
-		fmt.Println("AHAHAHAH Block Height:", blockHeight)
-	}
-
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	fmt.Println("/nodeMessage.Path: ", "/"+nodeMessage.Path)
-	// err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
 	if err != nil {
 		if connectCtx.Err() == context.DeadlineExceeded {
@@ -403,7 +374,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
-	fmt.Println("respBytes: ", respBytes)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -411,9 +381,17 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	reply := &pairingtypes.RelayReply{
 		Data: respBytes,
 	}
-	fmt.Println("reply: ", reply)
-
 	return reply, "", nil, nil
+}
+
+func convertToMetadata(md map[string][]string) []pairingtypes.Metadata {
+	var metadata []pairingtypes.Metadata
+	for k, v := range md {
+		for _, val := range v {
+			metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: val})
+		}
+	}
+	return metadata
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {

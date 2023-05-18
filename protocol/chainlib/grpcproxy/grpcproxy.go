@@ -2,7 +2,6 @@ package grpcproxy
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -37,7 +36,6 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 	return func(srv interface{}, stream grpc.ServerStream) error {
 		// currently the callback function does not account for headers.
 		methodName, ok := grpc.MethodFromServerStream(stream)
-		fmt.Println("grpcproxy methodName: ", methodName)
 		if !ok {
 			return status.Error(codes.Unavailable, "unable to get method name")
 		}

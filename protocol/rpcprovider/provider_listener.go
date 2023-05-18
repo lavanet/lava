@@ -3,7 +3,6 @@ package rpcprovider
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -71,7 +70,7 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	}
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
-	pairingtypes.RegisterRelayerServer(grpcServer, relayServer) // @audit found you relay.pb!
+	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
 		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
@@ -94,14 +93,10 @@ type RelayReceiver interface {
 }
 
 func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	fmt.Println("request.RelayData: ", request.RelayData)
-	fmt.Println("request.RelaySession: ", request.RelaySession)
-
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatError("invalid relay request, internal fields are nil", nil)
 	}
 	relayReceiver, err := rs.findReceiver(request)
-	fmt.Println("relayReceiver: ", relayReceiver)
 	if err != nil {
 		return nil, err
 	}

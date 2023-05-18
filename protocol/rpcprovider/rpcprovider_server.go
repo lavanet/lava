@@ -3,7 +3,6 @@ package rpcprovider
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -24,7 +23,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 )
 
 type RPCProviderServer struct {
@@ -95,10 +93,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
-	fmt.Println("THE GOOAT request: ", request)
-	fmt.Println("THE GOOAT request.RelayData: ", request.RelayData)
-	fmt.Println("THE GOOAT request.RelaySession: ", request.RelaySession)
-
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay request",
 		utils.Attribute{Key: "GUID", Value: ctx},
@@ -110,10 +104,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
-	fmt.Println("relaySession: ", relaySession)
-	fmt.Println("consumerAddress: ", consumerAddress)
-	fmt.Println("chainMessage: ", chainMessage)
-
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
@@ -202,10 +192,6 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		utils.Attribute{Key: "GUID", Value: ctx},
 	)
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
-	fmt.Println("relaySession: ", relaySession)
-	fmt.Println("consumerAddress: ", consumerAddress)
-	fmt.Println("chainMessage: ", chainMessage)
-
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
@@ -434,27 +420,6 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 }
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
-	// Creating a new context with request metadata - ToDo: Add required checks & position this into more suitable place
-
-	// TODO: grpc and rest header attaching are two different process! Can't use metadata
-	fmt.Println("TRISS provider request.RelayData: ", request.RelayData)
-	fmt.Println("TRISS provider request.RelaySession: ", request.RelaySession)
-
-	// update context with grpc header
-	if request.RelayData.ApiInterface == "grpc" {
-		metadataMap := make(map[string]string)
-		metaDataArr := request.RelayData.GetMetadata()
-		for _, metaData := range metaDataArr {
-			if metaData.Name == "x-cosmos-block-height" {
-				metadataMap[metaData.Name] = metaData.Value
-				fmt.Println("metadataMap[metaData.Name]: ", metadataMap[metaData.Name])
-				break
-			}
-		}
-		md := metadata.New(metadataMap)
-		ctx = metadata.NewOutgoingContext(ctx, md)
-	}
-
 	// Send
 	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
 	var reqParams interface{}
@@ -525,7 +490,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg, request) // @audit that's the place!
+		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg, request)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

@@ -77,7 +77,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	connectionType string,
 	dappID string,
 	analytics *metrics.RelayMetrics,
-	metadataValues []pairingtypes.Metadata,
+	metadata []pairingtypes.Metadata,
 ) (relayReply *pairingtypes.RelayReply, relayServer *pairingtypes.Relayer_RelaySubscribeClient, errRet error) {
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
@@ -95,8 +95,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	unwantedProviders := map[string]struct{}{}
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, metadataValues)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, metadata)
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
