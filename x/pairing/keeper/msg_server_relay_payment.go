@@ -97,7 +97,48 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			// badge is valid -> switch address to badge signer (developer key) and continue with payment
+			badgeUsedCuMapKey := k.CreateBadgeUsedCuMapKey(badgeData.Badge.ProjectSig, relay.Provider)
+			badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuMapKey)
+			if found {
+				if relay.CuSum <= badgeData.Badge.CuAllocation-badgeUsedCuMapEntry.UsedCu {
+					badgeUsedCuMapEntry.UsedCu += relay.CuSum
+					k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
+				} else {
+					return nil, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not update badge's used CU"),
+						utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
+						utils.Attribute{Key: "badgeCuLeft", Value: badgeData.Badge.CuAllocation - badgeUsedCuMapEntry.UsedCu},
+					)
+				}
+			} else {
+				if relay.CuSum <= badgeData.Badge.CuAllocation {
+					badgeUsedCuMapEntry = types.BadgeUsedCu{
+						BadgeUsedCuMapKey: badgeUsedCuMapKey,
+						UsedCu:            relay.CuSum,
+					}
+					k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
+
+					epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
+					if err != nil {
+						panic("can't get epochBlocks param. err: " + err.Error())
+					}
+					blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
+					if err != nil {
+						panic("can't get blocksToSave param. err: " + err.Error())
+					}
+					badgeUsedCuTimerExpiryBlock := uint64(ctx.BlockHeight()) + epochBlocks*blocksToSave
+
+					// setting a timer with a callback to delete the badgeUsedCuEntry after epochBlocks*blocksToSave (see keeper.go)
+					// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
+					k.badgeTimerStore.AddTimerByBlockHeight(ctx, badgeUsedCuTimerExpiryBlock, badgeUsedCuMapKey, badgeUsedCuMapKey)
+				} else {
+					return nil, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not create badge used CU entry"),
+						utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
+						utils.Attribute{Key: "badgeCuLeft", Value: badgeData.Badge.CuAllocation - badgeUsedCuMapEntry.UsedCu},
+					)
+				}
+			}
+
+			// badge is valid & CU enforced -> switch address to badge signer (developer key) and continue with payment
 			clientAddr = badgeData.BadgeSigner
 		}
 

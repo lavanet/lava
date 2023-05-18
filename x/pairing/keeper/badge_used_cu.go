@@ -59,3 +59,7 @@ func (k Keeper) GetAllBadgeUsedCu(ctx sdk.Context) (list []types.BadgeUsedCu) {
 
 	return
 }
+
+func (k Keeper) CreateBadgeUsedCuMapKey(badgeSig []byte, providerAddress string) []byte {
+	return append(badgeSig, []byte(providerAddress)...)
+}
