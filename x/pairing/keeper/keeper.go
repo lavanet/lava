@@ -48,8 +48,6 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix)
-
 	keeper := &Keeper{
 		cdc:                cdc,
 		storeKey:           storeKey,
@@ -61,8 +59,14 @@ func NewKeeper(
 		epochStorageKeeper: epochStorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		subscriptionKeeper: subscriptionKeeper,
-		badgeTimerStore:    *badgeTimerStore,
 	}
+
+	badgeTimerCallback := func(ctx sdk.Context, timerKey []byte, badgeUsedCuKey []byte) {
+		keeper.RemoveBadgeUsedCu(ctx, badgeUsedCuKey)
+	}
+	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).WithCallbackByBlockHeight(badgeTimerCallback)
+	keeper.badgeTimerStore = *badgeTimerStore
+
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })
 
@@ -76,4 +80,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // we dont want to do the calculation here too, epochStorage keeper did it
 func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	return k.epochStorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
+}
+
+func (k Keeper) IncrementTimer(ctx sdk.Context) {
+	k.badgeTimerStore.Tick(ctx)
 }

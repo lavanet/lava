@@ -176,6 +176,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		// run functions that are supposed to run in epoch start
 		am.keeper.EpochStart(ctx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
+	am.keeper.IncrementTimer(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
