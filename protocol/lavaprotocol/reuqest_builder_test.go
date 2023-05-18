@@ -28,8 +28,10 @@ func TestSignAndExtract(t *testing.T) {
 		ConsecutiveNumberOfFailures: 0,     // number of times this session has failed
 	}
 	metadataValue := []pairingtypes.Metadata{}
-	metadataValue = append(metadataValue, pairingtypes.Metadata{Name: "x-cosmos-block-height:",
-		Value: "55"})
+	metadataValue = append(metadataValue, pairingtypes.Metadata{
+		Name:  "x-cosmos-block-height:",
+		Value: "55",
+	})
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc", metadataValue)
 	relay, err := ConstructRelayRequest(ctx, sk, "lava", specId, relayRequestData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
