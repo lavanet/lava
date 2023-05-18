@@ -66,10 +66,10 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 				QosReport:   badQoS,
@@ -168,10 +168,10 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -247,10 +247,10 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -331,10 +331,10 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -404,10 +404,10 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -494,7 +494,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
 				CuSum:       uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
@@ -585,7 +585,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
 				CuSum:       uint64(200000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
@@ -678,10 +678,10 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.paymentEpoch),
 				RelayNum:    0,
 			}
@@ -802,7 +802,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	relayRequest := &pairingtypes.RelaySession{
 		Provider:    ts.providers[0].Addr.String(),
-		ContentHash: []byte(ts.spec.Apis[0].Name),
+		ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 		SessionId:   uint64(1),
 		SpecId:      ts.spec.Name,
 		CuSum:       uint64(10000),
@@ -875,7 +875,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		relayRequest := &pairingtypes.RelaySession{
 			Provider:    ts.providers[0].Addr.String(),
-			ContentHash: []byte(ts.spec.Apis[0].Name),
+			ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:   uint64(1),
 			SpecId:      ts.spec.Name,
 			CuSum:       uint64(10000),

@@ -70,7 +70,7 @@ func (ts *testStruct) addProviderGeolocation(amount int, geolocation uint64) err
 			return err
 		}
 		endpoints := []epochstoragetypes.Endpoint{}
-		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: geolocation})
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: geolocation})
 		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: geolocation, Endpoints: endpoints})
 		if err != nil {
 			return err
@@ -139,7 +139,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			}
 
 			// Create relay request that was done in the first epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 			relaySession.Epoch = int64(firstEpoch)
 			relaySession.SessionId = sessionCounter
 
@@ -204,7 +204,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			require.Nil(t, err)
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 			relaySession.Epoch = sdk.UnwrapSDKContext(ts.ctx).BlockHeight() + tt.blockTime
 
 			sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
@@ -224,12 +224,12 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				require.Nil(t, err)
 
 				mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-				want := mint.MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+				want := mint.MulInt64(int64(ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10))
 
 				require.Equal(t, balanceProvider+want.TruncateInt64(),
 					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].Addr, epochstoragetypes.TokenDenom).Amount.Int64())
 
-				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10))
 				newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].Addr)
 				require.Nil(t, err)
 				require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
@@ -258,7 +258,7 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	maxcu, err := ts.keepers.Pairing.GetAllowedCUForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()), entry)
 	require.Nil(t, err)
 
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), maxcu*2, ts.spec.Name, nil)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), maxcu*2, ts.spec.Name, nil)
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	relaySession.Sig = sig
 	require.Nil(t, err)
@@ -304,7 +304,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	require.Nil(t, err)
 	var Relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData // create the complaint
 		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
@@ -347,7 +347,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	var Relays []*types.RelaySession
 	var totalCu uint64
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData[clientIndex]
 		totalCu += relaySession.CuSum
 
@@ -375,7 +375,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 
 	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelaySession
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[1].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[1].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 
 		sig, err := sigs.SignRelay(ts.clients[i].SK, *relaySession)
 		relaySession.Sig = sig
@@ -390,7 +390,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	require.Nil(t, err)
 	var Relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 
 		sig, err := sigs.SignRelay(ts.clients[clientIndex].SK, *relaySession)
@@ -419,8 +419,8 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	cuSum := ts.spec.GetApis()[0].ComputeUnits * 10
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	relaySession.Sig = sig
@@ -457,7 +457,7 @@ func TestRelayPaymentDataModification(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	relaySession.Sig = sig
@@ -469,9 +469,9 @@ func TestRelayPaymentDataModification(t *testing.T) {
 		cu       uint64
 		id       int64
 	}{
-		{"ModifiedProvider", ts.clients[0].Addr.String(), ts.spec.Apis[0].ComputeUnits * 10, 1},
-		{"ModifiedCU", ts.providers[0].Addr.String(), ts.spec.Apis[0].ComputeUnits * 9, 1},
-		{"ModifiedID", ts.providers[0].Addr.String(), ts.spec.Apis[0].ComputeUnits * 10, 2},
+		{"ModifiedProvider", ts.clients[0].Addr.String(), ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10, 1},
+		{"ModifiedCU", ts.providers[0].Addr.String(), ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 9, 1},
+		{"ModifiedID", ts.providers[0].Addr.String(), ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10, 2},
 	}
 
 	for _, tt := range tests {
@@ -501,7 +501,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	relaySession.Sig = sig
@@ -577,8 +577,8 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cuSum := ts.spec.Apis[0].ComputeUnits * 10
-			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 			relaySession.SessionId = tt.sid
 			relaySession.Epoch = sdk.UnwrapSDKContext(ts.ctx).BlockHeight() - int64(blocksInEpoch)*tt.epoch
 
@@ -637,10 +637,10 @@ func TestRelayPaymentQoS(t *testing.T) {
 			require.Nil(t, err)
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-			cuSum := ts.spec.Apis[0].ComputeUnits * 10
+			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availability, Sync: tt.sync}
 
-			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, QoS)
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, QoS)
 			sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 			relaySession.Sig = sig
 			require.Nil(t, err)
@@ -763,7 +763,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits*10, ts.spec.Name, nil)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10, ts.spec.Name, nil)
 
 	sig, err := sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	relaySession.Sig = sig
@@ -781,12 +781,12 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	require.Nil(t, err)
 
 	mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-	want := mint.MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+	want := mint.MulInt64(int64(ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10))
 
 	require.Equal(t, balanceProvider+want.TruncateInt64(),
 		ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].Addr, epochstoragetypes.TokenDenom).Amount.Int64())
 
-	burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+	burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10))
 	newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].Addr)
 	require.Nil(t, err)
 	require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
@@ -857,7 +857,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		Availability: sdk.OneDec(),
 		Sync:         sdk.OneDec(),
 	}
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, &QoS)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, &QoS)
 
 	relaySession.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relaySession)
 	require.Nil(t, err)
@@ -897,7 +897,7 @@ func TestBadgeValidation(t *testing.T) {
 
 	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 
-	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.spec.Apis[0].ComputeUnits, ts.spec.Name, QoS)
+	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.spec.ApiCollections[0].Apis[0].ComputeUnits, ts.spec.Name, QoS)
 
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
@@ -919,14 +919,14 @@ func TestBadgeValidation(t *testing.T) {
 		cuAllocation uint64
 		valid        bool
 	}{
-		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
-		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
-		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
+		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, true},
+		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, false},
+		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, false},
+		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, false},
+		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, false},
+		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, false},
+		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits - 1, false},
+		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.ApiCollections[0].Apis[0].ComputeUnits + 1, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -988,7 +988,7 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	var relays []*types.RelaySession
 	for i := 0; i < 5; i++ {
 		QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), 1, ts.spec.Name, QoS)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), 1, ts.spec.Name, QoS)
 		if i == 0 {
 			relaySession.Badge = badge
 		}

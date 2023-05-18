@@ -6,22 +6,49 @@ option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
 
-message ServiceApi {
-  string name = 1; 
-  BlockParser block_parsing = 2 [(gogoproto.nullable) = false];
+message ApiCollection {
+  bool enabled = 1;
+  CollectionData collectionData =2 [(gogoproto.nullable) = false];
+  repeated Api apis = 3;
+  repeated Header headers = 4;
+	repeated CollectionData inheritanceApis = 5; // by collectionKey
+	float compute_units_multiplier = 6;
+	repeated Parsing parsing = 7;
+}
+
+message CollectionData {
+  string api_interface = 1;
+  string internal_path = 2;
+  string type = 3;
+	string add_on = 4;
+}
+
+message Header {
+	string name = 1;
+	
+	enum HeaderType {
+    pass = 0;
+  }
+
+	HeaderType kind = 2;
+}
+
+message Api {
+  bool enabled = 1; 
+  string name = 2; 
   uint64 compute_units = 3; 
-  bool enabled = 4; 
-  repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
-  SpecCategory reserved = 6;
-  Parsing parsing = 7 [(gogoproto.nullable) = false];
-  string internal_path = 8;
+  uint64 extra_compute_units = 4;
+  SpecCategory category = 6 [(gogoproto.nullable) = false];
+	BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
 }
 
 message Parsing {
   string function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
+  Api api = 4;
 }
+
 message ApiInterface {
   string interface = 1;
   string type = 2;

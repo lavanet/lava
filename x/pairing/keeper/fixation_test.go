@@ -103,10 +103,10 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	relayRequest := &pairingtypes.RelaySession{
 		Provider:    ts.providers[0].Addr.String(),
-		ContentHash: []byte(ts.spec.Apis[0].Name),
+		ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 		SessionId:   uint64(1),
 		SpecId:      ts.spec.Name,
-		CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+		CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 		Epoch:       sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 		RelayNum:    0,
 	}

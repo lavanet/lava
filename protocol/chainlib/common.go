@@ -242,6 +242,6 @@ type CraftData struct {
 	ConnectionType string
 }
 
-func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
-	return chainParser.CraftMessage(serviceApi, craftData)
+func CraftChainMessage(parsing spectypes.Parsing, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(parsing, craftData)
 }

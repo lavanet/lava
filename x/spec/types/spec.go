@@ -55,40 +55,41 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("MinStakeProvider can't be zero and must have denom of ulava")
 	}
 
-	for _, api := range spec.Apis {
-		if api.ComputeUnits < minCU || api.ComputeUnits > maxCU {
-			details["api"] = api.Name
-			return details, fmt.Errorf("compute units out or range")
+	for _, apiCollection := range spec.ApiCollections {
+		if len(apiCollection.Apis) == 0 {
+			return details, fmt.Errorf("api apiCollection list empty for %v", apiCollection.CollectionData)
 		}
-
-		if len(api.ApiInterfaces) == 0 {
-			return details, fmt.Errorf("api interface list empty for %v", api.Name)
+		if _, ok := availableAPIInterface[apiCollection.CollectionData.ApiInterface]; !ok {
+			return details, fmt.Errorf("unsupported api interface %v", apiCollection.CollectionData.ApiInterface)
 		}
-
-		for _, apiInterface := range api.ApiInterfaces {
-			if _, ok := availableAPIInterface[apiInterface.Interface]; !ok {
-				return details, fmt.Errorf("unsupported api interface %v", apiInterface.Interface)
+		// validate function tags
+		for _, parsing := range apiCollection.Parsing {
+			if parsing.FunctionTag == "" {
+				fmt.Errorf("empty parsing function tag %v", parsing.FunctionTag)
 			}
-		}
-
-		if api.Parsing.FunctionTag != "" {
 			// Validate tag name
 			result := false
 			for _, tag := range SupportedTags {
-				if tag == api.Parsing.FunctionTag {
+				if tag == parsing.FunctionTag {
 					result = true
-					functionTags[api.Parsing.FunctionTag] = true
+					functionTags[parsing.FunctionTag] = true
 				}
 			}
-
 			if !result {
-				details["api"] = api.Name
-				return details, fmt.Errorf("unsupported function tag")
+				details["apiCollection"] = fmt.Sprintf("%v", apiCollection.CollectionData)
+				return details, fmt.Errorf("unsupported function tag %s", parsing.FunctionTag)
 			}
-			if api.Parsing.ResultParsing.Encoding != "" {
-				if _, ok := availavleEncodings[api.Parsing.ResultParsing.Encoding]; !ok {
-					return details, fmt.Errorf("unsupported api encoding %s in api %v ", api.Parsing.ResultParsing.Encoding, api)
+			if parsing.ResultParsing.Encoding != "" {
+				if _, ok := availavleEncodings[parsing.ResultParsing.Encoding]; !ok {
+					return details, fmt.Errorf("unsupported api encoding %s in apiCollection %v ", parsing.ResultParsing.Encoding, apiCollection.CollectionData)
 				}
+			}
+		}
+		// validate apis
+		for _, api := range apiCollection.Apis {
+			if api.ComputeUnits < minCU || api.ComputeUnits > maxCU {
+				details["api"] = api.Name
+				return details, fmt.Errorf("compute units out or range")
 			}
 		}
 	}
@@ -102,4 +103,18 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	}
 
 	return details, nil
+}
+
+func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
+	for idx, collectionsToCombine := range parentsCollections {
+		if len(collectionsToCombine) == 0 {
+			return fmt.Errorf("collection with length 0 %v", idx)
+		}
+		combined, err := collectionsToCombine[0].CombineWithOthers(collectionsToCombine[1:])
+		if err != nil {
+			return err
+		}
+		spec.ApiCollections = append(spec.ApiCollections, combined)
+	}
+	return nil
 }

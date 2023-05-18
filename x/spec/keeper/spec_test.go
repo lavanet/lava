@@ -13,11 +13,11 @@ import (
 )
 
 // prepareMockApis returns a slice of mock ServiceApi for use in Spec
-func prepareMockApis() []types.ServiceApi {
-	mockApis := make([]types.ServiceApi, 8)
+func prepareMockApis() []*types.Api {
+	mockApis := make([]*types.Api, 8)
 
 	for i := 0; i < 4; i++ {
-		api := types.ServiceApi{
+		api := &types.Api{
 			Name: "API-" + strconv.Itoa(i),
 		}
 
@@ -32,8 +32,8 @@ func prepareMockApis() []types.ServiceApi {
 }
 
 // selectMockApis returns a slice of ServiceApi corresponding to the given ids
-func selectMockApis(apis []types.ServiceApi, ids []int) []types.ServiceApi {
-	var res []types.ServiceApi
+func selectMockApis(apis []*types.Api, ids []int) []*types.Api {
+	var res []*types.Api
 
 	for _, i := range ids {
 		res = append(res, apis[i])
@@ -93,7 +93,7 @@ func TestSpecGetAll(t *testing.T) {
 
 // prepareMockCurrentSpecs returns a slice of Spec according to the template
 // therein, to simulate the collection of existing Spec(s) on the chain.
-func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []types.ServiceApi) map[string]types.Spec {
+func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*types.Api) map[string]types.Spec {
 	currentSpecs := make(map[string]types.Spec)
 
 	template := []struct {
@@ -111,10 +111,10 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []type
 
 	for _, tt := range template {
 		spec := types.Spec{
-			Name:    tt.name,
-			Index:   tt.name,
-			Enabled: tt.enabled,
-			Apis:    selectMockApis(apis, tt.apis),
+			Name:           tt.name,
+			Index:          tt.name,
+			Enabled:        tt.enabled,
+			ApiCollections: []*types.ApiCollection{&types.ApiCollection{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 		currentSpecs[tt.name] = spec
 		keeper.SetSpec(ctx, spec)
@@ -232,21 +232,21 @@ func TestSpecWithImport(t *testing.T) {
 
 	for _, tt := range specTemplates {
 		spec := types.Spec{
-			Name:    tt.name,
-			Index:   tt.name,
-			Imports: tt.imports,
-			Enabled: true,
-			Apis:    selectMockApis(apis, tt.apis),
+			Name:           tt.name,
+			Index:          tt.name,
+			Imports:        tt.imports,
+			Enabled:        true,
+			ApiCollections: []*types.ApiCollection{&types.ApiCollection{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
 			fullspec, err := keeper.ExpandSpec(ctx, spec)
 			if tt.ok == true {
 				require.Nil(t, err, err)
-				require.Len(t, fullspec.Apis, len(tt.result))
+				require.Len(t, fullspec.ApiCollections[0].Apis, len(tt.result))
 				for i := 0; i < len(tt.result); i++ {
-					require.Equal(t, fullspec.Apis[i].Name, apis[tt.result[i]].Name)
-					require.Equal(t, fullspec.Apis[i].Enabled, apis[tt.result[i]].Enabled)
+					require.Equal(t, fullspec.ApiCollections[0].Apis[i].Name, apis[tt.result[i]].Name)
+					require.Equal(t, fullspec.ApiCollections[0].Apis[i].Enabled, apis[tt.result[i]].Enabled)
 				}
 				keeper.SetSpec(ctx, fullspec)
 			} else {
@@ -255,3 +255,5 @@ func TestSpecWithImport(t *testing.T) {
 		})
 	}
 }
+
+// TODO: check cross APICollections

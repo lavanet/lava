@@ -321,38 +321,38 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	}{
 		{
 			"valid policy (admin account)", admAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
 			"valid policy (subscription account)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
 			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"invalid geolocation (0)", devAddr, projectID, uint64(0),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			// note: currently, we don't verify the chain policies
 			"bad chainID (doesn't exist)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
@@ -370,12 +370,12 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		},
 		{
 			"epoch CU larger than total CU", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			10, 100, 3, false, false,
 		},
 		{
 			"bad maxProvidersToPair", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 1, false, false,
 		},
 	}

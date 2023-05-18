@@ -14,36 +14,37 @@ func checkSpecProposal(spec Spec) error {
 	if len(strings.TrimSpace(spec.Index)) == 0 {
 		return sdkerrors.Wrap(ErrBlankSpecName, "spec index cannot be blank")
 	}
-	if len(spec.Apis) == 0 && len(spec.Imports) == 0 {
+	if len(spec.ApiCollections) == 0 && len(spec.Imports) == 0 {
 		return sdkerrors.Wrap(ErrEmptyApis, "api list cannot be empty")
 	}
 
-	checkUnique := map[string]bool{}
-	for i, api := range spec.Apis {
-		if len(strings.TrimSpace(api.Name)) == 0 {
-			return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
+	for _, apiCollection := range spec.ApiCollections {
+		checkUnique := map[string]bool{}
+		for _, api := range apiCollection.Apis {
+			if len(strings.TrimSpace(api.Name)) == 0 {
+				return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
+			}
+			if _, ok := checkUnique[api.Name]; ok {
+				return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))
+			}
+			checkUnique[api.Name] = true
 		}
-		if _, ok := checkUnique[api.Name]; ok {
-			return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))
-		}
-		if len(api.ApiInterfaces) == 0 {
-			return sdkerrors.Wrap(ErrBlankApiName, fmt.Sprintf("api interface cannot be empty at spec:%s, api %d", spec.Name, i))
-		}
-		checkUnique[api.Name] = true
 	}
 	return nil
 }
 
 func stringSpec(spec Spec, b strings.Builder) strings.Builder {
 	b.WriteString(fmt.Sprintf(`    Spec name:
-	Name: %s, Spec index: %s, Enabled: %t, Apis: %d
-`, spec.Name, spec.Index, spec.Enabled, len(spec.Apis)))
-
-	for _, api := range spec.Apis {
-		b.WriteString(fmt.Sprintf(`        Api:
-		      Name: %s, Enabled: %t, ComputeUntis: %d
-		`, api.Name, api.Enabled, api.ComputeUnits))
+	Name: %s, Spec index: %s, Enabled: %t, ApiCollections: %d
+`, spec.Name, spec.Index, spec.Enabled, len(spec.ApiCollections)))
+	for _, collection := range spec.ApiCollections {
+		b.WriteString(fmt.Sprintf(`        ApiCollection: %v
+		`, collection.CollectionData))
+		for _, api := range collection.Apis {
+			b.WriteString(fmt.Sprintf(`        Api:
+				Name: %s, Enabled: %t, ComputeUntis: %d
+			`, api.Name, api.Enabled, api.ComputeUnits))
+		}
 	}
-
 	return b
 }

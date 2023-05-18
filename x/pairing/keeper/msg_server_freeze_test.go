@@ -249,7 +249,7 @@ func TestPaymentFrozen(t *testing.T) {
 		Provider:  providerToFreeze.Address,
 		SessionId: uint64(1),
 		SpecId:    ts.spec.Name,
-		CuSum:     ts.spec.Apis[0].ComputeUnits * 10,
+		CuSum:     ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 		Epoch:     blockForPaymentBeforeFreeze,
 		RelayNum:  0,
 	}

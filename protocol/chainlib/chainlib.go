@@ -47,8 +47,8 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
-	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)
-	CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error)
+	GetParsingByTag(tag string) (parsing spectypes.Parsing, collectionData *spectypes.CollectionData, existed bool)
+	CraftMessage(parsing spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error)
 }
 
 type ChainMessage interface {
@@ -57,7 +57,7 @@ type ChainMessage interface {
 }
 
 type ChainMessageForSend interface {
-	GetServiceApi() *spectypes.ServiceApi
+	GetServiceApi() *spectypes.Api
 	GetInterface() *spectypes.ApiInterface
 	GetRPCMessage() parser.RPCInput
 }

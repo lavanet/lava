@@ -121,37 +121,65 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 
 	details += "]"
 
-	currentApis := make(map[string]bool)
-	for _, api := range spec.Apis {
-		currentApis[api.Name] = true
-	}
-
-	var mergedApis []types.ServiceApi
-	mergedApisMap := make(map[string]types.ServiceApi)
-
-	// collect all parents' Specs' APIs
-	for _, imported := range parents {
-		for _, api := range imported.Apis {
-			if api.Enabled {
-				// duplicate API(s) not allowed
-				// (unless current Spec has an override for same API)
-				if _, found := mergedApisMap[api.Name]; found {
-					if _, found := currentApis[api.Name]; !found {
-						return details, fmt.Errorf("duplicate imported api: %s (in spec: %s)", api.Name, imported.Index)
-					}
-				}
-				mergedApisMap[api.Name] = api
-				mergedApis = append(mergedApis, api)
+	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
+	for _, parent := range parents {
+		for _, parentCollection := range parent.ApiCollections {
+			if parentsCollections[parentCollection.CollectionData] == nil {
+				parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
 			}
+			parentsCollections[parentCollection.CollectionData] = append(parentsCollections[parentCollection.CollectionData], parentCollection)
 		}
 	}
 
-	// merge collected APIs into current spec's APIs (unless overridden)
-	for _, api := range mergedApis {
-		if _, found := currentApis[api.Name]; !found {
-			spec.Apis = append(spec.Apis, api)
-		}
+	myCollections := map[types.CollectionData]*types.ApiCollection{}
+	for _, collection := range spec.ApiCollections {
+		myCollections[collection.CollectionData] = collection
 	}
+	for _, collection := range myCollections {
+		err := collection.InheritApis(myCollections, parentsCollections[collection.CollectionData])
+		if err != nil {
+			return details, err
+		}
+		delete(parentsCollections, collection.CollectionData)
+	}
+
+	// combine left over apis not overwritten by current spec
+	err := spec.CombineCollections(parentsCollections)
+	if err != nil {
+		return details, err
+	}
+
+	// currentApis := make(map[string]bool)
+	// for _, api := range spec.Apis {
+	// 	currentApis[api.Name] = true
+	// }
+
+	// var mergedApis []types.ServiceApi
+	// mergedApisMap := make(map[string]types.ServiceApi)
+
+	// // collect all parents' Specs' APIs
+	// for _, imported := range parents {
+	// 	for _, api := range imported.Apis {
+	// 		if api.Enabled {
+	// 			// duplicate API(s) not allowed
+	// 			// (unless current Spec has an override for same API)
+	// 			if _, found := mergedApisMap[api.Name]; found {
+	// 				if _, found := currentApis[api.Name]; !found {
+	// 					return details, fmt.Errorf("duplicate imported api: %s (in spec: %s)", api.Name, imported.Index)
+	// 				}
+	// 			}
+	// 			mergedApisMap[api.Name] = api
+	// 			mergedApis = append(mergedApis, api)
+	// 		}
+	// 	}
+	// }
+
+	// // merge collected APIs into current spec's APIs (unless overridden)
+	// for _, api := range mergedApis {
+	// 	if _, found := currentApis[api.Name]; !found {
+	// 		spec.Apis = append(spec.Apis, api)
+	// 	}
+	// }
 
 	return details, nil
 }
@@ -211,11 +239,9 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 		if err != nil { // should not happen! (all specs on chain must be valid)
 			panic(err)
 		}
-		for _, api := range spec.Apis {
+		for _, api := range spec.ApiCollections {
 			if api.Enabled {
-				for _, apiInterface := range api.ApiInterfaces {
-					expectedInterfaces[apiInterface.Interface] = true
-				}
+				expectedInterfaces[api.CollectionData.ApiInterface] = true
 			}
 		}
 	}

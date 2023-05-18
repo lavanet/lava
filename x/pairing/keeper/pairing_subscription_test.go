@@ -100,13 +100,13 @@ func TestRelayPaymentSubscription(t *testing.T) {
 		cu    uint64
 		valid bool
 	}{
-		{"happyflow", ts.spec.Apis[0].ComputeUnits, true},
+		{"happyflow", ts.spec.ApiCollections[0].Apis[0].ComputeUnits, true},
 		{"epochCULimit", allowedCu + 1, false},
 	}
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), tt.cu, ts.spec.Name, nil)
+			relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), tt.cu, ts.spec.Name, nil)
 			relayRequest.SessionId = uint64(i)
 			relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
 			require.Nil(t, err)
@@ -170,7 +170,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	// waste all the subscription's CU on project A
 	i := 0
 	for ; uint64(i) < ts.plan.PlanPolicy.GetTotalCuLimit()/ts.plan.PlanPolicy.GetEpochCuLimit(); i++ {
-		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
+		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(consumerA.SK, *relayRequest)
 		require.Nil(t, err)
@@ -182,7 +182,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	}
 
 	// last iteration should finish the plan and subscription quota
-	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
+	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 	relayRequest.SessionId = uint64(i + 1)
 	relayRequest.Sig, err = sigs.SignRelay(consumerA.SK, *relayRequest)
 	require.Nil(t, err)
@@ -439,7 +439,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.Subscription)
 				require.True(t, found)
 
-				relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), sub.MonthCuLeft, ts.spec.Name, nil)
+				relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), sub.MonthCuLeft, ts.spec.Name, nil)
 				relayRequest.SessionId = uint64(100)
 				relayRequest.Sig, err = sigs.SignRelay(consumerToWasteCu.SK, *relayRequest)
 				require.Nil(t, err)
@@ -499,7 +499,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 						cuSum = 90
 					}
 
-					relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+					relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 					relayRequest.SessionId = uint64(i)
 					relayRequest.Sig, err = sigs.SignRelay(consumer.SK, *relayRequest)
 					require.Nil(t, err)
@@ -544,7 +544,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		require.Nil(t, err)
 
 		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
-		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 		require.Nil(t, err)
@@ -573,7 +573,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		require.Nil(t, err)
 
 		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
-		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
+		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
 		relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].SK, *relayRequest)
 		require.Nil(t, err)

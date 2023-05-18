@@ -74,9 +74,11 @@ func TestSpecQuerySingleRaw(t *testing.T) {
 	wctx := sdk.WrapSDKContext(ctx)
 	msgs := createNSpec(keeper, ctx, 2)
 
-	msgs[0].Apis = []types.ServiceApi{{Name: "api-0", Enabled: true}}
+	msgs[0].ApiCollections = []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}}}
+	msgs[1].ApiCollections = []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}}}
+	msgs[0].ApiCollections[0].Apis = []*types.Api{{Name: "api-0", Enabled: true}}
 
-	msgs[1].Apis = []types.ServiceApi{{Name: "api-1", Enabled: true}}
+	msgs[1].ApiCollections[0].Apis = []*types.Api{{Name: "api-1", Enabled: true}}
 	msgs[1].Imports = []string{"api-0"}
 
 	keeper.SetSpec(ctx, msgs[0])
