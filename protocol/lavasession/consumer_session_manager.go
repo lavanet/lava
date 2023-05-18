@@ -397,13 +397,6 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	return providers, nil
 }
 
-type SessionWithProvider struct {
-	SessionsWithProvider *ConsumerSessionsWithProvider
-	CurrentEpoch         uint64
-}
-
-type SessionWithProviderMap map[string]*SessionWithProvider
-
 func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()

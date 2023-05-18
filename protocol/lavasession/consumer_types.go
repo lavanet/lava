@@ -67,6 +67,13 @@ type Endpoint struct {
 	ConnectionRefusals uint64
 }
 
+type SessionWithProvider struct {
+	SessionsWithProvider *ConsumerSessionsWithProvider
+	CurrentEpoch         uint64
+}
+
+type SessionWithProviderMap map[string]*SessionWithProvider
+
 type RPCEndpoint struct {
 	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
 	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
