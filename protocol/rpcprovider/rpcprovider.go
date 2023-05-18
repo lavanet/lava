@@ -298,7 +298,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
-			utils.LogFormat = logFormat
+			utils.JsonFormat = logFormat == "json"
 
 			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)

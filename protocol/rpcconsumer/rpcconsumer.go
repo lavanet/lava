@@ -249,7 +249,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if err != nil {
 				return err
 			}
-			utils.LogFormat = logFormat
+			utils.JsonFormat = logFormat == "json"
 
 			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
