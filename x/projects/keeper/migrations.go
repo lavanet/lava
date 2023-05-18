@@ -149,7 +149,10 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				}
 			}
 
+			// convert policy from type v4.Policy to v5.Policy
 			// convert chainPolicies from type v4.ChainPolicy to v5.ChainPolicy
+			var adminPolicy_v5 *v5.Policy
+			if project_v4.AdminPolicy != nil {
 			var adminChainPolicies_v5 []v5.ChainPolicy
 			for _, chainPolicy_v4 := range project_v4.AdminPolicy.ChainPolicies {
 				adminChainPolicies_v5 = append(adminChainPolicies_v5, v5.ChainPolicy{
@@ -157,6 +160,20 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 					Apis:    chainPolicy_v4.Apis,
 				})
 			}
+
+				adminPolicy_v5_temp := v5.Policy{
+					ChainPolicies:      adminChainPolicies_v5,
+					GeolocationProfile: project_v4.AdminPolicy.GeolocationProfile,
+					TotalCuLimit:       project_v4.AdminPolicy.TotalCuLimit,
+					EpochCuLimit:       project_v4.AdminPolicy.EpochCuLimit,
+					MaxProvidersToPair: project_v4.AdminPolicy.MaxProvidersToPair,
+				}
+
+				adminPolicy_v5 = &adminPolicy_v5_temp
+			}
+
+			var subscriptionPolicy_v5 *v5.Policy
+			if project_v4.SubscriptionPolicy != nil {
 			var subscriptionChainPolicies_v5 []v5.ChainPolicy
 			for _, chainPolicy_v4 := range project_v4.SubscriptionPolicy.ChainPolicies {
 				subscriptionChainPolicies_v5 = append(subscriptionChainPolicies_v5, v5.ChainPolicy{
@@ -165,20 +182,15 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				})
 			}
 
-			// convert policy from type v4.Policy to v5.Policy
-			adminPolicy_v5 := v5.Policy{
-				ChainPolicies:      adminChainPolicies_v5,
-				GeolocationProfile: project_v4.AdminPolicy.GeolocationProfile,
-				TotalCuLimit:       project_v4.AdminPolicy.TotalCuLimit,
-				EpochCuLimit:       project_v4.AdminPolicy.EpochCuLimit,
-				MaxProvidersToPair: project_v4.AdminPolicy.MaxProvidersToPair,
-			}
-			subscriptionPolicy_v5 := v5.Policy{
+				subscriptionPolicy_v5_temp := v5.Policy{
 				ChainPolicies:      subscriptionChainPolicies_v5,
 				GeolocationProfile: project_v4.SubscriptionPolicy.GeolocationProfile,
 				TotalCuLimit:       project_v4.SubscriptionPolicy.TotalCuLimit,
 				EpochCuLimit:       project_v4.SubscriptionPolicy.EpochCuLimit,
 				MaxProvidersToPair: project_v4.SubscriptionPolicy.MaxProvidersToPair,
+				}
+
+				subscriptionPolicy_v5 = &subscriptionPolicy_v5_temp
 			}
 
 			// convert project from type v4.Project to v5.Project
@@ -188,8 +200,8 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				Description:        project_v4.Description,
 				Enabled:            project_v4.Enabled,
 				ProjectKeys:        projectKeys_v5,
-				AdminPolicy:        &adminPolicy_v5,
-				SubscriptionPolicy: &subscriptionPolicy_v5,
+				AdminPolicy:        adminPolicy_v5,
+				SubscriptionPolicy: subscriptionPolicy_v5,
 				UsedCu:             project_v4.UsedCu,
 				Snapshot:           project_v4.Snapshot,
 			}
