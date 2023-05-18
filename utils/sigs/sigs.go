@@ -235,11 +235,8 @@ func CalculateContentHashForRelayData(relayRequestData *pairingtypes.RelayPrivat
 	requestBlockBytes := make([]byte, 8)
 	metadataBytes := make([]byte, 0)
 	metadata := relayRequestData.Metadata
-	fmt.Println("In sigs - metadata: ", metadata)
 	for _, metadataEntry := range metadata {
-		fmt.Println("metadataEntry: ", metadataEntry)
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
-		fmt.Println("metadataBytes: ", metadataBytes)
 	}
 	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(relayRequestData.RequestBlock))
 	msgData := bytes.Join([][]byte{metadataBytes, []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)

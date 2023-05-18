@@ -69,6 +69,7 @@ type RelaySender interface {
 		connectionType string,
 		dappID string,
 		analytics *metrics.RelayMetrics,
+		metadataValues []pairingtypes.Metadata,
 	) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error)
 }
 
@@ -77,7 +78,7 @@ type ChainListener interface {
 }
 
 type ChainProxy interface {
-	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
 func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {

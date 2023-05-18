@@ -37,7 +37,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -70,7 +70,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		return "", utils.LavaFormatWarning(spectypes.GET_BLOCK_BY_NUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}

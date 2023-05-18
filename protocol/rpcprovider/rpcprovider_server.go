@@ -252,7 +252,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, err := rpcps.chainProxy.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage)
+	reply, subscriptionID, clientSub, err := rpcps.chainProxy.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -435,26 +435,24 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
 	// Creating a new context with request metadata - ToDo: Add required checks & position this into more suitable place
-	metadataMap := make(map[string]string)
-	metaDataArr := request.RelayData.GetMetadata()
-	fmt.Println("metaDataArr: ", metaDataArr)
-	for _, metaData := range metaDataArr {
-		// Check if the metadata contains the key "x-cosmos-block-height"
-		if metaData.Name == "x-cosmos-block-height" {
-			// Store the value in the metadata map
-			metadataMap[metaData.Name] = metaData.Value
-		}
-	}
-	fmt.Println("metadataMap: ", metadataMap)
 
-	md := metadata.New(metadataMap)
-	ctx = metadata.NewOutgoingContext(ctx, md)
-	fmt.Println("ctxNew: ", ctx)
-	fmt.Println("Metadata: ", md)
-	mdp, ok := metadata.FromOutgoingContext(ctx)
-	if ok {
-		blockHeight := mdp.Get("x-cosmos-block-height")
-		fmt.Println("ZOLAZO Block Height:", blockHeight)
+	// TODO: grpc and rest header attaching are two different process! Can't use metadata
+	fmt.Println("TRISS provider request.RelayData: ", request.RelayData)
+	fmt.Println("TRISS provider request.RelaySession: ", request.RelaySession)
+
+	// update context with grpc header
+	if request.RelayData.ApiInterface == "grpc" {
+		metadataMap := make(map[string]string)
+		metaDataArr := request.RelayData.GetMetadata()
+		for _, metaData := range metaDataArr {
+			if metaData.Name == "x-cosmos-block-height" {
+				metadataMap[metaData.Name] = metaData.Value
+				fmt.Println("metadataMap[metaData.Name]: ", metadataMap[metaData.Name])
+				break
+			}
+		}
+		md := metadata.New(metadataMap)
+		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
 	// Send
@@ -527,7 +525,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg) // @audit that's the place!
+		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg, request) // @audit that's the place!
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

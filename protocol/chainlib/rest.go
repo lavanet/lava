@@ -206,6 +206,15 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
+func convertToMetadataRest(md map[string]string) []pairingtypes.Metadata {
+	var metadata []pairingtypes.Metadata
+	for k, v := range md {
+		metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: v})
+
+	}
+	return metadata
+}
+
 // Serve http server for RestChainListener
 func (apil *RestChainListener) Serve(ctx context.Context) {
 	// Guard that the RestChainListener instance exists
@@ -229,6 +238,11 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		path := "/" + c.Params("*")
 
+		metadataValues := c.GetReqHeaders()
+		blockHeight := metadataValues["X-Cosmos-Block-Height"]
+		fmt.Println("REST blockHeight: ", blockHeight)
+		convertedMd := convertToMetadataRest(metadataValues)
+
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -239,7 +253,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 		requestBody := string(c.Body())
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics, convertedMd)
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -276,13 +290,17 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		dappID := extractDappIDFromFiberContext(c)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
-		fmt.Println("REST GetReqHeaders: ", c.GetReqHeaders())
+		metadataValues := c.GetReqHeaders()
+		blockHeight := metadataValues["X-Cosmos-Block-Height"]
+		fmt.Println("REST blockHeight: ", blockHeight)
+		convertedMd := convertToMetadataRest(metadataValues)
+
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics, convertedMd)
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
@@ -327,10 +345,27 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return rcp, nil
 }
 
-func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
+
+	// var xCosmosBlockHeight string
+	var reqMetadata = make(map[string]string)
+	if request != nil {
+		fmt.Println("request.RelayData: ", request.RelayData)
+		fmt.Println("request.RelayData.GetMetadata: ", request.RelayData.GetMetadata())
+		for _, metadata := range request.RelayData.GetMetadata() {
+			// Check if the metadata field has the key "X-Cosmos-Block-Height"
+			if metadata.Name == "X-Cosmos-Block-Height" {
+				// Retrieve the corresponding value
+				reqMetadata[metadata.Name] = metadata.Value
+				fmt.Println("X-Cosmos-Block-Height:", reqMetadata[metadata.Name])
+				break // Exit the loop once the value is found
+			}
+		}
+	}
+
 	httpClient := http.Client{
 		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
 	}
@@ -366,6 +401,15 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
 	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
+	}
+
+	if req != nil {
+		for k, v := range reqMetadata {
+			fmt.Println("k: ", k)
+			fmt.Println("v: ", v)
+
+			req.Header.Set(k, v)
+		}
 	}
 
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)

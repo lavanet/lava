@@ -201,6 +201,16 @@ func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
+func convertToMetadata(md map[string][]string) []pairingtypes.Metadata {
+	var metadata []pairingtypes.Metadata
+	for k, v := range md {
+		for _, val := range v {
+			metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: val})
+		}
+	}
+	return metadata
+}
+
 // Serve http server for GrpcChainListener
 func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	// Guard that the GrpcChainListener instance exists
@@ -215,17 +225,20 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
+
+		// grpc header
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
 		fmt.Println("metadataValues: ", metadataValues)
-		// @audit hadi bakalim
 		blockHeader := metadataValues.Get("x-cosmos-block-height") // ToDo: change it into a header variable instead of hardcoded key
 		fmt.Println("blockHeader: ", blockHeader)
+		convertedMd := convertToMetadata(metadataValues)
+		fmt.Println("convertedMd: ", convertedMd)
 
 		//
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, convertedMd)
 		fmt.Println("relayReply.Data: ", relayReply.Data)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
@@ -275,7 +288,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on grpc", nil, utils.Attribute{Key: "GUID", Value: ctx})
 	}

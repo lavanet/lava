@@ -288,7 +288,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData)
+			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData, nil)
 			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
@@ -347,7 +347,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: c.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
-		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData)
+		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData, nil)
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -386,7 +386,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("urirpc in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: path}, utils.Attribute{Key: "dappID", Value: dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData, nil)
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -453,7 +453,7 @@ func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns 
 	return nil
 }
 
-func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
