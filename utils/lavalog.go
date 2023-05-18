@@ -19,6 +19,8 @@ const (
 	EventPrefix = "lava_"
 )
 
+var LogFormat = "text"
+
 type Attribute struct {
 	Key   string
 	Value interface{}
@@ -59,10 +61,12 @@ func LoggingLevel(logLevel string) {
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	// os.Getenv("LAVA_DISABLE_COLORS") == "true"
 	NoColor := true
-	if os.Getenv("LAVA_OUTPUT") != "json" {
+
+	if LogFormat != "json" {
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
+	} else {
+		zerologlog.Logger = zerologlog.Output(os.Stderr)
 	}
 
 	var logEvent *zerolog.Event

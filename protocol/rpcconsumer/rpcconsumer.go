@@ -244,6 +244,13 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// set log format
+			logFormat, err := cmd.Flags().GetString(flags.FlagLogFormat)
+			if err != nil {
+				return err
+			}
+			utils.LogFormat = logFormat
+
 			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

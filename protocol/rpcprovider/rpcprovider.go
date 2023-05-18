@@ -294,6 +294,12 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logFormat, err := cmd.Flags().GetString(flags.FlagLogFormat)
+			if err != nil {
+				return err
+			}
+			utils.LogFormat = logFormat
+
 			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
