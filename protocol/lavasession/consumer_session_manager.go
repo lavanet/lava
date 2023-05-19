@@ -365,18 +365,19 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				continue
 			}
 
-			// If we do not have enough fetch more
-			sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock)
+		}
 
-			// If error exists but we have sessions, return them
-			if err != nil && len(sessions) != 0 {
-				return sessions, err
-			}
+		// If we do not have enough fetch more
+		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock)
 
-			// If error happens, and we do not have any sessions return error
-			if err != nil {
-				return nil, err
-			}
+		// If error exists but we have sessions, return them
+		if err != nil && len(sessions) != 0 {
+			return sessions, err
+		}
+
+		// If error happens, and we do not have any sessions return error
+		if err != nil {
+			return nil, err
 		}
 	}
 }
