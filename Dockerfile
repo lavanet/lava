@@ -18,7 +18,7 @@ FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} as base
 ARG GIT_VERSION
 ARG GIT_COMMIT
 
-# Download debian packages for building
+# Download Debian packages for building
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,target=/var/cache/apt \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -37,15 +37,15 @@ FROM --platform=$BUILDPLATFORM base as builder
 ARG TARGETOS
 ARG TARGETARCH
 
-# set GIT_CLONE=true to force 'git clone' of sources from repository
+# Set GIT_CLONE=true to force 'git clone' of sources from the repository
 # (useful to compile a specific version, combined with GIT_VERSION).
 ARG GIT_CLONE=false
 
-# set LAVA_BUILD_OPTIONS to control the Makefile behavior (see there).
+# Set LAVA_BUILD_OPTIONS to control the Makefile behavior (see there).
 ARG BUILD_OPTIONS
 ENV LAVA_BUILD_OPTIONS=${BUILD_OPTIONS}
 
-# Download go dependencies
+# Download Go dependencies
 WORKDIR /lava
 COPY go.mod go.sum ./
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
@@ -95,23 +95,25 @@ WORKDIR /lava
 # Download Cosmovisor
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
     --mount=type=cache,sharing=private,target=/go/pkg/mod \
-    go mod init disposable \
-    && go get github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0 \
-    && go install github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0
-
+    go mod init disposable && \
+    go get github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0 && \
+    go install github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0
 
 # --------------------------------------------------------
 # Runner-base
 # --------------------------------------------------------
 
-# Download debian packages for runner
+# Download Debian packages for runner
 
 FROM ${RUNNER_IMAGE} as runner-base
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -yqq --no-install-recommends \
-        git curl unzip ca-certificates \
+        git \
+        curl \
+        unzip \
+        ca-certificates \
     && apt-get -y purge \
     && apt-get -y clean \
     && apt-get -y autoremove \
@@ -157,17 +159,17 @@ ENV LAVA_HOME_DIR= \
     LAVA_RELAY_ENDPOINT= \
     LAVA_LOG_LEVEL=
 
-# lava api
+# Lava API
 EXPOSE 1317
-# rosetta
+# Rosetta
 EXPOSE 8080
-# grpc
+# gRPC
 EXPOSE 9090
-# grpc-web
+# gRPC-Web
 EXPOSE 9090
-# tendermint p2p
+# Tendermint P2P
 EXPOSE 26656
-# tendermint rpc
+# Tendermint RPC
 EXPOSE 26657
 
 ENTRYPOINT ["/entrypoint.sh"]
