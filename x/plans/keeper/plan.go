@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/types"
@@ -21,6 +23,21 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 	}
 
 	return nil
+}
+
+// DelPlan deletes a plan, so it is not visible/gettable for new subscriptions
+// (however, existing referenced versions remain intact until not used anymore)
+func (k Keeper) DelPlan(ctx sdk.Context, index string) error {
+	// Deletions should take place at the end of epoch (beginning of next epoch).
+	// However, because deletion of plans occurs through gov proposal, we must be
+	// already at the beginning of that "next" epoch (after having waited for the
+	// the voting).
+
+	if !k.IsEpochStart(ctx) {
+		panic("DelPlan called not an epoch start block " + strconv.FormatInt(ctx.BlockHeight(), 10))
+	}
+
+	return k.plansFS.DelEntry(ctx, index, uint64(ctx.BlockHeight()))
 }
 
 // GetPlan gets the latest plan from the KVStore and increments its refcount

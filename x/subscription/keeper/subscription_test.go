@@ -136,7 +136,7 @@ func setupTestStruct(t *testing.T, numPlans int) testStruct {
 }
 
 func TestCreateSubscription(t *testing.T) {
-	ts := setupTestStruct(t, 2)
+	ts := setupTestStruct(t, 3)
 	keeper := ts.keepers.Subscription
 
 	creators := []struct {
@@ -171,6 +171,12 @@ func TestCreateSubscription(t *testing.T) {
 	}
 	consumers[3] = "invalid consumer"
 
+	// delete one plan, and advance to next epoch to take effect
+	err := ts.keepers.Plans.DelPlan(ts.ctx, ts.plans[2].Index)
+	require.Nil(t, err)
+	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+
 	template := []struct {
 		name      string
 		index     string
@@ -181,7 +187,7 @@ func TestCreateSubscription(t *testing.T) {
 	}{
 		{
 			name:      "create subscriptions",
-			index:     "mockPlan1",
+			index:     ts.plans[0].Index,
 			creator:   0,
 			consumers: []int{0, 1},
 			duration:  1,
@@ -189,7 +195,7 @@ func TestCreateSubscription(t *testing.T) {
 		},
 		{
 			name:      "invalid creator",
-			index:     "mockPlan1",
+			index:     ts.plans[0].Index,
 			creator:   2,
 			consumers: []int{2},
 			duration:  1,
@@ -197,7 +203,7 @@ func TestCreateSubscription(t *testing.T) {
 		},
 		{
 			name:      "invalid consumer",
-			index:     "mockPlan1",
+			index:     ts.plans[0].Index,
 			creator:   0,
 			consumers: []int{3},
 			duration:  1,
@@ -205,7 +211,7 @@ func TestCreateSubscription(t *testing.T) {
 		},
 		{
 			name:      "duration too long",
-			index:     "mockPlan1",
+			index:     ts.plans[0].Index,
 			creator:   0,
 			consumers: []int{2},
 			duration:  13,
@@ -213,7 +219,7 @@ func TestCreateSubscription(t *testing.T) {
 		},
 		{
 			name:      "insufficient funds",
-			index:     "mockPlan1",
+			index:     ts.plans[0].Index,
 			creator:   1,
 			consumers: []int{2},
 			duration:  1,
@@ -236,8 +242,16 @@ func TestCreateSubscription(t *testing.T) {
 			success:   false,
 		},
 		{
+			name:      "deleted plan",
+			index:     ts.plans[2].Index,
+			creator:   0,
+			consumers: []int{2},
+			duration:  1,
+			success:   false,
+		},
+		{
 			name:      "double subscription",
-			index:     "mockPlan2",
+			index:     ts.plans[1].Index,
 			creator:   0,
 			consumers: []int{0},
 			duration:  1,
@@ -320,6 +334,17 @@ func TestRenewSubscription(t *testing.T) {
 	subPlan, found = ts.keepers.Plans.FindPlan(ts.ctx, sub.PlanIndex, sub.PlanBlock)
 	require.True(t, found)
 	require.Equal(t, oldPlanCuPerEpoch, subPlan.PlanPolicy.EpochCuLimit)
+
+	// delete the plan, and try to renew the subscription again
+	err = ts.keepers.Plans.DelPlan(ts.ctx, ts.plans[0].Index)
+	require.Nil(t, err)
+	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+
+	// fast-forward another month, renewal should fail
+	sub = ts.expireSubscription(sub)
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10)
+	require.NotNil(t, err)
 }
 
 func TestSubscriptionAdminProject(t *testing.T) {
@@ -329,7 +354,7 @@ func TestSubscriptionAdminProject(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, "mockPlan1", 1)
+	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1)
 	require.Nil(t, err)
 
 	block := uint64(ts.ctx.BlockHeight())
