@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"strconv"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/types"
@@ -31,11 +29,8 @@ func (k Keeper) DelPlan(ctx sdk.Context, index string) error {
 	// Deletions should take place at the end of epoch (beginning of next epoch).
 	// However, because deletion of plans occurs through gov proposal, we must be
 	// already at the beginning of that "next" epoch (after having waited for the
-	// the voting).
-
-	if !k.IsEpochStart(ctx) {
-		panic("DelPlan called not an epoch start block " + strconv.FormatInt(ctx.BlockHeight(), 10))
-	}
+	// already at the beginning of that "next" epoch (after having waited for the
+	// the voting). Hence, we delete at current block height.
 
 	return k.plansFS.DelEntry(ctx, index, uint64(ctx.BlockHeight()))
 }
