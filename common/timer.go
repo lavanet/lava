@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -79,7 +80,7 @@ import (
 // set to "first", "second" and "third" respectively:
 //
 //     prefix: package_Timer_Next_       key: BlockHeight      value: 150
-//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxInt64
+//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxUint64
 //     prefix: package_Timer_Value_      key: 150_first        data: "first"
 //     prefix: package_Timer_Value_      key: 180_second       data: "second"
 //     prefix: package_Timer_Value_      key: 180_third        data: "third"
@@ -165,7 +166,7 @@ func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which types.TimerType)
 	store := tstore.getStore(ctx, types.NextTimerPrefix)
 	b := store.Get([]byte(types.NextTimerKey[which]))
 	if len(b) == 0 {
-		return math.MaxInt64
+		return math.MaxUint64
 	}
 	return types.DecodeKey(b)
 }
@@ -234,10 +235,37 @@ func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64,
 	tstore.delTimer(ctx, types.BlockTime, timestamp, key)
 }
 
-type timerTuple struct {
-	value uint64
-	key   []byte
-	data  []byte
+func (tstore *TimerStore) DumpTimers(ctx sdk.Context, which types.TimerType) string {
+	store := tstore.getStoreTimer(ctx, which)
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	var b strings.Builder
+
+	for ; iterator.Valid(); iterator.Next() {
+		value, key := types.DecodeBlockAndKey(iterator.Key())
+		b.WriteString(fmt.Sprintf("block: %d key %v\n", value, key))
+	}
+
+	return b.String()
+}
+
+func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which types.TimerType) (uint64, []byte, []byte) {
+	store := tstore.getStoreTimer(ctx, which)
+
+	// because the key is block height/timestamp, the iterator yields entries
+	// ordered by height/timestamp. so the front (earliest) one is the first.
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		return math.MaxUint64, []byte{}, []byte{}
+	}
+
+	value, key := types.DecodeBlockAndKey(iterator.Key())
+	return value, key, iterator.Value()
 }
 
 func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tickValue uint64) {
@@ -246,37 +274,21 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 		return
 	}
 
-	store := tstore.getStoreTimer(ctx, which)
+	// iterate over the timers and collect those that expire: can not use the
+	// KVStore iterator because it cannot handle callbacks added/removed during
+	// its operation. instead, repeately get the front (earliest) entry.
 
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-	defer iterator.Close()
+	for {
+		value, key, data := tstore.getFrontTimer(ctx, which)
 
-	var removals []timerTuple
-
-	// iterate over the timers and collect those that expire: because the
-	// key is block height/timestamp, the iterator yields entries ordered
-	// by height/timestamp.
-
-	for ; iterator.Valid(); iterator.Next() {
-		value, key := types.DecodeBlockAndKey(iterator.Key())
 		if value > tickValue {
 			// stop at first not-expired timer (update next timeout)
 			tstore.setNextTimeout(ctx, which, value)
 			break
 		}
-		tuple := timerTuple{value, key, iterator.Value()}
-		removals = append(removals, tuple)
-	}
 
-	// if no more pending timers - then set next timeout to infinity
-	if !iterator.Valid() {
-		tstore.setNextTimeout(ctx, which, math.MaxInt64)
-	}
-
-	// iterates over expired timers: remote and invoke callback
-	for _, tuple := range removals {
-		tstore.delTimer(ctx, which, tuple.value, tuple.key)
-		tstore.callbacks[which](ctx, tuple.key, tuple.data)
+		tstore.delTimer(ctx, which, value, key)
+		tstore.callbacks[which](ctx, key, data)
 	}
 }
 

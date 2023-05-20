@@ -115,16 +115,16 @@ func testWithTimerTemplate(t *testing.T, playbook []timerTemplate, countTS int) 
 // Test single timer by block height
 func TestTimerBlockHeight(t *testing.T) {
 	playbook := []timerTemplate{
-		{op: "nextheight", name: "next timeout infinity", value: math.MaxInt64},
+		{op: "nextheight", name: "next timeout infinity", value: math.MaxUint64},
 		{op: "tickheight", name: "tick without timers", value: 100, fire: 0},
 		{op: "addheight", name: "add timer no-1", value: 120, key: "a", data: "no-1."},
 		{op: "nextheight", name: "next timeout no-1", value: 120},
 		{op: "tickheight", name: "tick before timer no-1", value: 110, fire: 0},
 		{op: "tickheight", name: "tick after timer no-1", value: 130, key: "a", fire: 1, data: "no-1."},
-		{op: "nextheight", name: "next timeout no-1", value: math.MaxInt64},
+		{op: "nextheight", name: "next timeout no-1", value: math.MaxUint64},
 		{op: "addheight", name: "add timer no-2", value: 140, data: "no-2.", key: "a"},
 		{op: "tickheight", name: "tick exactly on timer no-2", value: 140, key: "a", fire: 1, data: "no-2."},
-		{op: "nextheight", name: "next timeout infinity again", value: math.MaxInt64},
+		{op: "nextheight", name: "next timeout infinity again", value: math.MaxUint64},
 	}
 
 	testWithTimerTemplate(t, playbook, 1)
@@ -133,7 +133,7 @@ func TestTimerBlockHeight(t *testing.T) {
 // Test single timer by block time
 func TestTimerBlockTime(t *testing.T) {
 	playbook := []timerTemplate{
-		{op: "nexttime", name: "next timeout infinity", value: math.MaxInt64},
+		{op: "nexttime", name: "next timeout infinity", value: math.MaxUint64},
 		{op: "ticktime", name: "tick without timers", value: 100, fire: 0},
 		{op: "addtime", name: "add timer no-1", value: 120, key: "b", data: "no-1."},
 		{op: "nexttime", name: "next timeout no-1", value: 120},
