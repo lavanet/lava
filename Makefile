@@ -5,32 +5,32 @@
 #
 # Targets:
 #
-#   build		- local build (output: `build/lavad`)
-#   docker-build	- docker build (output: `build/lavad`) with docker image
+#   build               - local build (output: `build/lavad`)
+#   docker-build        - docker build (output: `build/lavad`) with docker image
 #
-#   build-images	- build both amd64,arm64 lavad(s) and docker image(s)
-#   build-image-amd64	- docker build (output: `build/lavad-linux-amd64`) with docker image
-#   build-image-arm64	- docker build (output: `build/lavad-linux-arm64`) with docker image
+#   build-images        - build both amd64,arm64 lavad(s) and docker image(s)
+#   build-image-amd64   - docker build (output: `build/lavad-linux-amd64`) with docker image
+#   build-image-arm64   - docker build (output: `build/lavad-linux-arm64`) with docker image
 #
-#   test		- run unit-tests
-#   lint		- run the linter
+#   test                - run unit-tests
+#   lint                - run the linter
 #
 # Options:
 #   (comma separated list of options to turn on specific features)
 #
-#   static		- build static binary
-#   release		- generate release build
-#   nostrip		- do not strip binary from paths
+#   static	            - build static binary
+#   release	            - generate release build
+#   nostrip	            - do not strip binary from paths
 #
-#   debug_mutex	- (debug) enable debug mutex
-#   mask_consumer_logs	- (debug) enable debug mutex
+#   debug_mutex         - (debug) enable debug mutex
+#   mask_consumer_logs  - (debug) enable debug mutex
 #
 #   cleveldb, rocksdb   - (not to be used)
 #
 # Environment
-#   LAVA_VERSION=...	- select lava version (for 'release')
-#   BUILDDIR=...	- select local directory for build output
-#   LEDGER_ENABLED	- (not to be used)
+#   LAVA_VERSION=...    - select lava version (for 'release')
+#   BUILDDIR=...        - select local directory for build output
+#   LEDGER_ENABLED      - (not to be used)
 #
 # Examples:
 #
