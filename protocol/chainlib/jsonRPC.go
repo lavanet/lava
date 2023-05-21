@@ -40,7 +40,7 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 
 func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
+		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
 
 	msg := rpcInterfaceMessages.JsonrpcMessage{
@@ -53,7 +53,7 @@ func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, cr
 }
 
 // this func parses message data into chain message object
-func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("JsonRPCChainParser not defined")
@@ -388,7 +388,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 	return nil
 }
 
-func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 	internalPath := chainMessage.GetServiceApi().InternalPath
 	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)

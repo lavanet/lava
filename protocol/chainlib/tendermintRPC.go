@@ -40,7 +40,7 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 
 func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
+		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
 
 	msg := rpcInterfaceMessages.JsonrpcMessage{
@@ -54,7 +54,7 @@ func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi,
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -453,7 +453,7 @@ func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns 
 	return nil
 }
 
-func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {

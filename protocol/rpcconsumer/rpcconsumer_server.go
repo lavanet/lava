@@ -87,7 +87,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType)
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, nil)
 	if err != nil {
 		return nil, nil, err
 	}

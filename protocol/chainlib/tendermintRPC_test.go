@@ -60,7 +60,7 @@ func TestTendermintChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("")
-	apip.ParseMsg("", []byte{}, "")
+	apip.ParseMsg("", []byte{}, "", nil)
 }
 
 func TestTendermintGetSupportedApi(t *testing.T) {
@@ -119,7 +119,7 @@ func TestTendermintParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceTendermintRPC)
+	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceTendermintRPC, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)

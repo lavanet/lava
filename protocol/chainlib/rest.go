@@ -41,7 +41,7 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
-		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType)
+		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)
 	}
 
 	restMessage := rpcInterfaceMessages.RestMessage{
@@ -52,7 +52,7 @@ func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craft
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -74,14 +74,16 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:  data,
-		Path: url,
+		Msg:    data,
+		Path:   url,
+		Header: metadata,
 	}
 	if connectionType == http.MethodGet {
 		// support for optional params, our listener puts them inside Msg data
 		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:  nil,
-			Path: url + string(data),
+			Msg:    nil,
+			Path:   url + string(data),
+			Header: metadata,
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.
@@ -330,15 +332,9 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	return rcp, nil
 }
 
-func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, request *pairingtypes.RelayRequest) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
-	}
-	reqMetadata := make(map[string]string)
-	if request != nil {
-		for _, metadata := range request.RelayData.GetMetadata() {
-			reqMetadata[metadata.Name] = metadata.Value
-		}
 	}
 	httpClient := http.Client{
 		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
@@ -349,7 +345,6 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
-
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
 	if chainMessage.GetInterface().Type != "" {
@@ -377,9 +372,9 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if request != nil {
-		for k, v := range reqMetadata {
-			req.Header.Set(k, v)
+	if len(nodeMessage.Header) > 0 {
+		for _, metadata := range nodeMessage.Header {
+			req.Header.Set(metadata.Name, metadata.Value)
 		}
 	}
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)

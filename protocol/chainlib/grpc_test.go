@@ -61,7 +61,7 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("")
-	apip.ParseMsg("", []byte{}, "")
+	apip.ParseMsg("", []byte{}, "", nil)
 }
 
 func TestGRPCGetSupportedApi(t *testing.T) {
@@ -111,7 +111,7 @@ func TestGRPCParseMessage(t *testing.T) {
 		},
 	}
 
-	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceGrpc)
+	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceGrpc, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
