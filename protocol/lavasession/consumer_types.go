@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"crypto/tls"
 	"math"
 	"math/rand"
 	"sort"
@@ -14,7 +15,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 type ProviderOptimizer interface {
@@ -192,8 +193,10 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-
-	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	var tlsConf tls.Config
+	tlsConf.InsecureSkipVerify = true // as the providers are self signed we need to skip verify against CA certificates
+	credentials := credentials.NewTLS(&tlsConf)
+	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 	if err != nil {
 		return nil, nil, err
 	}

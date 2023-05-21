@@ -1,7 +1,11 @@
 endpoints:
     - api-interface: tendermintrpc
       chain-id: LAV1
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
+        # example with provider setting up a secure connection with a CA certificate
+        key-pem: "/path/to/key.pem"
+        cert-pem: "/path/to/cert.pem"
       node-urls:
         - url: ws://127.0.0.1:26657/websocket
           auth-config:
@@ -15,7 +19,8 @@ endpoints:
               AUTH-X-HEADER-2: xxyyzz
     - api-interface: grpc
       chain-id: LAV1
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
       node-urls: 
         - url: 127.0.0.1:9090
           auth-config:
@@ -25,7 +30,8 @@ endpoints:
             cert-pem: /home/user/cert.pem
     - api-interface: grpc
       chain-id: COS3
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
       node-urls: 
         - url: 127.0.0.1:9093
           auth-config:
@@ -33,7 +39,8 @@ endpoints:
             use-tls: true 
     - api-interface: grpc
       chain-id: COS5
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
       node-urls: 
         - url: 127.0.0.1:9096
           auth-config:
@@ -42,7 +49,8 @@ endpoints:
             cacert-pem: /home/user/cert.pem 
     - api-interface: rest
       chain-id: LAV1
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
       node-urls: 
         - url: http://127.0.0.1:1317
           auth-config:
@@ -53,7 +61,8 @@ endpoints:
           ip-forwarding: true
     - api-interface: jsonrpc
       chain-id: ETH1
-      network-address: 127.0.0.1:2221
+      network-address:
+        address: "127.0.0.1:2221"
       node-urls: 
         - url: ws://your_node_url/
           auth-config:

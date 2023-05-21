@@ -2,10 +2,17 @@ package rpcprovider
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
+	"math/big"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -49,11 +56,55 @@ func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
 	return nil
 }
 
-func NewProviderListener(ctx context.Context, networkAddress string) *ProviderListener {
-	pl := &ProviderListener{networkAddress: networkAddress}
+func generateSelfSignedCertificate() (tls.Certificate, error) {
+	// Generate a private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	// Create a self-signed certificate template
+	template := x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "localhost"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0), // Valid for 1 year
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	// Generate the self-signed certificate using the private key and template
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	// Create a tls.Certificate using the private key and certificate bytes
+	cert := tls.Certificate{
+		Certificate: [][]byte{derBytes},
+		PrivateKey:  privateKey,
+	}
+
+	return cert, nil
+}
+
+func getCaCertificate(serverCertPath, serverKeyPath string) (*tls.Config, error) {
+	serverCert, err := tls.LoadX509KeyPair(serverCertPath, serverKeyPath)
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		ClientAuth:   tls.NoClientCert,
+		Certificates: []tls.Certificate{serverCert},
+	}, nil
+}
+
+func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData) *ProviderListener {
+	pl := &ProviderListener{networkAddress: networkAddress.Address}
 
 	// GRPC
-	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress)
+	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress.Address)
 	grpcServer := grpc.NewServer()
 
 	wrappedServer := grpcweb.WrapServer(grpcServer)
@@ -65,15 +116,33 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
+	var tlsConfig *tls.Config
+	var err error
+	if networkAddress.CertPem != "" {
+		tlsConfig, err = getCaCertificate(networkAddress.CertPem, networkAddress.KeyPem)
+		if err != nil {
+			utils.LavaFormatFatal("failed to generate TLS certificate", err)
+		}
+	} else {
+		cert, err := generateSelfSignedCertificate()
+		if err != nil {
+			utils.LavaFormatFatal("failed to generate TLS certificate", err)
+		}
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+
 	pl.httpServer = http.Server{
-		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
+		Handler:   h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
+		TLSConfig: tlsConfig,
 	}
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
-		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		if err := pl.httpServer.ServeTLS(lis, "", ""); !errors.Is(err, http.ErrServerClosed) {
 			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
 		}
 		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})

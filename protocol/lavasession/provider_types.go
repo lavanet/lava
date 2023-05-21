@@ -18,12 +18,18 @@ type ProviderSessionsEpochData struct {
 	MissingComputeUnits uint64
 }
 
+type NetworkAddressData struct {
+	Address string `yaml:"address,omitempty" json:"address,omitempty" mapstructure:"address,omitempty"` // HOST:PORT
+	KeyPem  string `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem string `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+}
+
 type RPCProviderEndpoint struct {
-	NetworkAddress string           `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
-	ChainID        string           `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
-	ApiInterface   string           `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64           `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
-	NodeUrls       []common.NodeUrl `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	NetworkAddress NetworkAddressData `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"`
+	ChainID        string             `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"` // spec chain identifier
+	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {
@@ -35,7 +41,7 @@ func (endpoint *RPCProviderEndpoint) UrlsString() string {
 }
 
 func (endpoint *RPCProviderEndpoint) String() string {
-	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress.Address + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
 }
 
 func (endpoint *RPCProviderEndpoint) Validate() error {
