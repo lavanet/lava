@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message BadgeUsedCu {
+  bytes badgeUsedCuMapKey = 1; 
+  uint64 usedCu = 2; 
+  
+}
+

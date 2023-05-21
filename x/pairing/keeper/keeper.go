@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -24,6 +25,8 @@ type (
 		epochStorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		subscriptionKeeper types.SubscriptionKeeper
+
+		badgeTimerStore common.TimerStore
 	}
 )
 
@@ -33,19 +36,32 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, specKeeper types.SpecKeeper, epochStorageKeeper types.EpochstorageKeeper, projectsKeeper types.ProjectsKeeper, subscriptionKeeper types.SubscriptionKeeper,
+	bankKeeper types.BankKeeper,
+	accountKeeper types.AccountKeeper,
+	specKeeper types.SpecKeeper,
+	epochStorageKeeper types.EpochstorageKeeper,
+	projectsKeeper types.ProjectsKeeper,
+	subscriptionKeeper types.SubscriptionKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix)
+
 	keeper := &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper, epochStorageKeeper: epochStorageKeeper, projectsKeeper: projectsKeeper, subscriptionKeeper: subscriptionKeeper,
+		cdc:                cdc,
+		storeKey:           storeKey,
+		memKey:             memKey,
+		paramstore:         ps,
+		bankKeeper:         bankKeeper,
+		accountKeeper:      accountKeeper,
+		specKeeper:         specKeeper,
+		epochStorageKeeper: epochStorageKeeper,
+		projectsKeeper:     projectsKeeper,
+		subscriptionKeeper: subscriptionKeeper,
+		badgeTimerStore:    *badgeTimerStore,
 	}
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })

@@ -38,6 +38,14 @@ func TestGenesis(t *testing.T) {
 				Index: "1",
 			},
 		},
+		BadgeUsedCuList: []types.BadgeUsedCu{
+			{
+				BadgeUsedCuMapKey: []byte{byte(0)},
+			},
+			{
+				BadgeUsedCuMapKey: []byte{byte(1)},
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -52,5 +60,6 @@ func TestGenesis(t *testing.T) {
 	require.ElementsMatch(t, genesisState.UniquePaymentStorageClientProviderList, got.UniquePaymentStorageClientProviderList)
 	require.ElementsMatch(t, genesisState.ProviderPaymentStorageList, got.ProviderPaymentStorageList)
 	require.ElementsMatch(t, genesisState.EpochPaymentsList, got.EpochPaymentsList)
+	require.ElementsMatch(t, genesisState.BadgeUsedCuList, got.BadgeUsedCuList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

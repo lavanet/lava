@@ -13,6 +13,7 @@ func DefaultGenesis() *GenesisState {
 		UniquePaymentStorageClientProviderList: []UniquePaymentStorageClientProvider{},
 		ProviderPaymentStorageList:             []ProviderPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
+		BadgeUsedCuList:                        []BadgeUsedCu{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -50,6 +51,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for epochPayments")
 		}
 		epochPaymentsIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in badgeUsedCu
+	badgeUsedCuIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.BadgeUsedCuList {
+		index := string(BadgeUsedCuKey(elem.BadgeUsedCuMapKey))
+		if _, ok := badgeUsedCuIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for badgeUsedCu")
+		}
+		badgeUsedCuIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 
