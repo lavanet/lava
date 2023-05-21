@@ -113,7 +113,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				if relay.CuSum <= badgeData.Badge.CuAllocation {
 					// setting a timer with a callback to delete the badgeUsedCuEntry after epochBlocks*blocksToSave (see keeper.go)
 					badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
-					if badgeUsedCuTimerExpiryBlock < uint64(ctx.BlockHeight()) {
+					if badgeUsedCuTimerExpiryBlock <= uint64(ctx.BlockHeight()) {
 						return nil, utils.LavaFormatWarning("badge used CU entry expired", fmt.Errorf("could not create badge used CU entry"),
 							utils.Attribute{Key: "badgeUsedCuTimerExpiryBlock", Value: badgeUsedCuTimerExpiryBlock},
 							utils.Attribute{Key: "currentBlock", Value: uint64(ctx.BlockHeight())},
