@@ -866,7 +866,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	var Relays []*types.RelaySession
 	Relays = append(Relays, relaySession)
 	relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
-	payAndVerifyBalanceLegacy(t, ts, relayPaymentMessage, true, ts.clients[0].Addr, ts.providers[0].Addr)
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true, true, ts.clients[0].Addr, ts.providers[0].Addr)
 
 	sub, found := subkeeper.GetSubscription(_ctx, subscriptionOwner)
 	require.True(t, found)

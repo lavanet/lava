@@ -20,9 +20,6 @@ func TestSubscriptionExpire(t *testing.T) {
 	creator := account.String()
 	consumer := account.String()
 
-	// advance block to reach time > 0
-	ts.advanceBlock()
-
 	err := keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
 	require.Nil(t, err)
 
