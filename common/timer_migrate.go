@@ -49,7 +49,7 @@ func timerMigrate1to2(ctx sdk.Context, tstore *TimerStore) error {
 
 		for ; iterator.Valid(); iterator.Next() {
 			value, key := types.DecodeBlockAndKey(iterator.Key())
-			key_v1 := types.EncodeKey(value)
+			key_v1 := types.EncodeKey(value) // same as iterator.Key()
 			key_v2 := types.EncodeBlockAndKey(value, key)
 			store.Set(key_v2, iterator.Value())
 			store.Delete(key_v1)

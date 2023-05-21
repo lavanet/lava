@@ -74,16 +74,16 @@ import (
 //
 // 2. TimerStore keeps the timers with a special prefix; it uses the timeout value (block
 // height/timestamp) as the key prefix, so that the standard iterator would yield them
-// in the desired chronological order. TimeSStore also keeps the next-timeout values
+// in the desired chronological order. TimerStore also keeps the next-timeout values
 // (of block height/timestamp) to efficiently determine if the iterator is needed.
-// For instance, module "packages" may have three (block height) timeouts with their data
-// set to "first", "second" and "third" respectively:
+// For instance, module "packages" may have three (block height) timeouts with their keys
+// and data set to "first", "second" and "third" respectively:
 //
-//     prefix: package_Timer_Next_       key: BlockHeight      value: 150
-//     prefix: package_Timer_Next_       key: BLockTimer       value: MaxUint64
-//     prefix: package_Timer_Value_      key: 150_first        data: "first"
-//     prefix: package_Timer_Value_      key: 180_second       data: "second"
-//     prefix: package_Timer_Value_      key: 180_third        data: "third"
+//     prefix: package_Timer_Next_            key: BlockHeight      value: 150
+//     prefix: package_Timer_Next_            key: BLockTimer       value: MaxUint64
+//     prefix: package_Timer_Value_Block      key: 150_first        data: "first"
+//     prefix: package_Timer_Value_Block      key: 180_second       data: "second"
+//     prefix: package_Timer_Value_Block      key: 180_third        data: "third"
 //
 // 3. TimerStore tracks the next-timeout for both block-height/block-timestamp. On
 // every call to Tick(), it tests the current ctx's block height/timestamp against the
@@ -225,17 +225,18 @@ func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64,
 	tstore.addTimer(ctx, types.BlockTime, timestamp, key, data)
 }
 
-// DelTimerByBlockHeight removes an eximsting timer for the <block, key> tuple.
+// DelTimerByBlockHeight removes an existing timer for the <block, key> tuple.
 func (tstore *TimerStore) DelTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte) {
 	tstore.delTimer(ctx, types.BlockHeight, block, key)
 }
 
-// DelTimerByBlockHeight removes an eximsting timer for the <timetamp, key> tuple.
+// DelTimerByBlockHeight removes an existing timer for the <timestamp, key> tuple.
 func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte) {
 	tstore.delTimer(ctx, types.BlockTime, timestamp, key)
 }
 
-func (tstore *TimerStore) DumpTimers(ctx sdk.Context, which types.TimerType) string {
+// DumpAllTimers dumps the details of all existing timers (of a type) into a string (for test/debug).
+func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which types.TimerType) string {
 	store := tstore.getStoreTimer(ctx, which)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -276,7 +277,7 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 
 	// iterate over the timers and collect those that expire: can not use the
 	// KVStore iterator because it cannot handle callbacks added/removed during
-	// its operation. instead, repeately get the front (earliest) entry.
+	// its operation. instead, repeatedly get the front (earliest) entry.
 
 	for {
 		value, key, data := tstore.getFrontTimer(ctx, which)
