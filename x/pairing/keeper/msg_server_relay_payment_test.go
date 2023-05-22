@@ -1139,7 +1139,8 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 			// verify that the badgeUsedCu entry was deleted after it expired (and has the right value of used cu before expiring)
 			badgeUsedCuMapKey := ts.keepers.Pairing.CreateBadgeUsedCuMapKey(badge.ProjectSig, ts.providers[0].Addr.String())
 			badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
-			if sdk.UnwrapSDKContext(ts.ctx).BlockHeight() > int64(badgeUsedCuExpiry) {
+			currentBlock := sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
+			if currentBlock > int64(badgeUsedCuExpiry) {
 				require.False(t, found)
 			} else {
 				require.True(t, found)

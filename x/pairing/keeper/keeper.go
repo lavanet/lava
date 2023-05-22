@@ -78,6 +78,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.IncrementTimer(ctx)
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// run functions that are supposed to run in epoch start
 		k.EpochStart(ctx, types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
