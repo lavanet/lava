@@ -63,12 +63,12 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 	}
 
 	for _, projectKey := range projectKeys {
-		err := k.RegisterKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
+		err := k.registerKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
 		if err != nil {
 			return utils.LavaFormatError("failed to register key to project", err,
 				utils.Attribute{Key: "project", Value: projectID},
 				utils.Attribute{Key: "key", Value: projectKey.Key},
-				utils.Attribute{Key: "keyTypes", Value: projectKey.Types},
+				utils.Attribute{Key: "keyTypes", Value: projectKey.Kinds},
 			)
 		}
 	}

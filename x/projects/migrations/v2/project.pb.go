@@ -23,54 +23,54 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ProjectKey_KEY_TYPE_V2 int32
+type ProjectKey_KEY_TYPE int32
 
 const (
-	ProjectKey_NONE      ProjectKey_KEY_TYPE_V2 = 0
-	ProjectKey_ADMIN     ProjectKey_KEY_TYPE_V2 = 1
-	ProjectKey_DEVELOPER ProjectKey_KEY_TYPE_V2 = 2
+	ProjectKey_NONE      ProjectKey_KEY_TYPE = 0
+	ProjectKey_ADMIN     ProjectKey_KEY_TYPE = 1
+	ProjectKey_DEVELOPER ProjectKey_KEY_TYPE = 2
 )
 
-var ProjectKey_KEY_TYPE_name_V2 = map[int32]string{
+var ProjectKey_KEY_TYPE_name = map[int32]string{
 	0: "NONE",
 	1: "ADMIN",
 	2: "DEVELOPER",
 }
 
-var ProjectKey_KEY_TYPE_value_V2 = map[string]int32{
+var ProjectKey_KEY_TYPE_value = map[string]int32{
 	"NONE":      0,
 	"ADMIN":     1,
 	"DEVELOPER": 2,
 }
 
-func (x ProjectKey_KEY_TYPE_V2) String() string {
-	return proto.EnumName(ProjectKey_KEY_TYPE_name_V2, int32(x))
+func (x ProjectKey_KEY_TYPE) String() string {
+	return proto.EnumName(ProjectKey_KEY_TYPE_name, int32(x))
 }
 
-func (ProjectKey_KEY_TYPE_V2) EnumDescriptor() ([]byte, []int) {
+func (ProjectKey_KEY_TYPE) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{1, 0}
 }
 
-type ProjectV2 struct {
+type Project struct {
 	Index        string       `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
 	Subscription string       `protobuf:"bytes,2,opt,name=subscription,proto3" json:"subscription,omitempty"`
 	Description  string       `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	Enabled      bool         `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ProjectKeys  []ProjectKeyV2 `protobuf:"bytes,5,rep,name=project_keys,json=projectKeys,proto3" json:"project_keys"`
-	Policy       PolicyV2       `protobuf:"bytes,6,opt,name=policy,proto3" json:"policy"`
+	ProjectKeys  []ProjectKey `protobuf:"bytes,5,rep,name=project_keys,json=projectKeys,proto3" json:"project_keys"`
+	Policy       Policy       `protobuf:"bytes,6,opt,name=policy,proto3" json:"policy"`
 	UsedCu       uint64       `protobuf:"varint,7,opt,name=used_cu,json=usedCu,proto3" json:"used_cu,omitempty"`
 }
 
-func (m *ProjectV2) Reset()         { *m = ProjectV2{} }
-func (m *ProjectV2) String() string { return proto.CompactTextString(m) }
-func (*ProjectV2) ProtoMessage()    {}
-func (*ProjectV2) Descriptor() ([]byte, []int) {
+func (m *Project) Reset()         { *m = Project{} }
+func (m *Project) String() string { return proto.CompactTextString(m) }
+func (*Project) ProtoMessage()    {}
+func (*Project) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{0}
 }
-func (m *ProjectV2) XXX_Unmarshal(b []byte) error {
+func (m *Project) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProjectV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Project) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Project.Marshal(b, m, deterministic)
 	} else {
@@ -82,83 +82,83 @@ func (m *ProjectV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *ProjectV2) XXX_Merge(src proto.Message) {
+func (m *Project) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Project.Merge(m, src)
 }
-func (m *ProjectV2) XXX_Size() int {
+func (m *Project) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProjectV2) XXX_DiscardUnknown() {
+func (m *Project) XXX_DiscardUnknown() {
 	xxx_messageInfo_Project.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Project proto.InternalMessageInfo
 
-func (m *ProjectV2) GetIndex() string {
+func (m *Project) GetIndex() string {
 	if m != nil {
 		return m.Index
 	}
 	return ""
 }
 
-func (m *ProjectV2) GetSubscription() string {
+func (m *Project) GetSubscription() string {
 	if m != nil {
 		return m.Subscription
 	}
 	return ""
 }
 
-func (m *ProjectV2) GetDescription() string {
+func (m *Project) GetDescription() string {
 	if m != nil {
 		return m.Description
 	}
 	return ""
 }
 
-func (m *ProjectV2) GetEnabled() bool {
+func (m *Project) GetEnabled() bool {
 	if m != nil {
 		return m.Enabled
 	}
 	return false
 }
 
-func (m *ProjectV2) GetProjectKeys() []ProjectKeyV2 {
+func (m *Project) GetProjectKeys() []ProjectKey {
 	if m != nil {
 		return m.ProjectKeys
 	}
 	return nil
 }
 
-func (m *ProjectV2) GetPolicy() PolicyV2 {
+func (m *Project) GetPolicy() Policy {
 	if m != nil {
 		return m.Policy
 	}
-	return PolicyV2{}
+	return Policy{}
 }
 
-func (m *ProjectV2) GetUsedCu() uint64 {
+func (m *Project) GetUsedCu() uint64 {
 	if m != nil {
 		return m.UsedCu
 	}
 	return 0
 }
 
-type ProjectKeyV2 struct {
+type ProjectKey struct {
 	Key   string                `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Types []ProjectKey_KEY_TYPE_V2 `protobuf:"varint,2,rep,packed,name=types,proto3,enum=lavanet.lava.projects.ProjectKey_KEY_TYPE" json:"types,omitempty"`
+	Types []ProjectKey_KEY_TYPE `protobuf:"varint,2,rep,packed,name=types,proto3,enum=lavanet.lava.projects.ProjectKey_KEY_TYPE" json:"types,omitempty"`
 	Vrfpk string                `protobuf:"bytes,3,opt,name=vrfpk,proto3" json:"vrfpk,omitempty"`
 }
 
-func (m *ProjectKeyV2) Reset()         { *m = ProjectKeyV2{} }
-func (m *ProjectKeyV2) String() string { return proto.CompactTextString(m) }
-func (*ProjectKeyV2) ProtoMessage()    {}
-func (*ProjectKeyV2) Descriptor() ([]byte, []int) {
+func (m *ProjectKey) Reset()         { *m = ProjectKey{} }
+func (m *ProjectKey) String() string { return proto.CompactTextString(m) }
+func (*ProjectKey) ProtoMessage()    {}
+func (*ProjectKey) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{1}
 }
-func (m *ProjectKeyV2) XXX_Unmarshal(b []byte) error {
+func (m *ProjectKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProjectKeyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProjectKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ProjectKey.Marshal(b, m, deterministic)
 	} else {
@@ -170,57 +170,57 @@ func (m *ProjectKeyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *ProjectKeyV2) XXX_Merge(src proto.Message) {
+func (m *ProjectKey) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProjectKey.Merge(m, src)
 }
-func (m *ProjectKeyV2) XXX_Size() int {
+func (m *ProjectKey) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProjectKeyV2) XXX_DiscardUnknown() {
+func (m *ProjectKey) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProjectKey.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ProjectKey proto.InternalMessageInfo
 
-func (m *ProjectKeyV2) GetKey() string {
+func (m *ProjectKey) GetKey() string {
 	if m != nil {
 		return m.Key
 	}
 	return ""
 }
 
-func (m *ProjectKeyV2) GetTypes() []ProjectKey_KEY_TYPE_V2 {
+func (m *ProjectKey) GetTypes() []ProjectKey_KEY_TYPE {
 	if m != nil {
 		return m.Types
 	}
 	return nil
 }
 
-func (m *ProjectKeyV2) GetVrfpk() string {
+func (m *ProjectKey) GetVrfpk() string {
 	if m != nil {
 		return m.Vrfpk
 	}
 	return ""
 }
 
-type PolicyV2 struct {
-	ChainPolicies      []ChainPolicyV2 `protobuf:"bytes,1,rep,name=chain_policies,json=chainPolicies,proto3" json:"chain_policies"`
+type Policy struct {
+	ChainPolicies      []ChainPolicy `protobuf:"bytes,1,rep,name=chain_policies,json=chainPolicies,proto3" json:"chain_policies"`
 	GeolocationProfile uint64        `protobuf:"varint,2,opt,name=geolocation_profile,json=geolocationProfile,proto3" json:"geolocation_profile,omitempty"`
 	TotalCuLimit       uint64        `protobuf:"varint,3,opt,name=total_cu_limit,json=totalCuLimit,proto3" json:"total_cu_limit,omitempty"`
 	EpochCuLimit       uint64        `protobuf:"varint,4,opt,name=epoch_cu_limit,json=epochCuLimit,proto3" json:"epoch_cu_limit,omitempty"`
 	MaxProvidersToPair uint64        `protobuf:"varint,5,opt,name=max_providers_to_pair,json=maxProvidersToPair,proto3" json:"max_providers_to_pair,omitempty"`
 }
 
-func (m *PolicyV2) Reset()         { *m = PolicyV2{} }
-func (m *PolicyV2) String() string { return proto.CompactTextString(m) }
-func (*PolicyV2) ProtoMessage()    {}
-func (*PolicyV2) Descriptor() ([]byte, []int) {
+func (m *Policy) Reset()         { *m = Policy{} }
+func (m *Policy) String() string { return proto.CompactTextString(m) }
+func (*Policy) ProtoMessage()    {}
+func (*Policy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{2}
 }
-func (m *PolicyV2) XXX_Unmarshal(b []byte) error {
+func (m *Policy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *PolicyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Policy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_Policy.Marshal(b, m, deterministic)
 	} else {
@@ -232,68 +232,68 @@ func (m *PolicyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *PolicyV2) XXX_Merge(src proto.Message) {
+func (m *Policy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Policy.Merge(m, src)
 }
-func (m *PolicyV2) XXX_Size() int {
+func (m *Policy) XXX_Size() int {
 	return m.Size()
 }
-func (m *PolicyV2) XXX_DiscardUnknown() {
+func (m *Policy) XXX_DiscardUnknown() {
 	xxx_messageInfo_Policy.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Policy proto.InternalMessageInfo
 
-func (m *PolicyV2) GetChainPolicies() []ChainPolicyV2 {
+func (m *Policy) GetChainPolicies() []ChainPolicy {
 	if m != nil {
 		return m.ChainPolicies
 	}
 	return nil
 }
 
-func (m *PolicyV2) GetGeolocationProfile() uint64 {
+func (m *Policy) GetGeolocationProfile() uint64 {
 	if m != nil {
 		return m.GeolocationProfile
 	}
 	return 0
 }
 
-func (m *PolicyV2) GetTotalCuLimit() uint64 {
+func (m *Policy) GetTotalCuLimit() uint64 {
 	if m != nil {
 		return m.TotalCuLimit
 	}
 	return 0
 }
 
-func (m *PolicyV2) GetEpochCuLimit() uint64 {
+func (m *Policy) GetEpochCuLimit() uint64 {
 	if m != nil {
 		return m.EpochCuLimit
 	}
 	return 0
 }
 
-func (m *PolicyV2) GetMaxProvidersToPair() uint64 {
+func (m *Policy) GetMaxProvidersToPair() uint64 {
 	if m != nil {
 		return m.MaxProvidersToPair
 	}
 	return 0
 }
 
-type ChainPolicyV2 struct {
+type ChainPolicy struct {
 	ChainId string   `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	Apis    []string `protobuf:"bytes,2,rep,name=apis,proto3" json:"apis,omitempty"`
 }
 
-func (m *ChainPolicyV2) Reset()         { *m = ChainPolicyV2{} }
-func (m *ChainPolicyV2) String() string { return proto.CompactTextString(m) }
-func (*ChainPolicyV2) ProtoMessage()    {}
-func (*ChainPolicyV2) Descriptor() ([]byte, []int) {
+func (m *ChainPolicy) Reset()         { *m = ChainPolicy{} }
+func (m *ChainPolicy) String() string { return proto.CompactTextString(m) }
+func (*ChainPolicy) ProtoMessage()    {}
+func (*ChainPolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{3}
 }
-func (m *ChainPolicyV2) XXX_Unmarshal(b []byte) error {
+func (m *ChainPolicy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ChainPolicyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ChainPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ChainPolicy.Marshal(b, m, deterministic)
 	} else {
@@ -305,47 +305,47 @@ func (m *ChainPolicyV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *ChainPolicyV2) XXX_Merge(src proto.Message) {
+func (m *ChainPolicy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ChainPolicy.Merge(m, src)
 }
-func (m *ChainPolicyV2) XXX_Size() int {
+func (m *ChainPolicy) XXX_Size() int {
 	return m.Size()
 }
-func (m *ChainPolicyV2) XXX_DiscardUnknown() {
+func (m *ChainPolicy) XXX_DiscardUnknown() {
 	xxx_messageInfo_ChainPolicy.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ChainPolicy proto.InternalMessageInfo
 
-func (m *ChainPolicyV2) GetChainId() string {
+func (m *ChainPolicy) GetChainId() string {
 	if m != nil {
 		return m.ChainId
 	}
 	return ""
 }
 
-func (m *ChainPolicyV2) GetApis() []string {
+func (m *ChainPolicy) GetApis() []string {
 	if m != nil {
 		return m.Apis
 	}
 	return nil
 }
 
-type ProtoDeveloperDataV2 struct {
+type ProtoDeveloperData struct {
 	ProjectID string `protobuf:"bytes,1,opt,name=projectID,proto3" json:"projectID,omitempty"`
 	Vrfpk     string `protobuf:"bytes,2,opt,name=vrfpk,proto3" json:"vrfpk,omitempty"`
 }
 
-func (m *ProtoDeveloperDataV2) Reset()         { *m = ProtoDeveloperDataV2{} }
-func (m *ProtoDeveloperDataV2) String() string { return proto.CompactTextString(m) }
-func (*ProtoDeveloperDataV2) ProtoMessage()    {}
-func (*ProtoDeveloperDataV2) Descriptor() ([]byte, []int) {
+func (m *ProtoDeveloperData) Reset()         { *m = ProtoDeveloperData{} }
+func (m *ProtoDeveloperData) String() string { return proto.CompactTextString(m) }
+func (*ProtoDeveloperData) ProtoMessage()    {}
+func (*ProtoDeveloperData) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9f89a31663a330ce, []int{4}
 }
-func (m *ProtoDeveloperDataV2) XXX_Unmarshal(b []byte) error {
+func (m *ProtoDeveloperData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProtoDeveloperDataV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProtoDeveloperData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ProtoDeveloperData.Marshal(b, m, deterministic)
 	} else {
@@ -357,26 +357,26 @@ func (m *ProtoDeveloperDataV2) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *ProtoDeveloperDataV2) XXX_Merge(src proto.Message) {
+func (m *ProtoDeveloperData) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProtoDeveloperData.Merge(m, src)
 }
-func (m *ProtoDeveloperDataV2) XXX_Size() int {
+func (m *ProtoDeveloperData) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProtoDeveloperDataV2) XXX_DiscardUnknown() {
+func (m *ProtoDeveloperData) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProtoDeveloperData.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ProtoDeveloperData proto.InternalMessageInfo
 
-func (m *ProtoDeveloperDataV2) GetProjectID() string {
+func (m *ProtoDeveloperData) GetProjectID() string {
 	if m != nil {
 		return m.ProjectID
 	}
 	return ""
 }
 
-func (m *ProtoDeveloperDataV2) GetVrfpk() string {
+func (m *ProtoDeveloperData) GetVrfpk() string {
 	if m != nil {
 		return m.Vrfpk
 	}
@@ -384,12 +384,12 @@ func (m *ProtoDeveloperDataV2) GetVrfpk() string {
 }
 
 func init() {
-	proto.RegisterEnum("lavanet.lava.projects.ProjectKey_KEY_TYPE_V2", ProjectKey_KEY_TYPE_name_V2, ProjectKey_KEY_TYPE_value_V2)
-	proto.RegisterType((*ProjectV2)(nil), "lavanet.lava.projects.ProjectV2")
-	proto.RegisterType((*ProjectKeyV2)(nil), "lavanet.lava.projects.ProjectKeyV2")
-	proto.RegisterType((*PolicyV2)(nil), "lavanet.lava.projects.PolicyV2")
-	proto.RegisterType((*ChainPolicyV2)(nil), "lavanet.lava.projects.ChainPolicyV2")
-	proto.RegisterType((*ProtoDeveloperDataV2)(nil), "lavanet.lava.projects.ProtoDeveloperDataV2")
+	proto.RegisterEnum("lavanet.lava.projects.ProjectKey_KEY_TYPE_V2", ProjectKey_KEY_TYPE_name, ProjectKey_KEY_TYPE_value)
+	proto.RegisterType((*Project)(nil), "lavanet.lava.projects.Project_V2")
+	proto.RegisterType((*ProjectKey)(nil), "lavanet.lava.projects.ProjectKey_V2")
+	proto.RegisterType((*Policy)(nil), "lavanet.lava.projects.Policy_V2")
+	proto.RegisterType((*ChainPolicy)(nil), "lavanet.lava.projects.ChainPolicy_V2")
+	proto.RegisterType((*ProtoDeveloperData)(nil), "lavanet.lava.projects.ProtoDeveloperData_V2")
 }
 
 func init() { proto.RegisterFile("projects/project.proto", fileDescriptor_9f89a31663a330ce) }
@@ -436,7 +436,7 @@ var fileDescriptor_9f89a31663a330ce = []byte{
 	0x00,
 }
 
-func (m *ProjectV2) Marshal() (dAtA []byte, err error) {
+func (m *Project) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -446,12 +446,12 @@ func (m *ProjectV2) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProjectV2) MarshalTo(dAtA []byte) (int, error) {
+func (m *Project) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProjectV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Project) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -519,7 +519,7 @@ func (m *ProjectV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ProjectKeyV2) Marshal() (dAtA []byte, err error) {
+func (m *ProjectKey) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -529,12 +529,12 @@ func (m *ProjectKeyV2) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProjectKeyV2) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProjectKey) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProjectKeyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProjectKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -574,7 +574,7 @@ func (m *ProjectKeyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *PolicyV2) Marshal() (dAtA []byte, err error) {
+func (m *Policy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -584,12 +584,12 @@ func (m *PolicyV2) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *PolicyV2) MarshalTo(dAtA []byte) (int, error) {
+func (m *Policy) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *PolicyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Policy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -631,7 +631,7 @@ func (m *PolicyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ChainPolicyV2) Marshal() (dAtA []byte, err error) {
+func (m *ChainPolicy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -641,12 +641,12 @@ func (m *ChainPolicyV2) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ChainPolicyV2) MarshalTo(dAtA []byte) (int, error) {
+func (m *ChainPolicy) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ChainPolicyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ChainPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -670,7 +670,7 @@ func (m *ChainPolicyV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ProtoDeveloperDataV2) Marshal() (dAtA []byte, err error) {
+func (m *ProtoDeveloperData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -680,12 +680,12 @@ func (m *ProtoDeveloperDataV2) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProtoDeveloperDataV2) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProtoDeveloperData) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProtoDeveloperDataV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProtoDeveloperData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -718,7 +718,7 @@ func encodeVarintProject(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ProjectV2) Size() (n int) {
+func (m *Project) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -753,7 +753,7 @@ func (m *ProjectV2) Size() (n int) {
 	return n
 }
 
-func (m *ProjectKeyV2) Size() (n int) {
+func (m *ProjectKey) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -777,7 +777,7 @@ func (m *ProjectKeyV2) Size() (n int) {
 	return n
 }
 
-func (m *PolicyV2) Size() (n int) {
+func (m *Policy) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -804,7 +804,7 @@ func (m *PolicyV2) Size() (n int) {
 	return n
 }
 
-func (m *ChainPolicyV2) Size() (n int) {
+func (m *ChainPolicy) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -823,7 +823,7 @@ func (m *ChainPolicyV2) Size() (n int) {
 	return n
 }
 
-func (m *ProtoDeveloperDataV2) Size() (n int) {
+func (m *ProtoDeveloperData) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -846,7 +846,7 @@ func sovProject(x uint64) (n int) {
 func sozProject(x uint64) (n int) {
 	return sovProject(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *ProjectV2) Unmarshal(dAtA []byte) error {
+func (m *Project) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1020,7 +1020,7 @@ func (m *ProjectV2) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProjectKeys = append(m.ProjectKeys, ProjectKeyV2{})
+			m.ProjectKeys = append(m.ProjectKeys, ProjectKey{})
 			if err := m.ProjectKeys[len(m.ProjectKeys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1098,7 +1098,7 @@ func (m *ProjectV2) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
+func (m *ProjectKey) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1161,7 +1161,7 @@ func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType == 0 {
-				var v ProjectKey_KEY_TYPE_V2
+				var v ProjectKey_KEY_TYPE
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowProject
@@ -1171,7 +1171,7 @@ func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= ProjectKey_KEY_TYPE_V2(b&0x7F) << shift
+					v |= ProjectKey_KEY_TYPE(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1205,10 +1205,10 @@ func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.Types) == 0 {
-					m.Types = make([]ProjectKey_KEY_TYPE_V2, 0, elementCount)
+					m.Types = make([]ProjectKey_KEY_TYPE, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v ProjectKey_KEY_TYPE_V2
+					var v ProjectKey_KEY_TYPE
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowProject
@@ -1218,7 +1218,7 @@ func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= ProjectKey_KEY_TYPE_V2(b&0x7F) << shift
+						v |= ProjectKey_KEY_TYPE(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1281,7 +1281,7 @@ func (m *ProjectKeyV2) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *PolicyV2) Unmarshal(dAtA []byte) error {
+func (m *Policy) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1339,7 +1339,7 @@ func (m *PolicyV2) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainPolicies = append(m.ChainPolicies, ChainPolicyV2{})
+			m.ChainPolicies = append(m.ChainPolicies, ChainPolicy{})
 			if err := m.ChainPolicies[len(m.ChainPolicies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1441,7 +1441,7 @@ func (m *PolicyV2) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ChainPolicyV2) Unmarshal(dAtA []byte) error {
+func (m *ChainPolicy) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1555,7 +1555,7 @@ func (m *ChainPolicyV2) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProtoDeveloperDataV2) Unmarshal(dAtA []byte) error {
+func (m *ProtoDeveloperData) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
