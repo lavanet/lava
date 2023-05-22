@@ -332,7 +332,8 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
 		// never overflows because ctx.BlockHeight is int64
 		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
-		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, entry.Index)
+		key := types.EncodeBlockAndKey(entry.Block, []byte(entry.Index))
+		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
 
 	fs.setEntry(ctx, entry)
@@ -449,7 +450,10 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
-	callback := func(ctx sdk.Context, data string) { fs.deleteStaleEntries(ctx, data) }
+	callback := func(ctx sdk.Context, key []byte, _ []byte) {
+		_, k := types.DecodeBlockAndKey(key)
+		fs.deleteStaleEntries(ctx, string(k))
+	}
 	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
 
