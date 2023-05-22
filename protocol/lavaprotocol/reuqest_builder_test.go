@@ -27,11 +27,11 @@ func TestSignAndExtract(t *testing.T) {
 		BlockListed:                 false, // if session lost sync we blacklist it.
 		ConsecutiveNumberOfFailures: 0,     // number of times this session has failed
 	}
-	metadataValue := []pairingtypes.Metadata{}
-	metadataValue = append(metadataValue, pairingtypes.Metadata{
+	metadataValue := make([]pairingtypes.Metadata, 1)
+	metadataValue[0] = pairingtypes.Metadata{
 		Name:  "x-cosmos-block-height:",
 		Value: "55",
-	})
+	}
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc", metadataValue)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, sk, "lava", specId, relayRequestData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
