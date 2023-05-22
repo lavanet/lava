@@ -405,9 +405,11 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 }
 
 func convertToMetadataRest(md map[string]string) []pairingtypes.Metadata {
-	var metadata []pairingtypes.Metadata
+	metadata := make([]pairingtypes.Metadata, len(md))
+	indexer := 0
 	for k, v := range md {
-		metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: v})
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v}
+		indexer += 1
 	}
 	return metadata
 }
