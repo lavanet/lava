@@ -21,7 +21,7 @@ func (tstore *TimerStore) MigrateVersion(ctx sdk.Context) (err error) {
 	for from < to {
 		function, ok := timerMigrators[int(from)]
 		if !ok {
-			return fmt.Errorf("%s not available", prefixForErrors(from))
+			return fmt.Errorf("%s not available", tstore.prefixForErrors(from))
 		}
 
 		err = function(ctx, tstore)

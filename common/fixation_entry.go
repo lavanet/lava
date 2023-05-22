@@ -128,13 +128,13 @@ func FixationVersion() uint64 {
 // fire in order of expiry blocks, and in order of timeout kind.
 
 const (
-	// NOTE: callbackFutureEntry should be smaller than callbackDeleteEntry, to
+	// NOTE: TimerFutureEntry should be smaller than timerDeleteEntry, to
 	// ensure that it fires first (because the latter will removes future entries,
 	// so otherwise if they both expire on the same block then the future entry
 	// callback will be surprised when it cannot find the respective entry).
-	callbackFutureEntry = 0x01
-	callbackDeleteEntry = 0x02
-	callbackStaleEntry  = 0x03
+	timerFutureEntry = 0x01
+	timerDeleteEntry = 0x02
+	timerStaleEntry  = 0x03
 )
 
 func encodeForTimer(index string, block uint64, kind byte) []byte {
@@ -252,7 +252,7 @@ func (fs *FixationStore) AppendEntry(
 			latestEntry.DeleteAt = math.MaxUint64
 			fs.putEntry(ctx, latestEntry)
 		} else {
-			key := encodeForTimer(safeIndex, block, callbackFutureEntry)
+			key := encodeForTimer(safeIndex, block, timerFutureEntry)
 			fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 		}
 	}
@@ -271,7 +271,7 @@ func (fs *FixationStore) AppendEntry(
 	}
 
 	if entry.HasDeleteAt() {
-		fs.replaceTimer(ctx, latestEntry, entry, callbackDeleteEntry)
+		fs.replaceTimer(ctx, latestEntry, entry, timerDeleteEntry)
 	}
 
 	fs.setEntry(ctx, entry)
@@ -284,11 +284,11 @@ func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, da
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 
 	switch kind {
-	case callbackFutureEntry:
+	case timerFutureEntry:
 		fs.updateFutureEntry(ctx, safeIndex, block)
-	case callbackDeleteEntry:
+	case timerDeleteEntry:
 		fs.deleteMarkedEntry(ctx, safeIndex, block)
-	case callbackStaleEntry:
+	case timerStaleEntry:
 		fs.deleteStaleEntries(ctx, safeIndex, block)
 	}
 }
@@ -314,13 +314,13 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, bl
 			if entry.IsDeletedBy(block) {
 				// if DeleteAt is exactly now as we transition from future entry to
 				// be the latest entry, then simply invoke deleteMarkedEntry().
-				key := encodeForTimer(latestEntry.Index, latestEntry.Block, callbackDeleteEntry)
+				key := encodeForTimer(latestEntry.Index, latestEntry.Block, timerDeleteEntry)
 				fs.tstore.DelTimerByBlockHeight(ctx, block, key)
 				fs.deleteMarkedEntry(ctx, safeIndex, block)
 			} else {
 				// otherwise, then replace the old timer (for the previous latest)
 				// with a new timer (for the new latest).
-				fs.replaceTimer(ctx, latestEntry, entry, callbackDeleteEntry)
+				fs.replaceTimer(ctx, latestEntry, entry, timerDeleteEntry)
 			}
 		}
 
@@ -363,7 +363,7 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, bl
 	}
 
 	for _, entry := range entriesToRemove {
-		key := encodeForTimer(entry.Index, entry.Block, callbackFutureEntry)
+		key := encodeForTimer(entry.Index, entry.Block, timerFutureEntry)
 		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
 		fs.removeEntry(ctx, entry.Index, entry.Block)
 	}
@@ -564,7 +564,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
 		// never overflows because ctx.BlockHeight is int64
 		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
-		key := encodeForTimer(entry.Index, entry.Block, callbackStaleEntry)
+		key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
 
@@ -611,7 +611,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 	if block == uint64(ctx.BlockHeight()) {
 		fs.deleteMarkedEntry(ctx, safeIndex, entry.Block)
 	} else {
-		key := encodeForTimer(safeIndex, entry.Block, callbackDeleteEntry)
+		key := encodeForTimer(safeIndex, entry.Block, timerDeleteEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 	}
 

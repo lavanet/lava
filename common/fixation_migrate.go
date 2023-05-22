@@ -8,9 +8,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 )
 
-func prefixForErrors(from uint64) string {
+func (fs *FixationStore) prefixForErrors(from uint64) string {
 	return fmt.Sprintf("FixationStore: migration from version %d", from)
 }
 
@@ -28,7 +29,7 @@ func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	for from < to {
 		function, ok := fixationMigrators[int(from)]
 		if !ok {
-			return fmt.Errorf("%s not available", prefixForErrors(from))
+			return fmt.Errorf("%s not available", fs.prefixForErrors(from))
 		}
 
 		err = function(ctx, fs)
@@ -86,18 +87,18 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 	for _, index := range indices {
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
-			return fmt.Errorf("%s: failed to sanitize index: %s", prefixForErrors(1), index)
+			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		if len(blocks) < 1 {
-			return fmt.Errorf("%s: no versions for index: %s", prefixForErrors(1), index)
+			return fmt.Errorf("%s: no versions for index: %s", fs.prefixForErrors(1), index)
 		}
 		recent := blocks[len(blocks)-1]
 		for _, block := range blocks {
 			entry := fs.getEntry(ctx, safeIndex, block)
 			// check for refcount overflow due to excessive putEntry
 			if entry.Refcount > math.MaxInt64 {
-				return fmt.Errorf("%s: entry has negative refcount index: %s", prefixForErrors(1), index)
+				return fmt.Errorf("%s: entry has negative refcount index: %s", fs.prefixForErrors(1), index)
 			}
 			// bump refcount of head entries (most recent version of an entry)
 			if block == recent {
