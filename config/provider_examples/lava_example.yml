@@ -3,6 +3,8 @@ endpoints:
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
+        cert-pem: /home/user/cert.pem
+        key-pem: /home/user/key.pem
       node-urls:
         - url: ws://127.0.0.1:26657/websocket
         - url: http://127.0.0.1:26657
@@ -10,11 +12,15 @@ endpoints:
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
+        cert-pem: /home/user/cert.pem
+        key-pem: /home/user/key.pem
       node-urls: 
         - url: 127.0.0.1:9090
     - api-interface: rest
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
+        cert-pem: /home/user/cert.pem
+        key-pem: /home/user/key.pem
       node-urls: 
         - url: http://127.0.0.1:1317

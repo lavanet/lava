@@ -19,9 +19,10 @@ type ProviderSessionsEpochData struct {
 }
 
 type NetworkAddressData struct {
-	Address string `yaml:"address,omitempty" json:"address,omitempty" mapstructure:"address,omitempty"` // HOST:PORT
-	KeyPem  string `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
-	CertPem string `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	Address    string `yaml:"address,omitempty" json:"address,omitempty" mapstructure:"address,omitempty"` // HOST:PORT
+	KeyPem     string `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem    string `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	DisableTLS bool   `yaml:"disable-tls,omitempty" json:"disable-tls,omitempty" mapstructure:"disable-tls"`
 }
 
 type RPCProviderEndpoint struct {

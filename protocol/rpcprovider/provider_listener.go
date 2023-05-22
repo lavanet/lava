@@ -58,6 +58,7 @@ func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
 
 func generateSelfSignedCertificate() (tls.Certificate, error) {
 	// Generate a private key
+	utils.LavaFormatWarning("Warning: Using Self signed certificate is not recommended, this will not allow https connections to be established", nil)
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return tls.Certificate{}, err
@@ -100,6 +101,27 @@ func getCaCertificate(serverCertPath, serverKeyPath string) (*tls.Config, error)
 	}, nil
 }
 
+func getTlsConfig(networkAddress lavasession.NetworkAddressData) *tls.Config {
+	var tlsConfig *tls.Config
+	var err error
+	if networkAddress.CertPem != "" {
+		utils.LavaFormatInfo("Running with TLS certificate", utils.Attribute{Key: "cert", Value: networkAddress.CertPem}, utils.Attribute{Key: "key", Value: networkAddress.KeyPem})
+		tlsConfig, err = getCaCertificate(networkAddress.CertPem, networkAddress.KeyPem)
+		if err != nil {
+			utils.LavaFormatFatal("failed to generate TLS certificate", err)
+		}
+	} else {
+		cert, err := generateSelfSignedCertificate()
+		if err != nil {
+			utils.LavaFormatFatal("failed to generate TLS certificate", err)
+		}
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+	return tlsConfig
+}
+
 func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData) *ProviderListener {
 	pl := &ProviderListener{networkAddress: networkAddress.Address}
 
@@ -116,33 +138,25 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
-	var tlsConfig *tls.Config
-	var err error
-	if networkAddress.CertPem != "" {
-		tlsConfig, err = getCaCertificate(networkAddress.CertPem, networkAddress.KeyPem)
-		if err != nil {
-			utils.LavaFormatFatal("failed to generate TLS certificate", err)
-		}
-	} else {
-		cert, err := generateSelfSignedCertificate()
-		if err != nil {
-			utils.LavaFormatFatal("failed to generate TLS certificate", err)
-		}
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
+	pl.httpServer = http.Server{
+		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
 
-	pl.httpServer = http.Server{
-		Handler:   h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
-		TLSConfig: tlsConfig,
+	var serveExecutor func() error
+	if networkAddress.DisableTLS {
+		utils.LavaFormatWarning("Running with disabled TLS configuration", nil)
+		serveExecutor = func() error { return pl.httpServer.Serve(lis) }
+	} else {
+		pl.httpServer.TLSConfig = getTlsConfig(networkAddress)
+		serveExecutor = func() error { return pl.httpServer.ServeTLS(lis, "", "") }
 	}
+
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
-		if err := pl.httpServer.ServeTLS(lis, "", ""); !errors.Is(err, http.ErrServerClosed) {
+		if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
 		}
 		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})

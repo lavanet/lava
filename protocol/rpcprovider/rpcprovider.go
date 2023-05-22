@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-urls.url"}
+	Yaml_config_properties     = []string{"network-address.address", "chain-id", "api-interface", "node-urls.url"}
 	DefaultRPCProviderFileName = "rpcprovider.yml"
 )
 

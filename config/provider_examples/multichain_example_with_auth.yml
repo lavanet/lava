@@ -3,9 +3,15 @@ endpoints:
       chain-id: LAV1
       network-address:
         address: "127.0.0.1:2221"
+        # by default the connection will use a self signed certificate, which is not recommended 
+        # (https connections wont be able to connect)
+
         # example with provider setting up a secure connection with a CA certificate
         key-pem: "/path/to/key.pem"
         cert-pem: "/path/to/cert.pem"
+        # also you can specify disable-tls if you want to disable provider TLS settings in case 
+        # you want to use a proxy server which has tls enabled.
+        disable-tls: true
       node-urls:
         - url: ws://127.0.0.1:26657/websocket
           auth-config:
