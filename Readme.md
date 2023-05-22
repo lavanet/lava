@@ -31,7 +31,7 @@ Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 ### Add `lavad` autocomplete
 
-You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://gist.github.com/KagemniKarimu/443394649c5d8eab9fbcf69d4df4293a)
+You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://github.com/lavanet/lava/scripts/lavad_auto_completion_install.sh)
 
 ### Quick Start
 
