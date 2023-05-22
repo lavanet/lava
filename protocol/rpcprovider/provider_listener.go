@@ -127,7 +127,8 @@ func (rs *relayServer) findReceiver(request *pairingtypes.RelayRequest) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		return nil, utils.LavaFormatError("got called with unhandled relay receiver", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		utils.LavaFormatError("Relay Receiver is not set, might be one of the interfaces failed to load", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()})
+		return nil, utils.LavaFormatError("provider error: got called with unhandled relay receiver", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "providers_handled_receivers", Value: strings.Join(keys, ",")})
 	}
 	return relayReceiver, nil
 }

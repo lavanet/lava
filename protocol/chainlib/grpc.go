@@ -11,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/protocol/parser"
+
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 
@@ -38,11 +41,29 @@ type GrpcChainParser struct {
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
+
+	registry *dyncodec.Registry
+	codec    *dyncodec.Codec
 }
 
 // NewGrpcChainParser creates a new instance of GrpcChainParser
 func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
+}
+
+func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
+	apip.registry = dyncodec.NewRegistry(dyncodec.NewRelayerRemote(relayer))
+	apip.codec = dyncodec.NewCodec(apip.registry)
+}
+
+func (apip *GrpcChainParser) setupForProvider(grpcEndpoint string) error {
+	remote, err := dyncodec.NewGRPCReflectionProtoFileRegistry(grpcEndpoint)
+	if err != nil {
+		return err
+	}
+	apip.registry = dyncodec.NewRegistry(remote)
+	apip.codec = dyncodec.NewCodec(apip.registry)
+	return nil
 }
 
 func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
@@ -77,19 +98,21 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
-		Msg:  data,
-		Path: url,
+		Msg:      data,
+		Path:     url,
+		Codec:    apip.codec,
+		Registry: apip.registry,
 	}
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	// blockParser := serviceApi.BlockParsing
-	// requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
-	// if err != nil {
-	// 	return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
-	// }
+	blockParser := serviceApi.BlockParsing
+	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
+	if err != nil {
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, &grpcMessage)
 	return nodeMsg, nil
 }
 
@@ -188,16 +211,22 @@ type GrpcChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
 	logger      *metrics.RPCConsumerLogs
+	chainParser *GrpcChainParser
 }
 
-func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *GrpcChainListener) {
+func NewGrpcChainListener(
+	ctx context.Context,
+	listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	chainParser ChainParser) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
 		listenEndpoint,
 		relaySender,
 		rpcConsumerLogs,
+		chainParser.(*GrpcChainParser),
 	}
-
 	return chainListener
 }
 
@@ -236,6 +265,9 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
 
+	// setup chain parser
+	apil.chainParser.setupForConsumer(sendRelayCallback)
+
 	utils.LavaFormatInfo("Server listening", utils.Attribute{Key: "Address", Value: lis.Addr()})
 
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
@@ -248,7 +280,7 @@ type GrpcChainProxy struct {
 	conn *chainproxy.GRPCConnector
 }
 
-func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration, parser ChainParser) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
@@ -264,6 +296,11 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	cp.conn = conn
 	if cp.conn == nil {
 		return nil, utils.LavaFormatError("g_conn == nil", nil)
+	}
+
+	err = parser.(*GrpcChainParser).setupForProvider(nodeUrl.Url)
+	if err != nil {
+		return nil, fmt.Errorf("grpc chain proxy: failed to setup parser: %w", err)
 	}
 	return cp, nil
 }
