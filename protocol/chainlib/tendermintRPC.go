@@ -40,7 +40,7 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 
 func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
+		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
 
 	msg := rpcInterfaceMessages.JsonrpcMessage{
@@ -54,7 +54,7 @@ func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi,
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -288,7 +288,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData)
+			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData, nil)
 			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
@@ -347,7 +347,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: c.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
-		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData)
+		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData, nil)
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -386,7 +386,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("urirpc in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: path}, utils.Attribute{Key: "dappID", Value: dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData, nil)
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {

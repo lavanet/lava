@@ -42,7 +42,7 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 }
 
 type ChainParser interface {
-	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error)
+	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error)
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
@@ -69,6 +69,7 @@ type RelaySender interface {
 		connectionType string,
 		dappID string,
 		analytics *metrics.RelayMetrics,
+		metadataValues []pairingtypes.Metadata,
 	) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error)
 }
 

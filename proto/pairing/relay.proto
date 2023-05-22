@@ -33,6 +33,12 @@ message RelayPrivateData {
     int64 request_block = 4;
     string api_interface = 5;
     bytes salt = 6;
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
+}
+
+message Metadata {
+    string name = 1;
+    string value = 2;
 }
 
 message RelayRequest {
