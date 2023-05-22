@@ -116,6 +116,10 @@ type FixationStore struct {
 	tstore   TimerStore
 }
 
+func FixationVersion() uint64 {
+	return 3
+}
+
 // we use timers for three kinds of timeouts: when a future entry becomes in effect,
 // when a delete of entry becomes in effect, and when the stale-period ends and an
 // entry should become stale.

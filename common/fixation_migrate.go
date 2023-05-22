@@ -23,7 +23,7 @@ var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 // MigrateVerrsion performs pending internal version migration(s), if any.
 func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	from := fs.getVersion(ctx)
-	to := types.FixationVersion()
+	to := FixationVersion()
 
 	for from < to {
 		function, ok := fixationMigrators[int(from)]
