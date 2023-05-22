@@ -72,9 +72,15 @@ func TestMigrate1to2(t *testing.T) {
 		require.Equal(t, tt.before, entry.Refcount, what)
 	}
 
+	// mock fixation version to be 2
+	realFixationVersion := fixationVersion
+	fixationVersion = 2
+
 	// perform migration version 1 to version 2
 	err = fs.MigrateVersion(ctx)
 	require.Nil(t, err, "migration version 1 to version 2")
+
+	fixationVersion = realFixationVersion
 
 	// verify entries after migration
 	for _, tt := range templates {
@@ -176,9 +182,15 @@ func TestMigrate2to3(t *testing.T) {
 	require.Equal(t, 1+numHeads+numEntries, countWithPrefix(&store_V2, ""))
 	require.Equal(t, numHeads+numEntries, countWithPrefix(&store_V2, "Entry"))
 
+	// mock fixation version to be 3
+	realFixationVersion := fixationVersion
+	fixationVersion = 3
+
 	// perform migration version 2 to version 3
 	err = fs.MigrateVersion(ctx)
 	require.Nil(t, err, "migration version 2 to version 3")
+
+	fixationVersion = realFixationVersion
 
 	// verify version upgrade
 	require.Equal(t, uint64(3), fs.getVersion(ctx))

@@ -116,8 +116,10 @@ type FixationStore struct {
 	tstore   TimerStore
 }
 
+var fixationVersion uint64 = 4
+
 func FixationVersion() uint64 {
-	return 4
+	return fixationVersion
 }
 
 // we use timers for three kinds of timeouts: when a future entry becomes in effect,
