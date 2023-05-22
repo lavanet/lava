@@ -117,7 +117,7 @@ type FixationStore struct {
 }
 
 func FixationVersion() uint64 {
-	return 3
+	return 4
 }
 
 // we use timers for three kinds of timeouts: when a future entry becomes in effect,

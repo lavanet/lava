@@ -141,7 +141,49 @@ func fixationMigrate2to3(ctx sdk.Context, fs *FixationStore) error {
 	return nil
 }
 
-// fixationMigrate3to4: call migration of timerstore
+// fixationMigrate3to4: update keys/data for timers
+//   - instead of <expiry=block/time, data=index>,
+//     use <expiry=block/time, key=timer+entry-index+entry-block, data=[]>
 func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
-	return fs.tstore.MigrateVersion(ctx)
+	err := fs.tstore.MigrateVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	utils.LavaFormatDebug("migrate fixation timers")
+
+	blockHeight := uint64(ctx.BlockHeight())
+
+	// apply migration to all entries (even deleted ones as they may still
+	// have versions in stale-period); use the raw AllEntryIndicesFilter()
+	filter := func(_, v []byte) bool { return true }
+	indices := fs.AllEntryIndicesFilter(ctx, "", filter)
+
+	for _, index := range indices {
+		utils.LavaFormatDebug("  entry", utils.Attribute{Key: "index", Value: index})
+
+		safeIndex, err := types.SanitizeIndex(index)
+		if err != nil {
+			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
+		}
+
+		blocks := fs.GetAllEntryVersions(ctx, index)
+		if len(blocks) < 1 {
+			return fmt.Errorf("%s: no versions for index: %s", fs.prefixForErrors(1), index)
+		}
+
+		for _, block := range blocks {
+			entry := fs.getEntry(ctx, safeIndex, block)
+			utils.LavaFormatDebug("    version", utils.Attribute{Key: "entry", Value: entry})
+
+			// if StaleAt is set, then replace old style timer with new style timer
+			if entry.StaleAt != math.MaxUint && entry.StaleAt > blockHeight {
+				fs.tstore.DelTimerByBlockHeight(ctx, entry.StaleAt, []byte{})
+				key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
+				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
+			}
+		}
+	}
+
+	return nil
 }
