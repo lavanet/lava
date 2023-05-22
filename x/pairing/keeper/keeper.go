@@ -77,9 +77,11 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-// we dont want to do the calculation here too, epochStorage keeper did it
-func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
-	return k.epochStorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		// run functions that are supposed to run in epoch start
+		k.EpochStart(ctx, types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
+	}
 }
 
 func (k Keeper) IncrementTimer(ctx sdk.Context) {

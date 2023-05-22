@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"crypto/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -45,16 +45,17 @@ const (
 
 const BLOCK_HEADER_LEN = 32
 
+// NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	Epochstorage  epochstoragekeeper.Keeper
-	Spec          speckeeper.Keeper
-	Plans         planskeeper.Keeper
-	Projects      projectskeeper.Keeper
-	Subscription  subscriptionkeeper.Keeper
-	Pairing       pairingkeeper.Keeper
-	Conflict      conflictkeeper.Keeper
-	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
+	BankKeeper    mockBankKeeper
+	Spec          speckeeper.Keeper
+	Epochstorage  epochstoragekeeper.Keeper
+	Subscription  subscriptionkeeper.Keeper
+	Conflict      conflictkeeper.Keeper
+	Pairing       pairingkeeper.Keeper
+	Projects      projectskeeper.Keeper
+	Plans         planskeeper.Keeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
 }
@@ -67,6 +68,10 @@ type Servers struct {
 	ProjectServer      projectstypes.MsgServer
 	SubscriptionServer subscriptiontypes.MsgServer
 	PlansServer        planstypes.MsgServer
+}
+
+type KeeperBeginBlocker interface {
+	BeginBlock(ctx sdk.Context)
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
@@ -199,6 +204,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+	ctx = ctx.WithBlockTime(time.Now())
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -278,11 +284,17 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 // Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-	ks.Pairing.IncrementTimer(unwrapedCtx)
-	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		ks.Epochstorage.EpochStart(unwrapedCtx)
-		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-	}
 
-	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
+	// get the value and type of the Keepers struct
+	keepersType := reflect.TypeOf(*ks)
+	keepersValue := reflect.ValueOf(*ks)
+
+	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
+	for i := 0; i < keepersType.NumField(); i++ {
+		fieldValue := keepersValue.Field(i)
+
+		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
+			beginBlocker.BeginBlock(unwrapedCtx)
+		}
+	}
 }
