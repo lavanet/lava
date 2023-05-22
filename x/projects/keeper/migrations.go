@@ -230,6 +230,5 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 		}
 	}
 
-
 	return nil
 }
