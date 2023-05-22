@@ -45,7 +45,7 @@ const (
 
 const BLOCK_HEADER_LEN = 32
 
-// Note: the keeper fields' order is consistent with the app's BeginBlockers order (search in app.go the phrase "app.mm.SetOrderBeginBlockers(")
+// NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
 	AccountKeeper mockAccountKeeper
 	BankKeeper    mockBankKeeper
@@ -293,8 +293,8 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 	for i := 0; i < keepersType.NumField(); i++ {
 		fieldValue := keepersValue.Field(i)
 
-		if BeginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
-			BeginBlocker.BeginBlock(unwrapedCtx)
+		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
+			beginBlocker.BeginBlock(unwrapedCtx)
 		}
 	}
 }

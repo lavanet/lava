@@ -81,7 +81,6 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		// Notify world we have a new session
 
 		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
-		logger := k.Logger(ctx)
-		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), "new_epoch", details, "")
 	}
 }

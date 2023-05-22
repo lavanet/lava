@@ -23,6 +23,7 @@ type BankKeeper interface {
 type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (uint64, error)
 	GetEpochStart(ctx sdk.Context) uint64
+	IsEpochStart(ctx sdk.Context) bool
 	// Methods imported from epochstorage should be defined here
 }
 

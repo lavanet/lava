@@ -61,12 +61,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) IsEpochStart(ctx sdk.Context) bool {
-	return k.epochstorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
-}
-
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	if k.IsEpochStart(ctx) {
+	if k.epochstorageKeeper.IsEpochStart(ctx) {
 		// run functions that are supposed to run in epoch start
 		k.EpochStart(ctx)
 	}
