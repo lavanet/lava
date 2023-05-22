@@ -110,8 +110,8 @@ FROM ${RUNNER_IMAGE} as runner-base
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -yqq --no-install-recommends \
-        git curl unzip ca-certificates \
+    && apt-get install -yq --no-install-recommends \
+        git curl unzip ca-certificates jq \
     && apt-get -y purge \
     && apt-get -y clean \
     && apt-get -y autoremove \
@@ -133,29 +133,37 @@ COPY docker/entrypoint.sh /
 COPY docker/start_node.sh start_node.sh
 COPY docker/start_portal.sh start_portal.sh
 
-ENV LAVA_HOME_DIR= \
-    LAVA_USER= \
-    LAVA_ADDRESS= \
-    LAVA_KEYRING= \
-    LAVA_STAKE_AMOUNT= \
-    LAVA_GAS_MODE= \
-    LAVA_GAS_ADJUST= \
-    LAVA_GAS_PRICE= \
-    LAVA_GEOLOCATION= \
-    LAVA_RPC_NODE= \
-    LAVA_CHAIN_ID= \
-    LAVA_LISTEN_IP= \
-    LAVA_NODE_PORT_API= \
-    LAVA_NODE_PORT_GRPC= \
-    LAVA_NODE_PORT_GRPC_WEB= \
-    LAVA_NODE_PORT_P2P= \
-    LAVA_NODE_PORT_RPC= \
-    LAVA_PORTAL_PORT= \
-    LAVA_RELAY_CHAIN_ID= \
-    LAVA_RELAY_IFACE= \
-    LAVA_RELAY_NODE_URL= \
-    LAVA_RELAY_ENDPOINT= \
-    LAVA_LOG_LEVEL=
+# common setup
+ENV LAVA_COSMOVISOR_URL=
+ENV LAVA_CONFIG_GIT_URL=
+ENV LAVA_CHAIN_ID=
+ENV LAVA_MONIKER=
+
+# common runtime
+ENV LAVA_LOG_LEVEL=
+
+# provider/validator [OUTDATED]
+#ENV LAVA_ACCOUNT=
+#ENV LAVA_USER=
+#ENV LAVA_ADDRESS=
+#ENV LAVA_KEYRING=
+#ENV LAVA_STAKE_AMOUNT=
+#ENV LAVA_GAS_MODE=
+#ENV LAVA_GAS_ADJUST=
+#ENV LAVA_GAS_PRICE=
+#ENV LAVA_GEOLOCATION=
+#ENV LAVA_RPC_NODE=
+#ENV LAVA_LISTEN_IP=
+#ENV LAVA_NODE_PORT_API=
+#ENV LAVA_NODE_PORT_GRPC=
+#ENV LAVA_NODE_PORT_GRPC_WEB=
+#ENV LAVA_NODE_PORT_P2P=
+#ENV LAVA_NODE_PORT_RPC=
+#ENV LAVA_PORTAL_PORT=
+#ENV LAVA_RELAY_CHAIN_ID=
+#ENV LAVA_RELAY_IFACE=
+#ENV LAVA_RELAY_NODE_URL=
+#ENV LAVA_RELAY_ENDPOINT=
 
 # lava api
 EXPOSE 1317
