@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/projects/migrations/v2"
 	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
 	v4 "github.com/lavanet/lava/x/projects/migrations/v4"
@@ -130,14 +131,23 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 
 	projectIndices := m.keeper.projectsFS.GetAllEntryIndices(ctx)
 	for _, projectIndex := range projectIndices {
+		utils.LavaFormatDebug("migrate:",
+			utils.Attribute{Key: "project", Value: projectIndex})
+
 		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
 		for _, block := range blocks {
+			utils.LavaFormatDebug("  project:",
+				utils.Attribute{Key: "block", Value: block})
+
 			var project_v4 v4.Project
 			m.keeper.projectsFS.ReadEntry(ctx, projectIndex, block, &project_v4)
 
 			// convert project keys from type v4.ProjectKey to v5.ProjectKey
 			var projectKeys_v5 []v5.ProjectKey
 			for _, projectKey_v4 := range project_v4.ProjectKeys {
+				utils.LavaFormatDebug("    block:",
+					utils.Attribute{Key: "key", Value: projectKey_v4})
+
 				projectKey_v5 := v5.NewProjectKey(projectKey_v4.Key, 0x0)
 
 				for _, projectKeyType_v4 := range projectKey_v4.Types {
@@ -147,6 +157,8 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 						projectKey_v5 = projectKey_v5.AddType(v5.ProjectKey_DEVELOPER)
 					}
 				}
+
+				projectKeys_v5 = append(projectKeys_v5, projectKey_v5)
 			}
 
 			// convert policy from type v4.Policy to v5.Policy
@@ -194,7 +206,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 			}
 
 			// convert project from type v4.Project to v5.Project
-			projectStruct_v5 := v5.Project{
+			project_v5 := v5.Project{
 				Index:              project_v4.Index,
 				Subscription:       project_v4.Subscription,
 				Description:        project_v4.Description,
@@ -206,7 +218,12 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				Snapshot:           project_v4.Snapshot,
 			}
 
-			m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &projectStruct_v5)
+			utils.LavaFormatDebug("  project:",
+				utils.Attribute{Key: "entry_v4", Value: project_v4})
+			utils.LavaFormatDebug("  project:",
+				utils.Attribute{Key: "entry_v5", Value: project_v5})
+
+			m.keeper.projectsFS.ModifyEntry(ctx, projectIndex, block, &project_v5)
 		}
 	}
 
