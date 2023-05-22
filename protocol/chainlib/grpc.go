@@ -217,7 +217,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
-		grpcHeaders := convertToMetadata(metadataValues)
+		grpcHeaders := convertToMetadataGrpc(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
@@ -385,13 +385,14 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	return reply, "", nil, nil
 }
 
-func convertToMetadata(md map[string][]string) []pairingtypes.Metadata {
-	var metadata []pairingtypes.Metadata
+func convertToMetadataGrpc(md map[string][]string) []pairingtypes.Metadata {
+	metadata := make([]pairingtypes.Metadata, len(md))
+	indexer := 0
 	for k, v := range md {
-		for _, val := range v {
-			metadata = append(metadata, pairingtypes.Metadata{Name: k, Value: val})
-		}
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v[0]}
+		indexer += 1
 	}
+	fmt.Println("metadata: ", metadata)
 	return metadata
 }
 
