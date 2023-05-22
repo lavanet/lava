@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +38,7 @@ import (
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -324,7 +326,10 @@ func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, 
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting Provider " + rpcURL)
 		nctx, cancel := context.WithTimeout(ctx, time.Second)
-		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		var tlsConf tls.Config
+		tlsConf.InsecureSkipVerify = true // skip CA validation
+		credentials := credentials.NewTLS(&tlsConf)
+		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 		if err != nil {
 			// utils.LavaFormatInfo(fmt.Sprintf("Provider is still intializing %s", err), nil)
 			cancel()
