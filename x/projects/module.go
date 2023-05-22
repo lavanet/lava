@@ -147,7 +147,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}
 	// register v4 -> v5 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.Migrate4to5); err != nil {
-		panic(fmt.Errorf("%s: failed to register migration to v4: %w", types.ModuleName, err))
+		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
 }
 

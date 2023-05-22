@@ -111,7 +111,6 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 	// trigger EpochStart() processing
 	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
-	keeper.EpochStart(ts.ctx)
 
 	// might not be found - that's ok
 	sub, _ = keeper.GetSubscription(ts.ctx, sub.Consumer)
@@ -359,10 +358,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 		Description: "dummy_desc",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{
-			{
-				Key:   anotherAccount.Addr.String(),
-				Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
-			},
+			projectstypes.ProjectDeveloperKey(anotherAccount.Addr.String()),
 		},
 		Policy: &projectstypes.Policy{
 			GeolocationProfile: uint64(1),
@@ -416,12 +412,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			block2 := uint64(ts.ctx.BlockHeight())
 
 			// force fixation entry (by adding project key)
-			projKey := []projectstypes.ProjectKey{
-				{
-					Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-				},
-			}
+			admAddr := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+			projKey := []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(admAddr)}
 			projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
 
 			// fast-forward one month (since we expire the subscription in every iteration, it depends on the iteration number)
@@ -612,10 +604,9 @@ func TestAddProjectToSubscription(t *testing.T) {
 				Name:        tt.projectName,
 				Description: tt.projectDescription,
 				Enabled:     true,
-				ProjectKeys: []projectstypes.ProjectKey{{
-					Key:   tt.anotherAdmin,
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-				}},
+				ProjectKeys: []projectstypes.ProjectKey{
+					projectstypes.ProjectAdminKey(tt.anotherAdmin),
+				},
 			}
 			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)
 			if tt.success {

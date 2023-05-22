@@ -462,13 +462,13 @@ func (m *ProjectData) GetPolicy() *Policy {
 }
 
 func init() {
-	proto.RegisterEnum("lavanet.lava.projects.ProjectKey_Type", ProjectKey_Type_name, ProjectKey_Type_value)
-	proto.RegisterType((*Project)(nil), "lavanet.lava.projects.Project")
-	proto.RegisterType((*ProjectKey)(nil), "lavanet.lava.projects.ProjectKey")
-	proto.RegisterType((*Policy)(nil), "lavanet.lava.projects.Policy")
-	proto.RegisterType((*ChainPolicy)(nil), "lavanet.lava.projects.ChainPolicy")
-	proto.RegisterType((*ProtoDeveloperData)(nil), "lavanet.lava.projects.ProtoDeveloperData")
-	proto.RegisterType((*ProjectData)(nil), "lavanet.lava.projects.ProjectData")
+	proto.RegisterEnum("lavanet.lava.projects.ProjectKey_Type_V5", ProjectKey_Type_name, ProjectKey_Type_value)
+	proto.RegisterType((*Project)(nil), "lavanet.lava.projects.Project_V5")
+	proto.RegisterType((*ProjectKey)(nil), "lavanet.lava.projects.ProjectKey_V5")
+	proto.RegisterType((*Policy)(nil), "lavanet.lava.projects.Policy_V5")
+	proto.RegisterType((*ChainPolicy)(nil), "lavanet.lava.projects.ChainPolicy_V5")
+	proto.RegisterType((*ProtoDeveloperData)(nil), "lavanet.lava.projects.ProtoDeveloperData_V5")
+	proto.RegisterType((*ProjectData)(nil), "lavanet.lava.projects.ProjectData_V5")
 }
 
 func init() { proto.RegisterFile("projects/project.proto", fileDescriptor_9f89a31663a330ce) }
