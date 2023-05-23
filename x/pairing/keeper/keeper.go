@@ -61,10 +61,12 @@ func NewKeeper(
 		subscriptionKeeper: subscriptionKeeper,
 	}
 
-	badgeTimerCallback := func(ctx sdk.Context, timerKey []byte, badgeUsedCuKey []byte) {
-		keeper.RemoveBadgeUsedCu(ctx, badgeUsedCuKey)
+	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
+	badgeTimerCallback := func(ctx sdk.Context, badgeKey []byte, _ []byte) {
+		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
 	}
-	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).WithCallbackByBlockHeight(badgeTimerCallback)
+	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).
+		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
@@ -78,13 +80,9 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.IncrementTimer(ctx)
+	k.badgeTimerStore.Tick(ctx)
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// run functions that are supposed to run in epoch start
 		k.EpochStart(ctx, types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
-}
-
-func (k Keeper) IncrementTimer(ctx sdk.Context) {
-	k.badgeTimerStore.Tick(ctx)
 }

@@ -10,21 +10,17 @@ import (
 func (k Keeper) SetBadgeUsedCu(ctx sdk.Context, badgeUsedCu types.BadgeUsedCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BadgeUsedCuKeyPrefix))
 	b := k.cdc.MustMarshal(&badgeUsedCu)
-	store.Set(types.BadgeUsedCuKey(
-		badgeUsedCu.BadgeUsedCuMapKey,
-	), b)
+	store.Set(badgeUsedCu.BadgeUsedCuKey, b)
 }
 
 // GetBadgeUsedCu returns a badgeUsedCu from its index
 func (k Keeper) GetBadgeUsedCu(
 	ctx sdk.Context,
-	badgeUsedCuMapKey []byte,
+	badgeUsedCuKey []byte,
 ) (val types.BadgeUsedCu, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BadgeUsedCuKeyPrefix))
 
-	b := store.Get(types.BadgeUsedCuKey(
-		badgeUsedCuMapKey,
-	))
+	b := store.Get(badgeUsedCuKey)
 	if b == nil {
 		return val, false
 	}
@@ -36,19 +32,20 @@ func (k Keeper) GetBadgeUsedCu(
 // RemoveBadgeUsedCu removes a badgeUsedCu from the store
 func (k Keeper) RemoveBadgeUsedCu(
 	ctx sdk.Context,
-	badgeUsedCuMapKey []byte,
+	badgeUsedCuKey []byte,
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BadgeUsedCuKeyPrefix))
-	store.Delete(types.BadgeUsedCuKey(
-		badgeUsedCuMapKey,
-	))
+	if store.Has(badgeUsedCuKey) {
+		store.Delete(badgeUsedCuKey)
+	} else {
+		panic("could not remove badgeUsedCu entry. key not found " + string(badgeUsedCuKey))
+	}
 }
 
 // GetAllBadgeUsedCu returns all badgeUsedCu
 func (k Keeper) GetAllBadgeUsedCu(ctx sdk.Context) (list []types.BadgeUsedCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BadgeUsedCuKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -58,10 +55,6 @@ func (k Keeper) GetAllBadgeUsedCu(ctx sdk.Context) (list []types.BadgeUsedCu) {
 	}
 
 	return
-}
-
-func (k Keeper) CreateBadgeUsedCuMapKey(badgeSig []byte, providerAddress string) []byte {
-	return append(badgeSig, []byte(providerAddress)...)
 }
 
 func (k Keeper) BadgeUsedCuExpiry(ctx sdk.Context, badge types.Badge) uint64 {

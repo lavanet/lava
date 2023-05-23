@@ -40,10 +40,10 @@ func TestGenesis(t *testing.T) {
 		},
 		BadgeUsedCuList: []types.BadgeUsedCu{
 			{
-				BadgeUsedCuMapKey: []byte{byte(0)},
+				BadgeUsedCuKey: []byte{byte(0)},
 			},
 			{
-				BadgeUsedCuMapKey: []byte{byte(1)},
+				BadgeUsedCuKey: []byte{byte(1)},
 			},
 		},
 		// this line is used by starport scaffolding # genesis/test/state

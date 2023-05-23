@@ -18,7 +18,7 @@ var _ = strconv.IntSize
 func createNBadgeUsedCu(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.BadgeUsedCu {
 	items := make([]types.BadgeUsedCu, n)
 	for i := range items {
-		items[i].BadgeUsedCuMapKey = []byte{byte(i)}
+		items[i].BadgeUsedCuKey = []byte{byte(i)}
 
 		keeper.SetBadgeUsedCu(ctx, items[i])
 	}
@@ -30,7 +30,7 @@ func TestBadgeUsedCuGet(t *testing.T) {
 	items := createNBadgeUsedCu(keeper, ctx, 10)
 	for _, item := range items {
 		rst, found := keeper.GetBadgeUsedCu(ctx,
-			item.BadgeUsedCuMapKey,
+			item.BadgeUsedCuKey,
 		)
 		require.True(t, found)
 		require.Equal(t,
@@ -45,10 +45,10 @@ func TestBadgeUsedCuRemove(t *testing.T) {
 	items := createNBadgeUsedCu(keeper, ctx, 10)
 	for _, item := range items {
 		keeper.RemoveBadgeUsedCu(ctx,
-			item.BadgeUsedCuMapKey,
+			item.BadgeUsedCuKey,
 		)
 		_, found := keeper.GetBadgeUsedCu(ctx,
-			item.BadgeUsedCuMapKey,
+			item.BadgeUsedCuKey,
 		)
 		require.False(t, found)
 	}

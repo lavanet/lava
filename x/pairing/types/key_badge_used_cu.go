@@ -11,13 +11,7 @@ const (
 )
 
 // BadgeUsedCuKey returns the store key to retrieve a BadgeUsedCu from the index fields
-func BadgeUsedCuKey(
-	badgeUsedCuMapKey []byte,
-) []byte {
-	var key []byte
-
-	key = append(key, badgeUsedCuMapKey...)
-	key = append(key, []byte("/")...)
-
-	return key
+func BadgeUsedCuKey(badgeSig []byte, providerAddress string) []byte {
+	badgeSig = append(badgeSig, []byte(providerAddress)...)
+	return append(badgeSig, byte('/'))
 }

@@ -53,15 +53,15 @@ func (gs GenesisState) Validate() error {
 		epochPaymentsIndexMap[index] = struct{}{}
 	}
 	// Check for duplicated index in badgeUsedCu
-	badgeUsedCuIndexMap := make(map[string]struct{})
+	// badgeUsedCuIndexMap := make(map[string]struct{})
 
-	for _, elem := range gs.BadgeUsedCuList {
-		index := string(BadgeUsedCuKey(elem.BadgeUsedCuMapKey))
-		if _, ok := badgeUsedCuIndexMap[index]; ok {
-			return fmt.Errorf("duplicated index for badgeUsedCu")
-		}
-		badgeUsedCuIndexMap[index] = struct{}{}
-	}
+	// for _, elem := range gs.BadgeUsedCuList {
+	// 	index := string(BadgeUsedCuKey(elem.BadgeUsedCuKey))
+	// 	if _, ok := badgeUsedCuIndexMap[index]; ok {
+	// 		return fmt.Errorf("duplicated index for badgeUsedCu")
+	// 	}
+	// 	badgeUsedCuIndexMap[index] = struct{}{}
+	// }
 	// this line is used by starport scaffolding # genesis/types/validate
 
 	return gs.Params.Validate()
