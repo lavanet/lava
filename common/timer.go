@@ -246,7 +246,7 @@ func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which types.TimerType) 
 
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := types.DecodeBlockAndKey(iterator.Key())
-		b.WriteString(fmt.Sprintf("block: %d key %v\n", value, key))
+		b.WriteString(fmt.Sprintf("block %d key %v data %v\n", value, key, iterator.Value()))
 	}
 
 	return b.String()
