@@ -126,7 +126,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	// add a staked provider
 	balance := int64(10000)
 	notVoterProvider := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
-	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10, true)
+	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// try to vote with the new provider, he will be on the next voting list but not in the old one
