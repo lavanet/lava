@@ -3,7 +3,9 @@ package rpcprovider
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -31,6 +33,7 @@ import (
 )
 
 const networkAddressFlag = "network-address"
+const certFlag = "cert-pem"
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -216,14 +219,29 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 			if err != nil {
 				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
 			}
+			cert, err := cmd.Flags().GetString(certFlag)
+			if err != nil {
+				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
+			}
 
 			ctx := context.Background()
 			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			var tlsConf tls.Config
-			tlsConf.InsecureSkipVerify = false // verify against CA certificates
-			credentials := credentials.NewTLS(&tlsConf)
-			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+			caCert, err := ioutil.ReadFile(cert)
+			if err != nil {
+				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
+			}
+
+			certPool := x509.NewCertPool()
+			if !certPool.AppendCertsFromPEM(caCert) {
+				return utils.LavaFormatError("failed to append server certificate", nil)
+			}
+
+			creds := credentials.NewTLS(&tls.Config{
+				RootCAs: certPool,
+			})
+
+			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
 			if err != nil {
 				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
 				utils.LavaFormatError("It means your provider is not setup correctly or is lacking CA certification", nil)
@@ -235,11 +253,18 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 		},
 	}
 
-	// RPCConsumer command flags
-	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "127.0.0.1:5555", "network address")
+	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
 	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
 	if err != nil {
 		utils.LavaFormatFatal("MarkFlagRequired Error", err)
 	}
+
+	cmdTestProviderCaCert.Flags().String(certFlag, "", "certificate file")
+	err = cmdTestProviderCaCert.MarkFlagRequired(certFlag)
+	if err != nil {
+		utils.LavaFormatFatal("MarkFlagRequired Error", err)
+	}
+
 	return cmdTestProviderCaCert
+
 }
