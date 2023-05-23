@@ -206,10 +206,10 @@ func (fs *FixationStore) AppendEntry(
 		)
 	}
 
-	blockHeight := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
-	if block < blockHeight {
-		panic(fmt.Sprintf("AppendEntry for block %d < current ctx block %d", block, blockHeight))
+	if block < ctxBlock {
+		panic(fmt.Sprintf("AppendEntry for block %d < current ctx block %d", block, ctxBlock))
 	}
 
 	// find latest entry, including possible future entries
@@ -227,7 +227,7 @@ func (fs *FixationStore) AppendEntry(
 
 		// temporary: do not allow adding new entries for an index that was deleted
 		// and still not fully cleaned up (e.g. not stale or with references held)
-		if latestEntry.IsDeletedBy(blockHeight) {
+		if latestEntry.IsDeletedBy(ctxBlock) {
 			return utils.LavaFormatError("AppendEntry",
 				fmt.Errorf("entry already deleted and pending cleanup"),
 				utils.Attribute{Key: "index", Value: index},
@@ -249,7 +249,7 @@ func (fs *FixationStore) AppendEntry(
 		// deletion, if any, cannot be for the current block, because it would have been
 		// processed at the beginning of the block (and AppendEntry would fail earlier).
 
-		if block == blockHeight {
+		if block == ctxBlock {
 			deleteAt = latestEntry.DeleteAt
 			latestEntry.DeleteAt = math.MaxUint64
 			fs.putEntry(ctx, latestEntry)
@@ -335,10 +335,10 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, bl
 
 func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, block uint64) {
 	entry := fs.getEntry(ctx, safeIndex, block)
-	blockHeight := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
-	if entry.DeleteAt != blockHeight {
-		panic(fmt.Sprintf("DelEntry entry deleted %d != current ctx block %d", entry.DeleteAt, uint64(ctx.BlockHeight())))
+	if entry.DeleteAt != ctxBlock {
+		panic(fmt.Sprintf("DelEntry entry deleted %d != current ctx block %d", entry.DeleteAt, ctxBlock))
 	}
 
 	fs.setEntryIndex(ctx, safeIndex, false)
@@ -357,7 +357,7 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, bl
 		var entry types.Entry
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
-		if entry.Block <= blockHeight {
+		if entry.Block <= ctxBlock {
 			break
 		}
 
@@ -373,7 +373,7 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, bl
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _ uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
-	block := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
@@ -423,7 +423,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _
 		}
 
 		// entry is not stale: skip
-		if !entry.IsStaleBy(block) {
+		if !entry.IsStaleBy(ctxBlock) {
 			safeToDeleteEntry = false
 			safeToDeleteIndex = false
 			continue
@@ -477,7 +477,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex string, block uint64) (types.Entry, bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryStore(ctx, safeIndex)
-	blockHeight := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
 	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
 	defer iterator.Close()
@@ -503,7 +503,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 			// for this reason, we explicitly test for a deleted entry in EntryGet()
 			// and AppendEntry(), and for stale entry in EntryFind(). so EntryGet()
 			// and EntryFind() would return not-found, and AppendEntry would fail.
-			if entry.IsStaleBy(blockHeight) && !entry.IsDeletedBy(blockHeight) {
+			if entry.IsStaleBy(ctxBlock) && !entry.IsDeletedBy(ctxBlock) {
 				break
 			}
 			return entry, true
@@ -541,10 +541,10 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec
 		return false
 	}
 
-	block := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
-	if !found || entry.IsDeletedBy(block) {
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, ctxBlock)
+	if !found || entry.IsDeletedBy(ctxBlock) {
 		return false
 	}
 
@@ -592,13 +592,13 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		return sdkerrors.ErrNotFound.Wrapf("invalid non-ascii index")
 	}
 
-	blockHeight := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
-	if block < blockHeight {
-		panic(fmt.Sprintf("DelEntry for block %d < current ctx block %d", block, blockHeight))
+	if block < ctxBlock {
+		panic(fmt.Sprintf("DelEntry for block %d < current ctx block %d", block, ctxBlock))
 	}
 
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, blockHeight)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, ctxBlock)
 	if !found || entry.HasDeleteAt() {
 		return sdkerrors.ErrNotFound
 	}

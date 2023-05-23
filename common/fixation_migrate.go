@@ -83,6 +83,8 @@ func (fs *FixationStore) doMigratePrefix(ctx sdk.Context, oldPrefix, newPrefix s
 //     entries used to begin with refcount 0 instead of refcount 1)
 //   - correct negative refcounts if found any (for extra care)
 func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
 	indices := fs.GetAllEntryIndices(ctx)
 	for _, index := range indices {
 		safeIndex, err := types.SanitizeIndex(index)
@@ -106,7 +108,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 			}
 			// if refcount still zero, make sure StaleAt is set
 			if entry.Refcount == 0 && entry.StaleAt == math.MaxUint64 {
-				entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
+				entry.StaleAt = ctxBlock + uint64(types.STALE_ENTRY_TIME)
 			}
 			fs.setEntry(ctx, entry)
 			// if StaleAt is set, then start corresponding timer
@@ -152,7 +154,7 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 
 	utils.LavaFormatDebug("migrate fixation timers")
 
-	blockHeight := uint64(ctx.BlockHeight())
+	ctxBlock := uint64(ctx.BlockHeight())
 
 	// apply migration to all entries (even deleted ones as they may still
 	// have versions in stale-period); use the raw AllEntryIndicesFilter()
@@ -177,7 +179,7 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 			utils.LavaFormatDebug("    version", utils.Attribute{Key: "entry", Value: entry})
 
 			// if StaleAt is set, then replace old style timer with new style timer
-			if entry.StaleAt != math.MaxUint && entry.StaleAt > blockHeight {
+			if entry.StaleAt != math.MaxUint && entry.StaleAt > ctxBlock {
 				fs.tstore.DelTimerByBlockHeight(ctx, entry.StaleAt, []byte{})
 				key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
 				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
