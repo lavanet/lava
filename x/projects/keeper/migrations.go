@@ -30,9 +30,8 @@ func (m Migrator) migrateFixationsVersion(ctx sdk.Context) error {
 }
 
 // Migrate2to3 implements store migration from v2 to v3:
-// - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
-// - Update keys contents
-
+//   - Trigger version upgrade of the projectsFS, develooperKeysFS fixation stores
+//   - Update keys contents
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
 		return err
@@ -114,8 +113,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 }
 
 // Migrate3to4 implements store migration from v3 to v4:
-// - Trigger version upgrade of the projectsFS, developerKeysFS fixation-stores
-
+//   - Trigger version upgrade of the projectsFS, develooperKeysFS fixation-stores
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
 		return err
@@ -124,9 +122,8 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 }
 
 // Migrate4to5 implements store migration from v4 to v5:
-// - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
-// - Update keys types (from list of types to bitmap)
-
+//   - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
+//   - Update keys types (from list of types to bitmap)
 func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {
 		return err
