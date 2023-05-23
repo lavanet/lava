@@ -9,7 +9,6 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -24,9 +23,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -121,9 +120,9 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -230,9 +229,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -351,9 +350,9 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)

@@ -111,7 +111,6 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 	// trigger EpochStart() processing
 	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
-	keeper.EpochStart(ts.ctx)
 
 	// might not be found - that's ok
 	sub, _ = keeper.GetSubscription(ts.ctx, sub.Consumer)

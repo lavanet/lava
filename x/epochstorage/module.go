@@ -16,7 +16,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/client/cli"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -168,16 +167,7 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	if am.keeper.IsEpochStart(ctx) {
-		// run functions that are supposed to run in epoch start
-		am.keeper.EpochStart(ctx)
-
-		// Notify world we have a new session
-
-		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
-		logger := am.keeper.Logger(ctx)
-		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
-	}
+	am.keeper.BeginBlock(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
