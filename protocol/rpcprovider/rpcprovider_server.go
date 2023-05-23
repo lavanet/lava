@@ -164,13 +164,8 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	var metaDataMap []pairingtypes.Metadata
-	relayMetaData := request.RelayData.GetMetadata()
-	if len(relayMetaData) > 0 {
-		metaDataMap = append(metaDataMap, relayMetaData...)
-	}
 	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, metaDataMap)
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata())
 	if err != nil {
 		return nil, nil, nil, err
 	}
