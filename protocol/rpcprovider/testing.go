@@ -268,5 +268,4 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 	}
 
 	return cmdTestProviderCaCert
-
 }
