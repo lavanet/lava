@@ -364,7 +364,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				}
 				continue
 			}
-
 		}
 
 		// If we do not have enough fetch more
