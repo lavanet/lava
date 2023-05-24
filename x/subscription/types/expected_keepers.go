@@ -32,6 +32,7 @@ type ProjectsKeeper interface {
 	CreateProject(ctx sdk.Context, subscriptionAddress string, projectData projectstypes.ProjectData, plan planstypes.Plan) error
 	DeleteProject(ctx sdk.Context, index string) error
 	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string)
+	GetAllProjectsForSubscription(ctx sdk.Context, subscription string) []string
 	// Methods imported from projectskeeper should be defined here
 }
 

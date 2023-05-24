@@ -4,6 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,8 +18,14 @@ func (k Keeper) ListProjects(goCtx context.Context, req *types.QueryListProjects
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: implement logic
-	_ = ctx
+	_, found := k.GetSubscription(ctx, req.Subscription)
+	if !found {
+		return nil, utils.LavaFormatWarning("subscription not found", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "subscription", Value: req.Subscription},
+		)
+	}
 
-	return &types.QueryListProjectsResponse{}, nil
+	projects := k.projectsKeeper.GetAllProjectsForSubscription(ctx, req.Subscription)
+
+	return &types.QueryListProjectsResponse{Projects: projects}, nil
 }
