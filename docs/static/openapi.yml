@@ -31353,17 +31353,9 @@ paths:
                         key:
                           type: string
                           title: the address of the project key
-                        types:
-                          type: array
-                          items:
-                            type: string
-                            enum:
-                              - NONE
-                              - ADMIN
-                              - DEVELOPER
-                            default: NONE
-                            title: 'bitmap, must only be power of 2'
-                          title: 'the key type, determines the privilages of the key'
+                        kinds:
+                          type: integer
+                          format: int64
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -31490,17 +31482,9 @@ paths:
                         key:
                           type: string
                           title: the address of the project key
-                        types:
-                          type: array
-                          items:
-                            type: string
-                            enum:
-                              - NONE
-                              - ADMIN
-                              - DEVELOPER
-                            default: NONE
-                            title: 'bitmap, must only be power of 2'
-                          title: 'the key type, determines the privilages of the key'
+                        kinds:
+                          type: integer
+                          format: int64
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -55903,17 +55887,9 @@ definitions:
             key:
               type: string
               title: the address of the project key
-            types:
-              type: array
-              items:
-                type: string
-                enum:
-                  - NONE
-                  - ADMIN
-                  - DEVELOPER
-                default: NONE
-                title: 'bitmap, must only be power of 2'
-              title: 'the key type, determines the privilages of the key'
+            kinds:
+              type: integer
+              format: int64
         title: list of the projects keys
       admin_policy:
         type: object
@@ -55982,6 +55958,9 @@ definitions:
       key:
         type: string
         title: the address of the project key
+      kinds:
+        type: integer
+        format: int64
       types:
         type: array
         items:
@@ -55993,14 +55972,6 @@ definitions:
           default: NONE
           title: 'bitmap, must only be power of 2'
         title: 'the key type, determines the privilages of the key'
-  lavanet.lava.projects.ProjectKey.KEY_TYPE:
-    type: string
-    enum:
-      - NONE
-      - ADMIN
-      - DEVELOPER
-    default: NONE
-    title: 'bitmap, must only be power of 2'
   lavanet.lava.projects.QueryDeveloperResponse:
     type: object
     properties:
@@ -56029,17 +56000,9 @@ definitions:
                 key:
                   type: string
                   title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
+                kinds:
+                  type: integer
+                  format: int64
             title: list of the projects keys
           admin_policy:
             type: object
@@ -56134,17 +56097,9 @@ definitions:
                 key:
                   type: string
                   title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
+                kinds:
+                  type: integer
+                  format: int64
             title: list of the projects keys
           admin_policy:
             type: object
@@ -57442,6 +57397,14 @@ definitions:
             format: uint64
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
+  lavanet.lava.projects.ProjectKey.KEY_TYPE:
+    type: string
+    enum:
+      - NONE
+      - ADMIN
+      - DEVELOPER
+    default: NONE
+    title: 'bitmap, must only be power of 2'
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:

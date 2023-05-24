@@ -29,7 +29,7 @@ type RPCInput interface {
 
 func ParseDefaultBlockParameter(block string) (int64, error) {
 	switch block {
-	case "latest":
+	case "latest", "":
 		return spectypes.LATEST_BLOCK, nil
 	case "earliest":
 		return spectypes.EARLIEST_BLOCK, nil
