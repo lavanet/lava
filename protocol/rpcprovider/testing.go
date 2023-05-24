@@ -32,8 +32,10 @@ import (
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-const networkAddressFlag = "network-address"
-const certFlag = "cert-pem"
+const (
+	networkAddressFlag = "network-address"
+	certFlag           = "cert-pem"
+)
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
 	ctx, cancel := context.WithCancel(ctx)
