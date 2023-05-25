@@ -16,18 +16,18 @@ import (
 
 func TestMatchSpecApiByName(t *testing.T) {
 	t.Parallel()
-
+	connectionType := ""
 	testTable := []struct {
 		name        string
-		serverApis  map[string]spectypes.ServiceApi
+		serverApis  map[ApiKey]*spectypes.Api
 		inputName   string
-		expectedApi spectypes.ServiceApi
+		expectedApi spectypes.Api
 		expectedOk  bool
 	}{
 		{
 			name: "test1",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/blocks/[^\\/\\s]+": {
+			serverApis: map[ApiKey]*spectypes.Api{
+				{Name: "/blocks/[^\\/\\s]+", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
 					Name: "/blocks/{height}",
 					BlockParsing: spectypes.BlockParser{
 						ParserArg:  []string{"0"},
@@ -35,31 +35,17 @@ func TestMatchSpecApiByName(t *testing.T) {
 					},
 					ComputeUnits: 10,
 					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
-						},
-					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "",
-						FunctionTemplate: "",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{},
-							ParserFunc: spectypes.PARSER_FUNC_EMPTY,
-						},
-					},
+					Category:     spectypes.SpecCategory{Deterministic: true},
 				},
 			},
 			inputName:   "/blocks/10",
-			expectedApi: spectypes.ServiceApi{Name: "/blocks/{height}"},
+			expectedApi: spectypes.Api{Name: "/blocks/{height}"},
 			expectedOk:  true,
 		},
 		{
 			name: "test2",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+": {
+			serverApis: map[ApiKey]*spectypes.Api{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
 					Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
 					BlockParsing: spectypes.BlockParser{
 						ParserArg:  []string{"0"},
@@ -67,31 +53,17 @@ func TestMatchSpecApiByName(t *testing.T) {
 					},
 					ComputeUnits: 10,
 					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
-						},
-					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "getBlockByNumber",
-						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/%d",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{"block_id", "hash"},
-							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
-						},
-					},
+					Category:     spectypes.SpecCategory{Deterministic: true},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/10",
-			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}"},
+			expectedApi: spectypes.Api{Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}"},
 			expectedOk:  true,
 		},
 		{
 			name: "test3",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/cosmos/base/tendermint/v1beta1/blocks/latest": {
+			serverApis: map[ApiKey]*spectypes.Api{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
 					Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
 					BlockParsing: spectypes.BlockParser{
 						ParserArg:  []string{"0"},
@@ -99,25 +71,11 @@ func TestMatchSpecApiByName(t *testing.T) {
 					},
 					ComputeUnits: 10,
 					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
-						},
-					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "getBlockByNumber",
-						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/latest",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{"block", "header", "height"},
-							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
-						},
-					},
+					Category:     spectypes.SpecCategory{Deterministic: true},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/latest",
-			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
+			expectedApi: spectypes.Api{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
 			expectedOk:  true,
 		},
 	}
@@ -127,7 +85,7 @@ func TestMatchSpecApiByName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, ok := matchSpecApiByName(testCase.inputName, testCase.serverApis)
+			api, ok := matchSpecApiByName(testCase.inputName, connectionType, testCase.serverApis)
 			if ok != testCase.expectedOk {
 				t.Fatalf("expected ok value %v, but got %v", testCase.expectedOk, ok)
 			}
@@ -339,16 +297,16 @@ func TestConstructFiberCallbackWithDappIDExtraction(t *testing.T) {
 
 func TestParsedMessage_GetServiceApi(t *testing.T) {
 	pm := parsedMessage{
-		api: &spectypes.ServiceApi{},
+		api: &spectypes.Api{},
 	}
-	assert.Equal(t, &spectypes.ServiceApi{}, pm.GetServiceApi())
+	assert.Equal(t, &spectypes.Api{}, pm.GetApi())
 }
 
-func TestParsedMessage_GetInterface(t *testing.T) {
+func TestParsedMessage_GetApiCollection(t *testing.T) {
 	pm := parsedMessage{
-		apiInterface: &spectypes.ApiInterface{},
+		apiCollection: &spectypes.ApiCollection{},
 	}
-	assert.Equal(t, &spectypes.ApiInterface{}, pm.GetInterface())
+	assert.Equal(t, &spectypes.ApiCollection{}, pm.GetApiCollection())
 }
 
 func TestParsedMessage_RequestedBlock(t *testing.T) {
@@ -384,60 +342,32 @@ func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 func TestGetServiceApis(t *testing.T) {
 	spec := spectypes.Spec{
 		Enabled: true,
-		Apis: []spectypes.ServiceApi{
-			{
+		ApiCollections: []*spectypes.ApiCollection{&spectypes.ApiCollection{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: spectypes.APIInterfaceRest,
+			},
+			Apis: []*spectypes.Api{{
 				Enabled: true,
 				Name:    "test-api",
-				ApiInterfaces: []spectypes.ApiInterface{
-					{
-						Interface: spectypes.APIInterfaceRest,
-					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "tag",
-				},
 			},
-			{
-				Enabled: true,
-				Name:    "test-api-2",
-				ApiInterfaces: []spectypes.ApiInterface{
-					{
-						Interface: spectypes.APIInterfaceRest,
-					},
+				{
+					Enabled: true,
+					Name:    "test-api-2",
 				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
+				{
+					Enabled: false,
+					Name:    "test-api-disabled",
 				},
-			},
-			{
-				Enabled: false,
-				Name:    "test-api-disabled",
-				ApiInterfaces: []spectypes.ApiInterface{
-					{
-						Interface: spectypes.APIInterfaceRest,
-					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
-				},
-			},
-			{
-				Enabled: true,
-				Name:    "test-api-3",
-				ApiInterfaces: []spectypes.ApiInterface{
-					{
-						Interface: spectypes.APIInterfaceGrpc,
-					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
-				},
-			},
+				{
+					Enabled: true,
+					Name:    "test-api-3",
+				}},
+		},
 		},
 	}
 
 	rpcInterface := spectypes.APIInterfaceRest
-	serverApis, _ := getServiceApis(spec, rpcInterface)
+	serverApis, _, _ := getServiceApis(spec, rpcInterface)
 
 	// Test serverApis
 	if len(serverApis) != 2 {

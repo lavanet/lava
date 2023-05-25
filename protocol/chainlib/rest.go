@@ -133,6 +133,22 @@ func (apip *RestChainParser) getSupportedApi(name string, connectionType string)
 	return api, nil
 }
 
+// SetSpec sets the spec for the TendermintChainParser
+func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
+	// Guard that the TendermintChainParser instance exists
+	if apip == nil {
+		return
+	}
+
+	// Add a read-write lock to ensure thread safety
+	apip.rwLock.Lock()
+	defer apip.rwLock.Unlock()
+
+	// extract server and tagged apis from spec
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+}
+
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
 func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
 	// Guard that the RestChainParser instance exists

@@ -48,7 +48,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, craf
 	if err != nil {
 		return nil, err
 	}
-	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: serviceApi.GetName()}
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.Api.GetName()}
 	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, tenderMsg, apiCollection), nil
 }
 
@@ -104,7 +104,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(msg.Method)
+	serviceApi, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
@@ -112,10 +112,9 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// Extract default block parser
 	blockParser := serviceApi.BlockParsing
 
-	// Check if custom block parser exists in the api interface
-	// Use custom block parser only for URI calls
-	if apiInterface.GetOverwriteBlockParsing() != nil && !isJsonrpc {
-		blockParser = *apiInterface.GetOverwriteBlockParsing()
+	apiCollection, err := apip.getApiCollection(connectionType)
+	if err != nil {
+
 	}
 
 	// Fetch requested block, it is used for data reliability
@@ -127,7 +126,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if !isJsonrpc {
 		tenderMsg.Path = url // add path
 	}
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, tenderMsg)
+	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, tenderMsg, apiCollection)
 	return nodeMsg, nil
 }
 
@@ -139,32 +138,6 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		msg:            msg,
 	}
 	return nodeMsg
-}
-
-// getSupportedApi fetches service api from spec by name
-func (apip *TendermintChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the TendermintChainParser instance exists
-	if apip == nil {
-		return nil, errors.New("TendermintChainParser not defined")
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Fetch server api by name
-	api, ok := apip.serverApis[name]
-	// Return an error if spec does not exist
-	if !ok {
-		return nil, errors.New("tendermintRPC api not supported")
-	}
-
-	// Return an error if api is disabled
-	if !api.Enabled {
-		return nil, errors.New("api is disabled")
-	}
-
-	return &api, nil
 }
 
 // SetSpec sets the spec for the TendermintChainParser
@@ -179,12 +152,8 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
-
-	// Set the spec field of the TendermintChainParser object
-	apip.spec = spec
-	apip.serverApis = serverApis
-	apip.BaseChainParser.SetTaggedApis(taggedApis)
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -471,16 +440,16 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	// create a new http client with a timeout set by the getTimePerCu function
 	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
 	}
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
 	// create context
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetInterface().Category.HangingApi {
+	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
 	connectCtx, cancel := cp.httpNodeUrl.LowerContextTimeout(ctx, relayTimeout)
@@ -525,7 +494,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	// Get rpc connection from the connection pool
 	var rpc *rpcclient.Client
 	if ch != nil {
-		internalPath := chainMessage.GetServiceApi().InternalPath
+		internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 		rpc, err = cp.conn[internalPath].GetRpc(ctx, true)
 		if err != nil {
 			return nil, "", nil, err
@@ -552,9 +521,9 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// create a context with a timeout set by the LocalNodeTimePerCu function
-		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
-		if chainMessage.GetInterface().Category.HangingApi {
+		if chainMessage.GetApi().Category.HangingApi {
 			relayTimeout += cp.averageBlockTime
 		}
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
