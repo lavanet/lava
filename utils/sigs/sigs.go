@@ -233,7 +233,12 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 
 func CalculateContentHashForRelayData(relayRequestData *pairingtypes.RelayPrivateData) []byte {
 	requestBlockBytes := make([]byte, 8)
+	metadataBytes := make([]byte, 0)
+	metadata := relayRequestData.Metadata
+	for _, metadataEntry := range metadata {
+		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
+	}
 	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(relayRequestData.RequestBlock))
-	msgData := bytes.Join([][]byte{[]byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
+	msgData := bytes.Join([][]byte{metadataBytes, []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
 	return HashMsg(msgData)
 }

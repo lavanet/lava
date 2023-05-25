@@ -13,6 +13,7 @@ import (
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
 )
 
@@ -21,6 +22,7 @@ type GrpcMessage struct {
 	Path       string
 	methodDesc *desc.MethodDescriptor
 	formatter  grpcurl.Formatter
+	Header     []pairingtypes.Metadata
 }
 
 // GetParams will be deprecated after we remove old client
