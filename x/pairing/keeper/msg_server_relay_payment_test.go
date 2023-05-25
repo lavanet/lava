@@ -664,22 +664,22 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 
 	// calculate total used CU
 	var totalCuUsed uint64
-	var totalPayed uint64
+	var totalPaid uint64
 	for _, relay := range relayPaymentMessage.Relays {
-		cuused := relay.CuSum
-		totalCuUsed += cuused
+		cuUsed := relay.CuSum
+		totalCuUsed += cuUsed
 		if relay.QosReport != nil {
 			score, err := relay.QosReport.ComputeQoS()
 			require.Nil(t, err)
 
-			cuused = (score.Mul(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))).Add(sdk.OneDec().Sub(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))))).MulInt64(int64(cuused)).TruncateInt().Uint64()
+			cuUsed = (score.Mul(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))).Add(sdk.OneDec().Sub(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))))).MulInt64(int64(cuUsed)).TruncateInt().Uint64()
 		}
-		totalPayed += cuused
+		totalPaid += cuUsed
 	}
 
 	// verify provider's balance
 	mint := ts.keepers.Pairing.MintCoinsPerCU(_ctx)
-	want := mint.MulInt64(int64(totalPayed))
+	want := mint.MulInt64(int64(totalPaid))
 	require.Equal(t, balance+want.TruncateInt64(),
 		ts.keepers.BankKeeper.GetBalance(_ctx, providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
 
@@ -736,7 +736,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	projKeeper := ts.keepers.Projects
 
 	subscriptionOwner := ts.clients[0].Addr.String()
-	proj1PK, projectAdmin1 := sigs.GenerateFloatingKey()
+	proj1SK, projectAdmin1 := sigs.GenerateFloatingKey()
 	_, projectAdmin2 := sigs.GenerateFloatingKey()
 
 	err := subkeeper.CreateSubscription(_ctx, subscriptionOwner, subscriptionOwner, ts.plan.Index, 1)
@@ -777,7 +777,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	}
 	relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, &QoS)
 
-	relaySession.Sig, err = sigs.SignRelay(proj1PK, *relaySession)
+	relaySession.Sig, err = sigs.SignRelay(proj1SK, *relaySession)
 	require.Nil(t, err)
 
 	// Request payment (helper function validates the balances and verifies if we should get an error through valid)
