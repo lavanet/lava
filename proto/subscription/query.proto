@@ -21,6 +21,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
 	}
 
+// Queries a list of ListProjects items.
+	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -39,6 +44,14 @@ message QueryCurrentRequest {
 
 message QueryCurrentResponse {
   Subscription sub = 1 [(gogoproto.nullable) = true];
+}
+
+message QueryListProjectsRequest {
+  string subscription = 1;
+}
+
+message QueryListProjectsResponse {
+  repeated string projects = 1;
 }
 
 // this line is used by starport scaffolding # 3
