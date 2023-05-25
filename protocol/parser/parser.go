@@ -445,7 +445,5 @@ func appendInterfaceToInterfaceArrayWithError(value string) ([]interface{}, erro
 	if value == "" {
 		return nil, ValueNotSetError
 	}
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, value)
-	return retArr, nil
+	return appendInterfaceToInterfaceArray(value), nil
 }
