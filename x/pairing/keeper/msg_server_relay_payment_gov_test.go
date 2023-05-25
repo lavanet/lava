@@ -750,16 +750,6 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.Equal(t, uint64(relayRequest.GetEpoch()), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetBlock())
 	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
 
-	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
-	qresponse, err := ts.keepers.Pairing.UserEntry(ts.ctx, &pairingtypes.QueryUserEntryRequest{Address: ts.clients[0].Addr.String(), ChainID: relayRequest.GetSpecId(), Block: uint64(relayRequest.GetEpoch())})
-	require.Nil(t, err)
-
-	if qresponse.MaxCU < relayRequest.CuSum {
-		require.Equal(t, relayRequest.GetCuSum(), qresponse.MaxCU)
-	} else {
-		require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
-	}
-
 	// Get the providerPaymentStorage struct directly
 	providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
 	require.Equal(t, true, found)
@@ -769,11 +759,5 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	uniquePaymentStorageClientProvider, found := ts.keepers.Pairing.GetUniquePaymentStorageClientProvider(sdk.UnwrapSDKContext(ts.ctx), uniquePaymentStorageClientProviderKey)
 	require.Equal(t, true, found)
 	require.Equal(t, uint64(relayRequest.GetEpoch()), uniquePaymentStorageClientProvider.GetBlock())
-
-	if qresponse.MaxCU < relayRequest.CuSum {
-		require.Equal(t, relayRequest.GetCuSum(), qresponse.MaxCU)
-	} else {
-		require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProvider.GetUsedCU())
-	}
 	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProvider.GetUsedCU())
 }
