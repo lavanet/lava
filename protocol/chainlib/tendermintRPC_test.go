@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"encoding/json"
-	"sync"
 	"testing"
 	"time"
 
@@ -59,54 +58,54 @@ func TestTendermintChainParser_NilGuard(t *testing.T) {
 	apip.SetSpec(spectypes.Spec{})
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
-	apip.getSupportedApi("")
+	apip.getSupportedApi("", "")
 	apip.ParseMsg("", []byte{}, "")
 }
 
 func TestTendermintGetSupportedApi(t *testing.T) {
+	connectionType := "test"
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &TendermintChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+		},
 	}
-	api, err := apip.getSupportedApi("API1")
+	api, err := apip.getSupportedApi("API1", connectionType)
 	assert.NoError(t, err)
 	assert.Equal(t, "API1", api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &TendermintChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+		},
 	}
-	_, err = apip.getSupportedApi("API2")
+	_, err = apip.getSupportedApi("API2", connectionType)
 	assert.Error(t, err)
 	assert.Equal(t, "tendermintRPC api not supported", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &TendermintChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: false}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+		},
 	}
-	_, err = apip.getSupportedApi("API1")
+	_, err = apip.getSupportedApi("API1", connectionType)
 	assert.Error(t, err)
 	assert.Equal(t, "api is disabled", err.Error())
 }
 
 func TestTendermintParseMessage(t *testing.T) {
+	connectionType := "test"
 	apip := &TendermintChainParser{
-		rwLock: sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{
-			"API1": {
-				Name:    "API1",
-				Enabled: true,
-				ApiInterfaces: []spectypes.ApiInterface{{
-					Type: spectypes.APIInterfaceTendermintRPC,
-				}},
-				BlockParsing: spectypes.BlockParser{
-					ParserArg:  []string{"latest"},
-					ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{
+				ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
+					Name:    "API1",
+					Enabled: true,
 				},
 			},
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceTendermintRPC}}},
 		},
 	}
 
@@ -122,6 +121,6 @@ func TestTendermintParseMessage(t *testing.T) {
 	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceTendermintRPC)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)
 	assert.Equal(t, msg.RequestedBlock(), int64(-2))
 }

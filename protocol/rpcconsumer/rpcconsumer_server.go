@@ -184,10 +184,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 
-	isSubscription := chainMessage.GetInterface().Category.Subscription
+	isSubscription := chainMessage.GetApi().Category.Subscription
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
+	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
 	relayResult = &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
 	if err != nil {
 		return relayResult, err
@@ -209,7 +209,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// try using cache before sending relay
 	var reply *pairingtypes.RelayReply
 
-	reply, err = rpccs.cache.GetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+	reply, err = rpccs.cache.GetEntry(ctx, relayRequest, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 	if err == nil && reply != nil {
 		// Info was fetched from cache, so we don't need to change the state
 		// so we can return here, no need to update anything and calculate as this info was fetched from the cache
@@ -225,7 +225,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	extraRelayTimeout := time.Duration(0)
-	if chainMessage.GetInterface().Category.HangingApi {
+	if chainMessage.GetApi().Category.HangingApi {
 		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 	}
 	relayTimeout := extraRelayTimeout + common.GetTimePerCu(singleConsumerSession.LatestRelayCu) + common.AverageWorldLatency
@@ -250,14 +250,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
 	pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 	latestBlock := relayResult.Reply.LatestBlock
-	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetInterface().Category.HangingApi) // session done successfully
+	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 	// set cache in a non blocking call
 	go func() {
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
+		err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, dappID, relayResult.Reply, relayResult.Finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 			utils.LavaFormatWarning("error updating cache with new entry", err2)
 		}
@@ -345,7 +345,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayResult", Value: relayResult})
 	}
 
-	specCategory := chainMessage.GetInterface().Category
+	specCategory := chainMessage.GetApi().Category
 	if !specCategory.Deterministic || !relayResult.Finalized {
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}

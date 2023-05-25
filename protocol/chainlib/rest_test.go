@@ -1,7 +1,6 @@
 package chainlib
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -58,57 +57,61 @@ func TestRestChainParser_NilGuard(t *testing.T) {
 	apip.SetSpec(spectypes.Spec{})
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
-	apip.getSupportedApi("")
+	apip.getSupportedApi("", "")
 	apip.ParseMsg("", []byte{}, "")
 }
 
 func TestRestGetSupportedApi(t *testing.T) {
+	connectionType := "test"
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &RestChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+		},
 	}
-	api, err := apip.getSupportedApi("API1")
+	api, err := apip.getSupportedApi("API1", connectionType)
 	assert.NoError(t, err)
 	assert.Equal(t, "API1", api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &RestChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: true}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+		},
 	}
-	_, err = apip.getSupportedApi("API2")
+	_, err = apip.getSupportedApi("API2", connectionType)
 	assert.Error(t, err)
 	assert.Equal(t, "rest api not supported API2", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
-		rwLock:     sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{"API1": {Name: "API1", Enabled: false}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+		},
 	}
-	_, err = apip.getSupportedApi("API1")
+	_, err = apip.getSupportedApi("API1", connectionType)
 	assert.Error(t, err)
 	assert.Equal(t, "api is disabled", err.Error())
 }
 
 func TestRestParseMessage(t *testing.T) {
+	connectionType := "test"
 	apip := &RestChainParser{
-		rwLock: sync.RWMutex{},
-		serverApis: map[string]spectypes.ServiceApi{
-			"API1": {
-				Name:    "API1",
-				Enabled: true,
-				ApiInterfaces: []spectypes.ApiInterface{{
-					Type: spectypes.APIInterfaceRest,
-				}},
+		BaseChainParser: BaseChainParser{
+			serverApis: map[ApiKey]*spectypes.Api{
+				ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
+					Name:    "API1",
+					Enabled: true,
+				},
 			},
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceRest}}},
 		},
 	}
 
 	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceRest)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)
 
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:      []byte("test message"),

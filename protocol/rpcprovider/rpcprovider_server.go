@@ -141,7 +141,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			// Therefore the signature changes, so we need the original copy to extract the address from it.
 			// we want this code to run in parallel so it doesn't stop the flow
 
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
+			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -169,7 +169,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
+	relayCU := chainMessage.GetApi().ComputeUnits
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
@@ -203,7 +203,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		if relayError != nil {
 			return rpcps.handleRelayErrorStatus(relayError)
 		} else {
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
+			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -502,7 +502,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 	}
 
-	apiName := chainMsg.GetServiceApi().Name
+	apiName := chainMsg.GetApi().Name
 	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
 		err := rpcps.processUnsubscribe(ctx, apiName, consumerAddr, reqParams, uint64(request.RelayData.RequestBlock))
 		if err != nil {
