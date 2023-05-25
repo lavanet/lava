@@ -149,38 +149,6 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 		return details, err
 	}
 
-	// currentApis := make(map[string]bool)
-	// for _, api := range spec.Apis {
-	// 	currentApis[api.Name] = true
-	// }
-
-	// var mergedApis []types.ServiceApi
-	// mergedApisMap := make(map[string]types.ServiceApi)
-
-	// // collect all parents' Specs' APIs
-	// for _, imported := range parents {
-	// 	for _, api := range imported.Apis {
-	// 		if api.Enabled {
-	// 			// duplicate API(s) not allowed
-	// 			// (unless current Spec has an override for same API)
-	// 			if _, found := mergedApisMap[api.Name]; found {
-	// 				if _, found := currentApis[api.Name]; !found {
-	// 					return details, fmt.Errorf("duplicate imported api: %s (in spec: %s)", api.Name, imported.Index)
-	// 				}
-	// 			}
-	// 			mergedApisMap[api.Name] = api
-	// 			mergedApis = append(mergedApis, api)
-	// 		}
-	// 	}
-	// }
-
-	// // merge collected APIs into current spec's APIs (unless overridden)
-	// for _, api := range mergedApis {
-	// 	if _, found := currentApis[api.Name]; !found {
-	// 		spec.Apis = append(spec.Apis, api)
-	// 	}
-	// }
-
 	return details, nil
 }
 

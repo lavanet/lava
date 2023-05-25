@@ -40,32 +40,61 @@ func (apic *ApiCollection) Inherit(relevantCollections []*ApiCollection, depende
 }
 
 func (apic *ApiCollection) ApisMerge(relevantCollections []*ApiCollection, dependencies map[CollectionData]struct{}) error {
+	// TODO: also merge headers
+
+	// Merge apis
 	currentApis := make(map[string]struct{})
 	for _, api := range apic.Apis {
 		currentApis[api.Name] = struct{}{}
 	}
 	var mergedApis []*Api
-	mergedApisMap := make(map[string]*Api)
-	// TODO: also Expand headers
+	mergedMap := make(map[string]struct{})
 	for _, collection := range relevantCollections {
 		for _, api := range collection.Apis {
 			if api.Enabled {
 				// duplicate API(s) not allowed
-				// (unless current Spec has an override for same API)
-				if _, found := mergedApisMap[api.Name]; found {
+				// (unless current ApiCollection has an override for same API)
+				if _, found := mergedMap[api.Name]; found {
 					if _, found := currentApis[api.Name]; !found {
 						return fmt.Errorf("duplicate imported api: %s (in collection: %v)", api.Name, collection.CollectionData)
 					}
 				}
-				mergedApisMap[api.Name] = api
+				mergedMap[api.Name] = struct{}{}
 				mergedApis = append(mergedApis, api)
 			}
 		}
 	}
-	// merge collected APIs into current spec's APIs (unless overridden)
+	// merge collected APIs into current apiCollection's APIs (unless overridden)
 	for _, api := range mergedApis {
 		if _, found := currentApis[api.Name]; !found {
 			apic.Apis = append(apic.Apis, api)
+		}
+	}
+
+	// merge Parsers
+	currentParsers := make(map[string]struct{})
+	for _, parsing := range apic.Parsing {
+		currentParsers[parsing.FunctionTag] = struct{}{}
+	}
+	var mergedParsing []*Parsing
+	mergedMap = make(map[string]struct{})
+	for _, collection := range relevantCollections {
+		for _, parsing := range collection.Parsing {
+			// duplicate functionTag(s) not allowed
+			// (unless current ApiCollection has an override for same API)
+			if _, found := mergedMap[parsing.FunctionTag]; found {
+				if _, found := currentApis[parsing.FunctionTag]; !found {
+					return fmt.Errorf("duplicate imported functionTag: %s (in collection: %v)", parsing.FunctionTag, collection.CollectionData)
+				}
+			}
+			mergedMap[parsing.FunctionTag] = struct{}{}
+			mergedParsing = append(mergedParsing, parsing)
+		}
+	}
+	// merge collected parsing into current apiCollection's parsing (unless overridden)
+	for _, parsing := range mergedParsing {
+		if _, found := currentParsers[parsing.FunctionTag]; !found {
+			apic.Parsing = append(apic.Parsing, parsing)
 		}
 	}
 	return nil
@@ -75,7 +104,7 @@ func (apic *ApiCollection) Equals(other *ApiCollection) bool {
 	return other.CollectionData == apic.CollectionData
 }
 
-// all apiCollections are already expanded
+// assumes relevantParentCollections are already expanded
 func (apic *ApiCollection) InheritApis(myCollections map[CollectionData]*ApiCollection, relevantParentCollections []*ApiCollection) error {
 	for _, other := range relevantParentCollections {
 		if !apic.Equals(other) {
