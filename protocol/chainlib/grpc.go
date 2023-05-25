@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -34,9 +33,6 @@ import (
 )
 
 type GrpcChainParser struct {
-	spec       spectypes.Spec
-	rwLock     sync.RWMutex
-	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
 }
 
@@ -45,16 +41,19 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
-func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType)
 	}
-
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+	if err != nil {
+		return nil, err
+	}
 	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
 		Msg:  nil,
-		Path: serviceApi.GetName(),
+		Path: parsing.Api.GetName(),
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage), nil
+	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -65,14 +64,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Check API is supported and save it in nodeMsg.
-	serviceApi, err := apip.getSupportedApi(url)
+	serviceApi, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
-	}
-
-	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
-	if apiInterface == nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
 	// Construct grpcMessage
@@ -89,45 +83,23 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// 	return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
 	// }
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, spectypes.NOT_APPLICABLE, &grpcMessage)
+	apiCollection, err := apip.getApiCollection(connectionType)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to getApiCollection gRPC", err)
+	}
+
+	nodeMsg := apip.newChainMessage(serviceApi, spectypes.NOT_APPLICABLE, &grpcMessage, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*GrpcChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage) *parsedMessage {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
+		api:            api,
 		msg:            grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		requestedBlock: requestedBlock,
+		apiCollection:  apiCollection,
 	}
 	return nodeMsg
-}
-
-// getSupportedApi fetches service api from spec by name
-func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the GrpcChainParser instance exists
-	if apip == nil {
-		return nil, errors.New("GrpcChainParser not defined")
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Fetch server api by name
-	api, ok := apip.serverApis[name]
-
-	// Return an error if spec does not exist
-	if !ok {
-		return nil, utils.LavaFormatError("GRPC api not supported", nil, utils.Attribute{Key: "name", Value: name})
-	}
-
-	// Return an error if api is disabled
-	if !api.Enabled {
-		return nil, utils.LavaFormatError("GRPC api is disabled", nil, utils.Attribute{Key: "name", Value: name})
-	}
-
-	return &api, nil
 }
 
 // SetSpec sets the spec for the GrpcChainParser
@@ -142,12 +114,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-
-	// Set the spec field of the JsonRPCChainParser object
-	apip.spec = spec
-	apip.serverApis = serverApis
-	apip.BaseChainParser.SetTaggedApis(taggedApis)
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -283,9 +251,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetInterface().Category.HangingApi {
+	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
 	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)

@@ -339,7 +339,7 @@ func TestConstructFiberCallbackWithDappIDExtraction(t *testing.T) {
 
 func TestParsedMessage_GetServiceApi(t *testing.T) {
 	pm := parsedMessage{
-		serviceApi: &spectypes.ServiceApi{},
+		api: &spectypes.ServiceApi{},
 	}
 	assert.Equal(t, &spectypes.ServiceApi{}, pm.GetServiceApi())
 }

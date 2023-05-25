@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,9 +25,6 @@ import (
 )
 
 type TendermintChainParser struct {
-	spec       spectypes.Spec
-	rwLock     sync.RWMutex
-	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
 }
 
@@ -38,7 +33,7 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
-func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
 	}
@@ -46,11 +41,15 @@ func (apip *TendermintChainParser) CraftMessage(serviceApi spectypes.ServiceApi,
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
-		Method:  serviceApi.GetName(),
+		Method:  parsing.Api.GetName(),
 		Params:  nil,
 	}
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+	if err != nil {
+		return nil, err
+	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: serviceApi.GetName()}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, tenderMsg), nil
+	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, tenderMsg, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -113,11 +112,6 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// Extract default block parser
 	blockParser := serviceApi.BlockParsing
 
-	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
-	if apiInterface == nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
-	}
-
 	// Check if custom block parser exists in the api interface
 	// Use custom block parser only for URI calls
 	if apiInterface.GetOverwriteBlockParsing() != nil && !isJsonrpc {
@@ -137,10 +131,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.TendermintrpcMessage) ChainMessage {
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) ChainMessage {
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
+		api:            serviceApi,
+		apiCollection:  apiCollection,
 		requestedBlock: requestedBlock,
 		msg:            msg,
 	}

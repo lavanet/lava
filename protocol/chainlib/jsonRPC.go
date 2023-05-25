@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,9 +26,6 @@ import (
 )
 
 type JsonRPCChainParser struct {
-	spec       spectypes.Spec
-	rwLock     sync.RWMutex
-	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
 }
 
@@ -38,18 +34,21 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
-func (apip *JsonRPCChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType)
 	}
-
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+	if err != nil {
+		return nil, err
+	}
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
-		Method:  serviceApi.GetName(),
+		Method:  parsing.Api.GetName(),
 		Params:  nil,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, msg), nil
+	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, msg, apiCollection), nil
 }
 
 // this func parses message data into chain message object
@@ -67,28 +66,28 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(msg.Method)
+	serviceApi, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
 
-	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
-	if apiInterface == nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	apiCollection, err := apip.getApiCollection(connectionType)
+	if err != nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, serviceApi.Name, err)
 	}
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
 		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing}, utils.Attribute{Key: "service_api", Value: serviceApi.Name})
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, *msg)
+	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, *msg, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage) *parsedMessage {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
+		api:            serviceApi,
+		apiCollection:  apiCollection,
 		requestedBlock: requestedBlock,
 		msg:            msg,
 	}
@@ -107,47 +106,16 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-
-	// Set the spec field of the JsonRPCChainParser object
-	apip.spec = spec
-	apip.serverApis = serverApis
-	apip.BaseChainParser.SetTaggedApis(taggedApis)
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
 	internalPaths := map[string]struct{}{}
-	for _, api := range apip.serverApis {
-		internalPaths[api.InternalPath] = struct{}{}
+	for _, apiCollection := range apip.apiCollections {
+		internalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
 	}
 	return internalPaths
-}
-
-// getSupportedApi fetches service api from spec by name
-func (apip *JsonRPCChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the JsonRPCChainParser instance exists
-	if apip == nil {
-		return nil, errors.New("JsonRPCChainParser not defined")
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Fetch server api by name
-	api, ok := apip.serverApis[name]
-
-	// Return an error if spec does not exist
-	if !ok {
-		return nil, errors.New("jsonRPC api not supported")
-	}
-
-	// Return an error if api is disabled
-	if !api.Enabled {
-		return nil, errors.New("api is disabled")
-	}
-
-	return &api, nil
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -390,7 +358,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
-	internalPath := chainMessage.GetServiceApi().InternalPath
+	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
@@ -408,9 +376,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 		// check if this API is hanging (waiting for block confirmation)
-		if chainMessage.GetInterface().Category.HangingApi {
+		if chainMessage.GetApi().Category.HangingApi {
 			relayTimeout += cp.averageBlockTime
 		}
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
