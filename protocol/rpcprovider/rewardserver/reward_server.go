@@ -317,7 +317,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			if err != nil {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, could not parse index after a .", nil, utils.Attribute{Key: "attribute", Value: attribute.Key})
 			}
-			if index < 0 || index > len(event.Attributes) {
+			if index < 0 {
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
 		}

@@ -68,7 +68,7 @@ func (apip *GrpcChainParser) setupForProvider(grpcEndpoint string) error {
 
 func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType)
+		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, nil)
 	}
 
 	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
@@ -79,7 +79,7 @@ func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craft
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("GrpcChainParser not defined")
@@ -102,6 +102,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		Path:     url,
 		Codec:    apip.codec,
 		Registry: apip.registry,
+		Header:   metadata,
 	}
 
 	// // Fetch requested block, it is used for data reliability
@@ -245,10 +246,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+		grpcHeaders := convertToMetadataGrpc(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, grpcHeaders)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
@@ -320,6 +322,15 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
+	if len(nodeMessage.Header) > 0 {
+		metadataMap := make(map[string]string)
+		for _, metaData := range nodeMessage.Header {
+			metadataMap[metaData.Name] = metaData.Value
+		}
+		md := metadata.New(metadataMap)
+		ctx = metadata.NewOutgoingContext(ctx, md)
+	}
+
 	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
 	if chainMessage.GetInterface().Category.HangingApi {
@@ -409,6 +420,17 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		Data: respBytes,
 	}
 	return reply, "", nil, nil
+}
+
+func convertToMetadataGrpc(md map[string][]string) []pairingtypes.Metadata {
+	metadata := make([]pairingtypes.Metadata, len(md))
+	indexer := 0
+	for k, v := range md {
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v[0]}
+		indexer += 1
+	}
+	fmt.Println("metadata: ", metadata)
+	return metadata
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {
