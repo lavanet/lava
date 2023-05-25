@@ -73,7 +73,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, ts.clients[clientIndex].Addr, providerSdkAddress)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, true, ts.clients[clientIndex].Addr, providerSdkAddress)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -165,7 +165,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -269,7 +269,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	Relays = append(Relays, relayRequest)
 
 	// send relay payment and check the funds did transfer normally
-	payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[0].Addr, provider0_addr)
+	payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[0].Addr, provider0_addr)
 
 	// advance enough epochs so the unresponsive provider will be punished
 	if largerConst < recommendedEpochNumToCollectPayment {
@@ -315,7 +315,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		RelaysAfter = append(RelaysAfter, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: RelaysAfter}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: RelaysAfter}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// test the provider is still unstaked
@@ -391,7 +391,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
