@@ -198,11 +198,7 @@ func (k Keeper) CreateSubscription(
 
 	// use current block's timestamp to calculate next month's time
 	timestamp := ctx.BlockTime()
-	expiry := timestamp
-
-	for i := 0; i < int(duration); i++ {
-		expiry = nextMonth(expiry)
-	}
+	expiry := nextMonth(timestamp)
 
 	sub.MonthExpiryTime = uint64(expiry.Unix())
 
