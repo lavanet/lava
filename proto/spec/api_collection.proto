@@ -12,8 +12,7 @@ message ApiCollection {
   repeated Api apis = 3;
   repeated Header headers = 4;
 	repeated CollectionData inheritanceApis = 5; // by collectionKey
-	float compute_units_multiplier = 6;
-	repeated Parsing parsing = 7;
+	repeated Parsing parsing = 6;
 }
 
 message CollectionData {
