@@ -202,7 +202,7 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 	return
 }
 
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (expectedInterfaces map[string]bool) {
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[string]bool) {
 	expectedInterfaces = make(map[string]bool)
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
@@ -211,7 +211,7 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 			panic(err)
 		}
 		for _, api := range spec.ApiCollections {
-			if api.Enabled {
+			if api.Enabled && (!mandatory || api.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
 				expectedInterfaces[api.CollectionData.ApiInterface] = true
 			}
 		}

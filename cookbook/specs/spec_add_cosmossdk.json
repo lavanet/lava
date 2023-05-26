@@ -3499,15 +3499,6 @@
                                 "extra_compute_units": "0"
                             },
                             {
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
                                 "name": "cosmos.tx.v1beta1.Service/Simulate",
                                 "block_parsing": {
                                     "parser_arg": [

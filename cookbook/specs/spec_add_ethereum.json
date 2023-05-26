@@ -25,9 +25,9 @@
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "",
+                            "api_interface": "jsonrpc",
                             "internal_path": "",
-                            "type": "",
+                            "type": "POST",
                             "add_on": ""
                         },
                         "apis": [

@@ -27,7 +27,7 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 		chainId := spec.GetIndex()
 
 		// get the spec's expected interfaces
-		expectedInterfaces := k.GetExpectedInterfacesForSpec(ctx, chainId)
+		expectedInterfaces := k.GetExpectedInterfacesForSpec(ctx, chainId, true)
 
 		// copy the expectedInterfaces's keys (which are the interface names) to a string list
 		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)

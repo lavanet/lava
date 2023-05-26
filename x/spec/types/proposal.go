@@ -9,7 +9,7 @@ import (
 
 func checkSpecProposal(spec Spec) error {
 	if len(strings.TrimSpace(spec.Name)) == 0 {
-		return sdkerrors.Wrap(ErrBlankSpecName, "spec name cannot be blank")
+		return sdkerrors.Wrapf(ErrBlankSpecName, "spec name cannot be blank %v", spec)
 	}
 	if len(strings.TrimSpace(spec.Index)) == 0 {
 		return sdkerrors.Wrap(ErrBlankSpecName, "spec index cannot be blank")
@@ -20,9 +20,17 @@ func checkSpecProposal(spec Spec) error {
 
 	for _, apiCollection := range spec.ApiCollections {
 		checkUnique := map[string]bool{}
-		for _, api := range apiCollection.Apis {
+		for idx, api := range apiCollection.Apis {
 			if len(strings.TrimSpace(api.Name)) == 0 {
-				return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
+				prevApi := ""
+				if idx != 0 {
+					prevApi = apiCollection.Apis[idx-1].Name
+				} else {
+					if idx+1 < len(apiCollection.Apis) {
+						prevApi = apiCollection.Apis[idx+1].Name
+					}
+				}
+				return sdkerrors.Wrapf(ErrBlankApiName, "api name cannot be blank, %#v, in spec %s:%s, previous/next api: %s", apiCollection.CollectionData, spec.Index, spec.Name, prevApi)
 			}
 			if _, ok := checkUnique[api.Name]; ok {
 				return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))

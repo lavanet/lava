@@ -183,7 +183,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {
-	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID)
+	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
 	geolocMap := map[string]bool{} // TODO: turn this into spectypes.ApiInterface
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 	geolocKey := func(intefaceName string, geolocation uint64) string {

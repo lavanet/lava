@@ -69,7 +69,7 @@ func TestMatchSpecApiByName(t *testing.T) {
 		{
 			name: "test3",
 			serverApis: map[ApiKey]ApiContainer{
-				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", ConnectionType: connectionType}: ApiContainer{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", ConnectionType: connectionType}: {
 					api: &spectypes.Api{
 						Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
 						BlockParsing: spectypes.BlockParser{
