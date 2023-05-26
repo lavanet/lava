@@ -59,7 +59,7 @@ func TestJSONChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "")
+	apip.ParseMsg("", []byte{}, "", nil)
 }
 
 func TestJSONGetSupportedApi(t *testing.T) {
@@ -115,7 +115,7 @@ func TestJSONParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceJsonRPC)
+	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceJsonRPC, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)

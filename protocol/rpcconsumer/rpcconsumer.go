@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +22,7 @@ import (
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -81,7 +83,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string) (err error) {
 	if commonlib.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -92,6 +94,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
+
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -118,7 +121,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
 	errCh := make(chan error)
-
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
+	if err != nil {
+		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
+	}
+	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 	for _, rpcEndpoint := range rpcEndpoints {
@@ -175,7 +183,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -236,11 +244,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
+			// set viper
 			config_name := DefaultRPCConsumerFileName
 			if len(args) == 1 {
 				config_name = args[0] // name of config file (without extension)
@@ -250,6 +254,17 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(app.DefaultNodeHome)
+
+			// set log format
+			logFormat := viper.GetString(flags.FlagLogFormat)
+			utils.JsonFormat = logFormat == "json"
+
+			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
@@ -281,10 +296,18 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
+
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
+				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
+				if err == nil {
+					if clientTomlConfig.ChainID != "" {
+						networkChainId = clientTomlConfig.ChainID
+					}
+				}
 			}
+			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
@@ -330,8 +353,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
-
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy)
+			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr)
 			return err
 		},
 	}
@@ -347,6 +370,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
+	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	return cmdRPCConsumer
 }
 

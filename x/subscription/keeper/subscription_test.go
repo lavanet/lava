@@ -93,6 +93,7 @@ type testStruct struct {
 	_ctx    context.Context
 	ctx     sdk.Context
 	keepers *keepertest.Keepers
+	servers *keepertest.Servers
 	plans   []planstypes.Plan
 }
 
@@ -111,7 +112,6 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 	// trigger EpochStart() processing
 	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
-	keeper.EpochStart(ts.ctx)
 
 	// might not be found - that's ok
 	sub, _ = keeper.GetSubscription(ts.ctx, sub.Consumer)
@@ -119,7 +119,7 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 }
 
 func setupTestStruct(t *testing.T, numPlans int) testStruct {
-	_, keepers, _ctx := keepertest.InitAllKeepers(t)
+	servers, keepers, _ctx := keepertest.InitAllKeepers(t)
 
 	_ctx = keepertest.AdvanceEpoch(_ctx, keepers)
 	ctx := sdk.UnwrapSDKContext(_ctx)
@@ -131,6 +131,7 @@ func setupTestStruct(t *testing.T, numPlans int) testStruct {
 		ctx:     ctx,
 		keepers: keepers,
 		plans:   plans,
+		servers: servers,
 	}
 
 	return ts
@@ -359,10 +360,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 		Description: "dummy_desc",
 		Enabled:     true,
 		ProjectKeys: []projectstypes.ProjectKey{
-			{
-				Key:   anotherAccount.Addr.String(),
-				Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_DEVELOPER},
-			},
+			projectstypes.ProjectDeveloperKey(anotherAccount.Addr.String()),
 		},
 		Policy: &projectstypes.Policy{
 			GeolocationProfile: uint64(1),
@@ -416,12 +414,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			block2 := uint64(ts.ctx.BlockHeight())
 
 			// force fixation entry (by adding project key)
-			projKey := []projectstypes.ProjectKey{
-				{
-					Key:   common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String(),
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-				},
-			}
+			admAddr := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+			projKey := []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(admAddr)}
 			projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
 
 			// fast-forward one month (since we expire the subscription in every iteration, it depends on the iteration number)
@@ -481,9 +475,9 @@ func TestExpiryTime(t *testing.T) {
 		{[3]int{2001, 1, 31}, [3]int{2001, 2, 28}, 1},
 		{[3]int{2001, 12, 31}, [3]int{2002, 1, 28}, 1},
 		// duration > 1
-		{[3]int{2000, 3, 1}, [3]int{2000, 5, 1}, 2},
-		{[3]int{2000, 3, 1}, [3]int{2000, 9, 1}, 6},
-		{[3]int{2000, 3, 1}, [3]int{2001, 3, 1}, 12},
+		{[3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 2},
+		{[3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 6},
+		{[3]int{2000, 3, 1}, [3]int{2000, 4, 1}, 12},
 	}
 
 	plan := ts.plans[0]
@@ -612,10 +606,9 @@ func TestAddProjectToSubscription(t *testing.T) {
 				Name:        tt.projectName,
 				Description: tt.projectDescription,
 				Enabled:     true,
-				ProjectKeys: []projectstypes.ProjectKey{{
-					Key:   tt.anotherAdmin,
-					Types: []projectstypes.ProjectKey_KEY_TYPE{projectstypes.ProjectKey_ADMIN},
-				}},
+				ProjectKeys: []projectstypes.ProjectKey{
+					projectstypes.ProjectAdminKey(tt.anotherAdmin),
+				},
 			}
 			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)
 			if tt.success {
@@ -628,4 +621,66 @@ func TestAddProjectToSubscription(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetProjectsForSubscription(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	plan := ts.plans[0]
+
+	subAcc1 := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+	subAcc2 := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+
+	// buy two subscriptions
+	_, err := ts.servers.SubscriptionServer.Buy(ts._ctx, &types.MsgBuy{
+		Creator:  subAcc1,
+		Consumer: subAcc1,
+		Index:    plan.Index,
+		Duration: 1,
+	})
+	require.Nil(t, err)
+
+	_, err = ts.servers.SubscriptionServer.Buy(ts._ctx, &types.MsgBuy{
+		Creator:  subAcc2,
+		Consumer: subAcc2,
+		Index:    plan.Index,
+		Duration: 1,
+	})
+	require.Nil(t, err)
+
+	// add two projects to the first subscription
+	projData1 := projectstypes.ProjectData{
+		Name:    "proj1",
+		Enabled: true,
+		Policy:  &plan.PlanPolicy,
+	}
+	_, err = ts.servers.SubscriptionServer.AddProject(ts._ctx, &types.MsgAddProject{
+		Creator:     subAcc1,
+		ProjectData: projData1,
+	})
+	require.Nil(t, err)
+
+	projData2 := projectstypes.ProjectData{
+		Name:    "proj2",
+		Enabled: false,
+		Policy:  &plan.PlanPolicy,
+	}
+	_, err = ts.servers.SubscriptionServer.AddProject(ts._ctx, &types.MsgAddProject{
+		Creator:     subAcc1,
+		ProjectData: projData2,
+	})
+	require.Nil(t, err)
+
+	res1, err := ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc1,
+	})
+	require.Nil(t, err)
+
+	res2, err := ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc2,
+	})
+	require.Nil(t, err)
+
+	// check the number of projects are as expected (+1 because there's an auto-generated admin project)
+	require.Equal(t, 3, len(res1.Projects))
+	require.Equal(t, 1, len(res2.Projects))
 }

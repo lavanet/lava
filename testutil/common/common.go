@@ -14,6 +14,7 @@ import (
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,8 +41,8 @@ func CreateMockSpec() spectypes.Spec {
 
 func CreateMockPlan() plantypes.Plan {
 	policy := projectstypes.Policy{
-		TotalCuLimit:       1000,
-		EpochCuLimit:       100,
+		TotalCuLimit:       100000,
+		EpochCuLimit:       10000,
 		MaxProvidersToPair: 3,
 		GeolocationProfile: 1,
 	}
@@ -66,16 +67,15 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 	return
 }
 
-func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64, isProvider bool) {
-	if isProvider {
-		endpoints := []epochstoragetypes.Endpoint{}
-		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
-		_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
-		require.Nil(t, err)
-	} else {
-		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1})
-		require.Nil(t, err)
-	}
+func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64) {
+	endpoints := []epochstoragetypes.Endpoint{}
+	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
+	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
+	require.Nil(t, err)
+}
+
+func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, plan string) {
+	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
 }
 
 func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {

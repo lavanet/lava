@@ -19,19 +19,22 @@ func TestPairingUniqueness(t *testing.T) {
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	var balance int64 = 10000
 	stake := balance / 10
 
 	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer1, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
 
 	for i := 1; i <= 1000; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
 	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -102,19 +105,22 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	var balance int64 = 10000
 	stake := balance / 10
 
 	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer1, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
 
 	for i := 1; i <= 10; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
 	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -270,16 +276,19 @@ func TestPairingStatic(t *testing.T) {
 	spec.ProvidersTypes = spectypes.Spec_static
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	servicersToPair := keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ctx))
 
 	consumer := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
 
 	for i := uint64(0); i < servicersToPair*2; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i), true)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i))
 	}
 
 	// we expect to get all the providers in static spec

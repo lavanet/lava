@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -85,6 +86,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcp.providerStateTracker = providerStateTracker
+	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
@@ -292,11 +294,6 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
 			config_name := DefaultRPCProviderFileName
 			if len(args) == 1 {
 				config_name = args[0] // name of config file (without extension)
@@ -305,6 +302,17 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			viper.SetConfigType("yml")
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("./config")
+
+			// set log format
+			logFormat := viper.GetString(flags.FlagLogFormat)
+			utils.JsonFormat = logFormat == "json"
+
+			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
@@ -343,10 +351,18 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
+
+			networkChainId := viper.GetString(flags.FlagChainID)
+			if networkChainId == app.Name {
+				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
+				if err == nil {
+					if clientTomlConfig.ChainID != "" {
+						networkChainId = clientTomlConfig.ChainID
+					}
+				}
 			}
+			utils.LavaFormatInfo("Running with chain-id:" + networkChainId)
+
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)

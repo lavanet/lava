@@ -25,6 +25,10 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
+	// Create a mock spec
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
+
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
@@ -49,14 +53,11 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	// Add a staked provider and client and get their address
 	err = ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
-	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
@@ -86,8 +87,6 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 			// check if the provider/client are staked
 			_, foundProvider, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, foundProvider)
-			_, foundClient, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ClientKey, ts.spec.GetIndex())
-			require.Equal(t, tt.shouldBeStaked, foundClient)
 		})
 	}
 }
@@ -104,6 +103,10 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Create a mock spec
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// Create a mock spec
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
@@ -129,14 +132,11 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Add a staked provider/client and get their address
 	err = ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
-	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
@@ -170,8 +170,6 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 			// check if the provider/client are staked
 			_, found, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, found)
-			_, found, _ = ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ClientKey, ts.spec.GetIndex())
-			require.Equal(t, tt.shouldBeStaked, found)
 		})
 	}
 }
@@ -189,17 +187,18 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
+	// Create a mock spec
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
+
 	// Add a staked provider and client and get their address
 	err := ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
-	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
@@ -228,8 +227,6 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	}
 
 	// Unstake the provider/client - they are supposed to get their funds back on block #260 (39+210 = 249 -> next epoch start in 260)
-	_, err = ts.servers.PairingServer.UnstakeClient(ts.ctx, &types.MsgUnstakeClient{Creator: clientAddress.String(), ChainID: ts.spec.Index})
-	require.Nil(t, err)
 	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{Creator: providerAddress.String(), ChainID: ts.spec.Index})
 	require.Nil(t, err)
 
@@ -243,8 +240,6 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	}
 
 	// check if the client/provider got their funds back - they shouldn't get it
-	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.NotEqual(t, balance, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.NotEqual(t, balance, providerCurrentFunds.Amount.Int64())
 
@@ -252,8 +247,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 59
 
 	// check if the client/provider got their funds back - they should get it
-	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
+
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
 }
@@ -271,17 +265,18 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
+	// Create a mock spec
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
+
 	// Add a staked provider and client and get their address
 	err := ts.addClient(1)
 	require.Nil(t, err)
-	clientAddress := ts.clients[len(ts.clients)-1].Addr
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].Addr
 
 	// Verify the provider/client paid for its stake request
-	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
@@ -310,8 +305,6 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	}
 
 	// Unstake the provider/client - they are supposed to get their funds back on block #260 (39+210 = 249 -> next epoch start in 260)
-	_, err = ts.servers.PairingServer.UnstakeClient(ts.ctx, &types.MsgUnstakeClient{Creator: clientAddress.String(), ChainID: ts.spec.Index})
-	require.Nil(t, err)
 	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{Creator: providerAddress.String(), ChainID: ts.spec.Index})
 	require.Nil(t, err)
 
@@ -325,8 +318,6 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	}
 
 	// check if the client/provider got their funds back - they should get it
-	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
 
@@ -336,8 +327,6 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	}
 
 	// check if the client/provider got their funds back - they should get it
-	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
 	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
 }
