@@ -25,10 +25,13 @@ func prepareMockApis(count int) []*types.Api {
 		}
 
 		api.Enabled = true
-		mockApis[2*i] = api
+		mockApis[i] = api
 
-		api.Enabled = false
-		mockApis[2*i+1] = api
+		api = &types.Api{
+			Name:    "API-" + strconv.Itoa(i),
+			Enabled: false,
+		}
+		mockApis[i+count/2] = api
 	}
 
 	return mockApis
@@ -321,7 +324,7 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 		{name: "three", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
 			createApiCollection(20, []int{2, 6, 13}, 1, "test1", "", "", nil),
 			createApiCollection(20, []int{2, 6, 13}, 1, "test1", "", "test1", nil),
-			createApiCollection(20, []int{0}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(8, []int{4, 6}, 1, "test1", "", "", nil).CollectionData}),
+			createApiCollection(20, []int{0}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
 			createApiCollection(20, []int{0, 4, 13}, 1, "test-three", "", "", nil),
 		}},
 		{name: "one-conflict", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
@@ -334,7 +337,7 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 		{name: "three-conflict", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
 			createApiCollection(20, []int{2, 3, 13}, 1, "test1", "", "", nil),
 			createApiCollection(20, []int{2, 3, 13}, 1, "test1", "", "test1", nil),
-			createApiCollection(20, []int{0, 3, 13}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(8, []int{4, 6}, 1, "test1", "", "", nil).CollectionData}),
+			createApiCollection(20, []int{0, 3, 13}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
 		}},
 	}
 
@@ -355,7 +358,7 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	keeper, ctx := keepertest.SpecKeeper(t)
 	_ = prepareMockCurrentSpecsForApiCollectionInheritance(keeper, ctx)
-	var specTemplates = []struct {
+	specTemplates := []struct {
 		desc                 string
 		name                 string
 		imports              []string
@@ -365,6 +368,40 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 		totalApis            int   // total enabled apis in all api collections
 		ok                   bool
 	}{
+		{
+			name:    "expand",
+			desc:    "with several api collections expanding from each other",
+			imports: nil,
+			apisCollections: []*types.ApiCollection{
+				createApiCollection(20, []int{0, 1}, 1, "", "", "", nil),
+				createApiCollection(20, []int{1, 2}, 0, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+				createApiCollection(0, []int{}, 0, "test1", "", "addon", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
+			},
+			result:               []int{0, 1, 2},
+			resultApiCollections: 3,
+			totalApis:            8,
+			ok:                   true,
+		},
+		{
+			name:    "expand-fail",
+			desc:    "fail on several api collections expanding from each other",
+			imports: nil,
+			apisCollections: []*types.ApiCollection{
+				createApiCollection(20, []int{0, 1}, 1, "", "", "", nil),
+				createApiCollection(20, []int{1, 2}, 1, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+			},
+			ok: false,
+		},
+		{
+			name:    "expand-fail2",
+			desc:    "fail on expand of a wrong type",
+			imports: nil,
+			apisCollections: []*types.ApiCollection{
+				createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil),
+				createApiCollection(20, []int{1, 2}, 1, "test2", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+			},
+			ok: false,
+		},
 		{
 			name:            "import:unknown",
 			desc:            "import from unknown spec [expected: ERROR]",
@@ -393,6 +430,26 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			ok:                   true,
 		},
 		{
+			name:                 "import:spec-two",
+			desc:                 "import one spec called two",
+			imports:              []string{"two"},
+			apisCollections:      nil,
+			result:               []int{1, 5},
+			resultApiCollections: 3,
+			totalApis:            6,
+			ok:                   true,
+		},
+		{
+			name:                 "import:spec-three",
+			desc:                 "import one spec called three",
+			imports:              []string{"three"},
+			apisCollections:      nil,
+			result:               []int{2, 6},
+			resultApiCollections: 4,
+			totalApis:            9,
+			ok:                   true,
+		},
+		{
 			name:                 "import:with-override",
 			desc:                 "import one spec with override in current spec",
 			imports:              []string{"one"},
@@ -403,7 +460,17 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			ok:                   true,
 		},
 		{
-			name:                 "import:two-spec",
+			name:                 "import:with-no-overlap",
+			desc:                 "import one spec with no overlap in collections in current spec",
+			imports:              []string{"one"},
+			apisCollections:      []*types.ApiCollection{createApiCollection(20, []int{0, 1}, 1, "test-no-overlap", "", "", nil)},
+			result:               []int{0, 4},
+			resultApiCollections: 3,
+			totalApis:            6,
+			ok:                   true,
+		},
+		{
+			name:                 "import:two-specs",
 			desc:                 "import two specs",
 			imports:              []string{"one", "two"},
 			apisCollections:      nil,
@@ -496,13 +563,21 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
-				require.Equal(t, tt.totalApis, totApis)
+				require.Equal(t, tt.totalApis, totApis, fullspec)
 				require.NotNil(t, compareCollection)
 				require.Nil(t, err, err)
-				require.Len(t, compareCollection, len(tt.result))
+				require.Len(t, compareCollection.Apis, len(tt.result))
 				for i := 0; i < len(tt.result); i++ {
-					require.Equal(t, compareCollection.Apis[i].Name, apis[tt.result[i]].Name)
-					require.Equal(t, compareCollection.Apis[i].Enabled, apis[tt.result[i]].Enabled)
+					nameToFind := apis[tt.result[i]].Name
+					found := false
+					for _, api := range compareCollection.Apis {
+						if api.Name == nameToFind {
+							require.False(t, found) // only found once
+							found = true
+							require.Equal(t, api.Enabled, apis[tt.result[i]].Enabled)
+						}
+					}
+					require.True(t, found)
 				}
 				keeper.SetSpec(ctx, fullspec)
 			} else {

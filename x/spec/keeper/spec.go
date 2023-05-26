@@ -82,56 +82,55 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
 func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
-	if len(spec.Imports) == 0 {
-		return details, nil
-	}
-
-	var parents []types.Spec
-
-	// visual markers when import deepens
-	details += "->["
-
-	// recursion to get all parent specs (DFS)
-	comma := ""
-	for _, index := range spec.Imports {
-		imported, found := k.GetSpec(ctx, index)
-		// import of unknown Spec not allowed
-		if !found {
-			details += fmt.Sprintf("%s%s(unknown)", comma, index)
-			return details, fmt.Errorf("imported spec unknown: %s", index)
-		}
-
-		details += fmt.Sprintf("%s%s", comma, index)
-
-		// loop in the recursion not allowed
-		if _, found := depends[index]; found {
-			return details, fmt.Errorf("import loops not allowed for spec: %s", index)
-		}
-
-		depends[index] = true
-		details, err := k.doExpandSpec(ctx, &imported, depends, details)
-		if err != nil {
-			return details, err
-		}
-		delete(depends, index)
-
-		parents = append(parents, imported)
-		comma = ","
-	}
-
-	details += "]"
-
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
-	for _, parent := range parents {
-		for _, parentCollection := range parent.ApiCollections {
-			// ignore disabled apiCollections
-			if !parentCollection.Enabled {
-				continue
+
+	if len(spec.Imports) != 0 {
+		var parents []types.Spec
+
+		// visual markers when import deepens
+		details += "->["
+
+		// recursion to get all parent specs (DFS)
+		comma := ""
+		for _, index := range spec.Imports {
+			imported, found := k.GetSpec(ctx, index)
+			// import of unknown Spec not allowed
+			if !found {
+				details += fmt.Sprintf("%s%s(unknown)", comma, index)
+				return details, fmt.Errorf("imported spec unknown: %s", index)
 			}
-			if parentsCollections[parentCollection.CollectionData] == nil {
-				parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
+
+			details += fmt.Sprintf("%s%s", comma, index)
+
+			// loop in the recursion not allowed
+			if _, found := depends[index]; found {
+				return details, fmt.Errorf("import loops not allowed for spec: %s", index)
 			}
-			parentsCollections[parentCollection.CollectionData] = append(parentsCollections[parentCollection.CollectionData], parentCollection)
+
+			depends[index] = true
+			details, err := k.doExpandSpec(ctx, &imported, depends, details)
+			if err != nil {
+				return details, err
+			}
+			delete(depends, index)
+
+			parents = append(parents, imported)
+			comma = ","
+		}
+
+		details += "]"
+
+		for _, parent := range parents {
+			for _, parentCollection := range parent.ApiCollections {
+				// ignore disabled apiCollections
+				if !parentCollection.Enabled {
+					continue
+				}
+				if parentsCollections[parentCollection.CollectionData] == nil {
+					parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
+				}
+				parentsCollections[parentCollection.CollectionData] = append(parentsCollections[parentCollection.CollectionData], parentCollection)
+			}
 		}
 	}
 
