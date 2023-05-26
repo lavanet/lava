@@ -28,7 +28,7 @@ func prepareMockApis(count int) []*types.Api {
 		mockApis[i] = api
 
 		api = &types.Api{
-			Name:    "API-" + strconv.Itoa(i),
+			Name:    "API-" + strconv.Itoa(i+count/2),
 			Enabled: false,
 		}
 		mockApis[i+count/2] = api
@@ -357,7 +357,8 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 
 func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 	keeper, ctx := keepertest.SpecKeeper(t)
-	_ = prepareMockCurrentSpecsForApiCollectionInheritance(keeper, ctx)
+	debugme := prepareMockCurrentSpecsForApiCollectionInheritance(keeper, ctx)
+
 	specTemplates := []struct {
 		desc                 string
 		name                 string
@@ -525,7 +526,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 		},
 		{
 			desc:    "import with loop (modify 'one-two' imported by 'import:one-spec')",
-			name:    "one-two",
+			name:    "one",
 			imports: []string{"import:one-spec"}, // assumes 'import:one-spec' already added
 			result:  nil,
 			ok:      false,
@@ -543,6 +544,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 
 		t.Run(tt.desc, func(t *testing.T) {
 			fullspec, err := keeper.ExpandSpec(ctx, spec)
+			_ = debugme
 			if tt.ok == true {
 				// check Result against the baseline spec  "test1", "", "",
 				// count apis to totalApis
@@ -552,7 +554,12 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 				var compareCollection *types.ApiCollection
 				for _, apiCol := range fullspec.ApiCollections {
 					collections++
-					totApis += len(apiCol.Apis)
+					for _, api := range apiCol.Apis {
+						if api.Enabled {
+							totApis += 1
+						}
+					}
+
 					if (apiCol.CollectionData == types.CollectionData{
 						ApiInterface: "test1",
 						InternalPath: "",
@@ -567,7 +574,13 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 				require.Equal(t, tt.totalApis, totApis, fullspec)
 				require.NotNil(t, compareCollection)
 				require.Nil(t, err, err)
-				require.Len(t, compareCollection.Apis, len(tt.result))
+				enabledApis := 0
+				for _, api := range compareCollection.Apis {
+					if api.Enabled {
+						enabledApis++
+					}
+				}
+				require.Equal(t, enabledApis, len(tt.result))
 				for i := 0; i < len(tt.result); i++ {
 					nameToFind := apis[tt.result[i]].Name
 					found := false
