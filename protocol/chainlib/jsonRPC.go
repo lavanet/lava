@@ -34,21 +34,26 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
-func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
-	if err != nil {
-		return nil, err
-	}
+
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
-		Method:  parsing.Api.GetName(),
+		Method:  parsing.ApiName,
 		Params:  nil,
 	}
-	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, msg, apiCollection), nil
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
+	if err != nil {
+		return nil, err
+	}
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, msg, apiCollection), nil
 }
 
 // this func parses message data into chain message object
@@ -66,21 +71,21 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(msg.Method, connectionType)
+	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
 
-	apiCollection, err := apip.getApiCollection(connectionType)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, serviceApi.Name, err)
+		return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, apiCont.api.Name, err)
 	}
-	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+	requestedBlock, err := parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing}, utils.Attribute{Key: "service_api", Value: serviceApi.Name})
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing}, utils.Attribute{Key: "service_api", Value: apiCont.api.Name})
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, *msg, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, *msg, apiCollection)
 	return nodeMsg, nil
 }
 

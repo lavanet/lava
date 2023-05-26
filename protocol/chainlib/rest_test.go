@@ -66,17 +66,17 @@ func TestRestGetSupportedApi(t *testing.T) {
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	api, err := apip.getSupportedApi("API1", connectionType)
 	assert.NoError(t, err)
-	assert.Equal(t, "API1", api.Name)
+	assert.Equal(t, "API1", api.api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API2", connectionType)
@@ -86,7 +86,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API1", connectionType)
@@ -98,11 +98,8 @@ func TestRestParseMessage(t *testing.T) {
 	connectionType := "test"
 	apip := &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name:    "API1",
-					Enabled: true,
-				},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}},
 			},
 			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceRest}}},
 		},
@@ -111,7 +108,7 @@ func TestRestParseMessage(t *testing.T) {
 	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceRest, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType}].api.Name)
 
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:      []byte("test message"),

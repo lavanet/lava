@@ -29,11 +29,11 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	parsing, _, ok := cf.chainParser.GetParsingByTag(spectypes.GET_BLOCKNUM)
+	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	chainMessage, err := CraftChainMessage(parsing, cf.chainParser, nil)
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -49,7 +49,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning("Failed To Parse FetchLatestBlockNum", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
-			{Key: "Method", Value: parsing.Api.GetName()},
+			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
@@ -64,9 +64,9 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if parsing.FunctionTemplate == "" {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	path := parsing.Api.Name
+	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
-	chainMessage, err := CraftChainMessage(parsing, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type})
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type})
 	if err != nil {
 		return "", utils.LavaFormatError(spectypes.GET_BLOCK_BY_NUM+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}

@@ -33,7 +33,7 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
-func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
@@ -41,15 +41,20 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, craf
 	msg := rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
-		Method:  parsing.Api.GetName(),
+		Method:  parsing.ApiName,
 		Params:  nil,
 	}
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
 	if err != nil {
 		return nil, err
 	}
-	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.Api.GetName()}
-	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, tenderMsg, apiCollection), nil
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.ApiName}
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, tenderMsg, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -104,15 +109,14 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(msg.Method, connectionType)
+	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
 
 	// Extract default block parser
-	blockParser := serviceApi.BlockParsing
-
-	apiCollection, err := apip.getApiCollection(connectionType)
+	blockParser := apiCont.api.BlockParsing
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +124,13 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
 	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
 	if !isJsonrpc {
 		tenderMsg.Path = url // add path
 	}
-	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, tenderMsg, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, tenderMsg, apiCollection)
 	return nodeMsg, nil
 }
 

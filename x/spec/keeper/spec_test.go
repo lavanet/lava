@@ -51,7 +51,7 @@ func prepareMockParsing(count int) []*types.Parsing {
 			FunctionTag:      uniqueName,
 			FunctionTemplate: "%s",
 			ResultParsing:    types.BlockParser{},
-			Api:              api,
+			ApiName:          api.Name,
 		}
 		mockParsing[i] = parsing
 	}

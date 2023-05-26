@@ -33,7 +33,7 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)
@@ -41,14 +41,19 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, craftData 
 
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:  nil,
-		Path: parsing.Api.GetName(),
+		Path: parsing.ApiName,
 	}
 
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, restMessage, apiCollection), nil
+	api := apiCont.api
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -59,13 +64,13 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(url, connectionType)
+	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract default block parser
-	blockParser := serviceApi.BlockParsing
+	blockParser := apiCont.api.BlockParsing
 
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
@@ -82,19 +87,18 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.
-	restMessage.SpecPath = serviceApi.Name
+	restMessage.SpecPath = apiCont.api.Name
 
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
 	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
 	}
-
-	apiCollection, err := apip.getApiCollection(connectionType)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, restMessage, apiCollection)
 	return nodeMsg, nil
 }
 
@@ -109,7 +113,7 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 }
 
 // overwrites the base class match for a supported api
-func (apip *RestChainParser) getSupportedApi(name string, connectionType string) (*spectypes.Api, error) {
+func (apip *RestChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -119,20 +123,21 @@ func (apip *RestChainParser) getSupportedApi(name string, connectionType string)
 	apip.rwLock.RLock()
 	defer apip.rwLock.RUnlock()
 
-	// Fetch server api by name
-	api, ok := matchSpecApiByName(name, connectionType, apip.serverApis)
+	// Fetch server apiCont by name
+	apiCont, ok := matchSpecApiByName(name, connectionType, apip.serverApis)
 
 	// Return an error if spec does not exist
 	if !ok {
 		return nil, errors.New("rest api not supported " + name)
 	}
+	api := apiCont.api
 
 	// Return an error if api is disabled
 	if !api.Enabled {
 		return nil, errors.New("api is disabled")
 	}
 
-	return api, nil
+	return apiCont, nil
 }
 
 // SetSpec sets the spec for the TendermintChainParser

@@ -8,10 +8,10 @@ import "gogoproto/gogo.proto";
 
 message ApiCollection {
   bool enabled = 1;
-  CollectionData collectionData =2 [(gogoproto.nullable) = false];
+  CollectionData collection_data =2 [(gogoproto.nullable) = false];
   repeated Api apis = 3;
   repeated Header headers = 4;
-	repeated CollectionData inheritanceApis = 5; // by collectionKey
+	repeated CollectionData inheritance_apis = 5; // by collectionKey
 	repeated Parsing parsing = 6;
 }
 
@@ -45,7 +45,7 @@ message Parsing {
   string function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
-  Api api = 4;
+  string api_name = 4;
 }
 
 message BlockParser {

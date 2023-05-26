@@ -67,17 +67,17 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	api, err := apip.getSupportedApi("API1", connectionType)
 	assert.NoError(t, err)
-	assert.Equal(t, "API1", api.Name)
+	assert.Equal(t, "API1", api.api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API2", connectionType)
@@ -87,7 +87,7 @@ func TestTendermintGetSupportedApi(t *testing.T) {
 	// Test case 3: Returns error if the API is disabled
 	apip = &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API1", connectionType)
@@ -99,11 +99,8 @@ func TestTendermintParseMessage(t *testing.T) {
 	connectionType := "test"
 	apip := &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name:    "API1",
-					Enabled: true,
-				},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}},
 			},
 			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceTendermintRPC}}},
 		},
@@ -121,6 +118,6 @@ func TestTendermintParseMessage(t *testing.T) {
 	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceTendermintRPC, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType}].api.Name)
 	assert.Equal(t, msg.RequestedBlock(), int64(-2))
 }

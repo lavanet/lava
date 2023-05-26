@@ -63,19 +63,24 @@ func (apip *GrpcChainParser) setupForProvider(grpcEndpoint string) error {
 	return nil
 }
 
-func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.Parsing, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, nil)
 	}
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType)
+
+	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
+		Msg:  nil,
+		Path: parsing.ApiName,
+	}
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
 	if err != nil {
 		return nil, err
 	}
-	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
-		Msg:  nil,
-		Path: parsing.Api.GetName(),
+	apiCollection, err := apip.getApiCollection(craftData.ConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
 	}
-	return apip.newChainMessage(parsing.Api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -86,7 +91,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Check API is supported and save it in nodeMsg.
-	serviceApi, err := apip.getSupportedApi(url, connectionType)
+	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
 	}
@@ -102,18 +107,18 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	blockParser := serviceApi.BlockParsing
+	blockParser := apiCont.api.BlockParsing
 	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
 	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
 	}
 
-	apiCollection, err := apip.getApiCollection(connectionType)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to getApiCollection gRPC", err)
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, requestedBlock, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
 	return nodeMsg, nil
 }
 

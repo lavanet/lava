@@ -31,5 +31,5 @@ message Spec {
   
   ProvidersTypes providers_types = 14;
   repeated string imports = 15;
-  repeated ApiCollection apiCollections = 16;
+  repeated ApiCollection api_collections = 16;
 }

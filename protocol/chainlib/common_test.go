@@ -19,23 +19,26 @@ func TestMatchSpecApiByName(t *testing.T) {
 	connectionType := ""
 	testTable := []struct {
 		name        string
-		serverApis  map[ApiKey]*spectypes.Api
+		serverApis  map[ApiKey]ApiContainer
 		inputName   string
 		expectedApi spectypes.Api
 		expectedOk  bool
 	}{
 		{
 			name: "test1",
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "/blocks/[^\\/\\s]+", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name: "/blocks/{height}",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/blocks/[^\\/\\s]+", ConnectionType: connectionType}: {
+					api: &spectypes.Api{
+						Name: "/blocks/{height}",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					Category:     spectypes.SpecCategory{Deterministic: true},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/blocks/10",
@@ -44,16 +47,19 @@ func TestMatchSpecApiByName(t *testing.T) {
 		},
 		{
 			name: "test2",
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+", ConnectionType: connectionType}: {
+					api: &spectypes.Api{
+						Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					Category:     spectypes.SpecCategory{Deterministic: true},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/10",
@@ -62,16 +68,19 @@ func TestMatchSpecApiByName(t *testing.T) {
 		},
 		{
 			name: "test3",
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", ConnectionType: connectionType}: ApiContainer{
+					api: &spectypes.Api{
+						Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					Category:     spectypes.SpecCategory{Deterministic: true},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/latest",
@@ -89,8 +98,8 @@ func TestMatchSpecApiByName(t *testing.T) {
 			if ok != testCase.expectedOk {
 				t.Fatalf("expected ok value %v, but got %v", testCase.expectedOk, ok)
 			}
-			if api.Name != testCase.expectedApi.Name {
-				t.Fatalf("expected api %v, but got %v", testCase.expectedApi.Name, api.Name)
+			if api.api.Name != testCase.expectedApi.Name {
+				t.Fatalf("expected api %v, but got %v", testCase.expectedApi.Name, api.api.Name)
 			}
 		})
 	}

@@ -32,15 +32,20 @@ type TaggedContainer struct {
 	ApiCollection *spectypes.ApiCollection
 }
 
+type ApiContainer struct {
+	api           *spectypes.Api
+	collectionKey CollectionKey
+}
+
 type BaseChainParser struct {
 	taggedApis     map[string]TaggedContainer
 	spec           spectypes.Spec
 	rwLock         sync.RWMutex
-	serverApis     map[ApiKey]*spectypes.Api
+	serverApis     map[ApiKey]ApiContainer
 	apiCollections map[CollectionKey]*spectypes.ApiCollection
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]*spectypes.Api, apiCollections map[CollectionKey]*spectypes.ApiCollection) {
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
@@ -56,7 +61,7 @@ func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.Pars
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getSupportedApi(name string, connectionType string) (*spectypes.Api, error) {
+func (apip *BaseChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -67,9 +72,9 @@ func (apip *BaseChainParser) getSupportedApi(name string, connectionType string)
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	api, ok := apip.serverApis[ApiKey{
-		Name:          name,
-		CollectionKey: CollectionKey{connectionType},
+	apiCont, ok := apip.serverApis[ApiKey{
+		Name:           name,
+		ConnectionType: connectionType,
 	}]
 
 	// Return an error if spec does not exist
@@ -78,15 +83,15 @@ func (apip *BaseChainParser) getSupportedApi(name string, connectionType string)
 	}
 
 	// Return an error if api is disabled
-	if !api.Enabled {
+	if !apiCont.api.Enabled {
 		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
-	return api, nil
+	return &apiCont, nil
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getApiCollection(connectionType string) (*spectypes.ApiCollection, error) {
+func (apip *BaseChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -97,7 +102,11 @@ func (apip *BaseChainParser) getApiCollection(connectionType string) (*spectypes
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	api, ok := apip.apiCollections[CollectionKey{connectionType}]
+	api, ok := apip.apiCollections[CollectionKey{
+		ConnectionType: connectionType,
+		InternalPath:   internalPath,
+		Addon:          addon,
+	}]
 
 	// Return an error if spec does not exist
 	if !ok {
@@ -120,12 +129,14 @@ type parsedMessage struct {
 }
 
 type ApiKey struct {
-	Name string
-	CollectionKey
+	Name           string
+	ConnectionType string
 }
 
 type CollectionKey struct {
 	ConnectionType string
+	InternalPath   string
+	Addon          string
 }
 
 type BaseChainProxy struct {
@@ -191,8 +202,8 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]*spectypes.Api, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection) {
-	serverApis := map[ApiKey]*spectypes.Api{}
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection) {
+	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[string]TaggedContainer{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {
@@ -224,14 +235,20 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 					processedName = regexp.QuoteMeta(processedName)
 					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
 					serverApis[ApiKey{
-						Name:          processedName,
-						CollectionKey: collectionKey,
-					}] = api
+						Name:           processedName,
+						ConnectionType: collectionKey.ConnectionType,
+					}] = ApiContainer{
+						api:           api,
+						collectionKey: collectionKey,
+					}
 				} else {
 					serverApis[ApiKey{
-						Name:          api.Name,
-						CollectionKey: collectionKey,
-					}] = api
+						Name:           api.Name,
+						ConnectionType: collectionKey.ConnectionType,
+					}] = ApiContainer{
+						api:           api,
+						collectionKey: collectionKey,
+					}
 				}
 			}
 			apiCollections[collectionKey] = apiCollection
@@ -241,7 +258,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 }
 
 // matchSpecApiByName returns service api which match given name
-func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKey]*spectypes.Api) (*spectypes.Api, bool) {
+func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile("^" + apiName.Name + "$")
@@ -250,7 +267,7 @@ func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKe
 			continue
 		}
 		if re.MatchString(name) && apiName.ConnectionType == connectionType {
-			return api, true
+			return &api, true
 		}
 	}
 	return nil, false
@@ -327,8 +344,8 @@ type CraftData struct {
 	ConnectionType string
 }
 
-func CraftChainMessage(parsing *spectypes.Parsing, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
-	return chainParser.CraftMessage(parsing, craftData)
+func CraftChainMessage(parsing *spectypes.Parsing, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(parsing, connectionType, craftData)
 }
 
 // rest request headers are formatted like map[string]string

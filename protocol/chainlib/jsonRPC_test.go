@@ -67,17 +67,17 @@ func TestJSONGetSupportedApi(t *testing.T) {
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &JsonRPCChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	api, err := apip.getSupportedApi("API1", connectionType)
 	assert.NoError(t, err)
-	assert.Equal(t, "API1", api.Name)
+	assert.Equal(t, "API1", api.api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &JsonRPCChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API2", connectionType)
@@ -87,7 +87,7 @@ func TestJSONGetSupportedApi(t *testing.T) {
 	// Test case 3: Returns error if the API is disabled
 	apip = &JsonRPCChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1"}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
 		},
 	}
 	_, err = apip.getSupportedApi("API1", connectionType)
@@ -99,11 +99,8 @@ func TestJSONParseMessage(t *testing.T) {
 	connectionType := "test"
 	apip := &JsonRPCChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{
-				{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
-					Name:    "API1",
-					Enabled: true,
-				},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}},
 			},
 			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceJsonRPC}}},
 		},
@@ -118,7 +115,7 @@ func TestJSONParseMessage(t *testing.T) {
 	msg, err := apip.ParseMsg("API1", marshalledData, spectypes.APIInterfaceJsonRPC, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}].Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType}].api.Name)
 	assert.Equal(t, msg.RequestedBlock(), int64(-2))
 	assert.Equal(t, msg.GetApiCollection().CollectionData.ApiInterface, spectypes.APIInterfaceJsonRPC)
 }
