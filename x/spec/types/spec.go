@@ -64,10 +64,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 		// validate function tags
 		for _, parsing := range apiCollection.Parsing {
-			if parsing.FunctionTag == "" {
-				fmt.Errorf("empty parsing function tag %v", parsing.FunctionTag)
-			}
 			// Validate tag name
+			if parsing.FunctionTag == "" {
+				return details, fmt.Errorf("empty parsing function tag %v", parsing.FunctionTag)
+			}
 			result := false
 			for _, tag := range SupportedTags {
 				if tag == parsing.FunctionTag {

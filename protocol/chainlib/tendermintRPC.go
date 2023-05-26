@@ -114,7 +114,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	apiCollection, err := apip.getApiCollection(connectionType)
 	if err != nil {
-
+		return nil, err
 	}
 
 	// Fetch requested block, it is used for data reliability

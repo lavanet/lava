@@ -342,7 +342,7 @@ func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 func TestGetServiceApis(t *testing.T) {
 	spec := spectypes.Spec{
 		Enabled: true,
-		ApiCollections: []*spectypes.ApiCollection{&spectypes.ApiCollection{
+		ApiCollections: []*spectypes.ApiCollection{{
 			CollectionData: spectypes.CollectionData{
 				ApiInterface: spectypes.APIInterfaceRest,
 			},

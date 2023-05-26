@@ -66,7 +66,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
 		},
 	}
 	api, err := apip.getSupportedApi("API1", connectionType)
@@ -76,7 +76,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	// Test case 2: Returns error if the API does not exist
 	apip = &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
+			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: true}},
 		},
 	}
 	_, err = apip.getSupportedApi("API2", connectionType)
@@ -86,7 +86,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]*spectypes.Api{ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
+			serverApis: map[ApiKey]*spectypes.Api{{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {Name: "API1", Enabled: false}},
 		},
 	}
 	_, err = apip.getSupportedApi("API1", connectionType)
@@ -99,7 +99,7 @@ func TestRestParseMessage(t *testing.T) {
 	apip := &RestChainParser{
 		BaseChainParser: BaseChainParser{
 			serverApis: map[ApiKey]*spectypes.Api{
-				ApiKey{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
+				{Name: "API1", CollectionKey: CollectionKey{ConnectionType: connectionType}}: {
 					Name:    "API1",
 					Enabled: true,
 				},
