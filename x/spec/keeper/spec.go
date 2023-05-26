@@ -124,6 +124,10 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 	for _, parent := range parents {
 		for _, parentCollection := range parent.ApiCollections {
+			// ignore disabled apiCollections
+			if !parentCollection.Enabled {
+				continue
+			}
 			if parentsCollections[parentCollection.CollectionData] == nil {
 				parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
 			}
@@ -136,7 +140,7 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 		myCollections[collection.CollectionData] = collection
 	}
 	for _, collection := range myCollections {
-		err := collection.InheritApis(myCollections, parentsCollections[collection.CollectionData])
+		err := collection.InheritAllFields(myCollections, parentsCollections[collection.CollectionData])
 		if err != nil {
 			return details, err
 		}

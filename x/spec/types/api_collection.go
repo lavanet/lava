@@ -105,7 +105,7 @@ func (apic *ApiCollection) Equals(other *ApiCollection) bool {
 }
 
 // assumes relevantParentCollections are already expanded
-func (apic *ApiCollection) InheritApis(myCollections map[CollectionData]*ApiCollection, relevantParentCollections []*ApiCollection) error {
+func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*ApiCollection, relevantParentCollections []*ApiCollection) error {
 	for _, other := range relevantParentCollections {
 		if !apic.Equals(other) {
 			return fmt.Errorf("incompatible inheritance, apiCollections aren't equal %v", apic)
