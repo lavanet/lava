@@ -82,7 +82,7 @@ func (apic *ApiCollection) ApisMerge(relevantCollections []*ApiCollection, depen
 	for _, collection := range relevantCollections {
 		for _, parsing := range collection.Parsing {
 			// duplicate functionTag(s) not allowed
-			// (unless current ApiCollection has an override for same API)
+			// (unless current ApiCollection has an override for same tag)
 			if _, found := mergedMap[parsing.FunctionTag]; found {
 				if _, found := currentApis[parsing.FunctionTag]; !found {
 					return fmt.Errorf("duplicate imported functionTag: %s (in collection: %v)", parsing.FunctionTag, collection.CollectionData)
