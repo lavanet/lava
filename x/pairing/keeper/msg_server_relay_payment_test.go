@@ -827,7 +827,7 @@ func TestBadgeValidation(t *testing.T) {
 	_ctx = _ctx.WithBlockHeader(_ctxBlockHeader)
 	ts.ctx = sdk.WrapSDKContext(_ctx)
 
-	badgeCuAllocation := ts.spec.Apis[0].ComputeUnits * 2 // times 2 to have enough CU for the two tests that succeed
+	badgeCuAllocation := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 2 // times 2 to have enough CU for the two tests that succeed
 
 	tests := []struct {
 		name         string
@@ -968,7 +968,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	}
 	for it, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), tt.cuSum, ts.spec.Name, QoS)
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), tt.cuSum, ts.spec.Name, QoS)
 			relaySession.SessionId = uint64(it)
 			relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
 			require.Nil(t, err)
@@ -1040,7 +1040,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			relays := []*types.RelaySession{}
 			for i := 0; i < relayNum; i++ {
-				relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, QoS)
+				relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, QoS)
 				relaySession.Epoch = int64(currentEpoch) // BuildRelayRequest always takes the current blockHeight, which is not desirable in this test
 				relaySession.SessionId = uint64(i)
 				relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
@@ -1108,7 +1108,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	cuSum := badgeCuAllocation
 
 	for i := 0; i < 2; i++ {
-		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[i].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, QoS)
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[i].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, QoS)
 		relaySession.Epoch = int64(currentEpoch) // BuildRelayRequest always takes the current blockHeight, which is not desirable in this test
 		relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
 		require.Nil(t, err)
