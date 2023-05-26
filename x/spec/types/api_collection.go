@@ -2,6 +2,7 @@ package types
 
 import "fmt"
 
+// this means the current collection data can be expanded from other, i.e other is allowed to be in InheritanceApis
 func (cd *CollectionData) CanExpand(other *CollectionData) bool {
 	return cd.ApiInterface == other.ApiInterface && cd.Type == other.Type && cd.InternalPath == other.InternalPath || other.ApiInterface == ""
 }
@@ -15,7 +16,7 @@ func (apic *ApiCollection) Expand(myCollections map[CollectionData]*ApiCollectio
 	relevantCollections := []*ApiCollection{}
 	for _, inheritingCollection := range inheritanceApis {
 		if collection, ok := myCollections[*inheritingCollection]; ok {
-			if !inheritingCollection.CanExpand(&collection.CollectionData) {
+			if !apic.CollectionData.CanExpand(&collection.CollectionData) {
 				return fmt.Errorf("invalid inheriting collection %v", inheritingCollection)
 			}
 			if _, ok := dependencies[collection.CollectionData]; ok {

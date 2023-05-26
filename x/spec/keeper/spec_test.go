@@ -158,7 +158,7 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*typ
 			Name:           tt.name,
 			Index:          tt.name,
 			Enabled:        tt.enabled,
-			ApiCollections: []*types.ApiCollection{&types.ApiCollection{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+			ApiCollections: []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 		currentSpecs[tt.name] = spec
 		keeper.SetSpec(ctx, spec)
@@ -280,7 +280,7 @@ func TestSpecWithImport(t *testing.T) {
 			Index:          tt.name,
 			Imports:        tt.imports,
 			Enabled:        true,
-			ApiCollections: []*types.ApiCollection{&types.ApiCollection{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+			ApiCollections: []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
@@ -387,18 +387,18 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			desc:    "fail on several api collections expanding from each other",
 			imports: nil,
 			apisCollections: []*types.ApiCollection{
-				createApiCollection(20, []int{0, 1}, 1, "", "", "", nil),
-				createApiCollection(20, []int{1, 2}, 1, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+				createApiCollection(20, []int{0, 1}, 1, "123", "", "", nil),
+				createApiCollection(20, []int{1, 2}, 1, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "non-existent", "", "", nil).CollectionData}),
 			},
 			ok: false,
 		},
 		{
 			name:    "expand-fail2",
-			desc:    "fail on expand of a wrong type",
+			desc:    "fail on expand of a incompatible apiInterface type",
 			imports: nil,
 			apisCollections: []*types.ApiCollection{
 				createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil),
-				createApiCollection(20, []int{1, 2}, 1, "test2", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+				createApiCollection(20, []int{1, 2}, 1, "test2", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
 			},
 			ok: false,
 		},
@@ -561,6 +561,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}) {
 						compareCollection = apiCol
 					}
+					require.Equal(t, 1, len(apiCol.Parsing))
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
@@ -581,7 +582,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 				}
 				keeper.SetSpec(ctx, fullspec)
 			} else {
-				require.NotNil(t, err)
+				require.NotNil(t, err, err)
 			}
 		})
 	}
