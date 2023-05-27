@@ -124,9 +124,6 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	for _, name := range taggedApis {
-		fmt.Println(name)
-	}
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
