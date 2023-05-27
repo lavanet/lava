@@ -130,6 +130,22 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	return &api, nil
 }
 
+// GetSpec returns saved spec
+// if SetSpec is not called it will return empty spec
+func (apip *GrpcChainParser) GetSpec() (spec spectypes.Spec) {
+	// Guard that the JsonRPCChainParser instance exists
+	if apip == nil {
+		return spectypes.Spec{}
+	}
+
+	// Add a read-write lock to ensure thread safety
+	apip.rwLock.Lock()
+	defer apip.rwLock.Unlock()
+
+	// return spec
+	return apip.spec
+}
+
 // SetSpec sets the spec for the GrpcChainParser
 func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	// Guard that the GrpcChainParser instance exists

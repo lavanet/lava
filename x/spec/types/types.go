@@ -33,12 +33,13 @@ const (
 )
 
 const (
+	GET_CHAINID                 = "getChainId"
 	GET_BLOCKNUM                = "getBlockNumber"
 	GET_BLOCK_BY_NUM            = "getBlockByNumber"
 	DEFAULT_PARSED_RESULT_INDEX = 0
 )
 
-var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
+var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM, GET_CHAINID}
 
 // allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {

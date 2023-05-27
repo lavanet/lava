@@ -45,6 +45,7 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 type ChainParser interface {
 	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error)
 	SetSpec(spec spectypes.Spec)
+	GetSpec() (spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
 	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)

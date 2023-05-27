@@ -95,6 +95,22 @@ func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, api
 	return nodeMsg
 }
 
+// GetSpec returns saved spec
+// if SetSpec is not called it will return empty spec
+func (apip *JsonRPCChainParser) GetSpec() (spec spectypes.Spec) {
+	// Guard that the JsonRPCChainParser instance exists
+	if apip == nil {
+		return spectypes.Spec{}
+	}
+
+	// Add a read-write lock to ensure thread safety
+	apip.rwLock.Lock()
+	defer apip.rwLock.Unlock()
+
+	// return spec
+	return apip.spec
+}
+
 // SetSpec sets the spec for the JsonRPCChainParser
 func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	// Guard that the JsonRPCChainParser instance exists
@@ -108,6 +124,9 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	for _, name := range taggedApis {
+		fmt.Println(name)
+	}
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec

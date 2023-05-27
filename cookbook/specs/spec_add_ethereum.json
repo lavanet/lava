@@ -7,6 +7,7 @@
                 "index": "ETH1",
                 "name": "ethereum mainnet",
                 "enabled": true,
+                "chain_id": "0x1",
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 64,
@@ -126,7 +127,17 @@
                                 "type": "POST",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0"
+                                ],
+                                "parser_func": "PARSE_BY_ARG"
+                            }
+                        }
                     },
                     {
                         "name": "eth_coinbase",
