@@ -2725,7 +2725,19 @@
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "/node_info",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "node_info",
+                                    "network"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "/syncing",
