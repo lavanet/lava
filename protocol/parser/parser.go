@@ -104,6 +104,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	}
 	return rpcInput.ParseBlock(resString)
 }
+
 func ParseSpecIDFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
