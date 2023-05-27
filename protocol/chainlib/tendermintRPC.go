@@ -173,6 +173,22 @@ func (apip *TendermintChainParser) getSupportedApi(name string) (*spectypes.Serv
 	return &api, nil
 }
 
+// GetSpec returns saved spec
+// if SetSpec is not called it will return empty spec
+func (apip *TendermintChainParser) GetSpec() (spec spectypes.Spec) {
+	// Guard that the JsonRPCChainParser instance exists
+	if apip == nil {
+		return spectypes.Spec{}
+	}
+
+	// Add a read-write lock to ensure thread safety
+	apip.rwLock.Lock()
+	defer apip.rwLock.Unlock()
+
+	// return spec
+	return apip.spec
+}
+
 // SetSpec sets the spec for the TendermintChainParser
 func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	// Guard that the TendermintChainParser instance exists

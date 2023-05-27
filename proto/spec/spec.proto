@@ -31,4 +31,5 @@ message Spec {
   }
 
   ProvidersTypes providers_types = 14;
+  string chain_id = 16;
 }

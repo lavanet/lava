@@ -28,6 +28,38 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
 }
 
+func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, error) {
+	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_CHAINID)
+	if !ok {
+		return "", utils.LavaFormatError(spectypes.GET_CHAINID+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+
+	chainMessage, err := CraftChainMessage(serviceApi, cf.chainParser, nil)
+	if err != nil {
+		return "", utils.LavaFormatError(spectypes.GET_BLOCKNUM+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+
+	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+	if err != nil {
+		return "", utils.LavaFormatWarning(spectypes.GET_BLOCKNUM+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+
+	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
+	if err != nil {
+		return "", err
+	}
+	specID, err := parser.ParseSpecIDFromReply(parserInput, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", utils.LavaFormatWarning("Failed To Parse FetchChainID", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: serviceApi.GetName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
+	}
+
+	return specID, nil
+}
+
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	serviceApi, ok := cf.chainParser.GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
