@@ -3438,7 +3438,19 @@
                                 "type": "",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "defaultNodeInfo",
+                                    "network"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
