@@ -4806,7 +4806,19 @@
                                 "type": "",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "parsing": {
+                            "function_tag": "getChainId",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "response",
+                                    "data"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
                     },
                     {
                         "name": "abci_query",
