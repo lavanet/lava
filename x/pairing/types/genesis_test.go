@@ -46,14 +46,6 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
-				BadgeUsedCuList: []types.BadgeUsedCu{
-					{
-						BadgeUsedCuKey: []byte{byte(0)},
-					},
-					{
-						BadgeUsedCuKey: []byte{byte(1)},
-					},
-				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -103,20 +95,6 @@ func TestGenesisState_Validate(t *testing.T) {
 			},
 			valid: false,
 		},
-		// {
-		// 	desc: "duplicated badgeUsedCu",
-		// 	genState: &types.GenesisState{
-		// 		BadgeUsedCuList: []types.BadgeUsedCu{
-		// 			{
-		// 				BadgeUsedCuKey: []byte{byte(0)},
-		// 			},
-		// 			{
-		// 				BadgeUsedCuKey: []byte{byte(0)},
-		// 			},
-		// 		},
-		// 	},
-		// 	valid: false,
-		// },
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
