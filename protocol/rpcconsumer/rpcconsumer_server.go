@@ -212,7 +212,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
 			defer goroutineCtxCancel()
 
 			localRelayResult := &lavaprotocol.RelayResult{ProviderAddress: providerPublicAddress, Finalized: false}
