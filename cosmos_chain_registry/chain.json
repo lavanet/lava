@@ -1,0 +1,232 @@
+{
+    "$schema": "../chain.schema.json",
+    "chain_name": "lava-testnet-1",
+    "status": "live",
+    "network_type": "testnet",
+    "website": "https://www.lavanet.xyz/",
+    "update_link": "???",
+    "pretty_name": "Lava",
+    "chain_id": "lava-testnet-1",
+    "bech32_prefix": "lava",
+    "daemon_name": "lavad",
+    "node_home": "$HOME/.lava",
+    "key_algos": [
+      "secp256k1"
+    ],
+    "slip44": 118,
+    "fees": {
+      "fee_tokens": [
+        {
+          "denom": "ulava",
+          "fixed_min_gas_price": 0.0025,
+          "low_gas_price": 0.0025,
+          "average_gas_price": 0.025,
+          "high_gas_price": 0.04
+        }
+      ]
+    },
+    "staking": {
+      "staking_tokens": [
+        {
+          "denom": "ulava"
+        }
+      ],
+      "lock_duration": {
+        "time": "1209600s"
+      }
+    },
+    "codebase": {
+      "git_repo": "https://github.com/lavanet/lava",
+      "recommended_version": "v0.11.2",
+      "compatible_versions": [
+        "???"
+      ],
+      "binaries": {
+        "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64",
+        "linux/arm64": "???"
+      },
+      "cosmos_sdk_version": "0.45",
+      "consensus": {
+        "type": "tendermint",
+        "version": "0.34"
+      },
+      "cosmwasm_version": "???",
+      "cosmwasm_enabled": false,
+      "ibc_go_version": "3.0.1",
+      "ics_enabled": [
+        "ics20-1",
+        "???"
+      ],
+      "genesis": {
+        "name": "???",
+        "genesis_url": "???"
+      },
+      "versions": [
+        {
+          "name": "v0.3.0",
+          "tag": "v0.3.0",
+          "height": 0,
+          "next_version_name": "v0.4.0"
+        },
+        {
+          "name": "v0.4.0",
+          "tag": "v0.4.0",
+          "height": 838,
+          "next_version_name": "v0.4.3"
+        },
+        {
+          "name": "v0.4.3",
+          "tag": "v0.4.3",
+          "height": 22300,
+          "next_version_name": "v0.4.4"
+        },
+        {
+          "name": "v0.4.4",
+          "tag": "v0.4.4",
+          "height": 41735,
+          "next_version_name": "v0.5.2"
+        },
+        {
+          "name": "v0.5.2",
+          "tag": "v0.5.2",
+          "height": 63760,
+          "next_version_name": "v0.6.0-RC3"
+        },
+        {
+          "name": "v0.6.0-RC3",
+          "tag": "v0.6.0-RC3",
+          "height": 82570,
+          "next_version_name": "v0.7.0"
+        },
+        {
+          "name": "v0.7.0",
+          "tag": "v0.7.0",
+          "height": 102800,
+          "next_version_name": "v0.8.1"
+        },
+        {
+          "name": "v0.8.1",
+          "tag": "v0.8.1",
+          "height": 133100,
+          "next_version_name": "v0.9.8"
+        },
+        {
+          "name": "v0.9.8",
+          "tag": "v0.9.8",
+          "height": 163960,
+          "next_version_name": "v0.10.1"
+        },
+        {
+          "name": "v0.10.1",
+          "tag": "v0.10.1",
+          "height": 184620,
+          "next_version_name": "v0.11.2"
+        },
+        {
+          "name": "v0.11.2",
+          "tag": "v0.11.2",
+          "height": 208115,
+          "recommended_version": "v0.11.2",
+          "compatible_versions": [
+            "v15.1.0",
+            "v15.0.0",
+            "???"
+          ],
+          "cosmos_sdk_version": "0.45",
+          "consensus": {
+            "type": "tendermint",
+            "version": "0.34"
+          },
+          "cosmwasm_version": "???",
+          "cosmwasm_enabled": false,
+          "ibc_go_version": "3.0.1",
+          "ics_enabled": [
+            "ics20-1",
+            "???"
+          ],
+          "binaries": {
+            "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64",
+            "linux/arm64": "???"          }
+        }
+      ]
+    },
+    "images": [
+      {
+        "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/lava/images/lava-icon.png",
+        "theme": {
+          "primary_color_hex": "#231D4B",
+          "dasdsda": "???"
+        }
+      }
+    ],
+    "logo_URIs": {
+      "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/lava/images/lava-icon.png",
+      "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/lava/images/lava-icon.svg"
+    },
+    "peers": {
+      "seeds": [
+        {
+          "id": "3a445bfdbe2dprod-pnet-seed-node.lavanet.xyz:266560c8ee82461633aa3af31bc2b4dc0",
+          "address": "prod-pnet-seed-node.lavanet.xyz:26656",
+          "provider": "Lava"
+        },
+        {
+          "id": "e593c7a9ca61f5616119d6beb5bd8ef5dd28d62d",
+          "address": "prod-pnet-seed-node2.lavanet.xyz:26656",
+          "provider": "Lava"
+        },
+        {
+          "id": "????? ade4d8bc8cbe014af6ebdf3cb7b1e9ad36f412c0",
+          "address": "seeds.polkachu.com:12556",
+          "provider": "Polkachu"
+        }
+      ],
+      "persistent_peers": [
+        {
+          "Question": "should we create nodes that their only role is to be persistent_peers?",
+          "id": "4d9ac3510d9f5cfc975a28eb2a7b8da866f7bc47",
+          "address": "37.187.38.191:26656",
+          "provider": "stakelab"
+        }
+      ]
+    },
+    "apis": {
+      "Question": "should we publish the public rpc? (users should access through GW, maybe create another public rpc node?)",
+      "rpc": [
+        {
+          "address": "https://rpc.osmosis.zone/",
+          "provider": "Osmosis Foundation"
+        }
+      ],
+      "rest": [
+        {
+          "address": "https://lcd.osmosis.zone/",
+          "provider": "Osmosis Foundation"
+        }
+      ],
+      "grpc": [
+        {
+          "address": "osmosis-grpc.lavenderfive.com:443",
+          "provider": "Lavender.Five Nodes 🐝"
+        }
+      ]
+    },
+    "explorers": [
+      {
+        "kind": "explorers.guru",
+        "url": "https://lava.explorers.guru/",
+        "tx_page": "https://lava.explorers.guru//transaction/${txHash}",
+        "account_page": "https://lava.explorers.guru//account/${accountAddress}"
+      },
+      {
+        "kind": "bigdipper",
+        "url": "https://bd.lavanet.xyz",
+        "tx_page": "https://bd.lavanet.xyz/transactions/${txHash}",
+        "account_page": "https://bd.lavanet.xyz/accounts/${accountAddress}"
+      }
+    ],
+    "keywords": [
+      "dex",
+      "???"
+    ]
+  }
