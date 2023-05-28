@@ -97,7 +97,38 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			// badge is valid -> switch address to badge signer (developer key) and continue with payment
+			badgeUsedCuKey := types.BadgeUsedCuKey(badgeData.Badge.ProjectSig, relay.Provider)
+			badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuKey)
+			if !found {
+				// setting a timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go)
+				badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
+				if badgeUsedCuTimerExpiryBlock <= uint64(ctx.BlockHeight()) {
+					return nil, utils.LavaFormatWarning("badge rejected", fmt.Errorf("badge used CU entry validity expired"),
+						utils.Attribute{Key: "badgeUsedCuTimerExpiryBlock", Value: badgeUsedCuTimerExpiryBlock},
+						utils.Attribute{Key: "currentBlock", Value: uint64(ctx.BlockHeight())},
+					)
+				}
+				// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
+				k.badgeTimerStore.AddTimerByBlockHeight(ctx, badgeUsedCuTimerExpiryBlock, badgeUsedCuKey, []byte{})
+
+				badgeUsedCuMapEntry = types.BadgeUsedCu{
+					BadgeUsedCuKey: badgeUsedCuKey,
+					UsedCu:         0,
+				}
+			}
+
+			// enforce badge CU overuse
+			if relay.CuSum+badgeUsedCuMapEntry.UsedCu > badgeData.Badge.CuAllocation {
+				return nil, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not update badge's used CU"),
+					utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
+					utils.Attribute{Key: "badgeCuLeft", Value: badgeData.Badge.CuAllocation - badgeUsedCuMapEntry.UsedCu},
+				)
+			}
+
+			badgeUsedCuMapEntry.UsedCu += relay.CuSum
+			k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
+
+			// badge is valid & CU enforced -> switch address to badge signer (developer key) and continue with payment
 			clientAddr = badgeData.BadgeSigner
 		}
 

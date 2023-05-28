@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
+
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
 	"github.com/golang/protobuf/proto"
@@ -22,18 +26,53 @@ type GrpcMessage struct {
 	Path       string
 	methodDesc *desc.MethodDescriptor
 	formatter  grpcurl.Formatter
-	Header     []pairingtypes.Metadata
+
+	Registry *dyncodec.Registry
+	Codec    *dyncodec.Codec
+	Header   []pairingtypes.Metadata
 }
 
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {
-	var parsedData interface{}
-	err := json.Unmarshal(gm.Msg, &parsedData)
+	if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
+		var parsedData interface{}
+		err := json.Unmarshal(gm.Msg, &parsedData)
+		if err != nil {
+			utils.LavaFormatError("failed to unmarshal GetParams", err)
+			return nil
+		}
+		return parsedData
+	}
+	parsedData, err := gm.dynamicResolve()
 	if err != nil {
-		utils.LavaFormatError("GetParams Failed to unmarshal grpc message", err, utils.Attribute{Key: "message", Value: string(gm.Msg)})
+		utils.LavaFormatError("failed to dynamicResolve", err)
+		return nil
 	}
 	return parsedData
+}
+
+func (gm GrpcMessage) dynamicResolve() (interface{}, error) {
+	md, err := gm.Registry.FindDescriptorByName(protoreflect.FullName(strings.ReplaceAll(gm.Path, "/", ".")))
+	if err != nil {
+		return nil, err
+	}
+	msg := dynamicpb.NewMessage(md.(protoreflect.MethodDescriptor).Input())
+	err = gm.Codec.UnmarshalProto(gm.Msg, msg)
+	if err != nil {
+		return nil, err
+	}
+	jsonMsg, err := gm.Codec.MarshalProtoJSON(msg)
+	if err != nil {
+		return nil, err
+	}
+	var parsedData interface{}
+	err = json.Unmarshal(jsonMsg, &parsedData)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedData, nil
 }
 
 // GetResult will be deprecated after we remove old client
