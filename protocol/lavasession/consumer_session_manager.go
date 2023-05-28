@@ -20,14 +20,6 @@ const (
 	debug = false
 )
 
-type SessionInfo struct {
-	Session           *SingleConsumerSession
-	Epoch             uint64
-	ReportedProviders []byte
-}
-
-type ConsumerSessionsMap map[string]*SessionInfo
-
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
 	rpcEndpoint    *RPCEndpoint // used to filter out endpoints

@@ -17,6 +17,14 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type SessionInfo struct {
+	Session           *SingleConsumerSession
+	Epoch             uint64
+	ReportedProviders []byte
+}
+
+type ConsumerSessionsMap map[string]*SessionInfo
+
 type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
