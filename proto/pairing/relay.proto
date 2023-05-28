@@ -62,6 +62,7 @@ message RelayReply {
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
     bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
 }
 
 message QualityOfServiceReport{

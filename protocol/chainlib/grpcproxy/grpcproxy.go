@@ -10,10 +10,11 @@ import (
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, error)
+type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 
 func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, *http.Server, error) {
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(rawBytesCodec{}))
@@ -44,10 +45,11 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 		if err != nil {
 			return err
 		}
-		respBytes, err := callBack(stream.Context(), methodName[1:], reqBytes) // strip first '/' of the method name
+		respBytes, md, err := callBack(stream.Context(), methodName[1:], reqBytes) // strip first '/' of the method name
 		if err != nil {
 			return err
 		}
+		stream.SetHeader(md)
 		return stream.SendMsg(respBytes)
 	}
 }
