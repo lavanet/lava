@@ -827,6 +827,8 @@ func TestBadgeValidation(t *testing.T) {
 	_ctx = _ctx.WithBlockHeader(_ctxBlockHeader)
 	ts.ctx = sdk.WrapSDKContext(_ctx)
 
+	badgeCuAllocation := ts.spec.Apis[0].ComputeUnits * 2 // times 2 to have enough CU for the two tests that succeed
+
 	tests := []struct {
 		name         string
 		badgeAddress sdk.AccAddress // should be the badge user (in happy flow)
@@ -834,17 +836,15 @@ func TestBadgeValidation(t *testing.T) {
 		badgeSigner  common.Account // should be the badge granter, i.e. project developer (in happy flow)
 		epoch        uint64
 		lavaChainID  string
-		cuAllocation uint64
 		valid        bool
 	}{
-		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
-		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", ts.spec.Apis[0].ComputeUnits + 1, false},
-		{"badge cu allocation < relay cu sum", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits - 1, false},
-		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, ts.spec.Apis[0].ComputeUnits + 1, true},
+		{"happy flow", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, true},
+		{"badge address != badge user", projectDeveloper.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, false},
+		{"relay signer != badge user", badgeUser.Addr, projectDeveloper, projectDeveloper, currentEpoch, lavaChainID, false},
+		{"badge signer != project developer", badgeUser.Addr, badgeUser, badgeUser, currentEpoch, lavaChainID, false},
+		{"badge epoch != relay epoch", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch - 1, lavaChainID, false},
+		{"badge lava chain id != relay lava chain id", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, "dummy-lavanet", false},
+		{"badge epoch != relay epoch (epoch passed)", badgeUser.Addr, badgeUser, projectDeveloper, currentEpoch, lavaChainID, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -858,7 +858,7 @@ func TestBadgeValidation(t *testing.T) {
 				err = ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
 				require.Nil(t, err)
 			}
-			badge := types.CreateBadge(tt.cuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
+			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
@@ -920,4 +920,207 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	}
 	relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: relays}
 	payAndVerifyBalance(t, ts, relayPaymentMessage, true, true, projectDeveloper.Addr, ts.providers[0].Addr)
+}
+
+// Test:
+// 1. basic badge CU enforcement works (can't ask more CU than badge's cuAllocation)
+// 2. claiming payment for relays with different session IDs in different relay payment messages works
+func TestBadgeCuAllocationEnforcement(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	subkeeper := ts.keepers.Subscription
+
+	// apply pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectDeveloper := *ts.clients[0]
+	badgeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 100000)
+
+	err := subkeeper.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String(), projectDeveloper.Addr.String(), ts.plan.Index, 1)
+	require.Nil(t, err)
+
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	plan, err := ts.keepers.Subscription.GetPlanFromSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String())
+	require.Nil(t, err)
+	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
+
+	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
+	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
+
+	QoS := &types.QualityOfServiceReport{
+		Latency:      sdk.NewDecWithPrec(1, 0),
+		Availability: sdk.NewDecWithPrec(1, 0),
+		Sync:         sdk.NewDecWithPrec(1, 0),
+	}
+	usedCuSoFar := uint64(0)
+
+	tests := []struct {
+		name  string
+		cuSum uint64
+		valid bool
+	}{
+		{"happy flow", badgeCuAllocation / 2, true},
+		{"one cu over the limit", badgeCuAllocation/2 + 1, false},
+		{"many cu over the limit", badgeCuAllocation, false},
+		{"one cu below the limit", badgeCuAllocation/2 - 1, true},
+		{"finish cu allocation", 1, true},
+	}
+	for it, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), tt.cuSum, ts.spec.Name, QoS)
+			relaySession.SessionId = uint64(it)
+			relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
+			require.Nil(t, err)
+
+			relaySession.Badge = badge
+
+			relays := []*types.RelaySession{relaySession}
+
+			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, true, tt.valid, projectDeveloper.Addr, ts.providers[0].Addr)
+
+			if tt.valid {
+				usedCuSoFar += tt.cuSum
+			}
+			badgeUsedCuMapKey := types.BadgeUsedCuKey(badge.ProjectSig, ts.providers[0].Addr.String())
+			badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
+			require.True(t, found)
+			require.Equal(t, usedCuSoFar, badgeUsedCuMapEntry.UsedCu)
+		})
+	}
+}
+
+// Test:
+// 1. backward payment claims work (can claim up to epochBlocks*epochsToSave)
+// 2. badgeUsedCuEntry is valid from the badge's creation block plus epochBlocks*epochsToSave. Then, it should be deleted
+// 3. claiming payment for relays with different session IDs in the same relay payment message works
+func TestBadgeUsedCuMapTimeout(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	subkeeper := ts.keepers.Subscription
+
+	// apply pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectDeveloper := *ts.clients[0]
+	badgeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 100000)
+
+	err := subkeeper.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String(), projectDeveloper.Addr.String(), ts.plan.Index, 1)
+	require.Nil(t, err)
+
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	plan, err := ts.keepers.Subscription.GetPlanFromSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String())
+	require.Nil(t, err)
+	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
+
+	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
+	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
+
+	QoS := &types.QualityOfServiceReport{
+		Latency:      sdk.NewDecWithPrec(1, 0),
+		Availability: sdk.NewDecWithPrec(1, 0),
+		Sync:         sdk.NewDecWithPrec(1, 0),
+	}
+	relayNum := 5
+	cuSum := badgeCuAllocation / (uint64(relayNum) * 2)
+
+	badgeUsedCuExpiry := ts.keepers.Pairing.BadgeUsedCuExpiry(sdk.UnwrapSDKContext(ts.ctx), *badge)
+
+	tests := []struct {
+		name            string
+		blocksToAdvance uint64
+		valid           bool
+	}{
+		{"valid backwards claim payment", badgeUsedCuExpiry - currentEpoch - 1, true},
+		{"invalid backwards claim payment", 2, false}, // cuSum is valid (not passing badgeCuAllocation), but we've passed the backward payment period
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			relays := []*types.RelaySession{}
+			for i := 0; i < relayNum; i++ {
+				relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, QoS)
+				relaySession.Epoch = int64(currentEpoch) // BuildRelayRequest always takes the current blockHeight, which is not desirable in this test
+				relaySession.SessionId = uint64(i)
+				relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
+				require.Nil(t, err)
+
+				if i == 0 {
+					relaySession.Badge = badge
+				}
+
+				relays = append(relays, relaySession)
+			}
+
+			ts.ctx = testkeeper.AdvanceBlocks(ts.ctx, ts.keepers, int(tt.blocksToAdvance))
+
+			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, true, tt.valid, projectDeveloper.Addr, ts.providers[0].Addr)
+
+			// verify that the badgeUsedCu entry was deleted after it expired (and has the right value of used cu before expiring)
+			badgeUsedCuMapKey := types.BadgeUsedCuKey(badge.ProjectSig, ts.providers[0].Addr.String())
+			badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
+			currentBlock := sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
+			if currentBlock > int64(badgeUsedCuExpiry) {
+				require.False(t, found)
+			} else {
+				require.True(t, found)
+				require.Equal(t, cuSum*uint64(relayNum), badgeUsedCuMapEntry.UsedCu)
+			}
+		})
+	}
+}
+
+// Test that in the same epoch I can use the total CU allocation of the badge multiple times when talking to different providers
+func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	err := ts.addProvider(1)
+	require.Nil(t, err)
+
+	subkeeper := ts.keepers.Subscription
+
+	// apply pairing
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	projectDeveloper := *ts.clients[0]
+	badgeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 100000)
+
+	err = subkeeper.CreateSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String(), projectDeveloper.Addr.String(), ts.plan.Index, 1)
+	require.Nil(t, err)
+
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	plan, err := ts.keepers.Subscription.GetPlanFromSubscription(sdk.UnwrapSDKContext(ts.ctx), projectDeveloper.Addr.String())
+	require.Nil(t, err)
+	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit / 2
+
+	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
+	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
+
+	QoS := &types.QualityOfServiceReport{
+		Latency:      sdk.NewDecWithPrec(1, 0),
+		Availability: sdk.NewDecWithPrec(1, 0),
+		Sync:         sdk.NewDecWithPrec(1, 0),
+	}
+
+	cuSum := badgeCuAllocation
+
+	for i := 0; i < 2; i++ {
+		relaySession := common.BuildRelayRequest(ts.ctx, ts.providers[i].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, QoS)
+		relaySession.Epoch = int64(currentEpoch) // BuildRelayRequest always takes the current blockHeight, which is not desirable in this test
+		relaySession.Sig, err = sigs.SignRelay(badgeUser.SK, *relaySession)
+		require.Nil(t, err)
+
+		relaySession.Badge = badge
+
+		relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[i].Addr.String(), Relays: []*types.RelaySession{relaySession}}
+		payAndVerifyBalance(t, ts, relayPaymentMessage, true, true, projectDeveloper.Addr, ts.providers[i].Addr)
+
+		badgeUsedCuMapKey := types.BadgeUsedCuKey(badge.ProjectSig, ts.providers[i].Addr.String())
+		badgeUsedCuMapEntry, found := ts.keepers.Pairing.GetBadgeUsedCu(sdk.UnwrapSDKContext(ts.ctx), badgeUsedCuMapKey)
+		require.True(t, found)
+		require.Equal(t, cuSum, badgeUsedCuMapEntry.UsedCu)
+	}
 }
