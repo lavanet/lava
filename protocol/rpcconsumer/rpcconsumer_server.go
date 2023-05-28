@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	MaxRelayRetries  = 4
-	numberOfSessions = 2
+	MaxRelayRetries = 4
 )
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
