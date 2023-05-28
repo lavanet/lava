@@ -64,5 +64,10 @@ func (gs GenesisState) Validate() error {
 	// }
 	// this line is used by starport scaffolding # genesis/types/validate
 
+	// check the badgeUsedCuIndex map is empty
+	if len(gs.BadgeUsedCuList) > 0 {
+		return fmt.Errorf("badgeUsedCuList is not empty")
+	}
+
 	return gs.Params.Validate()
 }
