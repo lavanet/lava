@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -22,6 +23,8 @@ import (
 const (
 	MaxRelayRetries = 4
 )
+
+var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
@@ -324,22 +327,28 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		responsesReceived := 0
 		relayReturned := false
 		for {
-			response := <-responses
-			// increase responses received
-			responsesReceived++
-			if response.err == nil && !relayReturned {
-				// Return the first successful response
-				result <- response
-				relayReturned = true
-			}
-
-			if responsesReceived == len(sessions) {
-				// Return the last response if all previous responses were error
-				if !relayReturned {
+			select {
+			case response := <-responses:
+				// increase responses received
+				responsesReceived++
+				if response.err == nil && !relayReturned {
+					// Return the first successful response
 					result <- response
+					relayReturned = true
 				}
 
-				// if it was returned, just close this go routine
+				if responsesReceived == len(sessions) {
+					// Return the last response if all previous responses were error
+					if !relayReturned {
+						result <- response
+					}
+
+					// if it was returned, just close this go routine
+					return
+				}
+			case <-time.After(time.Second * 10):
+				// Timeout occurred, send an error to result channel
+				result <- &relayResponse{nil, NoResponseTimeout}
 				return
 			}
 		}
