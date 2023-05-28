@@ -16,7 +16,7 @@ import (
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, error)
 
 func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, *http.Server, error) {
-	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(rawBytesCodec{}))
+	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}))
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
@@ -52,9 +52,9 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 	}
 }
 
-type rawBytesCodec struct{}
+type RawBytesCodec struct{}
 
-func (rawBytesCodec) Marshal(v interface{}) ([]byte, error) {
+func (RawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 	bytes, ok := v.([]byte)
 	if !ok {
 		return nil, utils.LavaFormatError("cannot encode type", nil, utils.Attribute{Key: "v", Value: v})
@@ -62,7 +62,7 @@ func (rawBytesCodec) Marshal(v interface{}) ([]byte, error) {
 	return bytes, nil
 }
 
-func (rawBytesCodec) Unmarshal(data []byte, v interface{}) error {
+func (RawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	bufferPtr, ok := v.(*[]byte)
 	if !ok {
 		return utils.LavaFormatError("cannot decode into type", nil, utils.Attribute{Key: "v", Value: v})
@@ -71,6 +71,10 @@ func (rawBytesCodec) Unmarshal(data []byte, v interface{}) error {
 	return nil
 }
 
-func (rawBytesCodec) Name() string {
+func (RawBytesCodec) Name() string {
 	return "lava/grpc-proxy-codec"
+}
+
+func (RawBytesCodec) String() string {
+	return RawBytesCodec{}.Name()
 }
