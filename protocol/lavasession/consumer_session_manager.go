@@ -450,7 +450,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 
 		// If error exists but we have providers, return them
 		if err != nil && len(sessionWithProviderMap) != 0 {
-			return sessionWithProviderMap, err
+			return sessionWithProviderMap, nil
 		}
 
 		// If error happens, and we do not have any provider return error
