@@ -363,7 +363,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
-			return sessions, err
+			return sessions, nil
 		}
 
 		// If error happens, and we do not have any sessions return error
