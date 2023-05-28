@@ -106,7 +106,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64, pairedProviders int64) (*SingleProviderSession, error) {
 	// validate Epoch
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSessions", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
+		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
 		return nil, InvalidEpochError
 	}
 
@@ -159,7 +159,7 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 
 func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
-		utils.LavaFormatError("GetSessions", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
+		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
 	}
 
