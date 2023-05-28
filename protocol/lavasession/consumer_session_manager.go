@@ -386,6 +386,14 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	}
 
 	providers := csm.providerOptimizer.ChooseProvider(csm.validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+
+	// make sure we have at least 1 valid provider
+	if len(providers) == 0 {
+		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: csm.validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		err = PairingListEmptyError
+		return
+	}
+
 	return providers, nil
 }
 
