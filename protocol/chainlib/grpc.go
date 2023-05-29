@@ -17,6 +17,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
@@ -242,11 +243,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
-	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
+	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
-		grpcHeaders := convertToMetadataGrpc(metadataValues)
+		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
@@ -256,10 +257,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
-			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
+			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
 		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
-		return relayReply.Data, nil
+		return relayReply.Data, convertRelayMetaDataToMDMetaData(relayReply.Metadata), nil
 	}
 
 	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)
@@ -400,8 +401,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 	}
 
+	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response)
+	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
+
 	if err != nil {
 		if connectCtx.Err() == context.DeadlineExceeded {
 			// Not an rpc error, return provider error without disclosing the endpoint address
@@ -417,20 +420,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	reply := &pairingtypes.RelayReply{
-		Data: respBytes,
+		Data:     respBytes,
+		Metadata: convertToMetadataMapOfSlices(respHeaders),
 	}
 	return reply, "", nil, nil
-}
-
-func convertToMetadataGrpc(md map[string][]string) []pairingtypes.Metadata {
-	metadata := make([]pairingtypes.Metadata, len(md))
-	indexer := 0
-	for k, v := range md {
-		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v[0]}
-		indexer += 1
-	}
-	fmt.Println("metadata: ", metadata)
-	return metadata
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {

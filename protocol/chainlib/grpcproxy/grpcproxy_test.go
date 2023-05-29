@@ -6,17 +6,20 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestGRPCProxy(t *testing.T) {
-	proxyGRPCSrv, _, err := NewGRPCProxy(func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
+	proxyGRPCSrv, _, err := NewGRPCProxy(func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
 		// the callback function just does echo proxying
 		req := new(testproto.TestRequest)
 		err := req.Unmarshal(reqBody)
 		require.NoError(t, err)
 		respBytes, err := (&testproto.TestResponse{Response: req.Request + "-callback"}).Marshal()
 		require.NoError(t, err)
-		return respBytes, nil
+		responseHeaders := make(metadata.MD)
+		responseHeaders["test-headers"] = append(responseHeaders["test-headers"], "55")
+		return respBytes, responseHeaders, nil
 	})
 	require.NoError(t, err)
 

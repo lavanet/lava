@@ -33125,6 +33125,45 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/subscription/list_projects/{subscription}':
+    get:
+      summary: Queries a list of ListProjects items.
+      operationId: LavanetLavaSubscriptionListProjects
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              projects:
+                type: array
+                items:
+                  type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: subscription
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/subscription/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -54409,6 +54448,15 @@ definitions:
         title: >-
           sign
           latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+      metadata:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            value:
+              type: string
   lavanet.lava.pairing.RelayRequest:
     type: object
     properties:
@@ -54558,6 +54606,15 @@ definitions:
           salt:
             type: string
             format: byte
+          metadata:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                value:
+                  type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -54993,6 +55050,13 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.pairing.Metadata:
+    type: object
+    properties:
+      name:
+        type: string
+      value:
+        type: string
   lavanet.lava.pairing.MsgFreezeProviderResponse:
     type: object
   lavanet.lava.pairing.MsgRelayPaymentResponse:
@@ -55554,6 +55618,15 @@ definitions:
       salt:
         type: string
         format: byte
+      metadata:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            value:
+              type: string
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
@@ -55961,17 +56034,6 @@ definitions:
       kinds:
         type: integer
         format: int64
-      types:
-        type: array
-        items:
-          type: string
-          enum:
-            - NONE
-            - ADMIN
-            - DEVELOPER
-          default: NONE
-          title: 'bitmap, must only be power of 2'
-        title: 'the key type, determines the privilages of the key'
   lavanet.lava.projects.QueryDeveloperResponse:
     type: object
     properties:
@@ -57358,17 +57420,9 @@ definitions:
             key:
               type: string
               title: the address of the project key
-            types:
-              type: array
-              items:
-                type: string
-                enum:
-                  - NONE
-                  - ADMIN
-                  - DEVELOPER
-                default: NONE
-                title: 'bitmap, must only be power of 2'
-              title: 'the key type, determines the privilages of the key'
+            kinds:
+              type: integer
+              format: int64
       policy:
         type: object
         properties:
@@ -57397,14 +57451,6 @@ definitions:
             format: uint64
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
-  lavanet.lava.projects.ProjectKey.KEY_TYPE:
-    type: string
-    enum:
-      - NONE
-      - ADMIN
-      - DEVELOPER
-    default: NONE
-    title: 'bitmap, must only be power of 2'
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:
@@ -57463,6 +57509,13 @@ definitions:
             type: string
             format: uint64
             title: CU remaining for previous month
+  lavanet.lava.subscription.QueryListProjectsResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: string
   lavanet.lava.subscription.QueryParamsResponse:
     type: object
     properties:

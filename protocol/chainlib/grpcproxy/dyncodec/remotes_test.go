@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -74,10 +75,10 @@ func TestRemotes(t *testing.T) {
 	})
 
 	t.Run("test relayer remote", func(t *testing.T) {
-		remote := NewRelayerRemote(func(ctx context.Context, method string, req []byte) ([]byte, error) {
+		remote := NewRelayerRemote(func(ctx context.Context, method string, req []byte) ([]byte, metadata.MD, error) {
 			var resp []byte
 			err := conn.Invoke(ctx, method, req, &resp, grpc.CustomCodecCallOption{Codec: grpcproxy.RawBytesCodec{}})
-			return resp, err
+			return resp, make(metadata.MD), err
 		})
 		testRemote(remote)
 	})

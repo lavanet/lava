@@ -232,7 +232,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		path := "/" + c.Params("*")
 
 		metadataValues := c.GetReqHeaders()
-		restHeaders := convertToMetadataRest(metadataValues)
+		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -260,13 +260,13 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(response)
+			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
 
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Catch the others
@@ -281,7 +281,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
 		metadataValues := c.GetReqHeaders()
-		restHeaders := convertToMetadataRest(metadataValues)
+		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -303,17 +303,24 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(response)
+			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
 
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+}
+
+func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+	return c.SendString(data)
 }
 
 type RestChainProxy struct {
@@ -399,17 +406,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	reply := &pairingtypes.RelayReply{
-		Data: body,
+		Data:     body,
+		Metadata: convertToMetadataMapOfSlices(res.Header),
 	}
 	return reply, "", nil, nil
-}
-
-func convertToMetadataRest(md map[string]string) []pairingtypes.Metadata {
-	metadata := make([]pairingtypes.Metadata, len(md))
-	indexer := 0
-	for k, v := range md {
-		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v}
-		indexer += 1
-	}
-	return metadata
 }

@@ -16,7 +16,9 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -245,4 +247,34 @@ type CraftData struct {
 
 func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
 	return chainParser.CraftMessage(serviceApi, craftData)
+}
+
+// rest request headers are formatted like map[string]string
+func convertToMetadataMap(md map[string]string) []pairingtypes.Metadata {
+	metadata := make([]pairingtypes.Metadata, len(md))
+	indexer := 0
+	for k, v := range md {
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v}
+		indexer += 1
+	}
+	return metadata
+}
+
+// rest response headers / grpc headers are formatted like map[string][]string
+func convertToMetadataMapOfSlices(md map[string][]string) []pairingtypes.Metadata {
+	metadata := make([]pairingtypes.Metadata, len(md))
+	indexer := 0
+	for k, v := range md {
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v[0]}
+		indexer += 1
+	}
+	return metadata
+}
+
+func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
+	responseMetaData := make(metadata.MD)
+	for _, v := range md {
+		responseMetaData[v.Name] = append(responseMetaData[v.Name], v.Value)
+	}
+	return responseMetaData
 }

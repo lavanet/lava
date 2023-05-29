@@ -41,7 +41,8 @@ func (r RelayerRemote) sendReq(req *grpc_reflection_v1alpha.ServerReflectionRequ
 	if err != nil {
 		return nil, err
 	}
-	respBytes, err := r.relay(context.Background(), "grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo", reqBytes)
+
+	respBytes, _, err := r.relay(context.Background(), "grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo", reqBytes)
 	if err != nil {
 		return nil, err
 	}
