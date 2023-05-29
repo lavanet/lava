@@ -8,9 +8,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 )
 
-func prefixForErrors(from uint64) string {
+func (fs *FixationStore) prefixForErrors(from uint64) string {
 	return fmt.Sprintf("FixationStore: migration from version %d", from)
 }
 
@@ -23,12 +24,12 @@ var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 // MigrateVerrsion performs pending internal version migration(s), if any.
 func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	from := fs.getVersion(ctx)
-	to := types.FixationVersion()
+	to := FixationVersion()
 
 	for from < to {
 		function, ok := fixationMigrators[int(from)]
 		if !ok {
-			return fmt.Errorf("%s not available", prefixForErrors(from))
+			return fmt.Errorf("%s not available", fs.prefixForErrors(from))
 		}
 
 		err = function(ctx, fs)
@@ -82,22 +83,24 @@ func (fs *FixationStore) doMigratePrefix(ctx sdk.Context, oldPrefix, newPrefix s
 //     entries used to begin with refcount 0 instead of refcount 1)
 //   - correct negative refcounts if found any (for extra care)
 func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
 	indices := fs.GetAllEntryIndices(ctx)
 	for _, index := range indices {
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
-			return fmt.Errorf("%s: failed to sanitize index: %s", prefixForErrors(1), index)
+			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}
-		blocks := fs.GetAllEntryVersions(ctx, index, true)
+		blocks := fs.GetAllEntryVersions(ctx, index)
 		if len(blocks) < 1 {
-			return fmt.Errorf("%s: no versions for index: %s", prefixForErrors(1), index)
+			return fmt.Errorf("%s: no versions for index: %s", fs.prefixForErrors(1), index)
 		}
 		recent := blocks[len(blocks)-1]
 		for _, block := range blocks {
 			entry := fs.getEntry(ctx, safeIndex, block)
 			// check for refcount overflow due to excessive putEntry
 			if entry.Refcount > math.MaxInt64 {
-				return fmt.Errorf("%s: entry has negative refcount index: %s", prefixForErrors(1), index)
+				return fmt.Errorf("%s: entry has negative refcount index: %s", fs.prefixForErrors(1), index)
 			}
 			// bump refcount of head entries (most recent version of an entry)
 			if block == recent {
@@ -105,7 +108,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 			}
 			// if refcount still zero, make sure StaleAt is set
 			if entry.Refcount == 0 && entry.StaleAt == math.MaxUint64 {
-				entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
+				entry.StaleAt = ctxBlock + uint64(types.STALE_ENTRY_TIME)
 			}
 			fs.setEntry(ctx, entry)
 			// if StaleAt is set, then start corresponding timer
@@ -140,7 +143,49 @@ func fixationMigrate2to3(ctx sdk.Context, fs *FixationStore) error {
 	return nil
 }
 
-// fixationMigrate3to4: call migration of timerstore
+// fixationMigrate3to4: update keys/data for timers
+//   - instead of <expiry=block/time, data=index>,
+//     use <expiry=block/time, key=timer+entry-index+entry-block, data=[]>
 func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
-	return fs.tstore.MigrateVersion(ctx)
+	err := fs.tstore.MigrateVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	utils.LavaFormatDebug("migrate fixation timers")
+
+	ctxBlock := uint64(ctx.BlockHeight())
+
+	// apply migration to all entries (even deleted ones as they may still
+	// have versions in stale-period); use the raw AllEntryIndicesFilter()
+	filter := func(_, v []byte) bool { return true }
+	indices := fs.AllEntryIndicesFilter(ctx, "", filter)
+
+	for _, index := range indices {
+		utils.LavaFormatDebug("  entry", utils.Attribute{Key: "index", Value: index})
+
+		safeIndex, err := types.SanitizeIndex(index)
+		if err != nil {
+			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
+		}
+
+		blocks := fs.GetAllEntryVersions(ctx, index)
+		if len(blocks) < 1 {
+			return fmt.Errorf("%s: no versions for index: %s", fs.prefixForErrors(1), index)
+		}
+
+		for _, block := range blocks {
+			entry := fs.getEntry(ctx, safeIndex, block)
+			utils.LavaFormatDebug("    version", utils.Attribute{Key: "entry", Value: entry})
+
+			// if StaleAt is set, then replace old style timer with new style timer
+			if entry.StaleAt != math.MaxUint && entry.StaleAt > ctxBlock {
+				fs.tstore.DelTimerByBlockHeight(ctx, entry.StaleAt, []byte{})
+				key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
+				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
+			}
+		}
+	}
+
+	return nil
 }

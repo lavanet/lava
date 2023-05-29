@@ -14,6 +14,13 @@ const (
 	EntryPrefix        = "Entry_Value_"
 )
 
+var (
+	// use single byte to save storage.
+	// (value cannot be part of a valid index)
+	EntryIndexLive = []byte{1}
+	EntryIndexDead = []byte{2}
+)
+
 // TimerStore
 
 type TimerType int

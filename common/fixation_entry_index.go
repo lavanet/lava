@@ -17,6 +17,10 @@ import (
 //
 // EntryIndex objects are stored with a distinct prefix to avoid confusion
 // when iterating over Entries. See example in `x/common/fixation_entry.go`.
+//
+// EntryIndex objects are stored with the key set to the (sanitized) index,
+// and value normally set to types.EntryIndexLive, or types.EntryIndexDead if
+// the respective Entry is marked deleted.
 
 func (fs *FixationStore) getEntryIndexStore(ctx sdk.Context) *prefix.Store {
 	store := prefix.NewStore(
@@ -26,11 +30,14 @@ func (fs *FixationStore) getEntryIndexStore(ctx sdk.Context) *prefix.Store {
 }
 
 // setEntryIndex stores an Entry index in the store
-func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string) {
+func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string, live bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
-	appendedValue := []byte(safeIndex) // convert the index value to a byte array
-	store.Set(types.KeyPrefix(safeIndex), appendedValue)
+	value := types.EntryIndexLive
+	if !live {
+		value = types.EntryIndexDead
+	}
+	store.Set(types.KeyPrefix(safeIndex), value)
 }
 
 // removeEntryIndex removes an Entry index from the store
@@ -40,8 +47,9 @@ func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
 	store.Delete(types.KeyPrefix(safeIndex))
 }
 
-// GetAllEntryIndexWithPrefix returns all Entry indices with a given prefix
-func (fs FixationStore) GetAllEntryIndicesWithPrefix(ctx sdk.Context, prefix string) []string {
+// AllEntryIndicesFilter returns all Entry indices with a given prefix and filtered
+// by the given filter function.
+func (fs FixationStore) AllEntryIndicesFilter(ctx sdk.Context, prefix string, filter func(k, v []byte) bool) []string {
 	store := fs.getEntryIndexStore(ctx)
 	entryPrefix := types.KeyPrefix(prefix)
 	iterator := sdk.KVStorePrefixIterator(store, entryPrefix)
@@ -50,17 +58,27 @@ func (fs FixationStore) GetAllEntryIndicesWithPrefix(ctx sdk.Context, prefix str
 	// iterate over the store's values and save the indices in a list
 	indexList := []string{}
 	for ; iterator.Valid(); iterator.Next() {
-		safeIndex := string(iterator.Value())
+		key, value := iterator.Key(), iterator.Value()
+		safeIndex := string(key)
 		types.AssertSanitizedIndex(safeIndex, fs.prefix)
-		indexList = append(indexList, types.DesanitizeIndex(safeIndex))
+		if filter == nil || filter(key, value) {
+			indexList = append(indexList, types.DesanitizeIndex(safeIndex))
+		}
 	}
 
 	return indexList
 }
 
+// GetAllEntryIndicesWithPrefix returns all Entry indices with a given prefix
+func (fs FixationStore) GetAllEntryIndicesWithPrefix(ctx sdk.Context, prefix string) []string {
+	filter := func(_, v []byte) bool { return types.IsEntryIndexLive(v) }
+	return fs.AllEntryIndicesFilter(ctx, prefix, filter)
+}
+
 // GetAllEntryIndices returns all Entry indices
 func (fs FixationStore) GetAllEntryIndices(ctx sdk.Context) []string {
-	return fs.GetAllEntryIndicesWithPrefix(ctx, "")
+	filter := func(_, v []byte) bool { return types.IsEntryIndexLive(v) }
+	return fs.AllEntryIndicesFilter(ctx, "", filter)
 }
 
 func (fs FixationStore) createEntryIndexStoreKey() string {

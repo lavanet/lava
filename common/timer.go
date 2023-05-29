@@ -109,7 +109,7 @@ type TimerStore struct {
 
 // TimerVersion returns the timer library version
 func TimerVersion() uint64 {
-	return 2
+	return 1
 }
 
 // NewTimerStore returns a new TimerStore object

@@ -37,9 +37,9 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		return err
 	}
 
-	projectIndices := m.keeper.projectsFS.GetAllEntryIndices(ctx)
+	projectIndices := m.keeper.projectsFS.AllEntryIndicesFilter(ctx, "", nil)
 	for _, projectIndex := range projectIndices {
-		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
+		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex)
 		for _, block := range blocks {
 			var project_v2 v2.Project
 			m.keeper.projectsFS.ReadEntry(ctx, projectIndex, block, &project_v2)
@@ -94,9 +94,9 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		}
 	}
 
-	developerDataIndices := m.keeper.developerKeysFS.GetAllEntryIndices(ctx)
+	developerDataIndices := m.keeper.developerKeysFS.AllEntryIndicesFilter(ctx, "", nil)
 	for _, developerDataIndex := range developerDataIndices {
-		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex, true)
+		blocks := m.keeper.developerKeysFS.GetAllEntryVersions(ctx, developerDataIndex)
 		for _, block := range blocks {
 			var developerDataStruct_v2 v2.ProtoDeveloperData
 			m.keeper.developerKeysFS.ReadEntry(ctx, developerDataIndex, block, &developerDataStruct_v2)
@@ -134,7 +134,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 		utils.LavaFormatDebug("migrate:",
 			utils.Attribute{Key: "project", Value: projectIndex})
 
-		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex, true)
+		blocks := m.keeper.projectsFS.GetAllEntryVersions(ctx, projectIndex)
 		for _, block := range blocks {
 			utils.LavaFormatDebug("  project:",
 				utils.Attribute{Key: "block", Value: block})
