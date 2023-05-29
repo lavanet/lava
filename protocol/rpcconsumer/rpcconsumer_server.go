@@ -203,7 +203,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
 	if err != nil {
-		return relayResult, err
+		return &lavaprotocol.RelayResult{ProviderAddress: ""}, err
 	}
 
 	type relayResponse struct {
