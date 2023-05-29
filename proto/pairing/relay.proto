@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.pairing;
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
+import "epochstorage/stake_entry.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -53,6 +54,17 @@ message Badge {
     string address = 3;
     string lava_chain_id = 4;
     bytes project_sig = 5;
+}
+
+message GenerateBadgeRequest {
+    string badge_address = 1;
+    string project_id = 2;
+    string spec_id = 3 [(gogoproto.nullable)   = true];
+}
+
+message GenerateBadgeResponse {
+    Badge badge = 1;
+    repeated lavanet.lava.epochstorage.StakeEntry pairing_list = 2 [(gogoproto.nullable) = true];
 }
 
 message RelayReply {
