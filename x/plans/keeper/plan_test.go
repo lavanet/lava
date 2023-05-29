@@ -392,16 +392,24 @@ func TestPlansDelete(t *testing.T) {
 
 	block2 := uint64(ctx.BlockHeight())
 
+	// delete only takes effect next epoch, so for now still visible
+	_, found := ts.keepers.Plans.FindPlan(ctx, index, block2+10)
+	require.True(t, found)
+
+	// advance an epoch (so the delete will take effect)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ctx = sdk.UnwrapSDKContext(ts.ctx)
+
 	// verify there are zero plans visible
 	plansIndices = ts.keepers.Plans.GetAllPlanIndices(ctx)
 	require.Equal(t, 0, len(plansIndices))
-	_, found := ts.keepers.Plans.GetPlan(ctx, index)
+	_, found = ts.keepers.Plans.GetPlan(ctx, index)
 	require.False(t, found)
 
-	// but the plan is not stale yet, so can be found (until block2)
+	// but the plan is not stale yet, so can be found (until block2 + ~epoch)
 	_, found = ts.keepers.Plans.FindPlan(ctx, index, block1)
 	require.True(t, found)
-	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2)
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2 + 30)
 	require.False(t, found)
 
 	// advance epoch until the plan becomes stale
