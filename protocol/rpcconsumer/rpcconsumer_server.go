@@ -194,6 +194,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	chainID := rpccs.listenEndpoint.ChainID
 	lavaChainID := rpccs.lavaChainID
 
+	// Calculate extra RelayTimeout
+	extraRelayTimeout := time.Duration(0)
+	if chainMessage.GetInterface().Category.HangingApi {
+		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
+	}
+
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
 	if err != nil {
@@ -208,8 +214,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Make a channel for all providers to send responses
 	responses := make(chan *relayResponse, len(sessions))
 
+	// Set response timeout to 0
+	responseTimeout := 0 * time.Second
+
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		// Calculate relay timeout
+		relayTimeout := extraRelayTimeout + common.GetTimePerCu(sessionInfo.Session.LatestRelayCu) + common.AverageWorldLatency
+		// Always use longer timeout
+		if relayTimeout > relayTimeout {
+			responseTimeout = relayTimeout
+		}
+
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			var localRelayResult *lavaprotocol.RelayResult
@@ -266,12 +282,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				utils.LavaFormatError("cache not connected", errResponse)
 			}
 
-			extraRelayTimeout := time.Duration(0)
-			if chainMessage.GetInterface().Category.HangingApi {
-				_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
-			}
-
-			relayTimeout := extraRelayTimeout + common.GetTimePerCu(singleConsumerSession.LatestRelayCu) + common.AverageWorldLatency
 			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
@@ -312,7 +322,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	result := make(chan *relayResponse)
 
-	go func() {
+	go func(timeout time.Duration) {
 		responsesReceived := 0
 		relayReturned := false
 		for {
@@ -335,13 +345,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// if it was returned, just close this go routine
 					return
 				}
-			case <-time.After(time.Second * 10):
+			case <-time.After(responseTimeout + 2*time.Second):
 				// Timeout occurred, send an error to result channel
 				result <- &relayResponse{nil, NoResponseTimeout}
 				return
 			}
 		}
-	}()
+	}(responseTimeout)
 
 	response := <-result
 	return response.relayResult, response.err
