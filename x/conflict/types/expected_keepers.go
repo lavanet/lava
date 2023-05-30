@@ -12,9 +12,9 @@ type PairingKeeper interface {
 	CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin) (bool, error)
 	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error)
 	VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
-	JailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
-	BailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, bail sdk.Coin) error
-	SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, percentage sdk.Dec) (sdk.Coin, error)
+	JailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
+	BailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, bail sdk.Coin) error
+	SlashEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, percentage sdk.Dec) (sdk.Coin, error)
 	GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error)
 }
 
