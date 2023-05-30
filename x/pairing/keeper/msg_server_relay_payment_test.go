@@ -289,9 +289,9 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays})
 	require.Nil(t, err)
 	// testing that the provider wasnt unstaked.
-	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].Addr)
 	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.providers[1].Addr)
 	require.True(t, stakeStorageFound)
 }
 
@@ -377,9 +377,9 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	require.Nil(t, err)
 
 	// testing that the provider wasnt unstaked.
-	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].Addr)
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].Addr)
 	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].Addr)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.providers[1].Addr)
 	require.True(t, stakeStorageFound)
 }
 

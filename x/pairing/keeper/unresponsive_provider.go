@@ -180,7 +180,7 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 
 	// go over all chain IDs and keep their stake storage. If there is no stake storage for a specific chain, continue to the next one
 	for _, chainID := range chainIdList {
-		stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, epochstoragetypes.ProviderKey, chainID)
+		stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, chainID)
 		if !found {
 			continue
 		}
@@ -200,7 +200,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	}
 
 	// Get provider's stake entry
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, sdkUnresponsiveProviderAddress)
 	if !entryExists {
 		// if provider is not staked, nothing to do.
 		return nil
@@ -208,7 +208,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 
 	// unstake the unresponsive provider
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-	err = k.unsafeUnstakeProviderEntry(ctx, epoch, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
+	err = k.unsafeUnstakeProviderEntry(ctx, epoch, chainID, indexInStakeStorage, existingEntry)
 	if err != nil {
 		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}, {Key: "existingEntry", Value: existingEntry.GetStake()}}...)
 	}
@@ -236,9 +236,9 @@ func (k Keeper) resetComplainersCU(ctx sdk.Context, providerPaymentStorageIndexL
 }
 
 // Function that unstakes a provider (considered unsafe because it doesn't check that the provider is staked. It's ok since we check the provider is staked before we call it)
-func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, providerKey string, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) error {
+func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) error {
 	// Remove the provider's stake entry
-	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
 	if err != nil {
 		return utils.LavaFormatWarning("tried to unstake unsafe but didnt find entry", err,
 			utils.Attribute{Key: "existingEntry", Value: fmt.Sprintf("%+v", existingEntry)},
@@ -249,7 +249,7 @@ func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, provid
 	unstakeHoldBlocks := k.epochStorageKeeper.UnstakeHoldBlocks(ctx, epoch)
 
 	// Appened the provider's stake entry to the unstake entry list
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry, unstakeHoldBlocks)
+	k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 
 	return nil
 }

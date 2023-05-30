@@ -14,20 +14,18 @@ func (k Keeper) CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress 
 	}
 	// find the user in the stake list
 
-	storageType := epochstoragetypes.ProviderKey
-
-	entry, found, indexFound := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, storageType, chainID, lookUpAddress)
+	entry, found, indexFound := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, lookUpAddress)
 	if found {
 		// add the requested credit to the entry
 		entry.Stake = entry.Stake.Add(creditAmount)
 		// now we need to save the entry
 		k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(creditAmount))
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, storageType, chainID, entry, indexFound)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry, indexFound)
 		return true, nil
 	}
 
 	// didnt find user in staked users
-	entry, found, _ = k.epochStorageKeeper.UnstakeEntryByAddress(ctx, epochstoragetypes.ClientKey, lookUpAddress)
+	entry, found, _ = k.epochStorageKeeper.UnstakeEntryByAddress(ctx, lookUpAddress)
 	if found {
 		// add the requested credit to the entry
 		// appending new unstake entry in order to delay liquidity of the reward
@@ -41,7 +39,7 @@ func (k Keeper) CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress 
 			return false, err
 		}
 
-		return true, k.epochStorageKeeper.AppendUnstakeEntry(ctx, storageType, entry, unstakeHoldBlocks)
+		return true, k.epochStorageKeeper.AppendUnstakeEntry(ctx, entry, unstakeHoldBlocks)
 	}
 	// didn't find user
 	return false, nil

@@ -13,7 +13,6 @@ import (
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, unstakeDescription string) error {
 	logger := k.Logger(ctx)
-	stake_type := epochstoragetypes.ProviderKey
 
 	// TODO: validate chainID basic validation
 
@@ -26,19 +25,19 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, un
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		return utils.LavaFormatWarning("invalid "+stake_type+" address", err,
-			utils.Attribute{Key: stake_type, Value: creator},
+		return utils.LavaFormatWarning("invalid address", err,
+			utils.Attribute{Key: "provider", Value: creator},
 		)
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type, chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
-			utils.Attribute{Key: stake_type, Value: creator},
+			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "spec", Value: chainID},
 		)
 	}
-	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type, chainID, indexInStakeStorage)
+	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
 	if err != nil {
 		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,
 			utils.Attribute{Key: "index", Value: indexInStakeStorage},
@@ -60,12 +59,12 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, un
 		return err
 	}
 
-	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry, unstakeHoldBlocks)
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	// this pops all the entries that had their deadline pass
-	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ProviderKey, uint64(ctx.BlockHeight()))
+	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 
 	if unstakingEntriesToCredit != nil {
 		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) // true for providers
@@ -74,7 +73,7 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 		}
 	}
 	// no providers entries to handle, check clients
-	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ClientKey, uint64(ctx.BlockHeight()))
+	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 	if unstakingEntriesToCredit != nil {
 		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) // false for clients
 		if err != nil {
@@ -86,12 +85,7 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 
 func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesToUnstake []epochstoragetypes.StakeEntry) error {
 	logger := k.Logger(ctx)
-	var stake_type string
-	if provider {
-		stake_type = epochstoragetypes.ProviderKey
-	} else {
-		stake_type = epochstoragetypes.ClientKey
-	}
+
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 		if moduleBalance.IsLT(neededAmount) {
@@ -104,7 +98,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 		return true, nil
 	}
 	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{"spec": unstakingEntry.Chain, stake_type: unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
+		details := map[string]string{"spec": unstakingEntry.Chain, "provider": unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
 		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
 			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
@@ -125,7 +119,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
 			utils.LavaFormatWarning("trying to unstake while its stakeAppliedBlock wasn't reached", fmt.Errorf("unstake failed"),
 				utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-				utils.Attribute{Key: stake_type, Value: unstakingEntry.Address},
+				utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
 				utils.Attribute{Key: "stake", Value: unstakingEntry.Stake.String()},
 			)
 		}

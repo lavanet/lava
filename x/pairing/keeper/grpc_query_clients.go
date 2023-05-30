@@ -18,12 +18,12 @@ func (k Keeper) Clients(goCtx context.Context, req *types.QueryClientsRequest) (
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, epochstoragetypes.ClientKey, req.ChainID)
+	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, req.ChainID)
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
-	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ClientKey)
+	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
 	}

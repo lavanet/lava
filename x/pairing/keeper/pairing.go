@@ -54,7 +54,7 @@ func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress
 	verifiedUser := false
 
 	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
-	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ClientKey, chainID)
+	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, utils.LavaFormatWarning("no EpochStakeEntries entries at all for this spec", fmt.Errorf("user stake entries not found"),
 			utils.Attribute{Key: "chainID", Value: chainID},
@@ -125,7 +125,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, chainID)
+	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, 0, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
