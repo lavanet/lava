@@ -427,21 +427,6 @@ func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, chainID stri
 	return k.GetStakeStorage(ctx, key)
 }
 
-// gets chainID, clientAddress, and epoch
-// returns epochstoragetypes.StakeEntry which is needed to calculate allowedCU, for the selected epoch
-func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
-	stakeStorage, found := k.getStakeStorageEpoch(ctx, epoch, chainID)
-	if !found {
-		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s client %s", epoch, chainID, selectedClient.String())
-	}
-	clientStakeEntry, found, _ := k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, selectedClient)
-	if !found {
-		return nil, fmt.Errorf("could not find stakeEntry - epoch %d for client %s, chainID %s", epoch, selectedClient.String(), chainID)
-	}
-	entry = &clientStakeEntry
-	return
-}
-
 func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
 	stakeStorage, found := k.getStakeStorageEpoch(ctx, epoch, chainID)
 	if !found {
@@ -471,49 +456,4 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID stri
 		return nil, false, nil
 	}
 	return stakeStorage.StakeEntries, true, stakeStorage.EpochBlockHash
-}
-
-// append to epoch stake entries ONLY if it doesn't exist
-func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, chainID string, stakeEntry types.StakeEntry) (added bool, err error) {
-	epoch := k.GetEpochStart(ctx)
-	stakeEntry.StakeAppliedBlock = epoch
-	storage, found := k.getStakeStorageEpoch(ctx, epoch, chainID)
-	if !found {
-		entries := []types.StakeEntry{}
-		// create a new one
-		storage = types.StakeStorage{Index: k.StakeStorageKey(epoch, chainID), StakeEntries: entries, EpochBlockHash: nil}
-	}
-	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
-	if err != nil {
-		return false, err
-	}
-
-	for _, clientStakeEntry := range storage.StakeEntries {
-		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
-		if err != nil {
-			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
-		}
-		if clientAddr.Equals(entryAddr) {
-			return false, nil // stake already exists in this epoch
-		}
-	}
-
-	// put it in the right place
-	entries := storage.StakeEntries
-	sortFunc := func(i int) bool {
-		return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
-	}
-	// returns the smallest index in which the sort func is true
-	index := sort.Search(len(entries), sortFunc)
-	if index < len(entries) {
-		entries = append(entries[:index+1], entries[index:]...)
-		entries[index] = stakeEntry
-	} else {
-		// put in the end
-		entries = append(entries, stakeEntry)
-	}
-
-	storage.StakeEntries = entries
-	k.SetStakeStorage(ctx, storage)
-	return true, nil
 }

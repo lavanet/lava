@@ -1,0 +1,54 @@
+package keeper
+
+import (
+	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/x/epochstorage/types"
+)
+
+type Migrator struct {
+	keeper Keeper
+}
+
+func NewMigrator(keeper Keeper) Migrator {
+	return Migrator{keeper: keeper}
+}
+
+// Migrate2to3 implements store migration from v2 to v3:
+// - refund all clients stake
+// - migrate providers to a new key
+func (m Migrator) Migrate2to3(ctx sdk.Context) error {
+	const PairingModuleName = "pairing"
+	const ClientKey = "client"
+	const ProviderKey = "provider"
+
+	storage := m.keeper.GetAllStakeStorage(ctx)
+
+	for _, storage := range storage {
+		// handle client keys
+		if storage.Index[:len(ClientKey)] == ClientKey {
+			for _, entry := range storage.StakeEntries {
+				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(PairingModuleName), types.TokenDenom)
+				if moduleBalance.IsLT(entry.Stake) {
+					return fmt.Errorf("invalid unstaking module %s doesn't have sufficient balance to account %s", PairingModuleName, entry.Address)
+				}
+				receiverAddr, err := sdk.AccAddressFromBech32(entry.Address)
+				if err != nil {
+					return fmt.Errorf("error getting AccAddress from : %s error: %s", entry.Address, err)
+				}
+
+				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, receiverAddr, []sdk.Coin{entry.Stake})
+				if err != nil {
+					return fmt.Errorf("invalid transfer coins from module, %s to account %s", err, receiverAddr)
+				}
+			}
+		}
+
+		// // handle provider key
+		// if storage.Index[:len(ProviderKey)] == ProviderKey {
+
+		// }
+	}
+	return nil
+}

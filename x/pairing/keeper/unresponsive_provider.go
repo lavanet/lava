@@ -56,7 +56,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	}
 
 	// TODO: when we use the policy providers number, this should be updated
-	minimumProvidersCount := uint64(5) // yarom
+	minimumProvidersCount := uint64(5) // yarom was servicers to pair
 
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {

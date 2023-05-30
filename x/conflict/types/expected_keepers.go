@@ -25,12 +25,10 @@ type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, err error)
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)
-	GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
 	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
 	GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]epochstoragetypes.StakeEntry, err error)
 	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
 	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry) (added bool, err error)
 	PushFixatedParams(ctx sdk.Context, block uint64, limit uint64)
 }
 
