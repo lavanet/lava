@@ -237,20 +237,6 @@ func (lt *lavaTest) checkStakeLava(
 			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
 			lt.providerType[providerStakeEntry.Address] = providerStakeEntry.Endpoints
 		}
-
-		// Query clients
-		clientQueryRes, err := pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
-			ChainID: spec.GetIndex(),
-		})
-		if err != nil {
-			panic(err)
-		}
-		if len(clientQueryRes.StakeEntry) != clientCount {
-			panic("Staking Failed CLIENT")
-		}
-		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
-			fmt.Println("client", clientStakeEntry)
-		}
 	}
 	utils.LavaFormatInfo(successMessage)
 }
@@ -653,12 +639,6 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 		}
 		for _, spec := range specQueryRes.Spec {
 			_, err = pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-				ChainID: spec.GetIndex(),
-			})
-			if err != nil {
-				errors = append(errors, err.Error())
-			}
-			_, err = pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
 				ChainID: spec.GetIndex(),
 			})
 			if err != nil {
