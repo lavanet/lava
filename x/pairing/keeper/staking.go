@@ -10,14 +10,10 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
 	logger := k.Logger(ctx)
-	var stake_type string
-	if provider {
-		stake_type = epochstoragetypes.ProviderKey
-	} else {
-		stake_type = epochstoragetypes.ClientKey
-	}
+	stake_type := epochstoragetypes.ProviderKey
+
 	// TODO: basic validation for chain ID
 	specChainID := chainID
 
@@ -27,20 +23,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			utils.Attribute{Key: "spec", Value: specChainID},
 		)
 	}
-	var minStake sdk.Coin
-	if provider {
-		minStake = spec.MinStakeProvider
-	} else {
-		minStake = spec.MinStakeClient
-	}
-	// if we get here, the spec is active and supported
 
-	if amount.IsLT(minStake) { // we count on this to also check the denom
+	// if we get here, the spec is active and supported
+	if amount.IsLT(spec.MinStakeProvider) { // we count on this to also check the denom
 		return utils.LavaFormatWarning("insufficient "+stake_type+" stake amount", fmt.Errorf("stake amount smaller than minStake"),
 			utils.Attribute{Key: "spec", Value: specChainID},
 			utils.Attribute{Key: stake_type, Value: creator},
 			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minStake", Value: minStake.String()},
+			utils.Attribute{Key: "minStake", Value: spec.MinStakeProvider.String()},
 		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
@@ -72,16 +62,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)
 	}
-	if provider {
-		err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
-		if err != nil {
-			return utils.LavaFormatWarning("invalid "+stake_type+" endpoints implementation for the given spec", err,
-				utils.Attribute{Key: stake_type, Value: creator},
-				utils.Attribute{Key: "endpoints", Value: endpoints},
-				utils.Attribute{Key: "Chain", Value: chainID},
-				utils.Attribute{Key: "geolocation", Value: geolocation},
-			)
-		}
+
+	err = k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
+	if err != nil {
+		return utils.LavaFormatWarning("invalid "+stake_type+" endpoints implementation for the given spec", err,
+			utils.Attribute{Key: stake_type, Value: creator},
+			utils.Attribute{Key: "endpoints", Value: endpoints},
+			utils.Attribute{Key: "Chain", Value: chainID},
+			utils.Attribute{Key: "geolocation", Value: geolocation},
+		)
 	}
 
 	// new staking takes effect from the next block
@@ -134,7 +123,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			for _, val := range details {
 				detailsMap[val.Key] = fmt.Sprint(val.Value)
 			}
-			utils.LogLavaEvent(ctx, logger, types.StakeUpdateEventName(provider), detailsMap, "Changing Staked "+stake_type)
+			utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Staked "+stake_type)
 			return nil
 		}
 		details = append(details, utils.Attribute{Key: "existingStake", Value: existingEntry.Stake.String()})
@@ -161,16 +150,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type, chainID, stakeEntry)
 	appended := false
-	if !provider {
-		// this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
-		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type, chainID, stakeEntry)
 
-		if err != nil {
-			return utils.LavaFormatError("could not append epoch stake entries", err,
-				details...,
-			)
-		}
-	}
 	details = append(details, utils.Attribute{Key: "effectiveImmediately", Value: appended})
 	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
@@ -178,7 +158,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	for _, atr := range details {
 		detailsMap[atr.Key] = fmt.Sprint(atr.Value)
 	}
-	utils.LogLavaEvent(ctx, logger, types.StakeNewEventName(provider), detailsMap, "Adding Staked "+stake_type)
+	utils.LogLavaEvent(ctx, logger, types.ProviderStakeEventName, detailsMap, "Adding Staked "+stake_type)
 	return err
 }
 

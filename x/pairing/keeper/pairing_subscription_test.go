@@ -503,7 +503,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				}
 			}
 
-			_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
+			_, cuPerEpochLimit, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
 				consumer.Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 			require.Nil(t, err)
 
@@ -631,7 +631,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
-	_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
+	_, cuPerEpochLimit, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
 		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 

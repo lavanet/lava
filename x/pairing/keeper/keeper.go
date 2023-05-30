@@ -69,9 +69,6 @@ func NewKeeper(
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
-	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
-	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })
-
 	return keeper
 }
 

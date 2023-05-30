@@ -11,14 +11,10 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error {
+func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, unstakeDescription string) error {
 	logger := k.Logger(ctx)
-	var stake_type string
-	if provider {
-		stake_type = epochstoragetypes.ProviderKey
-	} else {
-		stake_type = epochstoragetypes.ClientKey
-	}
+	stake_type := epochstoragetypes.ProviderKey
+
 	// TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
@@ -57,9 +53,9 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		"moniker":     existingEntry.GetMoniker(),
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}
-	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
+	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
 
-	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain, provider)
+	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain)
 	if err != nil {
 		return err
 	}
@@ -123,7 +119,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 					utils.LavaFormatError("verifySufficientAmountAndSendFromModuleToAddress Failed", err)
 					panic(fmt.Sprintf("error unstaking : %s", err))
 				}
-				utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, "Unstaking Providers Commit")
+				utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, "Unstaking Providers Commit")
 			}
 		} else {
 			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
@@ -137,13 +133,13 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 	return nil
 }
 
-func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string, isProvider bool) (uint64, error) {
+func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string) (uint64, error) {
 	spec, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
 		return 0, fmt.Errorf("coult not find spec %s", chainID)
 	}
 
-	if isProvider && spec.ProvidersTypes == spectypes.Spec_static {
+	if spec.ProvidersTypes == spectypes.Spec_static {
 		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, uint64(ctx.BlockHeight())), nil
 	} else {
 		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, uint64(ctx.BlockHeight())), nil

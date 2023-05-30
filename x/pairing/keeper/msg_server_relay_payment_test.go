@@ -607,32 +607,6 @@ func TestRelayPaymentQoS(t *testing.T) {
 }
 
 // Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
-func payAndVerifyBalanceLegacy(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, valid bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
-	// Get provider's and consumer's before payment
-	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
-	stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
-
-	// perform payment
-	_, err := ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
-	if valid {
-		require.Nil(t, err)
-		// payment is valid, provider's balance should increase
-		mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-		want := mint.MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum)) // The compensation for a single query
-		require.Equal(t, balance+want.TruncateInt64(),
-			ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
-
-		// payment is valid, consumer's balance should decrease
-		burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum))
-		newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
-		require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
-	} else {
-		// payment is not valid, should result in an error
-		require.NotNil(t, err)
-	}
-}
-
-// Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
 func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, validConsumer bool, validPayment bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 

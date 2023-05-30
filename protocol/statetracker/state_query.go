@@ -242,14 +242,6 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), nil
 }
 
-func (psq *ProviderStateQuery) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
-	res, err := psq.PairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
-	if err != nil {
-		return 0, err
-	}
-	return uint32(res.GetParams().ServicersToPairCount), nil
-}
-
 func (psq *ProviderStateQuery) GetEpochSize(ctx context.Context) (uint64, error) {
 	res, err := psq.EpochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {

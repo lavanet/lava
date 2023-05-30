@@ -175,7 +175,7 @@ func TestUnstakeFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	err = ts.keepers.Pairing.UnstakeEntry(sdk.UnwrapSDKContext(ts.ctx), true, ts.spec.Index, providerToFreeze.Address, "")
+	err = ts.keepers.Pairing.UnstakeEntry(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Index, providerToFreeze.Address, "")
 	require.Nil(t, err)
 
 	// unfreeze the provider and verify he's not in the pairing list
