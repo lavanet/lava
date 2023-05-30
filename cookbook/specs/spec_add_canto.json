@@ -11,6 +11,7 @@
                     "ETH1",
                     "COSMOSSDK"
                 ],
+                "chain_id": "canto_7700-1",
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
