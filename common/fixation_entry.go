@@ -494,7 +494,6 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
 		if entry.Block <= block {
-
 			// stale entries work as markers of the extent to where the preceding
 			// (non stale) entry is valid. So if we meet one, we bail.
 			// however if that stale entry is also deleted (which means, it is the
@@ -508,7 +507,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 			// Note that we test for stale-ness against ctx.BlockHeight since it is
 			// meant to mark when an unreferenced only entry becomes invisible; and
 			// we test for delete-ness against the target block since it would mark
-			// that entry immediatley (as in: at deleition block) invisible.
+			// that entry immediately (as in: at deleition block) invisible.
 
 			if entry.IsStaleBy(ctxBlock) && !entry.IsDeletedBy(block) {
 				break
@@ -536,7 +535,7 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 	// if an entry was found, then it is either not stale -or- it is both stale
 	// (by ctx.BlockHeight) and deleted (by the given block) - see the logic in
 	// in getUnmarshalledEntryForBlock(). An entry of the latter kind - both
-	// stale and deleted - should not be visible, so we explicity skip it. Note
+	// stale and deleted - should not be visible, so we explicitly skip it. Note
 	// that it's enough to test only one of stale/deleted, because both must be
 	// true in this case.
 
