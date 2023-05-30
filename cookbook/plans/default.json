@@ -16,25 +16,6 @@
                 "overuse_rate": "0",
                 "plan_policy": {
                     "chain_policies": [
-                        {
-                            "chain_id": "LAV1",
-                            "apis": [
-                            ]
-                        },
-                        {
-                            "chain_id": "ETH1",
-                            "apis": [
-                                "eth_blockNumber",
-                                "eth_accounts"
-                            ]
-                        },
-                        {
-                            "chain_id": "FTM250",
-                            "apis": [
-                                "ftm_chainId",
-                                "ftm_blockNumber"
-                            ]
-                        }
                     ],
                     "geolocation_profile": "18446744073709551615",
                     "total_cu_limit": "1000000",
