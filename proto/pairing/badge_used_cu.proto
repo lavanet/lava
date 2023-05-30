@@ -4,7 +4,7 @@ package lavanet.lava.pairing;
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 message BadgeUsedCu {
-  bytes badgeUsedCuKey = 1; 
-  uint64 usedCu = 2; 
+  bytes badge_used_cu_key = 1; 
+  uint64 used_cu = 2; 
 }
 
