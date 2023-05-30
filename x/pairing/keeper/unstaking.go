@@ -67,23 +67,16 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 
 	if unstakingEntriesToCredit != nil {
-		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) // true for providers
+		err := k.creditUnstakingEntries(ctx, unstakingEntriesToCredit) // true for providers
 		if err != nil {
 			panic(err.Error())
 		}
 	}
-	// no providers entries to handle, check clients
-	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
-	if unstakingEntriesToCredit != nil {
-		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) // false for clients
-		if err != nil {
-			panic(err.Error())
-		}
-	}
+
 	return nil
 }
 
-func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesToUnstake []epochstoragetypes.StakeEntry) error {
+func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) error {
 	logger := k.Logger(ctx)
 
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
