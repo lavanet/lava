@@ -55050,6 +55050,69 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.pairing.GenerateBadgeResponse:
+    type: object
+    properties:
+      badge:
+        type: object
+        properties:
+          cu_allocation:
+            type: string
+            format: uint64
+          epoch:
+            type: string
+            format: uint64
+          address:
+            type: string
+          lava_chain_id:
+            type: string
+          project_sig:
+            type: string
+            format: byte
+      pairing_list:
+        type: array
+        items:
+          type: object
+          properties:
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            address:
+              type: string
+            stake_applied_block:
+              type: string
+              format: uint64
+            endpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  iPPORT:
+                    type: string
+                  useType:
+                    type: string
+                  geolocation:
+                    type: string
+                    format: uint64
+            geolocation:
+              type: string
+              format: uint64
+            chain:
+              type: string
+            moniker:
+              type: string
   lavanet.lava.pairing.Metadata:
     type: object
     properties:
