@@ -12,6 +12,10 @@ screen -wipe
 GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_avalanche.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 sleep 4
 
 CLIENTSTAKE="500000000000ulava"
@@ -19,7 +23,7 @@ PROVIDERSTAKE="500000000000ulava"
 
 PROVIDER1_LISTENER="127.0.0.1:2221"
 
-lavad tx pairing stake-client "AVAX"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 lavad tx pairing stake-provider "AVAX" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
