@@ -222,7 +222,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// Calculate relay timeout
 		relayTimeout := extraRelayTimeout + common.GetTimePerCu(sessionInfo.Session.LatestRelayCu) + common.AverageWorldLatency
 		// Always use longer timeout
-		if relayTimeout > relayTimeout {
+		if relayTimeout > responseTimeout {
 			responseTimeout = relayTimeout
 		}
 
