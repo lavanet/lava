@@ -35,7 +35,7 @@ message ProjectKey {
 // protobuf expected in YAML format: used "moretags" to simplify parsing
 message Policy {
     // the enum below determines the pairing algorithm's behaviour with the selected providers feature
-    enum selected_providers_mode {
+    enum selected_providers_mode_enum {
         ALLOWED = 0;    // no providers restrictions
         MIXED = 1;      // use the selected providers mixed with randomly chosen providers
         EXCLUSIVE = 2;  // use only the selected providers
@@ -47,7 +47,7 @@ message Policy {
     uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\"", (gogoproto.jsontag) = "total_cu_limit"];
     uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\"", (gogoproto.jsontag) = "epoch_cu_limit"];
     uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair", (gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
-    selected_providers_mode mode = 6 [(gogoproto.moretags) = "mapstructure:\"mode\"", (gogoproto.jsontag) = "mode"];
+    selected_providers_mode_enum selected_providers_mode = 6 [(gogoproto.moretags) = "mapstructure:\"mode\"", (gogoproto.jsontag) = "mode"];
     repeated string selected_providers = 7 [(gogoproto.moretags) = "mapstructure:\"selected_providers\"", (gogoproto.jsontag) = "selected_providers"];
 }
 
