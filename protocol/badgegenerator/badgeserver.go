@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -16,7 +17,6 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"net/http"
 	"strings"
@@ -124,7 +124,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 
 	s := grpc.NewServer()
 	pairingtypes.RegisterBadgeGeneratorServer(s, server)
-	reflection.Register(s)
+	gogoreflection.Register(s)
 
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
