@@ -66,8 +66,9 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		LavaChainId:  s.ChainId,
 	}
 	result := pairingtypes.GenerateBadgeResponse{
-		Badge:       &badge,
-		PairingList: make([]*epochstoragetypes.StakeEntry, 0),
+		Badge:              &badge,
+		BadgeSignerAddress: projectData.ProjectPublicKey,
+		PairingList:        make([]*epochstoragetypes.StakeEntry, 0),
 	}
 
 	err = s.addPairingListToResponse(req, projectData, &result)
