@@ -23,7 +23,6 @@ func CreateAddressEpochBadgeMapKey(address string, epoch uint64) string {
 }
 
 // check badge's basic attributes compared to the same traits from the relay request
-// TODO: check cu allocation
 func (badge Badge) IsBadgeValid(clientAddr string, lavaChainID string, epoch uint64) bool {
 	if badge.Address != clientAddr || badge.LavaChainId != lavaChainID ||
 		badge.Epoch != epoch {

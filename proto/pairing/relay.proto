@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.pairing;
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
+import "pairing/badges.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -33,6 +34,12 @@ message RelayPrivateData {
     int64 request_block = 4;
     string api_interface = 5;
     bytes salt = 6;
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
+}
+
+message Metadata {
+    string name = 1;
+    string value = 2;
 }
 
 message RelayRequest {
@@ -41,13 +48,8 @@ message RelayRequest {
     RelayPrivateData relay_data= 2;
 }
 
-message Badge {
-    uint64 cu_allocation =1;
-    uint64 epoch = 2;
-    string address = 3;
-    string lava_chain_id = 4;
-    bytes project_sig = 5;
-}
+
+
 
 message RelayReply {
     bytes data = 1;
@@ -56,6 +58,7 @@ message RelayReply {
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
     bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
 }
 
 message QualityOfServiceReport{

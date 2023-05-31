@@ -135,3 +135,7 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *t
 
 	return nil
 }
+
+func (k Keeper) GetAllProjectsForSubscription(ctx sdk.Context, subscription string) []string {
+	return k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscription)
+}

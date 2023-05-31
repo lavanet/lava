@@ -59,7 +59,7 @@ func TestRestChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("")
-	apip.ParseMsg("", []byte{}, "")
+	apip.ParseMsg("", []byte{}, "", nil)
 }
 
 func TestRestGetSupportedApi(t *testing.T) {
@@ -105,7 +105,7 @@ func TestRestParseMessage(t *testing.T) {
 		},
 	}
 
-	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceRest)
+	msg, err := apip.ParseMsg("API1", []byte("test message"), spectypes.APIInterfaceRest, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetServiceApi().Name, apip.serverApis["API1"].Name)

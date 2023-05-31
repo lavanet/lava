@@ -338,7 +338,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(blockInterfaceToString(val)), nil
+			return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(val))
 		}
 
 		// Else return an error
@@ -390,16 +390,16 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 		// Fetch value using prop index
 		block := unmarshalledDataTyped[propIndex]
-		return appendInterfaceToInterfaceArray(blockInterfaceToString(block)), nil
+		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(block))
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
-			return appendInterfaceToInterfaceArray(blockInterfaceToString(val)), nil
+			return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(val))
 		}
 
 		// If attribute with key index exists return value
 		if val, ok := unmarshalledDataTyped[inp]; ok {
-			return appendInterfaceToInterfaceArray(blockInterfaceToString(val)), nil
+			return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(val))
 		}
 
 		// Else return not set error
@@ -437,4 +437,13 @@ func appendInterfaceToInterfaceArray(value interface{}) []interface{} {
 	retArr := make([]interface{}, 0)
 	retArr = append(retArr, value)
 	return retArr
+}
+
+// appendInterfaceToInterfaceArrayWithError appends interface to interface array
+// returns a valueNotSetError if the value is an empty string
+func appendInterfaceToInterfaceArrayWithError(value string) ([]interface{}, error) {
+	if value == "" {
+		return nil, ValueNotSetError
+	}
+	return appendInterfaceToInterfaceArray(value), nil
 }

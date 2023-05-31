@@ -375,13 +375,6 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
-	_, err := ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
-		Creator:  ts.clients[0].Addr.String(),
-		Consumer: ts.clients[0].Addr.String(),
-		Index:    ts.plan.Index,
-		Duration: 10,
-	})
-	require.Nil(t, err)
 
 	developerQueryResponse, err := ts.keepers.Projects.Developer(ts.ctx, &projectstypes.QueryDeveloperRequest{
 		Developer: ts.clients[0].Addr.String(),
@@ -399,10 +392,10 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 		wasteSubscriptionCu      bool
 		effectiveCuPerEpochLimit uint64
 	}{
-		{"admin policy min CU", uint64(90), uint64(110), false, false, uint64(90)},
-		{"sub policy min CU", uint64(110), uint64(90), false, false, uint64(90)},
-		{"use most of the project's CU", uint64(100), uint64(100), true, false, uint64(10)},
-		{"waste subscription CU", uint64(100), uint64(100), false, true, uint64(0)},
+		{"admin policy min CU", ts.plan.PlanPolicy.EpochCuLimit - 10, ts.plan.PlanPolicy.EpochCuLimit + 10, false, false, ts.plan.PlanPolicy.EpochCuLimit - 10},
+		{"sub policy min CU", ts.plan.PlanPolicy.EpochCuLimit + 10, ts.plan.PlanPolicy.EpochCuLimit - 10, false, false, ts.plan.PlanPolicy.EpochCuLimit - 10},
+		{"use most of the project's CU", ts.plan.PlanPolicy.EpochCuLimit, ts.plan.PlanPolicy.EpochCuLimit, true, false, uint64(10)},
+		{"waste subscription CU", ts.plan.PlanPolicy.EpochCuLimit, ts.plan.PlanPolicy.EpochCuLimit, false, true, uint64(0)},
 	}
 
 	for _, tt := range providersToPairTestTemplates {
@@ -411,10 +404,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 			// add a new project to the subscription just to waste the subcsription's cu
 			if tt.wasteSubscriptionCu {
-				err = ts.addClient(1)
-				require.Nil(t, err)
-
-				consumerToWasteCu := ts.clients[1]
+				sk, address := sigs.GenerateFloatingKey()
+				consumerToWasteCu := common.Account{SK: sk, Addr: address}
 
 				// pair new client with provider
 				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -454,14 +445,14 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 			adminPolicy := &projectstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochAdminPolicy,
-				TotalCuLimit:       1000,
-				MaxProvidersToPair: 2,
+				TotalCuLimit:       ts.plan.PlanPolicy.TotalCuLimit,
+				MaxProvidersToPair: ts.plan.PlanPolicy.MaxProvidersToPair,
 			}
 			subscriptionPolicy := &projectstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochSubPolicy,
-				TotalCuLimit:       1000,
-				MaxProvidersToPair: 2,
+				TotalCuLimit:       ts.plan.PlanPolicy.TotalCuLimit,
+				MaxProvidersToPair: ts.plan.PlanPolicy.MaxProvidersToPair,
 			}
 
 			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
@@ -496,8 +487,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					})
 					require.Nil(t, err)
 					proj := developerQueryResponse.Project
-					if proj.UsedCu >= 900 {
-						cuSum = 90
+					if ts.plan.PlanPolicy.TotalCuLimit-proj.UsedCu <= cuSum {
+						cuSum -= 10
 					}
 
 					relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.Apis[0].Name), cuSum, ts.spec.Name, nil)
@@ -587,20 +578,12 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 
 func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	ts := setupForPaymentTest(t)
-	err := ts.addClient(1)
-	require.Nil(t, err)
+	sk, address := sigs.GenerateFloatingKey()
+	ts.clients = append(ts.clients, &common.Account{SK: sk, Addr: address})
 
 	// advance epoch to get pairing
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
-
-	_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subtypes.MsgBuy{
-		Creator:  ts.clients[0].Addr.String(),
-		Consumer: ts.clients[0].Addr.String(),
-		Index:    ts.plan.Index,
-		Duration: 11,
-	})
-	require.Nil(t, err)
 
 	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, ts.clients[0].Addr.String())
 	require.True(t, found)
@@ -614,7 +597,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	require.True(t, found)
 	oldEpochCuLimit := subPlan.PlanPolicy.EpochCuLimit
 	subPlan.PlanPolicy.EpochCuLimit -= 50
-	err = ts.keepers.Plans.AddPlan(_ctx, subPlan)
+	err := ts.keepers.Plans.AddPlan(_ctx, subPlan)
 	require.Nil(t, err)
 
 	// add another project under the subcscription

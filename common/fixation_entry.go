@@ -500,15 +500,23 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 			// latest too) then we need to not bail, and do return that entry, to
 			// comply with the expecations of AppendEntry(). thus, we may return an
 			// entry that is both stale and deleted.
-			// for this reason, we explicitly test for a deleted entry in EntryGet()
-			// and AppendEntry(), and for stale entry in EntryFind(). so EntryGet()
-			// and EntryFind() would return not-found, and AppendEntry would fail.
-			if entry.IsStaleBy(ctxBlock) && !entry.IsDeletedBy(ctxBlock) {
+			// for this reason, we explicitly test for a deleted entry in GetEntry()
+			// and AppendEntry(), and for stale entry in GetEntry(). so GetEntry()
+			// and FindEntry() would return not-found, and AppendEntry() would fail.
+			//
+			// Note that we test for stale-ness against ctx.BlockHeight since it is
+			// meant to mark when an unreferenced only entry becomes invisible; and
+			// we test for delete-ness against the target block since it would mark
+			// that entry immediately (as in: at deleition block) invisible.
+
+			if entry.IsStaleBy(ctxBlock) && !entry.IsDeletedBy(block) {
 				break
 			}
+
 			return entry, true
 		}
 	}
+
 	return types.Entry{}, false
 }
 
@@ -523,7 +531,15 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
-	if !found || entry.IsStaleBy(block) || entry.IsDeletedBy(block) {
+
+	// if an entry was found, then it is either not stale -or- it is both stale
+	// (by ctx.BlockHeight) and deleted (by the given block) - see the logic in
+	// in getUnmarshalledEntryForBlock(). An entry of the latter kind - both
+	// stale and deleted - should not be visible, so we explicitly skip it. Note
+	// that it's enough to test only one of stale/deleted, because both must be
+	// true in this case.
+
+	if !found || entry.IsDeletedBy(block) {
 		return false
 	}
 
