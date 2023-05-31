@@ -2,7 +2,6 @@ package badgegenerator
 
 import (
 	"context"
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
@@ -54,10 +53,6 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 			v.AutomaticEnv()
 
-			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-				fmt.Println(flag.Name, flag.Value)
-			})
-
 			bindFlags(cmd, v)
 
 			logFormat := viper.GetString(flags.FlagLogFormat)
@@ -85,7 +80,6 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) {
 		// Apply the viper config value to the flag when the flag is not set and viper has a value
 		if f.Changed {
 			val, _ := cmd.Flags().GetString(f.Name)
-			fmt.Println("Set viper from command line", configName, val)
 			v.Set(configName, val)
 		} else {
 			val := v.GetString(configName)
@@ -103,13 +97,9 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	}
 	// set up the grpc server
 
-	fmt.Println(v.AllKeys())
-
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)
 	userData := v.GetString(UserDataEnvironmentVariable)
-
-	fmt.Printf("Grpc URL=%s, chainId=%s, userData=%s\n", grpcUrl, chainId, userData)
 
 	server, err := NewServer(grpcUrl, chainId, userData)
 	if err != nil {
@@ -138,7 +128,6 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
 	if err := httpServer.Serve(listener); err != nil {
-		fmt.Println("http Server Serve")
 		utils.LavaFormatFatal("Http Server failed to start", err)
 	}
 }
