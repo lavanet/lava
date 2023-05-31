@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lavanet/lava/protocol/badgegenerator"
 	"os"
 
 	_ "net/http/pprof"
@@ -27,11 +28,15 @@ func main() {
 	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
+	// badge generator cobra command
+	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 
 	// Add RPC Consumer Command
 	rootCmd.AddCommand(cmdRPCConsumer)
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdRPCProvider)
+	// Add Badge Generator Command
+	rootCmd.AddCommand(badgeGenerator)
 
 	testCmd := &cobra.Command{
 		Use:   "test",
