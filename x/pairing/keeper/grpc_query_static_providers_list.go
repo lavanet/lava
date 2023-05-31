@@ -42,7 +42,7 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	finalProviders := []epochstoragetypes.StakeEntry{}
 	geolocation := uint64(1)
 	for i := uint64(0); i < k.specKeeper.GeolocationCount(ctx); i++ {
-		validProviders := k.getGeolocationProviders(ctx, stakes, geolocation)
+		validProviders := k.getUnfrozenGeolocationProviders(ctx, stakes, geolocation, false)
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 		finalProviders = append(finalProviders, validProviders...)
 		geolocation <<= 1

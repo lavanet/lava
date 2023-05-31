@@ -15,7 +15,9 @@ Policy:
   geolocation_profile: 1
   total_cu_limit: 1000
   epoch_cu_limit: 100
-  max_providers_to_pair: 3
+  max_providers_to_pair: 2
   selected_providers_mode: 1
   selected_providers:
-    - lava@1w3kctt4fzy3u6datmym0hl2d4uhxtat3ut2eqq
+    - lava@1kgd936x3tlz2er9untunk7texfanmaud8yp9kf
+    - lava@18puklmhr7u2f9g524tttm24ttf4ud842wtfcna
+    - lava@1hvfeuhp5x94wwf972mfyls8gl0lgxeluklr202

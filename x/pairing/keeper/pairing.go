@@ -109,6 +109,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	var geolocation uint64
 	var providersToPair uint64
 	var projectToPair string
+	var selectedProvidersMode projectstypes.PolicySelectedProvidersModeEnum
+	var selectedProvidersList []string
 
 	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
@@ -118,7 +120,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
 		legacyStake = false
-		geolocation, providersToPair, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		geolocation, providersToPair, projectToPair, allowedCU, selectedProvidersMode, selectedProvidersList, err = k.getProjectStrictestPolicy(ctx, project, chainID)
 		if err != nil {
 			return nil, 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
 		}
@@ -152,15 +154,29 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, false, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
-	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
+	selectedProvidersFlag := false
+	switch selectedProvidersMode {
+	case projectstypes.Policy_EXCLUSIVE, projectstypes.Policy_MIXED:
+		possibleProviders, err = k.getStakeEntriesOfSelectedProviders(possibleProviders, selectedProvidersList)
+		if err != nil {
+			return nil, 0, false, err
+		}
+
+		if uint64(len(possibleProviders)) < providersToPair {
+			providersToPair = uint64(len(possibleProviders))
+		}
+		selectedProvidersFlag = true
+	}
+
+	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair, selectedProvidersFlag)
 
 	return providers, allowedCU, legacyStake, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, error) {
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, projectstypes.PolicySelectedProvidersModeEnum, []string, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return 0, 0, "", 0, err
+		return 0, 0, "", 0, 0, []string{}, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -173,24 +189,64 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 
 	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return 0, 0, "", 0, fmt.Errorf("chain ID not found in any of the policies")
+		return 0, 0, "", 0, 0, []string{}, fmt.Errorf("chain ID not found in any of the policies")
 	}
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if providersToPair == uint64(math.MaxUint64) {
-		return 0, 0, "", 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+		return 0, 0, "", 0, 0, []string{}, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return 0, 0, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return 0, 0, "", 0, 0, []string{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	projectToPair := project.Index
-	return geolocation, providersToPair, projectToPair, allowedCU, nil
+
+	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
+
+	return geolocation, providersToPair, projectToPair, allowedCU, selectedProvidersMode, selectedProvidersList, nil
+}
+
+func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Policy) (projectstypes.PolicySelectedProvidersModeEnum, []string) {
+	selectedProvidersModeList := []projectstypes.PolicySelectedProvidersModeEnum{}
+	selectedProvidersList := [][]string{}
+	for _, p := range policies {
+		selectedProvidersModeList = append(selectedProvidersModeList, p.SelectedProvidersMode)
+		if p.SelectedProvidersMode == projectstypes.Policy_EXCLUSIVE || p.SelectedProvidersMode == projectstypes.Policy_MIXED {
+			selectedProvidersList = append(selectedProvidersList, p.SelectedProviders)
+		}
+	}
+
+	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
+	effectiveSelectedProviders := commontypes.InterSection(selectedProvidersList...)
+
+	return effectiveMode, effectiveSelectedProviders
+}
+
+func (k Keeper) getStakeEntriesOfSelectedProviders(possibleProviders []epochstoragetypes.StakeEntry, selectedProviders []string) ([]epochstoragetypes.StakeEntry, error) {
+	if len(selectedProviders) == 0 {
+		return nil, utils.LavaFormatWarning("selected providers intersection set is empty", fmt.Errorf("no providers to pair"))
+	}
+
+	providers := []epochstoragetypes.StakeEntry{}
+	for _, providerStakeEntry := range possibleProviders {
+		for _, selectedProviderAddr := range selectedProviders {
+			if providerStakeEntry.Address == selectedProviderAddr {
+				providers = append(providers, providerStakeEntry)
+			}
+		}
+	}
+
+	if len(providers) == 0 {
+		return nil, utils.LavaFormatWarning("none of the selected providers intersection set is staked", fmt.Errorf("no providers to pair"))
+	}
+
+	return providers, nil
 }
 
 func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectstypes.Policy) uint64 {
@@ -262,7 +318,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	return false, allowedCU, 0, legacyStake, nil
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64, isSelectedProviders bool) (validProviders []epochstoragetypes.StakeEntry, err error) {
 	if epochStartBlock > uint64(ctx.BlockHeight()) {
 		k.Logger(ctx).Error("\ninvalid session start\n")
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
@@ -273,7 +329,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		return nil, fmt.Errorf("spec not found or not enabled")
 	}
 
-	validProviders = k.getGeolocationProviders(ctx, providers, geolocation)
+	validProviders = k.getUnfrozenGeolocationProviders(ctx, providers, geolocation, isSelectedProviders)
 
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
@@ -286,7 +342,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	return validProviders, nil
 }
 
-func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
+func (k Keeper) getUnfrozenGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64, isSelectedProviders bool) []epochstoragetypes.StakeEntry {
 	validProviders := []epochstoragetypes.StakeEntry{}
 	// create a list of valid providers (stakeAppliedBlock reached)
 	for _, stakeEntry := range providers {
@@ -294,11 +350,15 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 			// provider stakeAppliedBlock wasn't reached yet
 			continue
 		}
-		geolocationSupported := stakeEntry.Geolocation & geolocation
-		if geolocationSupported == 0 {
-			// no match in geolocation bitmap
-			continue
+
+		if !isSelectedProviders {
+			geolocationSupported := stakeEntry.Geolocation & geolocation
+			if geolocationSupported == 0 {
+				// no match in geolocation bitmap
+				continue
+			}
 		}
+
 		validProviders = append(validProviders, stakeEntry)
 	}
 	return validProviders
