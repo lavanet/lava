@@ -2,13 +2,13 @@ package badgegenerator
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"sync/atomic"
@@ -136,19 +136,14 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 
 // note this update the signature of the response
 func signTheResponse(privateKeyString string, response *pairingtypes.GenerateBadgeResponse) error {
-	responseString, err := json.Marshal(*response)
-	if err != nil {
-		utils.LavaFormatError("Couldn't marshall response", err)
-		return err
-	}
 	privateKeyBytes, _ := hex.DecodeString(privateKeyString)
-	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), privateKeyBytes)
-	hash := sha256.Sum256(responseString)
-	signature, err := btcec.SignCompact(btcec.S256(), privateKey, hash[:], false)
+	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privateKeyBytes)
+	signature, err := sigs.SignBadge(privateKey, *response.Badge)
+
 	if err != nil {
-		utils.LavaFormatError("Couldn't sign response", err)
 		return err
 	}
+
 	response.Badge.ProjectSig = signature
 	return nil
 }
