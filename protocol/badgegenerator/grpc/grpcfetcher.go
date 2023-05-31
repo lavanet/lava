@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"google.golang.org/grpc/credentials/insecure"
+
 	_ "github.com/cosmos/cosmos-sdk/types/query"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/lavanet/lava/utils"
@@ -25,8 +27,8 @@ func NewGRPCFetcher(grpcAddr string) (*GRPCFetcher, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), DefaultRequestTimeout)
 	grpcConn, err := grpc.DialContext(
 		ctx,
-		grpcAddr,            // your gRPC server address.
-		grpc.WithInsecure(), // the SDK doesn't support any transport security mechanism.
+		grpcAddr, // your gRPC server address.
+		grpc.WithTransportCredentials(insecure.NewCredentials()), // the SDK doesn't support any transport security mechanism.
 		grpc.WithBlock(),
 	)
 	if err != nil {
@@ -47,7 +49,8 @@ func (fetcher *GRPCFetcher) FetchPairings(chainId string, userId string) (*[]epo
 		utils.Attribute{Key: "userId", Value: userId})
 	grpcClient := pairingtypes.NewQueryClient(fetcher.GrpcConn)
 	var header metadata.MD
-	ctx, _ := context.WithTimeout(context.Background(), DefaultRequestTimeout)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), DefaultRequestTimeout)
+	defer cancelFunc()
 	ctx = metadata.AppendToOutgoingContext(ctx)
 
 	consumerResponse, err := grpcClient.GetPairing(

@@ -129,7 +129,10 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 		}
 
 		for _, entry := range *configurations.PairingList {
-			response.PairingList = append(response.PairingList, &entry)
+			marshalled, _ := entry.Marshal()
+			newEntry := &epochstoragetypes.StakeEntry{}
+			newEntry.Unmarshal(marshalled)
+			response.PairingList = append(response.PairingList, newEntry)
 		}
 	}
 	return nil
