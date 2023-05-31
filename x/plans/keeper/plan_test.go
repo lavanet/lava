@@ -409,7 +409,8 @@ func TestPlansDelete(t *testing.T) {
 	// but the plan is not stale yet, so can be found (until block2 + ~epoch)
 	_, found = ts.keepers.Plans.FindPlan(ctx, index, block1)
 	require.True(t, found)
-	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2 + 30)
+
+	_, found = ts.keepers.Plans.FindPlan(ctx, index, block2+30)
 	require.False(t, found)
 
 	// advance epoch until the plan becomes stale
