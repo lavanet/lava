@@ -69,6 +69,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
 	cmd.Flags().Int("port", 8080, "--port=8080")
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
 
 	return cmd
 }
