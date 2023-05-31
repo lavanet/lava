@@ -48,5 +48,26 @@ func (p Plan) ValidatePlan() error {
 		return sdkerrors.Wrap(ErrInvalidPlanAnnualDiscount, "plan's annual discount is invalid (not between 0-100 percent)")
 	}
 
+	// check that if the selected providers mode is 0 or 3, the selected providers list should be empty
+	if (p.PlanPolicy.SelectedProvidersMode == 0 || p.PlanPolicy.SelectedProvidersMode == 3) &&
+		len(p.PlanPolicy.SelectedProviders) != 0 {
+		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no providers restrictions) 
+			or 3 (selected providers feature is disabled) and non-empty list of selected providers`)
+	}
+
+	// check that the selected providers addresses are valid and there are no duplicates
+	seen := map[string]bool{}
+	for _, addr := range p.PlanPolicy.SelectedProviders {
+		_, err := sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
+		}
+
+		if seen[addr] {
+			return sdkerrors.Wrapf(ErrInvalidSelectedProvidersConfig, "found duplicate provider address %s", addr)
+		}
+		seen[addr] = true
+	}
+
 	return nil
 }
