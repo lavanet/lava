@@ -3,6 +3,7 @@ package badgegenerator
 import (
 	"context"
 	"fmt"
+
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"

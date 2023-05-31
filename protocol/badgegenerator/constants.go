@@ -1,6 +1,8 @@
 package badgegenerator
 
-const PortEnvironmentVariable = "PORT"
-const UserDataEnvironmentVariable = "USER_DATA"
-const GrpcUrlEnvironmentVariable = "GRPC_URL"
-const LavaChainIDEnvironmentVariable = "CHAIN_ID"
+const (
+	PortEnvironmentVariable        = "PORT"
+	UserDataEnvironmentVariable    = "USER_DATA"
+	GrpcUrlEnvironmentVariable     = "GRPC_URL"
+	LavaChainIDEnvironmentVariable = "CHAIN_ID"
+)

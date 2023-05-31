@@ -5,18 +5,19 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
+
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"sync/atomic"
 )
 
 type Server struct {
 	pairingtypes.UnimplementedBadgeGeneratorServer
-	ProjectsConfiguration map[string]*ProjectConfiguration //userid/project_public_key
+	ProjectsConfiguration map[string]*ProjectConfiguration // userid/project_public_key
 	epoch                 uint64
 	grpcFetcher           *grpc.GRPCFetcher
 	ChainId               string
@@ -139,7 +140,6 @@ func signTheResponse(privateKeyString string, response *pairingtypes.GenerateBad
 	privateKeyBytes, _ := hex.DecodeString(privateKeyString)
 	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privateKeyBytes)
 	signature, err := sigs.SignBadge(privateKey, *response.Badge)
-
 	if err != nil {
 		return err
 	}

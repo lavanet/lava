@@ -2,6 +2,10 @@ package badgegenerator
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
@@ -16,9 +20,6 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
-	"strings"
 )
 
 var (
@@ -74,8 +75,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 
 func bindFlags(cmd *cobra.Command, v *viper.Viper) {
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		configName := f.Name
-		configName = strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
+		configName := strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
 
 		// Apply the viper config value to the flag when the flag is not set and viper has a value
 		if f.Changed {
@@ -108,8 +108,14 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 
 	ctx := context.Background()
 	clientCtx, err := client.GetClientTxContext(cmd)
+	if err != nil {
+		utils.LavaFormatFatal("Error initiating client to lava", err)
+	}
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	stateTracker, err := NewBadgeStateTracker(ctx, clientCtx, lavaChainFetcher, chainId)
+	if err != nil {
+		utils.LavaFormatFatal("Error initiating state tracker", err)
+	}
 	stateTracker.RegisterForEpochUpdates(ctx, server)
 
 	s := grpc.NewServer()
