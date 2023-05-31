@@ -1,3 +1,9 @@
+# selected_providers_mode:
+#    ALLOWED = 0;    // no providers restrictions
+#    MIXED = 1;      // use the selected providers mixed with randomly chosen providers
+#    EXCLUSIVE = 2;  // use only the selected providers
+#    DISABLED = 3;   // selected providers feature is disabled
+
 Policy:
   chain_policies:
     - chain_id: ETH1
@@ -10,3 +16,6 @@ Policy:
   total_cu_limit: 1000
   epoch_cu_limit: 100
   max_providers_to_pair: 3
+  selected_providers_mode: 1
+  selected_providers:
+    - lava@1w3kctt4fzy3u6datmym0hl2d4uhxtat3ut2eqq
