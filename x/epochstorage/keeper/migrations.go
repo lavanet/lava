@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"regexp"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -45,10 +46,22 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			}
 		}
 
-		// // handle provider key
-		// if storage.Index[:len(ProviderKey)] == ProviderKey {
+		extractEpochAndChainID := func(s string) (string, string) {
+			re := regexp.MustCompile(`(\d*)(\w+)`)
+			matches := re.FindStringSubmatch(s)
+			if len(matches) > 0 {
+				return matches[1], matches[2]
+			}
+			return "", ""
+		}
 
-		// }
+		// handle provider key
+		if storage.Index[:len(ProviderKey)] == ProviderKey {
+			m.keeper.RemoveStakeStorage(ctx, storage.Index)
+			epoch, chainID := extractEpochAndChainID(storage.Index)
+			storage.Index = chainID + epoch // new key for epoch storage
+			m.keeper.SetStakeStorage(ctx, storage)
+		}
 	}
 	return nil
 }
