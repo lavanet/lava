@@ -4,7 +4,6 @@
     "status": "live",
     "network_type": "testnet",
     "website": "https://www.lavanet.xyz/",
-    "update_link": "???",
     "pretty_name": "Lava",
     "chain_id": "lava-testnet-1",
     "bech32_prefix": "lava",
@@ -37,37 +36,29 @@
     },
     "codebase": {
       "git_repo": "https://github.com/lavanet/lava",
-      "recommended_version": "v0.11.2",
+      "recommended_version": "v0.12.1",
       "compatible_versions": [
-        "???"
+        "v0.12.1"
       ],
       "binaries": {
-        "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64",
-        "linux/arm64": "???"
+        "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64"
       },
       "cosmos_sdk_version": "0.45",
       "consensus": {
         "type": "tendermint",
         "version": "0.34"
       },
-      "cosmwasm_version": "???",
+      "cosmwasm_version": "0.30",
       "cosmwasm_enabled": false,
       "ibc_go_version": "3.0.1",
       "ics_enabled": [
-        "ics20-1",
-        "???"
+        "ics20-1"
       ],
       "genesis": {
-        "name": "???",
-        "genesis_url": "???"
+        "name": "v0.3.0",
+        "genesis_url": "https://github.com/lavanet/lava-config/blob/main/testnet-1/genesis_json/genesis.json"
       },
       "versions": [
-        {
-          "name": "v0.3.0",
-          "tag": "v0.3.0",
-          "height": 0,
-          "next_version_name": "v0.4.0"
-        },
         {
           "name": "v0.4.0",
           "tag": "v0.4.0",
@@ -126,27 +117,29 @@
           "name": "v0.11.2",
           "tag": "v0.11.2",
           "height": 208115,
-          "recommended_version": "v0.11.2",
+          "next_version_name": "v0.12.1"
+        },
+        {
+          "name": "v0.12.1",
+          "tag": "v0.12.1",
+          "height": 227130,
+          "recommended_version": "v0.12.1",
           "compatible_versions": [
-            "v15.1.0",
-            "v15.0.0",
-            "???"
+            "v0.12.1"
           ],
           "cosmos_sdk_version": "0.45",
           "consensus": {
             "type": "tendermint",
             "version": "0.34"
           },
-          "cosmwasm_version": "???",
           "cosmwasm_enabled": false,
           "ibc_go_version": "3.0.1",
           "ics_enabled": [
-            "ics20-1",
-            "???"
+            "ics20-1"
           ],
           "binaries": {
-            "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64",
-            "linux/arm64": "???"          }
+            "linux/amd64": "https://github.com/lavanet/lava/releases/download/v0.11.2/lavad-v0.11.2-linux-amd64"
+          }
         }
       ]
     },
@@ -154,8 +147,7 @@
       {
         "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/lava/images/lava-icon.png",
         "theme": {
-          "primary_color_hex": "#231D4B",
-          "dasdsda": "???"
+          "primary_color_hex": "#D7001F"
         }
       }
     ],
@@ -176,38 +168,23 @@
           "provider": "Lava"
         },
         {
-          "id": "????? ade4d8bc8cbe014af6ebdf3cb7b1e9ad36f412c0",
-          "address": "seeds.polkachu.com:12556",
+          "id": "ade4d8bc8cbe014af6ebdf3cb7b1e9ad36f412c0",
+          "address": "testnet-seeds.polkachu.com:19956",
           "provider": "Polkachu"
-        }
-      ],
-      "persistent_peers": [
-        {
-          "Question": "should we create nodes that their only role is to be persistent_peers?",
-          "id": "4d9ac3510d9f5cfc975a28eb2a7b8da866f7bc47",
-          "address": "37.187.38.191:26656",
-          "provider": "stakelab"
         }
       ]
     },
     "apis": {
-      "Question": "should we publish the public rpc? (users should access through GW, maybe create another public rpc node?)",
       "rpc": [
         {
-          "address": "https://rpc.osmosis.zone/",
-          "provider": "Osmosis Foundation"
+          "address": "https://public-rpc.lavanet.xyz/",
+          "provider": "Lava"
         }
       ],
       "rest": [
         {
-          "address": "https://lcd.osmosis.zone/",
-          "provider": "Osmosis Foundation"
-        }
-      ],
-      "grpc": [
-        {
-          "address": "osmosis-grpc.lavenderfive.com:443",
-          "provider": "Lavender.Five Nodes 🐝"
+          "address": "https://public-rpc.lavanet.xyz/rest/",
+          "provider": "Lava"
         }
       ]
     },
@@ -226,7 +203,7 @@
       }
     ],
     "keywords": [
-      "dex",
-      "???"
+      "rpc",
+      "api"
     ]
   }
