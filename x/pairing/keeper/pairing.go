@@ -218,7 +218,9 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Po
 	for _, p := range policies {
 		selectedProvidersModeList = append(selectedProvidersModeList, p.SelectedProvidersMode)
 		if p.SelectedProvidersMode == projectstypes.Policy_EXCLUSIVE || p.SelectedProvidersMode == projectstypes.Policy_MIXED {
-			selectedProvidersList = append(selectedProvidersList, p.SelectedProviders)
+			if len(p.SelectedProviders) != 0 {
+				selectedProvidersList = append(selectedProvidersList, p.SelectedProviders)
+			}
 		}
 	}
 

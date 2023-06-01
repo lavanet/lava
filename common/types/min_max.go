@@ -32,24 +32,34 @@ func FindMax[T constraints.Ordered](s []T) T {
 	return m
 }
 
-func InterSection[T constraints.Ordered](pS ...[]T) []T {
-	hash := make(map[T]*int) // value, counter
-	result := make([]T, 0)
-	for _, slice := range pS {
-		duplicationHash := make(map[T]bool) // duplication checking for individual slice
-		for _, value := range slice {
-			if _, isDup := duplicationHash[value]; !isDup { // is not duplicated in slice
-				if counter := hash[value]; counter != nil { // is found in hash counter map
-					if *counter++; *counter >= len(pS) { // is found in every slice
-						result = append(result, value)
-					}
-				} else { // not found in hash counter map
-					i := 1
-					hash[value] = &i
-				}
-				duplicationHash[value] = true
-			}
+func InterSection[T comparable](arrays ...[]T) []T {
+	// Create a map to store the elements and their occurrence count
+	elements := make(map[T]int)
+
+	// Iterate through each array
+	for _, arr := range arrays {
+		// Create a map to store the elements of the current array
+		arrElements := make(map[T]bool)
+
+		// Populate the map with elements from the current array
+		for _, elem := range arr {
+			arrElements[elem] = true
+		}
+
+		// Increment the occurrence count for each element in the map
+		for elem := range arrElements {
+			elements[elem]++
 		}
 	}
-	return result
+
+	var intersection []T
+
+	// Check the occurrence count of each element
+	for elem, count := range elements {
+		if count == len(arrays) {
+			intersection = append(intersection, elem)
+		}
+	}
+
+	return intersection
 }
