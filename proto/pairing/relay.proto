@@ -1,10 +1,11 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
-import "gogoproto/gogo.proto";
-import "google/protobuf/wrappers.proto";
-import "pairing/badges.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
