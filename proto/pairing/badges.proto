@@ -3,16 +3,9 @@ package lavanet.lava.pairing;
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "epochstorage/stake_entry.proto";
+import "pairing/relay.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
-
-message Badge {
-  uint64 cu_allocation =1;
-  uint64 epoch = 2;
-  string address = 3;
-  string lava_chain_id = 4;
-  bytes project_sig = 5;
-}
 
 message GenerateBadgeRequest {
   string badge_address = 1;

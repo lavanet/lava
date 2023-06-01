@@ -27,6 +27,14 @@ message RelaySession {
     Badge badge = 12;
 }
 
+message Badge {
+    uint64 cu_allocation =1;
+    uint64 epoch = 2;
+    string address = 3;
+    string lava_chain_id = 4;
+    bytes project_sig = 5;
+}  
+
 message RelayPrivateData {
     string connection_type = 1;
     string api_url = 2; // some relays have associated urls that are filled with params ('/block/{height}')
@@ -47,9 +55,6 @@ message RelayRequest {
     RelaySession relay_session = 1;
     RelayPrivateData relay_data= 2;
 }
-
-
-
 
 message RelayReply {
     bytes data = 1;
