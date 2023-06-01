@@ -214,18 +214,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Make a channel for all providers to send responses
 	responses := make(chan *relayResponse, len(sessions))
 
-	// Set response timeout to 0
-	responseTimeout := 0 * time.Second
+	// Set relay timout
+	relayTimeout := extraRelayTimeout + common.GetTimePerCu(chainMessage.GetServiceApi().ComputeUnits) + common.AverageWorldLatency
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
-		// Calculate relay timeout
-		relayTimeout := extraRelayTimeout + common.GetTimePerCu(sessionInfo.Session.LatestRelayCu) + common.AverageWorldLatency
-		// Always use longer timeout
-		if relayTimeout > responseTimeout {
-			responseTimeout = relayTimeout
-		}
-
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			var localRelayResult *lavaprotocol.RelayResult
@@ -345,13 +338,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// if it was returned, just close this go routine
 					return
 				}
-			case <-time.After(responseTimeout + 2*time.Second):
+			case <-time.After(relayTimeout + 2*time.Second):
 				// Timeout occurred, send an error to result channel
 				result <- &relayResponse{nil, NoResponseTimeout}
 				return
 			}
 		}
-	}(responseTimeout)
+	}(relayTimeout)
 
 	response := <-result
 	return response.relayResult, response.err
