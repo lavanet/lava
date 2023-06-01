@@ -12,8 +12,6 @@ const (
 	ProposalPlansAdd = "PlansAdd"
 )
 
-var _ govtypes.Content = &PlansAddProposal{}
-
 func init() {
 	govtypes.RegisterProposalType(ProposalPlansAdd)
 }
@@ -42,7 +40,7 @@ func (pcp *PlansAddProposal) ValidateBasic() error {
 	}
 
 	if len(pcp.Plans) == 0 {
-		return sdkerrors.Wrap(ErrEmptyPlans, "proposal plans cannot be empty")
+		return sdkerrors.Wrap(ErrEmptyPlans, "proposal plans add cannot be empty")
 	}
 	for _, planElem := range pcp.Plans {
 		err := planElem.ValidatePlan()
@@ -65,7 +63,7 @@ func (pcp PlansAddProposal) String() string {
 	`, pcp.Title, pcp.Description))
 
 	for _, planElem := range pcp.Plans {
-		b = stringPlan(&planElem, b)
+		b.WriteString(planElem.String())
 	}
 
 	return b.String()
