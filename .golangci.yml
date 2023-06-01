@@ -6,6 +6,7 @@ run:
     - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
     - "protocol/chainlib/chainproxy/thirdparty/*"
     - "protocol/chainlib/grpc.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/*"
 
 linters:
   disable-all: true
