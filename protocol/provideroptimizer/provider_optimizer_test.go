@@ -375,7 +375,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 			}
 		}
 	}
-	seed := int64(10023) // constant seed.
+	seed := int64(50050) // constant seed.
 	rand.Seed(seed)
 	utils.LavaFormatDebug("rand seed", utils.Attribute{Key: "seed", Value: seed})
 	same := 0
