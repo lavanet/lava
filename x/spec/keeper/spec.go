@@ -210,13 +210,18 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 		if err != nil { // should not happen! (all specs on chain must be valid)
 			panic(err)
 		}
-		for _, api := range spec.ApiCollections {
-			if api.Enabled && (!mandatory || api.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
-				expectedInterfaces[api.CollectionData.ApiInterface] = true
-			}
-		}
+		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
 	}
 	return
+}
+
+func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[string]bool, mandatory bool) map[string]bool {
+	for _, apiCollection := range spec.ApiCollections {
+		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
+			expectedInterfaces[apiCollection.CollectionData.ApiInterface] = true
+		}
+	}
+	return expectedInterfaces
 }
 
 func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {
