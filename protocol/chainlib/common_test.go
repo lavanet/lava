@@ -351,30 +351,55 @@ func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 func TestGetServiceApis(t *testing.T) {
 	spec := spectypes.Spec{
 		Enabled: true,
-		ApiCollections: []*spectypes.ApiCollection{{
-			Enabled: true,
-			CollectionData: spectypes.CollectionData{
-				ApiInterface: spectypes.APIInterfaceRest,
+		ApiCollections: []*spectypes.ApiCollection{
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: spectypes.APIInterfaceRest,
+				},
+				Apis: []*spectypes.Api{
+					{
+						Enabled: true,
+						Name:    "test-api",
+					},
+					{
+						Enabled: true,
+						Name:    "test-api-2",
+					},
+					{
+						Enabled: false,
+						Name:    "test-api-disabled",
+					},
+					{
+						Enabled: true,
+						Name:    "test-api-3",
+					},
+				},
 			},
-			Apis: []*spectypes.Api{
-				{
-					Enabled: true,
-					Name:    "test-api",
+			{
+				Enabled: true,
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: spectypes.APIInterfaceGrpc,
 				},
-				{
-					Enabled: true,
-					Name:    "test-api-2",
-				},
-				{
-					Enabled: false,
-					Name:    "test-api-disabled",
-				},
-				{
-					Enabled: true,
-					Name:    "test-api-3",
+				Apis: []*spectypes.Api{
+					{
+						Enabled: true,
+						Name:    "gtest-api",
+					},
+					{
+						Enabled: true,
+						Name:    "gtest-api-2",
+					},
+					{
+						Enabled: false,
+						Name:    "gtest-api-disabled",
+					},
+					{
+						Enabled: true,
+						Name:    "gtest-api-3",
+					},
 				},
 			},
-		},
 		},
 	}
 
