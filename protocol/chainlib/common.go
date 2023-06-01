@@ -57,6 +57,9 @@ func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.Pars
 	defer bcp.rwLock.RUnlock()
 
 	val, ok := bcp.taggedApis[tag]
+	if !ok {
+		return nil, nil, false
+	}
 	return val.Parsing, &val.ApiCollection.CollectionData, ok
 }
 

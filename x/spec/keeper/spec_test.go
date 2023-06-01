@@ -1,12 +1,16 @@
 package keeper_test
 
 import (
+	"os"
 	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
+	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -599,4 +603,27 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCookbookSpecs(t *testing.T) {
+	keeper, ctx := keepertest.SpecKeeper(t)
+	getToTopMostPath := "../../../"
+	proposalFile := "./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json"
+	for _, fileName := range strings.Split(proposalFile, ",") {
+		proposal := utils.SpecAddProposalJSON{}
+
+		contents, err := os.ReadFile(getToTopMostPath + fileName)
+		require.Nil(t, err)
+
+		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
+		require.Nil(t, err)
+
+		for _, spec := range proposal.Proposal.Specs {
+			keeper.SetSpec(ctx, spec)
+			fullspec, err := keeper.ExpandSpec(ctx, spec)
+			require.NoError(t, err)
+			require.NotNil(t, fullspec)
+		}
+	}
+
 }

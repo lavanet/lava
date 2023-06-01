@@ -152,7 +152,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceRest)
 	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
 }
 

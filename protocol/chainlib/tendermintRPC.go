@@ -164,7 +164,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
 	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
 }
 
