@@ -13,8 +13,6 @@ lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad tx gov submit-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
@@ -24,6 +22,10 @@ PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
 sleep 4
+
+lavad tx gov submit-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 lavad tx pairing stake-client "ETH1"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "GTH1"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "COS3"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
