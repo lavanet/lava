@@ -48,6 +48,14 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
+func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getSupportedApi(name, connectionType)
+}
+
 func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
 	apip.registry = dyncodec.NewRegistry(dyncodec.NewRelayerRemote(relayer))
 	apip.codec = dyncodec.NewCodec(apip.registry)

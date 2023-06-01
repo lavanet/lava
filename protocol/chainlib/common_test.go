@@ -352,13 +352,15 @@ func TestGetServiceApis(t *testing.T) {
 	spec := spectypes.Spec{
 		Enabled: true,
 		ApiCollections: []*spectypes.ApiCollection{{
+			Enabled: true,
 			CollectionData: spectypes.CollectionData{
 				ApiInterface: spectypes.APIInterfaceRest,
 			},
-			Apis: []*spectypes.Api{{
-				Enabled: true,
-				Name:    "test-api",
-			},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "test-api",
+				},
 				{
 					Enabled: true,
 					Name:    "test-api-2",
@@ -370,7 +372,8 @@ func TestGetServiceApis(t *testing.T) {
 				{
 					Enabled: true,
 					Name:    "test-api-3",
-				}},
+				},
+			},
 		},
 		},
 	}
@@ -379,7 +382,7 @@ func TestGetServiceApis(t *testing.T) {
 	serverApis, _, _ := getServiceApis(spec, rpcInterface)
 
 	// Test serverApis
-	if len(serverApis) != 2 {
-		t.Errorf("Expected serverApis length to be 2, but got %d", len(serverApis))
+	if len(serverApis) != 3 {
+		t.Errorf("Expected serverApis length to be 3, but got %d", len(serverApis))
 	}
 }
