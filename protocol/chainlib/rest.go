@@ -49,7 +49,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, connection
 		return nil, err
 	}
 	api := apiCont.api
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +110,13 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 		requestedBlock: requestBlock,
 	}
 	return nodeMsg
+}
+
+func (apip *RestChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
 // overwrites the base class match for a supported api

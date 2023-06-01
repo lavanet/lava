@@ -34,6 +34,13 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
+func (apip *JsonRPCChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
+}
+
 func (apip *JsonRPCChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {

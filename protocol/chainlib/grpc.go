@@ -48,6 +48,13 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
+func (apip *GrpcChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
+}
+
 func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
@@ -84,7 +91,7 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.Parsing, connection
 	if err != nil {
 		return nil, err
 	}
-	apiCollection, err := apip.getApiCollection(craftData.ConnectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
