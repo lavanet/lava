@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	connectionType = "test"
+	connectionType_test = "test"
 )
 
 func TestGRPCChainParser_Spec(t *testing.T) {
@@ -68,24 +68,23 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 }
 
 func TestGRPCGetSupportedApi(t *testing.T) {
-
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	apiCont, err := apip.getSupportedApi("API1", connectionType)
+	apiCont, err := apip.getSupportedApi("API1", connectionType_test)
 	assert.NoError(t, err)
 	assert.Equal(t, "API1", apiCont.api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType)
+	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
 	errorData, _, found := strings.Cut(err.Error(), " --")
 	require.True(t, found)
@@ -94,10 +93,10 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API1", connectionType)
+	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
 	errorData, _, found = strings.Cut(err.Error(), " --")
 	require.True(t, found)
@@ -108,16 +107,16 @@ func TestGRPCParseMessage(t *testing.T) {
 	apip := &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
 			serverApis: map[ApiKey]ApiContainer{
-				{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}},
+				{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}},
 			},
-			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceGrpc}}},
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType_test}: {Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceGrpc}}},
 		},
 	}
 
-	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType, nil)
+	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType_test, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType}].api.Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
 	assert.Equal(t, msg.GetApiCollection().CollectionData.ApiInterface, spectypes.APIInterfaceGrpc)
 
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{

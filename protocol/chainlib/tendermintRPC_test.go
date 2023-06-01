@@ -63,51 +63,49 @@ func TestTendermintChainParser_NilGuard(t *testing.T) {
 }
 
 func TestTendermintGetSupportedApi(t *testing.T) {
-	connectionType := "test"
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	api, err := apip.getSupportedApi("API1", connectionType)
+	api, err := apip.getSupportedApi("API1", connectionType_test)
 	assert.NoError(t, err)
 	assert.Equal(t, "API1", api.api.Name)
 
 	// Test case 2: Returns error if the API does not exist
 	apip = &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType)
+	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
-			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType}}},
+			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API1", connectionType)
+	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
 }
 
 func TestTendermintParseMessage(t *testing.T) {
-	connectionType := "test"
 	apip := &TendermintChainParser{
 		BaseChainParser: BaseChainParser{
 			serverApis: map[ApiKey]ApiContainer{
-				{Name: "API1", ConnectionType: connectionType}: {api: &spectypes.Api{
+				{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{
 					Name:    "API1",
 					Enabled: true,
 					BlockParsing: spectypes.BlockParser{
 						ParserArg:  []string{"latest"},
 						ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
 					},
-				}, collectionKey: CollectionKey{ConnectionType: connectionType}},
+				}, collectionKey: CollectionKey{ConnectionType: connectionType_test}},
 			},
-			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceTendermintRPC}}},
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType_test}: {Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceTendermintRPC}}},
 		},
 	}
 
@@ -120,9 +118,9 @@ func TestTendermintParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, connectionType, nil)
+	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType}].api.Name)
+	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
 	assert.Equal(t, msg.RequestedBlock(), int64(-2))
 }
