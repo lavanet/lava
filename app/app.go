@@ -178,6 +178,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		ibcclientclient.UpgradeProposalHandler,
 		specmoduleclient.SpecAddProposalHandler,
 		plansmoduleclient.PlansAddProposalHandler,
+		plansmoduleclient.PlansDelProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -398,12 +399,25 @@ func New(
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.EpochstorageKeeper = *epochstoragemodulekeeper.NewKeeper(
+		appCodec,
+		keys[epochstoragemoduletypes.StoreKey],
+		keys[epochstoragemoduletypes.MemStoreKey],
+		app.GetSubspace(epochstoragemoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+	)
+	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// Initialize PlansKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
 		appCodec,
 		keys[plansmoduletypes.StoreKey],
 		keys[plansmoduletypes.MemStoreKey],
 		app.GetSubspace(plansmoduletypes.ModuleName),
+		app.EpochstorageKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -444,18 +458,6 @@ func New(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter,
 	)
-
-	app.EpochstorageKeeper = *epochstoragemodulekeeper.NewKeeper(
-		appCodec,
-		keys[epochstoragemoduletypes.StoreKey],
-		keys[epochstoragemoduletypes.MemStoreKey],
-		app.GetSubspace(epochstoragemoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.SpecKeeper,
-	)
-	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
 		appCodec,
