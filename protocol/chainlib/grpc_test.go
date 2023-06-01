@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	connectionType = "test"
+)
+
 func TestGRPCChainParser_Spec(t *testing.T) {
 	// create a new instance of RestChainParser
 	apip, err := NewGrpcChainParser()
@@ -64,7 +68,7 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 }
 
 func TestGRPCGetSupportedApi(t *testing.T) {
-	connectionType := "test"
+
 	// Test case 1: Successful scenario, returns a supported API
 	apip := &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
@@ -101,7 +105,6 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 }
 
 func TestGRPCParseMessage(t *testing.T) {
-	connectionType := "test"
 	apip := &GrpcChainParser{
 		BaseChainParser: BaseChainParser{
 			serverApis: map[ApiKey]ApiContainer{

@@ -104,7 +104,8 @@ func TestTendermintParseMessage(t *testing.T) {
 					BlockParsing: spectypes.BlockParser{
 						ParserArg:  []string{"latest"},
 						ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
-					}}, collectionKey: CollectionKey{ConnectionType: connectionType}},
+					},
+				}, collectionKey: CollectionKey{ConnectionType: connectionType}},
 			},
 			apiCollections: map[CollectionKey]*spectypes.ApiCollection{{ConnectionType: connectionType}: {Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceTendermintRPC}}},
 		},

@@ -211,7 +211,6 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
-
 			if !apiCollection.Enabled {
 				continue
 			}

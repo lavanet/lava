@@ -625,5 +625,4 @@ func TestCookbookSpecs(t *testing.T) {
 			require.NotNil(t, fullspec)
 		}
 	}
-
 }

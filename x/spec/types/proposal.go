@@ -25,10 +25,8 @@ func checkSpecProposal(spec Spec) error {
 				prevApi := ""
 				if idx != 0 {
 					prevApi = apiCollection.Apis[idx-1].Name
-				} else {
-					if idx+1 < len(apiCollection.Apis) {
-						prevApi = apiCollection.Apis[idx+1].Name
-					}
+				} else if idx+1 < len(apiCollection.Apis) {
+					prevApi = apiCollection.Apis[idx+1].Name
 				}
 				return sdkerrors.Wrapf(ErrBlankApiName, "api name cannot be blank, %#v, in spec %s:%s, previous/next api: %s", apiCollection.CollectionData, spec.Index, spec.Name, prevApi)
 			}
