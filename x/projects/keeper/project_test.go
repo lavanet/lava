@@ -29,13 +29,15 @@ type testStruct struct {
 
 func newTestStruct(t *testing.T) *testStruct {
 	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
-	return &testStruct{
+	ts := &testStruct{
 		t:       t,
 		servers: servers,
 		keepers: keepers,
 		_ctx:    _ctx,
 		ctx:     sdk.UnwrapSDKContext(_ctx),
 	}
+	ts.AdvanceEpoch(1)
+	return ts
 }
 
 func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
@@ -46,12 +48,12 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 		ts.accounts[k] = v
 	}
 	for i := 0; i < numAdmin; i++ {
-		k := "adm" + strconv.Itoa(i)
+		k := "adm" + strconv.Itoa(i+1)
 		v := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
 		ts.accounts[k] = v
 	}
 	for i := 0; i < numDevel; i++ {
-		k := "dev" + strconv.Itoa(i)
+		k := "dev" + strconv.Itoa(i+1)
 		v := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
 		ts.accounts[k] = v
 	}
@@ -131,15 +133,15 @@ func (ts *testStruct) AdvanceEpoch(count int) {
 
 func (ts *testStruct) isKeyInProject(index, key string, kind types.ProjectKey_Type) bool {
 	resp, err := ts.keepers.Projects.Info(ts._ctx, &types.QueryInfoRequest{Project: index})
-	require.Nil(ts.t, err, "project: " + index + ", key: " + key)
+	require.Nil(ts.t, err, "project: "+index+", key: "+key)
 	pk := resp.Project.GetKey(key)
 	return pk.IsType(kind)
 }
 
 func (ts *testStruct) addProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
 	msg := types.MsgAddKeys{
-		Creator: creator,
-		Project: index,
+		Creator:     creator,
+		Project:     index,
 		ProjectKeys: projectKeys,
 	}
 	_, err := ts.servers.ProjectServer.AddKeys(ts._ctx, &msg)
@@ -148,8 +150,8 @@ func (ts *testStruct) addProjectKeys(index, creator string, projectKeys ...types
 
 func (ts *testStruct) delProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
 	msg := types.MsgDelKeys{
-		Creator: creator,
-		Project: index,
+		Creator:     creator,
+		Project:     index,
 		ProjectKeys: projectKeys,
 	}
 	_, err := ts.servers.ProjectServer.DelKeys(ts._ctx, &msg)
@@ -181,11 +183,11 @@ func TestCreateProject(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	projectData := ts.projects["pd1"]
+	projectData := ts.projects["pd2"]
 	plan := common.CreateMockPlan()
 
 	subAddr := ts.accounts["sub1"]
-	admAddr := ts.accounts["pd2_adm"]
+	admAddr := ts.accounts["pd2_both"]
 
 	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
@@ -256,7 +258,7 @@ func TestCreateProject(t *testing.T) {
 
 	require.Equal(t, response2.Project, response1.Project)
 
-	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, response1.Project.Index, 0)
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, response1.Project.Index, ts.BlockHeight())
 	require.Nil(t, err)
 
 	// there should be one project key
@@ -270,11 +272,11 @@ func TestCreateProject(t *testing.T) {
 	require.True(t, response2.Project.ProjectKeys[0].IsType(types.ProjectKey_DEVELOPER))
 }
 
-func TestAddKeys(t *testing.T) {
+func TestAddDelKeys(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 2) // 1 sub, 0 adm, 2 dev
 
-	projectData := ts.projects["pd2"]
+	projectData := ts.projects["pd3"]
 	plan := common.CreateMockPlan()
 
 	subAddr := ts.accounts["sub1"]
@@ -318,14 +320,58 @@ func TestAddKeys(t *testing.T) {
 	err = ts.addProjectKeys(project.Index, admAddr, pk)
 	require.Nil(t, err)
 
+	// additions above will only take effect in next epoch
+	require.False(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
+
 	// new admin adding another developer
 	pk = types.ProjectDeveloperKey(dev3Addr)
 	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
 	require.Nil(t, err)
 
+	// additions above will only take effect in next epoch
+	require.False(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+
 	// fetch project with new developer
 	_, err = ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: dev3Addr})
 	require.Nil(t, err)
+
+	// developer delete admin
+	pk = types.ProjectAdminKey(admAddr)
+	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	require.NotNil(t, err)
+
+	// developer delete developer
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	require.NotNil(t, err)
+
+	// new admin delete subscription owner (admin)
+	pk = types.ProjectAdminKey(subAddr)
+	err = ts.delProjectKeys(project.Index, admAddr, pk)
+	require.NotNil(t, err)
+
+	// subscription owner (admin) delete other admin
+	pk = types.ProjectAdminKey(admAddr)
+	err = ts.delProjectKeys(project.Index, subAddr, pk)
+	require.Nil(t, err)
+
+	// admin delete developer
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.delProjectKeys(project.Index, admAddr, pk)
+	require.Nil(t, err)
+
+	// deletion above will only take effect in next epoch
+	require.True(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 }
 
 func TestAddAdminInTwoProjects(t *testing.T) {
@@ -528,23 +574,27 @@ func TestChargeComputeUnits(t *testing.T) {
 	subAddr := ts.accounts["pd1_adm"]
 	devAddr := ts.accounts["dev1"]
 
-	ts.AdvanceEpoch(1)
-	block1 := ts.BlockHeight()
-
 	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch(1)
-	block2 := ts.BlockHeight()
+	block1 := ts.BlockHeight()
 
 	projectID := types.ProjectIndex(subAddr, projectData.Name)
-	project, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, block2)
+	project, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, block1)
 	require.Nil(t, err)
 
 	// add developer key (created fixation)
 	err = ts.addProjectKeys(project.Index, subAddr, types.ProjectDeveloperKey(devAddr))
 	require.Nil(t, err)
 
+	// first epoch for the developer key addition to take place.
+
+	ts.AdvanceEpoch(1)
+	block2 := ts.BlockHeight()
+
+	// second epoch to move further, otherwise snapshot will affect the current new
+	// dev key instead of creating a separate fixation version.
 
 	ts.AdvanceEpoch(1)
 	block3 := ts.BlockHeight()
@@ -580,13 +630,18 @@ func TestChargeComputeUnits(t *testing.T) {
 	require.Equal(t, uint64(0), proj.UsedCu)
 }
 
-func TestAddDevKeysToSameProjectID(t *testing.T) {
+func TestAddDelKeysSameEpoch(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(2, 1, 5) // 2 sub, 1 adm, 5 dev
 
-	sub Addr := ts.accounts["sub1"]
+	sub1Addr := ts.accounts["sub1"]
+	sub2Addr := ts.accounts["sub2"]
+	adm1Addr := ts.accounts["adm1"]
 	dev1Addr := ts.accounts["dev1"]
 	dev2Addr := ts.accounts["dev2"]
+	dev3Addr := ts.accounts["dev3"]
+	dev4Addr := ts.accounts["dev4"]
+	dev5Addr := ts.accounts["dev5"]
 
 	plan := common.CreateMockPlan()
 
@@ -594,31 +649,91 @@ func TestAddDevKeysToSameProjectID(t *testing.T) {
 		Name:        "mockname1",
 		Description: "",
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(subAddr)},
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
 		Policy:      &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, sub1Addr, projectData1, plan)
 	require.Nil(t, err)
 
+	projectData2 := types.ProjectData{
+		Name:        "mockname2",
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
+		Policy:      &plan.PlanPolicy,
+	}
+	err = ts.keepers.Projects.CreateProject(ts.ctx, sub2Addr, projectData2, plan)
+	require.Nil(t, err)
 
-	projectID := types.ProjectIndex(sub1Addr, projectData1.Name)
+	ts.AdvanceEpoch(1)
 
-	ts.AdvanceBlock(1)
+	projectID1 := types.ProjectIndex(sub1Addr, projectData1.Name)
+	projectID2 := types.ProjectIndex(sub2Addr, projectData2.Name)
 
-	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, sub1Addr,
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
 	require.Nil(t, err)
 
 	ts.AdvanceBlock(1)
 
-	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, sub1Addr,
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)})
 	require.Nil(t, err)
 
+	require.False(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.False(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
 
-	proj, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, subAddr, ts.BlockHeight())
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, sub1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	require.Equal(t, 3, len(proj.ProjectKeys))
+
+	// add twice - ok
+	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// del twice - fail
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.NotNil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.NotNil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// add, del in same epoch
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(projectID2, adm1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(projectID2, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// add dev to two projects in same epoch - latter fails
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev5Addr))
+	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev5Addr))
+	require.NotNil(t, err)
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
@@ -657,7 +772,7 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 	err = ts.keepers.Projects.CreateProject(ts.ctx, sub2Addr, projectData2, plan)
 	require.Nil(t, err)
 
-	ts.AdvanceBlock(1)
+	ts.AdvanceEpoch(1)
 
 	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
@@ -667,6 +782,7 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
 	require.NotNil(t, err) // developer was already added to the first project
 
+	ts.AdvanceEpoch(1)
 
 	proj1, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, sub1Addr, ts.BlockHeight())
 	require.Nil(t, err)
