@@ -29,7 +29,7 @@ message ProjectKey {
         DEVELOPER = 0x2;
     }
 
-	uint32 kinds = 4;
+    uint32 kinds = 4;
 }
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing

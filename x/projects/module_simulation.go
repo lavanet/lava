@@ -28,6 +28,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgAddKeys int = 100
 
+	opWeightMsgDelKeys = "op_weight_msg_del_keys"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgDelKeys int = 100
+
 	opWeightMsgSetPolicy = "op_weight_msg_set_admin_policy"
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgSetPolicy int = 100
@@ -78,6 +82,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgAddKeys,
 		projectssimulation.SimulateMsgAddKeys(am.keeper),
+	))
+
+	var weightMsgDelKeys int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelKeys, &weightMsgDelKeys, nil,
+		func(_ *rand.Rand) {
+			weightMsgDelKeys = defaultWeightMsgDelKeys
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgDelKeys,
+		projectssimulation.SimulateMsgDelKeys(am.keeper),
 	))
 
 	var weightMsgSetPolicy int
