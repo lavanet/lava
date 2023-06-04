@@ -447,14 +447,14 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 }
 
 func TestSetPolicy(t *testing.T) {
-	SetPolicyTest(t, true)
+	setPolicyTest(t, true)
 }
 
 func TestSetSubscriptionPolicy(t *testing.T) {
-	SetPolicyTest(t, false)
+	setPolicyTest(t, false)
 }
 
-func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
+func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 1) // 1 sub, 0 admin, 1 data
 
@@ -469,6 +469,8 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 
 	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
 
 	pk := types.ProjectDeveloperKey(devAddr)
 	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, admAddr, []types.ProjectKey{pk})
