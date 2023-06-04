@@ -11,7 +11,50 @@ import (
 	"github.com/lavanet/lava/x/projects/types"
 )
 
-// add a default project to a subscription, add the subscription key as
+// Keys management logic:
+//
+// upon CreateProject(project):
+//   -> registerKey(now)
+//     -> AppendEntry(project, now)
+//
+// upon AddKeysToProject(project, key-by, keys-to-add)
+//   -> FindEntry(project, now)
+//   -> validate key-by is admin-key in project
+//   -> FindEntry(project, nextEpoch)
+//   -> registerKey(keys-to-add, project, nextEpoch) (see below)
+//   -> AppendEntry(project, nextEpoch)
+//
+// upon DelKeysFromProject(project, key-by, keys-to-del)
+//   -> FindEntry(project, now)
+//   -> validate key-by is admin-key in project
+//   -> FindEntry(project, nextEpoch)
+//   -> unregisterKey(dev-keys-to-del, project, nextEpoch) (see below)
+//   -> AppendEntry(project, nextEpoch)
+//
+// upon DeleteProject(project)
+//   -> find project (now)
+//   -> unregisterKey(all-keys, project, nextEpoch) (see below)
+//   -> DelEntry(project, nextEpoch)
+//
+// upon registerKey(project, when)
+//   -> if admin: add to project
+//   -> if devel:
+//        find devel-key (now)
+//        if not belong to project: bail
+//        find devel-key (when)
+//        if not belong to project: bail
+//        else if not found: add to project, AppendEntry(dev-key, when)
+//
+// upon unregisterKey(project, when)
+//   -> if admin: del from project
+//   -> if devel:
+//        find devel-key (now)
+//        if not belong to project: bail
+//        find devel-key (when)
+//        if not found: nothing to do
+//        if not belong to project: bail
+//        else: del from project, DelEntry(dev-key, when)
+
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
