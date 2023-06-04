@@ -46,6 +46,11 @@ func (k Keeper) RemoveSubscription(ctx sdk.Context, consumer string) {
 		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	}
 
+	allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
+	for _, projectID := range allProjectsIDs {
+		k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+	}
+
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
 	store.Delete(types.SubscriptionKey(consumer))
 }
@@ -276,6 +281,15 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 	}
 
 	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
+}
+
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, subscription string, index string) error {
+	_, found := k.GetSubscription(ctx, subscription)
+	if !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
+	}
+
+	return k.projectsKeeper.DeleteProject(ctx, subscription, index)
 }
 
 func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {
