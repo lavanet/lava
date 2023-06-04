@@ -55996,6 +55996,8 @@ definitions:
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
+  lavanet.lava.projects.MsgDelKeysResponse:
+    type: object
   lavanet.lava.projects.MsgSetPolicyResponse:
     type: object
   lavanet.lava.projects.MsgSetSubscriptionPolicyResponse:
@@ -57528,6 +57530,8 @@ definitions:
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:
+    type: object
+  lavanet.lava.subscription.MsgDelProjectResponse:
     type: object
   lavanet.lava.subscription.Params:
     type: object
