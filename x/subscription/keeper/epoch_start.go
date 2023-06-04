@@ -37,9 +37,6 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 	})
 
 	for _, sub := range subExpired {
-		sub.PrevExpiryBlock = block
-		sub.PrevCuLeft = sub.MonthCuLeft
-
 		// subscription has been dead for EpochsToSave epochs: delete
 		// TODO: disable all projects registered in this subscription
 		// TODO: THIS WILL BE HANDLED AUTOMATICALLY BY FIXATION-STORE
@@ -48,6 +45,9 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 			k.RemoveSubscription(ctx, sub.Consumer)
 			continue
 		}
+
+		sub.PrevExpiryBlock = block
+		sub.PrevCuLeft = sub.MonthCuLeft
 
 		if sub.DurationLeft == 0 {
 			panic("Subscription: EpochStart: negative DurationLeft for consumer " + sub.Consumer)
