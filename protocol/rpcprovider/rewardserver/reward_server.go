@@ -95,6 +95,9 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 	if cuSumStored >= proof.CuSum {
 		return cuSumStored, false
 	}
+	if relayProof.Badge != proof.Badge {
+		proof.Badge = relayProof.Badge
+	}
 	consumerRewards.proofs[proof.SessionId] = proof
 	return 0, true
 }
