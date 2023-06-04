@@ -39,7 +39,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 					return fmt.Errorf("error getting AccAddress from : %s error: %s", entry.Address, err)
 				}
 
-				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, receiverAddr, []sdk.Coin{entry.Stake})
+				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, PairingModuleName, receiverAddr, []sdk.Coin{entry.Stake})
 				if err != nil {
 					return fmt.Errorf("invalid transfer coins from module, %s to account %s", err, receiverAddr)
 				}
