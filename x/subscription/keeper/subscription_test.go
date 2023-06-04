@@ -111,7 +111,7 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 	keeper := ts.keepers.Subscription
 
 	// expedite: change expiration time to 1 second ago
-	sub.MonthExpiryTime = uint64(ts.ctx.BlockTime().Add(-2 * time.Second).UTC().Unix())
+	sub.MonthExpiryTime = uint64(ts.ctx.BlockTime().Add(-1 * time.Second).UTC().Unix())
 	keeper.SetSubscription(ts.ctx, sub)
 
 	// trigger EpochStart() processing
