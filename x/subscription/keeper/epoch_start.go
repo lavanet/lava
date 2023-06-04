@@ -32,6 +32,11 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 		panic("Subscription: EpochStart: failed to obtain BlocksToSave at block " + strconv.Itoa(int(block)))
 	}
 
+	// not the end of memory yet, do nothing
+	if block < blocksToSave {
+		return
+	}
+
 	subExpired := k.GetCondSubscription(ctx, func(sub types.Subscription) bool {
 		return sub.IsMonthExpired(date) || sub.IsStale(block-blocksToSave)
 	})
