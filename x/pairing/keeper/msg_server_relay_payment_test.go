@@ -743,6 +743,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	projectData := projecttypes.ProjectData{
 		Name:    "proj1",
@@ -766,6 +767,9 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	}
 	err = subkeeper.AddProjectToSubscription(_ctx, subscriptionOwner, projectData)
 	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	// create a signed relay request
 	cuSum := uint64(1)
