@@ -313,7 +313,7 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress st
 	}
 	if stakeSum.IsZero() {
 		// list is empty
-		return
+		return returnedProviders
 	}
 
 	// add the session start block hash to the function to make it as unpredictable as we can
