@@ -323,13 +323,21 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		return nil, nil, utils.LavaFormatWarning("did not pass relay validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	// check signature
-	extractedConsumerAddress, err = sigs.ExtractSignerAddress(request.RelaySession)
-	if err != nil {
-		return nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
-	}
+	var consumerAddressString string
 
-	// handle non data reliability relays
-	consumerAddressString := extractedConsumerAddress.String()
+	if request.RelaySession.Badge != nil {
+		extractedConsumerAddress, err = sigs.ExtractSignerAddressFromBadge(*request.RelaySession.Badge)
+		if err != nil {
+			return nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+		consumerAddressString = extractedConsumerAddress.String()
+	} else {
+		extractedConsumerAddress, err = sigs.ExtractSignerAddress(request.RelaySession)
+		if err != nil {
+			return nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+		consumerAddressString = extractedConsumerAddress.String()
+	}
 
 	singleProviderSession, err = rpcps.getSingleProviderSession(ctx, request.RelaySession, consumerAddressString)
 	return singleProviderSession, extractedConsumerAddress, err
