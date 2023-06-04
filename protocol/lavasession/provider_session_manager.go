@@ -2,6 +2,8 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -97,7 +99,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 	}
 
 	// If we got here, we need to create a new instance for this consumer address.
-	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil, isDataReliabilityPSWC, pairedProviders)
+	providerSessionWithConsumer = NewProviderSessionsWithConsumer(address, nil, nil, isDataReliabilityPSWC, pairedProviders)
 	psm.dataReliabilitySessionsWithAllConsumers[epoch].sessionMap[address] = providerSessionWithConsumer
 	return providerSessionWithConsumer, nil
 }
@@ -167,11 +169,14 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("GetSession - providerSessionsWithConsumer: ", providerSessionsWithConsumer)
+	fmt.Println("GetSession - providerSessionsWithConsumer.badgeEpochData: ", providerSessionsWithConsumer.badgeEpochData)
+	fmt.Println("GetSession - providerSessionsWithConsumer.epochData: ", providerSessionsWithConsumer.epochData)
 
 	return psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
 }
 
-func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumer, error) {
+func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, badgeCuAllocation uint64, badgeUser string, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumer, error) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
@@ -188,21 +193,27 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer.sessionMap[consumerAddr]
 	if !foundAddressInMap {
 		epochData := &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, epochData, notDataReliabilityPSWC, pairedProviders)
+		badgesEpochData := make(map[string]*ProviderSessionsEpochData)
+		badgesEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, epochData, badgesEpochData, notDataReliabilityPSWC, pairedProviders)
 		mapOfProviderSessionsWithConsumer.sessionMap[consumerAddr] = providerSessionWithConsumer
 	}
 
 	return providerSessionWithConsumer, nil
 }
 
-func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch uint64, sessionId uint64, relayNumber uint64, maxCuForConsumer uint64, pairedProviders int64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch uint64, sessionId uint64, relayNumber uint64, badgeCuAllocation uint64, badgeUser string, maxCuForConsumer uint64, pairedProviders int64) (*SingleProviderSession, error) {
 	providerSessionWithConsumer, err := psm.IsActiveConsumer(epoch, consumerAddress)
 	if err != nil {
 		if ConsumerNotRegisteredYet.Is(err) {
-			providerSessionWithConsumer, err = psm.registerNewConsumer(consumerAddress, epoch, maxCuForConsumer, pairedProviders)
+			providerSessionWithConsumer, err = psm.registerNewConsumer(consumerAddress, epoch, badgeCuAllocation, badgeUser, maxCuForConsumer, pairedProviders)
 			if err != nil {
 				return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to registerNewSession", err)
 			}
+			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer: ", providerSessionWithConsumer)
+			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.badgeEpochData: ", providerSessionWithConsumer.badgeEpochData)
+			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.epochData: ", providerSessionWithConsumer.epochData)
+
 		} else {
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err)
 		}

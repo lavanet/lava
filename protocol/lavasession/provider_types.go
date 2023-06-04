@@ -101,17 +101,19 @@ type ProviderSessionsWithConsumer struct {
 	isBlockListed     uint32
 	consumerAddr      string
 	epochData         *ProviderSessionsEpochData
+	badgeEpochData    map[string]*ProviderSessionsEpochData
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 	pairedProviders   int64
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, badgeEpochData map[string]*ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
+		badgeEpochData:    badgeEpochData,
 		isDataReliability: isDataReliability,
 		pairedProviders:   pairedProviders,
 	}
