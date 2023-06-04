@@ -154,21 +154,21 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, false, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
-	selectedProvidersFlag := false
 	switch selectedProvidersMode {
 	case projectstypes.Policy_EXCLUSIVE, projectstypes.Policy_MIXED:
-		possibleProviders, err = k.getStakeEntriesOfSelectedProviders(possibleProviders, selectedProvidersList)
+		possibleProviders, err = k.getStakeEntriesOfSelectedProviders(ctx, possibleProviders, selectedProvidersList)
 		if err != nil {
 			return nil, 0, false, err
 		}
 
-		if uint64(len(possibleProviders)) < providersToPair {
-			providersToPair = uint64(len(possibleProviders))
+		if uint64(len(possibleProviders)) <= providersToPair {
+			return possibleProviders, allowedCU, legacyStake, err
 		}
-		selectedProvidersFlag = true
 	}
 
-	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair, selectedProvidersFlag)
+	// TODO: for mixed mode - change the providersToPair variable
+
+	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
 
 	return providers, allowedCU, legacyStake, err
 }
@@ -230,17 +230,23 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Po
 	return effectiveMode, effectiveSelectedProviders
 }
 
-func (k Keeper) getStakeEntriesOfSelectedProviders(possibleProviders []epochstoragetypes.StakeEntry, selectedProviders []string) ([]epochstoragetypes.StakeEntry, error) {
+func (k Keeper) getStakeEntriesOfSelectedProviders(ctx sdk.Context, possibleProviders []epochstoragetypes.StakeEntry, selectedProviders []string) ([]epochstoragetypes.StakeEntry, error) {
 	if len(selectedProviders) == 0 {
 		return nil, utils.LavaFormatWarning("selected providers intersection set is empty", fmt.Errorf("no providers to pair"))
 	}
 
+	selectedProvidersMap := map[string]string{}
+	for _, selectedProviderAddr := range selectedProviders {
+		selectedProvidersMap[selectedProviderAddr] = ""
+	}
+
 	providers := []epochstoragetypes.StakeEntry{}
 	for _, providerStakeEntry := range possibleProviders {
-		for _, selectedProviderAddr := range selectedProviders {
-			if providerStakeEntry.Address == selectedProviderAddr {
-				providers = append(providers, providerStakeEntry)
-			}
+		_, found := selectedProvidersMap[providerStakeEntry.Address]
+		if found && !isProviderFrozen(ctx, providerStakeEntry) {
+			// selected providers are not affected by geolocation -> make them include all (max uint64)
+			providerStakeEntry.Geolocation = math.MaxUint64
+			providers = append(providers, providerStakeEntry)
 		}
 	}
 
@@ -320,7 +326,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	return false, allowedCU, 0, legacyStake, nil
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64, isSelectedProviders bool) (validProviders []epochstoragetypes.StakeEntry, err error) {
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
 	if epochStartBlock > uint64(ctx.BlockHeight()) {
 		k.Logger(ctx).Error("\ninvalid session start\n")
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
@@ -331,7 +337,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		return nil, fmt.Errorf("spec not found or not enabled")
 	}
 
-	validProviders = k.getUnfrozenGeolocationProviders(ctx, providers, geolocation, isSelectedProviders)
+	validProviders = k.getUnfrozenGeolocationProviders(ctx, providers, geolocation)
 
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
@@ -344,26 +350,28 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	return validProviders, nil
 }
 
-func (k Keeper) getUnfrozenGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64, isSelectedProviders bool) []epochstoragetypes.StakeEntry {
+func (k Keeper) getUnfrozenGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
 	validProviders := []epochstoragetypes.StakeEntry{}
 	// create a list of valid providers (stakeAppliedBlock reached)
 	for _, stakeEntry := range providers {
-		if stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight()) {
+		if isProviderFrozen(ctx, stakeEntry) {
 			// provider stakeAppliedBlock wasn't reached yet
 			continue
 		}
 
-		if !isSelectedProviders {
-			geolocationSupported := stakeEntry.Geolocation & geolocation
-			if geolocationSupported == 0 {
-				// no match in geolocation bitmap
-				continue
-			}
+		geolocationSupported := stakeEntry.Geolocation & geolocation
+		if geolocationSupported == 0 {
+			// no match in geolocation bitmap
+			continue
 		}
 
 		validProviders = append(validProviders, stakeEntry)
 	}
 	return validProviders
+}
+
+func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry) bool {
+	return stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight())
 }
 
 // this function randomly chooses count providers by weight
