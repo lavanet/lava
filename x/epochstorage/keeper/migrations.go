@@ -46,21 +46,23 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			}
 		}
 
-		extractEpochAndChainID := func(s string) (string, string) {
+		extractEpochAndChainID := func(s string) (string, string, bool) {
 			re := regexp.MustCompile(`(\d*)(\w+)`)
 			matches := re.FindStringSubmatch(s)
 			if len(matches) > 0 {
-				return matches[1], matches[2]
+				return matches[1], matches[2], true
 			}
-			return "", ""
+			return "", "", false
 		}
 
 		// handle provider key
 		if storage.Index[:len(ProviderKey)] == ProviderKey {
 			m.keeper.RemoveStakeStorage(ctx, storage.Index)
-			epoch, chainID := extractEpochAndChainID(storage.Index)
-			storage.Index = chainID + epoch // new key for epoch storage
-			m.keeper.SetStakeStorage(ctx, storage)
+			epoch, chainID, check := extractEpochAndChainID(storage.Index)
+			if check {
+				storage.Index = chainID + epoch // new key for epoch storage
+				m.keeper.SetStakeStorage(ctx, storage)
+			}
 		}
 	}
 	return nil
