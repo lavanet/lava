@@ -11,7 +11,6 @@ linters:
   disable-all: true
   #for list of linters and what they do: https://golangci-lint.run/usage/linters/
   enable:
-    - depguard
     - dogsled
     - exportloopref
     - goconst
