@@ -108,7 +108,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64, badgeUser string) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
@@ -171,6 +171,17 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		sps.lock.Unlock() // unlock on error
 		return err
 	}
+
+	// Update badgeUsedCu in ProviderSessionsWithConsumer
+	if badgeUser != "" { // badge exists
+		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeUser)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeUser)
+		if err != nil {
+			sps.lock.Unlock() // unlock on error
+			return err
+		}
+	}
+
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
@@ -183,6 +194,25 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 	)
 	return nil
+}
+
+func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, maxCu uint64, badgeUser string) error {
+	for {
+		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUser)
+		if badgeUsedCu+currentCU > maxCu {
+			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
+				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
+				utils.Attribute{Key: "currentCU", Value: currentCU},
+				utils.Attribute{Key: "maxCu", Value: maxCu},
+			)
+		}
+		fmt.Println("validateAndAddUsedCU badge usedCU: ", badgeUsedCu)
+		fmt.Println("validateAndAddUsedCU badge currentCU: ", currentCU)
+		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUser) {
+			return nil
+		}
+		return nil
+	}
 }
 
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {

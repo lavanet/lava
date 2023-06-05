@@ -170,7 +170,11 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
+	var badgeUser string
+	if request.RelaySession.Badge != nil {
+		badgeUser = request.RelaySession.Badge.Address
+	}
+	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, badgeUser)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.

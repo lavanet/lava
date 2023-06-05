@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -140,23 +139,23 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComput
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
+func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeMaxComputeUnits(badgeUser string) (maxComputeUnits uint64) {
+	return atomic.LoadUint64(&pswc.badgeEpochData[badgeUser].MaxComputeUnits)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64) {
-	fmt.Println("atomic epochData cu: ", cu)
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeUsedComputeUnits(cu uint64, badgeUser string) {
-	atomic.LoadUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits)
+func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeUsedComputeUnits(badgeUser string) (usedComputeUnits uint64) {
+	return atomic.LoadUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicWriteBadgeUsedComputeUnits(cu uint64, badgeUser string) {
-	fmt.Println("atomic badgeUser: ", badgeUser)
-	fmt.Println("atomic cu: ", cu)
-
 	atomic.StoreUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits, cu)
 }
 
@@ -165,6 +164,13 @@ func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteBadgeUsedComputeUnits(newUsed uint64, knownUsed uint64, badgeUser string) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
+	return atomic.CompareAndSwapUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits, knownUsed, newUsed)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
