@@ -20,8 +20,16 @@ func TestSubscriptionExpire(t *testing.T) {
 	creator := account.String()
 	consumer := account.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
+	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(ts.ctx, uint64(ts.ctx.BlockHeight()))
 	require.Nil(t, err)
+
+	err = keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
+	require.Nil(t, err)
+
+	// fill memory
+	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
+		ts.advanceBlock()
+	}
 
 	sub, found := keeper.GetSubscription(ts.ctx, account.String())
 	require.True(t, found)
@@ -35,8 +43,11 @@ func TestSubscriptionExpire(t *testing.T) {
 	require.Equal(t, uint64(0), sub.DurationLeft)
 	require.Equal(t, uint64(0), sub.MonthCuLeft)
 
-	// fast-forward another month
-	sub = ts.expireSubscription(sub)
+	// fill memory
+	for uint64(ts.ctx.BlockHeight()) < sub.PrevExpiryBlock+blocksToSave {
+		ts.advanceBlock()
+	}
+	ts.advanceEpoch()
 
 	// the subscription is finally gone
 	_, found = keeper.GetSubscription(ts.ctx, account.String())
