@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -144,7 +145,19 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComp
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64) {
+	fmt.Println("atomic epochData cu: ", cu)
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeUsedComputeUnits(cu uint64, badgeUser string) {
+	atomic.LoadUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits)
+}
+
+func (pswc *ProviderSessionsWithConsumer) atomicWriteBadgeUsedComputeUnits(cu uint64, badgeUser string) {
+	fmt.Println("atomic badgeUser: ", badgeUser)
+	fmt.Println("atomic cu: ", cu)
+
+	atomic.StoreUint64(&pswc.badgeEpochData[badgeUser].UsedComputeUnits, cu)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {

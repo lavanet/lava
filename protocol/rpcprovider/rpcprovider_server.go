@@ -327,7 +327,10 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 	if request.RelaySession.Badge != nil {
 		// CHECK-1: badge signer == badge.Address
-		badgeUserSigner, _ := sigs.ExtractSignerAddress(request.RelaySession)
+		badgeUserSigner, err := sigs.ExtractSignerAddress(request.RelaySession)
+		if err != nil {
+			return nil, nil, utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 		if badgeUserSigner.String() != request.RelaySession.Badge.Address {
 			return nil, nil, utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

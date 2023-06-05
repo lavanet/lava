@@ -171,6 +171,12 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	}
 	fmt.Println("GetSession - providerSessionsWithConsumer: ", providerSessionsWithConsumer)
 	fmt.Println("GetSession - providerSessionsWithConsumer.badgeEpochData: ", providerSessionsWithConsumer.badgeEpochData)
+	for k, v := range providerSessionsWithConsumer.badgeEpochData {
+		fmt.Println("GetSession - k: ", k)
+		fmt.Println("GetSession -  UsedComputeUnits: ", v.UsedComputeUnits)
+		fmt.Println("GetSession -  MaxComputeUnits: ", v.MaxComputeUnits)
+		fmt.Println("GetSession -  MissingComputeUnits: ", v.MissingComputeUnits)
+	}
 	fmt.Println("GetSession - providerSessionsWithConsumer.epochData: ", providerSessionsWithConsumer.epochData)
 
 	return psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)

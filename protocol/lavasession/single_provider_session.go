@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -197,6 +198,8 @@ func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu u
 		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again
 		// this can happen when multiple sessions are adding their cu at the same time.
 		// comparing and adding is protecting against race conditions as the parent is not locked.
+		fmt.Println("validateAndAddUsedCU usedCU: ", usedCu)
+		fmt.Println("validateAndAddUsedCU currentCU: ", currentCU)
 		if sps.userSessionsParent.atomicCompareAndWriteUsedComputeUnits(usedCu+currentCU, usedCu) {
 			return nil
 		}
