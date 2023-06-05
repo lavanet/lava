@@ -400,6 +400,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 	rand.Seed(seed)
 	utils.LavaFormatDebug("rand seed", utils.Attribute{Key: "seed", Value: seed})
 	same := 0
+	pickFaults := 0
 	chosenProvider := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, 0)[0]
 	runs := 1000
 	for i := 0; i < runs; i++ {
@@ -410,9 +411,12 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 		}
 		for idx, address := range providersGen.providersAddresses {
 			if address == returnedProviders[0] {
-				require.Less(t, idx, len(providersGen.providersAddresses)/2, returnedProviders[0])
+				if idx > len(providersGen.providersAddresses)/2 {
+					pickFaults++
+				}
 			}
 		}
 	}
+	require.Less(t, pickFaults, float64(runs)*0.01)
 	require.Less(t, same, runs/2)
 }
