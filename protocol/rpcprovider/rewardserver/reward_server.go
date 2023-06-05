@@ -134,7 +134,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 func (rws *RewardServer) identifyMissingPayments(ctx context.Context) (missingPayments bool, err error) {
 	lastBlockInMemory, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
 	if err != nil {
-		return
+		return false, err
 	}
 	rws.lock.Lock()
 	defer rws.lock.Unlock()

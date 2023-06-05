@@ -23,6 +23,7 @@ message GenerateBadgeRequest {
 message GenerateBadgeResponse {
   Badge badge = 1;
   repeated lavanet.lava.epochstorage.StakeEntry pairing_list = 2 [(gogoproto.nullable) = true];
+  string badge_signer_address = 3;
 }
 
 service BadgeGenerator {
