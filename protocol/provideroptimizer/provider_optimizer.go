@@ -39,7 +39,7 @@ type ProviderOptimizer struct {
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
-	wantedNumProvidersInConcurrency int
+	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 }
 
@@ -184,7 +184,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (u
 }
 
 func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
-	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
+	if uint(currentNumProvders) >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -393,7 +393,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
