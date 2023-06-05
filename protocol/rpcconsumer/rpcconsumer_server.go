@@ -190,7 +190,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if isSubscription {
 		// temporarily disable subscriptions
 		// TODO: fix subscription and disable this case.
-		return nil, utils.LavaFormatError("Subscriptions are not supported currently", nil)
+		return &lavaprotocol.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are not supported currently", nil)
 	}
 
 	privKey := rpccs.privKey
