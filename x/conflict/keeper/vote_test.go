@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func setupForCommitTests(t *testing.T) (testStruct, string, conflicttypes.MsgDet
 	msg, err := common.CreateMsgDetection(ts.ctx, ts.consumer, ts.Providers[0], ts.Providers[1], ts.spec)
 	require.Nil(t, err)
 
-	//send detection msg
+	// send detection msg
 	_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 	require.Nil(t, err)
 	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
@@ -63,7 +63,6 @@ func TestCommit(t *testing.T) {
 			} else {
 				require.NotNil(t, err)
 			}
-
 		})
 	}
 }
@@ -90,7 +89,7 @@ func TestNotVotersProviders(t *testing.T) {
 	ts, voteID, detection := setupForCommitTests(t)
 
 	var notVoterProvider common.Account
-	notVoterProvider.SK, notVoterProvider.Addr = sigs.GenerateFloatingKey() //create new provider not in stake
+	notVoterProvider.SK, notVoterProvider.Addr = sigs.GenerateFloatingKey() // create new provider not in stake
 
 	msg := conflicttypes.MsgConflictVoteCommit{}
 	msg.Creator = notVoterProvider.Addr.String()
@@ -105,7 +104,7 @@ func TestNotVotersProviders(t *testing.T) {
 	}
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
-	require.NotNil(t, err) //should reject the commit since we are not in the providers list
+	require.NotNil(t, err) // should reject the commit since we are not in the providers list
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -118,19 +117,19 @@ func TestNotVotersProviders(t *testing.T) {
 	msgReveal.Nonce = 0
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
-	require.NotNil(t, err) //should reject the reveal since we are not in the providers list
+	require.NotNil(t, err) // should reject the reveal since we are not in the providers list
 }
 
 func TestNewVoterOldVote(t *testing.T) {
 	ts, voteID, detection := setupForCommitTests(t)
 
-	//add a staked provider
+	// add a staked provider
 	balance := int64(10000)
 	notVoterProvider := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
-	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10, true)
+	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	//try to vote with the new provider, he will be on the next voting list but not in the old one
+	// try to vote with the new provider, he will be on the next voting list but not in the old one
 	msg := conflicttypes.MsgConflictVoteCommit{}
 	msg.Creator = notVoterProvider.Addr.String()
 	msg.VoteID = voteID
@@ -144,7 +143,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	}
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
-	require.NotNil(t, err) //should reject the commit since we are not in the providers list
+	require.NotNil(t, err) // should reject the commit since we are not in the providers list
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -157,7 +156,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	msgReveal.Nonce = 0
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
-	require.NotNil(t, err) //should reject the reveal since we are not in the providers list
+	require.NotNil(t, err) // should reject the reveal since we are not in the providers list
 }
 
 func TestCommitAfterDeadline(t *testing.T) {
@@ -225,7 +224,6 @@ func TestReveal(t *testing.T) {
 			} else {
 				require.NotNil(t, err)
 			}
-
 		})
 	}
 }
@@ -250,17 +248,17 @@ func TestPreRevealAndDoubleReveal(t *testing.T) {
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
 	msgReveal.Nonce = nonce
 
-	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) //test reveal before commit finished
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) // test reveal before commit finished
 	require.NotNil(t, err)
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) //first valid reveal
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) // first valid reveal
 
 	require.Nil(t, err)
-	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) //secon reveal, invalid
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) // second reveal, invalid
 	require.NotNil(t, err)
 }
 
@@ -295,13 +293,13 @@ func TestRevealExpired(t *testing.T) {
 func TestFullMajorityVote(t *testing.T) {
 	ts, voteID, detection := setupForCommitTests(t)
 
-	//vote commit with all voters
+	// vote commit with all voters
 	msg := conflicttypes.MsgConflictVoteCommit{}
 
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	//first 2 voters
+	// first 2 voters
 	replyDataHash := sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
 	for i := 2; i < NUM_OF_PROVIDERS-1; i++ {
@@ -310,7 +308,7 @@ func TestFullMajorityVote(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	//last voter
+	// last voter
 	replyDataHash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
 	msg.Creator = ts.Providers[NUM_OF_PROVIDERS-1].Addr.String()
@@ -321,8 +319,8 @@ func TestFullMajorityVote(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//vote reveal with all voters
-	//first 2 voters
+	// vote reveal with all voters
+	// first 2 voters
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
@@ -334,28 +332,29 @@ func TestFullMajorityVote(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	//last voter
+	// last voter
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
 	msgReveal.Creator = ts.Providers[NUM_OF_PROVIDERS-1].Addr.String()
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//end of vote
+	// end of vote
 	_, found := ts.keepers.Conflict.GetConflictVote(sdk.UnwrapSDKContext(ts.ctx), voteID)
 	require.False(t, found)
 
-	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	events := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()
+	LastEvent := events[len(events)-1]
 	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteResolvedEventName)
 }
 
 func TestFullStrongMajorityVote(t *testing.T) {
 	ts, voteID, detection := setupForCommitTests(t)
 
-	//vote commit with all voters
+	// vote commit with all voters
 	msg := conflicttypes.MsgConflictVoteCommit{}
 
 	msg.VoteID = voteID
@@ -373,7 +372,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//vote reveal with all voters
+	// vote reveal with all voters
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
@@ -385,7 +384,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -403,7 +402,7 @@ func TestNoVotersConflict(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -421,7 +420,7 @@ func TestNoDecisionVote(t *testing.T) {
 	msg.VoteID = voteID
 	nonce := rand.Int63()
 
-	//first vote for provider 0
+	// first vote for provider 0
 	replyDataHash := sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
 
@@ -429,7 +428,7 @@ func TestNoDecisionVote(t *testing.T) {
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
 	require.Nil(t, err)
 
-	//first vote for provider 1
+	// first vote for provider 1
 	replyDataHash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
 
@@ -437,7 +436,7 @@ func TestNoDecisionVote(t *testing.T) {
 	_, err = ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
 	require.Nil(t, err)
 
-	//first vote for none
+	// first vote for none
 	noneData := "FAKE"
 	replyDataHash = sigs.HashMsg([]byte(noneData))
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
@@ -450,30 +449,30 @@ func TestNoDecisionVote(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	//reveal
+	// reveal
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.VoteID = voteID
 	msgReveal.Nonce = nonce
 
-	//reveal vote provider 0
+	// reveal vote provider 0
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
 	msgReveal.Creator = ts.Providers[2].Addr.String()
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	//reveal vote provider 1
+	// reveal vote provider 1
 	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
 	msgReveal.Creator = ts.Providers[3].Addr.String()
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	//reveal vote none
+	// reveal vote none
 	msgReveal.Hash = sigs.HashMsg([]byte(noneData))
 	msgReveal.Creator = ts.Providers[4].Addr.String()
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 

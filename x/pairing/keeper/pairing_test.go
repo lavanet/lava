@@ -19,21 +19,22 @@ func TestPairingUniqueness(t *testing.T) {
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	var balance int64 = 10000
 	stake := balance / 10
 
 	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer1, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
 	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
 
-	providers := []common.Account{}
 	for i := 1; i <= 1000; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
-		providers = append(providers, provider)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
 	}
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -81,7 +82,6 @@ func TestPairingUniqueness(t *testing.T) {
 
 	// test that get pairing gives the same results for the whole epoch
 	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	foundIndexMap := map[string]int{}
 	for i := uint64(0); i < epochBlocks-1; i++ {
 		ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
@@ -90,18 +90,62 @@ func TestPairingUniqueness(t *testing.T) {
 
 		for i := range providers1 {
 			require.Equal(t, providers11[i].Address, providers111[i].Address)
-
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, _, foundIndex, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
-			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
-				foundIndexMap[providers11[i].Address] = foundIndex
-			} else {
-				require.Equal(t, foundIndexMap[providers11[i].Address], foundIndex)
-			}
 		}
+	}
+}
 
+func TestValidatePairingDeterminism(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	// init keepers state
+	spec := common.CreateMockSpec()
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	var balance int64 = 10000
+	stake := balance / 10
+
+	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
+	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
+
+	for i := 1; i <= 10; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
+	}
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	// test that 2 different clients get different pairings
+	pairedProviders, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	require.Nil(t, err)
+	verifyPairingOncurrentBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	testAllProviders := func() {
+		for _, provider := range pairedProviders {
+			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
+			require.Nil(t, err)
+			valid, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			require.Nil(t, errPairing)
+			require.True(t, valid)
+		}
+	}
+	startBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	for i := startBlock; i < startBlock+(func() uint64 {
+		blockToSave, err := keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ctx), i)
+		require.Nil(t, err)
+		return blockToSave
+	})(); i++ {
+		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+		testAllProviders()
 	}
 }
 
@@ -149,7 +193,7 @@ func TestGetPairing(t *testing.T) {
 			}
 
 			// construct get-pairing request
-			pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: ts.clients[0].address.String()}
+			pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: ts.clients[0].Addr.String()}
 
 			// get pairing for client (for epoch zero there is no pairing -> expect to fail)
 			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
@@ -159,7 +203,7 @@ func TestGetPairing(t *testing.T) {
 				require.Nil(t, err)
 
 				// verify the expected provider
-				require.Equal(t, ts.providers[0].address.String(), pairing.Providers[0].Address)
+				require.Equal(t, ts.providers[0].Addr.String(), pairing.Providers[0].Address)
 
 				// verify the current epoch
 				currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
@@ -232,16 +276,19 @@ func TestPairingStatic(t *testing.T) {
 	spec.ProvidersTypes = spectypes.Spec_static
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
+	plan := common.CreateMockPlan()
+	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	servicersToPair := keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ctx))
 
 	consumer := common.CreateNewAccount(ctx, *keepers, balance)
-	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, stake, false)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
 
 	for i := uint64(0); i < servicersToPair*2; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i), true)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i))
 	}
 
 	// we expect to get all the providers in static spec

@@ -2,54 +2,65 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-const INVALID_INDEX = -2
-
-func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
-	logger := k.Logger(ctx)
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error) {
 	// TODO: add support for spec changes
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
-		return nil, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
+		return 0, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}
 	earliestSavedEpoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 	if block < earliestSavedEpoch {
-		return nil, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
+		return 0, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
 	}
 
 	requestedEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	currentEpochStart := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	if requestedEpochStart > currentEpochStart {
-		return nil, utils.LavaError(ctx, logger, "verify_pairing_block_sync", map[string]string{"requested block": strconv.FormatUint(block, 10), "requested epoch": strconv.FormatUint(requestedEpochStart, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "VerifyPairing requested epoch is too new")
+		return 0, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
+			utils.Attribute{Key: "requested block", Value: block},
+			utils.Attribute{Key: "requested epoch", Value: requestedEpochStart},
+			utils.Attribute{Key: "current epoch", Value: currentEpochStart},
+		)
 	}
 
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	if requestedEpochStart+blocksToSave < currentEpochStart {
-		return nil, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
+		return 0, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
 	}
+	return requestedEpochStart, nil
+}
+
+func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
 	verifiedUser := false
 
 	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
-	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, requestedEpochStart, epochstoragetypes.ClientKey, chainID)
+	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ClientKey, chainID)
 	if !found {
-		return nil, utils.LavaError(ctx, logger, "client_entries_pairing", map[string]string{"chainID": chainID, "query Epoch": strconv.FormatUint(requestedEpochStart, 10), "query block": strconv.FormatUint(block, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "no EpochStakeEntries entries at all for this spec")
+		return nil, utils.LavaFormatWarning("no EpochStakeEntries entries at all for this spec", fmt.Errorf("user stake entries not found"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "query Epoch", Value: epoch},
+			utils.Attribute{Key: "query block", Value: block},
+		)
 	}
 	for i, clientStakeEntry := range userStakedEntries {
 		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
@@ -57,9 +68,9 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
 		}
 		if clientAddr.Equals(clientAddress) {
-			if clientStakeEntry.Deadline > block {
+			if clientStakeEntry.StakeAppliedBlock > block {
 				// client is not valid for new pairings yet, or was jailed
-				return nil, fmt.Errorf("found staked user %+v, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
+				return nil, fmt.Errorf("found staked user %+v, but his stakeAppliedBlock %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.StakeAppliedBlock, block)
 			}
 			verifiedUser = true
 			clientStakeEntryRet = &userStakedEntries[i]
@@ -72,58 +83,186 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 	return clientStakeEntryRet, nil
 }
 
-// function used to get a new pairing from relayer and client
-// first argument has all metadata, second argument is only the addresses
-func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
-	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
-
-	clientStakeEntry, err := k.VerifyPairingData(ctx, chainID, clientAddress, currentEpoch)
+func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error) {
+	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, developerKey.String(), blockHeight)
 	if err != nil {
-		// user is not valid for pairing
-		return nil, fmt.Errorf("invalid user for pairing: %s", err)
+		return projectstypes.Project{}, err
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, currentEpoch, epochstoragetypes.ProviderKey, chainID)
-	if !found {
-		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
+	if !project.Enabled {
+		return projectstypes.Project{}, utils.LavaFormatWarning("the developers project is disabled", fmt.Errorf("cannot get project data"),
+			utils.Attribute{Key: "project", Value: project.Index},
+		)
 	}
 
-	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation, epochHash)
-
-	return
+	return project, nil
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, userStake *epochstoragetypes.StakeEntry, foundIndex int, errorRet error) {
-	epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
+	providers, _, _, err := k.getPairingForClient(ctx, chainID, clientAddress, uint64(ctx.BlockHeight()))
+	return providers, err
+}
+
+// function used to get a new pairing from provider and client
+// first argument has all metadata, second argument is only the addresses
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, legacyStake bool, errorRet error) {
+	var geolocation uint64
+	var providersToPair uint64
+	var projectToPair string
+
+	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
-		// could not read epoch start for block
-		return false, nil, INVALID_INDEX, fmt.Errorf("epoch start requested: %s", err)
-	}
-	// TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
-	userStake, err = k.VerifyPairingData(ctx, chainID, clientAddress, epochStart)
-	if err != nil {
-		// user is not valid for pairing
-		return false, nil, INVALID_INDEX, fmt.Errorf("invalid user for pairing: %s", err)
+		return nil, 0, false, fmt.Errorf("invalid pairing data: %s", err)
 	}
 
-	providerStakeEntries, found, blockHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epochStart, epochstoragetypes.ProviderKey, chainID)
+	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
+	if err == nil {
+		legacyStake = false
+		geolocation, providersToPair, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		if err != nil {
+			return nil, 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		}
+	} else {
+		// legacy staked client
+		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
+		if err2 != nil {
+			// user is not valid for pairing
+			return nil, 0, false, fmt.Errorf("invalid user for pairing: 1) %s 2) %s", err.Error(), err2.Error())
+		}
+		geolocation = clientStakeEntry.Geolocation
+
+		servicersToPairCount, err := k.ServicersToPairCount(ctx, block)
+		if err != nil {
+			return nil, 0, false, err
+		}
+
+		providersToPair = servicersToPairCount
+		projectToPair = clientAddress.String()
+
+		allowedCU, err = k.ClientMaxCUProviderForBlock(ctx, block, clientStakeEntry)
+		if err != nil {
+			return nil, 0, false, err
+		}
+
+		legacyStake = true
+	}
+
+	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, chainID)
 	if !found {
-		return false, nil, INVALID_INDEX, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", epochStart, chainID)
+		return nil, 0, false, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
-	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID, userStake.Geolocation, blockHash)
-	if errorRet != nil {
-		return false, nil, INVALID_INDEX, errorRet
+	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block, chainID, geolocation, epochHash, providersToPair)
+
+	return providers, allowedCU, legacyStake, err
+}
+
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (uint64, uint64, string, uint64, error) {
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	if err != nil {
+		return 0, 0, "", 0, err
 	}
-	for idx, possibleAddr := range validAddresses {
-		if possibleAddr.Equals(providerAddress) {
-			return true, userStake, idx, nil
+
+	planPolicy := plan.GetPlanPolicy()
+	policies := []*projectstypes.Policy{&planPolicy}
+	if project.SubscriptionPolicy != nil {
+		policies = append(policies, project.SubscriptionPolicy)
+	}
+	if project.AdminPolicy != nil {
+		policies = append(policies, project.AdminPolicy)
+	}
+
+	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
+		return 0, 0, "", 0, fmt.Errorf("chain ID not found in any of the policies")
+	}
+
+	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
+
+	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+	if providersToPair == uint64(math.MaxUint64) {
+		return 0, 0, "", 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+	}
+
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+	if !found {
+		return 0, 0, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	}
+	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+
+	projectToPair := project.Index
+	return geolocation, providersToPair, projectToPair, allowedCU, nil
+}
+
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectstypes.Policy) uint64 {
+	geolocation := uint64(math.MaxUint64)
+
+	// geolocation is a bitmap. common denominator can be calculated with logical AND
+	for _, policy := range policies {
+		if policy != nil {
+			geolocation &= policy.GetGeolocationProfile()
 		}
 	}
-	return false, userStake, INVALID_INDEX, nil
+
+	return geolocation
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte) (validProviders []epochstoragetypes.StakeEntry, addrList []sdk.AccAddress, err error) {
+func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
+	providersToPair := uint64(math.MaxUint64)
+
+	for _, policy := range policies {
+		val := policy.GetMaxProvidersToPair()
+		if policy != nil && val < providersToPair {
+			providersToPair = val
+		}
+	}
+
+	return providersToPair
+}
+
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+	var policyEpochCuLimit []uint64
+	var policyTotalCuLimit []uint64
+	for _, policy := range policies {
+		if policy != nil {
+			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
+			policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
+		}
+	}
+
+	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
+	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
+
+	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+
+	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
+}
+
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, legacyStake bool, errorRet error) {
+	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, epoch)
+	if err != nil {
+		return false, allowedCU, 0, legacyStake, err
+	}
+
+	validAddresses, allowedCU, legacyStake, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
+	if err != nil {
+		return false, allowedCU, 0, legacyStake, err
+	}
+
+	for _, possibleAddr := range validAddresses {
+		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Address)
+		if err != nil {
+			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAccAddr, err))
+		}
+
+		if providerAccAddr.Equals(providerAddress) {
+			return true, allowedCU, uint64(len(validAddresses)), legacyStake, nil
+		}
+	}
+
+	return false, allowedCU, 0, legacyStake, nil
+}
+
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, geolocation uint64, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
 	if epochStartBlock > uint64(ctx.BlockHeight()) {
 		k.Logger(ctx).Error("\ninvalid session start\n")
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
@@ -131,42 +270,28 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 	spec, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
-		return nil, nil, fmt.Errorf("spec not found or not enabled")
+		return nil, fmt.Errorf("spec not found or not enabled")
 	}
 
 	validProviders = k.getGeolocationProviders(ctx, providers, geolocation)
 
-	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
 
-		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID, epochHash)
+		validProviders = k.returnSubsetOfProvidersByStake(ctx, developerAddress, validProviders, providersToPair, epochStartBlock, chainID, epochHash)
 	} else {
-		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
+		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, providersToPair)
 	}
 
-	for _, stakeEntry := range validProviders {
-		providerAddress := stakeEntry.Address
-		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
-		if err != nil {
-			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
-		}
-		addrList = append(addrList, providerAccAddr)
-	}
-
-	return validProviders, addrList, nil
+	return validProviders, nil
 }
 
 func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
 	validProviders := []epochstoragetypes.StakeEntry{}
-	// create a list of valid providers (deadline reached)
+	// create a list of valid providers (stakeAppliedBlock reached)
 	for _, stakeEntry := range providers {
-		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
-			// provider deadline wasn't reached yet
+		if stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight()) {
+			// provider stakeAppliedBlock wasn't reached yet
 			continue
 		}
 		geolocationSupported := stakeEntry.Geolocation & geolocation
@@ -180,7 +305,7 @@ func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstorag
 }
 
 // this function randomly chooses count providers by weight
-func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sdk.AccAddress, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
+func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress string, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	stakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 	hashData := make([]byte, 0)
 	for _, stakedProvider := range providersMaps {
@@ -188,7 +313,7 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 	}
 	if stakeSum.IsZero() {
 		// list is empty
-		return
+		return returnedProviders
 	}
 
 	// add the session start block hash to the function to make it as unpredictable as we can

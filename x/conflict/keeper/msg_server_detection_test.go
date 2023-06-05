@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,35 +23,41 @@ type testStruct struct {
 	servers   *testkeeper.Servers
 	Providers []common.Account
 	spec      spectypes.Spec
+	plan      plantypes.Plan
 	consumer  common.Account
 }
 
-func setupForConflictTests(t *testing.T, NumOfProviders int) testStruct {
+func setupForConflictTests(t *testing.T, numOfProviders int) testStruct {
 	ts := testStruct{}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	//init keepers state
+	// init keepers state
 	var balance int64 = 100000
-	//setup consumer
+
+	// setup consumer
 	ts.consumer = common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
 
-	//setup providers
-	for i := 0; i < NumOfProviders; i++ {
+	// setup providers
+	for i := 0; i < numOfProviders; i++ {
 		ts.Providers = append(ts.Providers, common.CreateNewAccount(ts.ctx, *ts.keepers, balance))
 	}
 
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
-	var stake int64 = 1000
-	//stake consumer
-	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.spec, stake, false)
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
 
-	//stake providers
+	var stake int64 = 1000
+
+	// subscribe consumer
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.plan.Index)
+
+	// stake providers
 	for _, provider := range ts.Providers {
-		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake, true)
+		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake)
 	}
 
-	//advance for the staking to be valid
+	// advance for the staking to be valid
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	return ts
 }
@@ -97,24 +104,24 @@ func TestDetection(t *testing.T) {
 
 			msg.Creator = tt.Creator.Addr.String()
 
-			//changes to request1 according to test
-			msg.ResponseConflict.ConflictRelayData1.Request.ConnectionType += tt.ConnectionType
-			msg.ResponseConflict.ConflictRelayData1.Request.ApiUrl += tt.ApiUrl
-			msg.ResponseConflict.ConflictRelayData1.Request.BlockHeight += tt.BlockHeight
-			msg.ResponseConflict.ConflictRelayData1.Request.ChainID += tt.ChainID
-			msg.ResponseConflict.ConflictRelayData1.Request.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.Data, tt.Data...)
-			msg.ResponseConflict.ConflictRelayData1.Request.RequestBlock += tt.RequestBlock
-			msg.ResponseConflict.ConflictRelayData1.Request.CuSum += tt.Cusum
-			msg.ResponseConflict.ConflictRelayData1.Request.QoSReport = tt.QoSReport
-			msg.ResponseConflict.ConflictRelayData1.Request.RelayNum += tt.RelayNum
-			msg.ResponseConflict.ConflictRelayData1.Request.SessionId += tt.SeassionID
-			msg.ResponseConflict.ConflictRelayData1.Request.Provider = tt.Provider1.Addr.String()
-			msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
-			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
+			// changes to request1 according to test
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ConnectionType += tt.ConnectionType
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.ApiUrl += tt.ApiUrl
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Epoch += tt.BlockHeight
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SpecId += tt.ChainID
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.RelayData.Data, tt.Data...)
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayData.RequestBlock += tt.RequestBlock
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.CuSum += tt.Cusum
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.QosReport = tt.QoSReport
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.RelayNum += tt.RelayNum
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SessionId += tt.SeassionID
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
+			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 			require.Nil(t, err)
-			msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
+			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 
-			//changes to reply1 according to test
+			// changes to reply1 according to test
 			msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, tt.ReplyData...)
 			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			require.Nil(t, err)
@@ -123,13 +130,11 @@ func TestDetection(t *testing.T) {
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Reply.SigBlocks = sigBlocks
 
-			//send detection msg
+			// send detection msg
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 			if tt.Valid {
 				require.Nil(t, err)
 				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
-			} else {
-
 			}
 		})
 	}

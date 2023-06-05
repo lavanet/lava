@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -22,6 +23,10 @@ type (
 		accountKeeper      types.AccountKeeper
 		specKeeper         types.SpecKeeper
 		epochStorageKeeper types.EpochstorageKeeper
+		projectsKeeper     types.ProjectsKeeper
+		subscriptionKeeper types.SubscriptionKeeper
+
+		badgeTimerStore common.TimerStore
 	}
 )
 
@@ -31,7 +36,12 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, specKeeper types.SpecKeeper, epochStorageKeeper types.EpochstorageKeeper,
+	bankKeeper types.BankKeeper,
+	accountKeeper types.AccountKeeper,
+	specKeeper types.SpecKeeper,
+	epochStorageKeeper types.EpochstorageKeeper,
+	projectsKeeper types.ProjectsKeeper,
+	subscriptionKeeper types.SubscriptionKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -39,12 +49,26 @@ func NewKeeper(
 	}
 
 	keeper := &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper, epochStorageKeeper: epochStorageKeeper,
+		cdc:                cdc,
+		storeKey:           storeKey,
+		memKey:             memKey,
+		paramstore:         ps,
+		bankKeeper:         bankKeeper,
+		accountKeeper:      accountKeeper,
+		specKeeper:         specKeeper,
+		epochStorageKeeper: epochStorageKeeper,
+		projectsKeeper:     projectsKeeper,
+		subscriptionKeeper: subscriptionKeeper,
 	}
+
+	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
+	badgeTimerCallback := func(ctx sdk.Context, badgeKey []byte, _ []byte) {
+		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
+	}
+	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).
+		WithCallbackByBlockHeight(badgeTimerCallback)
+	keeper.badgeTimerStore = *badgeTimerStore
+
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })
 
@@ -55,7 +79,10 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-// we dont want to do the calculation here too, epochStorage keeper did it
-func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
-	return k.epochStorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.badgeTimerStore.Tick(ctx)
+	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		// run functions that are supposed to run in epoch start
+		k.EpochStart(ctx, types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
+	}
 }

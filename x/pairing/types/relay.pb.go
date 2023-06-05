@@ -13,6 +13,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -29,28 +30,292 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type RelaySession struct {
+	SpecId                string                  `protobuf:"bytes,1,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
+	ContentHash           []byte                  `protobuf:"bytes,2,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	SessionId             uint64                  `protobuf:"varint,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	CuSum                 uint64                  `protobuf:"varint,4,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
+	Provider              string                  `protobuf:"bytes,5,opt,name=provider,proto3" json:"provider,omitempty"`
+	RelayNum              uint64                  `protobuf:"varint,6,opt,name=relay_num,json=relayNum,proto3" json:"relay_num,omitempty"`
+	QosReport             *QualityOfServiceReport `protobuf:"bytes,7,opt,name=qos_report,json=qosReport,proto3" json:"qos_report,omitempty"`
+	Epoch                 int64                   `protobuf:"varint,8,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	UnresponsiveProviders []byte                  `protobuf:"bytes,9,opt,name=unresponsive_providers,json=unresponsiveProviders,proto3" json:"unresponsive_providers,omitempty"`
+	LavaChainId           string                  `protobuf:"bytes,10,opt,name=lava_chain_id,json=lavaChainId,proto3" json:"lava_chain_id,omitempty"`
+	Sig                   []byte                  `protobuf:"bytes,11,opt,name=sig,proto3" json:"sig,omitempty"`
+	Badge                 *Badge                  `protobuf:"bytes,12,opt,name=badge,proto3" json:"badge,omitempty"`
+}
+
+func (m *RelaySession) Reset()         { *m = RelaySession{} }
+func (m *RelaySession) String() string { return proto.CompactTextString(m) }
+func (*RelaySession) ProtoMessage()    {}
+func (*RelaySession) Descriptor() ([]byte, []int) {
+	return fileDescriptor_10cd1bfeb9978acf, []int{0}
+}
+func (m *RelaySession) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RelaySession) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RelaySession.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RelaySession) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RelaySession.Merge(m, src)
+}
+func (m *RelaySession) XXX_Size() int {
+	return m.Size()
+}
+func (m *RelaySession) XXX_DiscardUnknown() {
+	xxx_messageInfo_RelaySession.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RelaySession proto.InternalMessageInfo
+
+func (m *RelaySession) GetSpecId() string {
+	if m != nil {
+		return m.SpecId
+	}
+	return ""
+}
+
+func (m *RelaySession) GetContentHash() []byte {
+	if m != nil {
+		return m.ContentHash
+	}
+	return nil
+}
+
+func (m *RelaySession) GetSessionId() uint64 {
+	if m != nil {
+		return m.SessionId
+	}
+	return 0
+}
+
+func (m *RelaySession) GetCuSum() uint64 {
+	if m != nil {
+		return m.CuSum
+	}
+	return 0
+}
+
+func (m *RelaySession) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+func (m *RelaySession) GetRelayNum() uint64 {
+	if m != nil {
+		return m.RelayNum
+	}
+	return 0
+}
+
+func (m *RelaySession) GetQosReport() *QualityOfServiceReport {
+	if m != nil {
+		return m.QosReport
+	}
+	return nil
+}
+
+func (m *RelaySession) GetEpoch() int64 {
+	if m != nil {
+		return m.Epoch
+	}
+	return 0
+}
+
+func (m *RelaySession) GetUnresponsiveProviders() []byte {
+	if m != nil {
+		return m.UnresponsiveProviders
+	}
+	return nil
+}
+
+func (m *RelaySession) GetLavaChainId() string {
+	if m != nil {
+		return m.LavaChainId
+	}
+	return ""
+}
+
+func (m *RelaySession) GetSig() []byte {
+	if m != nil {
+		return m.Sig
+	}
+	return nil
+}
+
+func (m *RelaySession) GetBadge() *Badge {
+	if m != nil {
+		return m.Badge
+	}
+	return nil
+}
+
+type RelayPrivateData struct {
+	ConnectionType string     `protobuf:"bytes,1,opt,name=connection_type,json=connectionType,proto3" json:"connection_type,omitempty"`
+	ApiUrl         string     `protobuf:"bytes,2,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
+	Data           []byte     `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	RequestBlock   int64      `protobuf:"varint,4,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+	ApiInterface   string     `protobuf:"bytes,5,opt,name=api_interface,json=apiInterface,proto3" json:"api_interface,omitempty"`
+	Salt           []byte     `protobuf:"bytes,6,opt,name=salt,proto3" json:"salt,omitempty"`
+	Metadata       []Metadata `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata"`
+}
+
+func (m *RelayPrivateData) Reset()         { *m = RelayPrivateData{} }
+func (m *RelayPrivateData) String() string { return proto.CompactTextString(m) }
+func (*RelayPrivateData) ProtoMessage()    {}
+func (*RelayPrivateData) Descriptor() ([]byte, []int) {
+	return fileDescriptor_10cd1bfeb9978acf, []int{1}
+}
+func (m *RelayPrivateData) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RelayPrivateData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RelayPrivateData.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RelayPrivateData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RelayPrivateData.Merge(m, src)
+}
+func (m *RelayPrivateData) XXX_Size() int {
+	return m.Size()
+}
+func (m *RelayPrivateData) XXX_DiscardUnknown() {
+	xxx_messageInfo_RelayPrivateData.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RelayPrivateData proto.InternalMessageInfo
+
+func (m *RelayPrivateData) GetConnectionType() string {
+	if m != nil {
+		return m.ConnectionType
+	}
+	return ""
+}
+
+func (m *RelayPrivateData) GetApiUrl() string {
+	if m != nil {
+		return m.ApiUrl
+	}
+	return ""
+}
+
+func (m *RelayPrivateData) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *RelayPrivateData) GetRequestBlock() int64 {
+	if m != nil {
+		return m.RequestBlock
+	}
+	return 0
+}
+
+func (m *RelayPrivateData) GetApiInterface() string {
+	if m != nil {
+		return m.ApiInterface
+	}
+	return ""
+}
+
+func (m *RelayPrivateData) GetSalt() []byte {
+	if m != nil {
+		return m.Salt
+	}
+	return nil
+}
+
+func (m *RelayPrivateData) GetMetadata() []Metadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+type Metadata struct {
+	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *Metadata) Reset()         { *m = Metadata{} }
+func (m *Metadata) String() string { return proto.CompactTextString(m) }
+func (*Metadata) ProtoMessage()    {}
+func (*Metadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_10cd1bfeb9978acf, []int{2}
+}
+func (m *Metadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Metadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Metadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Metadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Metadata.Merge(m, src)
+}
+func (m *Metadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *Metadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_Metadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Metadata proto.InternalMessageInfo
+
+func (m *Metadata) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Metadata) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 type RelayRequest struct {
-	ChainID               string                  `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	ConnectionType        string                  `protobuf:"bytes,2,opt,name=connection_type,json=connectionType,proto3" json:"connection_type,omitempty"`
-	ApiUrl                string                  `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
-	SessionId             uint64                  `protobuf:"varint,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	CuSum                 uint64                  `protobuf:"varint,5,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
-	Data                  []byte                  `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	Sig                   []byte                  `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
-	Provider              string                  `protobuf:"bytes,8,opt,name=provider,proto3" json:"provider,omitempty"`
-	BlockHeight           int64                   `protobuf:"varint,9,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	RelayNum              uint64                  `protobuf:"varint,10,opt,name=relay_num,json=relayNum,proto3" json:"relay_num,omitempty"`
-	RequestBlock          int64                   `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
-	DataReliability       *VRFData                `protobuf:"bytes,12,opt,name=DataReliability,proto3" json:"DataReliability,omitempty"`
-	QoSReport             *QualityOfServiceReport `protobuf:"bytes,13,opt,name=QoSReport,proto3" json:"QoSReport,omitempty"`
-	UnresponsiveProviders []byte                  `protobuf:"bytes,14,opt,name=unresponsive_providers,json=unresponsiveProviders,proto3" json:"unresponsive_providers,omitempty"`
+	RelaySession *RelaySession     `protobuf:"bytes,1,opt,name=relay_session,json=relaySession,proto3" json:"relay_session,omitempty"`
+	RelayData    *RelayPrivateData `protobuf:"bytes,2,opt,name=relay_data,json=relayData,proto3" json:"relay_data,omitempty"`
 }
 
 func (m *RelayRequest) Reset()         { *m = RelayRequest{} }
 func (m *RelayRequest) String() string { return proto.CompactTextString(m) }
 func (*RelayRequest) ProtoMessage()    {}
 func (*RelayRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_10cd1bfeb9978acf, []int{0}
+	return fileDescriptor_10cd1bfeb9978acf, []int{3}
 }
 func (m *RelayRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -79,118 +344,35 @@ func (m *RelayRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RelayRequest proto.InternalMessageInfo
 
-func (m *RelayRequest) GetChainID() string {
+func (m *RelayRequest) GetRelaySession() *RelaySession {
 	if m != nil {
-		return m.ChainID
-	}
-	return ""
-}
-
-func (m *RelayRequest) GetConnectionType() string {
-	if m != nil {
-		return m.ConnectionType
-	}
-	return ""
-}
-
-func (m *RelayRequest) GetApiUrl() string {
-	if m != nil {
-		return m.ApiUrl
-	}
-	return ""
-}
-
-func (m *RelayRequest) GetSessionId() uint64 {
-	if m != nil {
-		return m.SessionId
-	}
-	return 0
-}
-
-func (m *RelayRequest) GetCuSum() uint64 {
-	if m != nil {
-		return m.CuSum
-	}
-	return 0
-}
-
-func (m *RelayRequest) GetData() []byte {
-	if m != nil {
-		return m.Data
+		return m.RelaySession
 	}
 	return nil
 }
 
-func (m *RelayRequest) GetSig() []byte {
+func (m *RelayRequest) GetRelayData() *RelayPrivateData {
 	if m != nil {
-		return m.Sig
-	}
-	return nil
-}
-
-func (m *RelayRequest) GetProvider() string {
-	if m != nil {
-		return m.Provider
-	}
-	return ""
-}
-
-func (m *RelayRequest) GetBlockHeight() int64 {
-	if m != nil {
-		return m.BlockHeight
-	}
-	return 0
-}
-
-func (m *RelayRequest) GetRelayNum() uint64 {
-	if m != nil {
-		return m.RelayNum
-	}
-	return 0
-}
-
-func (m *RelayRequest) GetRequestBlock() int64 {
-	if m != nil {
-		return m.RequestBlock
-	}
-	return 0
-}
-
-func (m *RelayRequest) GetDataReliability() *VRFData {
-	if m != nil {
-		return m.DataReliability
-	}
-	return nil
-}
-
-func (m *RelayRequest) GetQoSReport() *QualityOfServiceReport {
-	if m != nil {
-		return m.QoSReport
-	}
-	return nil
-}
-
-func (m *RelayRequest) GetUnresponsiveProviders() []byte {
-	if m != nil {
-		return m.UnresponsiveProviders
+		return m.RelayData
 	}
 	return nil
 }
 
 type RelayReply struct {
-	Data                  []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Sig                   []byte `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
-	Nonce                 uint32 `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	LatestBlock           int64  `protobuf:"varint,4,opt,name=latest_block,json=latestBlock,proto3" json:"latest_block,omitempty"`
-	FinalizedBlocksHashes []byte `protobuf:"bytes,5,opt,name=finalized_blocks_hashes,json=finalizedBlocksHashes,proto3" json:"finalized_blocks_hashes,omitempty"`
-	SigBlocks             []byte `protobuf:"bytes,6,opt,name=sig_blocks,json=sigBlocks,proto3" json:"sig_blocks,omitempty"`
+	Data                  []byte     `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Sig                   []byte     `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
+	Nonce                 uint32     `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	LatestBlock           int64      `protobuf:"varint,4,opt,name=latest_block,json=latestBlock,proto3" json:"latest_block,omitempty"`
+	FinalizedBlocksHashes []byte     `protobuf:"bytes,5,opt,name=finalized_blocks_hashes,json=finalizedBlocksHashes,proto3" json:"finalized_blocks_hashes,omitempty"`
+	SigBlocks             []byte     `protobuf:"bytes,6,opt,name=sig_blocks,json=sigBlocks,proto3" json:"sig_blocks,omitempty"`
+	Metadata              []Metadata `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata"`
 }
 
 func (m *RelayReply) Reset()         { *m = RelayReply{} }
 func (m *RelayReply) String() string { return proto.CompactTextString(m) }
 func (*RelayReply) ProtoMessage()    {}
 func (*RelayReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_10cd1bfeb9978acf, []int{1}
+	return fileDescriptor_10cd1bfeb9978acf, []int{4}
 }
 func (m *RelayReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -261,94 +443,9 @@ func (m *RelayReply) GetSigBlocks() []byte {
 	return nil
 }
 
-type VRFData struct {
-	Differentiator bool   `protobuf:"varint,1,opt,name=differentiator,proto3" json:"differentiator,omitempty"`
-	VrfValue       []byte `protobuf:"bytes,2,opt,name=vrf_value,json=vrfValue,proto3" json:"vrf_value,omitempty"`
-	VrfProof       []byte `protobuf:"bytes,3,opt,name=vrf_proof,json=vrfProof,proto3" json:"vrf_proof,omitempty"`
-	ProviderSig    []byte `protobuf:"bytes,4,opt,name=provider_sig,json=providerSig,proto3" json:"provider_sig,omitempty"`
-	AllDataHash    []byte `protobuf:"bytes,5,opt,name=allDataHash,proto3" json:"allDataHash,omitempty"`
-	QueryHash      []byte `protobuf:"bytes,6,opt,name=queryHash,proto3" json:"queryHash,omitempty"`
-	Sig            []byte `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
-}
-
-func (m *VRFData) Reset()         { *m = VRFData{} }
-func (m *VRFData) String() string { return proto.CompactTextString(m) }
-func (*VRFData) ProtoMessage()    {}
-func (*VRFData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_10cd1bfeb9978acf, []int{2}
-}
-func (m *VRFData) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *VRFData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_VRFData.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *VRFData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VRFData.Merge(m, src)
-}
-func (m *VRFData) XXX_Size() int {
-	return m.Size()
-}
-func (m *VRFData) XXX_DiscardUnknown() {
-	xxx_messageInfo_VRFData.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_VRFData proto.InternalMessageInfo
-
-func (m *VRFData) GetDifferentiator() bool {
+func (m *RelayReply) GetMetadata() []Metadata {
 	if m != nil {
-		return m.Differentiator
-	}
-	return false
-}
-
-func (m *VRFData) GetVrfValue() []byte {
-	if m != nil {
-		return m.VrfValue
-	}
-	return nil
-}
-
-func (m *VRFData) GetVrfProof() []byte {
-	if m != nil {
-		return m.VrfProof
-	}
-	return nil
-}
-
-func (m *VRFData) GetProviderSig() []byte {
-	if m != nil {
-		return m.ProviderSig
-	}
-	return nil
-}
-
-func (m *VRFData) GetAllDataHash() []byte {
-	if m != nil {
-		return m.AllDataHash
-	}
-	return nil
-}
-
-func (m *VRFData) GetQueryHash() []byte {
-	if m != nil {
-		return m.QueryHash
-	}
-	return nil
-}
-
-func (m *VRFData) GetSig() []byte {
-	if m != nil {
-		return m.Sig
+		return m.Metadata
 	}
 	return nil
 }
@@ -363,7 +460,7 @@ func (m *QualityOfServiceReport) Reset()         { *m = QualityOfServiceReport{}
 func (m *QualityOfServiceReport) String() string { return proto.CompactTextString(m) }
 func (*QualityOfServiceReport) ProtoMessage()    {}
 func (*QualityOfServiceReport) Descriptor() ([]byte, []int) {
-	return fileDescriptor_10cd1bfeb9978acf, []int{3}
+	return fileDescriptor_10cd1bfeb9978acf, []int{5}
 }
 func (m *QualityOfServiceReport) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -393,67 +490,77 @@ func (m *QualityOfServiceReport) XXX_DiscardUnknown() {
 var xxx_messageInfo_QualityOfServiceReport proto.InternalMessageInfo
 
 func init() {
+	proto.RegisterType((*RelaySession)(nil), "lavanet.lava.pairing.RelaySession")
+	proto.RegisterType((*RelayPrivateData)(nil), "lavanet.lava.pairing.RelayPrivateData")
+	proto.RegisterType((*Metadata)(nil), "lavanet.lava.pairing.Metadata")
 	proto.RegisterType((*RelayRequest)(nil), "lavanet.lava.pairing.RelayRequest")
 	proto.RegisterType((*RelayReply)(nil), "lavanet.lava.pairing.RelayReply")
-	proto.RegisterType((*VRFData)(nil), "lavanet.lava.pairing.VRFData")
 	proto.RegisterType((*QualityOfServiceReport)(nil), "lavanet.lava.pairing.QualityOfServiceReport")
 }
 
 func init() { proto.RegisterFile("pairing/relay.proto", fileDescriptor_10cd1bfeb9978acf) }
 
 var fileDescriptor_10cd1bfeb9978acf = []byte{
-	// 802 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xcd, 0x8e, 0x1b, 0x45,
-	0x10, 0xf6, 0xec, 0x7a, 0xfd, 0x53, 0xf6, 0x3a, 0xa8, 0xb3, 0x9b, 0x8c, 0x16, 0xe2, 0x35, 0x83,
-	0x94, 0xf8, 0x00, 0x36, 0x0a, 0x82, 0x03, 0x12, 0x12, 0x58, 0x0b, 0x24, 0x08, 0x91, 0x6c, 0x1b,
-	0x72, 0xd8, 0xcb, 0xa8, 0x3d, 0x6e, 0x8f, 0x5b, 0x69, 0x4f, 0x4f, 0xba, 0x67, 0x46, 0x0c, 0x4f,
-	0x81, 0xc4, 0x9b, 0x70, 0xe0, 0x01, 0x38, 0xe5, 0x98, 0x23, 0xe2, 0xb0, 0x8a, 0x76, 0xdf, 0x80,
-	0x27, 0x40, 0x5d, 0x33, 0x63, 0x9b, 0xc4, 0x42, 0x8a, 0x94, 0xd3, 0x74, 0x7d, 0x55, 0xf5, 0x95,
-	0xeb, 0xab, 0xea, 0x36, 0xdc, 0x8c, 0x99, 0xd0, 0x22, 0x0a, 0xc7, 0x9a, 0x4b, 0x96, 0x8f, 0x62,
-	0xad, 0x12, 0x45, 0x8e, 0x24, 0xcb, 0x58, 0xc4, 0x93, 0x91, 0xfd, 0x8e, 0xca, 0x88, 0x93, 0xa3,
-	0x50, 0x85, 0x0a, 0x03, 0xc6, 0xf6, 0x54, 0xc4, 0x7a, 0xbf, 0xd5, 0xa1, 0x4b, 0x6d, 0x2e, 0xe5,
-	0xcf, 0x52, 0x6e, 0x12, 0xe2, 0x42, 0x33, 0x58, 0x32, 0x11, 0x3d, 0x3c, 0x73, 0x9d, 0x81, 0x33,
-	0x6c, 0xd3, 0xca, 0x24, 0xf7, 0xe0, 0x46, 0xa0, 0xa2, 0x88, 0x07, 0x89, 0x50, 0x91, 0x9f, 0xe4,
-	0x31, 0x77, 0xf7, 0x30, 0xa2, 0xb7, 0x81, 0x7f, 0xcc, 0x63, 0x4e, 0x6e, 0x43, 0x93, 0xc5, 0xc2,
-	0x4f, 0xb5, 0x74, 0xf7, 0x31, 0xa0, 0xc1, 0x62, 0xf1, 0x93, 0x96, 0xe4, 0x0e, 0x80, 0xe1, 0xc6,
-	0xd8, 0x74, 0x31, 0x77, 0xeb, 0x03, 0x67, 0x58, 0xa7, 0xed, 0x12, 0x79, 0x38, 0x27, 0xc7, 0xd0,
-	0x08, 0x52, 0xdf, 0xa4, 0x2b, 0xf7, 0x00, 0x5d, 0x07, 0x41, 0x3a, 0x4d, 0x57, 0x84, 0x40, 0x7d,
-	0xce, 0x12, 0xe6, 0x36, 0x06, 0xce, 0xb0, 0x4b, 0xf1, 0x4c, 0xde, 0x81, 0x7d, 0x23, 0x42, 0xb7,
-	0x89, 0x90, 0x3d, 0x92, 0x13, 0x68, 0xc5, 0x5a, 0x65, 0x62, 0xce, 0xb5, 0xdb, 0xc2, 0xaa, 0x6b,
-	0x9b, 0xbc, 0x0f, 0xdd, 0x99, 0x54, 0xc1, 0x53, 0x7f, 0xc9, 0x45, 0xb8, 0x4c, 0xdc, 0xf6, 0xc0,
-	0x19, 0xee, 0xd3, 0x0e, 0x62, 0x0f, 0x10, 0x22, 0xef, 0x42, 0x1b, 0x25, 0xf4, 0xa3, 0x74, 0xe5,
-	0x02, 0x96, 0x6f, 0x21, 0xf0, 0x43, 0xba, 0x22, 0x1f, 0xc0, 0xa1, 0x2e, 0xe4, 0xf1, 0x31, 0xc7,
-	0xed, 0x20, 0x41, 0xb7, 0x04, 0x27, 0x16, 0x23, 0xdf, 0xc2, 0x8d, 0x33, 0x96, 0x30, 0xca, 0xa5,
-	0x60, 0x33, 0x21, 0x45, 0x92, 0xbb, 0xdd, 0x81, 0x33, 0xec, 0xdc, 0xbf, 0x33, 0xda, 0x35, 0x8f,
-	0xd1, 0x13, 0xfa, 0x0d, 0xc6, 0xbf, 0x9a, 0x45, 0xbe, 0x83, 0xf6, 0xb9, 0x9a, 0x52, 0x1e, 0x2b,
-	0x9d, 0xb8, 0x87, 0x48, 0xf1, 0xe1, 0x6e, 0x8a, 0xf3, 0x94, 0xd9, 0x8c, 0x47, 0x8b, 0x29, 0xd7,
-	0x99, 0x08, 0x78, 0x91, 0x43, 0x37, 0xe9, 0xe4, 0x53, 0xb8, 0x95, 0x46, 0x9a, 0x9b, 0x58, 0x45,
-	0x46, 0x64, 0xdc, 0xaf, 0x24, 0x31, 0x6e, 0x0f, 0xa5, 0x3b, 0xde, 0xf6, 0x3e, 0xae, 0x9c, 0xde,
-	0x9f, 0x0e, 0x40, 0xb9, 0x15, 0xb1, 0xcc, 0xd7, 0x13, 0x70, 0x5e, 0x9f, 0xc0, 0xde, 0x66, 0x02,
-	0x47, 0x70, 0x10, 0xa9, 0x28, 0xe0, 0x38, 0xf4, 0x43, 0x5a, 0x18, 0x56, 0x7b, 0xc9, 0x92, 0x8d,
-	0x74, 0xf5, 0x42, 0xfb, 0x02, 0x2b, 0x94, 0xfb, 0x0c, 0x6e, 0x2f, 0x44, 0xc4, 0xa4, 0xf8, 0x85,
-	0xcf, 0x8b, 0x28, 0xe3, 0x2f, 0x99, 0x59, 0x72, 0x83, 0x8b, 0xd0, 0xa5, 0xc7, 0x6b, 0x37, 0x26,
-	0x98, 0x07, 0xe8, 0xc4, 0x75, 0x12, 0x61, 0x99, 0x51, 0xae, 0x47, 0xdb, 0x88, 0xb0, 0x08, 0xf2,
-	0x5e, 0x3a, 0xd0, 0x2c, 0x45, 0x26, 0x77, 0xa1, 0x37, 0x17, 0x8b, 0x05, 0xd7, 0x3c, 0x4a, 0x04,
-	0x4b, 0x94, 0xc6, 0x5e, 0x5a, 0xf4, 0x15, 0xd4, 0xae, 0x41, 0xa6, 0x17, 0x7e, 0xc6, 0x64, 0xca,
-	0xcb, 0xde, 0x5a, 0x99, 0x5e, 0x3c, 0xb1, 0x76, 0xe5, 0x8c, 0xb5, 0x52, 0x0b, 0x6c, 0xb2, 0x70,
-	0x3e, 0xb6, 0xb6, 0xed, 0xb3, 0x12, 0xd7, 0xb7, 0xc2, 0xd4, 0xd1, 0xdf, 0xa9, 0xb0, 0xa9, 0x08,
-	0xc9, 0x00, 0x3a, 0x4c, 0x4a, 0xfb, 0x7b, 0x6c, 0x03, 0x65, 0x6f, 0xdb, 0x10, 0x79, 0x0f, 0xda,
-	0xcf, 0x52, 0xae, 0x73, 0xf4, 0x97, 0x0d, 0xad, 0x81, 0xd7, 0x97, 0xde, 0xfb, 0x7d, 0x0f, 0x6e,
-	0xed, 0x5e, 0x02, 0x72, 0x01, 0x4d, 0xab, 0x71, 0x14, 0xe4, 0xc5, 0x3d, 0x9e, 0x7c, 0xf9, 0xfc,
-	0xf2, 0xb4, 0xf6, 0xf7, 0xe5, 0xe9, 0xdd, 0x50, 0x24, 0xcb, 0x74, 0x36, 0x0a, 0xd4, 0x6a, 0x1c,
-	0x28, 0xb3, 0x52, 0xa6, 0xfc, 0x7c, 0x64, 0xe6, 0x4f, 0xc7, 0xf6, 0x5a, 0x9b, 0xd1, 0x19, 0x0f,
-	0xfe, 0xb9, 0x3c, 0xed, 0xe5, 0x6c, 0x25, 0x3f, 0xf7, 0xbe, 0x2f, 0x68, 0x3c, 0x5a, 0x11, 0x12,
-	0x01, 0x5d, 0x96, 0x31, 0x21, 0xab, 0x3d, 0xc7, 0x67, 0x60, 0xf2, 0xf5, 0x1b, 0x17, 0xb8, 0x59,
-	0x14, 0xd8, 0xe6, 0xf2, 0xe8, 0x7f, 0xa8, 0xc9, 0x39, 0xd4, 0x4d, 0x1e, 0x05, 0xc5, 0x43, 0x32,
-	0xf9, 0xe2, 0x8d, 0x4b, 0x74, 0x8a, 0x12, 0x96, 0xc3, 0xa3, 0x48, 0x75, 0xff, 0x0f, 0x07, 0x9a,
-	0xb8, 0xdc, 0x5c, 0x93, 0x47, 0x70, 0x80, 0x47, 0xe2, 0xed, 0xbe, 0x61, 0xdb, 0x4f, 0xe3, 0xc9,
-	0xe0, 0x7f, 0x63, 0x62, 0x99, 0x7b, 0x35, 0x72, 0x01, 0x3d, 0xb4, 0xa7, 0xe9, 0xcc, 0x04, 0x5a,
-	0xcc, 0xf8, 0xdb, 0x62, 0xfe, 0xd8, 0x99, 0x7c, 0xf5, 0xfc, 0xaa, 0xef, 0xbc, 0xb8, 0xea, 0x3b,
-	0x2f, 0xaf, 0xfa, 0xce, 0xaf, 0xd7, 0xfd, 0xda, 0x8b, 0xeb, 0x7e, 0xed, 0xaf, 0xeb, 0x7e, 0xed,
-	0xe2, 0xde, 0x96, 0x1e, 0x25, 0x13, 0x7e, 0xc7, 0x3f, 0x8f, 0xab, 0x3f, 0x08, 0x14, 0x65, 0xd6,
-	0xc0, 0x57, 0xff, 0x93, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x30, 0x0a, 0xad, 0xe0, 0x38, 0x06,
-	0x00, 0x00,
+	// 934 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x4f, 0x6f, 0x1b, 0x45,
+	0x14, 0xf7, 0xfa, 0x4f, 0x6c, 0x3f, 0x6f, 0x42, 0x34, 0x75, 0xda, 0x95, 0x0b, 0x8e, 0x59, 0xa4,
+	0xd6, 0x07, 0x58, 0x43, 0x28, 0x3d, 0x20, 0x21, 0x15, 0xd3, 0x88, 0x9a, 0x7f, 0x4d, 0x27, 0x94,
+	0x43, 0x2e, 0xd6, 0x78, 0x3d, 0x59, 0x8f, 0xba, 0xde, 0xd9, 0xec, 0xec, 0x1a, 0xcc, 0x99, 0x03,
+	0x47, 0x3e, 0x04, 0x9f, 0x80, 0x33, 0x1f, 0xa0, 0xc7, 0x1e, 0x11, 0x87, 0x08, 0x25, 0xdf, 0x80,
+	0x3b, 0x12, 0x9a, 0x37, 0xe3, 0xd4, 0x20, 0x2b, 0x52, 0xa5, 0x9e, 0xf6, 0xfd, 0xfd, 0xbd, 0x79,
+	0xef, 0xf7, 0x9e, 0x16, 0x6e, 0xa4, 0x4c, 0x64, 0x22, 0x89, 0x06, 0x19, 0x8f, 0xd9, 0x32, 0x48,
+	0x33, 0x99, 0x4b, 0xd2, 0x8e, 0xd9, 0x82, 0x25, 0x3c, 0x0f, 0xf4, 0x37, 0xb0, 0x11, 0x9d, 0x76,
+	0x24, 0x23, 0x89, 0x01, 0x03, 0x2d, 0x99, 0xd8, 0x4e, 0x37, 0x92, 0x32, 0x8a, 0xf9, 0x00, 0xb5,
+	0x49, 0x71, 0x3a, 0xf8, 0x3e, 0x63, 0x69, 0xca, 0x33, 0x65, 0xfd, 0xed, 0x55, 0x81, 0x09, 0x9b,
+	0x46, 0xdc, 0x5a, 0xfd, 0xdf, 0x2b, 0xe0, 0x52, 0x5d, 0xf1, 0x98, 0x2b, 0x25, 0x64, 0x42, 0x6e,
+	0x41, 0x5d, 0xa5, 0x3c, 0x1c, 0x8b, 0xa9, 0xe7, 0xf4, 0x9c, 0x7e, 0x93, 0x6e, 0x69, 0x75, 0x34,
+	0x25, 0x6f, 0x83, 0x1b, 0xca, 0x24, 0xe7, 0x49, 0x3e, 0x9e, 0x31, 0x35, 0xf3, 0xca, 0x3d, 0xa7,
+	0xef, 0xd2, 0x96, 0xb5, 0x3d, 0x62, 0x6a, 0x46, 0xde, 0x02, 0x50, 0x06, 0x46, 0xa7, 0x57, 0x7a,
+	0x4e, 0xbf, 0x4a, 0x9b, 0xd6, 0x32, 0x9a, 0x92, 0x3d, 0xd8, 0x0a, 0x8b, 0xb1, 0x2a, 0xe6, 0x5e,
+	0x15, 0x5d, 0xb5, 0xb0, 0x38, 0x2e, 0xe6, 0xa4, 0x03, 0x8d, 0x34, 0x93, 0x0b, 0x31, 0xe5, 0x99,
+	0x57, 0xc3, 0x92, 0x57, 0x3a, 0xb9, 0x0d, 0x4d, 0x9c, 0xc7, 0x38, 0x29, 0xe6, 0xde, 0x16, 0x66,
+	0x35, 0xd0, 0xf0, 0x4d, 0x31, 0x27, 0x5f, 0x02, 0x9c, 0x49, 0x35, 0xce, 0x78, 0x2a, 0xb3, 0xdc,
+	0xab, 0xf7, 0x9c, 0x7e, 0xeb, 0xe0, 0xdd, 0x60, 0xd3, 0xc8, 0x82, 0x27, 0x05, 0x8b, 0x45, 0xbe,
+	0x7c, 0x7c, 0x7a, 0xcc, 0xb3, 0x85, 0x08, 0x39, 0xc5, 0x1c, 0xda, 0x3c, 0x93, 0xca, 0x88, 0xa4,
+	0x0d, 0x35, 0x9e, 0xca, 0x70, 0xe6, 0x35, 0x7a, 0x4e, 0xbf, 0x42, 0x8d, 0x42, 0x3e, 0x82, 0x9b,
+	0x45, 0x92, 0x71, 0x95, 0xca, 0x44, 0x89, 0x05, 0x1f, 0xaf, 0x1e, 0xa6, 0xbc, 0x26, 0xb6, 0xbf,
+	0xb7, 0xee, 0x3d, 0x5a, 0x39, 0x89, 0x0f, 0xdb, 0xba, 0xfc, 0x38, 0x9c, 0x31, 0x81, 0xb3, 0x00,
+	0xec, 0xab, 0xa5, 0x8d, 0x9f, 0x69, 0xdb, 0x68, 0x4a, 0x76, 0xa1, 0xa2, 0x44, 0xe4, 0xb5, 0x10,
+	0x47, 0x8b, 0xe4, 0x03, 0xa8, 0x21, 0x37, 0x9e, 0x8b, 0xad, 0xdc, 0xde, 0xdc, 0xca, 0x50, 0x87,
+	0x50, 0x13, 0xe9, 0xff, 0x5c, 0x86, 0x5d, 0xa4, 0xef, 0x28, 0x13, 0x0b, 0x96, 0xf3, 0x87, 0x2c,
+	0x67, 0xe4, 0x2e, 0xbc, 0x11, 0xca, 0x24, 0xe1, 0x61, 0xae, 0x99, 0xc8, 0x97, 0x29, 0xb7, 0x54,
+	0xee, 0xbc, 0x34, 0x7f, 0xbb, 0x4c, 0xb9, 0xe6, 0x9a, 0xa5, 0x62, 0x5c, 0x64, 0x31, 0xb2, 0xd9,
+	0xa4, 0x5b, 0x2c, 0x15, 0x4f, 0xb3, 0x98, 0x10, 0xa8, 0x4e, 0x59, 0xce, 0x90, 0x42, 0x97, 0xa2,
+	0x4c, 0xde, 0x81, 0xed, 0x8c, 0x9f, 0x15, 0x5c, 0xe5, 0xe3, 0x49, 0x2c, 0xc3, 0x67, 0x48, 0x62,
+	0x85, 0xba, 0xd6, 0x38, 0xd4, 0x36, 0x1d, 0xa4, 0x11, 0x45, 0x92, 0xf3, 0xec, 0x94, 0x85, 0xdc,
+	0x12, 0xea, 0xb2, 0x54, 0x8c, 0x56, 0x36, 0x8d, 0xae, 0x58, 0x9c, 0x23, 0x9f, 0x2e, 0x45, 0x99,
+	0x3c, 0x80, 0xc6, 0x9c, 0xe7, 0x0c, 0xab, 0xd6, 0x7b, 0x95, 0x7e, 0xeb, 0xa0, 0xbb, 0xb9, 0xfd,
+	0xaf, 0x6d, 0xd4, 0xb0, 0xfa, 0xfc, 0x7c, 0xbf, 0x44, 0xaf, 0xb2, 0xfc, 0x7b, 0xd0, 0x58, 0xf9,
+	0x74, 0x85, 0x84, 0xcd, 0x57, 0x6d, 0xa3, 0xac, 0x09, 0x5e, 0xb0, 0xb8, 0xe0, 0xb6, 0x55, 0xa3,
+	0xf8, 0xbf, 0x3a, 0x76, 0xff, 0xa9, 0x69, 0x83, 0x7c, 0xae, 0xdb, 0xd4, 0x1b, 0x67, 0xf7, 0x16,
+	0x31, 0x5a, 0x07, 0xfe, 0xe6, 0xd7, 0xac, 0x9f, 0x8e, 0x1e, 0xc5, 0xda, 0x21, 0x1d, 0x02, 0x18,
+	0x20, 0xec, 0xa9, 0x8c, 0x28, 0x77, 0xae, 0x41, 0x59, 0x63, 0x90, 0x9a, 0xa5, 0xd7, 0xe2, 0x17,
+	0xd5, 0x46, 0x65, 0xb7, 0xea, 0xff, 0x54, 0x06, 0xb0, 0xcf, 0x4c, 0xe3, 0xe5, 0x15, 0x3f, 0xce,
+	0x1a, 0x3f, 0x76, 0x9f, 0xca, 0x2f, 0xf7, 0xa9, 0x0d, 0xb5, 0x44, 0x26, 0x21, 0x47, 0x1a, 0xb7,
+	0xa9, 0x51, 0xf4, 0x1d, 0xc7, 0x2c, 0xff, 0x3f, 0x8d, 0x2d, 0x63, 0x33, 0x2c, 0xde, 0x87, 0x5b,
+	0xa7, 0x22, 0x61, 0xb1, 0xf8, 0x91, 0x4f, 0x4d, 0x94, 0xc2, 0x9b, 0xe7, 0x0a, 0xf9, 0x74, 0xe9,
+	0xde, 0x95, 0x1b, 0x13, 0xd4, 0x23, 0x74, 0xe2, 0xfd, 0x8b, 0xc8, 0x66, 0x58, 0x7a, 0x9b, 0x4a,
+	0x44, 0x26, 0xe8, 0x35, 0x70, 0xfc, 0x5b, 0x19, 0x6e, 0x6e, 0x3e, 0x65, 0x72, 0x02, 0x75, 0xdd,
+	0x42, 0x12, 0x2e, 0x0d, 0xeb, 0xc3, 0x07, 0x3a, 0xf7, 0xcf, 0xf3, 0xfd, 0x3b, 0x91, 0xc8, 0x67,
+	0xc5, 0x24, 0x08, 0xe5, 0x7c, 0x10, 0x4a, 0x35, 0x97, 0xca, 0x7e, 0xde, 0x53, 0xd3, 0x67, 0x03,
+	0x7d, 0x1d, 0x2a, 0x78, 0xc8, 0xc3, 0xbf, 0xcf, 0xf7, 0x77, 0x96, 0x6c, 0x1e, 0x7f, 0xec, 0x7f,
+	0x65, 0x60, 0x7c, 0xba, 0x02, 0x24, 0x02, 0x5c, 0xb6, 0x60, 0x22, 0x66, 0x13, 0xa1, 0x4b, 0x9b,
+	0x0d, 0x1a, 0x1e, 0xbe, 0x72, 0x81, 0x1b, 0xa6, 0xc0, 0x3a, 0x96, 0x4f, 0xff, 0x03, 0x4d, 0x9e,
+	0x40, 0x55, 0x2d, 0x93, 0x10, 0x29, 0x6b, 0x0e, 0x3f, 0x79, 0xe5, 0x12, 0x2d, 0x53, 0x42, 0x63,
+	0xf8, 0x14, 0xa1, 0x0e, 0xfe, 0x71, 0xa0, 0x8e, 0xbb, 0xc3, 0x33, 0xf2, 0x18, 0x6a, 0x28, 0x92,
+	0xeb, 0xf6, 0xd9, 0x9e, 0x42, 0xa7, 0x77, 0x6d, 0x4c, 0x1a, 0x2f, 0xfd, 0x12, 0x39, 0x81, 0x1d,
+	0x73, 0x03, 0xc5, 0x44, 0x85, 0x99, 0x98, 0xf0, 0xd7, 0x85, 0xfc, 0xbe, 0x43, 0x0e, 0xa1, 0x76,
+	0x94, 0xc9, 0x09, 0x27, 0x6f, 0x06, 0xe6, 0xdf, 0x16, 0xac, 0xfe, 0x6d, 0xc1, 0xd3, 0x51, 0x92,
+	0xdf, 0xbf, 0xf7, 0x9d, 0x3e, 0xe1, 0xce, 0xb5, 0x5e, 0xbf, 0x34, 0xfc, 0xf4, 0xf9, 0x45, 0xd7,
+	0x79, 0x71, 0xd1, 0x75, 0xfe, 0xba, 0xe8, 0x3a, 0xbf, 0x5c, 0x76, 0x4b, 0x2f, 0x2e, 0xbb, 0xa5,
+	0x3f, 0x2e, 0xbb, 0xa5, 0x93, 0xbb, 0x6b, 0x63, 0xb5, 0x0f, 0xc2, 0xef, 0xe0, 0x87, 0xc1, 0xea,
+	0x67, 0x89, 0xb3, 0x9d, 0x6c, 0x21, 0xf4, 0x87, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0xa5, 0xd2,
+	0x8d, 0x93, 0xa5, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -470,6 +577,7 @@ const _ = grpc.SupportPackageIsVersion4
 type RelayerClient interface {
 	Relay(ctx context.Context, in *RelayRequest, opts ...grpc.CallOption) (*RelayReply, error)
 	RelaySubscribe(ctx context.Context, in *RelayRequest, opts ...grpc.CallOption) (Relayer_RelaySubscribeClient, error)
+	Probe(ctx context.Context, in *wrapperspb.UInt64Value, opts ...grpc.CallOption) (*wrapperspb.UInt64Value, error)
 }
 
 type relayerClient struct {
@@ -521,10 +629,20 @@ func (x *relayerRelaySubscribeClient) Recv() (*RelayReply, error) {
 	return m, nil
 }
 
+func (c *relayerClient) Probe(ctx context.Context, in *wrapperspb.UInt64Value, opts ...grpc.CallOption) (*wrapperspb.UInt64Value, error) {
+	out := new(wrapperspb.UInt64Value)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.pairing.Relayer/Probe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RelayerServer is the server API for Relayer service.
 type RelayerServer interface {
 	Relay(context.Context, *RelayRequest) (*RelayReply, error)
 	RelaySubscribe(*RelayRequest, Relayer_RelaySubscribeServer) error
+	Probe(context.Context, *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error)
 }
 
 // UnimplementedRelayerServer can be embedded to have forward compatible implementations.
@@ -536,6 +654,9 @@ func (*UnimplementedRelayerServer) Relay(ctx context.Context, req *RelayRequest)
 }
 func (*UnimplementedRelayerServer) RelaySubscribe(req *RelayRequest, srv Relayer_RelaySubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method RelaySubscribe not implemented")
+}
+func (*UnimplementedRelayerServer) Probe(ctx context.Context, req *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Probe not implemented")
 }
 
 func RegisterRelayerServer(s grpc1.Server, srv RelayerServer) {
@@ -581,6 +702,24 @@ func (x *relayerRelaySubscribeServer) Send(m *RelayReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Relayer_Probe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(wrapperspb.UInt64Value)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RelayerServer).Probe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.pairing.Relayer/Probe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RelayerServer).Probe(ctx, req.(*wrapperspb.UInt64Value))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Relayer_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.pairing.Relayer",
 	HandlerType: (*RelayerServer)(nil),
@@ -588,6 +727,10 @@ var _Relayer_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Relay",
 			Handler:    _Relayer_Relay_Handler,
+		},
+		{
+			MethodName: "Probe",
+			Handler:    _Relayer_Probe_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -598,6 +741,229 @@ var _Relayer_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "pairing/relay.proto",
+}
+
+func (m *RelaySession) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RelaySession) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RelaySession) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Badge != nil {
+		{
+			size, err := m.Badge.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x62
+	}
+	if len(m.Sig) > 0 {
+		i -= len(m.Sig)
+		copy(dAtA[i:], m.Sig)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Sig)))
+		i--
+		dAtA[i] = 0x5a
+	}
+	if len(m.LavaChainId) > 0 {
+		i -= len(m.LavaChainId)
+		copy(dAtA[i:], m.LavaChainId)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.LavaChainId)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.UnresponsiveProviders) > 0 {
+		i -= len(m.UnresponsiveProviders)
+		copy(dAtA[i:], m.UnresponsiveProviders)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.UnresponsiveProviders)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.Epoch != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.Epoch))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.QosReport != nil {
+		{
+			size, err := m.QosReport.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.RelayNum != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.RelayNum))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.CuSum != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.CuSum))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.SessionId != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.SessionId))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.ContentHash) > 0 {
+		i -= len(m.ContentHash)
+		copy(dAtA[i:], m.ContentHash)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.ContentHash)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.SpecId) > 0 {
+		i -= len(m.SpecId)
+		copy(dAtA[i:], m.SpecId)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.SpecId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RelayPrivateData) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RelayPrivateData) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RelayPrivateData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Metadata) > 0 {
+		for iNdEx := len(m.Metadata) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Metadata[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRelay(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.Salt) > 0 {
+		i -= len(m.Salt)
+		copy(dAtA[i:], m.Salt)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Salt)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.ApiInterface) > 0 {
+		i -= len(m.ApiInterface)
+		copy(dAtA[i:], m.ApiInterface)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.ApiInterface)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.RequestBlock != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.RequestBlock))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ApiUrl) > 0 {
+		i -= len(m.ApiUrl)
+		copy(dAtA[i:], m.ApiUrl)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.ApiUrl)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ConnectionType) > 0 {
+		i -= len(m.ConnectionType)
+		copy(dAtA[i:], m.ConnectionType)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.ConnectionType)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Metadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Metadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Metadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *RelayRequest) Marshal() (dAtA []byte, err error) {
@@ -620,101 +986,27 @@ func (m *RelayRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.UnresponsiveProviders) > 0 {
-		i -= len(m.UnresponsiveProviders)
-		copy(dAtA[i:], m.UnresponsiveProviders)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.UnresponsiveProviders)))
-		i--
-		dAtA[i] = 0x72
-	}
-	if m.QoSReport != nil {
+	if m.RelayData != nil {
 		{
-			size, err := m.QoSReport.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.RelayData.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
 			i -= size
 			i = encodeVarintRelay(dAtA, i, uint64(size))
 		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.DataReliability != nil {
-		{
-			size, err := m.DataReliability.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRelay(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.RequestBlock != 0 {
-		i = encodeVarintRelay(dAtA, i, uint64(m.RequestBlock))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.RelayNum != 0 {
-		i = encodeVarintRelay(dAtA, i, uint64(m.RelayNum))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.BlockHeight != 0 {
-		i = encodeVarintRelay(dAtA, i, uint64(m.BlockHeight))
-		i--
-		dAtA[i] = 0x48
-	}
-	if len(m.Provider) > 0 {
-		i -= len(m.Provider)
-		copy(dAtA[i:], m.Provider)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.Provider)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.Sig) > 0 {
-		i -= len(m.Sig)
-		copy(dAtA[i:], m.Sig)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.Sig)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.CuSum != 0 {
-		i = encodeVarintRelay(dAtA, i, uint64(m.CuSum))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.SessionId != 0 {
-		i = encodeVarintRelay(dAtA, i, uint64(m.SessionId))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.ApiUrl) > 0 {
-		i -= len(m.ApiUrl)
-		copy(dAtA[i:], m.ApiUrl)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.ApiUrl)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ConnectionType) > 0 {
-		i -= len(m.ConnectionType)
-		copy(dAtA[i:], m.ConnectionType)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.ConnectionType)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ChainID) > 0 {
-		i -= len(m.ChainID)
-		copy(dAtA[i:], m.ChainID)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.ChainID)))
+	if m.RelaySession != nil {
+		{
+			size, err := m.RelaySession.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
@@ -741,6 +1033,20 @@ func (m *RelayReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Metadata) > 0 {
+		for iNdEx := len(m.Metadata) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Metadata[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRelay(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
 	if len(m.SigBlocks) > 0 {
 		i -= len(m.SigBlocks)
 		copy(dAtA[i:], m.SigBlocks)
@@ -778,81 +1084,6 @@ func (m *RelayReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintRelay(dAtA, i, uint64(len(m.Data)))
 		i--
 		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *VRFData) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *VRFData) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VRFData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Sig) > 0 {
-		i -= len(m.Sig)
-		copy(dAtA[i:], m.Sig)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.Sig)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.QueryHash) > 0 {
-		i -= len(m.QueryHash)
-		copy(dAtA[i:], m.QueryHash)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.QueryHash)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.AllDataHash) > 0 {
-		i -= len(m.AllDataHash)
-		copy(dAtA[i:], m.AllDataHash)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.AllDataHash)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.ProviderSig) > 0 {
-		i -= len(m.ProviderSig)
-		copy(dAtA[i:], m.ProviderSig)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.ProviderSig)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.VrfProof) > 0 {
-		i -= len(m.VrfProof)
-		copy(dAtA[i:], m.VrfProof)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.VrfProof)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.VrfValue) > 0 {
-		i -= len(m.VrfValue)
-		copy(dAtA[i:], m.VrfValue)
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.VrfValue)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Differentiator {
-		i--
-		if m.Differentiator {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -921,21 +1152,17 @@ func encodeVarintRelay(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *RelayRequest) Size() (n int) {
+func (m *RelaySession) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ChainID)
+	l = len(m.SpecId)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
-	l = len(m.ConnectionType)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.ApiUrl)
+	l = len(m.ContentHash)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
@@ -945,7 +1172,25 @@ func (m *RelayRequest) Size() (n int) {
 	if m.CuSum != 0 {
 		n += 1 + sovRelay(uint64(m.CuSum))
 	}
-	l = len(m.Data)
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.RelayNum != 0 {
+		n += 1 + sovRelay(uint64(m.RelayNum))
+	}
+	if m.QosReport != nil {
+		l = m.QosReport.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.Epoch != 0 {
+		n += 1 + sovRelay(uint64(m.Epoch))
+	}
+	l = len(m.UnresponsiveProviders)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.LavaChainId)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
@@ -953,29 +1198,80 @@ func (m *RelayRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
-	l = len(m.Provider)
+	if m.Badge != nil {
+		l = m.Badge.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	return n
+}
+
+func (m *RelayPrivateData) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ConnectionType)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
-	if m.BlockHeight != 0 {
-		n += 1 + sovRelay(uint64(m.BlockHeight))
+	l = len(m.ApiUrl)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
 	}
-	if m.RelayNum != 0 {
-		n += 1 + sovRelay(uint64(m.RelayNum))
+	l = len(m.Data)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
 	}
 	if m.RequestBlock != 0 {
 		n += 1 + sovRelay(uint64(m.RequestBlock))
 	}
-	if m.DataReliability != nil {
-		l = m.DataReliability.Size()
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	if m.QoSReport != nil {
-		l = m.QoSReport.Size()
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.UnresponsiveProviders)
+	l = len(m.ApiInterface)
 	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.Salt)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if len(m.Metadata) > 0 {
+		for _, e := range m.Metadata {
+			l = e.Size()
+			n += 1 + l + sovRelay(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *Metadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	return n
+}
+
+func (m *RelayRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RelaySession != nil {
+		l = m.RelaySession.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.RelayData != nil {
+		l = m.RelayData.Size()
 		n += 1 + l + sovRelay(uint64(l))
 	}
 	return n
@@ -1009,41 +1305,11 @@ func (m *RelayReply) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
-	return n
-}
-
-func (m *VRFData) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Differentiator {
-		n += 2
-	}
-	l = len(m.VrfValue)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.VrfProof)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.ProviderSig)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.AllDataHash)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.QueryHash)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	l = len(m.Sig)
-	if l > 0 {
-		n += 1 + l + sovRelay(uint64(l))
+	if len(m.Metadata) > 0 {
+		for _, e := range m.Metadata {
+			l = e.Size()
+			n += 1 + l + sovRelay(uint64(l))
+		}
 	}
 	return n
 }
@@ -1069,7 +1335,7 @@ func sovRelay(x uint64) (n int) {
 func sozRelay(x uint64) (n int) {
 	return sovRelay(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *RelayRequest) Unmarshal(dAtA []byte) error {
+func (m *RelaySession) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1092,15 +1358,15 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RelayRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RelaySession: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RelayRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RelaySession: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SpecId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1128,113 +1394,11 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainID = string(dAtA[iNdEx:postIndex])
+			m.SpecId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConnectionType", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ConnectionType = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApiUrl", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ApiUrl = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SessionId", wireType)
-			}
-			m.SessionId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SessionId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CuSum", wireType)
-			}
-			m.CuSum = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CuSum |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ContentHash", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1261,12 +1425,222 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
+			m.ContentHash = append(m.ContentHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.ContentHash == nil {
+				m.ContentHash = []byte{}
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionId", wireType)
+			}
+			m.SessionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SessionId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CuSum", wireType)
+			}
+			m.CuSum = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CuSum |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RelayNum", wireType)
+			}
+			m.RelayNum = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RelayNum |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QosReport", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.QosReport == nil {
+				m.QosReport = &QualityOfServiceReport{}
+			}
+			if err := m.QosReport.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
+			}
+			m.Epoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Epoch |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnresponsiveProviders", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UnresponsiveProviders = append(m.UnresponsiveProviders[:0], dAtA[iNdEx:postIndex]...)
+			if m.UnresponsiveProviders == nil {
+				m.UnresponsiveProviders = []byte{}
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LavaChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LavaChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Sig", wireType)
 			}
@@ -1300,9 +1674,95 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 				m.Sig = []byte{}
 			}
 			iNdEx = postIndex
-		case 8:
+		case 12:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Badge", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Badge == nil {
+				m.Badge = &Badge{}
+			}
+			if err := m.Badge.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RelayPrivateData) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RelayPrivateData: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RelayPrivateData: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConnectionType", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1330,70 +1790,13 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Provider = string(dAtA[iNdEx:postIndex])
+			m.ConnectionType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 9:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
-			}
-			m.BlockHeight = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.BlockHeight |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 10:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RelayNum", wireType)
-			}
-			m.RelayNum = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RelayNum |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 11:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequestBlock", wireType)
-			}
-			m.RequestBlock = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RequestBlock |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 12:
+		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DataReliability", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ApiUrl", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRelay
@@ -1403,67 +1806,27 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthRelay
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthRelay
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.DataReliability == nil {
-				m.DataReliability = &VRFData{}
-			}
-			if err := m.DataReliability.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.ApiUrl = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 13:
+		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QoSReport", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.QoSReport == nil {
-				m.QoSReport = &QualityOfServiceReport{}
-			}
-			if err := m.QoSReport.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 14:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UnresponsiveProviders", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1490,9 +1853,364 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UnresponsiveProviders = append(m.UnresponsiveProviders[:0], dAtA[iNdEx:postIndex]...)
-			if m.UnresponsiveProviders == nil {
-				m.UnresponsiveProviders = []byte{}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
+			if m.Data == nil {
+				m.Data = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestBlock", wireType)
+			}
+			m.RequestBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RequestBlock |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ApiInterface", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ApiInterface = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Salt", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Salt = append(m.Salt[:0], dAtA[iNdEx:postIndex]...)
+			if m.Salt == nil {
+				m.Salt = []byte{}
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Metadata = append(m.Metadata, Metadata{})
+			if err := m.Metadata[len(m.Metadata)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Metadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Metadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Metadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RelayRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RelayRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RelayRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RelaySession", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RelaySession == nil {
+				m.RelaySession = &RelaySession{}
+			}
+			if err := m.RelaySession.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RelayData", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RelayData == nil {
+				m.RelayData = &RelayPrivateData{}
+			}
+			if err := m.RelayData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:
@@ -1719,251 +2437,11 @@ func (m *RelayReply) Unmarshal(dAtA []byte) error {
 				m.SigBlocks = []byte{}
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRelay(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *VRFData) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRelay
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: VRFData: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VRFData: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Differentiator", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Differentiator = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VrfValue", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.VrfValue = append(m.VrfValue[:0], dAtA[iNdEx:postIndex]...)
-			if m.VrfValue == nil {
-				m.VrfValue = []byte{}
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VrfProof", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.VrfProof = append(m.VrfProof[:0], dAtA[iNdEx:postIndex]...)
-			if m.VrfProof == nil {
-				m.VrfProof = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderSig", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProviderSig = append(m.ProviderSig[:0], dAtA[iNdEx:postIndex]...)
-			if m.ProviderSig == nil {
-				m.ProviderSig = []byte{}
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AllDataHash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.AllDataHash = append(m.AllDataHash[:0], dAtA[iNdEx:postIndex]...)
-			if m.AllDataHash == nil {
-				m.AllDataHash = []byte{}
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryHash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.QueryHash = append(m.QueryHash[:0], dAtA[iNdEx:postIndex]...)
-			if m.QueryHash == nil {
-				m.QueryHash = []byte{}
-			}
-			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Sig", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRelay
@@ -1973,24 +2451,24 @@ func (m *VRFData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRelay
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRelay
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Sig = append(m.Sig[:0], dAtA[iNdEx:postIndex]...)
-			if m.Sig == nil {
-				m.Sig = []byte{}
+			m.Metadata = append(m.Metadata, Metadata{})
+			if err := m.Metadata[len(m.Metadata)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:

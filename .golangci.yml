@@ -1,18 +1,18 @@
 run:
-  tests: false
+  tests: true
   # timeout for analysis, e.g. 30s, 5m, default is 1m
   timeout: 5m
   skip-files:
-    - "relayer/chainproxy/thirdparty/*"
-    - "relayer/chainproxy/grpc.go"
-    - "protocol/chainlib/chainproxy/thirdparty/*"
+    - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
     - "protocol/chainlib/grpc.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
 
 linters:
   disable-all: true
   #for list of linters and what they do: https://golangci-lint.run/usage/linters/
   enable:
-    - depguard
     - dogsled
     - exportloopref
     - goconst
@@ -66,7 +66,7 @@ issues:
 
 linters-settings:
   dogsled:
-    max-blank-identifiers: 3
+    max-blank-identifiers: 5
   maligned:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true

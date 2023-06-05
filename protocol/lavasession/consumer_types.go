@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -14,15 +13,31 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+type SessionInfo struct {
+	Session           *SingleConsumerSession
+	Epoch             uint64
+	ReportedProviders []byte
+}
+
+type ConsumerSessionsMap map[string]*SessionInfo
+
+type ProviderOptimizer interface {
+	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
+	AppendRelayFailure(providerAddress string)
+	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
+}
 
 type ignoredProviders struct {
 	providers    map[string]struct{}
 	currentEpoch uint64
 }
 
-type qoSInfo struct {
+type QoSReport struct {
 	LastQoSReport    *pairingtypes.QualityOfServiceReport
 	LatencyScoreList []sdk.Dec
 	SyncScoreSum     int64
@@ -33,8 +48,8 @@ type qoSInfo struct {
 
 type SingleConsumerSession struct {
 	CuSum                       uint64
-	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
-	QoSInfo                     qoSInfo
+	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
+	QoSInfo                     QoSReport
 	SessionId                   int64
 	Client                      *ConsumerSessionsWithProvider
 	lock                        utils.LavaMutex
@@ -56,14 +71,27 @@ type Endpoint struct {
 	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
 	Client             *pairingtypes.RelayerClient
+	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
 }
 
+type SessionWithProvider struct {
+	SessionsWithProvider *ConsumerSessionsWithProvider
+	CurrentEpoch         uint64
+}
+
+type SessionWithProviderMap map[string]*SessionWithProvider
+
 type RPCEndpoint struct {
-	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // IP:PORT
+	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
 	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
 	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
 	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+}
+
+func (endpoint *RPCEndpoint) String() (retStr string) {
+	retStr = endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return
 }
 
 func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
@@ -90,14 +118,23 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch      uint64
 }
 
+func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
+	return atomic.LoadUint64(&cswp.UsedComputeUnits)
+}
+
 // verify data reliability session exists or not
-func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (err error) {
+func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		// validate our relay number reached the data reliability relay number limit
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		dataReliabilitySession.lock.Lock() // lock before returning.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
-	return nil
+	return nil, cswp.PairingEpoch, NoDataReliabilitySessionWasCreatedError
 }
 
 // get a data reliability session from an endpoint
@@ -105,14 +142,19 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	// we re validate the data reliability session now that we are locked.
-	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
-		return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
+			return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+		}
+		// we already have the dr session. so return it.
+		return dataReliabilitySession, cswp.PairingEpoch, nil
 	}
 
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
 		Client:    cswp,
 		Endpoint:  endpoint,
+		RelayNum:  0,
 	}
 	singleDataReliabilitySession.lock.Lock() // we must lock the session so other requests wont get it.
 
@@ -135,7 +177,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, &map[string]string{"cu": strconv.FormatUint((cswp.UsedComputeUnits + cu), 10), "maxCu": strconv.FormatUint(cswp.MaxComputeUnits, 10)})
+		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
 	}
 	return nil
 }
@@ -162,18 +204,18 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
+func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
 
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	/*defer conn.Close()*/
 
 	c := pairingtypes.NewRelayerClient(conn)
-	return &c, nil
+	return &c, conn, nil
 }
 
 func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
@@ -231,7 +273,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, sessionEpoch uint64) (connected bool, endpointPtr *Endpoint, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
@@ -240,19 +282,40 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !endpoint.Enabled {
 				continue
 			}
-			if endpoint.Client == nil {
-				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
+			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
+				if endpoint.Client != nil && endpoint.connection.GetState() != connectivity.Shutdown {
+					return true
+				}
+				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.NetworkAddress, "provider address": cswp.PublicLavaAddress, "endpoint": fmt.Sprintf("%+v", endpoint)})
+					utils.LavaFormatError("error connecting to provider", err, utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.NetworkAddress, "address": cswp.PublicLavaAddress, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
 					}
-					continue
+					return false
 				}
 				endpoint.ConnectionRefusals = 0
-				endpoint.Client = conn
+				endpoint.Client = client
+				if endpoint.connection != nil {
+					endpoint.connection.Close() // just to be safe
+				}
+				endpoint.connection = conn
+				return true
+			}
+			if endpoint.Client == nil {
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
+					continue
+				}
+			} else if endpoint.connection.GetState() == connectivity.Shutdown {
+				// connection was shut down, so we need to create a new one
+				endpoint.connection.Close()
+				connected_ := connectEndpoint(cswp, ctx, endpoint)
+				if !connected_ {
+					continue
+				}
 			}
 			cswp.Endpoints[idx] = endpoint
 			return true, endpoint, false
@@ -274,15 +337,21 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.PublicLavaAddress})
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
 		// report provider.
-		return connected, endpointPtr, AllProviderEndpointsDisabledError
+		return connected, endpointPtr, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
 
-	return connected, endpointPtr, nil
+	return connected, endpointPtr, cswp.PublicLavaAddress, nil
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+// returns the expected latency to a threshold.
+func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay time.Duration) time.Duration {
+	expectedLatency := (timeoutGivenToRelay / 2)
+	return expectedLatency
+}
+
+func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	// Add current Session QoS
 	cs.QoSInfo.TotalRelays++    // increase total relays
 	cs.QoSInfo.AnsweredRelays++ // increase answered relays
@@ -294,11 +363,10 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
+		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
 
-	latencyThreshold := LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
 
 	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
 		index := sort.Search(len(list), func(i int) bool {
@@ -326,12 +394,12 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-		utils.LavaFormatInfo("QoS Sync report",
-			&map[string]string{
-				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
-				"block diff": strconv.FormatInt(blockHeightDiff, 10),
-				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
-			})
+		utils.LavaFormatDebug("QoS Sync report",
+			utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
+			utils.Attribute{Key: "block diff", Value: blockHeightDiff},
+			utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
+			utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+		)
 	}
 }
 

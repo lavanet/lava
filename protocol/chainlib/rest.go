@@ -5,15 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -21,7 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/metrics"
+	"github.com/lavanet/lava/protocol/metrics"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -29,7 +30,7 @@ type RestChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
 	serverApis map[string]spectypes.ServiceApi
-	taggedApis map[string]spectypes.ServiceApi
+	BaseChainParser
 }
 
 // NewRestChainParser creates a new instance of RestChainParser
@@ -37,8 +38,21 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
+func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+	if craftData != nil {
+		// chain fetcher sends the replaced request inside data
+		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)
+	}
+
+	restMessage := rpcInterfaceMessages.RestMessage{
+		Msg:  nil,
+		Path: serviceApi.GetName(),
+	}
+	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage), nil
+}
+
 // ParseMsg parses message data into chain message object
-func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -50,30 +64,49 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, err
 	}
 
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
+	// Extract default block parser
+	blockParser := serviceApi.BlockParsing
+
+	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
 	// Construct restMessage
-	restMessage := chainproxy.RestMessage{
-		Msg:  data,
-		Path: url,
+	restMessage := rpcInterfaceMessages.RestMessage{
+		Msg:    data,
+		Path:   url,
+		Header: metadata,
+	}
+	if connectionType == http.MethodGet {
+		// support for optional params, our listener puts them inside Msg data
+		restMessage = rpcInterfaceMessages.RestMessage{
+			Msg:    nil,
+			Path:   url + string(data),
+			Header: metadata,
+		}
+	}
+	// add spec path to rest message so we can extract the requested block.
+	restMessage.SpecPath = serviceApi.Name
+
+	// Fetch requested block, it is used for data reliability
+	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
+	if err != nil {
+		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
 	}
 
-	// TODO why we don't have requested block here?
-	nodeMsg := &parsedMessage{
-		serviceApi:   serviceApi,
-		apiInterface: apiInterface,
-		msg:          restMessage,
-	}
+	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, restMessage)
 	return nodeMsg, nil
+}
+
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestBlock int64, restMessage rpcInterfaceMessages.RestMessage) *parsedMessage {
+	nodeMsg := &parsedMessage{
+		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
+		msg:            restMessage,
+		requestedBlock: requestBlock,
+	}
+	return nodeMsg
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -92,7 +125,7 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("rest api not supported")
+		return nil, errors.New("rest api not supported " + name)
 	}
 
 	// Return an error if api is disabled
@@ -120,7 +153,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
 	apip.serverApis = serverApis
-	apip.taggedApis = taggedApis
+	apip.BaseChainParser.SetTaggedApis(taggedApis)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -151,7 +184,7 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	defer apip.rwLock.RUnlock()
 
 	// Convert average block time from int64 -> time.Duration
-	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
+	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// Return values
 	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
@@ -160,11 +193,11 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 type RestChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
-	logger      *common.RPCConsumerLogs
+	logger      *metrics.RPCConsumerLogs
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
-func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *common.RPCConsumerLogs) (chainListener *RestChainListener) {
+func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
 		listenEndpoint,
@@ -191,20 +224,28 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("rest-http")
+		endTx := apil.logger.LogStartTransaction("rest-http")
+		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
 
 		path := "/" + c.Params("*")
 
+		metadataValues := c.GetReqHeaders()
+		restHeaders := convertToMetadataMap(metadataValues)
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		defer cancel() // incase there's a problem make sure to cancel the connection
+
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(c)
-		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
+		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 		requestBody := string(c.Body())
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, metricsData)
-		go apil.logger.AddMetric(metricsData, err != nil)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -219,28 +260,35 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(response)
+			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
 
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
-		apil.logger.LogStartTransaction("rest-http")
+		endTx := apil.logger.LogStartTransaction("rest-http")
+		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 
 		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
 		dappID := extractDappIDFromFiberContext(c)
-		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics)
-		go apil.logger.AddMetric(analytics, err != nil)
+		metadataValues := c.GetReqHeaders()
+		restHeaders := convertToMetadataMap(metadataValues)
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		defer cancel() // incase there's a problem make sure to cancel the connection
+		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
+
+		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics, restHeaders)
+		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -255,46 +303,55 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(response)
+			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
 
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Go
-	err := app.Listen(apil.endpoint.NetworkAddress)
-	if err != nil {
-		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
+	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+}
+
+func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
 	}
+	return c.SendString(data)
 }
 
 type RestChainProxy struct {
-	nodeUrl string
+	BaseChainProxy
 }
 
-func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
-	rcp := &RestChainProxy{nodeUrl: nodeUrl}
+func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration) (ChainProxy, error) {
+	if len(rpcProviderEndpoint.NodeUrls) == 0 {
+		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
+	}
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
+	rcp := &RestChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0]},
+	}
 	return rcp, nil
 }
 
-func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
-		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
 	httpClient := http.Client{
-		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(chainproxy.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
-
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
 	if chainMessage.GetInterface().Type != "" {
@@ -302,12 +359,17 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
-	url := rcp.nodeUrl + nodeMessage.Path
-	// Only get calls uses query params the rest uses the body
-	if connectionTypeSlected == http.MethodGet {
-		url += string(nodeMessage.Msg)
+	url := rcp.NodeUrl.Url + nodeMessage.Path
+
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetInterface().Category.HangingApi {
+		relayTimeout += rcp.averageBlockTime
 	}
-	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+
+	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -316,8 +378,21 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	if len(nodeMessage.Header) > 0 {
+		for _, metadata := range nodeMessage.Header {
+			req.Header.Set(metadata.Name, metadata.Value)
+		}
+	}
+	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
+	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
+
 	res, err := httpClient.Do(req)
 	if err != nil {
+		if err != nil && connectCtx.Err() == context.DeadlineExceeded {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		}
 		return nil, "", nil, err
 	}
 
@@ -325,13 +400,14 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		defer res.Body.Close()
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, "", nil, err
 	}
 
 	reply := &pairingtypes.RelayReply{
-		Data: body,
+		Data:     body,
+		Metadata: convertToMetadataMapOfSlices(res.Header),
 	}
 	return reply, "", nil, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/keyring"
 	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -35,53 +36,23 @@ func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint
 	return
 }
 
-func verifyVRF(queryHash []byte, reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
-	providerSig := reliabilityData.ProviderSig
-	differentiator := []uint8{0}
-	if reliabilityData.Differentiator {
-		differentiator = []uint8{1}
-	}
-	relayEpochStartBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(relayEpochStartBytes, relayEpochStart)
-	vrf_data := bytes.Join([][]byte{queryHash, relayEpochStartBytes, providerSig, differentiator}, nil)
-	return vrf_pk.pk.Verify(vrf_data, reliabilityData.VrfValue, reliabilityData.VrfProof)
-}
-
-func VerifyVrfProofFromVRFData(reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
-	queryHash := reliabilityData.QueryHash
-	return verifyVRF(queryHash, reliabilityData, vrf_pk, relayEpochStart)
-}
-
-func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey, relayEpochStart uint64) (valid bool) {
-	queryHash := CalculateQueryHash(*request)
-	return verifyVRF(queryHash, request.DataReliability, vrf_pk, relayEpochStart)
-}
-
-func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, currentEpoch uint64) ([]byte, []byte) {
+func CalculateVrfOnRelay(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, currentEpoch uint64) ([]byte, []byte) {
 	vrfData0 := FormatDataForVrf(request, response, false, currentEpoch)
 	vrfData1 := FormatDataForVrf(request, response, true, currentEpoch)
 	return vrf_sk.Compute(vrfData0), vrf_sk.Compute(vrfData1)
 }
 
-func ProveVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, differentiator bool, currentEpoch uint64) (vrf_res []byte, proof []byte) {
+func ProveVrfOnRelay(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, differentiator bool, currentEpoch uint64) (vrf_res []byte, proof []byte) {
 	vrfData := FormatDataForVrf(request, response, differentiator, currentEpoch)
 	return vrf_sk.Prove(vrfData)
 }
 
-func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
-	relayReq.CuSum = 0
-	relayReq.Provider = ""
-	relayReq.RelayNum = 0
-	relayReq.SessionId = 0
-	relayReq.Sig = nil
-	relayReq.QoSReport = nil
-	relayReq.DataReliability = nil
-	relayReq.UnresponsiveProviders = nil
+func CalculateQueryHash(relayReq pairingtypes.RelayPrivateData) (queryHash []byte) {
 	queryHash = tendermintcrypto.Sha256([]byte(relayReq.String()))
 	return
 }
 
-func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool, currentEpoch uint64) (data []byte) {
+func FormatDataForVrf(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply, differentiator bool, currentEpoch uint64) (data []byte) {
 	// vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
 	currentEpochBytes := make([]byte, 8)

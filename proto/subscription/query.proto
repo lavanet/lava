@@ -1,0 +1,57 @@
+syntax = "proto3";
+package lavanet.lava.subscription;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "subscription/params.proto";
+// this line is used by starport scaffolding # 1
+import "subscription/subscription.proto";
+
+option go_package = "github.com/lavanet/lava/x/subscription/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/params";
+  }
+  // Queries a list of Current items.
+	rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
+	}
+
+// Queries a list of ListProjects items.
+	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryCurrentRequest {
+  string consumer = 1;
+}
+
+message QueryCurrentResponse {
+  Subscription sub = 1 [(gogoproto.nullable) = true];
+}
+
+message QueryListProjectsRequest {
+  string subscription = 1;
+}
+
+message QueryListProjectsResponse {
+  repeated string projects = 1;
+}
+
+// this line is used by starport scaffolding # 3

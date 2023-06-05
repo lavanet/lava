@@ -19,10 +19,10 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	spec.ProvidersTypes = spectypes.Spec_static
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	var balance int64 = 5 * spec.MinStakeProvider.Amount.Int64()
+	balance := 5 * spec.MinStakeProvider.Amount.Int64()
 	provider := common.CreateNewAccount(ctx, *keepers, balance)
 
-	common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, balance/2, true)
+	common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, balance/2)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	unstakeHoldBlocks := keepers.Epochstorage.UnstakeHoldBlocks(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))

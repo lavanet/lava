@@ -1,5 +1,6 @@
 import subprocess
 import os
+from inheritence_merger import get_inherited_rest_apis
 
 TEMPLATE = """
     ,{
@@ -12,18 +13,36 @@ TEMPLATE = """
 
 # Lava:
 # grpc_server = "public-rpc.lavanet.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_lava.json"
+# spec_file_name = "spec_add_lava.json"
+# chainId = "JUN1"
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_osmosis.json" 
 
 # Cosmos
 # grpc_server = "gaia-node-1.lavapro.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_cosmoshub.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_cosmoshub.json" 
 
-grpc_server = "juno-node-1.lavapro.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_juno.json" 
+# Juno
+# grpc_server = "juno-node-1.lavapro.xyz:9090"
+# spec_file_name = "spec_add_juno.json"
+# chainId = "JUN1"
+
+# Evmos
+# grpc_server = "evmos-node-1.lavapro.xyz:9090"
+# spec_file_name = "spec_add_evmos.json"
+# chainId = "EVMOS"
+
+# Axelar
+grpc_server = "grpc-axelar.stakerun.com:9090"
+spec_file_name = "spec_add_axelar.json"
+chainId = "AXELAR"
+
+# Canto
+# grpc_server = "canto-grpc.polkachu.com:15590"
+# spec_file_name = "spec_add_canto.json"
+# chainId = "CANTO"
 
 # 
 # grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
@@ -33,7 +52,12 @@ spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_juno.json"
 # # --- #
 # grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COS5T
 # grpcurl -plaintext juno-node-1.lavapro.xyz:9092 list # JUNO-TEST
+# grpcurl -plaintext grpc-axelar.stakerun.com:9090 list # AXELAR
+# grpcurl -plaintext canto-grpc.polkachu.com:15590 list # CANTO
 
+
+## 
+spec_current_file_path = os.getcwd() + "/cookbook/specs/" + spec_file_name
 
 special_cases_descriptors_with_no_rest_api = []
 
@@ -46,11 +70,9 @@ with open(spec_current_file_path, 'r') as f:
         print("splitting")
         spec_data = spec_data.rsplit("chainid",1)[0]
 
-all_rest_apis = spec_data.split('"name": "/')[1:]
 rest_api_list = []
-for rest_api in all_rest_apis:
-    rest_api = rest_api.split("\"",1)[0]
-    rest_api_list.append("/"+rest_api)
+
+rest_api_list = get_inherited_rest_apis(chainId)
 
 original_api_list = rest_api_list[:]
 total_number_of_descriptors = 0
@@ -59,7 +81,6 @@ rest_lines_not_in_spec = []
 skip_services = ["tendermint.liquidity.v1beta1.Query","testdata","reflection"]
 
 def check_skip(service):
-    # print("checking serice skip on: %s" % service)
     if service == "":
         return True
     for s in skip_services:
@@ -80,7 +101,7 @@ for service in arr:
         if descriptor.strip() == "": 
             continue
         method_name = descriptor.split(" ")[0]
-        full_name = f"{service}.{method_name}"
+        full_name = f"{service}/{method_name}"
         print("Full name: ", full_name)
         if "get:" not in descriptor:
             if "post:" not in descriptor:
@@ -106,14 +127,16 @@ for service in arr:
             rest_api_list.remove(rest_line)
 
         if (rest_line+"\",") not in spec_data:
+            print(rest_line+"\",")
             rest_lines_not_in_spec.append(rest_line)
             continue
-            # raise ValueError("rest_line not in spec:\n" + rest_line)
+
         spec_body = spec_data.split(rest_line+"\",",1)[-1].split('"name":',1)[0].rsplit("},",1)[0].strip()
         spec_body = spec_body.replace('"interface": "rest",','"interface": "grpc",',2)
         if '"interface": "rest"' in spec_body:
             raise ValueError("parsing error", "\nDescriptor\n",descriptor,"\nFullname\n",full_name )
         final_part = TEMPLATE.replace("###METHOD###",full_name).replace("###RESTPART###",spec_body).strip()
+        final_part = final_part.replace('"type": "GET",','"type": "",',2)
         print("final_part",final_part)
         spec_res += final_part
 
@@ -124,16 +147,13 @@ print("total number of api's added:", total_number_of_descriptors)
 print("rest apis that werent added from rest:")
 [print(x) for x in rest_api_list]
 print("@@@@@@@@@@@@@@\n\n")
-if len(rest_lines_not_in_spec) > 0:
-    [print(x) for x in rest_lines_not_in_spec]
-    raise ValueError("not all lines were found in spec, missing lines")
+
 if len(special_cases_descriptors_with_no_rest_api) > 0:
     print("Special cases rpc:")
     [print(x) for x in special_cases_descriptors_with_no_rest_api]
 
-with open("/home/user/go/src/lava/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
+with open(os.getcwd() + "/scripts/automation_scripts/automation_results/spec_add.json", "w+") as json_file:
     json_file.write(spec_res)
 
-
-    
+print("SUCCESS! gRPC spec interface created for:", chainId) 
 

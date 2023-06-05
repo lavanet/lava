@@ -21,6 +21,17 @@ const (
 	UnstakeDescriptionInsufficientFunds = "client stake is below the minimum stake required"
 )
 
+const (
+	FlagMoniker     = "provider-moniker"
+	MAX_LEN_MONIKER = 50
+)
+
+// unresponsiveness consts
+const (
+	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 4 // number of epochs to sum CU that the provider serviced
+	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
+)
+
 func StakeNewEventName(isProvider bool) string {
 	if isProvider {
 		return ProviderStakeEventName

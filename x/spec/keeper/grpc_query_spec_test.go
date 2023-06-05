@@ -69,6 +69,32 @@ func TestSpecQuerySingle(t *testing.T) {
 	}
 }
 
+func TestSpecQuerySingleRaw(t *testing.T) {
+	keeper, ctx := keepertest.SpecKeeper(t)
+	wctx := sdk.WrapSDKContext(ctx)
+	msgs := createNSpec(keeper, ctx, 2)
+
+	msgs[0].Apis = []types.ServiceApi{{Name: "api-0", Enabled: true}}
+
+	msgs[1].Apis = []types.ServiceApi{{Name: "api-1", Enabled: true}}
+	msgs[1].Imports = []string{"api-0"}
+
+	keeper.SetSpec(ctx, msgs[0])
+	keeper.SetSpec(ctx, msgs[1])
+
+	request := &types.QueryGetSpecRequest{ChainID: msgs[1].Index}
+	expected := &types.QueryGetSpecResponse{Spec: msgs[1]}
+
+	t.Run("Raw with import", func(t *testing.T) {
+		response, err := keeper.SpecRaw(wctx, request)
+		require.NoError(t, err)
+		require.Equal(t,
+			nullify.Fill(expected),
+			nullify.Fill(response),
+		)
+	})
+}
+
 func TestSpecQueryPaginated(t *testing.T) {
 	keeper, ctx := keepertest.SpecKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)

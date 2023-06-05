@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -16,8 +16,8 @@ import (
 func TestStakeProviderWithMoniker(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
@@ -44,7 +44,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 			// Stake provider with moniker
 			sk, address := sigs.GenerateFloatingKey()
-			ts.providers = append(ts.providers, &account{secretKey: sk, address: address})
+			ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
 			err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 			require.Nil(t, err)
 			endpoints := []epochstoragetypes.Endpoint{}
@@ -72,8 +72,8 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*account, 0),
-		clients:   make([]*account, 0),
+		providers: make([]*common.Account, 0),
+		clients:   make([]*common.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
@@ -88,7 +88,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// Stake provider with moniker
 	sk, address := sigs.GenerateFloatingKey()
-	ts.providers = append(ts.providers, &account{secretKey: sk, address: address})
+	ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
 	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 	require.Nil(t, err)
 	endpoints := []epochstoragetypes.Endpoint{}

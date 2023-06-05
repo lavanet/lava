@@ -13,6 +13,7 @@ func DefaultGenesis() *GenesisState {
 		UniquePaymentStorageClientProviderList: []UniquePaymentStorageClientProvider{},
 		ProviderPaymentStorageList:             []ProviderPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
+		BadgeUsedCuList:                        []BadgeUsedCu{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -51,6 +52,12 @@ func (gs GenesisState) Validate() error {
 		}
 		epochPaymentsIndexMap[index] = struct{}{}
 	}
+
+	// check the badgeUsedCuIndex map is empty
+	if len(gs.BadgeUsedCuList) > 0 {
+		return fmt.Errorf("badgeUsedCuList is not empty")
+	}
+
 	// this line is used by starport scaffolding # genesis/types/validate
 
 	return gs.Params.Validate()

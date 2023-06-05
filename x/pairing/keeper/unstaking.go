@@ -24,23 +24,30 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	// we can unstake disabled specs, but not missing ones
 	_, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
-		return utils.LavaError(ctx, logger, "unstake_spec_missing", map[string]string{"spec": chainID}, "trying to unstake an entry on missing spec")
+		return utils.LavaFormatWarning("trying to unstake an entry on missing spec", fmt.Errorf("spec not found"),
+			utils.Attribute{Key: "spec", Value: chainID},
+		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		details := map[string]string{stake_type: creator, "error": err.Error()}
-		return utils.LavaError(ctx, logger, "unstake_"+stake_type+"_addr", details, "invalid "+stake_type+" address")
+		return utils.LavaFormatWarning("invalid "+stake_type+" address", err,
+			utils.Attribute{Key: stake_type, Value: creator},
+		)
 	}
 
 	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type, chainID, senderAddr)
 	if !entryExists {
-		details := map[string]string{stake_type: creator, "spec": chainID}
-		return utils.LavaError(ctx, logger, stake_type+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
+		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
+			utils.Attribute{Key: stake_type, Value: creator},
+			utils.Attribute{Key: "spec", Value: chainID},
+		)
 	}
 	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type, chainID, indexInStakeStorage)
 	if err != nil {
-		details := map[string]string{stake_type: creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
-		return utils.LavaError(ctx, logger, stake_type+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
+		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,
+			utils.Attribute{Key: "index", Value: indexInStakeStorage},
+			utils.Attribute{Key: "spec", Value: chainID},
+		)
 	}
 
 	details := map[string]string{
@@ -102,7 +109,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 	}
 	for _, unstakingEntry := range entriesToUnstake {
 		details := map[string]string{"spec": unstakingEntry.Chain, stake_type: unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
-		if unstakingEntry.Deadline <= uint64(ctx.BlockHeight()) {
+		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
 			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
 			if err != nil {
@@ -113,14 +120,18 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 				valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
 				if !valid {
 					details["error"] = err.Error()
-					utils.LavaError(ctx, logger, stake_type+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
+					utils.LavaFormatError("verifySufficientAmountAndSendFromModuleToAddress Failed", err)
 					panic(fmt.Sprintf("error unstaking : %s", err))
 				}
 				utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, "Unstaking Providers Commit")
 			}
 		} else {
-			// found an entry that isn't handled now, but later because its deadline isnt current block
-			utils.LavaError(ctx, logger, stake_type+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
+			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
+			utils.LavaFormatWarning("trying to unstake while its stakeAppliedBlock wasn't reached", fmt.Errorf("unstake failed"),
+				utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
+				utils.Attribute{Key: stake_type, Value: unstakingEntry.Address},
+				utils.Attribute{Key: "stake", Value: unstakingEntry.Stake.String()},
+			)
 		}
 	}
 	return nil

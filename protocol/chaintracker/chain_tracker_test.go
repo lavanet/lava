@@ -9,6 +9,7 @@ import (
 	"time"
 
 	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -28,11 +29,16 @@ type MockChainFetcher struct {
 	fork        string
 }
 
+func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return lavasession.RPCProviderEndpoint{}
+}
+
 func (mcf *MockChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	mcf.mutex.Lock()
 	defer mcf.mutex.Unlock()
 	return mcf.latestBlock, nil
 }
+
 func (mcf *MockChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	mcf.mutex.Lock()
 	defer mcf.mutex.Unlock()
@@ -60,6 +66,7 @@ func (mcf *MockChainFetcher) AdvanceBlock() int64 {
 	mcf.blockHashes = append(mcf.blockHashes[1:], &chaintracker.BlockStore{Block: mcf.latestBlock, Hash: newHash})
 	return mcf.latestBlock
 }
+
 func (mcf *MockChainFetcher) SetBlock(latestBlock int64) {
 	mcf.latestBlock = latestBlock
 	newHash := mcf.hashKey(mcf.latestBlock)
@@ -110,16 +117,17 @@ func TestChainTracker(t *testing.T) {
 		specificBlock    int64
 	}{
 		{name: "one block memory + fetch", mockBlocks: 20, requestBlocks: 1, fetcherBlocks: 1, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.NOT_APPLICABLE, requestBlockTo: spectypes.NOT_APPLICABLE, specificBlock: spectypes.LATEST_BLOCK},
-		{name: "ten block memory 4 block fetch", mockBlocks: 20, requestBlocks: 4, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 9, requestBlockTo: spectypes.LATEST_BLOCK - 6, specificBlock: spectypes.LATEST_BLOCK},
+		{name: "ten block memory 4 block fetch", mockBlocks: 20, requestBlocks: 4, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 9, requestBlockTo: spectypes.LATEST_BLOCK - 6, specificBlock: spectypes.NOT_APPLICABLE},
+		{name: "ten block memory one block fetch", mockBlocks: 20, requestBlocks: 1, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK, requestBlockTo: spectypes.LATEST_BLOCK, specificBlock: spectypes.NOT_APPLICABLE},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
-			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 			require.NoError(t, err)
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -168,7 +176,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 		requestBlockTo   int64
 		specificBlock    int64
 	}{
-		{name: "ten block memory + 3 block fetch", mockBlocks: 100, requestBlocks: 3, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 6, requestBlockTo: spectypes.LATEST_BLOCK - 3, specificBlock: spectypes.NOT_APPLICABLE},
+		{name: "ten block memory + 3 block fetch", mockBlocks: 100, requestBlocks: 3, fetcherBlocks: 10, advancements: []int64{0, 1, 0, 0, 1, 1, 1, 0, 2, 0, 5, 1, 10, 1, 1, 1}, requestBlockFrom: spectypes.LATEST_BLOCK - 6, requestBlockTo: spectypes.LATEST_BLOCK - 4, specificBlock: spectypes.NOT_APPLICABLE},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -176,7 +184,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
-			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 			require.NoError(t, err)
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -214,7 +222,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	requestBlocks := 3
 	fetcherBlocks := 10
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
-	requestBlockTo := spectypes.LATEST_BLOCK - 3
+	requestBlockTo := spectypes.LATEST_BLOCK - 4
 	specificBlock := spectypes.NOT_APPLICABLE
 	tests := []struct {
 		name        string
@@ -246,21 +254,21 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
 	forkCallback := func(arg int64) {
-		utils.LavaFormatDebug("fork callback called", nil)
+		utils.LavaFormatDebug("fork callback called")
 		callbackCalledFork = true
 	}
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
-	newBlockCallback := func(arg int64) {
-		utils.LavaFormatDebug("new latest callback called", nil)
+	newBlockCallback := func(arg int64, hash string) {
+		utils.LavaFormatDebug("new latest callback called")
 		callbackCalledNewLatest = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
-	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			callbackCalledFork = false
 			callbackCalledNewLatest = false
 			for i := 0; i < int(tt.advancement); i++ {
@@ -308,8 +316,8 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	requestBlocks := 4
 	fetcherBlocks := 50
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
-	requestBlockTo := spectypes.LATEST_BLOCK - 3
-	specificBlock := spectypes.LATEST_BLOCK - 30 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
+	requestBlockTo := spectypes.LATEST_BLOCK - 4
+	specificBlock := spectypes.LATEST_BLOCK - 30 // needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
 	tests := []struct {
 		name        string
 		advancement int64
@@ -334,15 +342,15 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
 	forkCallback := func(arg int64) {
-		utils.LavaFormatDebug("fork callback called", nil)
+		utils.LavaFormatDebug("fork callback called")
 		callbackCalledFork = true
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
-	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test "+tt.name, nil)
+			utils.LavaFormatInfo("started test " + tt.name)
 			callbackCalledFork = false
 			for i := 0; i < int(tt.advancement); i++ {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
@@ -379,7 +387,6 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[idx].Hash, requestedHashes[idx].Block))
 			}
 			require.False(t, callbackCalledFork)
-
 		}
 	})
 }

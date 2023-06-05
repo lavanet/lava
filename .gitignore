@@ -1,5 +1,6 @@
 build/
 release/
+ts-client/
 
 # Intellij
 .idea/
@@ -25,3 +26,5 @@ testutil/debugging/
 
 # Misc
 scripts/vars/
+rpcprovider.yml
+rpcconsumer.yml

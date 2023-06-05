@@ -3,37 +3,37 @@ build:
   main: "cmd/lavad"
 accounts:
   - name: alice
-    coins: ["200000000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: bob
-    coins: ["10000ulava"]
+    coins: ["50000000000000ulava"]
   - name: user1
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: user2
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: user3
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: user4
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer1
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer2
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer3
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer4
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer5
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer6
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer7
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer8
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer9
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
   - name: servicer10
-    coins: ["200000000ulava"]
+    coins: ["50000000000000ulava"]
 validator:
   name: alice
   staked: "100000000000ulava"
@@ -54,8 +54,8 @@ genesis:
     gov:
       deposit_params:
         min_deposit:
-        - amount: "10000000"
-          denom: "ulava"
+          - amount: "10000000"
+            denom: "ulava"
       voting_params:
         voting_period: "3s"
     staking:

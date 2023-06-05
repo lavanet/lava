@@ -287,7 +287,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 // -------------------------------------------------- unstaking list --------------------------------------------
 
 func (k Keeper) stakeStorageKeyUnstake(storageType string) string {
-	return storageType + "Unstake"
+	return storageType + types.StakeStorageKeyUnstakeConst
 }
 
 // used to get the unstaking entries
@@ -331,7 +331,7 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	// the following code inserts stakeEntry into the existing entries by stake
 	// sort func needs to return true if the inserted entry is less than the existing entry
 	sortFunc := func(i int) bool {
-		return stakeEntry.Deadline <= entries[i].Deadline
+		return stakeEntry.StakeAppliedBlock <= entries[i].StakeAppliedBlock
 	}
 	// returns the smallest index in which the sort func is true
 	index := sort.Search(len(entries), sortFunc)
@@ -346,13 +346,13 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 }
 
 func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) error {
-	// update unstake deadline to the higher among params (unstakeholdblocks and blockstosave)
+	// update unstake stakeAppliedBlock to the higher among params (unstakeholdblocks and blockstosave)
 
 	blockHeight := uint64(ctx.BlockHeight())
 
-	stakeEntry.Deadline = blockHeight + unstakeHoldBlocks
+	stakeEntry.StakeAppliedBlock = blockHeight + unstakeHoldBlocks
 
-	// this stake storage entries are sorted by deadline
+	// this stake storage entries are sorted by stakeAppliedBlock
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	var entries []types.StakeEntry
 	if !found {
@@ -360,11 +360,11 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 		// create a new one
 		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyUnstake(storageType), StakeEntries: entries, EpochBlockHash: nil}
 	} else {
-		// the following code inserts stakeEntry into the existing entries by deadline
+		// the following code inserts stakeEntry into the existing entries by stakeAppliedBlock
 		entries = stakeStorage.StakeEntries
 		// sort func needs to return true if the inserted entry is less than the existing entry
 		sortFunc := func(i int) bool {
-			return stakeEntry.Deadline <= entries[i].Deadline
+			return stakeEntry.StakeAppliedBlock <= entries[i].StakeAppliedBlock
 		}
 		// returns the smallest index in which the sort func is true
 		index := sort.Search(len(entries), sortFunc)
@@ -382,7 +382,7 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	return nil
 }
 
-// Returns the unstaking Entry if its deadline is lower than the provided block
+// Returns the unstaking Entry if its stakeAppliedBlock is lower than the provided block
 func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []types.StakeEntry) {
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	if !found {
@@ -390,10 +390,10 @@ func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uin
 		return nil
 	}
 	found_idx := -1
-	// the unstaking is a sorted list so just chekcing until an entry deadline is too big
+	// the unstaking is a sorted list so just chekcing until an entry stakeAppliedBlock is too big
 	for idx, entry := range stakeStorage.StakeEntries {
-		if entry.Deadline <= block {
-			// found an enrty that its deadline is less equal to the wanted block number
+		if entry.StakeAppliedBlock <= block {
+			// found an enrty that its stakeAppliedBlock is less equal to the wanted block number
 			value = append(value, entry)
 			// remove from the unstaking stakeStorage everything before this index
 			found_idx = idx
@@ -482,7 +482,7 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType 
 // append to epoch stake entries ONLY if it doesn't exist
 func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) (added bool, err error) {
 	epoch := k.GetEpochStart(ctx)
-	stakeEntry.Deadline = epoch
+	stakeEntry.StakeAppliedBlock = epoch
 	storage, found := k.getStakeStorageEpoch(ctx, epoch, storageType, chainID)
 	if !found {
 		entries := []types.StakeEntry{}

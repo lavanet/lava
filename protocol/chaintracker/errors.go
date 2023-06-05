@@ -13,4 +13,5 @@ var ( // Consumer Side Errors
 	InvalidRequestedBlocks          = sdkerrors.New("Error InvalidRequestedBlocks", 10706, "provided requested blocks for function do not compse a valid request")
 	RequestedBlocksOutOfRange       = sdkerrors.New("RequestedBlocksOutOfRange", 10707, "requested blocks are outside the supported range by the state tracker")
 	ErrorFailedToFetchTooEarlyBlock = sdkerrors.New("Error ErrorFailedToFetchTooEarlyBlock", 10708, "server memory protection triggered, requested block is too early")
+	InvalidRequestedSpecificBlock   = sdkerrors.New("Error InvalidRequestedSpecificBlock", 10709, "provided requested specific blocks for function do not compose a stored entry")
 )

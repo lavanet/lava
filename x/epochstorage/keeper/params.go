@@ -85,7 +85,7 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	currentBlock := uint64(ctx.BlockHeight())
 	blockInEpoch, err := k.BlockInEpoch(ctx, currentBlock)
 	if err != nil {
-		utils.LavaError(ctx, k.Logger(ctx), "IsEpochStart", map[string]string{"error": err.Error()}, "can't get block in epoch")
+		utils.LavaFormatError("can't get block in epoch", err)
 		return false
 	}
 	return blockInEpoch == 0
@@ -138,7 +138,7 @@ func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, e
 func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error) {
 	epochStart, _, err := k.GetEpochStartForBlock(ctx, block)
 	if epochStart <= 0 {
-		return 0, utils.LavaFormatError("GetPreviousEpochStartForBlock", fmt.Errorf("GetPreviousEpochStartForBlock tried to fetch epoch beyond zero"), nil)
+		return 0, utils.LavaFormatError("GetPreviousEpochStartForBlock", fmt.Errorf("GetPreviousEpochStartForBlock tried to fetch epoch beyond zero"))
 	}
 	previousEpochStart, _, err2 := k.GetEpochStartForBlock(ctx, epochStart-1) // we take one block before the target epoch so it belongs to the previous epoch
 	if err != nil {

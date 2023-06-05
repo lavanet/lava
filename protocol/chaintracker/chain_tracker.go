@@ -13,31 +13,43 @@ import (
 	"sync/atomic"
 	"time"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
 )
 
+const (
+	initRetriesCount = 4
+	BACKOFF_MAX_TIME = 10 * time.Minute
+	maxFails         = 10
+)
+
 type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+	FetchEndpoint() lavasession.RPCProviderEndpoint
 }
 
 type ChainTracker struct {
-	chainFetcher      ChainFetcher // used to communicate with the node
-	blocksToSave      uint64       // how many finalized blocks to keep
-	latestBlockNum    int64
-	blockQueueMu      sync.RWMutex
-	blocksQueue       []BlockStore // holds all past hashes up until latest block
-	forkCallback      func(int64)  // a function to be called when a fork is detected
-	newLatestCallback func(int64)  // a function to be called when a new block is detected
-	serverBlockMemory uint64
-	quit              chan bool
+	chainFetcher            ChainFetcher // used to communicate with the node
+	blocksToSave            uint64       // how many finalized blocks to keep
+	latestBlockNum          int64
+	blockQueueMu            sync.RWMutex
+	blocksQueue             []BlockStore        // holds all past hashes up until latest block
+	forkCallback            func(int64)         // a function to be called when a fork is detected
+	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
+	serverBlockMemory       uint64
+	endpoint                lavasession.RPCProviderEndpoint
+	blockCheckpointDistance uint64 // used to do something every X blocks
+	blockCheckpoint         uint64 // last time checkpoint was met
+	ticker                  *time.Ticker
 }
 
-// this function returns block hashes of the blocks: [from block - to block) non inclusive. an additional specific block hash can be provided. order is sorted ascending
+// this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
 // it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
 // spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
 // if specific block is spectypes.NOT_APPLICABLE it is ignored
@@ -47,24 +59,23 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, speci
 
 	latestBlock = cs.GetLatestBlockNum()
 	if len(cs.blocksQueue) == 0 {
-		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10)})
+		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 	}
 	earliestBlockSaved := cs.getEarliestBlockUnsafe().Block
 	wantedBlocksData := WantedBlocksData{}
 	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
 	if err != nil {
-		return latestBlock, nil, utils.LavaFormatError("invalid input for GetLatestBlockData", err, &map[string]string{
+		return latestBlock, nil, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
 			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
-		})
+		}))
 	}
 
 	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
 		blockStore := cs.blocksQueue[blocksQueueIdx]
 		if !wantedBlocksData.IsWanted(blockStore.Block) {
-			return latestBlock, nil, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, &map[string]string{
-				"blocksQueueIdx": strconv.FormatInt(int64(blocksQueueIdx), 10), "blockStore": fmt.Sprintf("%+v", blockStore), "wantedBlocksData": wantedBlocksData.String(),
-			})
+			return latestBlock, nil, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, utils.Attribute{Key: "blocksQueueIdx", Value: blocksQueueIdx}, utils.Attribute{Key: "blockStore", Value: blockStore},
+				utils.Attribute{Key: "wantedBlocksData", Value: wantedBlocksData})
 		}
 		requestedHashes = append(requestedHashes, &blockStore)
 	}
@@ -105,35 +116,34 @@ func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64)
 
 // this function fetches all previous blocks from the node starting at the latest provided going backwards blocksToSave blocks
 // if it reaches a hash that it already has it stops reading
-func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (err error) {
+func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (hashLatest string, err error) {
 	newBlocksQueue := make([]BlockStore, int64(cs.blocksToSave))
 	currentLatestBlock := cs.GetLatestBlockNum()
 	if latestBlock < currentLatestBlock {
-		return utils.LavaFormatError("invalid latestBlock provided to fetch, it is older than the current state latest block", err, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10), "currentLatestBlock": strconv.FormatInt(currentLatestBlock, 10)})
+		return "", utils.LavaFormatError("invalid latestBlock provided to fetch, it is older than the current state latest block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "currentLatestBlock", Value: currentLatestBlock})
 	}
 	readIndexDiff := latestBlock - currentLatestBlock
 	blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex := int64(0), int64(0), int64(0)
-	cs.blockQueueMu.RLock()
-	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
-	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
-		blockNumToFetch := latestBlock - idx // reading the blocks from the newest to oldest
-		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
-		if err != nil {
-			return utils.LavaFormatError("could not get block data in Chain Tracker", err, &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10)})
-		}
-		var foundOverlap bool
-		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
-		if foundOverlap {
-			utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "hash": newHashForBlock, "KeptBlocks": strconv.FormatInt(blocksQueueEndIndex-blocksQueueStartIndex, 10)})
-			break
-		}
-		// there is no existing hash for this block
-		utils.LavaFormatDebug("Chain Tracker read a new block hash", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "newHash": newHashForBlock})
-		newBlocksQueue[int64(cs.blocksToSave)-1-idx] = BlockStore{Block: blockNumToFetch, Hash: newHashForBlock}
+	blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, err = cs.readHashes(latestBlock, ctx, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, readIndexDiff, newBlocksQueue)
+	if err != nil {
+		return "", err
 	}
-	cs.blockQueueMu.RUnlock()
 	blocksCopied := int64(cs.blocksToSave)
+	blocksCopied, blocksQueueLen, latestHash := cs.replaceBlocksQueue(latestBlock, newQueueStartIndex, blocksQueueStartIndex, blocksQueueEndIndex, newBlocksQueue, blocksCopied)
+	if blocksQueueLen < cs.blocksToSave {
+		return "", utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen})
+	}
+	// only print logs if there is something interesting or we reached the checkpoint
+	if readIndexDiff > 1 || cs.blockCheckpoint+cs.blockCheckpointDistance < uint64(latestBlock) {
+		cs.blockCheckpoint = uint64(latestBlock)
+		utils.LavaFormatDebug("Chain Tracker Updated block hashes", utils.Attribute{Key: "latest_block", Value: latestBlock}, utils.Attribute{Key: "latestHash", Value: latestHash}, utils.Attribute{Key: "blocksQueueLen", Value: blocksQueueLen}, utils.Attribute{Key: "blocksQueried", Value: int64(cs.blocksToSave) - blocksCopied}, utils.Attribute{Key: "blocksKept", Value: blocksCopied}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface}, utils.Attribute{Key: "nextBlocksUpdate", Value: cs.blockCheckpoint + cs.blockCheckpointDistance})
+	}
+	return latestHash, nil
+}
+
+func (cs *ChainTracker) replaceBlocksQueue(latestBlock int64, newQueueStartIndex int64, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newBlocksQueue []BlockStore, blocksCopied int64) (int64, uint64, string) {
 	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
 	cs.setLatestBlockNum(latestBlock)
 	if newQueueStartIndex > 0 {
 		// means we copy previous blocks
@@ -145,13 +155,30 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	}
 	blocksQueueLen := uint64(len(cs.blocksQueue))
 	latestHash := cs.getLatestBlockUnsafe().Hash
-	cs.blockQueueMu.Unlock()
-	if blocksQueueLen < cs.blocksToSave {
-		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, &map[string]string{"blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10)})
-	} else {
-		utils.LavaFormatInfo("Chain Tracker Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(blocksCopied, 10)})
+	return blocksCopied, blocksQueueLen, latestHash
+}
+
+func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64, readIndexDiff int64, newBlocksQueue []BlockStore) (int64, int64, int64, error) {
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
+	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
+		// reading the blocks from the newest to oldest
+		blockNumToFetch := latestBlock - idx
+		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
+		if err != nil {
+			return 0, 0, 0, utils.LavaFormatWarning("could not get block data in Chain Tracker", err, utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+		}
+		var foundOverlap bool
+		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
+		if foundOverlap {
+			utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", utils.Attribute{Key: "block", Value: blockNumToFetch}, utils.Attribute{Key: "hash", Value: newHashForBlock}, utils.Attribute{Key: "KeptBlocks", Value: blocksQueueEndIndex - blocksQueueStartIndex}, utils.Attribute{Key: "ChainID", Value: cs.endpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: cs.endpoint.ApiInterface})
+			break
+		}
+		// there is no existing hash for this block
+		newBlocksQueue[int64(cs.blocksToSave)-1-idx] = BlockStore{Block: blockNumToFetch, Hash: newHashForBlock}
 	}
-	return nil
+	return blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, nil
 }
 
 // this function finds if there is an existing block data by hash at the existing data, this allows us to stop querying for further data backwards since when there is a match all former blocks are the same
@@ -167,19 +194,18 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx in
 	if blocksQueueIdx > 0 && blocksQueueIdx <= savedBlocks-1 {
 		existingBlockStore := cs.blocksQueue[blocksQueueIdx]
 		if existingBlockStore.Block != fetchedBlockNum { // sanity
-			utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, &map[string]string{
-				"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-				"blocksQueueIdx": strconv.FormatInt(blocksQueueEnd, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10),
-			})
+			utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, utils.Attribute{
+				Key: "block", Value: fetchedBlockNum,
+			}, utils.Attribute{Key: "existingBlockStore", Value: existingBlockStore},
+				utils.Attribute{Key: "blocksQueueIdx", Value: blocksQueueEnd}, utils.Attribute{Key: "newQueueIdx", Value: newQueueIdx}, utils.Attribute{Key: "readIndexDiff", Value: readIndexDiff})
 			return false, 0, 0, 0
 		}
 		if existingBlockStore.Hash == newHashForBlock { // means we already have that hash, since its a blockchain, this means all previous hashes are the same too
 			overwriteElements := blocksQueueIdx + 1
 			if overwriteElements < int64(cs.blocksToSave)-1-newQueueIdx || readIndexDiff > overwriteElements { // make sure that in the tail we updated and the existing block we have at least cs.blocksToSave
-				utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, &map[string]string{
-					"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-					"overwriteElements": strconv.FormatInt(overwriteElements, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10),
-				})
+				utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, utils.Attribute{Key: "block", Value: fetchedBlockNum},
+					utils.Attribute{Key: "existingBlockStore", Value: existingBlockStore},
+					utils.Attribute{Key: "overwriteElements", Value: overwriteElements}, utils.Attribute{Key: "newQueueIdx", Value: newQueueIdx}, utils.Attribute{Key: "readIndexDiff", Value: readIndexDiff})
 				return false, 0, 0, 0
 			} else {
 				return true, readIndexDiff, overwriteElements, overwriteElements - readIndexDiff
@@ -221,20 +247,25 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
-		return utils.LavaFormatError("could not fetchLatestBlockNum in ChainTracker", err, nil)
+		return utils.LavaFormatWarning("could not fetchLatestBlockNum in ChainTracker", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
-		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(newLatestBlock, 10)})
+		return utils.LavaFormatWarning("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	if gotNewBlock || forked {
-		utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10), "currentBlock": strconv.FormatInt(cs.GetLatestBlockNum(), 10)})
-		// TODO: if we didn't fork theres really no need to refetch
-		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
+		prev_latest := cs.GetLatestBlockNum()
+		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
+		if err != nil {
+			return err
+		}
 		if gotNewBlock {
 			if cs.newLatestCallback != nil {
-				cs.newLatestCallback(newLatestBlock)
+				for i := prev_latest + 1; i <= newLatestBlock; i++ {
+					// on catch up of several blocks we don't want to miss any callbacks
+					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
+				}
 			}
 		}
 		if forked {
@@ -243,37 +274,70 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			}
 		}
 	}
-	return
+	return err
 }
 
 // this function starts the fetching timer periodically checking by polling if updates are necessary
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
-	// TODO: subscribe instead of repeatedly fetching
 	// TODO: improve the polling time, we don't need to poll the first half of every block change
-	ticker := time.NewTicker(pollingBlockTime / 10) // divide here so we don't miss new blocks by all that much
-
-	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
+	tickerTime := pollingBlockTime / 10
+	cs.ticker = time.NewTicker(tickerTime) // divide here so we don't miss new blocks by all that much
+	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
-		utils.LavaFormatFatal("could not fetchLatestBlockNum in ChainTracker", err, nil)
+		return err
 	}
-	cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	// Polls blocks and keeps a queue of them
 	go func() {
+		fetchFails := uint64(0)
 		for {
 			select {
-			case <-ticker.C:
+			case <-cs.ticker.C:
 				err := cs.fetchAllPreviousBlocksIfNecessary(ctx)
 				if err != nil {
-					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, nil)
+					fetchFails += 1
+					cs.updateTicker(tickerTime, fetchFails)
+					if fetchFails > maxFails {
+						utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+					}
+				} else {
+					if fetchFails != 0 {
+						// means we had failures and they are gone, need to reset the ticker
+						cs.updateTicker(tickerTime, 0)
+					}
+					fetchFails = 0
 				}
-			case <-cs.quit:
-				ticker.Stop()
+			case <-ctx.Done():
+				cs.ticker.Stop()
 				return
 			}
 		}
 	}()
+	return nil
+}
 
+func (cs *ChainTracker) updateTicker(tickerBaseTime time.Duration, fetchFails uint64) {
+	cs.ticker.Stop()
+	cs.ticker = time.NewTicker(exponentialBackoff(tickerBaseTime, fetchFails))
+}
+
+func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
+	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
+	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
+		utils.LavaFormatDebug("failed fetching block num data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		newLatestBlock, err = cs.fetchLatestBlockNum(ctx)
+	}
+	if err != nil {
+		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+	}
+	_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
+	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
+		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+		_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
+	}
+	if err != nil {
+		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+	}
 	return nil
 }
 
@@ -291,7 +355,7 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	}()
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		utils.LavaFormatFatal("Chain Tracker failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
+		utils.LavaFormatFatal("Chain Tracker failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: listenAddr})
 	}
 	s := grpc.NewServer()
 
@@ -311,16 +375,16 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	go func() {
 		select {
 		case <-ctx.Done():
-			utils.LavaFormatInfo("Chain Tracker Server ctx.Done", nil)
+			utils.LavaFormatInfo("Chain Tracker Server ctx.Done")
 		case <-signalChan:
-			utils.LavaFormatInfo("Chain Tracker Server signalChan", nil)
+			utils.LavaFormatInfo("Chain Tracker Server signalChan")
 		}
 
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownRelease()
 
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			utils.LavaFormatFatal("chainTracker failed to shutdown", err, &map[string]string{})
+			utils.LavaFormatFatal("chainTracker failed to shutdown", err)
 		}
 	}()
 
@@ -328,23 +392,39 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 
 	RegisterChainTrackerServiceServer(s, server)
 
-	utils.LavaFormatInfo("Chain Tracker Listening", &map[string]string{"Address": lis.Addr().String()})
+	utils.LavaFormatInfo("Chain Tracker Listening", utils.Attribute{Key: "Address", Value: lis.Addr().String()})
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-		utils.LavaFormatFatal("Chain Tracker failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
+		utils.LavaFormatFatal("Chain Tracker failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()})
 	}
 	return nil
 }
 
-func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
 	err = config.validate()
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory}
+	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance}
+	if chainFetcher == nil {
+		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
+	}
+	chainTracker.endpoint = chainFetcher.FetchEndpoint()
 	err = chainTracker.start(ctx, config.AverageBlockTime)
 	if err != nil {
 		return nil, err
 	}
 	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
+}
+
+func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
+	if fails > maxFails {
+		fails = maxFails
+	}
+	maxIncrease := BACKOFF_MAX_TIME
+	backoff := baseTime * (1 << fails)
+	if backoff > maxIncrease {
+		backoff = maxIncrease
+	}
+	return backoff
 }

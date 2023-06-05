@@ -1,0 +1,25 @@
+syntax = "proto3";
+package lavanet.lava.plans;
+
+option go_package = "github.com/lavanet/lava/x/plans/types";
+option (gogoproto.equal_all) = true;
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "projects/project.proto";
+
+message Plan {
+    reserved 10;
+    string index = 1;
+    reserved 2; // deprecated "duration"
+    uint64 block = 3; // the epoch that this plan was created
+    cosmos.base.v1beta1.Coin price = 4 [(gogoproto.nullable) = false]; // plan price (in ulava)
+    reserved 5; // max CU for the whole plan duration
+    reserved 6; // max CU per epoch for the whole plan duration
+    reserved 7; // max providers to be paired in an epoch
+    bool allow_overuse = 8; // allow CU overuse flag
+    uint64 overuse_rate = 9; // price of CU overuse
+    string description = 11; // plan description (for humans)
+    string type = 12; // plan type
+    uint64 annual_discount_percentage = 13; // discount for buying the plan for a year
+    lavanet.lava.projects.Policy plan_policy = 14 [(gogoproto.nullable) = false];
+}

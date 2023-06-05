@@ -16,6 +16,8 @@ service Msg {
   rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
   rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
   rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
+  rpc FreezeProvider(MsgFreezeProvider) returns (MsgFreezeProviderResponse);
+  rpc UnfreezeProvider(MsgUnfreezeProvider) returns (MsgUnfreezeProviderResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -32,11 +34,11 @@ message MsgStakeProviderResponse {
 }
 
 message MsgStakeClient {
+  reserved 5;
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   uint64 geolocation = 4;
-  string vrfpk = 5;
 }
 
 message MsgStakeClientResponse {
@@ -59,12 +61,30 @@ message MsgUnstakeClientResponse {
 }
 
 message MsgRelayPayment {
+  reserved 3;
   string creator = 1;
-  repeated RelayRequest relays = 2;
-  string descriptionString = 3;
+  repeated RelaySession relays = 2;
+  string descriptionString = 4;
 }
 
 message MsgRelayPaymentResponse {
+}
+
+message MsgFreezeProvider {
+  string creator = 1;
+  repeated string chainIds = 2;
+  string reason = 3;
+}
+
+message MsgFreezeProviderResponse {
+}
+
+message MsgUnfreezeProvider {
+  string creator = 1;
+  repeated string chainIds = 2;
+}
+
+message MsgUnfreezeProviderResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

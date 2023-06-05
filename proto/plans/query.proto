@@ -1,0 +1,65 @@
+syntax = "proto3";
+package lavanet.lava.plans;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "plans/params.proto";
+// this line is used by starport scaffolding # 1
+
+import "cosmos/base/v1beta1/coin.proto";
+import "plans/plan.proto";
+option go_package = "github.com/lavanet/lava/x/plans/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/plans/params";
+  }	
+
+  // Queries a list of List items.
+	rpc List(QueryListRequest) returns (QueryListResponse) {
+		option (google.api.http).get = "/lavanet/lava/plans/list";
+	}
+
+  // Queries an Info item.
+	rpc Info(QueryInfoRequest) returns (QueryInfoResponse) {
+		option (google.api.http).get = "/lavanet/lava/plans/info/{plan_index}";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryListRequest {
+}
+
+message QueryListResponse {
+  repeated ListInfoStruct plans_info = 1 [(gogoproto.nullable) = false];
+}
+
+message ListInfoStruct {
+	string index = 1;
+	string description = 2;
+	cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false];
+}
+
+message QueryInfoRequest {
+  string plan_index = 1;
+}
+
+message QueryInfoResponse {
+  Plan plan_info = 1 [(gogoproto.nullable) = false];
+}
+
+
+// this line is used by starport scaffolding # 3

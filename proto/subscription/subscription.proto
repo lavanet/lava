@@ -1,0 +1,19 @@
+syntax = "proto3";
+package lavanet.lava.subscription;
+
+option go_package = "github.com/lavanet/lava/x/subscription/types";
+
+message Subscription {
+  string creator = 1; // creator pays for the subscription
+  string consumer = 2; // consumer uses the subscription
+  uint64 block = 3; // when the subscription was created
+  string plan_index = 4; // index (name) of plan
+  uint64 plan_block = 5; // when the plan was created
+  uint64 duration_total = 6; // total requested duration in months
+  uint64 duration_left = 7; // remaining duration in months
+  uint64 month_expiry_time = 8; // expiry time of current month
+  uint64 prev_expiry_block = 9; // when previous month expired
+  uint64 month_cu_total = 10; // CU allowance during current month
+  uint64 month_cu_left = 11; // CU remaining during current month
+  uint64 prev_cu_left = 12; // CU remaining for previous month
+}

@@ -1,0 +1,56 @@
+syntax = "proto3";
+package lavanet.lava.projects;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "projects/params.proto";
+import "projects/project.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/lavanet/lava/x/projects/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/projects/params";
+  }
+  // Queries a list of ShowProject items.
+	rpc Info(QueryInfoRequest) returns (QueryInfoResponse) {
+		option (google.api.http).get = "/lavanet/lava/projects/info/{project}";
+	}
+
+// Queries a list of ShowDevelopersProject items.
+	rpc Developer(QueryDeveloperRequest) returns (QueryDeveloperResponse) {
+		option (google.api.http).get = "/lavanet/lava/projects/developer/{developer}";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryInfoRequest {
+  string project = 1;
+}
+
+message QueryInfoResponse {
+  Project project = 1;
+}
+
+message QueryDeveloperRequest {
+  string developer = 1;
+}
+
+message QueryDeveloperResponse {
+  Project project = 1;
+}
+
+// this line is used by starport scaffolding # 3

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.projects;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/projects/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}
