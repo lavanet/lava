@@ -281,7 +281,6 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 			providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime) // update that he doesn't have the latest requested block
 		}
 		sampleTime.Add(time.Millisecond * 5)
-
 	}
 	time.Sleep(4 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
@@ -417,6 +416,6 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 			}
 		}
 	}
-	require.Less(t, pickFaults, float64(runs)*0.01)
+	require.Less(t, float64(pickFaults), float64(runs)*0.01)
 	require.Less(t, same, runs/2)
 }
