@@ -50,8 +50,6 @@ func TestProviderOptimizerSetGet(t *testing.T) {
 		set := providerOptimizer.providersStorage.Set(address, providerData, 1)
 		if set == false {
 			utils.LavaFormatWarning("set in cache dropped", nil)
-		} else {
-			utils.LavaFormatDebug("successfully set", utils.Attribute{Key: "entry", Value: address})
 		}
 	}
 	time.Sleep(4 * time.Millisecond)
@@ -271,13 +269,19 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 	syncBlock := uint64(1000)
 
 	chosenIndex := rand.Intn(len(providersGen.providersAddresses))
-	for i := range providersGen.providersAddresses {
-		if i == chosenIndex {
-			// give better syncBlock, latency is a tiny bit worse for the second check
-			providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2+1*time.Microsecond, false, requestCU, syncBlock+5)
-			continue
+	sampleTime := time.Now()
+	for j := 0; j < 3; j++ { // repeat several times because a sync score is only correct after all providers sent their first block otherwise its giving favor to the first one
+		for i := range providersGen.providersAddresses {
+			time.Sleep(4 * time.Millisecond)
+			if i == chosenIndex {
+				// give better syncBlock, latency is a tiny bit worse for the second check
+				providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2+1*time.Microsecond, false, true, requestCU, syncBlock+5, sampleTime)
+				continue
+			}
+			providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime) // update that he doesn't have the latest requested block
 		}
-		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, requestCU, syncBlock) // update that he doesn't have the latest requested block
+		sampleTime.Add(time.Millisecond * 5)
+
 	}
 	time.Sleep(4 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
@@ -354,6 +358,22 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	require.Equal(t, providersGen.providersAddresses[1], returnedProviders[0])
 }
 
+func TestPerturbation(t *testing.T) {
+	origValue1 := 1.0
+	origValue2 := 0.5
+	pertrubationPercentage := 0.03 // this is statistical and we don;t want this failing
+	runs := 100000
+	success := 0
+	for i := 0; i < runs; i++ {
+		res1 := pertrubWithNormalGaussian(origValue1, pertrubationPercentage)
+		res2 := pertrubWithNormalGaussian(origValue2, pertrubationPercentage)
+		if res1 > res2 {
+			success++
+		}
+	}
+	require.GreaterOrEqual(t, float64(success), float64(runs)*0.9)
+}
+
 func TestProviderOptimizerPerturbation(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 100
@@ -363,16 +383,18 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 	syncBlock := uint64(1000)
 	pertrubationPercentage := 0.03 // this is statistical and we don;t want this failing
 	// set a basic state for all of them
+	sampleTime := time.Now()
 	for i := 0; i < 10; i++ {
 		for idx, address := range providersGen.providersAddresses {
 			if idx < len(providersGen.providersAddresses)/2 {
 				// first half are good
-				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock, time.Now())
+				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock, sampleTime)
 			} else {
 				// second half are bad
-				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*10, false, true, requestCU, syncBlock, time.Now())
+				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*10, false, true, requestCU, syncBlock, sampleTime)
 			}
 		}
+		sampleTime.Add(time.Millisecond * 5)
 	}
 	seed := time.Now().UnixNano() // constant seed.
 	rand.Seed(seed)

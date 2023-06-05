@@ -86,7 +86,7 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 			// do not allow providers to go back
 			providerData.SyncBlock = syncBlock
 		}
-		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock)
+		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
 		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
@@ -162,11 +162,11 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block
-func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64) time.Duration {
+func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64, sampleTime time.Time) time.Duration {
 	if latestSync < providerBlock {
 		return 0
 	}
-	timeLag := time.Since(timeSync)                                            // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
+	timeLag := sampleTime.Sub(timeSync)                                        // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
 	blocksGap := time.Duration(latestSync-providerBlock) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
 	timeLag += blocksGap
 	return timeLag
