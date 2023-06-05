@@ -187,6 +187,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 
 	isSubscription := chainMessage.GetInterface().Category.Subscription
+	if isSubscription {
+		// temporarily disable subscriptions
+		// TODO: fix subscription and disable this case.
+		return nil, utils.LavaFormatError("Subscriptions are not supported currently", nil)
+	}
 
 	privKey := rpccs.privKey
 	chainID := rpccs.listenEndpoint.ChainID
