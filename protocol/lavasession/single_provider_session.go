@@ -160,6 +160,30 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		// reading userSessionParent address because it's a fixed string value that isn't changing
 		utils.LavaFormatWarning("CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
 			utils.Attribute{Key: "sessionID", Value: sps.SessionID}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
+
+		// Badge Session: verify there are enough missing cus allowed
+		if badgeUser != "" {
+			var cuErrBadge error = nil
+			canAddBadgeMissingCU := sps.userSessionsParent.SafeAddMissingBadgeComputeUnits(missingCU, allowedThreshold, badgeUser)
+			if !canAddBadgeMissingCU {
+				cuErrBadge = utils.LavaFormatWarning("Badge CU mismatch PrepareSessionForUsage, Provider and badge consumer disagree on CuSum", ProviderConsumerCuMisMatch,
+					utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
+					utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
+					utils.Attribute{Key: "specCU", Value: cuFromSpec},
+					utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
+					utils.Attribute{Key: "GUID", Value: ctx},
+					utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
+					utils.Attribute{Key: "missingCUs", Value: missingCU},
+					utils.Attribute{Key: "allowedThreshold", Value: allowedThreshold},
+				)
+			}
+			if cuErrBadge != nil {
+				sps.lock.Unlock() // unlock on error
+				return cuErr
+			}
+			utils.LavaFormatWarning("Badge CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
+				utils.Attribute{Key: "sessionID", Value: sps.SessionID}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "badgeUser", Value: badgeUser})
+		}
 	}
 
 	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
@@ -173,7 +197,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	}
 
 	// Update badgeUsedCu in ProviderSessionsWithConsumer
-	if badgeUser != "" { // badge exists
+	if badgeUser != "" {
 		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeUser)
 		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeUser)
 		if err != nil {
