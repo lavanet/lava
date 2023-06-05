@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 	"sync"
@@ -176,17 +175,6 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 		}
 	}
 
-	fmt.Println("GetSession - providerSessionsWithConsumer: ", providerSessionsWithConsumer)
-	fmt.Println("GetSession - providerSessionsWithConsumer.badgeEpochData: ", providerSessionsWithConsumer.badgeEpochData)
-	for k, v := range providerSessionsWithConsumer.badgeEpochData {
-		fmt.Println("GetSession - k: ", k)
-		fmt.Println("GetSession -  UsedComputeUnits: ", v.UsedComputeUnits)
-		fmt.Println("GetSession -  MaxComputeUnits: ", v.MaxComputeUnits)
-		fmt.Println("GetSession -  MissingComputeUnits: ", v.MissingComputeUnits)
-		fmt.Println("GetSession -  providerSessionsWithConsumer.badgeEpochData[k]: ", providerSessionsWithConsumer.badgeEpochData[k])
-	}
-	fmt.Println("GetSession - providerSessionsWithConsumer.epochData: ", providerSessionsWithConsumer.epochData)
-
 	return psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
 }
 
@@ -224,9 +212,6 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 			if err != nil {
 				return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to registerNewSession", err)
 			}
-			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer: ", providerSessionWithConsumer)
-			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.badgeEpochData: ", providerSessionWithConsumer.badgeEpochData)
-			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.epochData: ", providerSessionWithConsumer.epochData)
 		} else {
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err)
 		}
