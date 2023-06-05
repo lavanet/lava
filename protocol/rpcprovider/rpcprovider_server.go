@@ -330,7 +330,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	var consumerAddressString string
 
 	if request.RelaySession.Badge != nil {
-		// CHECK-1: badge signer == badge.Address
+		// validating badge signer
 		badgeUserSigner, err := sigs.ExtractSignerAddress(request.RelaySession)
 		if err != nil {
 			return nil, nil, utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
@@ -338,11 +338,11 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		if badgeUserSigner.String() != request.RelaySession.Badge.Address {
 			return nil, nil, utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		// CHECK-2: check chainId
+		// validating badge lavaChainId
 		if request.RelaySession.LavaChainId != request.RelaySession.Badge.LavaChainId {
 			return nil, nil, utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		// Consumer address extracted from the badge
+		// extracting consumer address from the badge
 		extractedConsumerAddress, err = sigs.ExtractSignerAddressFromBadge(*request.RelaySession.Badge)
 		if err != nil {
 			return nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})

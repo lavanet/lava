@@ -227,7 +227,6 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer: ", providerSessionWithConsumer)
 			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.badgeEpochData: ", providerSessionWithConsumer.badgeEpochData)
 			fmt.Println("RegisterProviderSessionWithConsumer - providerSessionWithConsumer.epochData: ", providerSessionWithConsumer.epochData)
-
 		} else {
 			return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed", err)
 		}
