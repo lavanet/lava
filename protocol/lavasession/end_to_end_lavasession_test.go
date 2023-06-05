@@ -46,7 +46,7 @@ func TestHappyFlowE2E(t *testing.T) {
 
 		// Provider Side:
 
-		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum)
+		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, "", 0)
 		// validate expected results
 		require.Empty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, sps)

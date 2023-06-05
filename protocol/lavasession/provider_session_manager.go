@@ -159,7 +159,7 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 	return singleProviderSession, nil
 }
 
-func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch uint64, sessionId uint64, relayNumber uint64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch uint64, sessionId uint64, relayNumber uint64, badgeUser string, badgeCuAllocation uint64) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
@@ -169,6 +169,13 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	if err != nil {
 		return nil, err
 	}
+
+	if badgeUser != "" { // badgeSession
+		if _, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]; !exists {
+			providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(providerSessionsWithConsumer.epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
+		}
+	}
+
 	fmt.Println("GetSession - providerSessionsWithConsumer: ", providerSessionsWithConsumer)
 	fmt.Println("GetSession - providerSessionsWithConsumer.badgeEpochData: ", providerSessionsWithConsumer.badgeEpochData)
 	for k, v := range providerSessionsWithConsumer.badgeEpochData {

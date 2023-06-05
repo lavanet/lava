@@ -362,7 +362,14 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, request *pairingtypes.RelaySession, consumerAddressString string) (*lavasession.SingleProviderSession, error) {
 	// regular session, verifies pairing epoch and relay number
-	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
+	var badgeCuAllocation uint64
+	var badgeUser string
+	// check if it's a badge session
+	if request.Badge != nil {
+		badgeCuAllocation = request.Badge.GetCuAllocation()
+		badgeUser = request.Badge.GetAddress()
+	}
+	singleProviderSession, err := rpcps.providerSessionManager.GetSession(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, badgeUser, badgeCuAllocation)
 	if err != nil {
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
@@ -397,14 +404,6 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				)
 			}
 			// After validating the consumer we can register it with provider session manager.
-
-			var badgeCuAllocation uint64
-			var badgeUser string
-			// check if it's a badge session
-			if request.Badge != nil {
-				badgeCuAllocation = request.Badge.GetCuAllocation()
-				badgeUser = request.Badge.GetAddress()
-			}
 			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, badgeCuAllocation, badgeUser, maxCuForConsumer, pairedProviders)
 			if err != nil {
 				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err,
