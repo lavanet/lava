@@ -4,15 +4,15 @@ run:
   timeout: 5m
   skip-files:
     - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
-    - "protocol/chainlib/chainproxy/thirdparty/*"
     - "protocol/chainlib/grpc.go"
-    - "protocol/chainlib/grpcproxy/dyncodec/*"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
+    - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
 
 linters:
   disable-all: true
   #for list of linters and what they do: https://golangci-lint.run/usage/linters/
   enable:
-    - depguard
     - dogsled
     - exportloopref
     - goconst

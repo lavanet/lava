@@ -211,15 +211,20 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 		if err != nil { // should not happen! (all specs on chain must be valid)
 			panic(err)
 		}
-		for _, api := range spec.Apis {
-			if api.Enabled {
-				for _, apiInterface := range api.ApiInterfaces {
-					expectedInterfaces[apiInterface.Interface] = true
-				}
+		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces)
+	}
+	return
+}
+
+func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[string]bool) map[string]bool {
+	for _, api := range spec.Apis {
+		if api.Enabled {
+			for _, apiInterface := range api.ApiInterfaces {
+				expectedInterfaces[apiInterface.Interface] = true
 			}
 		}
 	}
-	return
+	return expectedInterfaces
 }
 
 func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {
