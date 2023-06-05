@@ -280,7 +280,7 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 			}
 			providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime) // update that he doesn't have the latest requested block
 		}
-		sampleTime.Add(time.Millisecond * 5)
+		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
 	time.Sleep(4 * time.Millisecond)
 	returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
@@ -393,7 +393,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*10, false, true, requestCU, syncBlock, sampleTime)
 			}
 		}
-		sampleTime.Add(time.Millisecond * 5)
+		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
 	seed := time.Now().UnixNano() // constant seed.
 	rand.Seed(seed)
