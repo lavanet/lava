@@ -226,7 +226,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			var localRelayResult *lavaprotocol.RelayResult
 			var errResponse error
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+			guid, found := utils.GetUniqueIdentifier(ctx)
+			if found {
+				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
+			}
 			defer func() {
 				// Return response
 				responses <- &relayResponse{
