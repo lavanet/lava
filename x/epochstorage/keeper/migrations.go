@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"unicode"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -28,8 +27,9 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	storage := m.keeper.GetAllStakeStorage(ctx)
 
 	for _, storage := range storage {
+		m.keeper.RemoveStakeStorage(ctx, storage.Index)
+
 		// handle client keys
-		fmt.Println(storage.Index)
 		if storage.Index[:len(ClientKey)] == ClientKey {
 			if len(storage.Index) > len(ClientKey) && !unicode.IsNumber(rune(storage.Index[len(ClientKey)])) {
 				for _, entry := range storage.StakeEntries {
@@ -56,15 +56,17 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 						continue
 					}
 				}
-				m.keeper.RemoveStakeStorage(ctx, storage.Index)
-			} else if storage.Index[:len(ProviderKey)] == ProviderKey {
-				if len(storage.Index) > len(ProviderKey) {
-					m.keeper.RemoveStakeStorage(ctx, storage.Index)
-					storage.Index = storage.Index[len(ProviderKey):]
-					m.keeper.SetStakeStorage(ctx, storage)
-				}
 			}
 		}
+
+		// handle provider keys
+		if storage.Index[:len(ProviderKey)] == ProviderKey {
+			if len(storage.Index) > len(ProviderKey) {
+				storage.Index = storage.Index[len(ProviderKey):]
+				m.keeper.SetStakeStorage(ctx, storage)
+			}
+		}
+
 	}
 	return nil
 }
