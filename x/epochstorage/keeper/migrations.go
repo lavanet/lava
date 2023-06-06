@@ -66,7 +66,6 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 				m.keeper.SetStakeStorage(ctx, storage)
 			}
 		}
-
 	}
 	return nil
 }
