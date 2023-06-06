@@ -111,6 +111,14 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
 	}
 
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to getApiCollection gRPC", err)
+	}
+
+	// handle headers
+	metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
 		Msg:      data,
@@ -126,11 +134,6 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
 	if err != nil {
 		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
-	}
-
-	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed to getApiCollection gRPC", err)
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)

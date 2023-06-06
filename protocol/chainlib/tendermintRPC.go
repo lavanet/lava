@@ -135,6 +135,8 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if err != nil {
 		return nil, err
 	}
+	// TODO:when we use metadata on tendermintrpc this needs to be here
+	// metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)

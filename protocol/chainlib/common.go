@@ -27,13 +27,6 @@ const (
 	RetryListeningInterval    = 10 // seconds
 )
 
-type HeadersDirection int
-
-const (
-	SendingToNode HeadersDirection = iota
-	ReceivingFromNode
-)
-
 type TaggedContainer struct {
 	Parsing       *spectypes.Parsing
 	ApiCollection *spectypes.ApiCollection
@@ -53,8 +46,23 @@ type BaseChainParser struct {
 	headers        map[ApiKey]*spectypes.Header
 }
 
-func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection HeadersDirection) []pairingtypes.Metadata {
-	return metadata
+func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) []pairingtypes.Metadata {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	retMeatadata := []pairingtypes.Metadata{}
+	for _, header := range metadata {
+		apiKey := ApiKey{Name: header.GetName(), ConnectionType: apiCollection.CollectionData.Type}
+		headerDirective, ok := bcp.headers[apiKey]
+		if !ok {
+			// this header is not handled
+			continue
+		}
+		if headerDirective.Kind == headersDirection {
+			retMeatadata = append(retMeatadata, header)
+		}
+	}
+	utils.LavaFormatDebug("Headers filtering", utils.Attribute{Key: "received", Value: metadata}, utils.Attribute{Key: "filtered", Value: retMeatadata})
+	return retMeatadata
 }
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {

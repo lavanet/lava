@@ -76,7 +76,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	if err != nil {
 		return nil, err
 	}
-	metadata = apip.HandleHeaders(metadata, apiCollection, SendingToNode)
+	metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:    data,
