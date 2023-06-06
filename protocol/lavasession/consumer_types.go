@@ -17,6 +17,14 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type SessionInfo struct {
+	Session           *SingleConsumerSession
+	Epoch             uint64
+	ReportedProviders []byte
+}
+
+type ConsumerSessionsMap map[string]*SessionInfo
+
 type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
@@ -40,7 +48,7 @@ type QoSReport struct {
 
 type SingleConsumerSession struct {
 	CuSum                       uint64
-	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
+	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
 	QoSInfo                     QoSReport
 	SessionId                   int64
 	Client                      *ConsumerSessionsWithProvider
@@ -66,6 +74,13 @@ type Endpoint struct {
 	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
 }
+
+type SessionWithProvider struct {
+	SessionsWithProvider *ConsumerSessionsWithProvider
+	CurrentEpoch         uint64
+}
+
+type SessionWithProviderMap map[string]*SessionWithProvider
 
 type RPCEndpoint struct {
 	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT

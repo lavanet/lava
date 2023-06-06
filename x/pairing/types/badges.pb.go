@@ -30,82 +30,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type Badge struct {
-	CuAllocation uint64 `protobuf:"varint,1,opt,name=cu_allocation,json=cuAllocation,proto3" json:"cu_allocation,omitempty"`
-	Epoch        uint64 `protobuf:"varint,2,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	Address      string `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
-	LavaChainId  string `protobuf:"bytes,4,opt,name=lava_chain_id,json=lavaChainId,proto3" json:"lava_chain_id,omitempty"`
-	ProjectSig   []byte `protobuf:"bytes,5,opt,name=project_sig,json=projectSig,proto3" json:"project_sig,omitempty"`
-}
-
-func (m *Badge) Reset()         { *m = Badge{} }
-func (m *Badge) String() string { return proto.CompactTextString(m) }
-func (*Badge) ProtoMessage()    {}
-func (*Badge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fad72c0554b022ec, []int{0}
-}
-func (m *Badge) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Badge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Badge.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Badge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Badge.Merge(m, src)
-}
-func (m *Badge) XXX_Size() int {
-	return m.Size()
-}
-func (m *Badge) XXX_DiscardUnknown() {
-	xxx_messageInfo_Badge.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Badge proto.InternalMessageInfo
-
-func (m *Badge) GetCuAllocation() uint64 {
-	if m != nil {
-		return m.CuAllocation
-	}
-	return 0
-}
-
-func (m *Badge) GetEpoch() uint64 {
-	if m != nil {
-		return m.Epoch
-	}
-	return 0
-}
-
-func (m *Badge) GetAddress() string {
-	if m != nil {
-		return m.Address
-	}
-	return ""
-}
-
-func (m *Badge) GetLavaChainId() string {
-	if m != nil {
-		return m.LavaChainId
-	}
-	return ""
-}
-
-func (m *Badge) GetProjectSig() []byte {
-	if m != nil {
-		return m.ProjectSig
-	}
-	return nil
-}
-
 type GenerateBadgeRequest struct {
 	BadgeAddress string `protobuf:"bytes,1,opt,name=badge_address,json=badgeAddress,proto3" json:"badge_address,omitempty"`
 	ProjectId    string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
@@ -116,7 +40,7 @@ func (m *GenerateBadgeRequest) Reset()         { *m = GenerateBadgeRequest{} }
 func (m *GenerateBadgeRequest) String() string { return proto.CompactTextString(m) }
 func (*GenerateBadgeRequest) ProtoMessage()    {}
 func (*GenerateBadgeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fad72c0554b022ec, []int{1}
+	return fileDescriptor_fad72c0554b022ec, []int{0}
 }
 func (m *GenerateBadgeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -167,15 +91,16 @@ func (m *GenerateBadgeRequest) GetSpecId() string {
 }
 
 type GenerateBadgeResponse struct {
-	Badge       *Badge              `protobuf:"bytes,1,opt,name=badge,proto3" json:"badge,omitempty"`
-	PairingList []*types.StakeEntry `protobuf:"bytes,2,rep,name=pairing_list,json=pairingList,proto3" json:"pairing_list,omitempty"`
+	Badge              *Badge              `protobuf:"bytes,1,opt,name=badge,proto3" json:"badge,omitempty"`
+	PairingList        []*types.StakeEntry `protobuf:"bytes,2,rep,name=pairing_list,json=pairingList,proto3" json:"pairing_list,omitempty"`
+	BadgeSignerAddress string              `protobuf:"bytes,3,opt,name=badge_signer_address,json=badgeSignerAddress,proto3" json:"badge_signer_address,omitempty"`
 }
 
 func (m *GenerateBadgeResponse) Reset()         { *m = GenerateBadgeResponse{} }
 func (m *GenerateBadgeResponse) String() string { return proto.CompactTextString(m) }
 func (*GenerateBadgeResponse) ProtoMessage()    {}
 func (*GenerateBadgeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fad72c0554b022ec, []int{2}
+	return fileDescriptor_fad72c0554b022ec, []int{1}
 }
 func (m *GenerateBadgeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -218,8 +143,14 @@ func (m *GenerateBadgeResponse) GetPairingList() []*types.StakeEntry {
 	return nil
 }
 
+func (m *GenerateBadgeResponse) GetBadgeSignerAddress() string {
+	if m != nil {
+		return m.BadgeSignerAddress
+	}
+	return ""
+}
+
 func init() {
-	proto.RegisterType((*Badge)(nil), "lavanet.lava.pairing.Badge")
 	proto.RegisterType((*GenerateBadgeRequest)(nil), "lavanet.lava.pairing.GenerateBadgeRequest")
 	proto.RegisterType((*GenerateBadgeResponse)(nil), "lavanet.lava.pairing.GenerateBadgeResponse")
 }
@@ -227,36 +158,33 @@ func init() {
 func init() { proto.RegisterFile("pairing/badges.proto", fileDescriptor_fad72c0554b022ec) }
 
 var fileDescriptor_fad72c0554b022ec = []byte{
-	// 460 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x8e, 0xd3, 0x30,
-	0x14, 0xac, 0xbb, 0xed, 0xae, 0xd6, 0x69, 0x39, 0x58, 0x41, 0x8a, 0x8a, 0x36, 0x5b, 0x05, 0x21,
-	0x2a, 0x90, 0x12, 0x51, 0xbe, 0xa0, 0x45, 0x08, 0x55, 0x42, 0x1c, 0xb2, 0x37, 0x2e, 0x91, 0x9b,
-	0x3c, 0x5c, 0x2f, 0x21, 0x0e, 0xb6, 0x03, 0x54, 0xe2, 0x23, 0x38, 0x73, 0xe3, 0x6f, 0xf6, 0xb8,
-	0x47, 0x4e, 0x08, 0xb5, 0x3f, 0x82, 0xec, 0x38, 0x88, 0xa2, 0x1e, 0xf6, 0x64, 0xbf, 0x79, 0xe3,
-	0x99, 0xb1, 0x9f, 0xb1, 0x5f, 0x53, 0x2e, 0x79, 0xc5, 0x92, 0x35, 0x2d, 0x18, 0xa8, 0xb8, 0x96,
-	0x42, 0x0b, 0xe2, 0x97, 0xf4, 0x13, 0xad, 0x40, 0xc7, 0x66, 0x8d, 0x1d, 0x65, 0xe2, 0x33, 0xc1,
-	0x84, 0x25, 0x24, 0x66, 0xd7, 0x72, 0x27, 0x21, 0x13, 0x82, 0x95, 0x90, 0xd8, 0x6a, 0xdd, 0xbc,
-	0x4b, 0x3e, 0x4b, 0x5a, 0xd7, 0x20, 0x55, 0xd7, 0x87, 0x5a, 0xe4, 0x1b, 0xa5, 0x85, 0xa4, 0x0c,
-	0x12, 0xa5, 0xe9, 0x7b, 0xc8, 0xa0, 0xd2, 0x72, 0xdb, 0xf6, 0xa3, 0x1f, 0x08, 0x0f, 0x97, 0xc6,
-	0x9c, 0x3c, 0xc4, 0xe3, 0xbc, 0xc9, 0x68, 0x59, 0x8a, 0x9c, 0x6a, 0x2e, 0xaa, 0x00, 0x4d, 0xd1,
-	0x6c, 0x90, 0x8e, 0xf2, 0x66, 0xf1, 0x17, 0x23, 0x3e, 0x1e, 0x5a, 0xc1, 0xa0, 0x6f, 0x9b, 0x6d,
-	0x41, 0x02, 0x7c, 0x46, 0x8b, 0x42, 0x82, 0x52, 0xc1, 0xc9, 0x14, 0xcd, 0xce, 0xd3, 0xae, 0x24,
-	0x11, 0x1e, 0x9b, 0x4b, 0x64, 0xf9, 0x86, 0xf2, 0x2a, 0xe3, 0x45, 0x30, 0xb0, 0x7d, 0xcf, 0x80,
-	0x2f, 0x0c, 0xb6, 0x2a, 0xc8, 0x25, 0xf6, 0x6a, 0x29, 0xae, 0x21, 0xd7, 0x99, 0xe2, 0x2c, 0x18,
-	0x4e, 0xd1, 0x6c, 0x94, 0x62, 0x07, 0x5d, 0x71, 0x16, 0x6d, 0xb1, 0xff, 0x0a, 0x2a, 0x90, 0x54,
-	0x83, 0x8d, 0x9a, 0xc2, 0xc7, 0x06, 0x94, 0x36, 0x89, 0xed, 0xbb, 0x65, 0x9d, 0x39, 0xb2, 0xe2,
-	0x23, 0x0b, 0x2e, 0x5c, 0x82, 0x0b, 0xdc, 0x49, 0x19, 0xfb, 0xbe, 0x65, 0x9c, 0x3b, 0x64, 0x55,
-	0x90, 0x0b, 0x7c, 0xa6, 0x6a, 0xc8, 0x4d, 0xcf, 0x46, 0x5f, 0x0e, 0x6e, 0x7e, 0x5d, 0xa2, 0xf4,
-	0xd4, 0x80, 0xab, 0x22, 0xfa, 0x8e, 0xf0, 0xfd, 0xff, 0xbc, 0x55, 0x2d, 0x2a, 0x05, 0xe4, 0x19,
-	0x1e, 0x5a, 0x1f, 0x6b, 0xea, 0xcd, 0x1f, 0xc4, 0xc7, 0x86, 0x16, 0xb7, 0x67, 0x5a, 0x26, 0x79,
-	0x83, 0x47, 0x0e, 0xcf, 0x4a, 0xae, 0x74, 0xd0, 0x9f, 0x9e, 0xcc, 0xbc, 0xf9, 0xa3, 0xc3, 0x93,
-	0xff, 0xce, 0x2b, 0xbe, 0x32, 0xf3, 0x7a, 0x69, 0xc6, 0xe5, 0x72, 0x79, 0x4e, 0xe0, 0x35, 0x57,
-	0x7a, 0xfe, 0x15, 0xdf, 0xb3, 0xfa, 0x2e, 0xa0, 0x90, 0xe4, 0x1a, 0x8f, 0x0f, 0xd2, 0x92, 0x27,
-	0xc7, 0x63, 0x1d, 0x7b, 0xce, 0xc9, 0xd3, 0x3b, 0x71, 0xdb, 0xeb, 0x47, 0xbd, 0xe5, 0xe2, 0x66,
-	0x17, 0xa2, 0xdb, 0x5d, 0x88, 0x7e, 0xef, 0x42, 0xf4, 0x6d, 0x1f, 0xf6, 0x6e, 0xf7, 0x61, 0xef,
-	0xe7, 0x3e, 0xec, 0xbd, 0x7d, 0xcc, 0xb8, 0xde, 0x34, 0xeb, 0x38, 0x17, 0x1f, 0x12, 0x27, 0x69,
-	0xd7, 0xe4, 0x4b, 0xd2, 0xfd, 0x77, 0xbd, 0xad, 0x41, 0xad, 0x4f, 0xed, 0x1f, 0x7c, 0xfe, 0x27,
-	0x00, 0x00, 0xff, 0xff, 0x94, 0xd5, 0xf4, 0x89, 0x07, 0x03, 0x00, 0x00,
+	// 404 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0xae, 0xd2, 0x40,
+	0x14, 0x6d, 0x41, 0x31, 0x0c, 0xe0, 0x62, 0xac, 0x09, 0xc1, 0x50, 0x09, 0xc6, 0x48, 0x34, 0xe9,
+	0x28, 0x7e, 0x01, 0x24, 0xc6, 0x90, 0x18, 0x17, 0x65, 0xe7, 0xa6, 0x99, 0xb6, 0xd7, 0xa1, 0x58,
+	0x3b, 0xe3, 0xcc, 0xa0, 0x92, 0xf8, 0x11, 0x7e, 0x16, 0x0b, 0x17, 0x2c, 0x5d, 0x19, 0x03, 0x3f,
+	0xf2, 0x32, 0xd3, 0xe1, 0xe5, 0xf1, 0xc2, 0xe2, 0xad, 0x66, 0x7a, 0xce, 0x99, 0x7b, 0xef, 0x39,
+	0xbd, 0x28, 0x10, 0xb4, 0x90, 0x45, 0xc5, 0x48, 0x4a, 0x73, 0x06, 0x2a, 0x12, 0x92, 0x6b, 0x8e,
+	0x83, 0x92, 0x7e, 0xa7, 0x15, 0xe8, 0xc8, 0x9c, 0x91, 0x93, 0x0c, 0x1e, 0x9d, 0xb4, 0x12, 0x4a,
+	0xba, 0xad, 0xa5, 0x83, 0x80, 0x71, 0xc6, 0xed, 0x95, 0x98, 0x9b, 0x43, 0x43, 0xc6, 0x39, 0x2b,
+	0x81, 0xd8, 0xaf, 0x74, 0xf3, 0x99, 0xfc, 0x90, 0x54, 0x08, 0x90, 0xea, 0xc4, 0x83, 0xe0, 0xd9,
+	0x4a, 0x69, 0x2e, 0x29, 0x03, 0xa2, 0x34, 0xfd, 0x02, 0x09, 0x54, 0x5a, 0xba, 0xaa, 0xe3, 0x2d,
+	0x0a, 0xde, 0x43, 0x05, 0x92, 0x6a, 0x98, 0x9b, 0xc1, 0x62, 0xf8, 0xb6, 0x01, 0xa5, 0xf1, 0x33,
+	0xd4, 0xb3, 0x83, 0x26, 0x34, 0xcf, 0x25, 0x28, 0xd5, 0xf7, 0x47, 0xfe, 0xa4, 0x1d, 0x77, 0x2d,
+	0x38, 0xab, 0x31, 0x3c, 0x44, 0x48, 0x48, 0xbe, 0x86, 0x4c, 0x27, 0x45, 0xde, 0x6f, 0x58, 0x45,
+	0xdb, 0x21, 0x8b, 0x1c, 0x0f, 0xd1, 0x03, 0x25, 0x20, 0x33, 0x5c, 0xd3, 0x70, 0xf3, 0x7b, 0xbb,
+	0x7f, 0x4f, 0xfd, 0xb8, 0x65, 0xc0, 0x45, 0x3e, 0xfe, 0xe3, 0xa3, 0xc7, 0xb7, 0x7a, 0x2b, 0xc1,
+	0x2b, 0x05, 0xf8, 0x0d, 0xba, 0x6f, 0xfb, 0xd8, 0xa6, 0x9d, 0xe9, 0x93, 0xe8, 0x52, 0x4a, 0x51,
+	0xfd, 0xa6, 0x56, 0xe2, 0x8f, 0xa8, 0xeb, 0xf0, 0xa4, 0x2c, 0x94, 0xee, 0x37, 0x46, 0xcd, 0x49,
+	0x67, 0xfa, 0xfc, 0xfc, 0xe5, 0xcd, 0x2c, 0xa2, 0xa5, 0xc9, 0xe2, 0x9d, 0x89, 0xc2, 0xcd, 0xd5,
+	0x71, 0x05, 0x3e, 0x14, 0x4a, 0xe3, 0xd7, 0x28, 0xa8, 0xfd, 0xab, 0x82, 0x55, 0x20, 0xaf, 0x63,
+	0xb0, 0x46, 0x62, 0x6c, 0xb9, 0xa5, 0xa5, 0x5c, 0x18, 0xd3, 0x5f, 0xe8, 0xa1, 0x9d, 0xc8, 0x59,
+	0xe2, 0x12, 0xaf, 0x51, 0xef, 0xcc, 0x1f, 0x7e, 0x79, 0xd9, 0xc8, 0xa5, 0x1f, 0x30, 0x78, 0x75,
+	0x27, 0x6d, 0x1d, 0xd8, 0xd8, 0x9b, 0xcf, 0x76, 0x87, 0xd0, 0xdf, 0x1f, 0x42, 0xff, 0xff, 0x21,
+	0xf4, 0x7f, 0x1f, 0x43, 0x6f, 0x7f, 0x0c, 0xbd, 0xbf, 0xc7, 0xd0, 0xfb, 0xf4, 0x82, 0x15, 0x7a,
+	0xb5, 0x49, 0xa3, 0x8c, 0x7f, 0x25, 0xae, 0xa4, 0x3d, 0xc9, 0x4f, 0x72, 0x5a, 0x33, 0xbd, 0x15,
+	0xa0, 0xd2, 0x96, 0xdd, 0x88, 0xb7, 0x57, 0x01, 0x00, 0x00, 0xff, 0xff, 0x42, 0xc3, 0x16, 0x2c,
+	0xaa, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -339,60 +267,6 @@ var _BadgeGenerator_serviceDesc = grpc.ServiceDesc{
 	Metadata: "pairing/badges.proto",
 }
 
-func (m *Badge) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Badge) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Badge) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ProjectSig) > 0 {
-		i -= len(m.ProjectSig)
-		copy(dAtA[i:], m.ProjectSig)
-		i = encodeVarintBadges(dAtA, i, uint64(len(m.ProjectSig)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.LavaChainId) > 0 {
-		i -= len(m.LavaChainId)
-		copy(dAtA[i:], m.LavaChainId)
-		i = encodeVarintBadges(dAtA, i, uint64(len(m.LavaChainId)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintBadges(dAtA, i, uint64(len(m.Address)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Epoch != 0 {
-		i = encodeVarintBadges(dAtA, i, uint64(m.Epoch))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.CuAllocation != 0 {
-		i = encodeVarintBadges(dAtA, i, uint64(m.CuAllocation))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *GenerateBadgeRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -457,6 +331,13 @@ func (m *GenerateBadgeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.BadgeSignerAddress) > 0 {
+		i -= len(m.BadgeSignerAddress)
+		copy(dAtA[i:], m.BadgeSignerAddress)
+		i = encodeVarintBadges(dAtA, i, uint64(len(m.BadgeSignerAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.PairingList) > 0 {
 		for iNdEx := len(m.PairingList) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -497,33 +378,6 @@ func encodeVarintBadges(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *Badge) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.CuAllocation != 0 {
-		n += 1 + sovBadges(uint64(m.CuAllocation))
-	}
-	if m.Epoch != 0 {
-		n += 1 + sovBadges(uint64(m.Epoch))
-	}
-	l = len(m.Address)
-	if l > 0 {
-		n += 1 + l + sovBadges(uint64(l))
-	}
-	l = len(m.LavaChainId)
-	if l > 0 {
-		n += 1 + l + sovBadges(uint64(l))
-	}
-	l = len(m.ProjectSig)
-	if l > 0 {
-		n += 1 + l + sovBadges(uint64(l))
-	}
-	return n
-}
-
 func (m *GenerateBadgeRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -561,6 +415,10 @@ func (m *GenerateBadgeResponse) Size() (n int) {
 			n += 1 + l + sovBadges(uint64(l))
 		}
 	}
+	l = len(m.BadgeSignerAddress)
+	if l > 0 {
+		n += 1 + l + sovBadges(uint64(l))
+	}
 	return n
 }
 
@@ -569,192 +427,6 @@ func sovBadges(x uint64) (n int) {
 }
 func sozBadges(x uint64) (n int) {
 	return sovBadges(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *Badge) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowBadges
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Badge: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Badge: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CuAllocation", wireType)
-			}
-			m.CuAllocation = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBadges
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CuAllocation |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
-			}
-			m.Epoch = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBadges
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Epoch |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBadges
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthBadges
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthBadges
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Address = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LavaChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBadges
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthBadges
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthBadges
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.LavaChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProjectSig", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowBadges
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthBadges
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthBadges
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProjectSig = append(m.ProjectSig[:0], dAtA[iNdEx:postIndex]...)
-			if m.ProjectSig == nil {
-				m.ProjectSig = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipBadges(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthBadges
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *GenerateBadgeRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1000,6 +672,38 @@ func (m *GenerateBadgeResponse) Unmarshal(dAtA []byte) error {
 			if err := m.PairingList[len(m.PairingList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BadgeSignerAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBadges
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBadges
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBadges
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BadgeSignerAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

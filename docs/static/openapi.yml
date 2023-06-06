@@ -55025,6 +55025,8 @@ definitions:
               type: string
             moniker:
               type: string
+      badge_signer_address:
+        type: string
   lavanet.lava.pairing.Metadata:
     type: object
     properties:
