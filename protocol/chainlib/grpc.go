@@ -121,11 +121,11 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
-		Msg:      data,
-		Path:     url,
-		Codec:    apip.codec,
-		Registry: apip.registry,
-		Header:   metadata,
+		Msg:         data,
+		Path:        url,
+		Codec:       apip.codec,
+		Registry:    apip.registry,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
 
 	// // Fetch requested block, it is used for data reliability
@@ -314,9 +314,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
-	if len(nodeMessage.Header) > 0 {
+	if len(nodeMessage.GetHeaders()) > 0 {
 		metadataMap := make(map[string]string)
-		for _, metaData := range nodeMessage.Header {
+		for _, metaData := range nodeMessage.GetHeaders() {
 			metadataMap[metaData.Name] = metaData.Value
 		}
 		md := metadata.New(metadataMap)

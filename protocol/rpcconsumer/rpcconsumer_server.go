@@ -90,15 +90,14 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, nil)
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata)
 	if err != nil {
 		return nil, nil, err
 	}
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
-
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, metadata)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true

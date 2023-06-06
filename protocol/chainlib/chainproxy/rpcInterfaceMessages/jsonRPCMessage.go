@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -18,6 +19,7 @@ type JsonrpcMessage struct {
 	Params  interface{}          `json:"params,omitempty"`
 	Error   *rpcclient.JsonError `json:"error,omitempty"`
 	Result  json.RawMessage      `json:"result,omitempty"`
+	chainproxy.BaseMessage
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {

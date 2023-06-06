@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -76,19 +77,21 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	if err != nil {
 		return nil, err
 	}
+
 	metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:    data,
-		Path:   url,
-		Header: metadata,
+		Msg:         data,
+		Path:        url,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
 	if connectionType == http.MethodGet {
 		// support for optional params, our listener puts them inside Msg data
 		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:    nil,
-			Path:   url + string(data),
-			Header: metadata,
+			Msg:         nil,
+			Path:        url + string(data),
+			BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.
@@ -388,8 +391,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if len(nodeMessage.Header) > 0 {
-		for _, metadata := range nodeMessage.Header {
+	if len(nodeMessage.GetHeaders()) > 0 {
+		for _, metadata := range nodeMessage.GetHeaders() {
 			req.Header.Set(metadata.Name, metadata.Value)
 		}
 	}

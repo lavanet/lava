@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lavanet/lava/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 const (
@@ -15,8 +16,17 @@ type CustomParsingMessage interface {
 	NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error)
 }
 
+type BaseMessage struct {
+	Headers []pairingtypes.Metadata
+}
+
+func (bm BaseMessage) GetHeaders() []pairingtypes.Metadata {
+	return bm.Headers
+}
+
 type DefaultRPCInput struct {
 	Result json.RawMessage
+	BaseMessage
 }
 
 func (dri DefaultRPCInput) GetParams() interface{} {
