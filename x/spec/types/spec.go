@@ -131,7 +131,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 }
 
 func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
-
 	collectionDataList := make([]CollectionData, 0)
 	// Populate the keys slice with the map keys
 	for key := range parentsCollections {
