@@ -9,6 +9,8 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
+const MINIMUM_PROVIDERS = 5
+
 // Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
 func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) error {
 	// check the epochsNum consts
@@ -55,9 +57,6 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		return nil
 	}
 
-	// TODO: when we use the policy providers number, this should be updated
-	minimumProvidersCount := uint64(5) // yarom was servicers to pair
-
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
@@ -80,7 +79,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > minimumProvidersCount {
+			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > MINIMUM_PROVIDERS {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				existingProviders[providerStakeEntry.Geolocation]--
 				if err != nil {

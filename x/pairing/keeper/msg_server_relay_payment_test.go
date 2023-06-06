@@ -258,6 +258,7 @@ func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients i
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	ts.plan = common.CreateMockPlan()
+	ts.plan.PlanPolicy.MaxProvidersToPair = 6
 	err := ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
 	require.Nil(t, err)
 

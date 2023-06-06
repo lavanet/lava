@@ -16,7 +16,7 @@ import (
 func TestUnresponsivenessStressTest(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 50
-	testProviderAmount := 5
+	testProviderAmount := 6
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
 	// get recommendedEpochNumToCollectPayment
@@ -222,7 +222,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 1
-	testProviderAmount := 3
+	testProviderAmount := 6
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
 	// get recommendedEpochNumToCollectPayment
