@@ -91,7 +91,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     }
                 ]
             },

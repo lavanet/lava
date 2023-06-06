@@ -1187,7 +1187,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_tag": "getBlockByNumber",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getCheckpoint\",\"params\":[\"%d\"],\"id\":1}",

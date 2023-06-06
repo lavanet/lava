@@ -1150,7 +1150,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_tag": "getBlockByNumber",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",

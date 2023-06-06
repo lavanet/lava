@@ -67,7 +67,7 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[string]struct{}) error {
 	mergedHeadersList := []*Header{}
 	mergedApisList := []*Api{}
-	mergedParserList := []*Parsing{}
+	mergedParserList := []*ParseDirective{}
 	currentApis := make(map[string]struct{}, 0)
 	currentHeaders := make(map[string]struct{}, 0)
 	currentParsers := make(map[string]struct{}, 0)
@@ -82,7 +82,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 		}
 	}
 	if mergedParsers != nil {
-		for _, parser := range apic.Parsing {
+		for _, parser := range apic.ParseDirectives {
 			currentParsers[parser.FunctionTag] = struct{}{}
 		}
 	}
@@ -127,7 +127,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 			}
 		}
 		if mergedParsers != nil {
-			for _, parsing := range collection.Parsing {
+			for _, parsing := range collection.ParseDirectives {
 				if _, ok := mergedParsers[parsing.FunctionTag]; ok {
 					// was already existing in mergedParsers
 					if !allowOverwrite {
@@ -165,7 +165,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 	// merge collected functionTags into current apiCollection's parsing (unless overridden)
 	for _, parser := range mergedParserList {
 		if _, found := currentParsers[parser.FunctionTag]; !found {
-			apic.Parsing = append(apic.Parsing, parser)
+			apic.ParseDirectives = append(apic.ParseDirectives, parser)
 		} else if !allowOverwrite {
 			return fmt.Errorf("existing api in collection combination %s %v", parser.FunctionTag, apic)
 		}

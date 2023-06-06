@@ -48,7 +48,7 @@ func (apip *TendermintChainParser) getSupportedApi(name string, connectionType s
 	return apip.BaseChainParser.getSupportedApi(name, connectionType)
 }
 
-func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}

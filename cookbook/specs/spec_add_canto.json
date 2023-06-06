@@ -722,7 +722,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -1420,7 +1420,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     }
                 ]
             }

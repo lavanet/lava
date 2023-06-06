@@ -78,7 +78,7 @@ func (apip *GrpcChainParser) setupForProvider(grpcEndpoint string) error {
 	return nil
 }
 
-func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, nil)
 	}

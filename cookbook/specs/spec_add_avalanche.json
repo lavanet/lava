@@ -1044,7 +1044,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
                                 "function_tag": "getBlockNumber",
@@ -1209,7 +1209,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -1567,7 +1567,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -1709,7 +1709,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     }
                 ]
             }

@@ -49,7 +49,7 @@ func (apip *JsonRPCChainParser) getSupportedApi(name string, connectionType stri
 	return apip.BaseChainParser.getSupportedApi(name, connectionType)
 }
 
-func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}

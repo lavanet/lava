@@ -28,7 +28,7 @@ const (
 )
 
 type TaggedContainer struct {
-	Parsing       *spectypes.Parsing
+	Parsing       *spectypes.ParseDirective
 	ApiCollection *spectypes.ApiCollection
 }
 
@@ -77,7 +77,7 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string
 	bcp.apiCollections = apiCollections
 }
 
-func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.Parsing, collectionData *spectypes.CollectionData, existed bool) {
+func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
@@ -244,7 +244,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				continue
 			}
 			collectionKey := CollectionKey{ConnectionType: apiCollection.CollectionData.Type}
-			for _, parsing := range apiCollection.Parsing {
+			for _, parsing := range apiCollection.ParseDirectives {
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,
 					ApiCollection: apiCollection,
@@ -378,7 +378,7 @@ type CraftData struct {
 	ConnectionType string
 }
 
-func CraftChainMessage(parsing *spectypes.Parsing, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
 	return chainParser.CraftMessage(parsing, connectionType, craftData)
 }
 

@@ -393,7 +393,7 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "/",
                                 "function_tag": "getBlockNumber",
@@ -541,7 +541,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     }
                 ]
             }

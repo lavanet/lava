@@ -2026,7 +2026,7 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
                                 "function_tag": "getBlockNumber",
@@ -2179,7 +2179,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -3627,7 +3627,7 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "",
                                 "function_tag": "getBlockNumber",
@@ -4215,7 +4215,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_tag": "getBlockNumber",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",

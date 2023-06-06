@@ -34,7 +34,7 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)

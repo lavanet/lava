@@ -68,7 +68,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			}
 		}
 		// validate function tags
-		for _, parsing := range apiCollection.Parsing {
+		for _, parsing := range apiCollection.ParseDirectives {
 			// Validate tag name
 			if parsing.FunctionTag == "" {
 				return details, fmt.Errorf("empty parsing function tag %v", parsing.FunctionTag)

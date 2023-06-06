@@ -12,7 +12,7 @@ message ApiCollection {
   repeated Api apis = 3;
   repeated Header headers = 4;
 	repeated CollectionData inheritance_apis = 5; // by collectionKey
-	repeated Parsing parsing = 6;
+	repeated ParseDirective parse_directives = 6;
 }
 
 message CollectionData {
@@ -43,7 +43,7 @@ message Api {
 	BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
 }
 
-message Parsing {
+message ParseDirective {
   string function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
