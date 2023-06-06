@@ -138,7 +138,8 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 	for _, collection := range spec.ApiCollections {
 		myCollections[collection.CollectionData] = collection
 	}
-	for _, collection := range myCollections {
+
+	for _, collection := range spec.ApiCollections {
 		err := collection.InheritAllFields(myCollections, parentsCollections[collection.CollectionData])
 		if err != nil {
 			return details, err

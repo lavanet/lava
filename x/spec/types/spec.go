@@ -2,6 +2,7 @@ package types
 
 import (
 	fmt "fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -130,9 +131,21 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 }
 
 func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
-	for idx, collectionsToCombine := range parentsCollections {
+
+	collectionDataList := make([]CollectionData, 0)
+	// Populate the keys slice with the map keys
+	for key := range parentsCollections {
+		collectionDataList = append(collectionDataList, key)
+	}
+	// sort the slice so the order is deterministic
+	sort.Slice(collectionDataList, func(i, j int) bool {
+		return collectionDataList[i].String() < collectionDataList[j].String()
+	})
+
+	for _, collectionData := range collectionDataList {
+		collectionsToCombine := parentsCollections[collectionData]
 		if len(collectionsToCombine) == 0 {
-			return fmt.Errorf("collection with length 0 %v", idx)
+			return fmt.Errorf("collection with length 0 %v", collectionData)
 		}
 		var combined *ApiCollection
 		var others []*ApiCollection
