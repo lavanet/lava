@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,8 +122,9 @@ func TestGRPCParseMessage(t *testing.T) {
 	assert.Equal(t, msg.GetApiCollection().CollectionData.ApiInterface, spectypes.APIInterfaceGrpc)
 
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
-		Msg:  []byte("test message"),
-		Path: "API1",
+		Msg:         []byte("test message"),
+		Path:        "API1",
+		BaseMessage: chainproxy.BaseMessage{Headers: []pairingtypes.Metadata{}},
 	}
 	grpcMsg, ok := msg.GetRPCMessage().(*rpcInterfaceMessages.GrpcMessage)
 	require.True(t, ok)
