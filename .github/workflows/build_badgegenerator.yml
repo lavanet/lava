@@ -1,0 +1,69 @@
+name: Build Badge Generator
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  main:
+    environment: Configure CI/CD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::529724559987:role/gh-action-cicd
+          role-session-name: badgegenerator-builder
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up NOW environment variable
+        id: "env-now"
+        run: |
+          echo "NOW=$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build, tag, and push docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          NOW: ${{ env.NOW }}
+        run: |
+          docker buildx build \
+            -t $REGISTRY/badgegenerator:latest \
+            -t $REGISTRY/badgegenerator:$IMAGE_TAG \
+            -t $REGISTRY/badgegenerator:$IMAGE_TAG-$NOW \
+            --cache-from="type=local,src=/tmp/.buildx-cache" \
+            --cache-to="type=local,dest=/tmp/.buildx-cache-new" \
+            --push -f Dockerfile .
+
+        # Necessary if you don't want your cache to grow forever, until
+        # https://github.com/docker/build-push-action/issues/252
+        # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache || true
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
