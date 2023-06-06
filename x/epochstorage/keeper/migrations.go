@@ -29,7 +29,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	extractEpochAndChainID := func(s string) (string, string, string, bool) {
 		re := regexp.MustCompile(`([A-Za-z]+)(\d+)([A-Z]+)(\d+)`)
 		matches := re.FindStringSubmatch(s)
-		if len(matches) == 3 {
+		if len(matches) > 0 {
 			return matches[1], matches[2], matches[3], true
 		}
 		return "", "", "", false
@@ -37,8 +37,8 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 	for _, storage := range storage {
 		storagetype, epoch, chainID, check := extractEpochAndChainID(storage.Index)
+		fmt.Println(storage.Index, ",", storagetype, ",", epoch, ",", chainID, ",", check)
 		if check {
-			fmt.Println(storage.Index, ",", storagetype, ",", epoch, ",", chainID, ",", check)
 			// handle client keys
 			if storagetype == ClientKey {
 				for i, entry := range storage.StakeEntries {
