@@ -199,18 +199,14 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
 		pairingEpoch := relaySession.PairingEpoch
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum) // TODO: when we pay as u go on subscription this will need to change
-		if relayError != nil {
-			return rpcps.handleRelayErrorStatus(relayError)
-		} else {
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
-			utils.LavaFormatDebug("Provider Finished Relay Successfully",
-				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-				utils.Attribute{Key: "GUID", Value: ctx},
-			)
-			err = nil // we don't want to return an error here
-		}
+		// no need to perform on session done as we did it in try relay subscribe
+		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+		utils.LavaFormatDebug("Provider Finished Relay Successfully",
+			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
+			utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
+			utils.Attribute{Key: "GUID", Value: ctx},
+		)
+		err = nil // we don't want to return an error here
 	} else {
 		// we didn't even manage to subscribe
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
@@ -242,6 +238,21 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+	if clientSub == nil {
+		// failed subscription, but not an error. (probably a node error)
+		// return the response to the user, and close the session.
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // subscription failed due to node error mark session as done and return
+		if relayError != nil {
+			utils.LavaFormatError("Error OnSessionDone", relayError)
+		}
+		err = srv.Send(reply) // this reply contains the error to the subscription
+		if err != nil {
+			utils.LavaFormatError("Error returning response", err)
+		}
+		return true, nil // we already returned the error to the user so no need to return another error.
+	}
+
+	// if we got a node error clientSub will be nil and also err will be nil. in that case we need to check for clientSub
 	subscription := &lavasession.RPCSubscription{
 		Id:                   subscriptionID,
 		Sub:                  clientSub,
