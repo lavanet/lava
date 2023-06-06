@@ -138,7 +138,8 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 		var others []*ApiCollection
 		for i := 0; i < len(collectionsToCombine); i++ {
 			combined = collectionsToCombine[i]
-			others = append(collectionsToCombine[:i], collectionsToCombine[i+1:]...)
+			others = collectionsToCombine[:i]
+			others = append(others, collectionsToCombine[i+1:]...)
 			if combined.Enabled {
 				break
 			}
