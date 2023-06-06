@@ -126,8 +126,8 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {

@@ -27,6 +27,13 @@ const (
 	RetryListeningInterval    = 10 // seconds
 )
 
+type HeadersDirection int
+
+const (
+	SendingToNode HeadersDirection = iota
+	ReceivingFromNode
+)
+
 type TaggedContainer struct {
 	Parsing       *spectypes.Parsing
 	ApiCollection *spectypes.ApiCollection
@@ -43,12 +50,18 @@ type BaseChainParser struct {
 	rwLock         sync.RWMutex
 	serverApis     map[ApiKey]ApiContainer
 	apiCollections map[CollectionKey]*spectypes.ApiCollection
+	headers        map[ApiKey]*spectypes.Header
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection) {
+func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection HeadersDirection) []pairingtypes.Metadata {
+	return metadata
+}
+
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
+	bcp.headers = headers
 	bcp.apiCollections = apiCollections
 }
 
@@ -205,9 +218,10 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[string]TaggedContainer{}
+	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
@@ -253,10 +267,16 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 					}
 				}
 			}
+			for _, header := range apiCollection.Headers {
+				headers[ApiKey{
+					Name:           header.Name,
+					ConnectionType: collectionKey.ConnectionType,
+				}] = header
+			}
 			apiCollections[collectionKey] = apiCollection
 		}
 	}
-	return serverApis, taggedApis, apiCollections
+	return serverApis, taggedApis, apiCollections, headers
 }
 
 // matchSpecApiByName returns service api which match given name

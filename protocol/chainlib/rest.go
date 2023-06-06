@@ -72,6 +72,11 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Extract default block parser
 	blockParser := apiCont.api.BlockParsing
 
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	metadata = apip.HandleHeaders(metadata, apiCollection, SendingToNode)
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:    data,
@@ -94,10 +99,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	if err != nil {
 		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
 	}
-	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
-	if err != nil {
-		return nil, err
-	}
+
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, restMessage, apiCollection)
 	return nodeMsg, nil
 }
@@ -159,8 +161,8 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceRest)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceRest)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)

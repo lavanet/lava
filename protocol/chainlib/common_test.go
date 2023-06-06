@@ -404,7 +404,7 @@ func TestGetServiceApis(t *testing.T) {
 	}
 
 	rpcInterface := spectypes.APIInterfaceRest
-	serverApis, _, _ := getServiceApis(spec, rpcInterface)
+	serverApis, _, _, _ := getServiceApis(spec, rpcInterface)
 
 	// Test serverApis
 	if len(serverApis) != 3 {

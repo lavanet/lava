@@ -159,8 +159,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
