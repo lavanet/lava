@@ -104,7 +104,6 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 					if _, found := currentApis[api.Name]; !found {
 						return fmt.Errorf("duplicate imported api: %s (in collection: %v)", api.Name, collection.CollectionData)
 					}
-
 				}
 				mergedApis[api.Name] = struct{}{}
 				mergedApisList = append(mergedApisList, api)
@@ -124,7 +123,6 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 				}
 				mergedHeaders[header.Name] = struct{}{}
 				mergedHeadersList = append(mergedHeadersList, header)
-
 			}
 		}
 		if mergedParsers != nil {
@@ -149,10 +147,8 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 	for _, api := range mergedApisList {
 		if _, found := currentApis[api.Name]; !found {
 			apic.Apis = append(apic.Apis, api)
-		} else {
-			if !allowOverwrite {
-				return fmt.Errorf("existing api in collection combination %s %v", api.Name, apic)
-			}
+		} else if !allowOverwrite {
+			return fmt.Errorf("existing api in collection combination %s %v", api.Name, apic)
 		}
 	}
 
@@ -160,10 +156,8 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 	for _, header := range mergedHeadersList {
 		if _, found := currentHeaders[header.Name]; !found {
 			apic.Headers = append(apic.Headers, header)
-		} else {
-			if !allowOverwrite {
-				return fmt.Errorf("existing header in collection combination %s %v", header.Name, apic)
-			}
+		} else if !allowOverwrite {
+			return fmt.Errorf("existing header in collection combination %s %v", header.Name, apic)
 		}
 	}
 
@@ -171,10 +165,8 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 	for _, parser := range mergedParserList {
 		if _, found := currentParsers[parser.FunctionTag]; !found {
 			apic.Parsing = append(apic.Parsing, parser)
-		} else {
-			if !allowOverwrite {
-				return fmt.Errorf("existing api in collection combination %s %v", parser.FunctionTag, apic)
-			}
+		} else if !allowOverwrite {
+			return fmt.Errorf("existing api in collection combination %s %v", parser.FunctionTag, apic)
 		}
 	}
 	return nil
