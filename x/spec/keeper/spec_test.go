@@ -601,7 +601,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 						compareCollection = apiCol
 					}
 					require.Equal(t, 1, len(apiCol.Parsing), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.Parsing)
-					// require.Equal(t, 2, len(apiCol.Headers))
+					require.Equal(t, 2, len(apiCol.Headers))
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
