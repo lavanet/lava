@@ -142,7 +142,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders), numProviders) {
+			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
 				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
 				returnedProviders = append(returnedProviders, returnedProviders[0])
 			}
