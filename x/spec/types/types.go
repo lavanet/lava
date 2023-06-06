@@ -60,6 +60,26 @@ func (s *PARSER_FUNC) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// allows unmarshaling header type
+func (s Header_HeaderType) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(Header_HeaderType_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshals a quoted json string to the enum value
+func (s *Header_HeaderType) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = Header_HeaderType(Header_HeaderType_value[j])
+	return nil
+}
+
 func IsFinalizedBlock(requestedBlock int64, latestBlock int64, finalizationCriteria uint32) bool {
 	switch requestedBlock {
 	case NOT_APPLICABLE:

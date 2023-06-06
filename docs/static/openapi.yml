@@ -31339,9 +31339,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -31468,9 +31465,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -31931,8 +31925,10 @@ paths:
                                 kind:
                                   type: string
                                   enum:
-                                    - pass
-                                  default: pass
+                                    - pass_send
+                                    - pass_reply
+                                    - pass_both
+                                  default: pass_send
                           inheritance_apis:
                             type: array
                             items:
@@ -32278,8 +32274,10 @@ paths:
                               kind:
                                 type: string
                                 enum:
-                                  - pass
-                                default: pass
+                                  - pass_send
+                                  - pass_reply
+                                  - pass_both
+                                default: pass_send
                         inheritance_apis:
                           type: array
                           items:
@@ -32447,6 +32445,176 @@ paths:
                         - dynamic
                         - static
                       default: dynamic
+                    imports:
+                      type: array
+                      items:
+                        type: string
+                    api_collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          collection_data:
+                            type: object
+                            properties:
+                              api_interface:
+                                type: string
+                              internal_path:
+                                type: string
+                              type:
+                                type: string
+                              add_on:
+                                type: string
+                          apis:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                enabled:
+                                  type: boolean
+                                name:
+                                  type: string
+                                compute_units:
+                                  type: string
+                                  format: uint64
+                                extra_compute_units:
+                                  type: string
+                                  format: uint64
+                                category:
+                                  type: object
+                                  properties:
+                                    deterministic:
+                                      type: boolean
+                                    local:
+                                      type: boolean
+                                    subscription:
+                                      type: boolean
+                                    stateful:
+                                      type: integer
+                                      format: int64
+                                    hanging_api:
+                                      type: boolean
+                                block_parsing:
+                                  type: object
+                                  properties:
+                                    parser_arg:
+                                      type: array
+                                      items:
+                                        type: string
+                                    parser_func:
+                                      type: string
+                                      enum:
+                                        - EMPTY
+                                        - PARSE_BY_ARG
+                                        - PARSE_CANONICAL
+                                        - PARSE_DICTIONARY
+                                        - PARSE_DICTIONARY_OR_ORDERED
+                                        - DEFAULT
+                                      default: EMPTY
+                                      description: >-
+                                        means parameters are non related to
+                                        block, and should fetch latest block
+                                        args: "latest"
+                                      title: >-
+                                        - PARSE_BY_ARG: means parameters are
+                                        ordered and flat expected arguments are:
+                                        [param index] (example: PARAMS:
+                                        [<#BlockNum>,"banana"]) args: 0
+                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                         - DEFAULT: reserved
+                                    default_value:
+                                      type: string
+                                      title: >-
+                                        default value when set allows parsing
+                                        failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
+                          headers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                kind:
+                                  type: string
+                                  enum:
+                                    - pass_send
+                                    - pass_reply
+                                    - pass_both
+                                  default: pass_send
+                          inheritance_apis:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                api_interface:
+                                  type: string
+                                internal_path:
+                                  type: string
+                                type:
+                                  type: string
+                                add_on:
+                                  type: string
+                            title: by collectionKey
+                          parsing:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                function_tag:
+                                  type: string
+                                function_template:
+                                  type: string
+                                result_parsing:
+                                  type: object
+                                  properties:
+                                    parser_arg:
+                                      type: array
+                                      items:
+                                        type: string
+                                    parser_func:
+                                      type: string
+                                      enum:
+                                        - EMPTY
+                                        - PARSE_BY_ARG
+                                        - PARSE_CANONICAL
+                                        - PARSE_DICTIONARY
+                                        - PARSE_DICTIONARY_OR_ORDERED
+                                        - DEFAULT
+                                      default: EMPTY
+                                      description: >-
+                                        means parameters are non related to
+                                        block, and should fetch latest block
+                                        args: "latest"
+                                      title: >-
+                                        - PARSE_BY_ARG: means parameters are
+                                        ordered and flat expected arguments are:
+                                        [param index] (example: PARAMS:
+                                        [<#BlockNum>,"banana"]) args: 0
+                                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                         - DEFAULT: reserved
+                                    default_value:
+                                      type: string
+                                      title: >-
+                                        default value when set allows parsing
+                                        failures to assume the default value
+                                    encoding:
+                                      type: string
+                                      title: >-
+                                        used to parse byte responses:
+                                        base64,hex,bech32
+                                api_name:
+                                  type: string
               pagination:
                 type: object
                 properties:
@@ -32707,6 +32875,19 @@ paths:
                                        - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
                                        - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
                                        - DEFAULT: reserved
+                                  default_value:
+                                    type: string
+                                    title: >-
+                                      default value when set allows parsing
+                                      failures to assume the default value
+                                  encoding:
+                                    type: string
+                                    title: >-
+                                      used to parse byte responses:
+                                      base64,hex,bech32
+                        headers:
+                          type: array
+                          items:
                             type: object
                             properties:
                               name:
@@ -32714,8 +32895,10 @@ paths:
                               kind:
                                 type: string
                                 enum:
-                                  - pass
-                                default: pass
+                                  - pass_send
+                                  - pass_reply
+                                  - pass_both
+                                default: pass_send
                         inheritance_apis:
                           type: array
                           items:
@@ -55775,9 +55958,6 @@ definitions:
       subscription:
         type: string
         title: the subscription address that owns the project
-      description:
-        type: string
-        title: the description of the project for the users convinient
       enabled:
         type: boolean
         title: enabled flag
@@ -55877,9 +56057,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag
@@ -55974,9 +56151,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag
@@ -56218,8 +56392,10 @@ definitions:
             kind:
               type: string
               enum:
-                - pass
-              default: pass
+                - pass_send
+                - pass_reply
+                - pass_both
+              default: pass_send
       inheritance_apis:
         type: array
         items:
@@ -56345,13 +56521,17 @@ definitions:
       kind:
         type: string
         enum:
-          - pass
-        default: pass
+          - pass_send
+          - pass_reply
+          - pass_both
+        default: pass_send
   lavanet.lava.spec.Header.HeaderType:
     type: string
     enum:
-      - pass
-    default: pass
+      - pass_send
+      - pass_reply
+      - pass_both
+    default: pass_send
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -56595,8 +56775,10 @@ definitions:
                         kind:
                           type: string
                           enum:
-                            - pass
-                          default: pass
+                            - pass_send
+                            - pass_reply
+                            - pass_both
+                          default: pass_send
                   inheritance_apis:
                     type: array
                     items:
@@ -56849,8 +57031,10 @@ definitions:
                       kind:
                         type: string
                         enum:
-                          - pass
-                        default: pass
+                          - pass_send
+                          - pass_reply
+                          - pass_both
+                        default: pass_send
                 inheritance_apis:
                   type: array
                   items:
@@ -57135,8 +57319,10 @@ definitions:
                   kind:
                     type: string
                     enum:
-                      - pass
-                    default: pass
+                      - pass_send
+                      - pass_reply
+                      - pass_both
+                    default: pass_send
             inheritance_apis:
               type: array
               items:
