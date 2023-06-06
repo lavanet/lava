@@ -2015,7 +2015,16 @@
                                 "extra_compute_units": "0"
                             }
                         ],
-                        "headers": [],
+                        "headers": [
+                            {
+                                "name":"x-cosmos-block-height",
+                                "kind": "pass_both"
+                            },
+                            {
+                                "name":"grpc-metadata-x-cosmos-block-height",
+                                "kind": "pass_both"
+                            }
+                        ],
                         "inheritance_apis": [],
                         "parsing": [
                             {

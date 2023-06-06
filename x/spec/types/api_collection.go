@@ -33,13 +33,14 @@ func (apic *ApiCollection) Expand(myCollections map[CollectionData]*ApiCollectio
 			return fmt.Errorf("did not find inheritingCollection in myCollections %v", inheritingCollection)
 		}
 	}
-	return apic.CombineWithOthers(relevantCollections, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	// since expand is called within the same spec it needs to combine with disabled apiCollections
+	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
 }
 
 // inherit is
 func (apic *ApiCollection) Inherit(relevantCollections []*ApiCollection, dependencies map[CollectionData]struct{}) error {
 	// do not set dependencies because this mechanism protects inheritance within the same spec and inherit is inheritance between different specs so same type is allowed
-	return apic.CombineWithOthers(relevantCollections, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
 }
 
 func (apic *ApiCollection) Equals(other *ApiCollection) bool {
@@ -63,7 +64,7 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // this function combines apis, headers and parsers into the api collection from others. it does not check type compatibility
 // changes in place inside the apic
 // nil merge maps means not to combine that field
-func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[string]struct{}) error {
+func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[string]struct{}) error {
 	mergedHeadersList := []*Header{}
 	mergedApisList := []*Api{}
 	mergedParserList := []*Parsing{}
@@ -87,7 +88,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, allowOverw
 	}
 
 	for _, collection := range others {
-		if !collection.Enabled {
+		if !collection.Enabled && !combineWithDisabled {
 			continue
 		}
 		if mergedApis != nil {

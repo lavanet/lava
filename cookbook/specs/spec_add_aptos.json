@@ -358,7 +358,40 @@
                                 "extra_compute_units": "0"
                             }
                         ],
-                        "headers": [],
+                        "headers": [
+                            {
+                                "name":"x-aptos-ledger-version",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-block-height",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-ledger-oldest-version",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-oldest-block-height",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-chain-id",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-epoch",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-ledger-timestampusec",
+                                "kind": "pass_reply"
+                            },
+                            {
+                                "name":"x-aptos-cursor",
+                                "kind": "pass_reply"
+                            }
+                        ],
                         "inheritance_apis": [],
                         "parsing": [
                             {

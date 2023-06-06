@@ -51,13 +51,14 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	defer bcp.rwLock.RUnlock()
 	retMeatadata := []pairingtypes.Metadata{}
 	for _, header := range metadata {
-		apiKey := ApiKey{Name: header.GetName(), ConnectionType: apiCollection.CollectionData.Type}
+		headerName := strings.ToLower(header.Name)
+		apiKey := ApiKey{Name: headerName, ConnectionType: apiCollection.CollectionData.Type}
 		headerDirective, ok := bcp.headers[apiKey]
 		if !ok {
 			// this header is not handled
 			continue
 		}
-		if headerDirective.Kind == headersDirection {
+		if headerDirective.Kind == headersDirection || headerDirective.Kind == spectypes.Header_pass_both {
 			retMeatadata = append(retMeatadata, header)
 		}
 	}
