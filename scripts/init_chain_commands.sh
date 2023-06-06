@@ -35,7 +35,7 @@ lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER
 
 echo "---------------Queries------------------"
 lavad q project developer $(lavad keys show user1 -a)
-lavad query pairing clients "ETH1"
+lavad query pairing providers "ETH1"
 
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
