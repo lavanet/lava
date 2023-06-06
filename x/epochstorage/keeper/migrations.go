@@ -32,7 +32,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			for _, entry := range storage.StakeEntries {
 				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(PairingModuleName), types.TokenDenom)
 				if moduleBalance.IsLT(entry.Stake) {
-					return fmt.Errorf("invalid unstaking module %s doesn't have sufficient balance to account %s", PairingModuleName, entry.Address)
+					return fmt.Errorf("invalid unstaking module %s %d doesn't have sufficient balance to account %s %d", PairingModuleName, moduleBalance.Amount, entry.Address, entry.Stake.Amount)
 				}
 				receiverAddr, err := sdk.AccAddressFromBech32(entry.Address)
 				if err != nil {
