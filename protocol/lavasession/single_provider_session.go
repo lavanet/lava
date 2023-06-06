@@ -232,7 +232,6 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, ma
 		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUser) {
 			return nil
 		}
-		return nil
 	}
 }
 
