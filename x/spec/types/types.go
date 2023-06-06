@@ -35,10 +35,11 @@ const (
 const (
 	GET_BLOCKNUM                = "getBlockNumber"
 	GET_BLOCK_BY_NUM            = "getBlockByNumber"
+	SET_LATEST                  = "setLatestRequest"
 	DEFAULT_PARSED_RESULT_INDEX = 0
 )
 
-var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
+var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM, SET_LATEST}
 
 // allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {
