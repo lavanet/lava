@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -28,26 +29,41 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 
 	for _, storage := range storage {
 		// handle client keys
+		fmt.Println(storage.Index)
 		if storage.Index[:len(ClientKey)] == ClientKey {
-			if len(storage.Index) > len(ClientKey) && unicode.IsNumber(rune(storage.Index[len(ClientKey)])) {
-				for i, entry := range storage.StakeEntries {
+			if len(storage.Index) > len(ClientKey) && !unicode.IsNumber(rune(storage.Index[len(ClientKey)])) {
+				for _, entry := range storage.StakeEntries {
 					moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(PairingModuleName), types.TokenDenom)
-					fmt.Printf("%d / %d unstaking module %s %d have balance to account %s %d \n", i, len(storage.StakeEntries), m.keeper.accountKeeper.GetModuleAddress(PairingModuleName), moduleBalance.Amount.Int64(), entry.Address, entry.Stake.Amount.Int64())
 					if moduleBalance.IsLT(entry.Stake) {
-						return fmt.Errorf("invalid unstaking module %s %d doesn't have sufficient balance to account %s %d", PairingModuleName, moduleBalance.Amount.Int64(), entry.Address, entry.Stake.Amount.Int64())
+						utils.LavaFormatError("module pairing does'nt have enough balance", nil,
+							utils.Attribute{Key: "balance", Value: moduleBalance.Amount.Int64()},
+							utils.Attribute{Key: "client", Value: entry.Address},
+							utils.Attribute{Key: "amount", Value: entry.Stake.Amount.Int64()})
+						continue
 					}
 					receiverAddr, err := sdk.AccAddressFromBech32(entry.Address)
 					if err != nil {
-						return fmt.Errorf("error getting AccAddress from : %s error: %s", entry.Address, err)
+						utils.LavaFormatError("error getting AccAddress", err, utils.Attribute{Key: "client", Value: entry.Address})
+						continue
 					}
 
 					err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, PairingModuleName, receiverAddr, []sdk.Coin{entry.Stake})
 					if err != nil {
-						return fmt.Errorf("invalid transfer coins from module, %s to account %s", err, receiverAddr)
+						utils.LavaFormatError("invalid transfer coins from module to account", err,
+							utils.Attribute{Key: "balance", Value: moduleBalance.Amount.Int64()},
+							utils.Attribute{Key: "client", Value: entry.Address},
+							utils.Attribute{Key: "amount", Value: entry.Stake.Amount.Int64()})
+						continue
 					}
 				}
+				m.keeper.RemoveStakeStorage(ctx, storage.Index)
+			} else if storage.Index[:len(ProviderKey)] == ProviderKey {
+				if len(storage.Index) > len(ProviderKey) {
+					m.keeper.RemoveStakeStorage(ctx, storage.Index)
+					storage.Index = storage.Index[len(ProviderKey):]
+					m.keeper.SetStakeStorage(ctx, storage)
+				}
 			}
-			m.keeper.RemoveStakeStorage(ctx, storage.Index)
 		}
 	}
 	return nil
