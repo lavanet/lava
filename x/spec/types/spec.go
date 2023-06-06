@@ -110,7 +110,9 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 		if len(collectionsToCombine) == 0 {
 			return fmt.Errorf("collection with length 0 %v", idx)
 		}
-		combined, err := collectionsToCombine[0].CombineWithOthers(collectionsToCombine[1:])
+		combined := collectionsToCombine[0]
+		others := collectionsToCombine[1:]
+		err := combined.CombineWithOthers(others, false, make(map[string]struct{}, 0), nil, nil)
 		if err != nil {
 			return err
 		}

@@ -26,7 +26,8 @@ message Header {
 	string name = 1;
 	
 	enum HeaderType {
-    pass = 0;
+    pass_send = 0;
+    pass_reply = 1;
   }
 
 	HeaderType kind = 2;

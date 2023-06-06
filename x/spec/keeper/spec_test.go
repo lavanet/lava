@@ -79,6 +79,24 @@ func createApiCollection(apiCount int, apiIds []int, parsingCount int, apiInterf
 	}
 }
 
+func generateHeaders(count int) (retHeaders []*types.Header) {
+	retHeaders = []*types.Header{}
+	for i := 0; i < count; i++ {
+		header := &types.Header{
+			Name: "header" + strconv.Itoa(i),
+			Kind: 0,
+		}
+		retHeaders = append(retHeaders, header)
+	}
+	return
+}
+
+func createApiCollectionWithHeaders(apiCount int, apiIds []int, parsingCount int, headersCount int, apiInterface string, connectionType string, addon string, imports []*types.CollectionData) *types.ApiCollection {
+	apiCollection := createApiCollection(apiCount, apiIds, parsingCount, apiInterface, connectionType, addon, imports)
+	apiCollection.Headers = generateHeaders(headersCount)
+	return apiCollection
+}
+
 // selectMockApis returns a slice of ServiceApi corresponding to the given ids
 func selectMockApis(apis []*types.Api, ids []int) []*types.Api {
 	var res []*types.Api
@@ -153,8 +171,8 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*typ
 		{name: "disabled", enabled: false, imports: nil, apis: []int{0, 2}},
 		{name: "one-two", enabled: true, imports: nil, apis: []int{0, 2}},
 		{name: "oneX-three", enabled: true, imports: nil, apis: []int{1, 4}},
-		{name: "three-four", enabled: true, imports: nil, apis: []int{4, 6}},
-		{name: "threeX-four", enabled: true, imports: nil, apis: []int{5, 6}},
+		{name: "three-four", enabled: true, imports: nil, apis: []int{1, 3}},
+		{name: "threeX-four", enabled: true, imports: nil, apis: []int{3, 6}},
 	}
 
 	for _, tt := range template {
@@ -162,7 +180,7 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*typ
 			Name:           tt.name,
 			Index:          tt.name,
 			Enabled:        tt.enabled,
-			ApiCollections: []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+			ApiCollections: []*types.ApiCollection{{Enabled: true, CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 		currentSpecs[tt.name] = spec
 		keeper.SetSpec(ctx, spec)
@@ -210,7 +228,7 @@ var specTemplates = []struct {
 		desc:    "import one spec with override in current spec",
 		imports: []string{"one-two"},
 		apis:    []int{1},
-		result:  []int{1, 2},
+		result:  []int{0, 1, 2},
 		ok:      true,
 	},
 	{
@@ -218,7 +236,7 @@ var specTemplates = []struct {
 		desc:    "import two specs",
 		imports: []string{"one-two", "three-four"},
 		apis:    nil,
-		result:  []int{0, 2, 4, 6},
+		result:  []int{0, 1, 2, 3},
 		ok:      true,
 	},
 	{
@@ -233,8 +251,8 @@ var specTemplates = []struct {
 		name:    "import:with-override-dup",
 		desc:    "import two specs with duplicate api with override in current spec",
 		imports: []string{"three-four", "threeX-four"},
-		apis:    []int{6},
-		result:  []int{6, 4},
+		apis:    []int{3},
+		result:  []int{1, 3},
 		ok:      true,
 	},
 	{
@@ -250,7 +268,7 @@ var specTemplates = []struct {
 		desc:    "import two level (one spec that imports another) with disabled",
 		imports: []string{"import:with-override"}, // assumes 'import:with-override' already added
 		apis:    nil,
-		result:  []int{2},
+		result:  []int{0, 1, 2},
 		ok:      true,
 	},
 	{
@@ -284,7 +302,7 @@ func TestSpecWithImport(t *testing.T) {
 			Index:          tt.name,
 			Imports:        tt.imports,
 			Enabled:        true,
-			ApiCollections: []*types.ApiCollection{{CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+			ApiCollections: []*types.ApiCollection{{Enabled: true, CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
@@ -292,10 +310,20 @@ func TestSpecWithImport(t *testing.T) {
 			if tt.ok == true {
 				require.Nil(t, err, err)
 				require.Len(t, fullspec.ApiCollections[0].Apis, len(tt.result))
+
 				for i := 0; i < len(tt.result); i++ {
-					require.Equal(t, fullspec.ApiCollections[0].Apis[i].Name, apis[tt.result[i]].Name)
-					require.Equal(t, fullspec.ApiCollections[0].Apis[i].Enabled, apis[tt.result[i]].Enabled)
+					nameToFind := apis[tt.result[i]].Name
+					found := false
+					for _, api := range fullspec.ApiCollections[0].Apis {
+						if api.Name == nameToFind {
+							require.False(t, found) // only found once
+							found = true
+							require.Equal(t, api.Enabled, apis[tt.result[i]].Enabled)
+						}
+					}
+					require.True(t, found)
 				}
+
 				keeper.SetSpec(ctx, fullspec)
 			} else {
 				require.NotNil(t, err)
@@ -314,34 +342,34 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 		apiCollections []*types.ApiCollection
 	}{
 		{name: "disabled", enabled: false, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{0, 4, 10}, 1, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{0, 4, 10}, 1, 2, "test1", "", "", nil),
 		}},
 		{name: "one", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{0, 4, 11}, 1, "test1", "", "", nil),
-			createApiCollection(20, []int{0, 4, 11}, 1, "test-one", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{0, 4, 11}, 1, 2, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{0, 4, 11}, 1, 2, "test-one", "", "", nil),
 		}},
 		{name: "two", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{1, 5, 12}, 1, "test1", "", "", nil),
-			createApiCollection(20, []int{1, 5, 12}, 1, "test1", "test", "", nil),
-			createApiCollection(20, []int{0, 4, 12}, 1, "test-two", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{1, 5, 12}, 1, 2, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{1, 5, 12}, 1, 2, "test1", "test", "", nil),
+			createApiCollectionWithHeaders(20, []int{0, 4, 12}, 1, 2, "test-two", "", "", nil),
 		}},
 		{name: "three", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{2, 6, 13}, 1, "test1", "", "", nil),
-			createApiCollection(20, []int{2, 6, 13}, 1, "test1", "", "test1", nil),
-			createApiCollection(20, []int{0}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
-			createApiCollection(20, []int{0, 4, 13}, 1, "test-three", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{2, 6, 13}, 1, 2, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{2, 6, 13}, 1, 2, "test1", "", "test1", nil),
+			createApiCollectionWithHeaders(20, []int{0}, 0, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
+			createApiCollectionWithHeaders(20, []int{0, 4, 13}, 1, 2, "test-three", "", "", nil),
 		}},
 		{name: "one-conflict", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{0, 3, 11}, 1, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{0, 3, 11}, 1, 2, "test1", "", "", nil),
 		}},
 		{name: "two-conflict", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{1, 3, 12}, 1, "test1", "", "", nil),
-			createApiCollection(20, []int{1, 3, 12}, 1, "test1", "test", "", nil),
+			createApiCollectionWithHeaders(20, []int{1, 3, 12}, 1, 2, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{1, 3, 12}, 1, 2, "test1", "test", "", nil),
 		}},
 		{name: "three-conflict", enabled: true, imports: nil, apiCollections: []*types.ApiCollection{
-			createApiCollection(20, []int{2, 3, 13}, 1, "test1", "", "", nil),
-			createApiCollection(20, []int{2, 3, 13}, 1, "test1", "", "test1", nil),
-			createApiCollection(20, []int{0, 3, 13}, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
+			createApiCollectionWithHeaders(20, []int{2, 3, 13}, 1, 2, "test1", "", "", nil),
+			createApiCollectionWithHeaders(20, []int{2, 3, 13}, 1, 2, "test1", "", "test1", nil),
+			createApiCollectionWithHeaders(20, []int{0, 3, 13}, 0, 0, "test1", "", "test2", []*types.CollectionData{&createApiCollection(20, []int{2, 6}, 1, "test1", "", "", nil).CollectionData}),
 		}},
 	}
 
@@ -378,9 +406,9 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			desc:    "with several api collections expanding from each other",
 			imports: nil,
 			apisCollections: []*types.ApiCollection{
-				createApiCollection(20, []int{0, 1}, 1, "", "", "", nil),
-				createApiCollection(20, []int{1, 2}, 0, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
-				createApiCollection(0, []int{}, 0, "test1", "", "addon", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
+				createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "", "", "", nil),
+				createApiCollectionWithHeaders(20, []int{1, 2}, 0, 0, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "", "", "", nil).CollectionData}),
+				createApiCollectionWithHeaders(0, []int{}, 0, 0, "test1", "", "addon", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
 			},
 			result:               []int{0, 1, 2},
 			resultApiCollections: 3,
@@ -392,8 +420,8 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			desc:    "fail on several api collections expanding from each other",
 			imports: nil,
 			apisCollections: []*types.ApiCollection{
-				createApiCollection(20, []int{0, 1}, 1, "123", "", "", nil),
-				createApiCollection(20, []int{1, 2}, 1, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "non-existent", "", "", nil).CollectionData}),
+				createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "123", "", "", nil),
+				createApiCollectionWithHeaders(20, []int{1, 2}, 1, 2, "test1", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "non-existent", "", "", nil).CollectionData}),
 			},
 			ok: false,
 		},
@@ -402,8 +430,8 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			desc:    "fail on expand of a incompatible apiInterface type",
 			imports: nil,
 			apisCollections: []*types.ApiCollection{
-				createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil),
-				createApiCollection(20, []int{1, 2}, 1, "test2", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
+				createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "test1", "", "", nil),
+				createApiCollectionWithHeaders(20, []int{1, 2}, 1, 2, "test2", "", "", []*types.CollectionData{&createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil).CollectionData}),
 			},
 			ok: false,
 		},
@@ -458,7 +486,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			name:                 "import:with-override",
 			desc:                 "import one spec with override in current spec",
 			imports:              []string{"one"},
-			apisCollections:      []*types.ApiCollection{createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil)},
+			apisCollections:      []*types.ApiCollection{createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "test1", "", "", nil)},
 			result:               []int{0, 1, 4},
 			resultApiCollections: 2,
 			totalApis:            5,
@@ -468,7 +496,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			name:                 "import:with-no-overlap",
 			desc:                 "import one spec with no overlap in collections in current spec",
 			imports:              []string{"one"},
-			apisCollections:      []*types.ApiCollection{createApiCollection(20, []int{0, 1}, 1, "test-no-overlap", "", "", nil)},
+			apisCollections:      []*types.ApiCollection{createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "test-no-overlap", "", "", nil)},
 			result:               []int{0, 4},
 			resultApiCollections: 3,
 			totalApis:            6,
@@ -495,7 +523,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			name:                 "import:with-override-dup",
 			desc:                 "import two specs with duplicate api with override in current spec",
 			imports:              []string{"one", "one-conflict"},
-			apisCollections:      []*types.ApiCollection{createApiCollection(20, []int{0, 1}, 1, "test1", "", "", nil)},
+			apisCollections:      []*types.ApiCollection{createApiCollectionWithHeaders(20, []int{0, 1}, 1, 2, "test1", "", "", nil)},
 			result:               []int{0, 1, 3, 4},
 			resultApiCollections: 2,
 			totalApis:            6,
@@ -515,7 +543,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			name:                 "import:two-level-override",
 			desc:                 "import two level (one spec that imports another) with disabled",
 			imports:              []string{"import:with-override"}, // assumes 'import:with-override' already added
-			apisCollections:      []*types.ApiCollection{createApiCollection(20, []int{0, 1, 8}, 1, "test1", "", "", nil)},
+			apisCollections:      []*types.ApiCollection{createApiCollectionWithHeaders(20, []int{0, 1, 8}, 1, 2, "test1", "", "", nil)},
 			result:               []int{0, 1, 4, 8},
 			resultApiCollections: 2,
 			totalApis:            6,
@@ -572,7 +600,8 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}) {
 						compareCollection = apiCol
 					}
-					require.Equal(t, 1, len(apiCol.Parsing))
+					require.Equal(t, 1, len(apiCol.Parsing), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.Parsing)
+					// require.Equal(t, 2, len(apiCol.Headers))
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
@@ -599,7 +628,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 				}
 				keeper.SetSpec(ctx, fullspec)
 			} else {
-				require.NotNil(t, err, err)
+				require.Error(t, err, "spec with no error although expected %s", spec.Index)
 			}
 		})
 	}
