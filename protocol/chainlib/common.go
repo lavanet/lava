@@ -49,6 +49,9 @@ type BaseChainParser struct {
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) []pairingtypes.Metadata {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
+	if len(metadata) == 0 {
+		return []pairingtypes.Metadata{}
+	}
 	retMeatadata := []pairingtypes.Metadata{}
 	for _, header := range metadata {
 		headerName := strings.ToLower(header.Name)
