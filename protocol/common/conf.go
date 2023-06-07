@@ -11,10 +11,11 @@ import (
 type Test_mode_ctx_key struct{}
 
 const (
-	EndpointsConfigName = "endpoints"
-	SaveConfigFlagName  = "save-conf"
-	GeolocationFlag     = "geolocation"
-	TestModeFlagName    = "test-mode"
+	EndpointsConfigName                = "endpoints"
+	SaveConfigFlagName                 = "save-conf"
+	GeolocationFlag                    = "geolocation"
+	TestModeFlagName                   = "test-mode"
+	MaximumConcurrentProvidersFlagName = "concurrent-providers"
 )
 
 func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {

@@ -39,7 +39,7 @@ type ProviderOptimizer struct {
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
-	wantedNumProvidersInConcurrency int
+	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 }
 
@@ -142,7 +142,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders), numProviders) {
+			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
 				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
 				returnedProviders = append(returnedProviders, returnedProviders[0])
 			}
@@ -185,7 +185,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sa
 }
 
 func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
-	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
+	if uint(currentNumProvders) >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -394,7 +394,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)

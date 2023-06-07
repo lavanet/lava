@@ -386,9 +386,16 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	}
 
 	providers := csm.providerOptimizer.ChooseProvider(csm.validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+	if debug {
+		utils.LavaFormatDebug("choosing provider",
+			utils.Attribute{Key: "validAddresses", Value: csm.validAddresses},
+			utils.Attribute{Key: "ignoredProvidersList", Value: ignoredProvidersList},
+			utils.Attribute{Key: "chosenProviders", Value: providers},
+		)
+	}
 
 	// make sure we have at least 1 valid provider
-	if len(providers) == 0 {
+	if len(providers) == 0 || providers[0] == "" {
 		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: csm.validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
@@ -400,6 +407,9 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
+	if debug {
+		utils.LavaFormatDebug("called getValidConsumerSessionsWithProvider", utils.Attribute{Key: "ignoredProviders", Value: ignoredProviders})
+	}
 	currentEpoch := csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
 		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", utils.Attribute{Key: "ignoredProvidersEpoch", Value: ignoredProviders.currentEpoch}, utils.Attribute{Key: "currentEpoch", Value: currentEpoch})
@@ -425,6 +435,17 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 		// Iterate over providers
 		for _, providerAddress := range providerAddresses {
 			consumerSessionsWithProvider := csm.pairing[providerAddress]
+			if consumerSessionsWithProvider == nil {
+				utils.LavaFormatFatal("invalid provider address returned from csm.getValidProviderAddresses", nil,
+					utils.Attribute{Key: "providerAddress", Value: providerAddress},
+					utils.Attribute{Key: "all_providerAddresses", Value: providerAddresses},
+					utils.Attribute{Key: "pairing", Value: csm.pairing},
+					utils.Attribute{Key: "epochAtStart", Value: currentEpoch},
+					utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()},
+					utils.Attribute{Key: "validAddresses", Value: csm.validAddresses},
+					utils.Attribute{Key: "wantedProviderNumber", Value: wantedProviderNumber},
+				)
+			}
 			if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession); err != nil {
 				// Add to ignored
 				ignoredProviders.providers[providerAddress] = struct{}{}
