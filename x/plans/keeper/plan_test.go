@@ -204,9 +204,9 @@ func TestInvalidPlanAddition(t *testing.T) {
 			case SERVICERS_FIELD:
 				planToTest[0].PlanPolicy.MaxProvidersToPair = 1
 			case DESCRIPTION_FIELD:
-				planToTest[0].Description = strings.Repeat("a", types.MAX_LEN_PACKAGE_DESCRIPTION+1)
+				planToTest[0].Description = strings.Repeat("a", types.MAX_LEN_PLAN_DESCRIPTION+1)
 			case TYPE_FIELD:
-				planToTest[0].Type = strings.Repeat("a", types.MAX_LEN_PACKAGE_TYPE+1)
+				planToTest[0].Type = strings.Repeat("a", types.MAX_LEN_PLAN_TYPE+1)
 			}
 
 			// simulate a plan proposal - should fail
