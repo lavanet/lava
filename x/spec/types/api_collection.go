@@ -6,7 +6,7 @@ import (
 
 // this means the current collection data can be expanded from other, i.e other is allowed to be in InheritanceApis
 func (cd *CollectionData) CanExpand(other *CollectionData) bool {
-	return cd.ApiInterface == other.ApiInterface && cd.Type == other.Type && cd.InternalPath == other.InternalPath || other.ApiInterface == ""
+	return cd.ApiInterface == other.ApiInterface && cd.Type == other.Type || other.ApiInterface == ""
 }
 
 // expand is called within the same spec apiCollections, to manage inheritance within collections of different add_ons
