@@ -107,13 +107,13 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 			return
 		}
-		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage, 0)
 		if err != nil {
 			utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
 			return
 		}
-		reply.Metadata = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		replyDataHash := sigs.HashMsg(reply.Data)
 		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash)

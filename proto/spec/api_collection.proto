@@ -32,7 +32,7 @@ message Header {
   }
 
 	HeaderType kind = 2;
-  FUNCTION_TAG functionTag = 3;
+  FUNCTION_TAG function_tag = 3;
 }
 
 message Api {
