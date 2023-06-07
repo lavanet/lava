@@ -6,7 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	"github.com/lavanet/lava/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,12 +42,16 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	}
 
 	finalProviders := []epochstoragetypes.StakeEntry{}
-	geolocation := uint64(1)
+	var geolocationFilter pairingfilters.GeolocationFilter
+	policy := projectstypes.Policy{
+		GeolocationProfile: uint64(1),
+	}
+	_ = geolocationFilter.InitFilter(policy)
 	for i := uint64(0); i < k.specKeeper.GeolocationCount(ctx); i++ {
-		validProviders := k.getUnfrozenGeolocationProviders(ctx, stakes, geolocation)
+		validProviders := pairingfilters.FilterProviders(ctx, []pairingfilters.Filter{&geolocationFilter}, stakes, policy)
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 		finalProviders = append(finalProviders, validProviders...)
-		geolocation <<= 1
+		policy.GeolocationProfile <<= 1
 	}
 
 	return &types.QueryStaticProvidersListResponse{Providers: finalProviders}, nil
