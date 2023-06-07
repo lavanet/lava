@@ -10,13 +10,13 @@ rm $LOGS_DIR/*.log
 killall screen
 screen -wipe
 GASPRICE="0.000000001ulava"
-lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 4
 
-lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+# Plans proposal
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-
 sleep 4
 
 
