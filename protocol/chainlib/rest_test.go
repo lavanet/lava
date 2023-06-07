@@ -2,6 +2,8 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -125,7 +127,13 @@ func TestRestParseMessage(t *testing.T) {
 
 func TestRestChainProxy(t *testing.T) {
 	ctx := context.Background()
-	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest)
+
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
+	})
+	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)

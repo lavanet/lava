@@ -1,6 +1,8 @@
 package chainlib
 
 import (
+	"context"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -129,4 +131,24 @@ func TestGRPCParseMessage(t *testing.T) {
 	grpcMsg, ok := msg.GetRPCMessage().(*rpcInterfaceMessages.GrpcMessage)
 	require.True(t, ok)
 	assert.Equal(t, grpcMessage, *grpcMsg)
+}
+
+func TestGrpcChainProxy(t *testing.T) {
+	ctx := context.Background()
+	wasCalled := false
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		wasCalled = true
+	})
+	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandle)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+	_, err = chainFetcher.FetchLatestBlockNum(ctx)
+	require.True(t, wasCalled)
+	require.NoError(t, err)
+	if closeServer != nil {
+		closeServer()
+	}
 }

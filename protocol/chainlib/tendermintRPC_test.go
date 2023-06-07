@@ -1,13 +1,17 @@
 package chainlib
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTendermintChainParser_Spec(t *testing.T) {
@@ -123,4 +127,37 @@ func TestTendermintParseMessage(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
 	assert.Equal(t, msg.RequestedBlock(), int64(-2))
+}
+
+func TestTendermintRpcChainProxy(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{
+			"jsonrpc": "2.0",
+			"id": 1,"result": {
+				"sync_info": {
+					"latest_block_height": "1947"
+				},
+				"block_id": {
+					"hash": "ABABABABABABABABABABABAB"
+				}
+			}
+		}`)
+	})
+
+	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+	block, err := chainFetcher.FetchLatestBlockNum(ctx)
+	require.Greater(t, block, int64(0))
+	require.NoError(t, err)
+	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
+	require.NoError(t, err)
+	if closeServer != nil {
+		closeServer()
+	}
 }

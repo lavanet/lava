@@ -3,13 +3,15 @@ package chainlib
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
@@ -20,8 +22,8 @@ import (
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/proto/tendermint/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestMatchSpecApiByName(t *testing.T) {
@@ -426,8 +428,18 @@ func TestGetServiceApis(t *testing.T) {
 	}
 }
 
+type myServiceImplementation struct {
+	*tmservice.UnimplementedServiceServer
+	serverCallback http.HandlerFunc
+}
+
+func (bbb myServiceImplementation) GetLatestBlock(context.Context, *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
+	bbb.serverCallback(nil, nil)
+	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: 5}}}, nil
+}
+
 // generates a chain parser, a chain fetcher messages based on it
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, errRet error, closeServer func()) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, errRet error, closeServer func()) {
 	closeServer = nil
 	lavaSpec, err := keepertest.GetASpec(specIndex)
 	if err != nil {
@@ -447,34 +459,31 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		NodeUrls:       []common.NodeUrl{},
 	}
 	if apiInterface == spectypes.APIInterfaceGrpc {
-		buf := bufconn.Listen(1024 * 1024)
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: buf.Addr().String()})
+
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
+		lis, err := net.Listen("tcp", "localhost:28353")
+		if err != nil {
+			return nil, nil, nil, err, nil
+		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String()})
 		go func() {
-			// Register your gRPC service implementation with the server
-			// ...
-
+			service := myServiceImplementation{serverCallback: serverCallback}
+			tmservice.RegisterServiceServer(grpcServer, service)
+			gogoreflection.Register(grpcServer)
 			// Serve requests on the buffered connection
-			if err := grpcServer.Serve(buf); err != nil {
+			if err := grpcServer.Serve(lis); err != nil {
 				return
 			}
 		}()
-		time.Sleep(3 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, err, closeServer
 		}
 
 	} else {
-		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Handle the incoming request and provide the desired response
-			w.WriteHeader(http.StatusOK)
-			if apiInterface != spectypes.APIInterfaceGrpc {
-				// can add if cases here for the others
-				fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
-			}
-		}))
+		mockServer := httptest.NewServer(serverCallback)
 		closeServer = mockServer.Close
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
 		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)

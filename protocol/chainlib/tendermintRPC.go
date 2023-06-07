@@ -439,17 +439,16 @@ func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns 
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.TendermintrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
-		_, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
 		return nil, "", nil, utils.LavaFormatError("invalid message type in tendermintrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage}, utils.Attribute{Key: "ptrCast", Value: ok})
 	}
 	if nodeMessage.Path != "" {
-		return cp.SendURI(ctx, &nodeMessage, ch, chainMessage)
+		return cp.SendURI(ctx, nodeMessage, ch, chainMessage)
 	}
 
 	// Else do RPC call
-	return cp.SendRPC(ctx, &nodeMessage, ch, chainMessage)
+	return cp.SendRPC(ctx, nodeMessage, ch, chainMessage)
 }
 
 func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpcInterfaceMessages.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
