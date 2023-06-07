@@ -8,10 +8,21 @@ import (
 
 type FrozenProvidersFilter struct{}
 
-func (*FrozenProvidersFilter) Filter(ctx sdk.Context, stakeEntry []epochstoragetypes.StakeEntry) []bool {
-	return nil
+func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
+	filterResult := make([]bool, len(providers))
+	for i := range providers {
+		if !isProviderFrozen(ctx, providers[i]) {
+			filterResult[i] = true
+		}
+	}
+
+	return filterResult
 }
 
-func (*FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
-	return false
+func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+	return true
+}
+
+func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry) bool {
+	return stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight())
 }
