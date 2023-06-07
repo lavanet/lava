@@ -1152,7 +1152,7 @@
                         "inheritance_apis": [],
                         "parse_directives": [
                             {
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
@@ -1166,7 +1166,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlockHeight\",\"params\":[],\"id\":1}",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0"

@@ -32,6 +32,7 @@ message Header {
   }
 
 	HeaderType kind = 2;
+  FUNCTION_TAG functionTag = 3;
 }
 
 message Api {
@@ -44,7 +45,7 @@ message Api {
 }
 
 message ParseDirective {
-  string function_tag = 1;
+  FUNCTION_TAG function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
@@ -55,6 +56,14 @@ message BlockParser {
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
   string encoding =4; // used to parse byte responses: base64,hex,bech32
+}
+
+enum FUNCTION_TAG {
+  DISABLED = 0;
+  GET_BLOCKNUM = 1;
+  GET_BLOCK_BY_NUM = 2;
+  SET_LATEST_IN_METADATA = 3;
+  SET_LATEST_IN_BODY = 4;
 }
 
 enum PARSER_FUNC{

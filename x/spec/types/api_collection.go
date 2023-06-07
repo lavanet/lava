@@ -34,13 +34,13 @@ func (apic *ApiCollection) Expand(myCollections map[CollectionData]*ApiCollectio
 		}
 	}
 	// since expand is called within the same spec it needs to combine with disabled apiCollections
-	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
 }
 
 // inherit is
 func (apic *ApiCollection) Inherit(relevantCollections []*ApiCollection, dependencies map[CollectionData]struct{}) error {
 	// do not set dependencies because this mechanism protects inheritance within the same spec and inherit is inheritance between different specs so same type is allowed
-	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
 }
 
 func (apic *ApiCollection) Equals(other *ApiCollection) bool {
@@ -64,13 +64,13 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // this function combines apis, headers and parsers into the api collection from others. it does not check type compatibility
 // changes in place inside the apic
 // nil merge maps means not to combine that field
-func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[string]struct{}) error {
+func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[FUNCTION_TAG]struct{}) error {
 	mergedHeadersList := []*Header{}
 	mergedApisList := []*Api{}
 	mergedParserList := []*ParseDirective{}
 	currentApis := make(map[string]struct{}, 0)
 	currentHeaders := make(map[string]struct{}, 0)
-	currentParsers := make(map[string]struct{}, 0)
+	currentParsers := make(map[FUNCTION_TAG]struct{}, 0)
 	if mergedApis != nil {
 		for _, api := range apic.Apis {
 			currentApis[api.Name] = struct{}{}

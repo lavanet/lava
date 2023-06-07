@@ -38,7 +38,7 @@ type ApiContainer struct {
 }
 
 type BaseChainParser struct {
-	taggedApis     map[string]TaggedContainer
+	taggedApis     map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec           spectypes.Spec
 	rwLock         sync.RWMutex
 	serverApis     map[ApiKey]ApiContainer
@@ -69,7 +69,7 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	return retMeatadata
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
@@ -77,7 +77,7 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string
 	bcp.apiCollections = apiCollections
 }
 
-func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
+func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
@@ -230,9 +230,9 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
 	serverApis := map[ApiKey]ApiContainer{}
-	taggedApis := map[string]TaggedContainer{}
+	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {

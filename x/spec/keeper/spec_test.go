@@ -52,7 +52,7 @@ func prepareMockParsing(count int) []*types.ParseDirective {
 
 		api.Enabled = true
 		parsing := &types.ParseDirective{
-			FunctionTag:      uniqueName,
+			FunctionTag:      types.FUNCTION_TAG(i + 1),
 			FunctionTemplate: "%s",
 			ResultParsing:    types.BlockParser{},
 			ApiName:          api.Name,

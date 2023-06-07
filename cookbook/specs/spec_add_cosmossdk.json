@@ -2029,7 +2029,7 @@
                         "parse_directives": [
                             {
                                 "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -2043,7 +2043,7 @@
                             },
                             {
                                 "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -3630,7 +3630,7 @@
                         "parse_directives": [
                             {
                                 "function_template": "",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -3644,7 +3644,7 @@
                             },
                             {
                                 "function_template": "{\"height\":\"%d\"}",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -4217,7 +4217,7 @@
                         "inheritance_apis": [],
                         "parse_directives": [
                             {
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
@@ -4231,7 +4231,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"%d\"]}",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
