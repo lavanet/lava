@@ -34,12 +34,12 @@ func (p Plan) ValidatePlan() error {
 	}
 
 	// check that the plan's description length is below the max length
-	if len(p.GetDescription()) > MAX_LEN_PACKAGE_DESCRIPTION {
+	if len(p.GetDescription()) > MAX_LEN_PLAN_DESCRIPTION {
 		return sdkerrors.Wrap(ErrInvalidPlanDescription, "plan's description is too long")
 	}
 
 	// check that the plan's type length is below the max length
-	if len(p.GetType()) > MAX_LEN_PACKAGE_TYPE {
+	if len(p.GetType()) > MAX_LEN_PLAN_TYPE {
 		return sdkerrors.Wrap(ErrInvalidPlanType, "plan's type is too long")
 	}
 
