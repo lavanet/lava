@@ -107,7 +107,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 			return
 		}
-		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage, 0)
+		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 		if err != nil {
 			utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})

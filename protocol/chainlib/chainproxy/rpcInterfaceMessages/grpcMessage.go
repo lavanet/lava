@@ -52,6 +52,11 @@ func (gm GrpcMessage) GetParams() interface{} {
 	return parsedData
 }
 
+func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
+	gm.SetLatestBlockWithHeader(latestBlock)
+	// when !done: we need a different setter
+}
+
 func (gm GrpcMessage) dynamicResolve() (interface{}, error) {
 	md, err := gm.Registry.FindDescriptorByName(protoreflect.FullName(strings.ReplaceAll(gm.Path, "/", ".")))
 	if err != nil {

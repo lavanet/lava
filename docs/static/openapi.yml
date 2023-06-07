@@ -31929,6 +31929,15 @@ paths:
                                     - pass_reply
                                     - pass_both
                                   default: pass_send
+                                function_tag:
+                                  type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                           inheritance_apis:
                             type: array
                             items:
@@ -31943,13 +31952,20 @@ paths:
                                 add_on:
                                   type: string
                             title: by collectionKey
-                          parsing:
+                          parse_directives:
                             type: array
                             items:
                               type: object
                               properties:
                                 function_tag:
                                   type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                                 function_template:
                                   type: string
                                 result_parsing:
@@ -32278,6 +32294,15 @@ paths:
                                   - pass_reply
                                   - pass_both
                                 default: pass_send
+                              function_tag:
+                                type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                         inheritance_apis:
                           type: array
                           items:
@@ -32292,13 +32317,20 @@ paths:
                               add_on:
                                 type: string
                           title: by collectionKey
-                        parsing:
+                        parse_directives:
                           type: array
                           items:
                             type: object
                             properties:
                               function_tag:
                                 type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                               function_template:
                                 type: string
                               result_parsing:
@@ -32550,6 +32582,15 @@ paths:
                                     - pass_reply
                                     - pass_both
                                   default: pass_send
+                                function_tag:
+                                  type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                           inheritance_apis:
                             type: array
                             items:
@@ -32564,13 +32605,20 @@ paths:
                                 add_on:
                                   type: string
                             title: by collectionKey
-                          parsing:
+                          parse_directives:
                             type: array
                             items:
                               type: object
                               properties:
                                 function_tag:
                                   type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                                 function_template:
                                   type: string
                                 result_parsing:
@@ -32899,6 +32947,15 @@ paths:
                                   - pass_reply
                                   - pass_both
                                 default: pass_send
+                              function_tag:
+                                type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                         inheritance_apis:
                           type: array
                           items:
@@ -32913,13 +32970,20 @@ paths:
                               add_on:
                                 type: string
                           title: by collectionKey
-                        parsing:
+                        parse_directives:
                           type: array
                           items:
                             type: object
                             properties:
                               function_tag:
                                 type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                               function_template:
                                 type: string
                               result_parsing:
@@ -56396,6 +56460,15 @@ definitions:
                 - pass_reply
                 - pass_both
               default: pass_send
+            function_tag:
+              type: string
+              enum:
+                - DISABLED
+                - GET_BLOCKNUM
+                - GET_BLOCK_BY_NUM
+                - SET_LATEST_IN_METADATA
+                - SET_LATEST_IN_BODY
+              default: DISABLED
       inheritance_apis:
         type: array
         items:
@@ -56410,13 +56483,20 @@ definitions:
             add_on:
               type: string
         title: by collectionKey
-      parsing:
+      parse_directives:
         type: array
         items:
           type: object
           properties:
             function_tag:
               type: string
+              enum:
+                - DISABLED
+                - GET_BLOCKNUM
+                - GET_BLOCK_BY_NUM
+                - SET_LATEST_IN_METADATA
+                - SET_LATEST_IN_BODY
+              default: DISABLED
             function_template:
               type: string
             result_parsing:
@@ -56513,6 +56593,15 @@ definitions:
         type: string
       add_on:
         type: string
+  lavanet.lava.spec.FUNCTION_TAG:
+    type: string
+    enum:
+      - DISABLED
+      - GET_BLOCKNUM
+      - GET_BLOCK_BY_NUM
+      - SET_LATEST_IN_METADATA
+      - SET_LATEST_IN_BODY
+    default: DISABLED
   lavanet.lava.spec.Header:
     type: object
     properties:
@@ -56525,6 +56614,15 @@ definitions:
           - pass_reply
           - pass_both
         default: pass_send
+      function_tag:
+        type: string
+        enum:
+          - DISABLED
+          - GET_BLOCKNUM
+          - GET_BLOCK_BY_NUM
+          - SET_LATEST_IN_METADATA
+          - SET_LATEST_IN_BODY
+        default: DISABLED
   lavanet.lava.spec.Header.HeaderType:
     type: string
     enum:
@@ -56562,11 +56660,18 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
-  lavanet.lava.spec.Parsing:
+  lavanet.lava.spec.ParseDirective:
     type: object
     properties:
       function_tag:
         type: string
+        enum:
+          - DISABLED
+          - GET_BLOCKNUM
+          - GET_BLOCK_BY_NUM
+          - SET_LATEST_IN_METADATA
+          - SET_LATEST_IN_BODY
+        default: DISABLED
       function_template:
         type: string
       result_parsing:
@@ -56779,6 +56884,15 @@ definitions:
                             - pass_reply
                             - pass_both
                           default: pass_send
+                        function_tag:
+                          type: string
+                          enum:
+                            - DISABLED
+                            - GET_BLOCKNUM
+                            - GET_BLOCK_BY_NUM
+                            - SET_LATEST_IN_METADATA
+                            - SET_LATEST_IN_BODY
+                          default: DISABLED
                   inheritance_apis:
                     type: array
                     items:
@@ -56793,13 +56907,20 @@ definitions:
                         add_on:
                           type: string
                     title: by collectionKey
-                  parsing:
+                  parse_directives:
                     type: array
                     items:
                       type: object
                       properties:
                         function_tag:
                           type: string
+                          enum:
+                            - DISABLED
+                            - GET_BLOCKNUM
+                            - GET_BLOCK_BY_NUM
+                            - SET_LATEST_IN_METADATA
+                            - SET_LATEST_IN_BODY
+                          default: DISABLED
                         function_template:
                           type: string
                         result_parsing:
@@ -57035,6 +57156,15 @@ definitions:
                           - pass_reply
                           - pass_both
                         default: pass_send
+                      function_tag:
+                        type: string
+                        enum:
+                          - DISABLED
+                          - GET_BLOCKNUM
+                          - GET_BLOCK_BY_NUM
+                          - SET_LATEST_IN_METADATA
+                          - SET_LATEST_IN_BODY
+                        default: DISABLED
                 inheritance_apis:
                   type: array
                   items:
@@ -57049,13 +57179,20 @@ definitions:
                       add_on:
                         type: string
                   title: by collectionKey
-                parsing:
+                parse_directives:
                   type: array
                   items:
                     type: object
                     properties:
                       function_tag:
                         type: string
+                        enum:
+                          - DISABLED
+                          - GET_BLOCKNUM
+                          - GET_BLOCK_BY_NUM
+                          - SET_LATEST_IN_METADATA
+                          - SET_LATEST_IN_BODY
+                        default: DISABLED
                       function_template:
                         type: string
                       result_parsing:
@@ -57323,6 +57460,15 @@ definitions:
                       - pass_reply
                       - pass_both
                     default: pass_send
+                  function_tag:
+                    type: string
+                    enum:
+                      - DISABLED
+                      - GET_BLOCKNUM
+                      - GET_BLOCK_BY_NUM
+                      - SET_LATEST_IN_METADATA
+                      - SET_LATEST_IN_BODY
+                    default: DISABLED
             inheritance_apis:
               type: array
               items:
@@ -57337,13 +57483,20 @@ definitions:
                   add_on:
                     type: string
               title: by collectionKey
-            parsing:
+            parse_directives:
               type: array
               items:
                 type: object
                 properties:
                   function_tag:
                     type: string
+                    enum:
+                      - DISABLED
+                      - GET_BLOCKNUM
+                      - GET_BLOCK_BY_NUM
+                      - SET_LATEST_IN_METADATA
+                      - SET_LATEST_IN_BODY
+                    default: DISABLED
                   function_template:
                     type: string
                   result_parsing:

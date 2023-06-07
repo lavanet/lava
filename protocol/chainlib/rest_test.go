@@ -1,14 +1,17 @@
 package chainlib
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRestChainParser_Spec(t *testing.T) {
@@ -117,5 +120,20 @@ func TestRestParseMessage(t *testing.T) {
 		BaseMessage: chainproxy.BaseMessage{Headers: []pairingtypes.Metadata{}},
 	}
 
-	assert.Equal(t, restMessage, msg.GetRPCMessage())
+	assert.Equal(t, &restMessage, msg.GetRPCMessage())
+}
+
+func TestRestChainProxy(t *testing.T) {
+	ctx := context.Background()
+	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+	block, err := chainFetcher.FetchLatestBlockNum(ctx)
+	require.Greater(t, block, int64(0))
+	require.NoError(t, err)
+	if closeServer != nil {
+		closeServer()
+	}
 }

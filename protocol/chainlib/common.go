@@ -154,10 +154,15 @@ func (apip *BaseChainParser) getApiCollection(connectionType string, internalPat
 	return api, nil
 }
 
+type updatableRPCInput interface {
+	parser.RPCInput
+	UpdateLatestBlockInMessage(uint64)
+}
+
 type parsedMessage struct {
 	api            *spectypes.Api
 	requestedBlock int64
-	msg            parser.RPCInput
+	msg            updatableRPCInput
 	apiCollection  *spectypes.ApiCollection
 }
 
@@ -191,6 +196,10 @@ func (pm parsedMessage) RequestedBlock() int64 {
 
 func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
 	return pm.msg
+}
+
+func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
+	pm.msg.UpdateLatestBlockInMessage(latestBlock)
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {

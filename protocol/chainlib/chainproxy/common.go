@@ -2,6 +2,7 @@ package chainproxy
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -17,7 +18,26 @@ type CustomParsingMessage interface {
 }
 
 type BaseMessage struct {
-	Headers []pairingtypes.Metadata
+	Headers                 []pairingtypes.Metadata
+	LatestBlockHeaderSetter string
+}
+
+func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64) (done bool) {
+	if bm.LatestBlockHeaderSetter == "" {
+		return false
+	}
+	headerValue := strconv.FormatUint(latestBlock, 10)
+	for idx, header := range bm.Headers {
+		if header.Name == bm.LatestBlockHeaderSetter {
+			bm.Headers[idx].Value = headerValue
+			return true
+		}
+	}
+	bm.Headers = append(bm.Headers, pairingtypes.Metadata{
+		Name:  bm.LatestBlockHeaderSetter,
+		Value: headerValue,
+	})
+	return true
 }
 
 func (bm BaseMessage) GetHeaders() []pairingtypes.Metadata {

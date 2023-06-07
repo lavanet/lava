@@ -40,6 +40,11 @@ func (cp RestMessage) GetParams() interface{} {
 	return parameters
 }
 
+func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
+	rm.SetLatestBlockWithHeader(latestBlock)
+	// if !done else we need a different setter
+}
+
 // GetResult will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (cp RestMessage) GetResult() json.RawMessage {

@@ -1,8 +1,11 @@
 package chainlib
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -11,8 +14,14 @@ import (
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavasession"
+	keepertest "github.com/lavanet/lava/testutil/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestMatchSpecApiByName(t *testing.T) {
@@ -347,6 +356,8 @@ func (m *mockRPCInput) GetResult() json.RawMessage {
 	return nil
 }
 
+func (m *mockRPCInput) UpdateLatestBlockInMessage(uint64) {}
+
 func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 	return 0, nil
 }
@@ -413,4 +424,66 @@ func TestGetServiceApis(t *testing.T) {
 	if len(serverApis) != 3 {
 		t.Errorf("Expected serverApis length to be 3, but got %d", len(serverApis))
 	}
+}
+
+// generates a chain parser, a chain fetcher messages based on it
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, errRet error, closeServer func()) {
+	closeServer = nil
+	lavaSpec, err := keepertest.GetASpec(specIndex)
+	if err != nil {
+		return nil, nil, nil, err, nil
+	}
+	chainParser, err := NewChainParser(apiInterface)
+	if err != nil {
+		return nil, nil, nil, err, nil
+	}
+	var chainProxy ChainProxy
+	chainParser.SetSpec(lavaSpec)
+	endpoint := &lavasession.RPCProviderEndpoint{
+		NetworkAddress: "",
+		ChainID:        specIndex,
+		ApiInterface:   apiInterface,
+		Geolocation:    1,
+		NodeUrls:       []common.NodeUrl{},
+	}
+	if apiInterface == spectypes.APIInterfaceGrpc {
+		buf := bufconn.Listen(1024 * 1024)
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: buf.Addr().String()})
+		// Start a new gRPC server using the buffered connection
+		grpcServer := grpc.NewServer()
+		go func() {
+			// Register your gRPC service implementation with the server
+			// ...
+
+			// Serve requests on the buffered connection
+			if err := grpcServer.Serve(buf); err != nil {
+				return
+			}
+		}()
+		time.Sleep(3 * time.Millisecond)
+		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		if err != nil {
+			return nil, nil, nil, err, closeServer
+		}
+
+	} else {
+		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Handle the incoming request and provide the desired response
+			w.WriteHeader(http.StatusOK)
+			if apiInterface != spectypes.APIInterfaceGrpc {
+				// can add if cases here for the others
+				fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
+			}
+		}))
+		closeServer = mockServer.Close
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
+		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		if err != nil {
+			return nil, nil, nil, err, closeServer
+		}
+	}
+
+	chainFetcher := NewChainFetcher(ctx, chainProxy, chainParser, endpoint)
+
+	return chainParser, chainProxy, chainFetcher, err, closeServer
 }
