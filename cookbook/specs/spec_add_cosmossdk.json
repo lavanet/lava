@@ -3629,7 +3629,8 @@
                             },
                             {
                                 "name":"grpc-metadata-x-cosmos-block-height",
-                                "kind": "pass_both"
+                                "kind": "pass_both",
+                                "function_tag":"SET_LATEST_IN_METADATA"
                             }
                         ],
                         "inheritance_apis": [],
@@ -3661,6 +3662,11 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight"
+                            },
+                            {
+                                "function_template": "%d",
+                                "function_tag": "SET_LATEST_IN_METADATA",
+                                "api_name": "grpc-metadata-x-cosmos-block-height"
                             }
                         ]
                     },

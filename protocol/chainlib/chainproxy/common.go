@@ -2,10 +2,11 @@ package chainproxy
 
 import (
 	"encoding/json"
-	"strconv"
+	"fmt"
 
 	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
@@ -19,22 +20,22 @@ type CustomParsingMessage interface {
 
 type BaseMessage struct {
 	Headers                 []pairingtypes.Metadata
-	LatestBlockHeaderSetter string
+	LatestBlockHeaderSetter *spectypes.ParseDirective
 }
 
 func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64) (done bool) {
-	if bm.LatestBlockHeaderSetter == "" {
+	if bm.LatestBlockHeaderSetter == nil {
 		return false
 	}
-	headerValue := strconv.FormatUint(latestBlock, 10)
+	headerValue := fmt.Sprintf(bm.LatestBlockHeaderSetter.FunctionTemplate, latestBlock)
 	for idx, header := range bm.Headers {
-		if header.Name == bm.LatestBlockHeaderSetter {
+		if header.Name == bm.LatestBlockHeaderSetter.ApiName {
 			bm.Headers[idx].Value = headerValue
 			return true
 		}
 	}
 	bm.Headers = append(bm.Headers, pairingtypes.Metadata{
-		Name:  bm.LatestBlockHeaderSetter,
+		Name:  bm.LatestBlockHeaderSetter.ApiName,
 		Value: headerValue,
 	})
 	return true

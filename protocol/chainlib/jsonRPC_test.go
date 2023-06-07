@@ -136,7 +136,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 
 	})
 
-	chainParser, chainProxy, chainFetcher, err, closeServer := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle)
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)

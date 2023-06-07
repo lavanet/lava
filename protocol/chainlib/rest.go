@@ -79,6 +79,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:         data,
@@ -90,7 +91,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		restMessage = rpcInterfaceMessages.RestMessage{
 			Msg:         nil,
 			Path:        url + string(data),
-			BaseMessage: chainproxy.BaseMessage{Headers: metadata},
+			BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.

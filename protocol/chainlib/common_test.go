@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/proto/tendermint/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestMatchSpecApiByName(t *testing.T) {
@@ -428,26 +429,54 @@ func TestGetServiceApis(t *testing.T) {
 	}
 }
 
+type mockResponseWriter struct {
+	blockToReturn *int
+}
+
+func (mockResponseWriter) Header() http.Header {
+	return http.Header{}
+}
+func (mockResponseWriter) Write(in []byte) (int, error) {
+	return 0, nil
+}
+func (mrw mockResponseWriter) WriteHeader(statusCode int) {
+	*mrw.blockToReturn = statusCode
+}
+
 type myServiceImplementation struct {
 	*tmservice.UnimplementedServiceServer
 	serverCallback http.HandlerFunc
 }
 
-func (bbb myServiceImplementation) GetLatestBlock(context.Context, *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
-	bbb.serverCallback(nil, nil)
-	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: 5}}}, nil
+func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
+
+	metadata, exists := metadata.FromIncomingContext(ctx)
+	req := &http.Request{}
+	if exists {
+		headers := map[string][]string{}
+		for key, val := range metadata {
+			headers[key] = val
+		}
+		req = &http.Request{
+			Header: headers,
+		}
+	}
+	num := 5
+	respWriter := mockResponseWriter{blockToReturn: &num}
+	bbb.serverCallback(respWriter, req)
+	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
 }
 
 // generates a chain parser, a chain fetcher messages based on it
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, errRet error, closeServer func()) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
 	lavaSpec, err := keepertest.GetASpec(specIndex)
 	if err != nil {
-		return nil, nil, nil, err, nil
+		return nil, nil, nil, nil, err
 	}
 	chainParser, err := NewChainParser(apiInterface)
 	if err != nil {
-		return nil, nil, nil, err, nil
+		return nil, nil, nil, nil, err
 	}
 	var chainProxy ChainProxy
 	chainParser.SetSpec(lavaSpec)
@@ -464,7 +493,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		grpcServer := grpc.NewServer()
 		lis, err := net.Listen("tcp", "localhost:28353")
 		if err != nil {
-			return nil, nil, nil, err, nil
+			return nil, nil, nil, closeServer, err
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String()})
 		go func() {
@@ -479,7 +508,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		time.Sleep(10 * time.Millisecond)
 		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
 		if err != nil {
-			return nil, nil, nil, err, closeServer
+			return nil, nil, nil, closeServer, err
 		}
 
 	} else {
@@ -488,11 +517,11 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
 		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
 		if err != nil {
-			return nil, nil, nil, err, closeServer
+			return nil, nil, nil, closeServer, err
 		}
 	}
 
 	chainFetcher := NewChainFetcher(ctx, chainProxy, chainParser, endpoint)
 
-	return chainParser, chainProxy, chainFetcher, err, closeServer
+	return chainParser, chainProxy, chainFetcher, closeServer, err
 }

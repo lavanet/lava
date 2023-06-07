@@ -119,13 +119,15 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// handle headers
 	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
 		Msg:         data,
 		Path:        url,
 		Codec:       apip.codec,
 		Registry:    apip.registry,
-		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 	}
 
 	// // Fetch requested block, it is used for data reliability
