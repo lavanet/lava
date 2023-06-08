@@ -47,6 +47,7 @@ message Parsing {
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
+  string wanted_result = 5;
 }
 
 message BlockParser {

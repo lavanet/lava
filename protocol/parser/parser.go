@@ -105,6 +105,27 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	return rpcInput.ParseBlock(resString)
 }
 
+func ParseSpecIDFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
+	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
+	if err != nil || result == nil {
+		return "", err
+	}
+
+	chainID, ok := result[0].(string)
+	if !ok {
+		return "", errors.New("chain ID is not string parseable")
+	}
+
+	if strings.Contains(chainID, "\"") {
+		chainID, err = strconv.Unquote(chainID)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return chainID, nil
+}
+
 // this function returns the block that was requested,
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
