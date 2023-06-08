@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"math"
 	"strconv"
 	"strings"
 
@@ -11,8 +10,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
-
-const FrozenBlock = math.MaxInt64
 
 func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezeProvider) (*types.MsgFreezeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -35,7 +32,7 @@ func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []stri
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
-		stakeEntry.StakeAppliedBlock = FrozenBlock
+		stakeEntry.StakeAppliedBlock = types.FROZEN_BLOCK
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainId, stakeEntry, index)
 	}
 

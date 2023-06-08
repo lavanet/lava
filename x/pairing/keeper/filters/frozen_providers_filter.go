@@ -3,6 +3,7 @@ package filters
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 )
 
@@ -15,7 +16,7 @@ func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy)
 func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
-		if !isProviderFrozen(ctx, providers[i]) {
+		if !isProviderFrozen(providers[i]) {
 			filterResult[i] = true
 		}
 	}
@@ -23,6 +24,6 @@ func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstorage
 	return filterResult
 }
 
-func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry) bool {
-	return stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight())
+func isProviderFrozen(stakeEntry epochstoragetypes.StakeEntry) bool {
+	return stakeEntry.StakeAppliedBlock == types.FROZEN_BLOCK
 }

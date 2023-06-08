@@ -124,6 +124,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		if err != nil {
 			return nil, 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
 		}
+		projectToPair = project.Index
 	} else {
 		// legacy staked client
 		clientStakeEntry, err2 := k.VerifyClientStake(ctx, chainID, clientAddress, block, epoch)
