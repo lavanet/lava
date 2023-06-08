@@ -50,6 +50,7 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 			utils.LavaFormatError("filter result length is not equal to providers list length", fmt.Errorf("filter failed"),
 				utils.Attribute{},
 			)
+			return []epochstoragetypes.StakeEntry{}
 		}
 
 		for i := range res {

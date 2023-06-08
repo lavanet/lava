@@ -8,6 +8,10 @@ import (
 
 type FrozenProvidersFilter struct{}
 
+func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+	return true
+}
+
 func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
@@ -17,10 +21,6 @@ func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstorage
 	}
 
 	return filterResult
-}
-
-func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
-	return true
 }
 
 func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry) bool {

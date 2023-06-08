@@ -120,7 +120,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err == nil {
 		legacyStake = false
-		strictestPolicy, projectToPair, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+		strictestPolicy, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
 		if err != nil {
 			return nil, 0, false, fmt.Errorf("invalid user for pairing: %s", err.Error())
 		}
@@ -164,10 +164,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, allowedCU, legacyStake, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (projectstypes.Policy, string, uint64, error) {
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (projectstypes.Policy, uint64, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return projectstypes.Policy{}, "", 0, err
+		return projectstypes.Policy{}, 0, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -180,23 +180,21 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 
 	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return projectstypes.Policy{}, "", 0, fmt.Errorf("chain ID not found in any of the policies")
+		return projectstypes.Policy{}, 0, fmt.Errorf("chain ID not found in any of the policies")
 	}
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if providersToPair == uint64(math.MaxUint64) {
-		return projectstypes.Policy{}, "", 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+		return projectstypes.Policy{}, 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return projectstypes.Policy{}, "", 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return projectstypes.Policy{}, 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
-
-	projectToPair := project.Index
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
@@ -207,7 +205,7 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		SelectedProviders:     selectedProvidersList,
 	}
 
-	return strictestPolicy, projectToPair, allowedCU, nil
+	return strictestPolicy, allowedCU, nil
 }
 
 func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Policy) (projectstypes.PolicySelectedProvidersModeEnum, []string) {

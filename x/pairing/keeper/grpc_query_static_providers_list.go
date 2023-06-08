@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -44,9 +45,17 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	finalProviders := []epochstoragetypes.StakeEntry{}
 	var geolocationFilter pairingfilters.GeolocationFilter
 	policy := projectstypes.Policy{
-		GeolocationProfile: uint64(1),
+		GeolocationProfile:    uint64(1),
+		SelectedProvidersMode: projectstypes.Policy_DISABLED,
 	}
-	_ = geolocationFilter.InitFilter(policy)
+	geoFilterActive := geolocationFilter.InitFilter(policy)
+	if !geoFilterActive {
+		return nil, utils.LavaFormatError("geolocation filter should be active according to the mode", fmt.Errorf("geo filter not active"),
+			utils.Attribute{Key: "selected_providers_mode", Value: policy.SelectedProvidersMode},
+			utils.Attribute{Key: "geolocation_profile", Value: policy.GeolocationProfile},
+		)
+	}
+
 	for i := uint64(0); i < k.specKeeper.GeolocationCount(ctx); i++ {
 		validProviders := pairingfilters.FilterProviders(ctx, []pairingfilters.Filter{&geolocationFilter}, stakes, policy)
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
