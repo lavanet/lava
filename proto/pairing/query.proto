@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
-import "pairing/badge_used_cu.proto";
 // this line is used by starport scaffolding # 1
 import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";

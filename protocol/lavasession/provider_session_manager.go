@@ -350,7 +350,7 @@ func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscripti
 func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	// we already validated the epoch is valid in the GetSession no need to verify again.
+	// we already validated the epoch is valid in the GetSessions no need to verify again.
 	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch]
 	if !foundEpoch {
 		// this is the first time we subscribe in this epoch

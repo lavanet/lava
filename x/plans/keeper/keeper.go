@@ -16,7 +16,10 @@ type (
 	Keeper struct {
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
-		plansFS    common.FixationStore
+
+		epochstorageKeeper types.EpochStorageKeeper
+
+		plansFS common.FixationStore
 	}
 )
 
@@ -25,6 +28,7 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
+	epochstorageKeeper types.EpochStorageKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -34,9 +38,10 @@ func NewKeeper(
 	fs := *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix)
 
 	return &Keeper{
-		memKey:     memKey,
-		paramstore: ps,
-		plansFS:    fs,
+		memKey:             memKey,
+		paramstore:         ps,
+		epochstorageKeeper: epochstorageKeeper,
+		plansFS:            fs,
 	}
 }
 
@@ -46,4 +51,8 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) IsEpochStart(ctx sdk.Context) bool {
+	return k.epochstorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
 }

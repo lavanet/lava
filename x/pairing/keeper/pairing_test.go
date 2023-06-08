@@ -404,7 +404,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{plan})
+			err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{plan})
 			require.Nil(t, err)
 
 			_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subscriptiontypes.MsgBuy{

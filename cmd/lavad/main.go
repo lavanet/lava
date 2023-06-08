@@ -1,14 +1,14 @@
 package main
 
 import (
-	"os"
-
 	_ "net/http/pprof"
+	"os"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
+	"github.com/lavanet/lava/protocol/badgegenerator"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -27,11 +27,15 @@ func main() {
 	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
+	// badge generator cobra command
+	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 
 	// Add RPC Consumer Command
 	rootCmd.AddCommand(cmdRPCConsumer)
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdRPCProvider)
+	// Add Badge Generator Command
+	rootCmd.AddCommand(badgeGenerator)
 
 	testCmd := &cobra.Command{
 		Use:   "test",

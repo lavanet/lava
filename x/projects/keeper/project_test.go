@@ -62,7 +62,6 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 	for _, tt := range templates {
 		projectData := types.ProjectData{
 			Name:        tt.name,
-			Description: "",
 			Enabled:     tt.enabled,
 			ProjectKeys: tt.keys,
 			Policy:      tt.policy,
@@ -110,42 +109,33 @@ func TestCreateProject(t *testing.T) {
 	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
 	ctx = sdk.UnwrapSDKContext(_ctx)
 
-	// test invalid project name/description
+	// test invalid project name
 	defaultProjectName := types.ADMIN_PROJECT_NAME
 	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
 	invalidProjectName := "projectName,"
 
-	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
-	invalidProjectDescription := "projectDesc¢"
-
 	testProjectData := projectData
 	testProjectData.ProjectKeys = []types.ProjectKey{}
 
-	nameAndDescriptionTests := []struct {
-		name               string
-		projectName        string
-		projectDescription string
+	nameTests := []struct {
+		name        string
+		projectName string
 	}{
-		{"bad projectName (duplicate)", projectData.Name, projectDescription},
-		{"bad projectName (too long)", longProjectName, projectDescription},
-		{"bad projectName (contains comma)", invalidProjectName, projectDescription},
-		{"bad projectName (empty)", "", projectDescription},
-		{"bad projectDescription (too long)", "test1", longProjectDescription},
-		{"bad projectDescription (non ascii)", "test2", invalidProjectDescription},
+		{"bad projectName (duplicate)", projectData.Name},
+		{"bad projectName (too long)", longProjectName},
+		{"bad projectName (contains comma)", invalidProjectName},
+		{"bad projectName (empty)", ""},
 	}
 
-	for _, tt := range nameAndDescriptionTests {
+	for _, tt := range nameTests {
 		t.Run(tt.name, func(t *testing.T) {
 			testProjectData.Name = tt.projectName
-			testProjectData.Description = tt.projectDescription
-
 			err = keepers.Projects.CreateProject(ctx, subAddr, testProjectData, plan)
 			require.NotNil(t, err)
 		})
 	}
 
-	// continue testing traits that are not related to the project's name/description
+	// continue testing traits that are not related to the project's name
 	// try creating a project with invalid project keys
 	invalidKeysProjectData := projectData
 	invalidKeysProjectData.Name = "nonDuplicateProjectName"
@@ -517,7 +507,6 @@ func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
 
 	projectData := types.ProjectData{
 		Name:        projectName,
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(subAddr)},
 		Policy:      &plan.PlanPolicy,
@@ -563,7 +552,6 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	projectData1 := types.ProjectData{
 		Name:        projectName1,
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -573,7 +561,6 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	projectData2 := types.ProjectData{
 		Name:        projectName2,
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -664,7 +651,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansProposal(ctx, keepers.Plans, []planstypes.Plan{plan})
+			err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, []planstypes.Plan{plan})
 			if tt.planPolicyValid {
 				require.Nil(t, err)
 			} else {
