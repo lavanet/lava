@@ -272,6 +272,61 @@ func TestCreateProject(t *testing.T) {
 	require.True(t, response2.Project.ProjectKeys[0].IsType(types.ProjectKey_DEVELOPER))
 }
 
+func TestProjectsServerAPI(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(2, 1, 5) // 2 sub, 1 adm, 5 dev
+
+	sub1Acc := common.CreateNewAccount(ts._ctx, *ts.keepers, 20000)
+	sub1Addr := sub1Acc.Addr.String()
+
+	dev1Addr := ts.accounts["dev1"]
+	dev2Addr := ts.accounts["dev2"]
+
+	plan := common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(ts.ctx, plan)
+
+	common.BuySubscription(t, ts._ctx, *ts.keepers, *ts.servers, sub1Acc, plan.Index)
+
+	projectData := types.ProjectData{
+		Name:        "mockname2",
+		Description: "",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)},
+		Policy:      &plan.PlanPolicy,
+	}
+
+	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
+
+	msgAddProject := &subscriptiontypes.MsgAddProject{
+		Creator:     sub1Addr,
+		ProjectData: projectData,
+	}
+	_, err := ts.servers.SubscriptionServer.AddProject(ts._ctx, msgAddProject)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	msgAddKeys := types.MsgAddKeys{
+		Creator:     sub1Addr,
+		Project:     projectID,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)},
+	}
+	_, err = ts.servers.ProjectServer.AddKeys(ts._ctx, &msgAddKeys)
+	require.Nil(t, err)
+
+	ts.AdvanceBlock(1)
+
+	require.True(t, ts.isKeyInProject(projectID, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.False(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
+
+	msgQueryDev := &types.QueryDeveloperRequest{Developer: sub1Addr}
+	res, err := ts.keepers.Projects.Developer(ts._ctx, msgQueryDev)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Project.ProjectKeys))
+}
+
 func TestAddDelKeys(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 2) // 1 sub, 0 adm, 2 dev
