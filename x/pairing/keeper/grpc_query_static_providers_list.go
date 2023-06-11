@@ -57,7 +57,10 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	}
 
 	for i := uint64(0); i < k.specKeeper.GeolocationCount(ctx); i++ {
-		validProviders := pairingfilters.FilterProviders(ctx, []pairingfilters.Filter{&geolocationFilter}, stakes, policy)
+		validProviders, err := pairingfilters.FilterProviders(ctx, []pairingfilters.Filter{&geolocationFilter}, stakes, policy)
+		if err != nil {
+			return nil, err
+		}
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 		finalProviders = append(finalProviders, validProviders...)
 		policy.GeolocationProfile <<= 1

@@ -155,7 +155,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	filters := pairingfilters.GetAllFilters()
 
-	possibleProviders = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy)
+	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy)
+	if err != nil {
+		return nil, 0, false, err
+	}
 
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block,
 		chainID, epochHash, strictestPolicy.MaxProvidersToPair)

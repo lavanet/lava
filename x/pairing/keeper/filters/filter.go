@@ -36,7 +36,7 @@ func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filte
 	return activeFilters
 }
 
-func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy) []epochstoragetypes.StakeEntry {
+func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy) ([]epochstoragetypes.StakeEntry, error) {
 	filters = initFilters(filters, strictestPolicy)
 
 	filtersResult := make([]bool, len(providers))
@@ -47,10 +47,10 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 	for _, filter := range filters {
 		res := filter.Filter(ctx, providers)
 		if len(res) != len(providers) {
-			utils.LavaFormatError("filter result length is not equal to providers list length", fmt.Errorf("filter failed"),
-				utils.Attribute{},
+			return []epochstoragetypes.StakeEntry{}, utils.LavaFormatError("filter result length is not equal to providers list length", fmt.Errorf("filter failed"),
+				utils.Attribute{Key: "filter result length", Value: len(res)},
+				utils.Attribute{Key: "providers length", Value: len(providers)},
 			)
-			return []epochstoragetypes.StakeEntry{}
 		}
 
 		for i := range res {
@@ -65,5 +65,5 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 		}
 	}
 
-	return filteredProviders
+	return filteredProviders, nil
 }
