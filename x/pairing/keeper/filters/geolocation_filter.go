@@ -13,8 +13,8 @@ type GeolocationFilter struct {
 }
 
 func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
-	if strictestPolicy.SelectedProvidersMode == projectstypes.Policy_DISABLED ||
-		strictestPolicy.SelectedProvidersMode == projectstypes.Policy_ALLOWED {
+	if strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
+		strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
 		f.geolocation = strictestPolicy.GeolocationProfile
 		return true
 	}

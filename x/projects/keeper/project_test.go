@@ -599,10 +599,10 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 	subAddr := projectData.ProjectKeys[0].Key
 	projPolicy := projectData.Policy
 
-	allowed := types.Policy_ALLOWED
-	mixed := types.Policy_MIXED
-	exclusive := types.Policy_EXCLUSIVE
-	disabled := types.Policy_DISABLED
+	allowed := types.SELECTED_PROVIDERS_MODE_ALLOWED
+	mixed := types.SELECTED_PROVIDERS_MODE_MIXED
+	exclusive := types.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := types.SELECTED_PROVIDERS_MODE_DISABLED
 
 	providersSets := []struct {
 		planProviders []string
@@ -619,9 +619,9 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 
 	templates := []struct {
 		name            string
-		planMode        types.PolicySelectedProvidersModeEnum
-		subMode         types.PolicySelectedProvidersModeEnum
-		projMode        types.PolicySelectedProvidersModeEnum
+		planMode        types.SELECTED_PROVIDERS_MODE
+		subMode         types.SELECTED_PROVIDERS_MODE
+		projMode        types.SELECTED_PROVIDERS_MODE
 		providerSet     int
 		planPolicyValid bool
 		subPolicyValid  bool

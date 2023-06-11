@@ -207,12 +207,12 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	return strictestPolicy, allowedCU, nil
 }
 
-func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Policy) (projectstypes.PolicySelectedProvidersModeEnum, []string) {
-	selectedProvidersModeList := []projectstypes.PolicySelectedProvidersModeEnum{}
+func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Policy) (projectstypes.SELECTED_PROVIDERS_MODE, []string) {
+	selectedProvidersModeList := []projectstypes.SELECTED_PROVIDERS_MODE{}
 	selectedProvidersList := [][]string{}
 	for _, p := range policies {
 		selectedProvidersModeList = append(selectedProvidersModeList, p.SelectedProvidersMode)
-		if p.SelectedProvidersMode == projectstypes.Policy_EXCLUSIVE || p.SelectedProvidersMode == projectstypes.Policy_MIXED {
+		if p.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE || p.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_MIXED {
 			if len(p.SelectedProviders) != 0 {
 				selectedProvidersList = append(selectedProvidersList, p.SelectedProviders)
 			}

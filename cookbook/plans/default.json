@@ -40,7 +40,7 @@
                     "total_cu_limit": "1000000",
                     "epoch_cu_limit": "100000",
                     "max_providers_to_pair": "3",
-                    "selected_providers_mode": 0,
+                    "selected_providers_mode": "ALLOWED",
                     "selected_providers": []
                 }
             }

@@ -320,9 +320,9 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	err := ts.addProvider(200)
 	require.Nil(t, err)
 
-	allowed := projectstypes.Policy_ALLOWED
-	exclusive := projectstypes.Policy_EXCLUSIVE
-	disabled := projectstypes.Policy_DISABLED
+	allowed := projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED
+	exclusive := projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := projectstypes.SELECTED_PROVIDERS_MODE_DISABLED
 
 	maxProvidersToPair := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
 		[]*projectstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
@@ -364,9 +364,9 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	// TODO: add mixed mode test cases (once implemented)
 	templates := []struct {
 		name              string
-		planMode          projectstypes.PolicySelectedProvidersModeEnum
-		subMode           projectstypes.PolicySelectedProvidersModeEnum
-		projMode          projectstypes.PolicySelectedProvidersModeEnum
+		planMode          projectstypes.SELECTED_PROVIDERS_MODE
+		subMode           projectstypes.SELECTED_PROVIDERS_MODE
+		projMode          projectstypes.SELECTED_PROVIDERS_MODE
 		providersSet      int
 		expectedProviders int
 	}{

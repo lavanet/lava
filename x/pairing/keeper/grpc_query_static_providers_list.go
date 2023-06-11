@@ -46,7 +46,7 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	var geolocationFilter pairingfilters.GeolocationFilter
 	policy := projectstypes.Policy{
 		GeolocationProfile:    uint64(1),
-		SelectedProvidersMode: projectstypes.Policy_DISABLED,
+		SelectedProvidersMode: projectstypes.SELECTED_PROVIDERS_MODE_DISABLED,
 	}
 	geoFilterActive := geolocationFilter.InitFilter(policy)
 	if !geoFilterActive {

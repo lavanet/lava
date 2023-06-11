@@ -12,7 +12,7 @@ type SelectedProvidersFilter struct {
 
 func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
 	switch strictestPolicy.SelectedProvidersMode {
-	case projectstypes.Policy_EXCLUSIVE, projectstypes.Policy_MIXED:
+	case projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, projectstypes.SELECTED_PROVIDERS_MODE_MIXED:
 		f.selectedProviders = strictestPolicy.SelectedProviders
 		return true
 	}
