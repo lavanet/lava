@@ -164,7 +164,10 @@ func (fs *FixationStore) getEntryStore(ctx sdk.Context, index string) *prefix.St
 	return &store
 }
 
-func (fs *FixationStore) replaceTimer(ctx sdk.Context, prev, next types.Entry, block uint64, kind byte) {
+// transferTimer moves a timer (unexpired) from a previous entry to a new entry, with
+// the same expirty block. Useful, for example, when a newer entry takes responsibility
+// for a pending deletion from the previous owner.
+func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, block uint64, kind byte) {
 	key := encodeForTimer(prev.Index, prev.Block, kind)
 	fs.tstore.DelTimerByBlockHeight(ctx, block, key)
 
@@ -278,7 +281,7 @@ func (fs *FixationStore) AppendEntry(
 	}
 
 	if entry.HasDeleteAt() {
-		fs.replaceTimer(ctx, latestEntry, entry, entry.DeleteAt, timerDeleteEntry)
+		fs.transferTimer(ctx, latestEntry, entry, entry.DeleteAt, timerDeleteEntry)
 	}
 
 	fs.setEntry(ctx, entry)
