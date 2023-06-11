@@ -77,7 +77,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 
 // add a new project to the subscription
 func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan, block uint64) error {
-	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
+	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
 		return err
 	}
@@ -109,17 +109,15 @@ func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData typ
 	return k.projectsFS.AppendEntry(ctx, project.Index, block, &project)
 }
 
-func (k Keeper) DeleteProject(ctx sdk.Context, creator string, index string) error {
+func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
 	if err != nil {
 		return utils.LavaFormatError("DeleteProject: failed to get NextEpoch", err,
-			utils.Attribute{Key: "index", Value: index},
+			utils.Attribute{Key: "projectID", Value: projectID},
 		)
 	}
-
-	projectID := types.ProjectIndex(creator, index)
 
 	var project types.Project
 	found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project)

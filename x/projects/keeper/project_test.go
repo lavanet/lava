@@ -337,7 +337,7 @@ func TestDeleteProject(t *testing.T) {
 	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, "nonsense")
 	require.NotNil(t, err)
 
-	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, projectData.Name)
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, projectID)
 	require.Nil(t, err)
 
 	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())

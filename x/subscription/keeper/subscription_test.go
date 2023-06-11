@@ -67,13 +67,15 @@ func TestSubscriptionGet(t *testing.T) {
 }
 
 func TestSubscriptionRemove(t *testing.T) {
-	keeper, ctx := keepertest.SubscriptionKeeper(t)
-	items := createNSubscription(keeper, ctx, 10)
+	ts := setupTestStruct(t, 3)
+	keeper := &ts.keepers.Subscription
+
+	items := createNSubscription(keeper, ts.ctx, 10)
 	for _, item := range items {
-		keeper.RemoveSubscription(ctx,
+		keeper.RemoveSubscription(ts.ctx,
 			item.Creator,
 		)
-		_, found := keeper.GetSubscription(ctx,
+		_, found := keeper.GetSubscription(ts.ctx,
 			item.Creator,
 		)
 		require.False(t, found)
@@ -583,7 +585,7 @@ func TestExpiryTime(t *testing.T) {
 
 			// TODO: remove when RemoveSubscriptions properly removes projects
 			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
+			ts.keepers.Projects.DeleteProject(ts.ctx, creator, projectID)
 		})
 	}
 }
@@ -630,7 +632,7 @@ func TestPrice(t *testing.T) {
 
 			// TODO: remove when RemoveSubscriptions properly removes projects
 			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
+			ts.keepers.Projects.DeleteProject(ts.ctx, creator, projectID)
 		})
 	}
 }
