@@ -57,10 +57,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 					}
 				}
 			}
-		}
-
-		// handle provider keys
-		if storage.Index[:len(ProviderKey)] == ProviderKey {
+		} else if storage.Index[:len(ProviderKey)] == ProviderKey { // handle provider keys
 			if len(storage.Index) > len(ProviderKey) {
 				storage.Index = storage.Index[len(ProviderKey):]
 				m.keeper.SetStakeStorage(ctx, storage)
