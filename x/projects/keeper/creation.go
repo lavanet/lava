@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -109,6 +110,14 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 				)
 			}
 
+			logger := k.Logger(ctx)
+			details := map[string]string{
+				"project": project.GetIndex(),
+				"key":     key.Key,
+				"keytype": strconv.FormatInt(int64(key.Kinds), 10),
+			}
+			utils.LogLavaEvent(ctx, logger, types.AddProjectKeyEventName, details, "key added to project")
+
 			project.AppendKey(types.ProjectDeveloperKey(key.Key))
 		}
 	}
@@ -161,6 +170,14 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		if !found {
 			panic("unregisterKey: developer key not found")
 		}
+
+		logger := k.Logger(ctx)
+		details := map[string]string{
+			"project": project.GetIndex(),
+			"key":     key.Key,
+			"keytype": strconv.FormatInt(int64(key.Kinds), 10),
+		}
+		utils.LogLavaEvent(ctx, logger, types.DelProjectKeyEventName, details, "key deleted from project")
 	}
 
 	return nil

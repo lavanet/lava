@@ -69,6 +69,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 		return utils.LavaFormatWarning("failed to add keys",
 			fmt.Errorf("project not found"),
 			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
@@ -85,6 +86,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 		return utils.LavaFormatError("failed to add keys",
 			fmt.Errorf("project not found (for next epoch)"),
 			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
