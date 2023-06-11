@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29928,6 +29938,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31658,6 +31678,9 @@ paths:
                       type: array
                       items:
                         type: string
+                    api_count:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -32080,6 +32103,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -32716,6 +32749,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -56978,6 +57021,9 @@ definitions:
               type: array
               items:
                 type: string
+            api_count:
+              type: string
+              format: uint64
   lavanet.lava.spec.QueryShowChainInfoResponse:
     type: object
     properties:
@@ -57176,6 +57222,9 @@ definitions:
         type: array
         items:
           type: string
+      api_count:
+        type: string
+        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -57476,14 +57525,6 @@ definitions:
             format: uint64
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
-  lavanet.lava.projects.ProjectKey.KEY_TYPE:
-    type: string
-    enum:
-      - NONE
-      - ADMIN
-      - DEVELOPER
-    default: NONE
-    title: 'bitmap, must only be power of 2'
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:

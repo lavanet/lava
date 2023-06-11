@@ -105,7 +105,6 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 	for _, tt := range templates {
 		ts.projects[tt.code] = types.ProjectData{
 			Name:        tt.name,
-			Description: "",
 			Enabled:     tt.enabled,
 			ProjectKeys: tt.keys,
 			Policy:      tt.policy,
@@ -194,42 +193,33 @@ func TestCreateProject(t *testing.T) {
 
 	ts.AdvanceEpoch(1)
 
-	// test invalid project name/description
+	// test invalid project name
 	defaultProjectName := types.ADMIN_PROJECT_NAME
 	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
 	invalidProjectName := "projectName,"
 
-	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
-	invalidProjectDescription := "projectDesc¢"
-
 	testProjectData := projectData
 	testProjectData.ProjectKeys = []types.ProjectKey{}
 
-	nameAndDescriptionTests := []struct {
-		name               string
-		projectName        string
-		projectDescription string
+	nameTests := []struct {
+		name        string
+		projectName string
 	}{
-		{"bad projectName (duplicate)", projectData.Name, projectDescription},
-		{"bad projectName (too long)", longProjectName, projectDescription},
-		{"bad projectName (contains comma)", invalidProjectName, projectDescription},
-		{"bad projectName (empty)", "", projectDescription},
-		{"bad projectDescription (too long)", "test1", longProjectDescription},
-		{"bad projectDescription (non ascii)", "test2", invalidProjectDescription},
+		{"bad projectName (duplicate)", projectData.Name},
+		{"bad projectName (too long)", longProjectName},
+		{"bad projectName (contains comma)", invalidProjectName},
+		{"bad projectName (empty)", ""},
 	}
 
-	for _, tt := range nameAndDescriptionTests {
+	for _, tt := range nameTests {
 		t.Run(tt.name, func(t *testing.T) {
 			testProjectData.Name = tt.projectName
-			testProjectData.Description = tt.projectDescription
-
 			err = ts.keepers.Projects.CreateProject(ts.ctx, subAddr, testProjectData, plan)
 			require.NotNil(t, err)
 		})
 	}
 
-	// continue testing traits that are not related to the project's name/description
+	// continue testing traits that are not related to the project's name
 	// try creating a project with invalid project keys
 	invalidKeysProjectData := projectData
 	invalidKeysProjectData.Name = "nonDuplicateProjectName"
@@ -289,7 +279,6 @@ func TestProjectsServerAPI(t *testing.T) {
 
 	projectData := types.ProjectData{
 		Name:        "mockname2",
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -702,7 +691,6 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 
 	projectData1 := types.ProjectData{
 		Name:        "mockname1",
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -712,7 +700,6 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 
 	projectData2 := types.ProjectData{
 		Name:        "mockname2",
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -809,7 +796,6 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	projectData1 := types.ProjectData{
 		Name:        projectName1,
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
 		Policy:      &plan.PlanPolicy,
@@ -819,7 +805,6 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	projectData2 := types.ProjectData{
 		Name:        projectName2,
-		Description: "",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
 		Policy:      &plan.PlanPolicy,

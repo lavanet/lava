@@ -102,11 +102,16 @@ func (ts *testStruct) advanceBlock(delta ...time.Duration) {
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 }
 
+func (ts *testStruct) advanceEpoch(delta ...time.Duration) {
+	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers, delta...)
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+}
+
 func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscription {
 	keeper := ts.keepers.Subscription
 
 	// expedite: change expiration time to 1 second ago
-	sub.MonthExpiryTime = uint64(ts.ctx.BlockTime().Add(-time.Second).UTC().Unix())
+	sub.MonthExpiryTime = uint64(ts.ctx.BlockTime().Add(-1 * time.Second).UTC().Unix())
 	keeper.SetSubscription(ts.ctx, sub)
 
 	// trigger EpochStart() processing
@@ -284,6 +289,39 @@ func TestCreateSubscription(t *testing.T) {
 	}
 }
 
+func TestSubscriptionExpiration(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
+
+	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
+	creator := account.Addr.String()
+
+	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(ts.ctx, uint64(ts.ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	// fill memory
+	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
+		ts.advanceBlock()
+	}
+
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1)
+	require.Nil(t, err)
+
+	sub, found := keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
+
+	sub = ts.expireSubscription(sub)
+	require.NotNil(t, sub)
+
+	for uint64(ts.ctx.BlockHeight()) < sub.PrevExpiryBlock+blocksToSave {
+		ts.advanceBlock()
+	}
+	ts.advanceEpoch()
+
+	_, found = keeper.GetSubscription(ts.ctx, creator)
+	require.False(t, found)
+}
+
 func TestRenewSubscription(t *testing.T) {
 	ts := setupTestStruct(t, 1)
 	keeper := ts.keepers.Subscription
@@ -291,7 +329,15 @@ func TestRenewSubscription(t *testing.T) {
 	account := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
+	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(ts.ctx, uint64(ts.ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	// fill memory
+	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
+		ts.advanceBlock()
+	}
+
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
 	require.Nil(t, err)
 
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
@@ -376,14 +422,21 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	anotherAccount := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000)
 	creator := account.Addr.String()
 
-	err := keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3)
+	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(ts.ctx, uint64(ts.ctx.BlockHeight()))
+	require.Nil(t, err)
+
+	// fill memory
+	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
+		ts.advanceBlock()
+	}
+
+	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3)
 	require.Nil(t, err)
 
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
-		Name:        "another_project",
-		Description: "dummy_desc",
-		Enabled:     true,
+		Name:    "another_project",
+		Enabled: true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			projectstypes.ProjectDeveloperKey(anotherAccount.Addr.String()),
 		},
@@ -602,35 +655,27 @@ func TestAddProjectToSubscription(t *testing.T) {
 	longProjectName := strings.Repeat(defaultProjectName, projectstypes.MAX_PROJECT_NAME_LEN)
 	invalidProjectName := "project_name,"
 
-	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
-	nonAsciiProjectDescription := "projectDesc¢"
-
 	template := []struct {
-		name               string
-		subscription       string
-		anotherAdmin       string
-		projectName        string
-		projectDescription string
-		success            bool
+		name         string
+		subscription string
+		anotherAdmin string
+		projectName  string
+		success      bool
 	}{
-		{"project admin = regular account", consumerAddr, regularAccountAddr, "test1", projectDescription, true},
-		{"project admin = subscription payer account", consumerAddr, subPayerAddr, "test2", projectDescription, true},
-		{"bad subscription account (regular account)", regularAccountAddr, consumerAddr, "test4", projectDescription, false},
-		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", projectDescription, false},
-		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, projectDescription, false},
-		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, projectDescription, false},
-		{"bad projectName (contains comma)", consumerAddr, regularAccountAddr, invalidProjectName, projectDescription, false},
-		{"bad projectDescription (too long)", consumerAddr, regularAccountAddr, "test6", longProjectDescription, false},
-		{"bad projectDescription (non ascii)", consumerAddr, regularAccountAddr, "test7", nonAsciiProjectDescription, false},
+		{"project admin = regular account", consumerAddr, regularAccountAddr, "test1", true},
+		{"project admin = subscription payer account", consumerAddr, subPayerAddr, "test2", true},
+		{"bad subscription account (regular account)", regularAccountAddr, consumerAddr, "test4", false},
+		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", false},
+		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, false},
+		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, false},
+		{"bad projectName (contains comma)", consumerAddr, regularAccountAddr, invalidProjectName, false},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			projectData := projectstypes.ProjectData{
-				Name:        tt.projectName,
-				Description: tt.projectDescription,
-				Enabled:     true,
+				Name:    tt.projectName,
+				Enabled: true,
 				ProjectKeys: []projectstypes.ProjectKey{
 					projectstypes.ProjectAdminKey(tt.anotherAdmin),
 				},

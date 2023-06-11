@@ -31,17 +31,15 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 		}
 	}
 
-	if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
-		return nil, utils.LavaFormatWarning("cannot add project with invalid name/description to subscription", fmt.Errorf("invalid name or description"),
+	if !projectstypes.ValidateProjectName(msg.GetProjectData().Name) {
+		return nil, utils.LavaFormatWarning("cannot add project with invalid name to subscription", fmt.Errorf("invalid project name"),
 			utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
-			utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
 		)
 	}
 
 	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
 		return nil, utils.LavaFormatWarning("cannot add project with invalid providersToPair to subscription (must be >1)", fmt.Errorf("invalid policy"),
 			utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
-			utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
 		)
 	}
 

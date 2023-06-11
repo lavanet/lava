@@ -11,8 +11,7 @@ const (
 type charRestrictionEnum string
 
 const (
-	NAME_RESTRICTIONS        charRestrictionEnum = "name"
-	DESCRIPTION_RESTRICTIONS charRestrictionEnum = "description"
+	NAME_RESTRICTIONS charRestrictionEnum = "name"
 )
 
 func isCharDisallowed(c rune, disallowedChars []rune) bool {
@@ -24,11 +23,10 @@ func isCharDisallowed(c rune, disallowedChars []rune) bool {
 	return false
 }
 
-// Validates name/description strings.
+// Validates name strings.
 // Current policy:
 //
 //	name: lowercase ascii letters and digits only and the characters {' ', '_'}. can't be empty.
-//	description: lowercase ascii letters and digits only and the characters {' ', ',', '.', '_', '(', ')'}
 func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars []rune) bool {
 	if restrictType == NAME_RESTRICTIONS && len(s) == 0 {
 		return false
@@ -43,10 +41,6 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 				if r == ',' {
 					return false
 				} else if !unicode.IsLower(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
-					return false
-				}
-			case DESCRIPTION_RESTRICTIONS:
-				if !unicode.IsLower(r) && r != ' ' && r != '.' && r != ',' && r != '_' && r != ')' && r != '(' && !unicode.IsDigit(r) {
 					return false
 				}
 			}

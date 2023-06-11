@@ -15,7 +15,6 @@ import (
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
-		Description: types.ADMIN_PROJECT_DESCRIPTION,
 		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(subAddr)},
 		Enabled:     true,
 		Policy:      nil,
@@ -25,7 +24,7 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 
 // add a new project to the subscription
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetDescription(), projectData.GetEnabled())
+	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
 		return err
 	}
