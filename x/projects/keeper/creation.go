@@ -42,7 +42,7 @@ import (
 //        find devel-key (now)
 //        if not belong to project: bail
 //        find devel-key (when)
-//        if not belong to project: bail
+//        if the key not belong to this project: bail
 //        else if not found: add to project, AppendEntry(dev-key, when)
 //
 // upon unregisterKey(project, when)
@@ -125,6 +125,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 		return utils.LavaFormatWarning("delete project failed",
 			fmt.Errorf("project not found"),
 			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 

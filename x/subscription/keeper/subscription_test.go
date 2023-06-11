@@ -748,9 +748,15 @@ func TestGetProjectsForSubscription(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	// check the number of projects are as expected (+1 because there's an auto-generated admin project)
+	// number of projects expected (+1 because there's an auto-generated admin project)
 	require.Equal(t, 3, len(res1.Projects))
 	require.Equal(t, 1, len(res2.Projects))
+
+	_, err = ts.servers.SubscriptionServer.DelProject(ts._ctx, &types.MsgDelProject{
+		Creator: subAcc1,
+		Name:    projData2.Name,
+	})
+	require.Nil(t, err)
 }
 
 func TestAddDelProjectForSubscription(t *testing.T) {
