@@ -187,9 +187,9 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
-	providersToPair := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
-	if providersToPair == uint64(math.MaxUint64) {
-		return projectstypes.Policy{}, 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+	if err != nil {
+		return projectstypes.Policy{}, 0, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
@@ -223,7 +223,7 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Po
 	}
 
 	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
-	effectiveSelectedProviders := commontypes.InterSection(selectedProvidersList...)
+	effectiveSelectedProviders := commontypes.Intersection(selectedProvidersList...)
 
 	return effectiveMode, effectiveSelectedProviders
 }
@@ -241,7 +241,7 @@ func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectsty
 	return geolocation
 }
 
-func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) uint64 {
+func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) (uint64, error) {
 	providersToPair := uint64(math.MaxUint64)
 
 	for _, policy := range policies {
@@ -251,7 +251,11 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projec
 		}
 	}
 
-	return providersToPair
+	if providersToPair == uint64(math.MaxUint64) {
+		return 0, fmt.Errorf("could not calculate providersToPair value: all policies are nil")
+	}
+
+	return providersToPair, nil
 }
 
 func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {

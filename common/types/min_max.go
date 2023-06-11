@@ -32,7 +32,7 @@ func FindMax[T constraints.Ordered](s []T) T {
 	return m
 }
 
-func InterSection[T comparable](arrays ...[]T) []T {
+func Intersection[T comparable](arrays ...[]T) []T {
 	// Create a map to store the elements and their occurrence count
 	elements := make(map[T]int)
 

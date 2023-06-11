@@ -324,9 +324,10 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	exclusive := projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
 	disabled := projectstypes.SELECTED_PROVIDERS_MODE_DISABLED
 
-	maxProvidersToPair := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
+	maxProvidersToPair, err := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
 		[]*projectstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
 	)
+	require.Nil(t, err)
 
 	p1 := ts.providers[0].Addr.String()
 	p2 := ts.providers[1].Addr.String()

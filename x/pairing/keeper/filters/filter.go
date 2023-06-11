@@ -39,10 +39,7 @@ func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filte
 func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy) ([]epochstoragetypes.StakeEntry, error) {
 	filters = initFilters(filters, strictestPolicy)
 
-	filtersResult := make([]bool, len(providers))
-	for i := range filtersResult {
-		filtersResult[i] = true
-	}
+	var filtersResult [][]bool
 
 	for _, filter := range filters {
 		res := filter.Filter(ctx, providers)
@@ -52,16 +49,17 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 				utils.Attribute{Key: "providers length", Value: len(providers)},
 			)
 		}
-
-		for i := range res {
-			filtersResult[i] = filtersResult[i] && res[i]
-		}
+		filtersResult = append(filtersResult, res)
 	}
 
 	filteredProviders := []epochstoragetypes.StakeEntry{}
-	for i := range filtersResult {
-		if filtersResult[i] {
-			filteredProviders = append(filteredProviders, providers[i])
+	for j := 0; j < len(providers); j++ {
+		result := true
+		for i := 0; i < len(filters); i++ {
+			result = result && filtersResult[i][j]
+		}
+		if result {
+			filteredProviders = append(filteredProviders, providers[j])
 		}
 	}
 
