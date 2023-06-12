@@ -23,7 +23,36 @@
                 "min_stake_client": {
                     "denom": "ulava",
                     "amount": "5000000000"
-                }
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis":[],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "0xa4ec",
+                                "api_name": "eth_chainId"
+                            }
+                        ]
+                    }
+                ]
             },
             {
                 "index": "ALFAJORES",
@@ -45,7 +74,36 @@
                 "min_stake_client": {
                     "denom": "ulava",
                     "amount": "5000000000"
-                }
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis":[],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "0xaef3",
+                                "api_name": "eth_chainId"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     },

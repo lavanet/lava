@@ -857,7 +857,20 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parsing": [ {
+                            "function_template": "/node_info",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "node_info",
+                                    "network"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            },
+                            "wanted_result": "evmos_9001-2",
+                            "api_name": "/node_info"
+                        }]
                     },
                     {
                         "enabled": true,
@@ -1690,7 +1703,77 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parsing": [
+                            {
+                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "defaultNodeInfo",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "evmos_9001-2",
+                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "response",
+                                        "data"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "evmos_9001-2",
+                                "api_name": "abci_info"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis":[],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "evmos_9001-2",
+                                "api_name": "eth_chainId"
+                            }
+                        ]
                     }
                     ]
             },
@@ -1714,7 +1797,938 @@
                 "min_stake_client": {
                     "denom": "ulava",
                     "amount": "5000000000"
-                }
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [ {
+                            "function_template": "/node_info",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "node_info",
+                                    "network"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            },
+                            "wanted_result": "evmos_9000-4",
+                            "api_name": "/node_info"
+                        }]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "ethermint.evm.v1.Query/Account",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/Balance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/BaseFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/Code",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/CosmosAccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/EstimateGas",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/EthCall",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/Storage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/TraceBlock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/TraceTx",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.evm.v1.Query/ValidatorAccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.feemarket.v1.Query/BaseFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.feemarket.v1.Query/BlockGas",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "ethermint.feemarket.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.claims.v1.Query/ClaimsRecord",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.claims.v1.Query/ClaimsRecords",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.claims.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.claims.v1.Query/TotalUnclaimed",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.epochs.v1.Query/CurrentEpoch",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.epochs.v1.Query/EpochInfos",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.erc20.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.erc20.v1.Query/TokenPair",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.erc20.v1.Query/TokenPairs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/AllocationMeter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/AllocationMeters",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/GasMeter",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/GasMeters",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/Incentive",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/Incentives",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.incentives.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/CirculatingSupply",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/EpochMintProvision",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/InflationRate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/Period",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.inflation.v1.Query/SkippedEpochs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.recovery.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            },
+                            {
+                                "name": "evmos.vesting.v1.Query/Balances",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "defaultNodeInfo",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "evmos_9000-4",
+                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "response",
+                                        "data"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "evmos_9000-4",
+                                "api_name": "abci_info"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis":[],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "evmos_9000-4",
+                                "api_name": "eth_chainId"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     },

@@ -595,7 +595,22 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parsing": [
+                            {
+                                "function_template": "/node_info",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "axelar-dojo-1",
+                                "api_name": "/node_info"
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -1131,7 +1146,48 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parsing": [ {
+                            "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                            "function_tag": "getChainId",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "defaultNodeInfo",
+                                    "network"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            },
+                            "wanted_result": "axelar-dojo-1",
+                            "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                        }]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "response",
+                                        "data"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "axelar-dojo-1",
+                                "api_name": "abci_info"
+                            }
+                        ]
                     }
                 ]
             },
@@ -1155,7 +1211,93 @@
                 "min_stake_client": {
                     "denom": "ulava",
                     "amount": "5000000000"
-                }
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "/node_info",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "axelar-testnet-lisbon-3",
+                                "api_name": "/node_info"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "defaultNodeInfo",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "axelar-testnet-lisbon-3",
+                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "response",
+                                        "data"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "axelar-testnet-lisbon-3",
+                                "api_name": "abci_info"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     },

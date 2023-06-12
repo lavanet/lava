@@ -32,6 +32,26 @@
                         },
                         "apis": [
                             {
+                                "name": "sui_getChainIdentifier",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "100",
+                                "enabled": true,
+
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+
+                                "extra_compute_units": "0"
+                            },
+                            {
                                 "name": "sui_batchTransaction",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1211,6 +1231,19 @@
                                     "parser_func": "PARSE_BY_ARG"
                                 },
                                 "api_name": "sui_getLatestCheckpointSequenceNumber"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getChainIdentifier\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "7ea7b8fb",
+                                "api_name": "sui_getChainIdentifier"
                             }
                         ]
                     }

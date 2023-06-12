@@ -1819,7 +1819,21 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parsing": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex"
+                                },
+                                "wanted_result": "0x13a",
+                                "api_name": "eth_chainId"
+                            }
+                        ]
                     }
                 ]
             }
