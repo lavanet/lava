@@ -77,14 +77,32 @@ func (project *Project) GetKey(key string) ProjectKey {
 	return ProjectKey{}
 }
 
-func (project *Project) AppendKey(key ProjectKey) {
+func (project *Project) AppendKey(key ProjectKey) bool {
 	for i, projectKey := range project.ProjectKeys {
 		if projectKey.Key == key.Key {
 			project.ProjectKeys[i].Kinds |= key.Kinds
-			return
+			return true
 		}
 	}
 	project.ProjectKeys = append(project.ProjectKeys, key)
+	return false
+}
+
+func (project *Project) DeleteKey(key ProjectKey) bool {
+	length := len(project.ProjectKeys)
+	for i, projectKey := range project.ProjectKeys {
+		if projectKey.Key == key.Key {
+			project.ProjectKeys[i].Kinds &= ^key.Kinds
+			if project.ProjectKeys[i].Kinds == uint32(ProjectKey_NONE) {
+				if i < length-1 {
+					project.ProjectKeys[i] = project.ProjectKeys[length-1]
+				}
+				project.ProjectKeys = project.ProjectKeys[0 : length-1]
+			}
+			return true
+		}
+	}
+	return false
 }
 
 func (project *Project) IsAdminKey(key string) bool {
