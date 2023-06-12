@@ -74,6 +74,34 @@ func init() {
 	fmt.Println("Test Directory", dir)
 }
 
+func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+	lt.logs[logName] = new(bytes.Buffer)
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Args = strings.Fields(command)
+	cmd.Path = cmd.Args[0]
+	cmd.Stdout = lt.logs[logName]
+	cmd.Stderr = lt.logs[logName]
+
+	err := cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	lt.commands[logName] = cmd
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Panic occurred:", r)
+				utils.LavaFormatInfo("Restarting goroutine for startJSONRPCProvider...")
+				go lt.execCommandWithRetry(ctx, funcName, logName, command)
+			}
+		}()
+		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+	}()
+
+}
+
 func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -277,7 +305,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
-		lt.execCommand(ctx, funcName, logName, command, false)
+		lt.execCommandWithRetry(ctx, funcName, logName, command)
 	}
 
 	// validate all providers are up
