@@ -7,25 +7,22 @@ import (
 )
 
 const (
-	ADMIN_PROJECT_NAME        = "admin"
-	ADMIN_PROJECT_DESCRIPTION = "default admin project"
+	ADMIN_PROJECT_NAME = "admin"
 )
 
 func ProjectIndex(subscriptionAddress string, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func NewProject(subscriptionAddress string, projectName string, description string, enable bool) (Project, error) {
-	if !ValidateProjectNameAndDescription(projectName, description) {
-		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d."+
-			" Name: %s. The project's description must also be ASCII and its length must be less than %d",
-			MAX_PROJECT_NAME_LEN, projectName, MAX_PROJECT_DESCRIPTION_LEN)
+func NewProject(subscriptionAddress string, projectName string, enable bool) (Project, error) {
+	if !ValidateProjectName(projectName) {
+		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d. "+
+			"Name: %s", MAX_PROJECT_NAME_LEN, projectName)
 	}
 
 	return Project{
 		Index:              ProjectIndex(subscriptionAddress, projectName),
 		Subscription:       subscriptionAddress,
-		Description:        description,
 		ProjectKeys:        []ProjectKey{},
 		AdminPolicy:        nil,
 		SubscriptionPolicy: nil,
@@ -34,56 +31,80 @@ func NewProject(subscriptionAddress string, projectName string, description stri
 	}, nil
 }
 
-func ValidateProjectNameAndDescription(name string, description string) bool {
+func ValidateProjectName(name string) bool {
 	if !commontypes.ValidateString(name, commontypes.NAME_RESTRICTIONS, nil) ||
-		len(name) > MAX_PROJECT_NAME_LEN || len(description) > MAX_PROJECT_DESCRIPTION_LEN ||
-		!commontypes.ValidateString(description, commontypes.DESCRIPTION_RESTRICTIONS, nil) {
+		len(name) > MAX_PROJECT_NAME_LEN {
 		return false
 	}
 
 	return true
 }
 
-func (project *Project) GetKey(projectKey string) ProjectKey {
-	for _, key := range project.ProjectKeys {
-		if key.Key == projectKey {
-			return key
+func NewProjectKey(key string) ProjectKey {
+	return ProjectKey{Key: key}
+}
+
+func (projectKey ProjectKey) AddType(kind ProjectKey_Type) ProjectKey {
+	projectKey.Kinds |= uint32(kind)
+	return projectKey
+}
+
+func ProjectAdminKey(key string) ProjectKey {
+	return NewProjectKey(key).AddType(ProjectKey_ADMIN)
+}
+
+func ProjectDeveloperKey(key string) ProjectKey {
+	return NewProjectKey(key).AddType(ProjectKey_DEVELOPER)
+}
+
+func (projectKey ProjectKey) IsType(kind ProjectKey_Type) bool {
+	return projectKey.Kinds&uint32(kind) != 0x0
+}
+
+func (projectKey ProjectKey) IsTypeValid() bool {
+	const keyKindsAll = (uint32(ProjectKey_ADMIN) | uint32(ProjectKey_DEVELOPER))
+
+	return projectKey.Kinds != uint32(ProjectKey_NONE) &&
+		(projectKey.Kinds & ^keyKindsAll) == 0x0
+}
+
+func (project *Project) GetKey(key string) ProjectKey {
+	for _, projectKey := range project.ProjectKeys {
+		if projectKey.Key == key {
+			return projectKey
 		}
 	}
 	return ProjectKey{}
 }
 
-func (projectKey ProjectKey) IsKeyType(keyTypeToCheck ProjectKey_KEY_TYPE) bool {
-	for _, keytype := range projectKey.Types {
-		if keytype == keyTypeToCheck {
+func (project *Project) AppendKey(key ProjectKey) bool {
+	for i, projectKey := range project.ProjectKeys {
+		if projectKey.Key == key.Key {
+			project.ProjectKeys[i].Kinds |= key.Kinds
+			return true
+		}
+	}
+	project.ProjectKeys = append(project.ProjectKeys, key)
+	return false
+}
+
+func (project *Project) DeleteKey(key ProjectKey) bool {
+	length := len(project.ProjectKeys)
+	for i, projectKey := range project.ProjectKeys {
+		if projectKey.Key == key.Key {
+			project.ProjectKeys[i].Kinds &= ^key.Kinds
+			if project.ProjectKeys[i].Kinds == uint32(ProjectKey_NONE) {
+				if i < length-1 {
+					project.ProjectKeys[i] = project.ProjectKeys[length-1]
+				}
+				project.ProjectKeys = project.ProjectKeys[0 : length-1]
+			}
 			return true
 		}
 	}
 	return false
 }
 
-func (projectKey *ProjectKey) AppendKeyType(typesToAdd []ProjectKey_KEY_TYPE) {
-	for _, keytype := range typesToAdd {
-		if !projectKey.IsKeyType(keytype) {
-			projectKey.Types = append(projectKey.Types, keytype)
-		}
-	}
-}
-
-func (project *Project) AppendKey(keyToAdd ProjectKey) {
-	for i := 0; i < len(project.ProjectKeys); i++ {
-		if project.ProjectKeys[i].Key == keyToAdd.Key {
-			project.ProjectKeys[i].AppendKeyType(keyToAdd.Types)
-			return
-		}
-	}
-	project.ProjectKeys = append(project.ProjectKeys, keyToAdd)
-}
-
-func (project *Project) HasKeyType(projectKey string, keyTypeToCheck ProjectKey_KEY_TYPE) bool {
-	return project.GetKey(projectKey).IsKeyType(keyTypeToCheck)
-}
-
-func (project *Project) IsAdminKey(projectKey string) bool {
-	return project.HasKeyType(projectKey, ProjectKey_ADMIN) || project.Subscription == projectKey
+func (project *Project) IsAdminKey(key string) bool {
+	return project.Subscription == key || project.GetKey(key).IsType(ProjectKey_ADMIN)
 }

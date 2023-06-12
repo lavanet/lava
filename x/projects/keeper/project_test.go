@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"context"
 	"math"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -16,28 +17,69 @@ import (
 
 const projectName = "mockname"
 
-func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (projects []types.ProjectData) {
-	adm1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	adm2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	adm3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	dev3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+type testStruct struct {
+	t        *testing.T
+	servers  *testkeeper.Servers
+	keepers  *testkeeper.Keepers
+	_ctx     context.Context
+	ctx      sdk.Context
+	accounts map[string]string
+	projects map[string]types.ProjectData
+}
 
-	typeAdmin := []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}
-	typeDevel := []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}
-	typeBoth := []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN, types.ProjectKey_DEVELOPER}
+func newTestStruct(t *testing.T) *testStruct {
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	ts := &testStruct{
+		t:       t,
+		servers: servers,
+		keepers: keepers,
+		_ctx:    _ctx,
+		ctx:     sdk.UnwrapSDKContext(_ctx),
+	}
+	ts.AdvanceEpoch(1)
+	return ts
+}
+
+func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
+	ts.accounts = make(map[string]string)
+	for i := 0; i < numSub; i++ {
+		k := "sub" + strconv.Itoa(i+1)
+		v := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+		ts.accounts[k] = v
+	}
+	for i := 0; i < numAdmin; i++ {
+		k := "adm" + strconv.Itoa(i+1)
+		v := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+		ts.accounts[k] = v
+	}
+	for i := 0; i < numDevel; i++ {
+		k := "dev" + strconv.Itoa(i+1)
+		v := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+		ts.accounts[k] = v
+	}
+
+	ts.projects = make(map[string]types.ProjectData)
+
+	ts.accounts["pd1_adm"] = common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+	ts.accounts["pd2_both"] = common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+	ts.accounts["pd3_adm"] = common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+	ts.accounts["pd3_dev"] = common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
-		{Key: adm1Addr, Types: typeAdmin},
+		types.ProjectAdminKey(ts.accounts["pd1_adm"]),
 	}
 	// developer key
 	keys_1_admin_dev := []types.ProjectKey{
-		{Key: adm2Addr, Types: typeBoth},
+		types.NewProjectKey(ts.accounts["pd2_both"]).
+			AddType(types.ProjectKey_ADMIN).
+			AddType(types.ProjectKey_DEVELOPER),
 	}
+
 	// both (admin+developer) key
 	keys_2_admin_and_dev := []types.ProjectKey{
-		{Key: adm3Addr, Types: typeAdmin},
-		{Key: dev3Addr, Types: typeDevel},
+		types.ProjectAdminKey(ts.accounts["pd3_adm"]),
+		types.ProjectDeveloperKey(ts.accounts["pd3_dev"]),
 	}
 
 	policy1 := &types.Policy{
@@ -46,141 +88,167 @@ func prepareProjectsData(ctx context.Context, keepers *testkeeper.Keepers) (proj
 	}
 
 	templates := []struct {
+		code    string
 		name    string
 		enabled bool
 		keys    []types.ProjectKey
 		policy  *types.Policy
 	}{
 		// project with admin key, enabled, has policy
-		{"mock_project_1", true, keys_1_admin, policy1},
+		{"pd1", "mock_project_1", true, keys_1_admin, policy1},
 		// project with "both" key, disabled, with policy
-		{"mock_project_2", false, keys_1_admin_dev, policy1},
+		{"pd2", "mock_project_2", false, keys_1_admin_dev, policy1},
 		// project with 2 keys (one admin, one developer) disabled, no policy
-		{"mock_project_3", false, keys_2_admin_and_dev, nil},
+		{"pd3", "mock_project_3", false, keys_2_admin_and_dev, nil},
 	}
 
 	for _, tt := range templates {
-		projectData := types.ProjectData{
+		ts.projects[tt.code] = types.ProjectData{
 			Name:        tt.name,
-			Description: "",
 			Enabled:     tt.enabled,
 			ProjectKeys: tt.keys,
 			Policy:      tt.policy,
 		}
-		projects = append(projects, projectData)
 	}
+}
 
-	return projects
+func (ts *testStruct) BlockHeight() uint64 {
+	return uint64(ts.ctx.BlockHeight())
+}
+
+func (ts *testStruct) AdvanceBlock(count int) {
+	for i := 0; i < count; i += 1 {
+		ts._ctx = testkeeper.AdvanceBlock(ts._ctx, ts.keepers)
+	}
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+}
+
+func (ts *testStruct) AdvanceEpoch(count int) {
+	for i := 0; i < count; i += 1 {
+		ts._ctx = testkeeper.AdvanceEpoch(ts._ctx, ts.keepers)
+	}
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+}
+
+func (ts *testStruct) isKeyInProject(index, key string, kind types.ProjectKey_Type) bool {
+	resp, err := ts.keepers.Projects.Info(ts._ctx, &types.QueryInfoRequest{Project: index})
+	require.Nil(ts.t, err, "project: "+index+", key: "+key)
+	pk := resp.Project.GetKey(key)
+	return pk.IsType(kind)
+}
+
+func (ts *testStruct) addProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
+	msg := types.MsgAddKeys{
+		Creator:     creator,
+		Project:     index,
+		ProjectKeys: projectKeys,
+	}
+	_, err := ts.servers.ProjectServer.AddKeys(ts._ctx, &msg)
+	return err
+}
+
+func (ts *testStruct) delProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
+	msg := types.MsgDelKeys{
+		Creator:     creator,
+		Project:     index,
+		ProjectKeys: projectKeys,
+	}
+	_, err := ts.servers.ProjectServer.DelKeys(ts._ctx, &msg)
+	return err
 }
 
 func TestCreateDefaultProject(t *testing.T) {
-	_, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTestStruct(t)
 
-	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	subAddr := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
 	plan := common.CreateMockPlan()
 
-	err := keepers.Projects.CreateAdminProject(sdk.UnwrapSDKContext(ctx), subAddr, plan)
+	err := ts.keepers.Projects.CreateAdminProject(ts.ctx, subAddr, plan)
 	require.Nil(t, err)
 
 	// subscription key is a developer in the default project
-	response1, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAddr})
+	response1, err := ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: subAddr})
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch(1)
 
-	response2, err := keepers.Projects.Info(ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
+	response2, err := ts.keepers.Projects.Info(ts._ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
 }
 
 func TestCreateProject(t *testing.T) {
-	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
-	ctx := sdk.UnwrapSDKContext(_ctx)
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	projectData := prepareProjectsData(_ctx, keepers)[1]
+	projectData := ts.projects["pd2"]
 	plan := common.CreateMockPlan()
 
-	subAddr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
-	admAddr := projectData.ProjectKeys[0].Key
+	subAddr := ts.accounts["sub1"]
+	admAddr := ts.accounts["pd2_both"]
 
-	err := keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-	ctx = sdk.UnwrapSDKContext(_ctx)
+	ts.AdvanceEpoch(1)
 
-	// test invalid project name/description
+	// test invalid project name
 	defaultProjectName := types.ADMIN_PROJECT_NAME
 	longProjectName := strings.Repeat(defaultProjectName, types.MAX_PROJECT_NAME_LEN+1)
 	invalidProjectName := "projectName,"
 
-	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, types.MAX_PROJECT_DESCRIPTION_LEN+1)
-	invalidProjectDescription := "projectDesc¢"
-
 	testProjectData := projectData
 	testProjectData.ProjectKeys = []types.ProjectKey{}
 
-	nameAndDescriptionTests := []struct {
-		name               string
-		projectName        string
-		projectDescription string
+	nameTests := []struct {
+		name        string
+		projectName string
 	}{
-		{"bad projectName (duplicate)", projectData.Name, projectDescription},
-		{"bad projectName (too long)", longProjectName, projectDescription},
-		{"bad projectName (contains comma)", invalidProjectName, projectDescription},
-		{"bad projectName (empty)", "", projectDescription},
-		{"bad projectDescription (too long)", "test1", longProjectDescription},
-		{"bad projectDescription (non ascii)", "test2", invalidProjectDescription},
+		{"bad projectName (duplicate)", projectData.Name},
+		{"bad projectName (too long)", longProjectName},
+		{"bad projectName (contains comma)", invalidProjectName},
+		{"bad projectName (empty)", ""},
 	}
 
-	for _, tt := range nameAndDescriptionTests {
+	for _, tt := range nameTests {
 		t.Run(tt.name, func(t *testing.T) {
 			testProjectData.Name = tt.projectName
-			testProjectData.Description = tt.projectDescription
-
-			err = keepers.Projects.CreateProject(ctx, subAddr, testProjectData, plan)
+			err = ts.keepers.Projects.CreateProject(ts.ctx, subAddr, testProjectData, plan)
 			require.NotNil(t, err)
 		})
 	}
 
-	// continue testing traits that are not related to the project's name/description
+	// continue testing traits that are not related to the project's name
 	// try creating a project with invalid project keys
 	invalidKeysProjectData := projectData
 	invalidKeysProjectData.Name = "nonDuplicateProjectName"
 	invalidKeysProjectData.ProjectKeys = []types.ProjectKey{
-		{
-			Key:   subAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		},
-		{
-			Key:   admAddr,
-			Types: []types.ProjectKey_KEY_TYPE{4},
-		},
+		types.ProjectDeveloperKey(subAddr),
+		types.ProjectAdminKey(subAddr).AddType(0x4),
 	}
 
 	// should fail because there's an invalid key
-	_, err = servers.SubscriptionServer.AddProject(_ctx, &subscriptiontypes.MsgAddProject{
+	_, err = ts.servers.SubscriptionServer.AddProject(ts._ctx, &subscriptiontypes.MsgAddProject{
 		Creator:     subAddr,
 		ProjectData: invalidKeysProjectData,
 	})
 	require.NotNil(t, err)
 
-	// get project by developer - subscription key is not a developer, should fail (if it succeeds, it means that the valid project key
-	// from invalidKeysProjectData was registered, which is not desired!)
-	_, err = keepers.Projects.Developer(_ctx, &types.QueryDeveloperRequest{Developer: subAddr})
+	// subscription key is not a developer, so get project by developer should fail (if it succeeds,
+	// then the valid project key from invalidKeysProjectData was registered, which is undesired!)
+	_, err = ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: subAddr})
 	require.NotNil(t, err)
 
-	response1, err := keepers.Projects.Developer(_ctx, &types.QueryDeveloperRequest{Developer: admAddr})
+	response1, err := ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: admAddr})
 	require.Nil(t, err)
 
-	response2, err := keepers.Projects.Info(_ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
+	response2, err := ts.keepers.Projects.Info(ts._ctx, &types.QueryInfoRequest{Project: response1.Project.Index})
 	require.Nil(t, err)
 
 	require.Equal(t, response2.Project, response1.Project)
 
-	_, err = keepers.Projects.GetProjectForBlock(ctx, response1.Project.Index, 0)
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, response1.Project.Index, ts.BlockHeight())
 	require.Nil(t, err)
 
 	// there should be one project key
@@ -190,88 +258,190 @@ func TestCreateProject(t *testing.T) {
 	require.Equal(t, response2.Project.ProjectKeys[0].Key, admAddr)
 
 	// the admin is both an admin and a developer
-	require.Equal(t, 2, len(response2.Project.ProjectKeys[0].Types))
+	require.True(t, response2.Project.ProjectKeys[0].IsType(types.ProjectKey_ADMIN))
+	require.True(t, response2.Project.ProjectKeys[0].IsType(types.ProjectKey_DEVELOPER))
 }
 
-func TestAddKeys(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-	_ctx := sdk.UnwrapSDKContext(ctx)
-	projectData := prepareProjectsData(ctx, keepers)[2]
+func TestProjectsServerAPI(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(2, 1, 5) // 2 sub, 1 adm, 5 dev
+
+	sub1Acc := common.CreateNewAccount(ts._ctx, *ts.keepers, 20000)
+	sub1Addr := sub1Acc.Addr.String()
+
+	dev1Addr := ts.accounts["dev1"]
+	dev2Addr := ts.accounts["dev2"]
+
 	plan := common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(ts.ctx, plan)
 
-	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	admAddr := projectData.ProjectKeys[0].Key
-	dev1Addr := projectData.ProjectKeys[1].Key
-	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	dev3Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	common.BuySubscription(t, ts._ctx, *ts.keepers, *ts.servers, sub1Acc, plan.Index)
 
-	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
+	projectData := types.ProjectData{
+		Name:        "mockname2",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)},
+		Policy:      &plan.PlanPolicy,
+	}
+
+	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
+
+	msgAddProject := &subscriptiontypes.MsgAddProject{
+		Creator:     sub1Addr,
+		ProjectData: projectData,
+	}
+	_, err := ts.servers.SubscriptionServer.AddProject(ts._ctx, msgAddProject)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch(1)
 
-	projectRes, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: dev1Addr})
+	msgAddKeys := types.MsgAddKeys{
+		Creator:     sub1Addr,
+		Project:     projectID,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)},
+	}
+	_, err = ts.servers.ProjectServer.AddKeys(ts._ctx, &msgAddKeys)
+	require.Nil(t, err)
+
+	ts.AdvanceBlock(1)
+
+	require.True(t, ts.isKeyInProject(projectID, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.False(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
+
+	msgQueryDev := &types.QueryDeveloperRequest{Developer: sub1Addr}
+	res, err := ts.keepers.Projects.Developer(ts._ctx, msgQueryDev)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Project.ProjectKeys))
+}
+
+func TestAddDelKeys(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 2) // 1 sub, 0 adm, 2 dev
+
+	projectData := ts.projects["pd3"]
+	plan := common.CreateMockPlan()
+
+	subAddr := ts.accounts["sub1"]
+	admAddr := ts.accounts["pd3_adm"]
+	dev1Addr := ts.accounts["pd3_dev"]
+	dev2Addr := ts.accounts["dev1"]
+	dev3Addr := ts.accounts["dev2"]
+
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	projectRes, err := ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: dev1Addr})
 	require.Nil(t, err)
 
 	project := projectRes.Project
-	pk := types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
+	pk := types.ProjectAdminKey(dev1Addr)
+
 	// try adding myself as admin, should fail
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
 	require.NotNil(t, err)
 
 	// admin key adding an invalid key
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{4}}
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	pk = types.NewProjectKey(dev2Addr).AddType(0x4)
+	err = ts.addProjectKeys(project.Index, admAddr, pk)
 	require.NotNil(t, err)
 
 	// admin key adding a developer
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	pk = types.ProjectDeveloperKey(dev2Addr)
+	err = ts.addProjectKeys(project.Index, admAddr, pk)
 	require.Nil(t, err)
 
 	// developer tries to add the second developer as admin
-	pk = types.ProjectKey{Key: dev2Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	pk = types.ProjectAdminKey(dev2Addr)
+	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
 	require.NotNil(t, err)
 
 	// admin adding admin
-	pk = types.ProjectKey{Key: dev1Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}}
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: admAddr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	pk = types.ProjectAdminKey(dev1Addr)
+	err = ts.addProjectKeys(project.Index, admAddr, pk)
 	require.Nil(t, err)
+
+	// additions above will only take effect in next epoch
+	require.False(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
 
 	// new admin adding another developer
-	pk = types.ProjectKey{Key: dev3Addr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddKeys(ctx, &types.MsgAddKeys{Creator: dev1Addr, Project: project.Index, ProjectKeys: []types.ProjectKey{pk}})
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
 	require.Nil(t, err)
 
+	// additions above will only take effect in next epoch
+	require.False(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+
 	// fetch project with new developer
-	_, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: dev3Addr})
+	_, err = ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: dev3Addr})
 	require.Nil(t, err)
+
+	// developer delete admin
+	pk = types.ProjectAdminKey(admAddr)
+	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	require.NotNil(t, err)
+
+	// developer delete developer
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	require.NotNil(t, err)
+
+	// new admin delete subscription owner (admin)
+	pk = types.ProjectAdminKey(subAddr)
+	err = ts.delProjectKeys(project.Index, admAddr, pk)
+	require.NotNil(t, err)
+
+	// subscription owner (admin) delete other admin
+	pk = types.ProjectAdminKey(admAddr)
+	err = ts.delProjectKeys(project.Index, subAddr, pk)
+	require.Nil(t, err)
+
+	// admin delete developer
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.delProjectKeys(project.Index, admAddr, pk)
+	require.Nil(t, err)
+
+	// deletion above will only take effect in next epoch
+	require.True(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 }
 
 func TestAddAdminInTwoProjects(t *testing.T) {
-	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-	_ctx := sdk.UnwrapSDKContext(ctx)
-	projectData := prepareProjectsData(ctx, keepers)[0]
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 0) // 1 sub, 0 admin, 0 devel
+
+	projectData := ts.projects["pd1"]
 	plan := common.CreateMockPlan()
 
-	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	admAddr := projectData.ProjectKeys[0].Key
+	subAddr := ts.accounts["sub1"]
+	admAddr := ts.accounts["pd1_adm"]
 
-	err := keepers.Projects.CreateAdminProject(_ctx, subAddr, plan)
+	err := ts.keepers.Projects.CreateAdminProject(ts.ctx, subAddr, plan)
 	require.Nil(t, err)
 
 	// this is not supposed to fail because you can use the same admin key for two different projects
 	// creating a regular project (not admin project) so subAccount won't be a developer there
-	err = keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
+	err = ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch(1)
 
-	_, err = keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: admAddr})
+	_, err = ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: admAddr})
 	require.NotNil(t, err)
 
-	response, err := keepers.Projects.Developer(ctx, &types.QueryDeveloperRequest{Developer: subAddr})
+	response, err := ts.keepers.Projects.Developer(ts._ctx, &types.QueryDeveloperRequest{Developer: subAddr})
 	require.Nil(t, err)
 	require.Equal(t, response.Project.Index, types.ProjectIndex(subAddr, types.ADMIN_PROJECT_NAME))
 }
@@ -285,27 +455,27 @@ func TestSetSubscriptionPolicy(t *testing.T) {
 }
 
 func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
-	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
-	ctx := sdk.UnwrapSDKContext(_ctx)
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 1) // 1 sub, 0 admin, 1 data
 
-	projectData := prepareProjectsData(_ctx, keepers)[0]
+	projectData := ts.projects["pd1"]
 	plan := common.CreateMockPlan()
 
-	subAddr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
-	admAddr := projectData.ProjectKeys[0].Key
-	devAddr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+	subAddr := ts.accounts["sub1"]
+	admAddr := ts.accounts["pd1_adm"]
+	devAddr := ts.accounts["dev1"]
 
 	projectID := types.ProjectIndex(subAddr, projectData.Name)
 
-	err := keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	err = keepers.Projects.AddKeysToProject(ctx, projectID, admAddr, []types.ProjectKey{pk})
+	pk := types.ProjectDeveloperKey(devAddr)
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, admAddr, []types.ProjectKey{pk})
 	require.Nil(t, err)
 
 	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(ctx, spec)
+	ts.keepers.Spec.SetSpec(ts.ctx, spec)
 
 	templates := []struct {
 		name                         string
@@ -400,13 +570,12 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				err = SetPolicyMessage.ValidateBasic()
 				require.Nil(t, err)
 
-				_, err := servers.ProjectServer.SetPolicy(_ctx, &SetPolicyMessage)
+				_, err := ts.servers.ProjectServer.SetPolicy(ts._ctx, &SetPolicyMessage)
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
-					_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-					ctx = sdk.UnwrapSDKContext(_ctx)
+					ts.AdvanceEpoch(1)
 
-					proj, err := keepers.Projects.GetProjectForBlock(ctx, tt.projectID, uint64(ctx.BlockHeight()))
+					proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, tt.projectID, ts.BlockHeight())
 					require.Nil(t, err)
 
 					require.Equal(t, newPolicy, *proj.AdminPolicy)
@@ -423,15 +592,13 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 				err = setSubscriptionPolicyMessage.ValidateBasic()
 				require.Nil(t, err)
 
-				_, err := servers.ProjectServer.SetSubscriptionPolicy(_ctx, &setSubscriptionPolicyMessage)
+				_, err := ts.servers.ProjectServer.SetSubscriptionPolicy(ts._ctx, &setSubscriptionPolicyMessage)
 				if tt.setSubscriptionPolicySuccess {
 					require.Nil(t, err)
-					_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-					ctx = sdk.UnwrapSDKContext(_ctx)
+					ts.AdvanceEpoch(1)
 
-					proj, err := keepers.Projects.GetProjectForBlock(ctx, tt.projectID, uint64(ctx.BlockHeight()))
+					proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, tt.projectID, ts.BlockHeight())
 					require.Nil(t, err)
-
 					require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
 				} else {
 					require.NotNil(t, err)
@@ -442,131 +609,184 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 }
 
 func TestChargeComputeUnits(t *testing.T) {
-	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	ts := newTestStruct(t)
+	ts.prepareData(0, 0, 1) // 0 sub, 0 adm, 1 dev
 
-	projectData := prepareProjectsData(_ctx, keepers)[0]
+	projectData := ts.projects["pd1"]
 	plan := common.CreateMockPlan()
 
-	subAddr := projectData.ProjectKeys[0].Key
-	devAddr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+	subAddr := ts.accounts["pd1_adm"]
+	devAddr := ts.accounts["dev1"]
 
-	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-	ctx := sdk.UnwrapSDKContext(_ctx)
-	block1 := uint64(ctx.BlockHeight())
-
-	err := keepers.Projects.CreateProject(ctx, subAddr, projectData, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
-	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-	ctx = sdk.UnwrapSDKContext(_ctx)
-	block2 := uint64(ctx.BlockHeight())
+	ts.AdvanceEpoch(1)
+	block1 := ts.BlockHeight()
 
 	projectID := types.ProjectIndex(subAddr, projectData.Name)
-	project, err := keepers.Projects.GetProjectForBlock(ctx, projectID, block2)
+	project, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, block1)
 	require.Nil(t, err)
 
 	// add developer key (created fixation)
-	pk := types.ProjectKey{Key: devAddr, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}
-	_, err = servers.ProjectServer.AddKeys(_ctx, &types.MsgAddKeys{
-		Creator:     subAddr,
-		Project:     project.Index,
-		ProjectKeys: []types.ProjectKey{pk},
-	})
+	err = ts.addProjectKeys(project.Index, subAddr, types.ProjectDeveloperKey(devAddr))
 	require.Nil(t, err)
 
-	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
-	ctx = sdk.UnwrapSDKContext(_ctx)
-	block3 := uint64(ctx.BlockHeight())
+	// first epoch for the developer key addition to take place.
 
-	keepers.Projects.SnapshotSubscriptionProjects(ctx, subAddr)
+	ts.AdvanceEpoch(1)
+	block2 := ts.BlockHeight()
+
+	// second epoch to move further, otherwise snapshot will affect the current new
+	// dev key instead of creating a separate fixation version.
+
+	ts.AdvanceEpoch(1)
+	block3 := ts.BlockHeight()
+
+	ts.keepers.Projects.SnapshotSubscriptionProjects(ts.ctx, subAddr)
 
 	// try to charge CUs: should update oldest and second-oldest entries, but not the latest
 	// (because the latter is in a new snapshot)
 
-	err = keepers.Projects.ChargeComputeUnitsToProject(ctx, project, block1, 1000)
+	err = ts.keepers.Projects.ChargeComputeUnitsToProject(ts.ctx, project, block1, 1000)
 	require.Nil(t, err)
 
-	proj, err := keepers.Projects.GetProjectForBlock(ctx, project.Index, block1)
+	proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block2)
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block2)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block3)
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
 
-	keepers.Projects.ChargeComputeUnitsToProject(ctx, project, block2, 1000)
+	ts.keepers.Projects.ChargeComputeUnitsToProject(ts.ctx, project, block2, 1000)
 
-	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block1)
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block2)
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block2)
 	require.Nil(t, err)
 	require.Equal(t, uint64(2000), proj.UsedCu)
-	proj, err = keepers.Projects.GetProjectForBlock(ctx, project.Index, block3)
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, project.Index, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
 }
 
-func TestAddDevKeyToSameProjectDifferentBlocks(t *testing.T) {
-	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-	_ctx := sdk.UnwrapSDKContext(ctx)
-	projectName := "mockname1"
-	subAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	dev1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	dev2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	projectID := types.ProjectIndex(subAddr, projectName)
+func TestAddDelKeysSameEpoch(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(2, 1, 5) // 2 sub, 1 adm, 5 dev
+
+	sub1Addr := ts.accounts["sub1"]
+	sub2Addr := ts.accounts["sub2"]
+	adm1Addr := ts.accounts["adm1"]
+	dev1Addr := ts.accounts["dev1"]
+	dev2Addr := ts.accounts["dev2"]
+	dev3Addr := ts.accounts["dev3"]
+	dev4Addr := ts.accounts["dev4"]
+	dev5Addr := ts.accounts["dev5"]
+
 	plan := common.CreateMockPlan()
 
-	projectData := types.ProjectData{
-		Name:        projectName,
-		Description: "",
+	projectData1 := types.ProjectData{
+		Name:        "mockname1",
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{
-			Key:   subAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}},
-		Policy: &plan.PlanPolicy,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
+		Policy:      &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(_ctx, subAddr, projectData, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, sub1Addr, projectData1, plan)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	_ctx = sdk.UnwrapSDKContext(ctx)
-
-	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
-		[]types.ProjectKey{{
-			Key:   dev1Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}})
+	projectData2 := types.ProjectData{
+		Name:        "mockname2",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
+		Policy:      &plan.PlanPolicy,
+	}
+	err = ts.keepers.Projects.CreateProject(ts.ctx, sub2Addr, projectData2, plan)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	_ctx = sdk.UnwrapSDKContext(ctx)
+	ts.AdvanceEpoch(1)
 
-	err = keepers.Projects.AddKeysToProject(_ctx, projectID, subAddr,
-		[]types.ProjectKey{{
-			Key:   dev2Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}})
+	projectID1 := types.ProjectIndex(sub1Addr, projectData1.Name)
+	projectID2 := types.ProjectIndex(sub2Addr, projectData2.Name)
+
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
+		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
 	require.Nil(t, err)
 
-	proj, err := keepers.Projects.GetProjectForDeveloper(_ctx, subAddr,
-		uint64(_ctx.BlockHeight()))
+	ts.AdvanceBlock(1)
+
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
+		[]types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)})
 	require.Nil(t, err)
 
+	require.False(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.False(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
+
+	proj, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, sub1Addr, ts.BlockHeight())
+	require.Nil(t, err)
 	require.Equal(t, 3, len(proj.ProjectKeys))
+
+	// add twice - ok
+	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.True(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// del twice - fail
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.NotNil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	require.NotNil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// add, del in same epoch
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+	require.False(t, ts.isKeyInProject(projectID2, adm1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(projectID2, dev3Addr, types.ProjectKey_DEVELOPER))
+
+	// add dev to two projects in same epoch - latter fails
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev5Addr))
+	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev5Addr))
+	require.NotNil(t, err)
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
-	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-	_ctx := sdk.UnwrapSDKContext(ctx)
-	plan := common.CreateMockPlan()
+	ts := newTestStruct(t)
+	ts.prepareData(2, 0, 1) // 2 sub, 0 adm, 1 dev
 
-	sub1Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	sub2Addr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
-	devAddr := common.CreateNewAccount(ctx, *keepers, 10000).Addr.String()
+	sub1Addr := ts.accounts["sub1"]
+	sub2Addr := ts.accounts["sub2"]
+	dev1Addr := ts.accounts["dev1"]
+
+	plan := common.CreateMockPlan()
 
 	projectName1 := "mockname1"
 	projectName2 := "mockname2"
@@ -576,53 +796,38 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	projectData1 := types.ProjectData{
 		Name:        projectName1,
-		Description: "",
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{
-			Key:   sub1Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}},
-		Policy: &plan.PlanPolicy,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub1Addr)},
+		Policy:      &plan.PlanPolicy,
 	}
-	err := keepers.Projects.CreateProject(_ctx, sub1Addr, projectData1, plan)
+	err := ts.keepers.Projects.CreateProject(ts.ctx, sub1Addr, projectData1, plan)
 	require.Nil(t, err)
 
 	projectData2 := types.ProjectData{
 		Name:        projectName2,
-		Description: "",
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{
-			Key:   sub2Addr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}},
-		Policy: &plan.PlanPolicy,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(sub2Addr)},
+		Policy:      &plan.PlanPolicy,
 	}
-	err = keepers.Projects.CreateProject(_ctx, sub2Addr, projectData2, plan)
+	err = ts.keepers.Projects.CreateProject(ts.ctx, sub2Addr, projectData2, plan)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	_ctx = sdk.UnwrapSDKContext(ctx)
+	ts.AdvanceEpoch(1)
 
-	err = keepers.Projects.AddKeysToProject(_ctx, projectID1, sub1Addr,
-		[]types.ProjectKey{{
-			Key:   devAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}})
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
+		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
 	require.Nil(t, err)
 
-	err = keepers.Projects.AddKeysToProject(_ctx, projectID2, sub2Addr,
-		[]types.ProjectKey{{
-			Key:   devAddr,
-			Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-		}})
-	require.NotNil(t, err) // should fail since this developer was already added to the first project
+	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID2, sub2Addr,
+		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
+	require.NotNil(t, err) // developer was already added to the first project
 
-	proj1, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub1Addr,
-		uint64(_ctx.BlockHeight()))
+	ts.AdvanceEpoch(1)
+
+	proj1, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, sub1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 
-	proj2, err := keepers.Projects.GetProjectForDeveloper(_ctx, sub2Addr,
-		uint64(_ctx.BlockHeight()))
+	proj2, err := ts.keepers.Projects.GetProjectForDeveloper(ts.ctx, sub2Addr, ts.BlockHeight())
 	require.Nil(t, err)
 
 	require.Equal(t, 2, len(proj1.ProjectKeys))

@@ -60,3 +60,7 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 func (k Keeper) PushFixations(ctx sdk.Context) {
 	k.epochstorageKeeper.PushFixatedParams(ctx, 0, 0)
 }
+
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.CheckAndHandleAllVotes(ctx)
+}

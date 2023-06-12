@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"crypto/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -45,16 +45,17 @@ const (
 
 const BLOCK_HEADER_LEN = 32
 
+// NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	Epochstorage  epochstoragekeeper.Keeper
-	Spec          speckeeper.Keeper
-	Plans         planskeeper.Keeper
-	Projects      projectskeeper.Keeper
-	Subscription  subscriptionkeeper.Keeper
-	Pairing       pairingkeeper.Keeper
-	Conflict      conflictkeeper.Keeper
-	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
+	BankKeeper    mockBankKeeper
+	Spec          speckeeper.Keeper
+	Epochstorage  epochstoragekeeper.Keeper
+	Subscription  subscriptionkeeper.Keeper
+	Conflict      conflictkeeper.Keeper
+	Pairing       pairingkeeper.Keeper
+	Projects      projectskeeper.Keeper
+	Plans         planskeeper.Keeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
 }
@@ -69,14 +70,29 @@ type Servers struct {
 	PlansServer        planstypes.MsgServer
 }
 
+type KeeperBeginBlocker interface {
+	BeginBlock(ctx sdk.Context)
+}
+
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
 	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
 	return
 }
 
-func SimulatePlansProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
-	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal for testing", plansToPropose)
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
+	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err
@@ -165,7 +181,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
+	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription)
@@ -199,6 +215,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+	ctx = ctx.WithBlockTime(time.Now())
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -278,10 +295,17 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 // Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		ks.Epochstorage.EpochStart(unwrapedCtx)
-		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-	}
 
-	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
+	// get the value and type of the Keepers struct
+	keepersType := reflect.TypeOf(*ks)
+	keepersValue := reflect.ValueOf(*ks)
+
+	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
+	for i := 0; i < keepersType.NumField(); i++ {
+		fieldValue := keepersValue.Field(i)
+
+		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
+			beginBlocker.BeginBlock(unwrapedCtx)
+		}
+	}
 }

@@ -2,110 +2,182 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
 // add a default project to a subscription, add the subscription key as
-func (k Keeper) CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan plantypes.Plan) error {
+func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
-		Description: types.ADMIN_PROJECT_DESCRIPTION,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(subAddr)},
 		Enabled:     true,
-		ProjectKeys: []types.ProjectKey{{Key: subscriptionAddress, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}}},
 		Policy:      nil,
 	}
-	return k.CreateProject(ctx, subscriptionAddress, projectData, plan)
+	return k.CreateProject(ctx, subAddr, projectData, plan)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subscriptionAddress string, projectData types.ProjectData, plan plantypes.Plan) error {
-	project, err := types.NewProject(subscriptionAddress, projectData.GetName(), projectData.GetDescription(),
-		projectData.GetEnabled())
+func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
+	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
 		return err
 	}
 
 	var emptyProject types.Project
-	blockHeight := uint64(ctx.BlockHeight())
-	if found := k.projectsFS.FindEntry(ctx, project.Index, blockHeight, &emptyProject); found {
+	ctxBlock := uint64(ctx.BlockHeight())
+	if found := k.projectsFS.FindEntry(ctx, project.Index, ctxBlock, &emptyProject); found {
 		// the project with the same name already exists if no error has returned
-		return utils.LavaFormatWarning("project already exist for the current subscription with the same name", fmt.Errorf("could not create project"),
-			utils.Attribute{Key: "subscription", Value: subscriptionAddress},
+		return utils.LavaFormatWarning(
+			"project already exist for the current subscription with the same name",
+			fmt.Errorf("could not create project"),
+			utils.Attribute{Key: "subscription", Value: subAddr},
 		)
 	}
 
 	project.AdminPolicy = projectData.GetPolicy()
 
-	// projects can be created only by the subscription owner. So the subscription policy is equal to the admin policy
+	// projects can be created only by the subscription owner:
+	// clone the admin policy to use as the subscription policy too.
 	project.SubscriptionPolicy = project.AdminPolicy
 
 	for _, projectKey := range projectData.GetProjectKeys() {
-		err = k.RegisterKey(ctx, types.ProjectKey{Key: projectKey.GetKey(), Types: projectKey.GetTypes()}, &project, blockHeight)
+		err = k.registerKey(ctx, projectKey, &project, ctxBlock)
 		if err != nil {
 			return err
 		}
 	}
 
-	return k.projectsFS.AppendEntry(ctx, project.Index, blockHeight, &project)
+	return k.projectsFS.AppendEntry(ctx, project.Index, ctxBlock, &project)
 }
 
-func (k Keeper) RegisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
-	if project == nil {
-		return utils.LavaFormatError("project is nil", fmt.Errorf("could not register key to project"))
+func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+	if !key.IsTypeValid() {
+		return sdkerrors.ErrInvalidType
 	}
 
-	for _, keyType := range key.GetTypes() {
-		switch keyType {
-		case types.ProjectKey_ADMIN:
-			k.AddAdminKey(project, key.GetKey())
-		case types.ProjectKey_DEVELOPER:
-			// try to find the developer key
-			var developerData types.ProtoDeveloperData
-			found := k.developerKeysFS.FindEntry(ctx, key.GetKey(), blockHeight, &developerData)
+	if key.IsType(types.ProjectKey_ADMIN) {
+		project.AppendKey(types.ProjectAdminKey(key.Key))
+	}
 
-			// if we find the developer key and it belongs to a different project, return error
-			if found && developerData.ProjectID != project.GetIndex() {
-				return utils.LavaFormatWarning("key already exists", fmt.Errorf("could not register key to project"),
+	if key.IsType(types.ProjectKey_DEVELOPER) {
+		ctxBlock := uint64(ctx.BlockHeight())
+
+		// check that the developer key is valid in the current project state
+		var devkeyData types.ProtoDeveloperData
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, ctxBlock, &devkeyData)
+
+		// the developer key may already belong to a different project
+		if found && devkeyData.ProjectID != project.GetIndex() {
+			return utils.LavaFormatWarning("failed to register key",
+				fmt.Errorf("key already exists"),
+				utils.Attribute{Key: "key", Value: key.Key},
+				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
+			)
+		}
+
+		// the project may have future (e.g. end of epoch) changes pending; so
+		// check that the developer key is still valid in that future state
+		// (for example, it could be removed and added elsewhere by then).
+		found = k.developerKeysFS.FindEntry(ctx, key.Key, blockHeight, &devkeyData)
+
+		// the developer key may already belong to a different project
+		devkeyData = types.ProtoDeveloperData{}
+		if found && devkeyData.ProjectID != project.GetIndex() {
+			return utils.LavaFormatWarning("failed to register key",
+				fmt.Errorf("key already exists in next epoch"),
+				utils.Attribute{Key: "key", Value: key.Key},
+				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
+			)
+		}
+
+		if !found {
+			devkeyData := types.ProtoDeveloperData{
+				ProjectID: project.GetIndex(),
+			}
+
+			err := k.developerKeysFS.AppendEntry(ctx, key.Key, blockHeight, &devkeyData)
+			if err != nil {
+				return utils.LavaFormatError("failed to register key", err,
 					utils.Attribute{Key: "key", Value: key.Key},
-					utils.Attribute{Key: "keyTypes", Value: key.Types},
+					utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				)
 			}
 
-			if !found {
-				err := k.AddDeveloperKey(ctx, key.GetKey(), project, blockHeight)
-				if err != nil {
-					return utils.LavaFormatError("adding developer key to project failed", err,
-						utils.Attribute{Key: "developerKey", Value: key.Key},
-						utils.Attribute{Key: "projectIndex", Value: project.Index},
-						utils.Attribute{Key: "blockHeight", Value: blockHeight},
-					)
-				}
+			logger := k.Logger(ctx)
+			details := map[string]string{
+				"project": project.GetIndex(),
+				"key":     key.Key,
+				"keytype": strconv.FormatInt(int64(key.Kinds), 10),
 			}
-		default:
-			panic("requested key has an invalid type")
+			utils.LogLavaEvent(ctx, logger, types.AddProjectKeyEventName, details, "key added to project")
+
+			project.AppendKey(types.ProjectDeveloperKey(key.Key))
 		}
 	}
 
 	return nil
 }
 
-func (k Keeper) AddAdminKey(project *types.Project, adminKey string) {
-	project.AppendKey(types.ProjectKey{Key: adminKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN}})
-}
-
-func (k Keeper) AddDeveloperKey(ctx sdk.Context, developerKey string, project *types.Project, blockHeight uint64) error {
-	var developerData types.ProtoDeveloperData
-	developerData.ProjectID = project.GetIndex()
-	err := k.developerKeysFS.AppendEntry(ctx, developerKey, blockHeight, &developerData)
-	if err != nil {
-		return err
+func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+	if !key.IsTypeValid() {
+		return sdkerrors.ErrInvalidType
 	}
 
-	project.AppendKey(types.ProjectKey{Key: developerKey, Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER}})
+	if key.IsType(types.ProjectKey_ADMIN) {
+		found := project.DeleteKey(types.ProjectAdminKey(key.Key))
+		if !found {
+			return sdkerrors.ErrKeyNotFound
+		}
+	}
+
+	if key.IsType(types.ProjectKey_DEVELOPER) {
+		ctxBlock := uint64(ctx.BlockHeight())
+
+		// check that the developer key is valid in the current project state
+		var devkeyData types.ProtoDeveloperData
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, ctxBlock, &devkeyData)
+		if !found {
+			// if not found now, check if it is valid in the future (e.g. end of
+			// epoch) state, as it may have been added in this epoch and pending
+			// to become visible).
+			found = k.developerKeysFS.FindEntry(ctx, key.Key, blockHeight, &devkeyData)
+		}
+
+		if !found {
+			return sdkerrors.ErrNotFound
+		}
+
+		// the developer key belongs to a different project
+		if devkeyData.ProjectID != project.GetIndex() {
+			return utils.LavaFormatWarning("failed to unregister key", sdkerrors.ErrNotFound,
+				utils.Attribute{Key: "key", Value: key.Key},
+				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
+			)
+		}
+
+		err := k.developerKeysFS.DelEntry(ctx, key.Key, blockHeight)
+		if err != nil {
+			return err
+		}
+		found = project.DeleteKey(types.ProjectDeveloperKey(key.Key))
+		if !found {
+			panic("unregisterKey: developer key not found")
+		}
+
+		logger := k.Logger(ctx)
+		details := map[string]string{
+			"project": project.GetIndex(),
+			"key":     key.Key,
+			"keytype": strconv.FormatInt(int64(key.Kinds), 10),
+		}
+		utils.LogLavaEvent(ctx, logger, types.DelProjectKeyEventName, details, "key deleted from project")
+	}
 
 	return nil
 }

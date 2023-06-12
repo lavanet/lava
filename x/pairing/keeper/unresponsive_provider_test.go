@@ -9,7 +9,6 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -24,9 +23,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -74,7 +73,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, ts.clients[clientIndex].Addr, providerSdkAddress)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: providerAddress, Relays: Relays}, true, true, ts.clients[clientIndex].Addr, providerSdkAddress)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -121,9 +120,9 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -166,7 +165,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -230,9 +229,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -270,7 +269,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	Relays = append(Relays, relayRequest)
 
 	// send relay payment and check the funds did transfer normally
-	payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[0].Addr, provider0_addr)
+	payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[0].Addr, provider0_addr)
 
 	// advance enough epochs so the unresponsive provider will be punished
 	if largerConst < recommendedEpochNumToCollectPayment {
@@ -316,7 +315,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		RelaysAfter = append(RelaysAfter, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: RelaysAfter}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: RelaysAfter}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// test the provider is still unstaked
@@ -351,9 +350,9 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
 
 	// check which const is larger
-	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
 	}
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -392,7 +391,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		Relays = append(Relays, relayRequest)
 
 		// send relay payment and check the funds did transfer normally
-		payAndVerifyBalanceLegacy(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, ts.clients[clientIndex].Addr, provider0_addr)
+		payAndVerifyBalance(t, ts, types.MsgRelayPayment{Creator: provider0_addr.String(), Relays: Relays}, true, true, ts.clients[clientIndex].Addr, provider0_addr)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished

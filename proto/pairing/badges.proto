@@ -1,0 +1,25 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "pairing/relay.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "epochstorage/stake_entry.proto";
+
+service BadgeGenerator {
+  rpc GenerateBadge(GenerateBadgeRequest) returns (GenerateBadgeResponse) {}
+}
+
+message GenerateBadgeRequest {
+  string badge_address = 1;
+  string project_id = 2;
+  string spec_id = 3 [(gogoproto.nullable)   = true];
+}
+
+message GenerateBadgeResponse {
+  Badge badge = 1; 
+  repeated lavanet.lava.epochstorage.StakeEntry pairing_list = 2 [(gogoproto.nullable) = true];
+  string badge_signer_address = 3;
+}

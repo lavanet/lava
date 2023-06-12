@@ -31353,17 +31353,9 @@ paths:
                         key:
                           type: string
                           title: the address of the project key
-                        types:
-                          type: array
-                          items:
-                            type: string
-                            enum:
-                              - NONE
-                              - ADMIN
-                              - DEVELOPER
-                            default: NONE
-                            title: 'bitmap, must only be power of 2'
-                          title: 'the key type, determines the privilages of the key'
+                        kinds:
+                          type: integer
+                          format: int64
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -31490,17 +31482,9 @@ paths:
                         key:
                           type: string
                           title: the address of the project key
-                        types:
-                          type: array
-                          items:
-                            type: string
-                            enum:
-                              - NONE
-                              - ADMIN
-                              - DEVELOPER
-                            default: NONE
-                            title: 'bitmap, must only be power of 2'
-                          title: 'the key type, determines the privilages of the key'
+                        kinds:
+                          type: integer
+                          format: int64
                     title: list of the projects keys
                   admin_policy:
                     type: object
@@ -31694,6 +31678,9 @@ paths:
                       type: array
                       items:
                         type: string
+                    api_count:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -33136,6 +33123,45 @@ paths:
                   additionalProperties: {}
       parameters:
         - name: consumer
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  '/lavanet/lava/subscription/list_projects/{subscription}':
+    get:
+      summary: Queries a list of ListProjects items.
+      operationId: LavanetLavaSubscriptionListProjects
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              projects:
+                type: array
+                items:
+                  type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: subscription
           in: path
           required: true
           type: string
@@ -54425,6 +54451,15 @@ definitions:
         title: >-
           sign
           latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+      metadata:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            value:
+              type: string
   lavanet.lava.pairing.RelayRequest:
     type: object
     properties:
@@ -54574,6 +54609,15 @@ definitions:
           salt:
             type: string
             format: byte
+          metadata:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                value:
+                  type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -55009,6 +55053,78 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.pairing.GenerateBadgeResponse:
+    type: object
+    properties:
+      badge:
+        type: object
+        properties:
+          cu_allocation:
+            type: string
+            format: uint64
+          epoch:
+            type: string
+            format: uint64
+          address:
+            type: string
+          lava_chain_id:
+            type: string
+          project_sig:
+            type: string
+            format: byte
+      pairing_list:
+        type: array
+        items:
+          type: object
+          properties:
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            address:
+              type: string
+            stake_applied_block:
+              type: string
+              format: uint64
+            endpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  iPPORT:
+                    type: string
+                  useType:
+                    type: string
+                  geolocation:
+                    type: string
+                    format: uint64
+            geolocation:
+              type: string
+              format: uint64
+            chain:
+              type: string
+            moniker:
+              type: string
+      badge_signer_address:
+        type: string
+  lavanet.lava.pairing.Metadata:
+    type: object
+    properties:
+      name:
+        type: string
+      value:
+        type: string
   lavanet.lava.pairing.MsgFreezeProviderResponse:
     type: object
   lavanet.lava.pairing.MsgRelayPaymentResponse:
@@ -55570,6 +55686,15 @@ definitions:
       salt:
         type: string
         format: byte
+      metadata:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            value:
+              type: string
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
@@ -55903,17 +56028,9 @@ definitions:
             key:
               type: string
               title: the address of the project key
-            types:
-              type: array
-              items:
-                type: string
-                enum:
-                  - NONE
-                  - ADMIN
-                  - DEVELOPER
-                default: NONE
-                title: 'bitmap, must only be power of 2'
-              title: 'the key type, determines the privilages of the key'
+            kinds:
+              type: integer
+              format: int64
         title: list of the projects keys
       admin_policy:
         type: object
@@ -55982,25 +56099,9 @@ definitions:
       key:
         type: string
         title: the address of the project key
-      types:
-        type: array
-        items:
-          type: string
-          enum:
-            - NONE
-            - ADMIN
-            - DEVELOPER
-          default: NONE
-          title: 'bitmap, must only be power of 2'
-        title: 'the key type, determines the privilages of the key'
-  lavanet.lava.projects.ProjectKey.KEY_TYPE:
-    type: string
-    enum:
-      - NONE
-      - ADMIN
-      - DEVELOPER
-    default: NONE
-    title: 'bitmap, must only be power of 2'
+      kinds:
+        type: integer
+        format: int64
   lavanet.lava.projects.QueryDeveloperResponse:
     type: object
     properties:
@@ -56029,17 +56130,9 @@ definitions:
                 key:
                   type: string
                   title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
+                kinds:
+                  type: integer
+                  format: int64
             title: list of the projects keys
           admin_policy:
             type: object
@@ -56134,17 +56227,9 @@ definitions:
                 key:
                   type: string
                   title: the address of the project key
-                types:
-                  type: array
-                  items:
-                    type: string
-                    enum:
-                      - NONE
-                      - ADMIN
-                      - DEVELOPER
-                    default: NONE
-                    title: 'bitmap, must only be power of 2'
-                  title: 'the key type, determines the privilages of the key'
+                kinds:
+                  type: integer
+                  format: int64
             title: list of the projects keys
           admin_policy:
             type: object
@@ -56936,6 +57021,9 @@ definitions:
               type: array
               items:
                 type: string
+            api_count:
+              type: string
+              format: uint64
   lavanet.lava.spec.QueryShowChainInfoResponse:
     type: object
     properties:
@@ -57134,6 +57222,9 @@ definitions:
         type: array
         items:
           type: string
+      api_count:
+        type: string
+        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -57403,17 +57494,9 @@ definitions:
             key:
               type: string
               title: the address of the project key
-            types:
-              type: array
-              items:
-                type: string
-                enum:
-                  - NONE
-                  - ADMIN
-                  - DEVELOPER
-                default: NONE
-                title: 'bitmap, must only be power of 2'
-              title: 'the key type, determines the privilages of the key'
+            kinds:
+              type: integer
+              format: int64
       policy:
         type: object
         properties:
@@ -57500,6 +57583,13 @@ definitions:
             type: string
             format: uint64
             title: CU remaining for previous month
+  lavanet.lava.subscription.QueryListProjectsResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: string
   lavanet.lava.subscription.QueryParamsResponse:
     type: object
     properties:

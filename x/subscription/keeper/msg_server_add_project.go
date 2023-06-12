@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -20,27 +21,26 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 			)
 		}
 
-		for _, projectKeyType := range projectKey.Types {
-			if projectKeyType != projectstypes.ProjectKey_ADMIN && projectKeyType != projectstypes.ProjectKey_DEVELOPER {
-				return nil, utils.LavaFormatWarning("cannot add project with invalid project key type to subscription", err,
-					utils.Attribute{Key: "type", Value: projectKeyType},
-				)
-			}
-		}
-
-		if !projectstypes.ValidateProjectNameAndDescription(msg.GetProjectData().Name, msg.GetProjectData().Description) {
-			return nil, utils.LavaFormatWarning("cannot add project with invalid name/description to subscription", err,
-				utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
-				utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
+		if !projectKey.IsTypeValid() {
+			return nil, utils.LavaFormatWarning(
+				"invalid project key type (must be ADMIN(=1) or DEVELOPER(=2) or ADMIN+DEVELOPER(=3)",
+				fmt.Errorf("invalid project key type"),
+				utils.Attribute{Key: "key", Value: projectKey.Key},
+				utils.Attribute{Key: "keyType", Value: projectKey.Kinds},
 			)
 		}
+	}
 
-		if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
-			return nil, utils.LavaFormatWarning("cannot add project with invalid providersToPair to subscription (must be >1)", err,
-				utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
-				utils.Attribute{Key: "description", Value: msg.ProjectData.Description},
-			)
-		}
+	if !projectstypes.ValidateProjectName(msg.GetProjectData().Name) {
+		return nil, utils.LavaFormatWarning("cannot add project with invalid name to subscription", fmt.Errorf("invalid project name"),
+			utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
+		)
+	}
+
+	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
+		return nil, utils.LavaFormatWarning("cannot add project with invalid providersToPair to subscription (must be >1)", fmt.Errorf("invalid policy"),
+			utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
+		)
 	}
 
 	err := k.Keeper.AddProjectToSubscription(ctx, msg.GetCreator(), msg.GetProjectData())

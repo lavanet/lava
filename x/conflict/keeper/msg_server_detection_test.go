@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +23,7 @@ type testStruct struct {
 	servers   *testkeeper.Servers
 	Providers []common.Account
 	spec      spectypes.Spec
+	plan      plantypes.Plan
 	consumer  common.Account
 }
 
@@ -42,13 +44,17 @@ func setupForConflictTests(t *testing.T, numOfProviders int) testStruct {
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
+	ts.plan = common.CreateMockPlan()
+	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
+
 	var stake int64 = 1000
-	// stake consumer
-	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.spec, stake, false)
+
+	// subscribe consumer
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.plan.Index)
 
 	// stake providers
 	for _, provider := range ts.Providers {
-		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake, true)
+		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake)
 	}
 
 	// advance for the staking to be valid

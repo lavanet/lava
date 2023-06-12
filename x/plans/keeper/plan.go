@@ -23,6 +23,20 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
 	return nil
 }
 
+// DelPlan deletes a plan, so it is not visible/gettable for new subscriptions
+// (however, existing referenced versions remain intact until not used anymore)
+func (k Keeper) DelPlan(ctx sdk.Context, index string) error {
+	// Deletions should take place at the end of epoch (beginning of next epoch).
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return utils.LavaFormatError("DelPlan: failed to get NextEpoch", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
+	}
+
+	return k.plansFS.DelEntry(ctx, index, nextEpoch)
+}
+
 // GetPlan gets the latest plan from the KVStore and increments its refcount
 func (k Keeper) GetPlan(ctx sdk.Context, index string) (val types.Plan, found bool) {
 	var plan types.Plan

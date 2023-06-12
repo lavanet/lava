@@ -1,4 +1,7 @@
 #!/bin/bash 
+
+set -e
+
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 
@@ -10,9 +13,15 @@ lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 sleep 4
 
 # Plans proposal
-lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 4
+
+# Plan removal (of one)
+lavad tx gov submit-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+sleep_until_next_epoch
 
 STAKE="500000000000ulava"
 # Ethereum providers
@@ -36,7 +45,21 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,tendermintrpc,1 12
 lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "LAV1" $STAKE 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+# subscriptions and projects
 lavad tx subscription buy "DefaultPlan" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+user3addr=$(lavad keys show user3 -a)
+
+lavad tx subscription add-project "myproject" ./cookbook/projects/example_policy.yml -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+sleep_until_next_epoch
+
+lavad q subscription list-projects user3addr
+
+lavad tx project add-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
+sleep_until_next_epoch
+
+lavad tx project del-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
+sleep_until_next_epoch
 
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch

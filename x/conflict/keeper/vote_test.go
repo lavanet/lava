@@ -126,7 +126,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	// add a staked provider
 	balance := int64(10000)
 	notVoterProvider := common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
-	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10, true)
+	common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, notVoterProvider, ts.spec, balance/10)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// try to vote with the new provider, he will be on the next voting list but not in the old one
@@ -338,7 +338,7 @@ func TestFullMajorityVote(t *testing.T) {
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -346,7 +346,8 @@ func TestFullMajorityVote(t *testing.T) {
 	_, found := ts.keepers.Conflict.GetConflictVote(sdk.UnwrapSDKContext(ts.ctx), voteID)
 	require.False(t, found)
 
-	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	events := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()
+	LastEvent := events[len(events)-1]
 	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteResolvedEventName)
 }
 
@@ -383,7 +384,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -401,7 +402,7 @@ func TestNoVotersConflict(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -471,7 +472,7 @@ func TestNoDecisionVote(t *testing.T) {
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
-	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx))); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 

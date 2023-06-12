@@ -10,4 +10,5 @@ message Entry {
     uint64 stale_at = 3; // block when the entry becomes stale
     uint64 refcount = 4; // reference count
     bytes data = 5; // the data saved in the entry
+    uint64 delete_at = 6; // block when the entry becomes deleted
 }

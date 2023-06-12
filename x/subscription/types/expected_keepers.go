@@ -23,6 +23,7 @@ type BankKeeper interface {
 type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (uint64, error)
 	GetEpochStart(ctx sdk.Context) uint64
+	IsEpochStart(ctx sdk.Context) bool
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -31,11 +32,13 @@ type ProjectsKeeper interface {
 	CreateProject(ctx sdk.Context, subscriptionAddress string, projectData projectstypes.ProjectData, plan planstypes.Plan) error
 	DeleteProject(ctx sdk.Context, index string) error
 	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string)
+	GetAllProjectsForSubscription(ctx sdk.Context, subscription string) []string
 	// Methods imported from projectskeeper should be defined here
 }
 
 type PlansKeeper interface {
 	GetPlan(ctx sdk.Context, index string) (planstypes.Plan, bool)
+	DelPlan(ctx sdk.Context, index string) error
 	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
 	PutPlan(ctx sdk.Context, index string, block uint64)
 	// Methods imported from planskeeper should be defined here

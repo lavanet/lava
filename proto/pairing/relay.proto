@@ -1,9 +1,11 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -26,6 +28,14 @@ message RelaySession {
     Badge badge = 12;
 }
 
+message Badge {
+    uint64 cu_allocation =1;
+    uint64 epoch = 2;
+    string address = 3;
+    string lava_chain_id = 4;
+    bytes project_sig = 5;
+}  
+
 message RelayPrivateData {
     string connection_type = 1;
     string api_url = 2; // some relays have associated urls that are filled with params ('/block/{height}')
@@ -33,20 +43,18 @@ message RelayPrivateData {
     int64 request_block = 4;
     string api_interface = 5;
     bytes salt = 6;
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
+}
+
+message Metadata {
+    string name = 1;
+    string value = 2;
 }
 
 message RelayRequest {
     reserved 3;
     RelaySession relay_session = 1;
     RelayPrivateData relay_data= 2;
-}
-
-message Badge {
-    uint64 cu_allocation =1;
-    uint64 epoch = 2;
-    string address = 3;
-    string lava_chain_id = 4;
-    bytes project_sig = 5;
 }
 
 message RelayReply {
@@ -56,6 +64,7 @@ message RelayReply {
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
     bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
 }
 
 message QualityOfServiceReport{

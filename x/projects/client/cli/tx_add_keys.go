@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"strconv"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -11,20 +9,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = strconv.Itoa(0)
-
 func CmdAddKeys() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add-keys [project-id] [optional: project-keys-file-path]",
 		Short: "Add developer/admin keys to an existing project",
 		Long: `The add-keys command allows the project admin to add new project keys (admin/developer) to the project.
 		To add the keys you can optionally provide a YAML file of the new project keys (see example in cookbook/project/example_project_keys.yml).
-		Note that in project keys, to define the key type, you should follow the enum described in the top of example_project_keys.yml.
-		Another way to add keys is with the --admin and --developer flags.`,
+		Another way to add keys is with the --admin-key and --developer-key flags.`,
 		Example: `required flags: --from <admin-key> (the project's subscription address is also considered admin)
 				  
 		lavad tx project add-keys [project-id] [project-keys-file-path] --from <admin-key>
-		lavad tx project add-keys [project-id] --admin <other-admin-key> --admin <another-admin-key> --developer <developer-key> --from <admin-key>`,
+		lavad tx project add-keys [project-id] --admin-key <other-admin-key> --admin-key <another-admin-key> --developer-key <developer-key> --from <admin-key>`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			projectID := args[0]
@@ -43,10 +38,7 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var developerKeys []types.ProjectKey
 				for _, developerFlagValue := range developerFlagsValue {
-					developerKeys = append(developerKeys, types.ProjectKey{
-						Key:   developerFlagValue,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_DEVELOPER},
-					})
+					developerKeys = append(developerKeys, types.ProjectDeveloperKey(developerFlagValue))
 				}
 
 				adminAddresses, err := cmd.Flags().GetStringSlice("admin-key")
@@ -55,10 +47,7 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var adminKeys []types.ProjectKey
 				for _, adminAddress := range adminAddresses {
-					adminKeys = append(adminKeys, types.ProjectKey{
-						Key:   adminAddress,
-						Types: []types.ProjectKey_KEY_TYPE{types.ProjectKey_ADMIN},
-					})
+					adminKeys = append(adminKeys, types.ProjectAdminKey(adminAddress))
 				}
 
 				// doing this redundant line to avoid lint issues
