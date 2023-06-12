@@ -1,11 +1,15 @@
 package lavasession
 
 import (
+	"context"
+	"crypto/tls"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -41,4 +45,11 @@ const (
 func IsSessionSyncLoss(err error) bool {
 	code := status.Code(err)
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
+}
+
+func ConnectgRPCClient(ctx context.Context, address string) (*grpc.ClientConn, error) {
+	var tlsConf tls.Config
+	tlsConf.InsecureSkipVerify = true // as the providers are self signed we need to skip verify against CA certificates
+	credentials := credentials.NewTLS(&tlsConf)
+	return grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 }
