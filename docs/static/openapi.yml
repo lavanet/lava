@@ -31339,9 +31339,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -31468,9 +31465,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -56014,9 +56008,6 @@ definitions:
       subscription:
         type: string
         title: the subscription address that owns the project
-      description:
-        type: string
-        title: the description of the project for the users convinient
       enabled:
         type: boolean
         title: enabled flag
@@ -56116,9 +56107,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag
@@ -56213,9 +56201,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag
