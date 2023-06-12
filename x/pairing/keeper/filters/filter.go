@@ -10,8 +10,8 @@ import (
 )
 
 type Filter interface {
-	Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool
-	InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool // return if filter is usable (by the policy)
+	Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool
+	InitFilter(strictestPolicy projectstypes.Policy) bool // return if filter is usable (by the policy)
 }
 
 func GetAllFilters() []Filter {
@@ -23,11 +23,11 @@ func GetAllFilters() []Filter {
 	return filters
 }
 
-func initFilters(filters []Filter, strictestPolicy projectstypes.Policy, currentEpoch uint64) []Filter {
+func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filter {
 	activeFilters := []Filter{}
 
 	for _, filter := range filters {
-		active := filter.InitFilter(strictestPolicy, currentEpoch)
+		active := filter.InitFilter(strictestPolicy)
 		if active {
 			activeFilters = append(activeFilters, filter)
 		}
@@ -37,12 +37,12 @@ func initFilters(filters []Filter, strictestPolicy projectstypes.Policy, current
 }
 
 func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy, currentEpoch uint64) ([]epochstoragetypes.StakeEntry, error) {
-	filters = initFilters(filters, strictestPolicy, currentEpoch)
+	filters = initFilters(filters, strictestPolicy)
 
 	var filtersResult [][]bool
 
 	for _, filter := range filters {
-		res := filter.Filter(ctx, providers)
+		res := filter.Filter(ctx, providers, currentEpoch)
 		if len(res) != len(providers) {
 			return []epochstoragetypes.StakeEntry{}, utils.LavaFormatError("filter result length is not equal to providers list length", fmt.Errorf("filter failed"),
 				utils.Attribute{Key: "filter result length", Value: len(res)},
@@ -57,7 +57,11 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 		result := true
 		for i := 0; i < len(filters); i++ {
 			result = result && filtersResult[i][j]
+			if !result {
+				break
+			}
 		}
+
 		if result {
 			filteredProviders = append(filteredProviders, providers[j])
 		}

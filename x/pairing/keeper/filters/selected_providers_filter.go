@@ -10,7 +10,7 @@ type SelectedProvidersFilter struct {
 	selectedProviders []string
 }
 
-func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
+func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
 	switch strictestPolicy.SelectedProvidersMode {
 	case projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, projectstypes.SELECTED_PROVIDERS_MODE_MIXED:
 		f.selectedProviders = strictestPolicy.SelectedProviders
@@ -19,7 +19,7 @@ func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Polic
 	return false
 }
 
-func (f *SelectedProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
+func (f *SelectedProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
 	filterResult := make([]bool, len(providers))
 	if len(f.selectedProviders) == 0 {
 		return filterResult

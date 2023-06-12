@@ -12,7 +12,7 @@ type GeolocationFilter struct {
 	geolocation uint64
 }
 
-func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
+func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
 	if strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
 		strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
 		f.geolocation = strictestPolicy.GeolocationProfile
@@ -21,7 +21,7 @@ func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy, cur
 	return false
 }
 
-func (f *GeolocationFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
+func (f *GeolocationFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
 		if isGeolocationSupported(f.geolocation, providers[i].Geolocation) {

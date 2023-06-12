@@ -6,20 +6,17 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 )
 
-type FrozenProvidersFilter struct {
-	currentEpoch uint64
-}
+type FrozenProvidersFilter struct{}
 
-func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
-	f.currentEpoch = currentEpoch
+func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
 	// frozen providers (or providers that their stake is not applied yet) can't be part of the pairing - this filter is always active
 	return true
 }
 
-func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
+func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
-		if !isProviderFrozen(ctx, providers[i], f.currentEpoch) {
+		if !isProviderFrozen(ctx, providers[i], currentEpoch) {
 			filterResult[i] = true
 		}
 	}
