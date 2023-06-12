@@ -12,7 +12,7 @@ type GeolocationFilter struct {
 	geolocation uint64
 }
 
-func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
 	if strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
 		strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
 		f.geolocation = strictestPolicy.GeolocationProfile

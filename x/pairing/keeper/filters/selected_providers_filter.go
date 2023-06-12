@@ -10,7 +10,7 @@ type SelectedProvidersFilter struct {
 	selectedProviders []string
 }
 
-func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
 	switch strictestPolicy.SelectedProvidersMode {
 	case projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, projectstypes.SELECTED_PROVIDERS_MODE_MIXED:
 		f.selectedProviders = strictestPolicy.SelectedProviders

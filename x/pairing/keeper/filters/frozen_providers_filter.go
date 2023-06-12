@@ -6,9 +6,12 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 )
 
-type FrozenProvidersFilter struct{}
+type FrozenProvidersFilter struct {
+	currentEpoch uint64
+}
 
-func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool {
+	f.currentEpoch = currentEpoch
 	// frozen providers (or providers that their stake is not applied yet) can't be part of the pairing - this filter is always active
 	return true
 }
@@ -16,7 +19,7 @@ func (f *FrozenProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy)
 func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
-		if !isProviderFrozen(ctx, providers[i]) {
+		if !isProviderFrozen(ctx, providers[i], f.currentEpoch) {
 			filterResult[i] = true
 		}
 	}
@@ -24,6 +27,6 @@ func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstorage
 	return filterResult
 }
 
-func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry) bool {
-	return stakeEntry.StakeAppliedBlock > uint64(ctx.BlockHeight())
+func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, currentEpoch uint64) bool {
+	return stakeEntry.StakeAppliedBlock > currentEpoch
 }

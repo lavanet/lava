@@ -155,7 +155,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	filters := pairingfilters.GetAllFilters()
 
-	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy)
+	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, false, err
 	}

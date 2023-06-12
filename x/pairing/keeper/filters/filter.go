@@ -11,7 +11,7 @@ import (
 
 type Filter interface {
 	Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry) []bool
-	InitFilter(strictestPolicy projectstypes.Policy) bool // return if filter is usable (by the policy)
+	InitFilter(strictestPolicy projectstypes.Policy, currentEpoch uint64) bool // return if filter is usable (by the policy)
 }
 
 func GetAllFilters() []Filter {
@@ -23,11 +23,11 @@ func GetAllFilters() []Filter {
 	return filters
 }
 
-func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filter {
+func initFilters(filters []Filter, strictestPolicy projectstypes.Policy, currentEpoch uint64) []Filter {
 	activeFilters := []Filter{}
 
 	for _, filter := range filters {
-		active := filter.InitFilter(strictestPolicy)
+		active := filter.InitFilter(strictestPolicy, currentEpoch)
 		if active {
 			activeFilters = append(activeFilters, filter)
 		}
@@ -36,8 +36,8 @@ func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filte
 	return activeFilters
 }
 
-func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy) ([]epochstoragetypes.StakeEntry, error) {
-	filters = initFilters(filters, strictestPolicy)
+func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy, currentEpoch uint64) ([]epochstoragetypes.StakeEntry, error) {
+	filters = initFilters(filters, strictestPolicy, currentEpoch)
 
 	var filtersResult [][]bool
 
