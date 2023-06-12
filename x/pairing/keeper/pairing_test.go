@@ -1,14 +1,19 @@
 package keeper_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -301,4 +306,277 @@ func TestPairingStatic(t *testing.T) {
 	for i, provider := range providers {
 		require.Equal(t, provider.Stake.Amount.Int64(), stake+int64(i))
 	}
+}
+
+func TestSelectedProvidersPairing(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+
+	projPolicy := &projectstypes.Policy{
+		GeolocationProfile: math.MaxUint64,
+		MaxProvidersToPair: 3,
+	}
+
+	err := ts.addProvider(200)
+	require.Nil(t, err)
+
+	allowed := projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED
+	exclusive := projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := projectstypes.SELECTED_PROVIDERS_MODE_DISABLED
+
+	maxProvidersToPair, err := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
+		[]*projectstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
+	)
+	require.Nil(t, err)
+
+	p1 := ts.providers[0].Addr.String()
+	p2 := ts.providers[1].Addr.String()
+	p3 := ts.providers[2].Addr.String()
+	p4 := ts.providers[3].Addr.String()
+	p5 := ts.providers[4].Addr.String()
+
+	providerSets := []struct {
+		planProviders []string
+		subProviders  []string
+		projProviders []string
+	}{
+		{[]string{}, []string{}, []string{}},                                 // set #0
+		{[]string{p1, p2, p3}, []string{}, []string{}},                       // set #1
+		{[]string{p1, p2}, []string{}, []string{}},                           // set #2
+		{[]string{p3, p4}, []string{}, []string{}},                           // set #3
+		{[]string{p1, p2, p3}, []string{p1, p2}, []string{}},                 // set #4
+		{[]string{p1, p2, p3}, []string{}, []string{p1, p3}},                 // set #5
+		{[]string{}, []string{p1, p2, p3}, []string{p1, p2}},                 // set #6
+		{[]string{p1}, []string{p1, p2, p3}, []string{p1, p2}},               // set #7
+		{[]string{p1, p2, p3, p4, p5}, []string{p1, p2, p3, p4}, []string{}}, // set #8
+	}
+
+	expectedSelectedProviders := [][]string{
+		{p1, p2, p3},     // expected providers for intersection of set #1
+		{p1, p2},         // expected providers for intersection of set #2
+		{p3, p4},         // expected providers for intersection of set #3
+		{p1, p2},         // expected providers for intersection of set #4
+		{p1, p3},         // expected providers for intersection of set #5
+		{p1, p2},         // expected providers for intersection of set #6
+		{p1},             // expected providers for intersection of set #7
+		{p1, p2, p3, p4}, // expected providers for intersection of set #8
+	}
+
+	// TODO: add mixed mode test cases (once implemented)
+	templates := []struct {
+		name              string
+		planMode          projectstypes.SELECTED_PROVIDERS_MODE
+		subMode           projectstypes.SELECTED_PROVIDERS_MODE
+		projMode          projectstypes.SELECTED_PROVIDERS_MODE
+		providersSet      int
+		expectedProviders int
+	}{
+		// normal pairing cases
+		{"ALLOWED mode normal pairing", allowed, allowed, allowed, 0, 0},
+		{"DISABLED mode normal pairing", disabled, allowed, allowed, 0, 0},
+
+		// basic pairing checks cases
+		{"EXCLUSIVE mode selected MaxProvidersToPair providers", exclusive, allowed, allowed, 1, 0},
+		{"EXCLUSIVE mode selected less than MaxProvidersToPair providers", exclusive, allowed, allowed, 2, 1},
+		{"EXCLUSIVE mode selected less than MaxProvidersToPair different providers", exclusive, allowed, allowed, 3, 2},
+
+		// intersection checks cases
+		{"EXCLUSIVE mode intersection between plan/sub policies", exclusive, exclusive, exclusive, 4, 3},
+		{"EXCLUSIVE mode intersection between plan/proj policies", exclusive, exclusive, exclusive, 5, 4},
+		{"EXCLUSIVE mode intersection between sub/proj policies", exclusive, exclusive, exclusive, 6, 5},
+		{"EXCLUSIVE mode intersection between all policies", exclusive, exclusive, exclusive, 7, 6},
+
+		// selected providers more than MaxProvidersToPair
+		{"EXCLUSIVE mode selected more than MaxProvidersToPair providers", exclusive, exclusive, exclusive, 8, 7},
+
+		// provider unstake checks cases
+		{"EXCLUSIVE mode provider unstakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
+		{"EXCLUSIVE mode non-staked provider stakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
+	}
+
+	expectedProvidersAfterUnstake := []string{}
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			// create plan, propose it and buy subscription
+			plan := common.CreateMockPlan()
+			subAddr := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000).Addr.String()
+			providersSet := providerSets[tt.providersSet]
+
+			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
+			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
+
+			err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{plan})
+			require.Nil(t, err)
+
+			_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subscriptiontypes.MsgBuy{
+				Creator:  subAddr,
+				Consumer: subAddr,
+				Index:    plan.Index,
+				Duration: 1,
+			})
+			require.Nil(t, err)
+
+			// get the admin project and set its policies
+			subProjects, err := ts.keepers.Subscription.ListProjects(ts.ctx, &subscriptiontypes.QueryListProjectsRequest{
+				Subscription: subAddr,
+			})
+			require.Nil(t, err)
+			require.Equal(t, 1, len(subProjects.Projects))
+
+			adminProject, err := ts.keepers.Projects.GetProjectForBlock(_ctx, subProjects.Projects[0], uint64(_ctx.BlockHeight()))
+			require.Nil(t, err)
+
+			projPolicy.SelectedProvidersMode = tt.projMode
+			projPolicy.SelectedProviders = providersSet.projProviders
+
+			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
+				Creator: subAddr,
+				Project: adminProject.Index,
+				Policy:  *projPolicy,
+			})
+			require.Nil(t, err)
+
+			// apply policy change
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+			projPolicy.SelectedProvidersMode = tt.subMode
+			projPolicy.SelectedProviders = providersSet.subProviders
+
+			_, err = ts.servers.ProjectServer.SetSubscriptionPolicy(ts.ctx, &projectstypes.MsgSetSubscriptionPolicy{
+				Creator:  subAddr,
+				Projects: []string{adminProject.Index},
+				Policy:   *projPolicy,
+			})
+			require.Nil(t, err)
+
+			// apply policy change
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+			// get pairing of two consecutive epochs
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+				ChainID: ts.spec.Index,
+				Client:  subAddr,
+			})
+			require.Nil(t, err)
+			providerAddresses1 := []string{}
+			for _, provider := range pairing.Providers {
+				providerAddresses1 = append(providerAddresses1, provider.Address)
+			}
+
+			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
+				_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{
+					Creator: p1,
+					ChainID: ts.spec.Index,
+				})
+				require.Nil(t, err)
+				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:] // remove p1 from expected providers
+			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
+				endpoints := []epochstoragetypes.Endpoint{{
+					IPPORT:      "123",
+					UseType:     ts.spec.GetApis()[0].ApiInterfaces[0].Interface,
+					Geolocation: uint64(1),
+				}}
+				_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{
+					Creator:     p1,
+					ChainID:     ts.spec.Index,
+					Amount:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000000)),
+					Endpoints:   endpoints,
+					Geolocation: uint64(1),
+				})
+				require.Nil(t, err)
+			}
+
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
+			pairing, err = ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+				ChainID: ts.spec.Index,
+				Client:  subAddr,
+			})
+			require.Nil(t, err)
+			providerAddresses2 := []string{}
+			for _, provider := range pairing.Providers {
+				providerAddresses2 = append(providerAddresses2, provider.Address)
+			}
+
+			// check pairings
+			switch tt.name {
+			case "ALLOWED mode normal pairing", "DISABLED mode normal pairing":
+				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
+				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
+
+			case "EXCLUSIVE mode selected MaxProvidersToPair providers":
+				require.True(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
+				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+
+			case "EXCLUSIVE mode selected less than MaxProvidersToPair providers",
+				"EXCLUSIVE mode selected less than MaxProvidersToPair different providers",
+				"EXCLUSIVE mode intersection between plan/sub policies",
+				"EXCLUSIVE mode intersection between plan/proj policies",
+				"EXCLUSIVE mode intersection between sub/proj policies",
+				"EXCLUSIVE mode intersection between all policies":
+				require.True(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.Less(t, uint64(len(providerAddresses1)), maxProvidersToPair)
+				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+
+			case "EXCLUSIVE mode selected more than MaxProvidersToPair providers":
+				require.True(t, IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
+				require.True(t, IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
+				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
+				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
+
+			case "EXCLUSIVE mode provider unstakes after first pairing":
+				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, unorderedEqual(expectedProvidersAfterUnstake, providerAddresses2))
+
+			case "EXCLUSIVE mode non-staked provider stakes after first pairing":
+				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
+				require.True(t, unorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
+			}
+		})
+	}
+}
+
+func unorderedEqual(first, second []string) bool {
+	if len(first) != len(second) {
+		return false
+	}
+	exists := make(map[string]bool)
+	for _, value := range first {
+		exists[value] = true
+	}
+	for _, value := range second {
+		if !exists[value] {
+			return false
+		}
+	}
+	return true
+}
+
+func IsSubset(subset, superset []string) bool {
+	// Create a map to store the elements of the superset
+	elements := make(map[string]bool)
+
+	// Populate the map with elements from the superset
+	for _, elem := range superset {
+		elements[elem] = true
+	}
+
+	// Check each element of the subset against the map
+	for _, elem := range subset {
+		if !elements[elem] {
+			return false
+		}
+	}
+
+	return true
 }

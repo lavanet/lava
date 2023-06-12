@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -832,4 +833,125 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	require.Equal(t, 2, len(proj1.ProjectKeys))
 	require.Equal(t, 1, len(proj2.ProjectKeys))
+}
+
+func TestSetPolicySelectedProviders(t *testing.T) {
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	adm1Addr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+	projectData := types.ProjectData{
+		Name:        "name",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{Key: adm1Addr, Kinds: uint32(types.ProjectKey_ADMIN)}},
+		Policy:      &types.Policy{MaxProvidersToPair: 2, GeolocationProfile: math.MaxUint64},
+	}
+	subAddr := projectData.ProjectKeys[0].Key
+	projPolicy := projectData.Policy
+
+	allowed := types.SELECTED_PROVIDERS_MODE_ALLOWED
+	mixed := types.SELECTED_PROVIDERS_MODE_MIXED
+	exclusive := types.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := types.SELECTED_PROVIDERS_MODE_DISABLED
+
+	providersSets := []struct {
+		planProviders []string
+		subProviders  []string
+		projProviders []string
+	}{
+		{[]string{}, []string{}, []string{}},
+		{[]string{subAddr}, []string{subAddr}, []string{subAddr}},
+		{[]string{subAddr}, []string{subAddr}, []string{}},
+		{[]string{"lalala"}, []string{"lalala"}, []string{"lalala"}},
+		{[]string{subAddr, subAddr}, []string{subAddr, subAddr}, []string{subAddr, subAddr}},
+		{[]string{subAddr}, []string{}, []string{}},
+	}
+
+	templates := []struct {
+		name            string
+		planMode        types.SELECTED_PROVIDERS_MODE
+		subMode         types.SELECTED_PROVIDERS_MODE
+		projMode        types.SELECTED_PROVIDERS_MODE
+		providerSet     int
+		planPolicyValid bool
+		subPolicyValid  bool
+		projPolicyValid bool
+	}{
+		{"ALLOWED mode happy flow", allowed, allowed, allowed, 0, true, true, true},
+		{"ALLOWED mode non empty providers list", allowed, allowed, allowed, 1, false, false, false},
+
+		{"EXCLUSIVE mode happy flow", exclusive, exclusive, exclusive, 2, true, true, true},
+		{"EXCLUSIVE mode invalid providers addresses", exclusive, exclusive, exclusive, 3, false, false, false},
+		{"EXCLUSIVE mode providers addresses duplicates", exclusive, exclusive, exclusive, 4, false, false, false},
+
+		{"MIXED mode happy flow", mixed, mixed, mixed, 2, true, true, true},
+		{"MIXED mode invalid providers addresses", mixed, mixed, mixed, 3, false, false, false},
+		{"MIXED mode providers addresses duplicates", mixed, mixed, mixed, 4, false, false, false},
+
+		{"DISABLED mode happy flow", disabled, mixed, mixed, 0, true, true, true},
+		{"DISABLED mode non empty providers list", disabled, mixed, mixed, 5, false, true, true},
+		{"DISABLED mode configured to proj/sub policy", mixed, disabled, disabled, 2, true, false, false},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			providersSet := providersSets[tt.providerSet]
+			plan := common.CreateMockPlan()
+
+			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
+			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
+
+			err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, []planstypes.Plan{plan})
+			if tt.planPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+
+			_, err = servers.SubscriptionServer.Buy(_ctx, &subscriptiontypes.MsgBuy{
+				Creator:  subAddr,
+				Consumer: subAddr,
+				Index:    plan.Index,
+				Duration: 1,
+			})
+			require.Nil(t, err)
+
+			subProjects, err := keepers.Subscription.ListProjects(_ctx, &subscriptiontypes.QueryListProjectsRequest{
+				Subscription: subAddr,
+			})
+			require.Nil(t, err)
+			require.Equal(t, 1, len(subProjects.Projects))
+
+			adminProject, err := keepers.Projects.GetProjectForBlock(ctx, subProjects.Projects[0], uint64(ctx.BlockHeight()))
+			require.Nil(t, err)
+
+			projPolicy.SelectedProvidersMode = tt.projMode
+			projPolicy.SelectedProviders = providersSet.projProviders
+
+			_, err = servers.ProjectServer.SetPolicy(_ctx, &types.MsgSetPolicy{
+				Creator: subAddr,
+				Project: adminProject.Index,
+				Policy:  *projPolicy,
+			})
+			if tt.projPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+
+			projPolicy.SelectedProvidersMode = tt.subMode
+			projPolicy.SelectedProviders = providersSet.subProviders
+
+			_, err = servers.ProjectServer.SetSubscriptionPolicy(_ctx, &types.MsgSetSubscriptionPolicy{
+				Creator:  subAddr,
+				Projects: []string{adminProject.Index},
+				Policy:   *projPolicy,
+			})
+			if tt.subPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
+	}
 }

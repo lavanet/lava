@@ -31678,9 +31678,6 @@ paths:
                       type: array
                       items:
                         type: string
-                    api_count:
-                      type: string
-                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -55116,8 +55113,6 @@ definitions:
               type: string
             moniker:
               type: string
-      badge_signer_address:
-        type: string
   lavanet.lava.pairing.Metadata:
     type: object
     properties:
@@ -57021,9 +57016,6 @@ definitions:
               type: array
               items:
                 type: string
-            api_count:
-              type: string
-              format: uint64
   lavanet.lava.spec.QueryShowChainInfoResponse:
     type: object
     properties:
@@ -57222,9 +57214,6 @@ definitions:
         type: array
         items:
           type: string
-      api_count:
-        type: string
-        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:

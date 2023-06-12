@@ -1,5 +1,7 @@
 package types
 
+import math "math"
+
 const (
 	ProviderStakeEventName       = "stake_new_provider"
 	ConsumerStakeEventName       = "stake_new_consumer"
@@ -31,6 +33,9 @@ const (
 	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 4 // number of epochs to sum CU that the provider serviced
 	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
 )
+
+// Frozen provider block const
+const FROZEN_BLOCK = math.MaxInt64
 
 func StakeNewEventName(isProvider bool) string {
 	if isProvider {
