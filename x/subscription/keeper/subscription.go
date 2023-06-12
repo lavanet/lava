@@ -283,13 +283,14 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
 }
 
-func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, subscription string, index string) error {
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, subscription string, name string) error {
 	_, found := k.GetSubscription(ctx, subscription)
 	if !found {
 		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
 	}
 
-	return k.projectsKeeper.DeleteProject(ctx, subscription, index)
+	projectID := projectstypes.ProjectIndex(subscription, name)
+	return k.projectsKeeper.DeleteProject(ctx, subscription, projectID)
 }
 
 func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, subscription string, cuAmount uint64) error {

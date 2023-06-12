@@ -57,14 +57,14 @@ func TestGetPairingForSubscription(t *testing.T) {
 		Provider: pairing.Providers[0].Address,
 		Block:    uint64(_ctx.BlockHeight()),
 	}
-	vefiry, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
+	verify, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.Nil(t, err)
-	require.True(t, vefiry.Valid)
+	require.True(t, verify.Valid)
 
-	_, err = ts.keepers.Projects.GetProjectForDeveloper(_ctx, devkey, uint64(_ctx.BlockHeight()))
+	project, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, devkey, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	err = ts.keepers.Projects.DeleteProject(_ctx, consumer, projectData.Name)
+	err = ts.keepers.Projects.DeleteProject(_ctx, consumer, project.Index)
 	require.Nil(t, err)
 
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -79,9 +79,9 @@ func TestGetPairingForSubscription(t *testing.T) {
 		Provider: pairing.Providers[0].Address,
 		Block:    uint64(_ctx.BlockHeight()),
 	}
-	vefiry, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
+	verify, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.NotNil(t, err)
-	require.False(t, vefiry.Valid)
+	require.False(t, verify.Valid)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
