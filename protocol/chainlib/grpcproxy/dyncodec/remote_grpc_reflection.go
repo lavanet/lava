@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -12,17 +11,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-func NewGRPCReflectionProtoFileRegistry(grpcEndpoint string) (*GRPCReflectionProtoFileRegistry, error) {
-	connectCtx, cancel := context.WithTimeout(context.Background(), lavasession.TimeoutForEstablishingAConnection)
-	defer cancel()
-	conn, err := lavasession.ConnectgRPCClient(connectCtx, grpcEndpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewGRPCReflectionProtoFileRegistryFromConn(conn), nil
-}
 
 func NewGRPCReflectionProtoFileRegistryFromConn(conn *grpc.ClientConn) *GRPCReflectionProtoFileRegistry {
 	return &GRPCReflectionProtoFileRegistry{
