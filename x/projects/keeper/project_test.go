@@ -839,7 +839,13 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
-	projectData := prepareProjectsData(_ctx, keepers)[0]
+	adm1Addr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+	projectData := types.ProjectData{
+		Name:        "name",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{Key: adm1Addr, Kinds: uint32(types.ProjectKey_ADMIN)}},
+		Policy:      &types.Policy{MaxProvidersToPair: 2, GeolocationProfile: math.MaxUint64},
+	}
 	subAddr := projectData.ProjectKeys[0].Key
 	projPolicy := projectData.Policy
 
