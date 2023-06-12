@@ -29,7 +29,7 @@ message ProjectKey {
         DEVELOPER = 0x2;
     }
 
-	uint32 kinds = 4;
+    uint32 kinds = 4;
 }
 
 // the enum below determines the pairing algorithm's behaviour with the selected providers feature

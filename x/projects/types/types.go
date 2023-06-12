@@ -17,6 +17,11 @@ const (
 	SET_SUBSCRIPTION_POLICY SetPolicyEnum = 2
 )
 
+const (
+	AddProjectKeyEventName = "add_key_to_project_event"
+	DelProjectKeyEventName = "del_key_from_project_event"
+)
+
 // allows unmarshaling parser func
 func (s SELECTED_PROVIDERS_MODE) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
