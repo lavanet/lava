@@ -25,9 +25,9 @@ func (f *SelectedProvidersFilter) Filter(ctx sdk.Context, providers []epochstora
 		return filterResult
 	}
 
-	selectedProvidersMap := map[string]string{}
+	selectedProvidersMap := map[string]struct{}{}
 	for _, selectedProviderAddr := range f.selectedProviders {
-		selectedProvidersMap[selectedProviderAddr] = ""
+		selectedProvidersMap[selectedProviderAddr] = struct{}{}
 	}
 
 	for i := range providers {
