@@ -385,6 +385,19 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "/blocks/by_height/{block_height}"
+                            },
+                            {
+                                "function_template": "/",
+                                "function_tag": "getChainId",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "chain_id"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "wanted_result": "1",
+                                "api_name": "/"
                             }
                         ]
                     },
