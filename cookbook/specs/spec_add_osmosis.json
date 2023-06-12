@@ -2634,18 +2634,18 @@
                         "inheritance_apis": [],
                         "parsing": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                                 "function_tag": "getChainId",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
-                                        "response",
-                                        "data"
+                                        "node_info",
+                                        "network"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
                                 "wanted_result": "osmosis-1",
-                                "api_name": "abci_query"
+                                "api_name": "status"
                             }
                         ]
                     }
@@ -2742,18 +2742,18 @@
                         "inheritance_apis": [],
                         "parsing": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":[],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                                 "function_tag": "getChainId",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
-                                        "response",
-                                        "data"
+                                        "node_info",
+                                        "network"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
                                 "wanted_result": "osmo-test-5",
-                                "api_name": "abci_info"
+                                "api_name": "status"
                             }
                         ]
                     }
