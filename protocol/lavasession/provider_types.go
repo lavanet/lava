@@ -107,6 +107,11 @@ type ProviderSessionsWithConsumer struct {
 	pairedProviders   int64
 }
 
+type BadgeSession struct {
+	BadgeCuAllocation uint64
+	BadgeUser         string
+}
+
 func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, badgeEpochData map[string]*ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
