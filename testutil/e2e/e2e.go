@@ -101,13 +101,12 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 					utils.LavaFormatInfo("Restarting goroutine for startJSONRPCProvider...")
 					go lt.execCommandWithRetry(ctx, funcName, logName, command)
 				} else {
-					panic(errors.New("Maximum number of retries exceeded."))
+					panic(errors.New("maximum number of retries exceeded"))
 				}
 			}
 		}()
 		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
 	}()
-
 }
 
 func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
