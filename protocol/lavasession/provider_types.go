@@ -186,14 +186,6 @@ func (pswc *ProviderSessionsWithConsumer) atomicWriteMissingComputeUnits(cu uint
 	atomic.StoreUint64(&pswc.epochData.MissingComputeUnits, cu)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeMissingComputeUnits(badgeUser string) (missingComputeUnits uint64) {
-	return atomic.LoadUint64(&pswc.badgeEpochData[badgeUser].MissingComputeUnits)
-}
-
-func (pswc *ProviderSessionsWithConsumer) atomicWriteBadgeMissingComputeUnits(cu uint64, badgeUser string) {
-	atomic.StoreUint64(&pswc.badgeEpochData[badgeUser].MissingComputeUnits, cu)
-}
-
 func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool) {
 	missing := pswc.atomicReadMissingComputeUnits()
 	used := pswc.atomicReadUsedComputeUnits()
@@ -212,27 +204,6 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 	}
 	// TODO: use compare and swap for race avoidance
 	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
-	return true
-}
-
-func (pswc *ProviderSessionsWithConsumer) SafeAddMissingBadgeComputeUnits(currentMissingCU uint64, allowedThreshold float64, badgeUser string) (legitimate bool) {
-	missing := pswc.atomicReadBadgeMissingComputeUnits(badgeUser)
-	used := pswc.atomicReadBadgeUsedComputeUnits(badgeUser)
-	max := pswc.atomicReadBadgeMaxComputeUnits(badgeUser)
-	// do not allow bypassing max used CU
-	if currentMissingCU+missing+used > max {
-		return false
-	}
-	// do not allow having more missing than threshold
-	if currentMissingCU+missing > uint64(float64(max)*allowedThreshold) {
-		return false
-	}
-	// do not allow having more missing than already used
-	if currentMissingCU+missing > used {
-		return false
-	}
-	// TODO: use compare and swap for race avoidance
-	pswc.atomicWriteBadgeMissingComputeUnits(currentMissingCU+missing, badgeUser)
 	return true
 }
 
