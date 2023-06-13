@@ -107,7 +107,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64, badgeUser string) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64, badgeSession *BadgeSession) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
@@ -172,9 +172,9 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	}
 
 	// Update badgeUsedCu in ProviderSessionsWithConsumer
-	if badgeUser != "" {
-		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeUser)
-		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeUser)
+	if badgeSession != nil {
+		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeSession.BadgeUser)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeSession.BadgeUser)
 		if err != nil {
 			sps.lock.Unlock() // unlock on error
 			return err
