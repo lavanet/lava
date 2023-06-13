@@ -17,7 +17,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 50
 	testProviderAmount := 6
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount-1)
 
 	// get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
@@ -114,7 +114,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 1
 	testProviderAmount := 10
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount-1)
 
 	// get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
@@ -223,7 +223,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	// setup test for unresponsiveness
 	testClientAmount := 1
 	testProviderAmount := 5
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount-1)
 
 	// get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
@@ -342,7 +342,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 1
 	testProviderAmount := 2
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount)
 	err := ts.addProviderGeolocation(2, 2)
 	require.Nil(t, err)
 

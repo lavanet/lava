@@ -14,7 +14,7 @@ import (
 func TestFreeze(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -91,7 +91,7 @@ func TestFreeze(t *testing.T) {
 func TestProvidersQuery(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -141,7 +141,7 @@ func TestProvidersQuery(t *testing.T) {
 func TestUnstakeFrozen(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -208,7 +208,7 @@ func TestUnstakeFrozen(t *testing.T) {
 func TestPaymentFrozen(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)

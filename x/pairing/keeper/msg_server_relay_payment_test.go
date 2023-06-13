@@ -246,7 +246,7 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	// require.Zero(t, balance)
 }
 
-func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int, amountOfProviders int) (ts *testStruct) {
+func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int, amountOfProviders int, providersToPair int) (ts *testStruct) {
 	ts = &testStruct{
 		providers: make([]*common.Account, 0),
 		clients:   make([]*common.Account, 0),
@@ -258,13 +258,13 @@ func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients i
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	ts.plan = common.CreateMockPlan()
-	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(amountOfProviders)
+	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(providersToPair)
 	err := ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
 	require.Nil(t, err)
 
 	err = ts.addClient(amountOfClients)
 	require.Nil(t, err)
-	err = ts.addProvider(amountOfProviders + 1)
+	err = ts.addProvider(amountOfProviders)
 	require.Nil(t, err)
 	return ts
 }
@@ -273,7 +273,7 @@ func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients i
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation(t *testing.T) {
 	testClientAmount := 4
 	testProviderAmount := 2
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].Addr.String()})
@@ -299,7 +299,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *testing.T) {
 	testClientAmount := 4
 	testProviderAmount := 2
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount)
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -346,7 +346,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t *testing.T) {
 	testClientAmount := 4
 	testProviderAmount := 2
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount, testProviderAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch to stake
 
 	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelaySession
