@@ -222,7 +222,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
 	// setup test for unresponsiveness
 	testClientAmount := 1
-	testProviderAmount := 6
+	testProviderAmount := 5
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
 	// get recommendedEpochNumToCollectPayment
