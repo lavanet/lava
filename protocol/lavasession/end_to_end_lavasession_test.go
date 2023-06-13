@@ -60,7 +60,7 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.NotNil(t, sps)
 
 		// prepare session for usage
-		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, "")
+		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, nil)
 
 		// validate session was prepared successfully
 		require.Nil(t, err)
