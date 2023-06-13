@@ -107,7 +107,6 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
-	var projectToPair string
 	var strictestPolicy projectstypes.Policy
 
 	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
@@ -137,7 +136,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, err
 	}
 
-	providers, err = k.calculatePairingForClient(ctx, possibleProviders, projectToPair, block,
+	providers, err = k.calculatePairingForClient(ctx, possibleProviders, project.Index, block,
 		chainID, epochHash, strictestPolicy.MaxProvidersToPair)
 
 	return providers, allowedCU, err
