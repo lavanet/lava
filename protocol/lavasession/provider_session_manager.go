@@ -170,12 +170,26 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	}
 
 	if badgeUser != "" { // badgeSession
-		if _, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]; !exists {
-			providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(providerSessionsWithConsumer.epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
+		exists := psm.getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser, providerSessionsWithConsumer)
+		if !exists {
+			psm.registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser, badgeCuAllocation, providerSessionsWithConsumer)
 		}
 	}
 
 	return psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
+}
+
+func (psm *ProviderSessionManager) getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) bool {
+	psm.lock.RLock()
+	defer psm.lock.RUnlock()
+	_, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]
+	return exists
+}
+
+func (psm *ProviderSessionManager) registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) {
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(providerSessionsWithConsumer.epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
 }
 
 func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, badgeCuAllocation uint64, badgeUser string, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumer, error) {
