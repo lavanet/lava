@@ -95,6 +95,10 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if err != nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, apiCont.api.Name, err)
 	}
+
+	// TODO: when we handle headers on jsonrpc
+	// metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+
 	requestedBlock, err := parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 	if err != nil {
 		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing}, utils.Attribute{Key: "service_api", Value: apiCont.api.Name})
@@ -126,8 +130,8 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {

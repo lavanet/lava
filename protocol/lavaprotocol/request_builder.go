@@ -14,6 +14,10 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	debug = false
+)
+
 type RelayRequestCommonData struct {
 	ChainID        string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
 	ConnectionType string `protobuf:"bytes,2,opt,name=connection_type,json=connectionType,proto3" json:"connection_type,omitempty"`
@@ -138,5 +142,40 @@ func compareRelaysFindConflict(ctx context.Context, result1 *RelayResult, result
 		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},
 	}
+	if debug {
+		firstAsString := string(result1.Reply.Data)
+		secondAsString := string(result2.Reply.Data)
+		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
+		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
+			utils.LavaFormatDebug("different in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
+		}
+	}
 	return true, responseConflict
+}
+
+func findFirstDifferentChar(str1, str2 string) (rune, int) {
+	// Find the minimum length between the two strings
+	minLen := len(str1)
+	if len(str2) < minLen {
+		minLen = len(str2)
+	}
+
+	// Iterate over the characters and find the first difference
+	for i := 0; i < minLen; i++ {
+		if str1[i] != str2[i] {
+			return rune(str1[i]), i
+		}
+	}
+
+	// If the loop completes without finding a difference,
+	// return the first extra character from the longer string
+	if len(str1) != len(str2) {
+		if len(str1) < len(str2) {
+			return rune(str2[minLen]), minLen
+		}
+		return rune(str1[minLen]), minLen
+	}
+
+	// Return -1 if the strings are identical
+	return -1, -1
 }

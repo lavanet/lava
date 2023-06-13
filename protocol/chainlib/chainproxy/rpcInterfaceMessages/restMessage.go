@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type RestMessage struct {
 	Msg      []byte
 	Path     string
 	SpecPath string
-	Header   []pairingtypes.Metadata
+	chainproxy.BaseMessage
 }
 
 // GetParams will be deprecated after we remove old client

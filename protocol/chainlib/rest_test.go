@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -109,9 +111,10 @@ func TestRestParseMessage(t *testing.T) {
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
 
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:      []byte("test message"),
-		Path:     "API1",
-		SpecPath: "API1",
+		Msg:         []byte("test message"),
+		Path:        "API1",
+		SpecPath:    "API1",
+		BaseMessage: chainproxy.BaseMessage{Headers: []pairingtypes.Metadata{}},
 	}
 
 	assert.Equal(t, restMessage, msg.GetRPCMessage())

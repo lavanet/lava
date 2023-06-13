@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -17,7 +18,6 @@ import (
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
 )
 
@@ -29,7 +29,7 @@ type GrpcMessage struct {
 
 	Registry *dyncodec.Registry
 	Codec    *dyncodec.Codec
-	Header   []pairingtypes.Metadata
+	chainproxy.BaseMessage
 }
 
 // GetParams will be deprecated after we remove old client

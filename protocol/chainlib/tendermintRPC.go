@@ -135,6 +135,8 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if err != nil {
 		return nil, err
 	}
+	// TODO:when we use metadata on tendermintrpc this needs to be here
+	// metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
 	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
@@ -171,8 +173,8 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)

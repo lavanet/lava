@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -334,7 +335,9 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 	assert.Equal(t, rpcInput, pm.GetRPCMessage())
 }
 
-type mockRPCInput struct{}
+type mockRPCInput struct {
+	chainproxy.BaseMessage
+}
 
 func (m *mockRPCInput) GetParams() interface{} {
 	return nil
@@ -404,7 +407,7 @@ func TestGetServiceApis(t *testing.T) {
 	}
 
 	rpcInterface := spectypes.APIInterfaceRest
-	serverApis, _, _ := getServiceApis(spec, rpcInterface)
+	serverApis, _, _, _ := getServiceApis(spec, rpcInterface)
 
 	// Test serverApis
 	if len(serverApis) != 3 {

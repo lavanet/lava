@@ -54,6 +54,7 @@ type ChainParser interface {
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
 	GetParsingByTag(tag string) (parsing *spectypes.Parsing, collectionData *spectypes.CollectionData, existed bool)
 	CraftMessage(parser *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error)
+	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) []pairingtypes.Metadata
 }
 
 type ChainMessage interface {

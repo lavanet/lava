@@ -2,7 +2,9 @@ package types
 
 import (
 	fmt "fmt"
+	"sort"
 	"strconv"
+	"strings"
 	"unicode"
 
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -60,7 +62,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			return details, fmt.Errorf("api apiCollection list empty for %v", apiCollection.CollectionData)
 		}
 		if _, ok := availableAPIInterface[apiCollection.CollectionData.ApiInterface]; !ok {
-			return details, fmt.Errorf("unsupported api interface %v", apiCollection.CollectionData.ApiInterface)
+			// if the apiCollection is disabled and has an empty apiInterface it's allowed since this is a base collection for expand
+			if apiCollection.CollectionData.ApiInterface != "" || apiCollection.Enabled {
+				return details, fmt.Errorf("unsupported api interface %v", apiCollection.CollectionData.ApiInterface)
+			}
 		}
 		// validate function tags
 		for _, parsing := range apiCollection.Parsing {
@@ -85,11 +90,31 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				}
 			}
 		}
+		currentApis := map[string]struct{}{}
 		// validate apis
 		for _, api := range apiCollection.Apis {
+			_, ok := currentApis[api.Name]
+			if ok {
+				details["api"] = api.Name
+				return details, fmt.Errorf("api defined twice %s", api.Name)
+			}
+			currentApis[api.Name] = struct{}{}
 			if api.ComputeUnits < minCU || api.ComputeUnits > maxCU {
 				details["api"] = api.Name
-				return details, fmt.Errorf("compute units out or range")
+				return details, fmt.Errorf("compute units out or range %s", api.Name)
+			}
+		}
+		currentHeaders := map[string]struct{}{}
+		for _, header := range apiCollection.Headers {
+			_, ok := currentHeaders[header.Name]
+			if ok {
+				details["header"] = header.Name
+				return details, fmt.Errorf("header defined twice %s", header.Name)
+			}
+			currentHeaders[header.Name] = struct{}{}
+			if strings.ToLower(header.Name) != header.Name {
+				details["header"] = header.Name
+				return details, fmt.Errorf("header names must be lower case %s", header.Name)
 			}
 		}
 	}
@@ -106,13 +131,36 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 }
 
 func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*ApiCollection) error {
-	for idx, collectionsToCombine := range parentsCollections {
+	collectionDataList := make([]CollectionData, 0)
+	// Populate the keys slice with the map keys
+	for key := range parentsCollections {
+		collectionDataList = append(collectionDataList, key)
+	}
+	// sort the slice so the order is deterministic
+	sort.Slice(collectionDataList, func(i, j int) bool {
+		return collectionDataList[i].String() < collectionDataList[j].String()
+	})
+
+	for _, collectionData := range collectionDataList {
+		collectionsToCombine := parentsCollections[collectionData]
 		if len(collectionsToCombine) == 0 {
-			return fmt.Errorf("collection with length 0 %v", idx)
+			return fmt.Errorf("collection with length 0 %v", collectionData)
 		}
-		combined := collectionsToCombine[0]
-		others := collectionsToCombine[1:]
-		err := combined.CombineWithOthers(others, false, make(map[string]struct{}, 0), nil, nil)
+		var combined *ApiCollection
+		var others []*ApiCollection
+		for i := 0; i < len(collectionsToCombine); i++ {
+			combined = collectionsToCombine[i]
+			others = collectionsToCombine[:i]
+			others = append(others, collectionsToCombine[i+1:]...)
+			if combined.Enabled {
+				break
+			}
+		}
+		if !combined.Enabled {
+			// no collections enabled to combine, we skip this
+			continue
+		}
+		err := combined.CombineWithOthers(others, false, false, make(map[string]struct{}, 0), nil, nil)
 		if err != nil {
 			return err
 		}

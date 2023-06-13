@@ -11,6 +11,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -25,6 +26,7 @@ type RPCInput interface {
 	GetParams() interface{}
 	GetResult() json.RawMessage
 	ParseBlock(block string) (int64, error)
+	GetHeaders() []pairingtypes.Metadata
 }
 
 func ParseDefaultBlockParameter(block string) (int64, error) {
