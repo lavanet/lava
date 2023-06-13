@@ -24,6 +24,10 @@ var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 // MigrateVerrsion performs pending internal version migration(s), if any.
 func (fs *FixationStore) MigrateVersion(ctx sdk.Context) (err error) {
 	from := fs.getVersion(ctx)
+	return fs.MigrateVersionFrom(ctx, from)
+}
+
+func (fs *FixationStore) MigrateVersionFrom(ctx sdk.Context, from uint64) (err error) {
 	to := FixationVersion()
 
 	for from < to {
@@ -169,6 +173,8 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}
 
+		fs.setEntryIndex(ctx, safeIndex, true)
+
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		if len(blocks) < 1 {
 			return fmt.Errorf("%s: no versions for index: %s", fs.prefixForErrors(1), index)
@@ -184,6 +190,9 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 				key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
 				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 			}
+
+			entry.DeleteAt = math.MaxUint64
+			fs.setEntry(ctx, entry)
 		}
 	}
 

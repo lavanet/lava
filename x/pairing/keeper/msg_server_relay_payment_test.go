@@ -720,9 +720,8 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	projectData := projecttypes.ProjectData{
-		Name:        "proj1",
-		Description: "description",
-		Enabled:     true,
+		Name:    "proj1",
+		Enabled: true,
 		ProjectKeys: []projecttypes.ProjectKey{
 			projecttypes.ProjectDeveloperKey(projectAdmin1.String()),
 		},

@@ -135,9 +135,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	require.Nil(t, err)
 
 	consumerBProjectData := projectstypes.ProjectData{
-		Name:        "consumer_b_project",
-		Description: "",
-		Enabled:     true,
+		Name:    "consumer_b_project",
+		Enabled: true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			projectstypes.NewProjectKey(consumerB.Addr.String()).
 				AddType(projectstypes.ProjectKey_ADMIN).
@@ -412,9 +411,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 				projectData := projectstypes.ProjectData{
-					Name:        "low_cu_project",
-					Description: "project with low cu limit (per epoch)",
-					Enabled:     true,
+					Name:    "low_cu_project",
+					Enabled: true,
 					ProjectKeys: []projectstypes.ProjectKey{
 						projectstypes.NewProjectKey(consumerToWasteCu.Addr.String()).
 							AddType(projectstypes.ProjectKey_ADMIN).
@@ -602,9 +600,8 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
-		Name:        "another_project",
-		Description: "dummy_desc",
-		Enabled:     true,
+		Name:    "another_project",
+		Enabled: true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			projectstypes.NewProjectKey(ts.clients[1].Addr.String()).
 				AddType(projectstypes.ProjectKey_ADMIN).

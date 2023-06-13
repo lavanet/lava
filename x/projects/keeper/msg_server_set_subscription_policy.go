@@ -12,7 +12,7 @@ func (k msgServer) SetSubscriptionPolicy(goCtx context.Context, msg *types.MsgSe
 
 	policy := msg.GetPolicy()
 
-	err := policy.ValidateBasicPolicy()
+	err := policy.ValidateBasicPolicy(false)
 	if err != nil {
 		return nil, err
 	}

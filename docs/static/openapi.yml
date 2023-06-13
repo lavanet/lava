@@ -31251,9 +31251,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -31380,9 +31377,6 @@ paths:
                   subscription:
                     type: string
                     title: the subscription address that owns the project
-                  description:
-                    type: string
-                    title: the description of the project for the users convinient
                   enabled:
                     type: boolean
                     title: enabled flag
@@ -55028,8 +55022,6 @@ definitions:
               type: string
             moniker:
               type: string
-      badge_signer_address:
-        type: string
   lavanet.lava.pairing.Metadata:
     type: object
     properties:
@@ -55859,9 +55851,6 @@ definitions:
       subscription:
         type: string
         title: the subscription address that owns the project
-      description:
-        type: string
-        title: the description of the project for the users convinient
       enabled:
         type: boolean
         title: enabled flag
@@ -55961,9 +55950,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag
@@ -56058,9 +56044,6 @@ definitions:
           subscription:
             type: string
             title: the subscription address that owns the project
-          description:
-            type: string
-            title: the description of the project for the users convinient
           enabled:
             type: boolean
             title: enabled flag

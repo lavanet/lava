@@ -18,7 +18,7 @@ var _ = strconv.Itoa(0)
 func CmdAddProject() *cobra.Command {
 	var disable bool
 	cmd := &cobra.Command{
-		Use:   "add-project [project-name] [optional: project-description]",
+		Use:   "add-project [project-name]",
 		Short: "Add a new project to a subscription",
 		Long: `The add-project command allows the subscription owner to create a new project and associate 
 		it with its subscription.  Optionally, you can determine the policy of the project using a YAML file
@@ -30,18 +30,13 @@ func CmdAddProject() *cobra.Command {
 		Note, after the project is added, its name (a.k.a. index) is 
 		changed to "<project_subscription_address>-<original_project_name>".`,
 		Example: `required flags: --from <subscription_consumer>
-				  
+
 		optional flags: --policy-file <policy-file-path>, --project-keys-file <project-keys-file-path>, --disable
-				  
-		lavad tx subscription add-project [project-file-path] --from <subscription_consumer>`,
-		Args: cobra.RangeArgs(1, 2),
+
+		lavad tx subscription add-project --policy-file policy-file-path --from <subscription_consumer>`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			projectName := args[0]
-			projectDescription := ""
-			if len(args) == 2 {
-				projectDescription = args[1]
-			}
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -82,7 +77,6 @@ func CmdAddProject() *cobra.Command {
 			// keep all the inputs in a single projectData object (used as a container)
 			projectData := projectstypes.ProjectData{
 				Name:        projectName,
-				Description: projectDescription,
 				Enabled:     !disable,
 				ProjectKeys: projectKeys,
 				Policy:      &policy,
