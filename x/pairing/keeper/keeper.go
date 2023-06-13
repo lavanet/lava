@@ -25,8 +25,8 @@ type (
 		epochStorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		subscriptionKeeper types.SubscriptionKeeper
-
-		badgeTimerStore common.TimerStore
+		planKeeper         types.PlanKeeper
+		badgeTimerStore    common.TimerStore
 	}
 )
 
@@ -42,6 +42,7 @@ func NewKeeper(
 	epochStorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	subscriptionKeeper types.SubscriptionKeeper,
+	planKeeper types.PlanKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -59,6 +60,7 @@ func NewKeeper(
 		epochStorageKeeper: epochStorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		subscriptionKeeper: subscriptionKeeper,
+		planKeeper:         planKeeper,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)

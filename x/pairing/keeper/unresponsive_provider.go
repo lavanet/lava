@@ -2,14 +2,13 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
-
-const MINIMUM_PROVIDERS = 5
 
 // Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
 func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) error {
@@ -57,6 +56,16 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		return nil
 	}
 
+	// find the minimum number of providers in all the plans
+	minProviders := uint64(math.MaxUint64)
+	planIndices := k.planKeeper.GetAllPlanIndices(ctx)
+	for _, index := range planIndices {
+		plan, found := k.planKeeper.FindPlan(ctx, index, uint64(ctx.BlockHeight()))
+		if found && plan.PlanPolicy.MaxProvidersToPair < minProviders {
+			minProviders = plan.PlanPolicy.MaxProvidersToPair
+		}
+	}
+
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
@@ -79,7 +88,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > MINIMUM_PROVIDERS {
+			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > minProviders {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				existingProviders[providerStakeEntry.Geolocation]--
 				if err != nil {

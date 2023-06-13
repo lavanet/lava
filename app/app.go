@@ -494,6 +494,7 @@ func New(
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
 		app.SubscriptionKeeper,
+		app.PlansKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

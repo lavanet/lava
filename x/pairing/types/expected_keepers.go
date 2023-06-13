@@ -75,3 +75,8 @@ type SubscriptionKeeper interface {
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 }
+
+type PlanKeeper interface {
+	GetAllPlanIndices(ctx sdk.Context) (val []string)
+	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
+}
