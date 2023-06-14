@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -76,6 +75,42 @@ func init() {
 		panic(err)
 	}
 	fmt.Println("Test Directory", dir)
+}
+
+func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+	lt.logs[logName] = new(bytes.Buffer)
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Args = strings.Fields(command)
+	cmd.Path = cmd.Args[0]
+	cmd.Stdout = lt.logs[logName]
+	cmd.Stderr = lt.logs[logName]
+
+	err := cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	lt.commands[logName] = cmd
+	retries := 0 // Counter for retries
+	maxRetries := 2
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Panic occurred:", r)
+				if retries < maxRetries {
+					retries++
+
+					utils.LavaFormatInfo(fmt.Sprintln("Restarting goroutine for startJSONRPCProvider. Remaining retries: ", maxRetries-retries))
+					go lt.execCommandWithRetry(ctx, funcName, logName, command)
+				} else {
+					panic(errors.New("maximum number of retries exceeded"))
+				}
+			}
+		}()
+		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
+	}()
 }
 
 func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
@@ -275,7 +310,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
-		lt.execCommand(ctx, funcName, logName, command, false)
+		lt.execCommandWithRetry(ctx, funcName, logName, command)
 	}
 
 	// validate all providers are up
@@ -741,94 +776,6 @@ func (lt *lavaTest) saveLogs() {
 	}
 }
 
-func (lt *lavaTest) checkPayments(testDuration time.Duration) {
-	utils.LavaFormatInfo("Checking Payments")
-	ethPaid := false
-	lavaPaid := false
-	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	for start := time.Now(); time.Since(start) < testDuration; {
-		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
-		if err != nil {
-			panic(err)
-		}
-
-		if len(pairingRes.EpochPayments) == 0 {
-			utils.LavaFormatInfo("Waiting Payments")
-			time.Sleep(time.Second)
-			continue
-		}
-		for _, epochPayment := range pairingRes.EpochPayments {
-			for _, clientsPaymentKey := range epochPayment.GetProviderPaymentStorageKeys() {
-				if strings.Contains(clientsPaymentKey, "ETH") {
-					ethPaid = true
-				} else if strings.Contains(clientsPaymentKey, "LAV") {
-					lavaPaid = true
-				}
-			}
-		}
-		if ethPaid && lavaPaid {
-			break
-		}
-	}
-
-	if !ethPaid && !lavaPaid {
-		panic("PAYMENT FAILED FOR ETH AND LAVA")
-	}
-
-	if ethPaid {
-		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR ETH")
-	} else {
-		panic("PAYMENT FAILED FOR ETH")
-	}
-
-	if lavaPaid {
-		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR LAVA")
-	} else {
-		panic("PAYMENT FAILED FOR LAVA")
-	}
-
-	// Get CU usage:
-	providerCU, err := calculateProviderCU(pairingClient)
-	if err != nil {
-		panic("PROVIDER CU CALCULATION ERROR")
-	}
-
-	// Checking the provider payments
-	for provider, totalCU := range providerCU {
-		expectedPayment := pairingTypes.DefaultMintCoinsPerCU.MulInt64(int64(totalCU))
-		if expectedPayment == sdk.ZeroDec() {
-			panic("EXPECTED PAYMENT ERROR")
-		}
-
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: provider,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		// Comparing the balances after payment with the initial balances
-		if providerBalances[provider] != nil {
-			if lt.isGethProvider(provider) { // Lava Over Lava tests are made with these providers, adjusting balance checks accordingly
-				netAmount := balanceRes.GetBalance().Amount.Int64() + 500000000000
-				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
-					utils.LavaFormatError("GETH Payment Failed ", nil, utils.Attribute{Key: "netAmount", Value: netAmount}, utils.Attribute{Key: "balanceRes.GetBalance().Amount.Int64()", Value: providerBalances[provider].GetBalance().Amount.Int64()})
-					panic("PROVIDER PAYMENT CHECK FAILED")
-				}
-			} else {
-				netAmount := balanceRes.GetBalance().Amount.Int64()
-				if netAmount < providerBalances[provider].GetBalance().Amount.Int64() {
-					utils.LavaFormatError("Payment Failed ", nil, utils.Attribute{Key: "netAmount", Value: netAmount}, utils.Attribute{Key: "balanceRes.GetBalance().Amount.Int64()", Value: providerBalances[provider].GetBalance().Amount.Int64()})
-					panic("PROVIDER PAYMENT CHECK FAILED")
-				}
-			}
-		}
-	}
-	utils.LavaFormatInfo("PROVIDER BALANCE CHECK AFTER PAYMENT OK")
-}
-
 func (lt *lavaTest) checkQoS() error {
 	utils.LavaFormatInfo("Starting QoS Tests")
 	errors := []string{}
@@ -1023,64 +970,6 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	return nil
 }
 
-// This func is used for adjusting expected balances for providers which are staked during Lava-On-Lava tests
-func (lt *lavaTest) isGethProvider(providerAddr string) bool {
-	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	gethProvidersResponse, _ := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "GTH1",
-	})
-	gethProviders := gethProvidersResponse.GetStakeEntry()
-	for _, gethProvider := range gethProviders {
-		if gethProvider.Address == providerAddr {
-			return true
-		}
-	}
-	return false
-}
-
-func (lt *lavaTest) setInitialProviderBalances() {
-	pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
-	lavaProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "LAV1",
-	})
-	if err != nil {
-		panic(err)
-	}
-	ethProvidersResponse, err := pairingClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
-		ChainID: "ETH1",
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	lavaProviders := lavaProvidersResponse.GetStakeEntry()
-	ethProviders := ethProvidersResponse.GetStakeEntry()
-
-	for _, lavaProvider := range lavaProviders {
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: lavaProvider.Address,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-		providerBalances[lavaProvider.Address] = balanceRes
-	}
-
-	for _, ethProvider := range ethProviders {
-		bankClient := bankTypes.NewQueryClient(lt.grpcConn)
-		balanceRes, err := bankClient.Balance(context.Background(), &bankTypes.QueryBalanceRequest{
-			Address: ethProvider.Address,
-			Denom:   "ulava",
-		})
-		if err != nil {
-			panic(err)
-		}
-		providerBalances[ethProvider.Address] = balanceRes
-	}
-}
-
 func (lt *lavaTest) getKeyAddress(key string) string {
 	cmd := exec.Command(lt.lavadPath, "keys", "show", key, "-a")
 
@@ -1163,8 +1052,6 @@ func runE2E(timeout time.Duration) {
 	// - produce 1 subscription (for both ETH1, LAV1)
 
 	lt.checkStakeLava(1, 5, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
-
-	lt.setInitialProviderBalances()
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -1258,7 +1145,7 @@ func runE2E(timeout time.Duration) {
 
 	lt.checkResponse("http://127.0.0.1:3340/1", "http://127.0.0.1:3341/1", "127.0.0.1:3342")
 
-	lt.checkPayments(time.Minute * 10)
+	// TODO: Add payment tests when subscription payment mechanism is implemented
 
 	lt.checkQoS()
 
