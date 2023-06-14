@@ -66,5 +66,4 @@ sleep_until_next_epoch
 
 lavad q subscription list-projects user3
 
-# we need to wait for the next epoch for the stake to take action.
-sleep_until_next_epoch
+# the end

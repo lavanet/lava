@@ -48,7 +48,16 @@ func (k Keeper) RemoveSubscription(ctx sdk.Context, consumer string) {
 
 	allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
 	for _, projectID := range allProjectsIDs {
-		k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+		err := k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+		if err != nil {
+			// TODO: this should never fail, because these are exactly the
+			// subscription's current projects.
+			utils.LavaFormatError("Failed to delete project at subscription removal", err,
+				utils.Attribute{Key: "subscription", Value: consumer},
+				utils.Attribute{Key: "project", Value: projectID},
+				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+			)
+		}
 	}
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
