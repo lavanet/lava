@@ -219,7 +219,9 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 	if !foundAddressInMap {
 		epochData := &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}
 		badgesEpochData := make(map[string]*ProviderSessionsEpochData)
-		badgesEpochData[badgeSession.BadgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(epochData.MaxComputeUnits), float64(badgeSession.BadgeCuAllocation)))}
+		if badgeSession != nil {
+			badgesEpochData[badgeSession.BadgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(epochData.MaxComputeUnits), float64(badgeSession.BadgeCuAllocation)))}
+		}
 		providerSessionWithConsumer = NewProviderSessionsWithConsumer(consumerAddr, epochData, badgesEpochData, notDataReliabilityPSWC, pairedProviders)
 		mapOfProviderSessionsWithConsumer.sessionMap[consumerAddr] = providerSessionWithConsumer
 	}
@@ -240,7 +242,10 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 		}
 		utils.LavaFormatDebug("provider registered consumer", utils.Attribute{Key: "consumer", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch})
 	}
-	badgeUserEpochData := psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
+	var badgeUserEpochData *ProviderSessionsEpochData
+	if badgeSession != nil {
+		badgeUserEpochData = psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
+	}
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionWithConsumer, sessionId, epoch, relayNumber)
 	return singleSessionFromPSWC, badgeUserEpochData, err
 }
