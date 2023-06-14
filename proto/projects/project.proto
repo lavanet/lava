@@ -8,7 +8,7 @@ option go_package = "github.com/lavanet/lava/x/projects/types";
 message Project {
     string index = 1; // unique id that will be the combination of subscription address and project name, cannot be changed once created
     string subscription = 2; // the subscription address that owns the project
-    string description = 3; // the description of the project for the users convinient
+    reserved 3;
     bool enabled = 4; // enabled flag
     repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
     Policy admin_policy = 6;
@@ -29,7 +29,15 @@ message ProjectKey {
         DEVELOPER = 0x2;
     }
 
-	uint32 kinds = 4;
+    uint32 kinds = 4;
+}
+
+// the enum below determines the pairing algorithm's behaviour with the selected providers feature
+enum SELECTED_PROVIDERS_MODE {
+    ALLOWED = 0;    // no providers restrictions
+    MIXED = 1;      // use the selected providers mixed with randomly chosen providers
+    EXCLUSIVE = 2;  // use only the selected providers
+    DISABLED = 3;   // selected providers feature is disabled
 }
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing
@@ -39,6 +47,8 @@ message Policy {
     uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\"", (gogoproto.jsontag) = "total_cu_limit"];
     uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\"", (gogoproto.jsontag) = "epoch_cu_limit"];
     uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair", (gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
+    SELECTED_PROVIDERS_MODE selected_providers_mode = 6 [(gogoproto.moretags) = "mapstructure:\"selected_providers_mode\"", (gogoproto.jsontag) = "selected_providers_mode"];
+    repeated string selected_providers = 7 [(gogoproto.moretags) = "mapstructure:\"selected_providers\"", (gogoproto.jsontag) = "selected_providers"];
 }
 
 message ChainPolicy {
@@ -54,7 +64,7 @@ message ProtoDeveloperData {
 // used as a container struct for the subscription module
 message ProjectData {
     string name = 1;
-    string description = 2;
+    reserved 2;
     bool enabled = 3;
     repeated ProjectKey projectKeys = 4 [(gogoproto.nullable) = false];
     Policy policy = 5;

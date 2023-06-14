@@ -122,8 +122,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			k.pairingKeeper.JailEntry(ctx, accAddress, true, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
-			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, conflictVote.ChainID, SlashStakePercent)
+			k.pairingKeeper.JailEntry(ctx, accAddress, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
+			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, conflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
 				utils.LavaFormatWarning("slashing failed at vote conflict", err)
@@ -173,13 +173,13 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 						)
 						continue
 					}
-					slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, conflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
+					slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, conflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
 					rewardPool = rewardPool.Add(slashed)
 					if err != nil {
 						utils.LavaFormatWarning("slashing failed at vote conflict", err)
 					}
 
-					err = k.pairingKeeper.UnstakeEntry(ctx, true, conflictVote.ChainID, vote.Address, types.UnstakeDescriptionFraudVote)
+					err = k.pairingKeeper.UnstakeEntry(ctx, conflictVote.ChainID, vote.Address, types.UnstakeDescriptionFraudVote)
 					if err != nil {
 						utils.LavaFormatWarning("unstaking fraud voter failed", err)
 						continue
@@ -201,17 +201,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 		k.RemoveConflictVote(ctx, conflictVote.Index)
 		return
 	}
-	accClientAddress, err := sdk.AccAddressFromBech32(conflictVote.ClientAddress)
-	if err != nil {
-		utils.LavaFormatWarning("invalid conflict vote address", err,
-			utils.Attribute{Key: "voteAddress", Value: conflictVote.ClientAddress},
-		)
-	} else {
-		ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accClientAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, clientReward.TruncateInt()), false)
-		if !ok {
-			utils.LavaFormatWarning("failed to credit client", err)
-		}
-	}
+
+	// TODO: add consumer rewards
 
 	if majorityMet {
 		// reward winner provider
@@ -230,7 +221,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					utils.Attribute{Key: "voteAddress", Value: winnersAddr},
 				)
 			} else {
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()), true)
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()))
 				if !ok {
 					utils.LavaFormatWarning("failed to credit client", err)
 				}
@@ -257,7 +248,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					)
 					continue
 				}
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, rewardVoter.TruncateInt()), true)
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, rewardVoter.TruncateInt()))
 				if !ok {
 					details := map[string]string{}
 					if err != nil {

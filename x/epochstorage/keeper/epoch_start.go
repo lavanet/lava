@@ -2,7 +2,6 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Function that calls all the functions that are supposed to run in epoch start
@@ -21,12 +20,9 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 
 	k.SetEpochDetailsStart(ctx, block)
 
-	k.StoreCurrentEpochStakeStorage(ctx, block, types.ProviderKey)
-
-	k.StoreCurrentEpochStakeStorage(ctx, block, types.ClientKey)
+	k.StoreCurrentEpochStakeStorage(ctx, block)
 
 	k.UpdateEarliestEpochstart(ctx)
 
-	k.RemoveOldEpochData(ctx, types.ProviderKey)
-	k.RemoveOldEpochData(ctx, types.ClientKey)
+	k.RemoveOldEpochData(ctx)
 }

@@ -33,6 +33,7 @@ import (
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	planTypes "github.com/lavanet/lava/x/plans/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
+	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
@@ -45,9 +46,11 @@ const (
 )
 
 var (
-	checkedPlansE2E    = []string{"DefaultPlan"}
-	checkedSpecsE2E    = []string{"LAV1", "ETH1"}
-	checkedSpecsE2ELOL = []string{"GTH1"}
+	checkedPlansE2E         = []string{"DefaultPlan"}
+	checkedSubscriptions    = []string{"user1", "user2", "user3"}
+	checkedSpecsE2E         = []string{"LAV1", "ETH1"}
+	checkedSpecsE2ELOL      = []string{"GTH1"}
+	checkedSubscriptionsLOL = []string{"user4"}
 )
 
 type lavaTest struct {
@@ -212,9 +215,9 @@ func (lt *lavaTest) checkStakeLava(
 	planCount int,
 	specCount int,
 	providerCount int,
-	clientCount int,
 	checkedPlans []string,
 	checkedSpecs []string,
+	checkedSubscriptions []string,
 	successMessage string,
 ) {
 	planQueryClient := planTypes.NewQueryClient(lt.grpcConn)
@@ -233,6 +236,14 @@ func (lt *lavaTest) checkStakeLava(
 	for _, plan := range planQueryRes.PlansInfo {
 		if !slices.Contains(checkedPlans, plan.Index) {
 			panic("Staking Failed PLAN names")
+		}
+	}
+
+	for _, key := range checkedSubscriptions {
+		subscriptionQueryClient := subscriptionTypes.NewQueryClient(lt.grpcConn)
+		_, err = subscriptionQueryClient.Current(context.Background(), &subscriptionTypes.QueryCurrentRequest{Consumer: lt.getKeyAddress(key)})
+		if err != nil {
+			panic("could not get the subscription of " + key)
 		}
 	}
 
@@ -271,20 +282,6 @@ func (lt *lavaTest) checkStakeLava(
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
 			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
 			lt.providerType[providerStakeEntry.Address] = providerStakeEntry.Endpoints
-		}
-
-		// Query clients
-		clientQueryRes, err := pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
-			ChainID: spec.GetIndex(),
-		})
-		if err != nil {
-			panic(err)
-		}
-		if len(clientQueryRes.StakeEntry) != clientCount {
-			panic("Staking Failed CLIENT")
-		}
-		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
-			fmt.Println("client", clientStakeEntry)
 		}
 	}
 	utils.LavaFormatInfo(successMessage)
@@ -589,7 +586,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 1 plan: "DefaultPlan"
 
-	lt.checkStakeLava(1, 5, 5, 1, checkedPlansE2E, checkedSpecsE2ELOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(1, 5, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -693,12 +690,6 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 			if err != nil {
 				errors = append(errors, err.Error())
 			}
-			_, err = pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
-				ChainID: spec.GetIndex(),
-			})
-			if err != nil {
-				errors = append(errors, err.Error())
-			}
 		}
 	}
 	if len(errors) > 0 {
@@ -721,7 +712,7 @@ func (lt *lavaTest) saveLogs() {
 			panic(err)
 		}
 	}
-	errorLineCount := 0
+	errorFound := false
 	errorFiles := []string{}
 	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
@@ -748,7 +739,7 @@ func (lt *lavaTest) saveLogs() {
 				}
 				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
 				if !lt.testFinishedProperly || !isAllowedError {
-					errorLineCount += 1
+					errorFound = true
 					errorLines = append(errorLines, line)
 				}
 			}
@@ -756,9 +747,9 @@ func (lt *lavaTest) saveLogs() {
 		if len(errorLines) == 0 {
 			continue
 		}
-		errorFiles = append(errorFiles, fileName)
+
+		// dump all errors into the log file
 		errors := strings.Join(errorLines, "\n")
-		errorPrint[fileName] = errorLines[0] + errorLines[1]
 		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
 		if err != nil {
 			panic(err)
@@ -767,9 +758,17 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write([]byte(errors))
 		writer.Flush()
 		errFile.Close()
+
+		// keep at most 5 errors to display
+		count := len(errorLines)
+		if count > 5 {
+			count = 5
+		}
+		errorPrint[fileName] = strings.Join(errorLines[:count], "\n")
+		errorFiles = append(errorFiles, fileName)
 	}
 
-	if errorLineCount != 0 {
+	if errorFound {
 		for _, errLine := range errorPrint {
 			fmt.Println("ERROR: ", errLine)
 		}
@@ -971,6 +970,17 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	return nil
 }
 
+func (lt *lavaTest) getKeyAddress(key string) string {
+	cmd := exec.Command(lt.lavadPath, "keys", "show", key, "-a")
+
+	output, err := cmd.Output()
+	if err != nil {
+		panic(fmt.Sprintf("could not get %s address %s", key, err.Error()))
+	}
+
+	return string(output)
+}
+
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
 	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
@@ -1041,7 +1051,7 @@ func runE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(1, 5, 5, 1, checkedPlansE2E, checkedSpecsE2E, "Staking Lava OK")
+	lt.checkStakeLava(1, 5, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 

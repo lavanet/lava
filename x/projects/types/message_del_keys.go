@@ -5,26 +5,27 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const TypeMsgUnstakeClient = "unstake_client"
+const TypeMsgDelKeys = "del_keys"
 
-var _ sdk.Msg = &MsgUnstakeClient{}
+var _ sdk.Msg = &MsgDelKeys{}
 
-func NewMsgUnstakeClient(creator string, chainID string) *MsgUnstakeClient {
-	return &MsgUnstakeClient{
-		Creator: creator,
-		ChainID: chainID,
+func NewMsgDelKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgDelKeys {
+	return &MsgDelKeys{
+		Creator:     creator,
+		Project:     projectID,
+		ProjectKeys: projectKeys,
 	}
 }
 
-func (msg *MsgUnstakeClient) Route() string {
+func (msg *MsgDelKeys) Route() string {
 	return RouterKey
 }
 
-func (msg *MsgUnstakeClient) Type() string {
-	return TypeMsgUnstakeClient
+func (msg *MsgDelKeys) Type() string {
+	return TypeMsgDelKeys
 }
 
-func (msg *MsgUnstakeClient) GetSigners() []sdk.AccAddress {
+func (msg *MsgDelKeys) GetSigners() []sdk.AccAddress {
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
@@ -32,15 +33,16 @@ func (msg *MsgUnstakeClient) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{creator}
 }
 
-func (msg *MsgUnstakeClient) GetSignBytes() []byte {
+func (msg *MsgDelKeys) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
-func (msg *MsgUnstakeClient) ValidateBasic() error {
+func (msg *MsgDelKeys) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
+
 	return nil
 }

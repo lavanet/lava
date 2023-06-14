@@ -26,11 +26,6 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
 	}
 
-// Queries a list of Clients items.
-	rpc Clients(QueryClientsRequest) returns (QueryClientsResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/clients/{chainID}";
-	}
-
 // Queries a list of GetPairing items.
 	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
@@ -99,15 +94,6 @@ message QueryProvidersRequest {
 }
 
 message QueryProvidersResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
-	string output =2;
-}
-
-message QueryClientsRequest {
-  string chainID = 1;
-}
-
-message QueryClientsResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
 	string output =2;
 }

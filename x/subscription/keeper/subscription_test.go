@@ -13,80 +13,43 @@ import (
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
-	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
-func createNSubscription(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Subscription {
+func createNSubscription(ts *testStruct, n int) []types.Subscription {
+	keeper := &ts.keepers.Subscription
+
 	items := make([]types.Subscription, n)
 	_, creator := sigs.GenerateFloatingKey()
 
 	for i := range items {
 		items[i].Creator = creator.String()
 		items[i].Consumer = "consumer-" + strconv.Itoa(i)
-		items[i].Block = uint64(ctx.BlockHeight())
+		items[i].Block = ts.blockHeight()
 		items[i].PlanIndex = "testplan"
-		items[i].PlanBlock = uint64(ctx.BlockHeight())
+		items[i].PlanBlock = ts.blockHeight()
 
-		keeper.SetSubscription(ctx, items[i])
+		keeper.SetSubscription(ts.ctx, items[i])
 	}
 	return items
 }
 
-func createNPlans(keeper *planskeeper.Keeper, ctx sdk.Context, n int) []planstypes.Plan {
+func createNPlans(ts *testStruct, n int) []planstypes.Plan {
+	keeper := &ts.keepers.Plans
+
 	items := make([]planstypes.Plan, n)
 	plan := common.CreateMockPlan()
 
 	for i := range items {
 		items[i] = plan
 		items[i].Index += strconv.Itoa(i + 1)
-		keeper.AddPlan(ctx, items[i])
+		keeper.AddPlan(ts.ctx, items[i])
 	}
 
 	return items
-}
-
-func TestSubscriptionGet(t *testing.T) {
-	keeper, ctx := keepertest.SubscriptionKeeper(t)
-	items := createNSubscription(keeper, ctx, 10)
-	for _, item := range items {
-		rst, found := keeper.GetSubscription(ctx,
-			item.Consumer,
-		)
-		require.True(t, found)
-
-		require.Equal(t,
-			nullify.Fill(&item),
-			nullify.Fill(&rst),
-		)
-	}
-}
-
-func TestSubscriptionRemove(t *testing.T) {
-	keeper, ctx := keepertest.SubscriptionKeeper(t)
-	items := createNSubscription(keeper, ctx, 10)
-	for _, item := range items {
-		keeper.RemoveSubscription(ctx,
-			item.Creator,
-		)
-		_, found := keeper.GetSubscription(ctx,
-			item.Creator,
-		)
-		require.False(t, found)
-	}
-}
-
-func TestSubscriptionGetAll(t *testing.T) {
-	keeper, ctx := keepertest.SubscriptionKeeper(t)
-	items := createNSubscription(keeper, ctx, 10)
-	require.ElementsMatch(t,
-		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllSubscription(ctx)),
-	)
 }
 
 type testStruct struct {
@@ -95,6 +58,28 @@ type testStruct struct {
 	keepers *keepertest.Keepers
 	servers *keepertest.Servers
 	plans   []planstypes.Plan
+}
+
+func setupTestStruct(t *testing.T, numPlans int) *testStruct {
+	servers, keepers, _ctx := keepertest.InitAllKeepers(t)
+
+	_ctx = keepertest.AdvanceEpoch(_ctx, keepers)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	ts := testStruct{
+		_ctx:    _ctx,
+		ctx:     ctx,
+		keepers: keepers,
+		servers: servers,
+	}
+
+	ts.plans = createNPlans(&ts, numPlans)
+
+	return &ts
+}
+
+func (ts *testStruct) blockHeight() uint64 {
+	return uint64(ts.ctx.BlockHeight())
 }
 
 func (ts *testStruct) advanceBlock(delta ...time.Duration) {
@@ -123,23 +108,43 @@ func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscript
 	return sub
 }
 
-func setupTestStruct(t *testing.T, numPlans int) testStruct {
-	servers, keepers, _ctx := keepertest.InitAllKeepers(t)
+func TestSubscriptionGet(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := ts.keepers.Subscription
 
-	_ctx = keepertest.AdvanceEpoch(_ctx, keepers)
-	ctx := sdk.UnwrapSDKContext(_ctx)
+	items := createNSubscription(ts, 10)
+	for _, item := range items {
+		rst, found := keeper.GetSubscription(ts.ctx, item.Consumer)
+		require.True(t, found)
 
-	plans := createNPlans(&keepers.Plans, ctx, numPlans)
-
-	ts := testStruct{
-		_ctx:    _ctx,
-		ctx:     ctx,
-		keepers: keepers,
-		plans:   plans,
-		servers: servers,
+		require.Equal(t,
+			nullify.Fill(&item),
+			nullify.Fill(&rst),
+		)
 	}
+}
 
-	return ts
+func TestSubscriptionRemove(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := &ts.keepers.Subscription
+
+	items := createNSubscription(ts, 10)
+	for _, item := range items {
+		keeper.RemoveSubscription(ts.ctx, item.Creator)
+		_, found := keeper.GetSubscription(ts.ctx, item.Creator)
+		require.False(t, found)
+	}
+}
+
+func TestSubscriptionGetAll(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	keeper := &ts.keepers.Subscription
+
+	items := createNSubscription(ts, 10)
+	require.ElementsMatch(t,
+		nullify.Fill(items),
+		nullify.Fill(keeper.GetAllSubscription(ts.ctx)),
+	)
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -435,9 +440,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
-		Name:        "another_project",
-		Description: "dummy_desc",
-		Enabled:     true,
+		Name:    "another_project",
+		Enabled: true,
 		ProjectKeys: []projectstypes.ProjectKey{
 			projectstypes.ProjectDeveloperKey(anotherAccount.Addr.String()),
 		},
@@ -581,10 +585,6 @@ func TestExpiryTime(t *testing.T) {
 			require.Equal(t, tt.months, sub.DurationTotal)
 
 			keeper.RemoveSubscription(ts.ctx, creator)
-
-			// TODO: remove when RemoveSubscriptions properly removes projects
-			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }
@@ -628,10 +628,6 @@ func TestPrice(t *testing.T) {
 			require.Equal(t, balance.Amount.Int64(), 10000-tt.cost)
 
 			keeper.RemoveSubscription(ts.ctx, creator)
-
-			// TODO: remove when RemoveSubscriptions properly removes projects
-			projectID := projectstypes.ProjectIndex(creator, projectstypes.ADMIN_PROJECT_NAME)
-			ts.keepers.Projects.DeleteProject(ts.ctx, projectID)
 		})
 	}
 }
@@ -656,35 +652,27 @@ func TestAddProjectToSubscription(t *testing.T) {
 	longProjectName := strings.Repeat(defaultProjectName, projectstypes.MAX_PROJECT_NAME_LEN)
 	invalidProjectName := "project_name,"
 
-	projectDescription := "test project"
-	longProjectDescription := strings.Repeat(projectDescription, projectstypes.MAX_PROJECT_DESCRIPTION_LEN)
-	nonAsciiProjectDescription := "projectDesc¢"
-
 	template := []struct {
-		name               string
-		subscription       string
-		anotherAdmin       string
-		projectName        string
-		projectDescription string
-		success            bool
+		name         string
+		subscription string
+		anotherAdmin string
+		projectName  string
+		success      bool
 	}{
-		{"project admin = regular account", consumerAddr, regularAccountAddr, "test1", projectDescription, true},
-		{"project admin = subscription payer account", consumerAddr, subPayerAddr, "test2", projectDescription, true},
-		{"bad subscription account (regular account)", regularAccountAddr, consumerAddr, "test4", projectDescription, false},
-		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", projectDescription, false},
-		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, projectDescription, false},
-		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, projectDescription, false},
-		{"bad projectName (contains comma)", consumerAddr, regularAccountAddr, invalidProjectName, projectDescription, false},
-		{"bad projectDescription (too long)", consumerAddr, regularAccountAddr, "test6", longProjectDescription, false},
-		{"bad projectDescription (non ascii)", consumerAddr, regularAccountAddr, "test7", nonAsciiProjectDescription, false},
+		{"project admin = regular account", consumerAddr, regularAccountAddr, "test1", true},
+		{"project admin = subscription payer account", consumerAddr, subPayerAddr, "test2", true},
+		{"bad subscription account (regular account)", regularAccountAddr, consumerAddr, "test4", false},
+		{"bad subscription account (subscription payer account)", subPayerAddr, consumerAddr, "test5", false},
+		{"bad projectName (duplicate)", consumerAddr, regularAccountAddr, defaultProjectName, false},
+		{"bad projectName (too long)", consumerAddr, regularAccountAddr, longProjectName, false},
+		{"bad projectName (contains comma)", consumerAddr, regularAccountAddr, invalidProjectName, false},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			projectData := projectstypes.ProjectData{
-				Name:        tt.projectName,
-				Description: tt.projectDescription,
-				Enabled:     true,
+				Name:    tt.projectName,
+				Enabled: true,
 				ProjectKeys: []projectstypes.ProjectKey{
 					projectstypes.ProjectAdminKey(tt.anotherAdmin),
 				},
@@ -692,6 +680,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 			err = keeper.AddProjectToSubscription(ts.ctx, tt.subscription, projectData)
 			if tt.success {
 				require.Nil(t, err)
+				ts.advanceEpoch()
 				proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectstypes.ProjectIndex(tt.subscription, tt.projectName), uint64(ts.ctx.BlockHeight()))
 				require.Nil(t, err)
 				require.Equal(t, tt.subscription, proj.Subscription)
@@ -759,7 +748,64 @@ func TestGetProjectsForSubscription(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	// check the number of projects are as expected (+1 because there's an auto-generated admin project)
+	// number of projects expected (+1 because there's an auto-generated admin project)
 	require.Equal(t, 3, len(res1.Projects))
 	require.Equal(t, 1, len(res2.Projects))
+
+	_, err = ts.servers.SubscriptionServer.DelProject(ts._ctx, &types.MsgDelProject{
+		Creator: subAcc1,
+		Name:    projData2.Name,
+	})
+	require.Nil(t, err)
+}
+
+func TestAddDelProjectForSubscription(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	plan := ts.plans[0]
+
+	subAcc := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+
+	// buy subscription
+	_, err := ts.servers.SubscriptionServer.Buy(ts._ctx, &types.MsgBuy{
+		Creator:  subAcc,
+		Consumer: subAcc,
+		Index:    plan.Index,
+		Duration: 1,
+	})
+	require.Nil(t, err)
+
+	// add project to the subscription
+	projData := projectstypes.ProjectData{
+		Name:    "proj",
+		Enabled: true,
+		Policy:  &plan.PlanPolicy,
+	}
+	_, err = ts.servers.SubscriptionServer.AddProject(ts._ctx, &types.MsgAddProject{
+		Creator:     subAcc,
+		ProjectData: projData,
+	})
+	require.Nil(t, err)
+
+	ts.advanceEpoch()
+
+	res, err := ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc,
+	})
+	require.Nil(t, err)
+	require.Equal(t, 2, len(res.Projects))
+
+	// del project to the subscription
+	_, err = ts.servers.SubscriptionServer.DelProject(ts._ctx, &types.MsgDelProject{
+		Creator: subAcc,
+		Name:    projData.Name,
+	})
+	require.Nil(t, err)
+
+	ts.advanceEpoch()
+
+	res, err = ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc,
+	})
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Projects))
 }

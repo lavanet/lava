@@ -8,7 +8,6 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/app/upgrades"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const (
@@ -31,7 +30,7 @@ func CreateUpgradeHandler(
 
 		chainIDs := keepers.SpecKeeper.GetAllChainIDs(ctx)
 		for _, chainID := range chainIDs {
-			storage, found := keepers.EpochstorageKeeper.GetStakeStorageCurrent(ctx, epochstoragetypes.ProviderKey, chainID)
+			storage, found := keepers.EpochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
 			if !found {
 				continue
 			}

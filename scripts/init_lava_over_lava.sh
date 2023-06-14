@@ -12,8 +12,11 @@ sleep 3
 lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_lava.json --from alice -y --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 sleep 4 
-lavad tx pairing stake-client "LAV1" 200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy "DefaultPlan" -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
 # Lava Providers
@@ -39,7 +42,7 @@ screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_se
 
 # sleep 3 # wait for the portal to start.
 
-# lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1 --node "http://127.0.0.1:3341/1"
+
 
 # lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --node "http://127.0.0.1:3341/1"
 

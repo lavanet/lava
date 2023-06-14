@@ -154,7 +154,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, servicersToPair, legacy, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			clientAddr,
@@ -237,26 +237,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
-		// first check we can burn user before we give money to the provider
-		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
-		if legacy {
-			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
-			burnSucceeded, err2 := k.BurnClientStake(ctx, relay.SpecId, clientAddr, burnAmount, false)
-
-			if err2 != nil {
-				return nil, utils.LavaFormatError("BurnUserStake failed on user", err2,
-					utils.Attribute{Key: "amountToBurn", Value: burnAmount},
-				)
-			}
-			if !burnSucceeded {
-				return nil, utils.LavaFormatError("BurnUserStake failed on user, did not find user, or insufficient funds", fmt.Errorf("insufficient funds or didn't find user"),
-					utils.Attribute{Key: "amountToBurn", Value: burnAmount},
-				)
-			}
-
-			details["clientFee"] = burnAmount.String()
-		}
-
+		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
 		details["Mint"] = details["BasePay"]
 
@@ -281,11 +262,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
-		if !legacy {
-			err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
-			if err != nil {
-				return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
-			}
+
+		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
+		if err != nil {
+			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
 
 		// update provider payment storage with complainer's CU

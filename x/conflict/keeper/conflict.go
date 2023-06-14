@@ -70,9 +70,9 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			return err
 		}
 		// 2. validate signer
-		_, err = k.epochstorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epochStart)
+		_, err := k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, epochStart)
 		if err != nil {
-			return fmt.Errorf("did not find a stake entry for consumer %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
+			return fmt.Errorf("did not find a project for %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
 		}
 	}
 	verifyClientAddrFromSignatureOnRequest := func(conflictRelayData types.ConflictRelayData) error {

@@ -68,14 +68,8 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 
 	items := make([]epochstoragetypes.StakeStorage, stakeStorageSlots)
 	chainID := "ETH1"
-	storageType := epochstoragetypes.ProviderKey
 	for i := 0; i < len(items); i++ {
-		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
-		keeper.SetStakeStorage(ctx, items[i])
-	}
-	storageType = epochstoragetypes.ClientKey
-	for i := 0; i < len(items); i++ {
-		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
+		items[i].Index = keeper.StakeStorageKey(uint64(i), chainID)
 		keeper.SetStakeStorage(ctx, items[i])
 	}
 
@@ -85,25 +79,25 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"COS3ETH1LAV1COS4"})
 	allStorage := keeper.GetAllStakeStorage(ctx)
-	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
+	require.Equal(t, len(allStorage), stakeStorageSlots) // no entry was removed
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"COS3"})
 	allStorage = keeper.GetAllStakeStorage(ctx)
-	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
+	require.Equal(t, len(allStorage), stakeStorageSlots) // no entry was removed
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 0, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
-	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
+	require.Equal(t, len(allStorage), stakeStorageSlots) // no entry was removed
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 9, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
-	require.Equal(t, len(allStorage), 2) // one provider one client
+	require.Equal(t, len(allStorage), 1) // one provider
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), 0) // zero entries left
 
-	items[0].Index = epochstoragetypes.ProviderKey + strconv.FormatUint(uint64(10), 10) + ""
+	items[0].Index = strconv.FormatUint(uint64(10), 10) + ""
 	keeper.SetStakeStorage(ctx, items[0])
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 11, []string{""})
 	allStorage = keeper.GetAllStakeStorage(ctx)

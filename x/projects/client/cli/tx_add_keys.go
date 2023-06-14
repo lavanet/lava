@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"strconv"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -11,15 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = strconv.Itoa(0)
-
 func CmdAddKeys() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add-keys [project-id] [optional: project-keys-file-path]",
 		Short: "Add developer/admin keys to an existing project",
 		Long: `The add-keys command allows the project admin to add new project keys (admin/developer) to the project.
 		To add the keys you can optionally provide a YAML file of the new project keys (see example in cookbook/project/example_project_keys.yml).
-		Note that in project keys, to define the key type, you should follow the enum described in the top of example_project_keys.yml.
 		Another way to add keys is with the --admin-key and --developer-key flags.`,
 		Example: `required flags: --from <admin-key> (the project's subscription address is also considered admin)
 				  
