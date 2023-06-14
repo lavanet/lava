@@ -59,5 +59,9 @@ sleep_until_next_epoch
 lavad tx project del-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
 sleep_until_next_epoch
 
-# we need to wait for the next epoch for the stake to take action.
+lavad tx subscription del-project myproject -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
+
+lavad q subscription list-projects user3
+
+# the end

@@ -677,7 +677,7 @@ func (lt *lavaTest) saveLogs() {
 			panic(err)
 		}
 	}
-	errorLineCount := 0
+	errorFound := false
 	errorFiles := []string{}
 	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
@@ -704,7 +704,7 @@ func (lt *lavaTest) saveLogs() {
 				}
 				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
 				if !lt.testFinishedProperly || !isAllowedError {
-					errorLineCount += 1
+					errorFound = true
 					errorLines = append(errorLines, line)
 				}
 			}
@@ -712,9 +712,9 @@ func (lt *lavaTest) saveLogs() {
 		if len(errorLines) == 0 {
 			continue
 		}
-		errorFiles = append(errorFiles, fileName)
+
+		// dump all errors into the log file
 		errors := strings.Join(errorLines, "\n")
-		errorPrint[fileName] = errorLines[0] + errorLines[1]
 		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
 		if err != nil {
 			panic(err)
@@ -723,9 +723,17 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write([]byte(errors))
 		writer.Flush()
 		errFile.Close()
+
+		// keep at most 5 errors to display
+		count := len(errorLines)
+		if count > 5 {
+			count = 5
+		}
+		errorPrint[fileName] = strings.Join(errorLines[:count], "\n")
+		errorFiles = append(errorFiles, fileName)
 	}
 
-	if errorLineCount != 0 {
+	if errorFound {
 		for _, errLine := range errorPrint {
 			fmt.Println("ERROR: ", errLine)
 		}

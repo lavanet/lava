@@ -11,7 +11,50 @@ import (
 	"github.com/lavanet/lava/x/projects/types"
 )
 
-// add a default project to a subscription, add the subscription key as
+// Keys management logic:
+//
+// upon CreateProject(project):
+//   -> registerKey(now)
+//     -> AppendEntry(project, now)
+//
+// upon AddKeysToProject(project, key-by, keys-to-add)
+//   -> FindEntry(project, now)
+//   -> validate key-by is admin-key in project
+//   -> FindEntry(project, nextEpoch)
+//   -> registerKey(keys-to-add, project, nextEpoch) (see below)
+//   -> AppendEntry(project, nextEpoch)
+//
+// upon DelKeysFromProject(project, key-by, keys-to-del)
+//   -> FindEntry(project, now)
+//   -> validate key-by is admin-key in project
+//   -> FindEntry(project, nextEpoch)
+//   -> unregisterKey(dev-keys-to-del, project, nextEpoch) (see below)
+//   -> AppendEntry(project, nextEpoch)
+//
+// upon DeleteProject(project)
+//   -> find project (now)
+//   -> unregisterKey(all-keys, project, nextEpoch) (see below)
+//   -> DelEntry(project, nextEpoch)
+//
+// upon registerKey(project, when)
+//   -> if admin: add to project
+//   -> if devel:
+//        find devel-key (now)
+//        if not belong to project: bail
+//        find devel-key (when)
+//        if the key not belong to this project: bail
+//        else if not found: add to project, AppendEntry(dev-key, when)
+//
+// upon unregisterKey(project, when)
+//   -> if admin: del from project
+//   -> if devel:
+//        find devel-key (now)
+//        if not belong to project: bail
+//        find devel-key (when)
+//        if not found: nothing to do
+//        if not belong to project: bail
+//        else: del from project, DelEntry(dev-key, when)
+
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
@@ -19,23 +62,33 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 		Enabled:     true,
 		Policy:      nil,
 	}
-	return k.CreateProject(ctx, subAddr, projectData, plan)
+	return k.doCreateProject(ctx, subAddr, projectData, plan, uint64(ctx.BlockHeight()))
+}
+
+func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return utils.LavaFormatError("CreateProject: failed to get NextEpoch", err,
+			utils.Attribute{Key: "index", Value: projectData.Name},
+		)
+	}
+	return k.doCreateProject(ctx, subAddr, projectData, plan, nextEpoch)
 }
 
 // add a new project to the subscription
-func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
+func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan, block uint64) error {
 	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
 		return err
 	}
 
+	// project creation wll take effect at the designated block - so check
+	// for duplicates (names) by that block and not only for current block.
 	var emptyProject types.Project
-	ctxBlock := uint64(ctx.BlockHeight())
-	if found := k.projectsFS.FindEntry(ctx, project.Index, ctxBlock, &emptyProject); found {
-		// the project with the same name already exists if no error has returned
+	if found := k.projectsFS.FindEntry(ctx, project.Index, block, &emptyProject); found {
 		return utils.LavaFormatWarning(
-			"project already exist for the current subscription with the same name",
-			fmt.Errorf("could not create project"),
+			"failed to create project",
+			fmt.Errorf("project name already exist for current subscription"),
 			utils.Attribute{Key: "subscription", Value: subAddr},
 		)
 	}
@@ -47,13 +100,51 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	project.SubscriptionPolicy = project.AdminPolicy
 
 	for _, projectKey := range projectData.GetProjectKeys() {
-		err = k.registerKey(ctx, projectKey, &project, ctxBlock)
+		err = k.registerKey(ctx, projectKey, &project, block)
 		if err != nil {
 			return err
 		}
 	}
 
-	return k.projectsFS.AppendEntry(ctx, project.Index, ctxBlock, &project)
+	return k.projectsFS.AppendEntry(ctx, project.Index, block, &project)
+}
+
+func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		return utils.LavaFormatError("DeleteProject: failed to get NextEpoch", err,
+			utils.Attribute{Key: "projectID", Value: projectID},
+		)
+	}
+
+	var project types.Project
+	found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project)
+	if !found {
+		return utils.LavaFormatWarning("delete project failed",
+			fmt.Errorf("project not found"),
+			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+		)
+	}
+
+	if creator != project.Subscription {
+		return utils.LavaFormatWarning("delete project failed",
+			fmt.Errorf("creator not subscription owner"),
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "projectID", Value: projectID},
+		)
+	}
+
+	for _, projectKey := range project.GetProjectKeys() {
+		err = k.unregisterKey(ctx, projectKey, &project, nextEpoch)
+		if err != nil {
+			return err
+		}
+	}
+
+	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
 func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
@@ -204,20 +295,6 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 
 	project.UsedCu = 0
 	project.Snapshot += 1
-
-	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
-}
-
-func (k Keeper) DeleteProject(ctx sdk.Context, projectID string) error {
-	var project types.Project
-	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaFormatWarning("project to delete was not found", fmt.Errorf("project not found"),
-			utils.Attribute{Key: "projectID", Value: projectID},
-		)
-	}
-
-	project.Enabled = false
-	// TODO: delete all developer keys from the fixation
 
 	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 }

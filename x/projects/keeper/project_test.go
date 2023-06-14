@@ -317,6 +317,39 @@ func TestProjectsServerAPI(t *testing.T) {
 	require.Equal(t, 1, len(res.Project.ProjectKeys))
 }
 
+func TestDeleteProject(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	projectData := ts.projects["pd2"]
+	plan := common.CreateMockPlan()
+
+	subAddr := ts.accounts["sub1"]
+	projectID := types.ProjectIndex(subAddr, projectData.Name)
+
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.Nil(t, err)
+
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, "nonsense")
+	require.NotNil(t, err)
+
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, projectID)
+	require.Nil(t, err)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.NotNil(t, err)
+}
+
 func TestAddDelKeys(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 2) // 1 sub, 0 adm, 2 dev
@@ -448,14 +481,14 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 }
 
 func TestSetPolicy(t *testing.T) {
-	SetPolicyTest(t, true)
+	setPolicyTest(t, true)
 }
 
 func TestSetSubscriptionPolicy(t *testing.T) {
-	SetPolicyTest(t, false)
+	setPolicyTest(t, false)
 }
 
-func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
+func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 1) // 1 sub, 0 admin, 1 data
 
@@ -470,6 +503,8 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 
 	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
 
 	pk := types.ProjectDeveloperKey(devAddr)
 	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, admAddr, []types.ProjectKey{pk})
