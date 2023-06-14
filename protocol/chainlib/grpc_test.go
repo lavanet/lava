@@ -278,7 +278,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
 			require.NoError(t, err)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			chainMessage.UpdateLatestBlockInMessage(uint64(test.block))
+			chainMessage.UpdateLatestBlockInMessage(test.block)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
 			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
