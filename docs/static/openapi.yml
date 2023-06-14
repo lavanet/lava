@@ -30041,87 +30041,6 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/clients/{chainID}':
-    get:
-      summary: Queries a list of Clients items.
-      operationId: LavanetLavaPairingClients
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              stakeEntry:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    stake:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    address:
-                      type: string
-                    stake_applied_block:
-                      type: string
-                      format: uint64
-                    endpoints:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          iPPORT:
-                            type: string
-                          useType:
-                            type: string
-                          geolocation:
-                            type: string
-                            format: uint64
-                    geolocation:
-                      type: string
-                      format: uint64
-                    chain:
-                      type: string
-                    moniker:
-                      type: string
-              output:
-                type: string
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: chainID
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   /lavanet/lava/pairing/epoch_payments:
     get:
       summary: Queries a list of EpochPayments items.
@@ -30402,21 +30321,14 @@ paths:
                 properties:
                   mintCoinsPerCU:
                     type: string
-                  burnCoinsPerCU:
-                    type: string
                   fraudStakeSlashingFactor:
                     type: string
                   fraudSlashingAmount:
                     type: string
                     format: uint64
-                  servicersToPairCount:
-                    type: string
-                    format: uint64
                   epochBlocksOverlap:
                     type: string
                     format: uint64
-                  stakeToMaxCUList:
-                    type: string
                   unpayLimit:
                     type: string
                   slashLimit:
@@ -31672,6 +31584,9 @@ paths:
                       type: array
                       items:
                         type: string
+                    api_count:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -55118,13 +55033,9 @@ definitions:
     type: object
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
-  lavanet.lava.pairing.MsgStakeClientResponse:
-    type: object
   lavanet.lava.pairing.MsgStakeProviderResponse:
     type: object
   lavanet.lava.pairing.MsgUnfreezeProviderResponse:
-    type: object
-  lavanet.lava.pairing.MsgUnstakeClientResponse:
     type: object
   lavanet.lava.pairing.MsgUnstakeProviderResponse:
     type: object
@@ -55133,21 +55044,14 @@ definitions:
     properties:
       mintCoinsPerCU:
         type: string
-      burnCoinsPerCU:
-        type: string
       fraudStakeSlashingFactor:
         type: string
       fraudSlashingAmount:
         type: string
         format: uint64
-      servicersToPairCount:
-        type: string
-        format: uint64
       epochBlocksOverlap:
         type: string
         format: uint64
-      stakeToMaxCUList:
-        type: string
       unpayLimit:
         type: string
       slashLimit:
@@ -55307,55 +55211,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  lavanet.lava.pairing.QueryClientsResponse:
-    type: object
-    properties:
-      stakeEntry:
-        type: array
-        items:
-          type: object
-          properties:
-            stake:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-            address:
-              type: string
-            stake_applied_block:
-              type: string
-              format: uint64
-            endpoints:
-              type: array
-              items:
-                type: object
-                properties:
-                  iPPORT:
-                    type: string
-                  useType:
-                    type: string
-                  geolocation:
-                    type: string
-                    format: uint64
-            geolocation:
-              type: string
-              format: uint64
-            chain:
-              type: string
-            moniker:
-              type: string
-      output:
-        type: string
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
     type: object
     properties:
@@ -55472,21 +55327,14 @@ definitions:
         properties:
           mintCoinsPerCU:
             type: string
-          burnCoinsPerCU:
-            type: string
           fraudStakeSlashingFactor:
             type: string
           fraudSlashingAmount:
             type: string
             format: uint64
-          servicersToPairCount:
-            type: string
-            format: uint64
           epochBlocksOverlap:
             type: string
             format: uint64
-          stakeToMaxCUList:
-            type: string
           unpayLimit:
             type: string
           slashLimit:
@@ -57001,6 +56849,9 @@ definitions:
               type: array
               items:
                 type: string
+            api_count:
+              type: string
+              format: uint64
   lavanet.lava.spec.QueryShowChainInfoResponse:
     type: object
     properties:
@@ -57199,6 +57050,9 @@ definitions:
         type: array
         items:
           type: string
+      api_count:
+        type: string
+        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:

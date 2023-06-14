@@ -9,13 +9,15 @@ GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ethereum.json --from alice -y --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4
 STAKE="500000000000ulava"
-lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user2 -a) -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user3 -a) -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user4 -a) -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Ethereum providers
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

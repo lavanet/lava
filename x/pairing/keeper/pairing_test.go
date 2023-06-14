@@ -97,7 +97,7 @@ func TestPairingUniqueness(t *testing.T) {
 			require.Equal(t, providers11[i].Address, providers111[i].Address)
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
 		}
 	}
@@ -138,7 +138,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		for _, provider := range pairedProviders {
 			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
 			require.Nil(t, err)
-			valid, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			valid, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
 			require.Nil(t, errPairing)
 			require.True(t, valid)
 		}
@@ -286,12 +286,10 @@ func TestPairingStatic(t *testing.T) {
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-	servicersToPair := keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ctx))
-
 	consumer := common.CreateNewAccount(ctx, *keepers, balance)
 	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
 
-	for i := uint64(0); i < servicersToPair*2; i++ {
+	for i := uint64(0); i < plan.PlanPolicy.MaxProvidersToPair*2; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i))
 	}
