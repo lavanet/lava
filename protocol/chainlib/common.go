@@ -25,6 +25,7 @@ import (
 const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
+	debug                     = false
 )
 
 type TaggedContainer struct {

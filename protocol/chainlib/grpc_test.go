@@ -267,7 +267,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 		{
 			desc:           "with-metadata",
 			metadata:       metadata,
-			block:          244589,
+			block:          244590,
 			requestedBlock: 244590,
 		},
 	}
@@ -277,7 +277,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
 			require.NoError(t, err)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			chainMessage.UpdateLatestBlockInMessage(test.block)
+			chainMessage.UpdateLatestBlockInMessage(test.block)                  // will update the request only if it's latest
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
 			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)

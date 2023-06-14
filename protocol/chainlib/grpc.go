@@ -413,7 +413,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-
+	if debug {
+		utils.LavaFormatDebug("provider sending node message",
+			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "headers", Value: metadataMap},
+		)
+	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
