@@ -98,7 +98,8 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 				fmt.Println("Panic occurred:", r)
 				if retries < maxRetries {
 					retries++
-					utils.LavaFormatInfo("Restarting goroutine for startJSONRPCProvider...")
+
+					utils.LavaFormatInfo(fmt.Sprintln("Restarting goroutine for startJSONRPCProvider. Remaining retries: ", maxRetries-retries))
 					go lt.execCommandWithRetry(ctx, funcName, logName, command)
 				} else {
 					panic(errors.New("maximum number of retries exceeded"))
