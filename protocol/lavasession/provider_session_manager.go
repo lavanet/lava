@@ -169,13 +169,15 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 		return nil, nil, err
 	}
 
+	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil { // badgeSession
 		exists := psm.getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionsWithConsumer)
 		if !exists {
 			psm.registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
 		}
+		badgeUserEpochData = psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
 	}
-	badgeUserEpochData := psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
 
 	return singleSessionFromPSWC, badgeUserEpochData, err

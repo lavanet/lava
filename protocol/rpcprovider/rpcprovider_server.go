@@ -159,13 +159,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
-	var badgeSession lavasession.BadgeSession
+	var badgeSession *lavasession.BadgeSession
 	if request.RelaySession.Badge != nil { // badge session
 		badgeSession.BadgeCuAllocation = request.RelaySession.Badge.CuAllocation
 		badgeSession.BadgeUser = request.RelaySession.Badge.Address
 	}
 	var badgeUserEpochData *lavasession.ProviderSessionsEpochData
-	relaySession, consumerAddress, badgeUserEpochData, err = rpcps.verifyRelaySession(ctx, request, &badgeSession)
+	relaySession, consumerAddress, badgeUserEpochData, err = rpcps.verifyRelaySession(ctx, request, badgeSession)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -176,7 +176,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
 
-	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, &badgeSession, badgeUserEpochData)
+	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, badgeSession, badgeUserEpochData)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
