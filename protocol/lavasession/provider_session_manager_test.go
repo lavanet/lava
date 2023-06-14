@@ -73,6 +73,48 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	return psm, sps
 }
 
+func prepareBadgeSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
+	// initialize the struct
+	psm := initProviderSessionManager()
+
+	badgeSession := &BadgeSession{
+		BadgeCuAllocation: 100,
+		BadgeUser:         "sampleUser",
+	}
+
+	// get session for the first time
+	sps, badgeUserEpochData, err := psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, badgeSession)
+
+	// validate expected results
+	require.Empty(t, psm.sessionsWithAllConsumers)
+	require.Nil(t, sps)
+	require.Nil(t, badgeUserEpochData)
+	require.Error(t, err)
+	require.True(t, ConsumerNotRegisteredYet.Is(err))
+
+	// expect session to be missing, so we need to register it for the first time
+	sps, badgeUserEpochData, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, badgeSession)
+
+	// validate session was added
+	require.NotEmpty(t, psm.sessionsWithAllConsumers)
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+	require.NotNil(t, badgeUserEpochData)
+
+	// prepare session for usage
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, badgeSession, badgeUserEpochData)
+
+	// validate session was prepared successfully
+	require.Nil(t, err)
+	require.Equal(t, relayCu, sps.LatestRelayCu)
+	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+	require.LessOrEqual(t, sps.CuSum, badgeSession.BadgeCuAllocation)
+	return psm, sps
+}
+
 func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
 	// initialize the struct
 	psm := initProviderSessionManager()
@@ -105,6 +147,22 @@ func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManage
 func TestHappyFlowPSM(t *testing.T) {
 	// init test
 	psm, sps := prepareSession(t, context.Background())
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+
+	// validate session done data
+	require.Nil(t, err)
+	require.Equal(t, sps.LatestRelayCu, uint64(0))
+	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumber)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+func TestHappyFlowBadgePSM(t *testing.T) {
+	// init test
+	psm, sps := prepareBadgeSession(t, context.Background())
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
