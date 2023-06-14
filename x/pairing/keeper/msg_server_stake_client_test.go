@@ -31,11 +31,11 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	common.StakeAccount(t, ctx, *keepers, *servers, provider2, spec, stake)
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
 
 	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
 
