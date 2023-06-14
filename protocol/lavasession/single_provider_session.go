@@ -172,7 +172,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	}
 
 	// Update badgeUsedCu in ProviderSessionsWithConsumer
-	if badgeSession != nil {
+	if badgeSession != nil && badgeUserEpochData != nil {
 		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeUserEpochData)
 		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeUserEpochData)
 		if err != nil {
