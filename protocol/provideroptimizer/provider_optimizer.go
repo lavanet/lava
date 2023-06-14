@@ -39,7 +39,7 @@ type ProviderOptimizer struct {
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
-	wantedNumProvidersInConcurrency int
+	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 }
 
@@ -62,35 +62,35 @@ const (
 )
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
-	po.appendRelayData(providerAddress, 0, false, false, 0, 0)
+	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
 }
 
 func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64) {
-	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock)
+	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
 }
 
-func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64) {
-	latestSync, timeSync := po.updateLatestSyncData(syncBlock)
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64, sampleTime time.Time) {
+	latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
 	providerData, _ := po.getProviderData(providerAddress)
-	halfTime := po.calculateHalfTime(providerAddress)
-	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime)
+	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
+	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success {
 		if latency > 0 {
 			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)
 			if isHangingApi {
 				baseLatency += po.averageBlockTime // hanging apis take longer
 			}
-			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime)
+			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 		}
 		if syncBlock > providerData.SyncBlock {
 			// do not allow providers to go back
 			providerData.SyncBlock = syncBlock
 		}
-		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock)
-		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime)
+		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
+		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
-	po.updateRelayTime(providerAddress)
+	po.updateRelayTime(providerAddress, sampleTime)
 	if debug {
 		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
 	}
@@ -98,11 +98,12 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
 	providerData, _ := po.getProviderData(providerAddress)
-	halfTime := po.calculateHalfTime(providerAddress)
-	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime)
+	sampleTime := time.Now()
+	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
+	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success && latency > 0 {
 		// base latency for a probe is the world latency
-		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime)
+		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	if debug {
@@ -141,7 +142,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if len(returnedProviders) > 0 && po.shouldExplore(len(returnedProviders), numProviders) {
+			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
 				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
 				returnedProviders = append(returnedProviders, returnedProviders[0])
 			}
@@ -161,30 +162,30 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block
-func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64) time.Duration {
+func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64, sampleTime time.Time) time.Duration {
 	if latestSync < providerBlock {
 		return 0
 	}
-	timeLag := time.Since(timeSync)                                            // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
+	timeLag := sampleTime.Sub(timeSync)                                        // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
 	blocksGap := time.Duration(latestSync-providerBlock) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
 	timeLag += blocksGap
 	return timeLag
 }
 
-func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64) (uint64, time.Time) {
+func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sampleTime time.Time) (uint64, time.Time) {
 	po.latestSyncData.Lock.Lock()
 	defer po.latestSyncData.Lock.Unlock()
 	latestBlock := po.latestSyncData.Block
 	if latestBlock < providerLatestBlock {
 		// saved latest block is older, so update
 		po.latestSyncData.Block = providerLatestBlock
-		po.latestSyncData.Time = time.Now()
+		po.latestSyncData.Time = sampleTime
 	}
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
 func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
-	if currentNumProvders >= po.wantedNumProvidersInConcurrency {
+	if uint(currentNumProvders) >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
 	explorationChance := DEFAULT_EXPLORATION_CHANCE
@@ -324,44 +325,44 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	return providerData, found
 }
 
-func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync time.Duration, baseSync time.Duration, halfTime time.Duration) ProviderData {
-	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), time.Now())
+func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync time.Duration, baseSync time.Duration, halfTime time.Duration, sampleTime time.Time) ProviderData {
+	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), sampleTime)
 	oldScore := providerData.Sync
-	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT)
+	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
 	return providerData
 }
 
-func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderData, success bool, weight float64, halfTime time.Duration) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderData, success bool, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
 	newNumerator := float64(1)
 	if !success {
 		// if we failed we need the score update to be 0
 		newNumerator = 0
 	}
 	oldScore := providerData.Availability
-	newScore := score.NewScoreStore(newNumerator, 1, time.Now()) // denom is 1, entry time is now
-	providerData.Availability = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight)
+	newScore := score.NewScoreStore(newNumerator, 1, sampleTime) // denom is 1, entry time is now
+	providerData.Availability = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
 	return providerData
 }
 
 // update latency data, base latency is the latency for the api defined in the spec
-func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency time.Duration, baseLatency time.Duration, weight float64, halfTime time.Duration) ProviderData {
-	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), time.Now())
+func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency time.Duration, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
+	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), sampleTime)
 	oldScore := providerData.Latency
-	providerData.Latency = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight)
+	providerData.Latency = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
 	return providerData
 }
 
-func (po *ProviderOptimizer) updateRelayTime(providerAddress string) {
+func (po *ProviderOptimizer) updateRelayTime(providerAddress string, sampleTime time.Time) {
 	times := po.getRelayStatsTimes(providerAddress)
 	if len(times) == 0 {
-		po.providerRelayStats.Set(providerAddress, []time.Time{time.Now()}, 1)
+		po.providerRelayStats.Set(providerAddress, []time.Time{sampleTime}, 1)
 		return
 	}
-	times = append(times, time.Now())
+	times = append(times, sampleTime)
 	po.providerRelayStats.Set(providerAddress, times, 1)
 }
 
-func (po *ProviderOptimizer) calculateHalfTime(providerAddress string) time.Duration {
+func (po *ProviderOptimizer) calculateHalfTime(providerAddress string, sampleTime time.Time) time.Duration {
 	halfTime := HALF_LIFE_TIME
 	relaysHalfTime := po.getRelayStatsTimeDiff(providerAddress)
 	if relaysHalfTime > halfTime {
@@ -393,7 +394,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency int) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)

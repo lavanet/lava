@@ -9,9 +9,7 @@ import (
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgStakeProvider{}, "pairing/StakeProvider", nil)
-	cdc.RegisterConcrete(&MsgStakeClient{}, "pairing/StakeClient", nil)
 	cdc.RegisterConcrete(&MsgUnstakeProvider{}, "pairing/UnstakeProvider", nil)
-	cdc.RegisterConcrete(&MsgUnstakeClient{}, "pairing/UnstakeClient", nil)
 	cdc.RegisterConcrete(&MsgRelayPayment{}, "pairing/RelayPayment", nil)
 	cdc.RegisterConcrete(&MsgFreezeProvider{}, "pairing/Freeze", nil)
 	cdc.RegisterConcrete(&MsgUnfreezeProvider{}, "pairing/Unfreeze", nil)
@@ -23,13 +21,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgStakeProvider{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgStakeClient{},
-	)
-	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgUnstakeProvider{},
-	)
-	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgUnstakeClient{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgRelayPayment{},

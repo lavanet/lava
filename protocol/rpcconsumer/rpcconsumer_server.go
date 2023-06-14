@@ -187,6 +187,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 
 	isSubscription := chainMessage.GetInterface().Category.Subscription
+	if isSubscription {
+		// temporarily disable subscriptions
+		// TODO: fix subscription and disable this case.
+		return &lavaprotocol.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are not supported currently", nil)
+	}
 
 	privKey := rpccs.privKey
 	chainID := rpccs.listenEndpoint.ChainID
@@ -221,7 +226,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			var localRelayResult *lavaprotocol.RelayResult
 			var errResponse error
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+			guid, found := utils.GetUniqueIdentifier(ctx)
+			if found {
+				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
+			}
 			defer func() {
 				// Return response
 				responses <- &relayResponse{

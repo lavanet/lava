@@ -15,10 +15,6 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_epochstorage"
-
-	ProviderKey = "provider"
-
-	ClientKey = "client"
 )
 
 func KeyPrefix(p string) []byte {

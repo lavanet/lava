@@ -8,22 +8,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMsgStakeClient_ValidateBasic(t *testing.T) {
+func TestMsgDelProject_ValidateBasic(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  MsgStakeClient
+		msg  MsgDelProject
 		err  error
 	}{
 		{
 			name: "invalid address",
-			msg: MsgStakeClient{
+			msg: MsgDelProject{
 				Creator: "invalid_address",
+				Name:    "validname",
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
-			msg: MsgStakeClient{
+			msg: MsgDelProject{
 				Creator: sample.AccAddress(),
+				Name:    "validname",
 			},
 		},
 	}

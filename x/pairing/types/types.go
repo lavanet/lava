@@ -1,12 +1,11 @@
 package types
 
+import math "math"
+
 const (
 	ProviderStakeEventName       = "stake_new_provider"
-	ConsumerStakeEventName       = "stake_new_consumer"
 	ProviderStakeUpdateEventName = "stake_update_provider"
-	ConsumerStakeUpdateEventName = "stake_update_consumer"
 	ProviderUnstakeEventName     = "provider_unstake_commit"
-	ConsumerUnstakeEventName     = "consumer_unstake_commit"
 
 	ConsumerInsufficientFundsToStayStakedEventName = "consumer_insufficient_funds_to_stay_staked"
 	RelayPaymentEventName                          = "relay_payment"
@@ -32,29 +31,8 @@ const (
 	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
 )
 
-func StakeNewEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderStakeEventName
-	} else {
-		return ConsumerStakeEventName
-	}
-}
-
-func StakeUpdateEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderStakeUpdateEventName
-	} else {
-		return ConsumerStakeUpdateEventName
-	}
-}
-
-func UnstakeCommitNewEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderUnstakeEventName
-	} else {
-		return ConsumerUnstakeEventName
-	}
-}
+// Frozen provider block const
+const FROZEN_BLOCK = math.MaxInt64
 
 type ClientUsedCU struct {
 	TotalUsed uint64

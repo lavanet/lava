@@ -9,12 +9,9 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.MintCoinsPerCU(ctx),
-		k.BurnCoinsPerCU(ctx),
 		k.FraudStakeSlashingFactor(ctx),
 		k.FraudSlashingAmount(ctx),
-		k.ServicersToPairCountRaw(ctx),
 		k.EpochBlocksOverlap(ctx),
-		k.StakeToMaxCUListRaw(ctx),
 		k.UnpayLimit(ctx),
 		k.SlashLimit(ctx),
 		k.DataReliabilityReward(ctx),
@@ -34,12 +31,6 @@ func (k Keeper) MintCoinsPerCU(ctx sdk.Context) (res sdk.Dec) {
 	return
 }
 
-// BurnCoinsPerCU returns the BurnCoinsPerCU param
-func (k Keeper) BurnCoinsPerCU(ctx sdk.Context) (res sdk.Dec) {
-	k.paramstore.Get(ctx, types.KeyBurnCoinsPerCU, &res)
-	return
-}
-
 // FraudStakeSlashingFactor returns the FraudStakeSlashingFactor param
 func (k Keeper) FraudStakeSlashingFactor(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyFraudStakeSlashingFactor, &res)
@@ -52,29 +43,8 @@ func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 	return
 }
 
-func (k Keeper) ServicersToPairCount(ctx sdk.Context, block uint64) (res uint64, err error) {
-	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyServicersToPairCount), block, &res)
-	return
-}
-
-// ServicersToPairCount returns the ServicersToPairCount param
-func (k Keeper) ServicersToPairCountRaw(ctx sdk.Context) (res uint64) {
-	k.paramstore.Get(ctx, types.KeyServicersToPairCount, &res)
-	return
-}
-
 func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyEpochBlocksOverlap, &res)
-	return
-}
-
-func (k Keeper) StakeToMaxCUList(ctx sdk.Context, block uint64) (res types.StakeToMaxCUList, err error) {
-	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyStakeToMaxCUList), block, &res)
-	return
-}
-
-func (k Keeper) StakeToMaxCUListRaw(ctx sdk.Context) (res types.StakeToMaxCUList) {
-	k.paramstore.Get(ctx, types.KeyStakeToMaxCUList, &res)
 	return
 }
 

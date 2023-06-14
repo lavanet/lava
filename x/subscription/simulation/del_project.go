@@ -6,11 +6,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/subscription/keeper"
+	"github.com/lavanet/lava/x/subscription/types"
 )
 
-func SimulateMsgStakeClient(
+func SimulateMsgDelProject(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
 	k keeper.Keeper,
@@ -18,12 +18,12 @@ func SimulateMsgStakeClient(
 	return func(r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
-		msg := &types.MsgStakeClient{
+		msg := &types.MsgDelProject{
 			Creator: simAccount.Address.String(),
 		}
 
-		// TODO: Handling the StakeClient simulation
+		// TODO: Handling the DelProject simulation
 
-		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "StakeClient simulation not implemented"), nil, nil
+		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "DelProject simulation not implemented"), nil, nil
 	}
 }

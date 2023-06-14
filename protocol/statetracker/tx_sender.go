@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultGasPrice      = "0.000000001ulava"
-	defaultGasAdjustment = 1.5
+	defaultGasAdjustment = 3
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -83,27 +83,14 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		return err
 	}
 
-	simResult, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
-	if err != nil {
-		return err
-	}
-
-	if checkProfitability {
-		err := ts.checkProfitability(simResult, gasUsed, txfactory)
-		if err != nil {
-			return err
-		}
-	}
-
-	txfactory = txfactory.WithGas(gasUsed)
 	myWriter := bytes.Buffer{}
-	hasSequenceError := false
+	retryWithNewSequenceNumber := false
 	success := false
 	idx := -1
 	sequenceNumberParsed := 0
 	summarizedTransactionResult := ""
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
-		if hasSequenceError { // a retry
+		if retryWithNewSequenceNumber { // a retry
 			// if sequence number error happened it means that we already sent a tx this block.
 			// we need to wait a block for the tx to be approved,
 			// only then we can ask for a new sequence number continue and try again.
@@ -122,7 +109,16 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 			txfactory = txfactory.WithSequence(seq)
 			myWriter.Reset()
 			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{Key: "SeqNum", Value: seq})
+			// reset the state
+			sequenceNumberParsed = 0
 		}
+
+		_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
+		if err != nil {
+			return err
+		}
+		txfactory = txfactory.WithGas(gasUsed)
+
 		var transactionResult string
 		clientCtx.Output = &myWriter
 		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
@@ -138,12 +134,15 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
 			success = true
 		} else if strings.Contains(transactionResult, "account sequence") {
-			hasSequenceError = true
+			retryWithNewSequenceNumber = true
 			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
 			if err != nil {
 				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{Key: "sequence", Value: transactionResult})
 			}
 			summarizedTransactionResult = transactionResult
+		} else if strings.Contains(transactionResult, "out of gas") {
+			utils.LavaFormatInfo("Transaction got out of gas error, retrying next block.")
+			retryWithNewSequenceNumber = true // retry with out of gas issue
 		}
 	}
 	if !success {

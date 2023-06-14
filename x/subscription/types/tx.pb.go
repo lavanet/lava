@@ -221,40 +221,132 @@ func (m *MsgAddProjectResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgAddProjectResponse proto.InternalMessageInfo
 
+type MsgDelProject struct {
+	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (m *MsgDelProject) Reset()         { *m = MsgDelProject{} }
+func (m *MsgDelProject) String() string { return proto.CompactTextString(m) }
+func (*MsgDelProject) ProtoMessage()    {}
+func (*MsgDelProject) Descriptor() ([]byte, []int) {
+	return fileDescriptor_cc8b79a0f6744252, []int{4}
+}
+func (m *MsgDelProject) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgDelProject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgDelProject.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgDelProject) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDelProject.Merge(m, src)
+}
+func (m *MsgDelProject) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgDelProject) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDelProject.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgDelProject proto.InternalMessageInfo
+
+func (m *MsgDelProject) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgDelProject) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type MsgDelProjectResponse struct {
+}
+
+func (m *MsgDelProjectResponse) Reset()         { *m = MsgDelProjectResponse{} }
+func (m *MsgDelProjectResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgDelProjectResponse) ProtoMessage()    {}
+func (*MsgDelProjectResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_cc8b79a0f6744252, []int{5}
+}
+func (m *MsgDelProjectResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgDelProjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgDelProjectResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgDelProjectResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDelProjectResponse.Merge(m, src)
+}
+func (m *MsgDelProjectResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgDelProjectResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDelProjectResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgDelProjectResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgBuy)(nil), "lavanet.lava.subscription.MsgBuy")
 	proto.RegisterType((*MsgBuyResponse)(nil), "lavanet.lava.subscription.MsgBuyResponse")
 	proto.RegisterType((*MsgAddProject)(nil), "lavanet.lava.subscription.MsgAddProject")
 	proto.RegisterType((*MsgAddProjectResponse)(nil), "lavanet.lava.subscription.MsgAddProjectResponse")
+	proto.RegisterType((*MsgDelProject)(nil), "lavanet.lava.subscription.MsgDelProject")
+	proto.RegisterType((*MsgDelProjectResponse)(nil), "lavanet.lava.subscription.MsgDelProjectResponse")
 }
 
 func init() { proto.RegisterFile("subscription/tx.proto", fileDescriptor_cc8b79a0f6744252) }
 
 var fileDescriptor_cc8b79a0f6744252 = []byte{
-	// 355 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xcf, 0x4e, 0xfa, 0x40,
-	0x10, 0xee, 0xfe, 0x28, 0xfc, 0x70, 0x50, 0x43, 0x1a, 0xd0, 0xda, 0x43, 0xc5, 0x9e, 0x30, 0x31,
-	0x5b, 0x83, 0x4f, 0x20, 0x31, 0x1e, 0x34, 0x24, 0xa6, 0xde, 0xbc, 0x98, 0xa5, 0xdd, 0x94, 0x1a,
-	0xe9, 0x36, 0xbb, 0x5b, 0x02, 0x6f, 0xe1, 0x43, 0x79, 0xe0, 0xc8, 0xd1, 0x93, 0x31, 0xf0, 0x22,
-	0xa6, 0xff, 0x80, 0x1e, 0x44, 0x4f, 0x3b, 0xdf, 0xce, 0x37, 0x33, 0xdf, 0x7c, 0x19, 0x68, 0x8b,
-	0x78, 0x28, 0x5c, 0x1e, 0x44, 0x32, 0x60, 0xa1, 0x2d, 0xa7, 0x38, 0xe2, 0x4c, 0x32, 0xed, 0xe4,
-	0x95, 0x4c, 0x48, 0x48, 0x25, 0x4e, 0x5e, 0xbc, 0xcd, 0x31, 0x8e, 0x22, 0xce, 0x5e, 0xa8, 0x2b,
-	0x85, 0x9d, 0x07, 0x59, 0x89, 0xd1, 0xf2, 0x99, 0xcf, 0xd2, 0xd0, 0x4e, 0xa2, 0xec, 0xd7, 0x9a,
-	0x40, 0x6d, 0x20, 0xfc, 0x7e, 0x3c, 0xd3, 0x74, 0xf8, 0xef, 0x72, 0x4a, 0x24, 0xe3, 0x3a, 0xea,
-	0xa0, 0xee, 0x9e, 0x53, 0x40, 0xcd, 0x80, 0xba, 0xcb, 0x42, 0x11, 0x8f, 0x29, 0xd7, 0xff, 0xa5,
-	0xa9, 0x35, 0xd6, 0x5a, 0x50, 0x0d, 0x42, 0x8f, 0x4e, 0xf5, 0x4a, 0x9a, 0xc8, 0x40, 0x52, 0xe1,
-	0xc5, 0x9c, 0x24, 0x7a, 0x74, 0xb5, 0x83, 0xba, 0xaa, 0xb3, 0xc6, 0x77, 0x6a, 0xbd, 0xda, 0xac,
-	0x59, 0x4d, 0x38, 0xcc, 0xe6, 0x3a, 0x54, 0x44, 0x2c, 0x14, 0xd4, 0x9a, 0xc0, 0xc1, 0x40, 0xf8,
-	0xd7, 0x9e, 0xf7, 0x90, 0xc9, 0xde, 0x21, 0xe8, 0x1e, 0xf6, 0xf3, 0xdd, 0x9e, 0x3d, 0x22, 0x49,
-	0x2a, 0xaa, 0xd1, 0xb3, 0x70, 0xc9, 0x94, 0xc2, 0x06, 0x9c, 0xf7, 0xbb, 0x21, 0x92, 0xf4, 0xd5,
-	0xf9, 0xe7, 0xa9, 0xe2, 0x34, 0xa2, 0xcd, 0x97, 0x75, 0x0c, 0xed, 0xd2, 0xdc, 0x42, 0x50, 0xef,
-	0x1d, 0x41, 0x65, 0x20, 0x7c, 0xed, 0x11, 0x2a, 0x89, 0x3f, 0x67, 0xf8, 0x47, 0xcf, 0x71, 0xb6,
-	0x8a, 0x71, 0xfe, 0x2b, 0xa5, 0x68, 0xae, 0x8d, 0x00, 0xb6, 0x56, 0xed, 0xee, 0x2e, 0xdc, 0x30,
-	0x8d, 0xcb, 0xbf, 0x32, 0x8b, 0x49, 0xfd, 0xdb, 0xf9, 0xd2, 0x44, 0x8b, 0xa5, 0x89, 0xbe, 0x96,
-	0x26, 0x7a, 0x5b, 0x99, 0xca, 0x62, 0x65, 0x2a, 0x1f, 0x2b, 0x53, 0x79, 0xba, 0xf0, 0x03, 0x39,
-	0x8a, 0x87, 0xd8, 0x65, 0x63, 0x3b, 0xef, 0x9a, 0xbe, 0xf6, 0xd4, 0x2e, 0x5f, 0xdd, 0x2c, 0xa2,
-	0x62, 0x58, 0x4b, 0x0f, 0xe6, 0xea, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x4c, 0x10, 0x26, 0x58, 0x92,
-	0x02, 0x00, 0x00,
+	// 392 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xc1, 0x6e, 0xaa, 0x40,
+	0x14, 0x05, 0x45, 0x9f, 0x6f, 0x7c, 0xef, 0xc5, 0x10, 0x7d, 0xa5, 0x2c, 0xa8, 0x65, 0x65, 0x93,
+	0x66, 0x68, 0xec, 0xba, 0x8b, 0x1a, 0xd3, 0x45, 0x1b, 0x93, 0x86, 0xee, 0xba, 0x69, 0x46, 0x98,
+	0x20, 0x8d, 0x32, 0x64, 0x66, 0x30, 0xfa, 0x17, 0xfd, 0x92, 0x7e, 0x87, 0x4b, 0x97, 0x5d, 0x35,
+	0x8d, 0xfe, 0x48, 0xc3, 0x00, 0x82, 0x69, 0x2a, 0x5d, 0xcd, 0xbd, 0x73, 0xcf, 0x3d, 0xe7, 0x70,
+	0x00, 0xd0, 0x61, 0xd1, 0x98, 0x39, 0xd4, 0x0f, 0xb9, 0x4f, 0x02, 0x8b, 0x2f, 0x60, 0x48, 0x09,
+	0x27, 0xea, 0xf1, 0x14, 0xcd, 0x51, 0x80, 0x39, 0x8c, 0x4f, 0x58, 0xc4, 0xe8, 0xff, 0x43, 0x4a,
+	0x9e, 0xb1, 0xc3, 0x99, 0x95, 0x16, 0xc9, 0x8a, 0xde, 0xf6, 0x88, 0x47, 0x44, 0x69, 0xc5, 0x55,
+	0x72, 0x6b, 0xce, 0x41, 0x7d, 0xc4, 0xbc, 0x41, 0xb4, 0x54, 0x35, 0xf0, 0xcb, 0xa1, 0x18, 0x71,
+	0x42, 0x35, 0xb9, 0x2b, 0xf7, 0x7e, 0xdb, 0x59, 0xab, 0xea, 0xa0, 0xe1, 0x90, 0x80, 0x45, 0x33,
+	0x4c, 0xb5, 0x8a, 0x18, 0xed, 0x7a, 0xb5, 0x0d, 0x6a, 0x7e, 0xe0, 0xe2, 0x85, 0x56, 0x15, 0x83,
+	0xa4, 0x89, 0x37, 0xdc, 0x88, 0xa2, 0xd8, 0x8f, 0xa6, 0x74, 0xe5, 0x9e, 0x62, 0xef, 0xfa, 0x5b,
+	0xa5, 0x51, 0x6b, 0xd5, 0xcd, 0x16, 0xf8, 0x97, 0xe8, 0xda, 0x98, 0x85, 0x24, 0x60, 0xd8, 0x9c,
+	0x83, 0xbf, 0x23, 0xe6, 0x5d, 0xbb, 0xee, 0x7d, 0x62, 0xfb, 0x80, 0xa1, 0x3b, 0xf0, 0x27, 0x7d,
+	0xb6, 0x27, 0x17, 0x71, 0x24, 0x4c, 0x35, 0xfb, 0x26, 0xdc, 0x0b, 0x25, 0x8b, 0x01, 0xa6, 0x7c,
+	0x43, 0xc4, 0xd1, 0x40, 0x59, 0xbd, 0x9f, 0x48, 0x76, 0x33, 0xcc, 0xaf, 0xcc, 0x23, 0xd0, 0xd9,
+	0xd3, 0xdd, 0x19, 0xba, 0x12, 0x86, 0x86, 0x78, 0x5a, 0x6e, 0x48, 0x05, 0x4a, 0x80, 0x66, 0x38,
+	0x4d, 0x47, 0xd4, 0x29, 0x6f, 0xbe, 0x9e, 0xf1, 0xf6, 0x5f, 0x2b, 0xa0, 0x3a, 0x62, 0x9e, 0xfa,
+	0x00, 0xaa, 0x71, 0xee, 0xa7, 0xf0, 0xdb, 0x77, 0x09, 0x93, 0x88, 0xf4, 0xb3, 0x52, 0x48, 0x46,
+	0xae, 0x4e, 0x00, 0x28, 0x44, 0xd8, 0x3b, 0xbc, 0x98, 0x23, 0xf5, 0x8b, 0x9f, 0x22, 0x8b, 0x4a,
+	0x85, 0x6c, 0x4a, 0x94, 0x72, 0x64, 0x99, 0xd2, 0xd7, 0xc0, 0x06, 0x37, 0xab, 0x8d, 0x21, 0xaf,
+	0x37, 0x86, 0xfc, 0xb1, 0x31, 0xe4, 0x97, 0xad, 0x21, 0xad, 0xb7, 0x86, 0xf4, 0xb6, 0x35, 0xa4,
+	0xc7, 0x73, 0xcf, 0xe7, 0x93, 0x68, 0x0c, 0x1d, 0x32, 0xb3, 0x52, 0x56, 0x71, 0x5a, 0x0b, 0x6b,
+	0xff, 0xbf, 0x59, 0x86, 0x98, 0x8d, 0xeb, 0xe2, 0x93, 0xbf, 0xfc, 0x0c, 0x00, 0x00, 0xff, 0xff,
+	0xb5, 0x27, 0xf3, 0x1e, 0x54, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -271,6 +363,7 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	Buy(ctx context.Context, in *MsgBuy, opts ...grpc.CallOption) (*MsgBuyResponse, error)
 	AddProject(ctx context.Context, in *MsgAddProject, opts ...grpc.CallOption) (*MsgAddProjectResponse, error)
+	DelProject(ctx context.Context, in *MsgDelProject, opts ...grpc.CallOption) (*MsgDelProjectResponse, error)
 }
 
 type msgClient struct {
@@ -299,10 +392,20 @@ func (c *msgClient) AddProject(ctx context.Context, in *MsgAddProject, opts ...g
 	return out, nil
 }
 
+func (c *msgClient) DelProject(ctx context.Context, in *MsgDelProject, opts ...grpc.CallOption) (*MsgDelProjectResponse, error) {
+	out := new(MsgDelProjectResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.subscription.Msg/DelProject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	Buy(context.Context, *MsgBuy) (*MsgBuyResponse, error)
 	AddProject(context.Context, *MsgAddProject) (*MsgAddProjectResponse, error)
+	DelProject(context.Context, *MsgDelProject) (*MsgDelProjectResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -314,6 +417,9 @@ func (*UnimplementedMsgServer) Buy(ctx context.Context, req *MsgBuy) (*MsgBuyRes
 }
 func (*UnimplementedMsgServer) AddProject(ctx context.Context, req *MsgAddProject) (*MsgAddProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddProject not implemented")
+}
+func (*UnimplementedMsgServer) DelProject(ctx context.Context, req *MsgDelProject) (*MsgDelProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DelProject not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -356,6 +462,24 @@ func _Msg_AddProject_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_DelProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgDelProject)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).DelProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.subscription.Msg/DelProject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).DelProject(ctx, req.(*MsgDelProject))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.subscription.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -367,6 +491,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddProject",
 			Handler:    _Msg_AddProject_Handler,
+		},
+		{
+			MethodName: "DelProject",
+			Handler:    _Msg_DelProject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -508,6 +636,66 @@ func (m *MsgAddProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgDelProject) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgDelProject) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgDelProject) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgDelProjectResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgDelProjectResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgDelProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -568,6 +756,32 @@ func (m *MsgAddProject) Size() (n int) {
 }
 
 func (m *MsgAddProjectResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgDelProject) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgDelProjectResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -939,6 +1153,170 @@ func (m *MsgAddProjectResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgAddProjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDelProject) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDelProject: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDelProject: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDelProjectResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDelProjectResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDelProjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

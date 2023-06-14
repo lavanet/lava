@@ -103,7 +103,7 @@ func CmdAccountInfo() *cobra.Command {
 			}
 
 			unstakeEntriesAllChains, err := epochStorageQuerier.StakeStorage(ctx, &epochstoragetypes.QueryGetStakeStorageRequest{
-				Index: epochstoragetypes.ProviderKey + epochstoragetypes.StakeStorageKeyUnstakeConst,
+				Index: epochstoragetypes.StakeStorageKeyUnstakeConst,
 			})
 			if err == nil {
 				if len(unstakeEntriesAllChains.StakeStorage.StakeEntries) > 0 {
