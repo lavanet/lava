@@ -18,6 +18,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	var balance int64 = 10000
 
 	consumer := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
+	devkey := common.CreateNewAccount(ts.ctx, *ts.keepers, balance).Addr.String()
+
 	msgBuy := &subtypes.MsgBuy{
 		Creator:  consumer,
 		Consumer: consumer,
@@ -30,41 +32,56 @@ func TestGetPairingForSubscription(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
+	projectData := projectstypes.ProjectData{
+		Name:        "project",
+		Enabled:     true,
+		Policy:      &ts.plan.PlanPolicy,
+		ProjectKeys: []projectstypes.ProjectKey{projectstypes.ProjectDeveloperKey(devkey)},
+	}
+	err = ts.keepers.Projects.CreateProject(_ctx, consumer, projectData, ts.plan)
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
 	pairingReq := types.QueryGetPairingRequest{
 		ChainID: ts.spec.Index,
-		Client:  consumer,
+		Client:  devkey,
 	}
 	pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.Nil(t, err)
 
 	verifyPairingQuery := &types.QueryVerifyPairingRequest{
 		ChainID:  ts.spec.Index,
-		Client:   consumer,
+		Client:   devkey,
 		Provider: pairing.Providers[0].Address,
 		Block:    uint64(_ctx.BlockHeight()),
 	}
-	vefiry, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
+	verify, err := ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.Nil(t, err)
-	require.True(t, vefiry.Valid)
+	require.True(t, verify.Valid)
 
-	project, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer, uint64(_ctx.BlockHeight()))
+	project, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, devkey, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	err = ts.keepers.Projects.DeleteProject(_ctx, project.Index)
+	err = ts.keepers.Projects.DeleteProject(_ctx, consumer, project.Index)
 	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	_, err = ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 	require.NotNil(t, err)
 
 	verifyPairingQuery = &types.QueryVerifyPairingRequest{
 		ChainID:  ts.spec.Index,
-		Client:   consumer,
+		Client:   devkey,
 		Provider: pairing.Providers[0].Address,
 		Block:    uint64(_ctx.BlockHeight()),
 	}
-	vefiry, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
+	verify, err = ts.keepers.Pairing.VerifyPairing(ts.ctx, verifyPairingQuery)
 	require.NotNil(t, err)
-	require.False(t, vefiry.Valid)
+	require.False(t, verify.Valid)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
@@ -147,14 +164,14 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, consumerA.Addr.String(), consumerBProjectData)
 	require.Nil(t, err)
 
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
 	// verify both projects exist
 	projA, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerA.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 	projB, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumerB.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
-
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
 	// verify that both consumers are paired
 	for _, consumer := range consumers {
@@ -426,6 +443,9 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				})
 				require.Nil(t, err)
 
+				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
 				sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.Subscription)
 				require.True(t, found)
 
@@ -501,7 +521,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				}
 			}
 
-			_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
+			_, cuPerEpochLimit, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx, ts.spec.Index,
 				consumer.Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 			require.Nil(t, err)
 
@@ -612,11 +632,14 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	err = ts.keepers.Subscription.AddProjectToSubscription(_ctx, ts.clients[0].Addr.String(), projectData)
 	require.Nil(t, err)
 
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	_ctx = sdk.UnwrapSDKContext(ts.ctx)
+
 	proj, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, ts.clients[1].Addr.String(),
 		uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	// set a new policy to the second project, making it more strict than the old plan but less strict than the new plan
+	// new policy to the second project: stricter than the old plan, weaker than the new plan
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
@@ -628,7 +651,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	_ctx = sdk.UnwrapSDKContext(ts.ctx)
 
-	_, cuPerEpochLimit, _, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
+	_, cuPerEpochLimit, _, err := ts.keepers.Pairing.ValidatePairingForClient(_ctx,
 		ts.spec.Index, ts.clients[1].Addr, ts.providers[0].Addr, uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 

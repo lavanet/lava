@@ -13,4 +13,5 @@ var (
 	ErrInvalidPolicy                   = sdkerrors.Register(ModuleName, 1102, "Invalid policy")
 	ErrPolicyBasicValidation           = sdkerrors.Register(ModuleName, 1100, "invalid policy")
 	ErrInvalidKeyType                  = sdkerrors.Register(ModuleName, 1103, "invalid project key type")
+	ErrInvalidSelectedProvidersConfig  = sdkerrors.Register(ModuleName, 1104, "plan's selected providers config is invalid")
 )

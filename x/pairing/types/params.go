@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"gopkg.in/yaml.v2"
 )
 
@@ -14,11 +13,6 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
 	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
-)
-
-var (
-	KeyBurnCoinsPerCU             = []byte("BurnCoinsPerCU")
-	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
 var (
@@ -34,28 +28,9 @@ var (
 )
 
 var (
-	KeyServicersToPairCount = []byte("ServicersToPairCount")
-	// TODO: Determine the default value
-	DefaultServicersToPairCount uint64 = 2
-)
-
-var (
 	KeyEpochBlocksOverlap = []byte("EpochBlocksOverlap")
 	// TODO: Determine the default value
 	DefaultEpochBlocksOverlap uint64 = 5
-)
-
-var (
-	KeyStakeToMaxCUList = []byte("StakeToMaxCUList")
-	// TODO: Determine the default value
-	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, 5000},
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, 15000},
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, 50000},
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, 250000},
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(100000)}, 500000},
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, 9999999999},
-	}}
 )
 
 var (
@@ -91,12 +66,9 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	mintCoinsPerCU sdk.Dec,
-	burnCoinsPerCU sdk.Dec,
 	fraudStakeSlashingFactor sdk.Dec,
 	fraudSlashingAmount uint64,
-	servicersToPairCount uint64,
 	epochBlocksOverlap uint64,
-	stakeToMaxCUList StakeToMaxCUList,
 	unpayLimit sdk.Dec,
 	slashLimit sdk.Dec,
 	dataReliabilityReward sdk.Dec,
@@ -105,12 +77,9 @@ func NewParams(
 ) Params {
 	return Params{
 		MintCoinsPerCU:                      mintCoinsPerCU,
-		BurnCoinsPerCU:                      burnCoinsPerCU,
 		FraudStakeSlashingFactor:            fraudStakeSlashingFactor,
 		FraudSlashingAmount:                 fraudSlashingAmount,
-		ServicersToPairCount:                servicersToPairCount,
 		EpochBlocksOverlap:                  epochBlocksOverlap,
-		StakeToMaxCUList:                    stakeToMaxCUList,
 		UnpayLimit:                          unpayLimit,
 		SlashLimit:                          slashLimit,
 		DataReliabilityReward:               dataReliabilityReward,
@@ -123,12 +92,9 @@ func NewParams(
 func DefaultParams() Params {
 	return NewParams(
 		DefaultMintCoinsPerCU,
-		DefaultBurnCoinsPerCU,
 		DefaultFraudStakeSlashingFactor,
 		DefaultFraudSlashingAmount,
-		DefaultServicersToPairCount,
 		DefaultEpochBlocksOverlap,
-		DefaultStakeToMaxCUList,
 		DefaultUnpayLimit,
 		DefaultSlashLimit,
 		DefaultDataReliabilityReward,
@@ -141,12 +107,9 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyMintCoinsPerCU, &p.MintCoinsPerCU, validateMintCoinsPerCU),
-		paramtypes.NewParamSetPair(KeyBurnCoinsPerCU, &p.BurnCoinsPerCU, validateBurnCoinsPerCU),
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
-		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
 		paramtypes.NewParamSetPair(KeyEpochBlocksOverlap, &p.EpochBlocksOverlap, validateEpochBlocksOverlap),
-		paramtypes.NewParamSetPair(KeyStakeToMaxCUList, &p.StakeToMaxCUList, validateStakeToMaxCUList),
 		paramtypes.NewParamSetPair(KeyUnpayLimit, &p.UnpayLimit, validateUnpayLimit),
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
@@ -161,10 +124,6 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateBurnCoinsPerCU(p.BurnCoinsPerCU); err != nil {
-		return err
-	}
-
 	if err := validateFraudStakeSlashingFactor(p.FraudStakeSlashingFactor); err != nil {
 		return err
 	}
@@ -173,15 +132,7 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateServicersToPairCount(p.ServicersToPairCount); err != nil {
-		return err
-	}
-
 	if err := validateEpochBlocksOverlap(p.EpochBlocksOverlap); err != nil {
-		return err
-	}
-
-	if err := validateStakeToMaxCUList(p.StakeToMaxCUList); err != nil {
 		return err
 	}
 
@@ -285,28 +236,6 @@ func validateEpochBlocksOverlap(v interface{}) error {
 
 	// TODO implement validation
 	_ = epochBlocksOverlap
-
-	return nil
-}
-
-// validateStakeToMaxCUList validates the StakeToMaxCUList param
-func validateStakeToMaxCUList(v interface{}) error {
-	stakeToMaxCUList, ok := v.(StakeToMaxCUList)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	for i, stakeToMaxCU := range stakeToMaxCUList.List {
-		if stakeToMaxCU.StakeThreshold.Amount.Sign() == -1 || stakeToMaxCU.StakeThreshold.Amount.Int64() == 0 {
-			return fmt.Errorf("invalid stakeThreshold %v. Must be non-zero positive integer", stakeToMaxCU.StakeThreshold)
-		}
-		if i > 0 {
-			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
-				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
-				return fmt.Errorf("invalid parameter stakeToMaxCUList order, the order must be ascending: index %d value %+v and index %d value %+v", i, stakeToMaxCU.StakeThreshold, i-1, stakeToMaxCUList.List[i-1].StakeThreshold)
-			}
-		}
-	}
 
 	return nil
 }
