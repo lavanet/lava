@@ -179,7 +179,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 	}()
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
-	headerParsingDirective, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
 	block := 244590
@@ -221,7 +221,6 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.Equal(t, test.block, blockNum)
 		})
 	}
-
 }
 
 func TestSettingBlocksHeadersGrpc(t *testing.T) {
@@ -247,7 +246,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 	}()
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
-	headerParsingDirective, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
 	block := 244590
@@ -290,5 +289,4 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.Equal(t, test.block, blockNum)
 		})
 	}
-
 }

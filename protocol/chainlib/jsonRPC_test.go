@@ -133,7 +133,6 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
-
 	})
 
 	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle)

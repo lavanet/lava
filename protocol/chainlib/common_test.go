@@ -436,9 +436,11 @@ type mockResponseWriter struct {
 func (mockResponseWriter) Header() http.Header {
 	return http.Header{}
 }
+
 func (mockResponseWriter) Write(in []byte) (int, error) {
 	return 0, nil
 }
+
 func (mrw mockResponseWriter) WriteHeader(statusCode int) {
 	*mrw.blockToReturn = statusCode
 }
@@ -449,7 +451,6 @@ type myServiceImplementation struct {
 }
 
 func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
-
 	metadata, exists := metadata.FromIncomingContext(ctx)
 	req := &http.Request{}
 	if exists {
@@ -488,7 +489,6 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		NodeUrls:       []common.NodeUrl{},
 	}
 	if apiInterface == spectypes.APIInterfaceGrpc {
-
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
 		lis, err := net.Listen("tcp", "localhost:28353")
@@ -510,7 +510,6 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		if err != nil {
 			return nil, nil, nil, closeServer, err
 		}
-
 	} else {
 		mockServer := httptest.NewServer(serverCallback)
 		closeServer = mockServer.Close

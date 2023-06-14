@@ -169,7 +169,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 	}()
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
-	headerParsingDirective, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
 	block := 244590
@@ -211,7 +211,6 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			require.Equal(t, test.block, blockNum)
 		})
 	}
-
 }
 
 func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
@@ -230,7 +229,6 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			}
 		}
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
-
 	})
 	chainParser, chainProxy, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler)
 	require.NoError(t, err)
@@ -241,7 +239,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 	}()
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
-	headerParsingDirective, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
 	block := 244590
@@ -284,5 +282,4 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			require.Equal(t, test.block, blockNum)
 		})
 	}
-
 }
