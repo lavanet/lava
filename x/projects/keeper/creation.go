@@ -148,7 +148,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
-func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
 		return sdkerrors.ErrInvalidType
 	}
@@ -158,11 +158,9 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 	}
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
-		ctxBlock := uint64(ctx.BlockHeight())
-
 		// check that the developer key is valid in the current project state
 		var devkeyData types.ProtoDeveloperData
-		found := k.developerKeysFS.FindEntry(ctx, key.Key, ctxBlock, &devkeyData)
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
 		// the developer key may already belong to a different project
 		if found && devkeyData.ProjectID != project.GetIndex() {
@@ -173,10 +171,15 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
+		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, epoch)
+		if err != nil {
+			return utils.LavaFormatError("registerKey: failed to get next epoch", err)
+		}
+
 		// the project may have future (e.g. end of epoch) changes pending; so
 		// check that the developer key is still valid in that future state
 		// (for example, it could be removed and added elsewhere by then).
-		found = k.developerKeysFS.FindEntry(ctx, key.Key, blockHeight, &devkeyData)
+		found = k.developerKeysFS.FindEntry(ctx, key.Key, nextEpoch, &devkeyData)
 
 		// the developer key may already belong to a different project
 		devkeyData = types.ProtoDeveloperData{}
@@ -193,7 +196,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 				ProjectID: project.GetIndex(),
 			}
 
-			err := k.developerKeysFS.AppendEntry(ctx, key.Key, blockHeight, &devkeyData)
+			err := k.developerKeysFS.AppendEntry(ctx, key.Key, epoch, &devkeyData)
 			if err != nil {
 				return utils.LavaFormatError("failed to register key", err,
 					utils.Attribute{Key: "key", Value: key.Key},
