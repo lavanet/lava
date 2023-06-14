@@ -132,6 +132,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
+		replyBlock := reply.LatestBlock
 		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
@@ -146,6 +147,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
+				utils.Attribute{Key: "replyBlock", Value: replyBlock},
+				utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
 			)
 		}
 	}
@@ -471,9 +475,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
 			}
 		}
-		if latestBlock > 0 {
-			chainMsg.UpdateLatestBlockInMessage(uint64(latestBlock))
-		}
+
+		chainMsg.UpdateLatestBlockInMessage(latestBlock)
+
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 		for _, block := range requestedHashes {
 			if block.Block == request.RelayData.RequestBlock {

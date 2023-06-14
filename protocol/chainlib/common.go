@@ -198,8 +198,11 @@ func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
 	return pm.msg
 }
 
-func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
-	pm.msg.UpdateLatestBlockInMessage(latestBlock)
+func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64) {
+	if latestBlock <= spectypes.NOT_APPLICABLE || pm.RequestedBlock() != spectypes.LATEST_BLOCK {
+		return
+	}
+	pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock))
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {

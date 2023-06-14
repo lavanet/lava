@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/dynamicpb"
-
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type GrpcMessage struct {
