@@ -345,16 +345,10 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	var consumerAddressString string
 
 	if badgeSession != nil {
-		err := rpcps.validateBadgeSession(ctx, request.RelaySession)
+		consumerAddressString, err = rpcps.validateBadgeSession(ctx, request.RelaySession)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		// extracting consumer address from the badge
-		extractedConsumerAddress, err = sigs.ExtractSignerAddressFromBadge(*request.RelaySession.Badge)
-		if err != nil {
-			return nil, nil, nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
-		}
-		consumerAddressString = extractedConsumerAddress.String()
 	} else {
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(request.RelaySession)
 		if err != nil {
@@ -367,20 +361,26 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	return singleProviderSession, extractedConsumerAddress, badgeUserEpochData, err
 }
 
-func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relaySession *pairingtypes.RelaySession) error {
+func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relaySession *pairingtypes.RelaySession) (consumerAddressString string, err error) {
 	// validating badge signer
 	badgeUserSigner, err := sigs.ExtractSignerAddress(relaySession)
 	if err != nil {
-		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return "", utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	if badgeUserSigner.String() != relaySession.Badge.Address {
-		return utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return "", utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	// validating badge lavaChainId
 	if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
-		return utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return "", utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-	return nil
+	// extracting consumer address from the badge
+	extractedConsumerAddress, err := sigs.ExtractSignerAddressFromBadge(*relaySession.Badge)
+	if err != nil {
+		return "", err
+	}
+	consumerAddressString = extractedConsumerAddress.String()
+	return consumerAddressString, nil
 }
 
 func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, request *pairingtypes.RelaySession, consumerAddressString string, badgeSession *lavasession.BadgeSession) (*lavasession.SingleProviderSession, *lavasession.ProviderSessionsEpochData, error) {
