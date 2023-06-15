@@ -22,6 +22,9 @@ func (cp TendermintrpcMessage) GetParams() interface{} {
 }
 
 func (cp TendermintrpcMessage) GetResult() json.RawMessage {
+	if cp.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+	}
 	return cp.Result
 }
 
