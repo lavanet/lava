@@ -211,10 +211,6 @@ func (fs *FixationStore) AppendEntry(
 
 	ctxBlock := uint64(ctx.BlockHeight())
 
-	if block < ctxBlock {
-		panic(fmt.Sprintf("AppendEntry for block %d < current ctx block %d", block, ctxBlock))
-	}
-
 	// find latest entry, including possible future entries
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
@@ -259,9 +255,11 @@ func (fs *FixationStore) AppendEntry(
 		// otherwise we are a future entry version, so set a timer for when it will become
 		// the new latest entry.
 
-		if block == ctxBlock {
+		if block <= ctxBlock {
+			// the new entry is now the latest, put reference on the previous entry
 			fs.putEntry(ctx, latestEntry)
 		} else {
+			// the new entry is not yet in effect, create a timer to put reference back to the latest once this is changed
 			key := encodeForTimer(safeIndex, block, timerFutureEntry)
 			fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 		}

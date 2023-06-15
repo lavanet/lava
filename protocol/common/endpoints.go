@@ -19,6 +19,7 @@ const (
 
 type NodeUrl struct {
 	Url          string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	InternalPath string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`
 	AuthConfig   AuthConfig    `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
 	IpForwarding bool          `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
 	Timeout      time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`

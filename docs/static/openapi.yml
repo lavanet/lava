@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29931,6 +29941,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/stake_storage/{index}':
@@ -30131,6 +30151,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30453,6 +30483,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30788,6 +30828,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31242,6 +31292,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31274,6 +31344,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31368,6 +31458,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31400,6 +31510,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31961,6 +32091,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -32604,6 +32744,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -54966,6 +55116,8 @@ definitions:
               type: string
             moniker:
               type: string
+      badge_signer_address:
+        type: string
   lavanet.lava.pairing.Metadata:
     type: object
     properties:
@@ -55774,6 +55926,26 @@ definitions:
       max_providers_to_pair:
         type: string
         format: uint64
+      selected_providers_mode:
+        type: string
+        enum:
+          - ALLOWED
+          - MIXED
+          - EXCLUSIVE
+          - DISABLED
+        default: ALLOWED
+        description: |-
+          - ALLOWED: no providers restrictions
+           - MIXED: use the selected providers mixed with randomly chosen providers
+           - EXCLUSIVE: use only the selected providers
+           - DISABLED: selected providers feature is disabled
+        title: >-
+          the enum below determines the pairing algorithm's behaviour with the
+          selected providers feature
+      selected_providers:
+        type: array
+        items:
+          type: string
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
@@ -55838,6 +56010,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       used_cu:
         type: string
@@ -55868,6 +56060,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       snapshot:
         type: string
@@ -55937,6 +56149,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -55969,6 +56201,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56031,6 +56283,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56063,6 +56335,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56077,6 +56369,22 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
+    type: string
+    enum:
+      - ALLOWED
+      - MIXED
+      - EXCLUSIVE
+      - DISABLED
+    default: ALLOWED
+    description: |-
+      - ALLOWED: no providers restrictions
+       - MIXED: use the selected providers mixed with randomly chosen providers
+       - EXCLUSIVE: use only the selected providers
+       - DISABLED: selected providers feature is disabled
+    title: >-
+      the enum below determines the pairing algorithm's behaviour with the
+      selected providers feature
   lavanet.lava.spec.Api:
     type: object
     properties:
@@ -57337,8 +57645,6 @@ definitions:
     properties:
       name:
         type: string
-      description:
-        type: string
       enabled:
         type: boolean
       projectKeys:
@@ -57378,6 +57684,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
   lavanet.lava.subscription.MsgAddProjectResponse:
