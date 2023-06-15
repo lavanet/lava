@@ -171,11 +171,11 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 
 	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil { // badgeSession
-		exists := psm.getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+		exists := getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionsWithConsumer)
 		if !exists {
-			psm.registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
+			registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
 		}
-		badgeUserEpochData = psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+		badgeUserEpochData = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
 	}
 
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
@@ -183,23 +183,23 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	return singleSessionFromPSWC, badgeUserEpochData, err
 }
 
-func (psm *ProviderSessionManager) getBadgeUserEpochDataPointer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (badgeUserEpochData *ProviderSessionsEpochData) {
-	psm.lock.RLock()
-	defer psm.lock.RUnlock()
+func getBadgeUserEpochDataPointer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (badgeUserEpochData *ProviderSessionsEpochData) {
+	providerSessionsWithConsumer.Lock.RLock()
+	defer providerSessionsWithConsumer.Lock.RUnlock()
 	badgeUserEpochData = providerSessionsWithConsumer.badgeEpochData[badgeUser]
 	return badgeUserEpochData
 }
 
-func (psm *ProviderSessionManager) getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) bool {
-	psm.lock.RLock()
-	defer psm.lock.RUnlock()
+func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) bool {
+	providerSessionsWithConsumer.Lock.RLock()
+	defer providerSessionsWithConsumer.Lock.RUnlock()
 	_, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]
 	return exists
 }
 
-func (psm *ProviderSessionManager) registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) {
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
+func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) {
+	providerSessionsWithConsumer.Lock.Lock()
+	defer providerSessionsWithConsumer.Lock.Unlock()
 	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(providerSessionsWithConsumer.epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
 }
 
@@ -246,7 +246,7 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 	}
 	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil {
-		badgeUserEpochData = psm.getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
+		badgeUserEpochData = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
 	}
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionWithConsumer, sessionId, epoch, relayNumber)
 	return singleSessionFromPSWC, badgeUserEpochData, err
