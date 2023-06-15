@@ -161,8 +161,10 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
 	var badgeSession *lavasession.BadgeSession
 	if request.RelaySession.Badge != nil { // badge session
-		badgeSession.BadgeCuAllocation = request.RelaySession.Badge.CuAllocation
-		badgeSession.BadgeUser = request.RelaySession.Badge.Address
+		badgeSession = &lavasession.BadgeSession{
+			BadgeCuAllocation: request.RelaySession.Badge.CuAllocation,
+			BadgeUser:         request.RelaySession.Badge.Address,
+		}
 	}
 	var badgeUserEpochData *lavasession.ProviderSessionsEpochData
 	relaySession, consumerAddress, badgeUserEpochData, err = rpcps.verifyRelaySession(ctx, request, badgeSession)
