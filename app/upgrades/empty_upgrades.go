@@ -189,3 +189,9 @@ var Upgrade_0_13_1 = Upgrade{
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
+
+var Upgrade_0_14_0 = Upgrade{
+	UpgradeName:          "v0.14.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
