@@ -175,7 +175,10 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 		if !exists {
 			registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
 		}
-		badgeUserEpochData = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+		badgeUserEpochData, err = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
@@ -183,11 +186,14 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	return singleSessionFromPSWC, badgeUserEpochData, err
 }
 
-func getBadgeUserEpochDataPointer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (badgeUserEpochData *ProviderSessionsEpochData) {
+func getBadgeUserEpochDataPointer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (*ProviderSessionsEpochData, error) {
 	providerSessionsWithConsumer.Lock.RLock()
 	defer providerSessionsWithConsumer.Lock.RUnlock()
-	badgeUserEpochData = providerSessionsWithConsumer.badgeEpochData[badgeUser]
-	return badgeUserEpochData
+	badgeUserEpochData, ok := providerSessionsWithConsumer.badgeEpochData[badgeUser]
+	if !ok {
+		return nil, utils.LavaFormatError("getBadgeUserEpochDataPointer Failure", nil, utils.Attribute{Key: "badgeUserEpochData", Value: badgeUserEpochData})
+	}
+	return badgeUserEpochData, nil
 }
 
 func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) bool {
@@ -246,7 +252,10 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 	}
 	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil {
-		badgeUserEpochData = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
+		badgeUserEpochData, err = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
+		if err != nil {
+			return nil, nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to fetch badgeUserEpochData", err)
+		}
 	}
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionWithConsumer, sessionId, epoch, relayNumber)
 	return singleSessionFromPSWC, badgeUserEpochData, err
