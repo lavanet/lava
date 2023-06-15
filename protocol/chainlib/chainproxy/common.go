@@ -23,21 +23,25 @@ type BaseMessage struct {
 	LatestBlockHeaderSetter *spectypes.ParseDirective
 }
 
-func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64) (done bool) {
+func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64, modifyContent bool) (done bool) {
 	if bm.LatestBlockHeaderSetter == nil {
 		return false
 	}
 	headerValue := fmt.Sprintf(bm.LatestBlockHeaderSetter.FunctionTemplate, latestBlock)
 	for idx, header := range bm.Headers {
 		if header.Name == bm.LatestBlockHeaderSetter.ApiName {
-			bm.Headers[idx].Value = headerValue
+			if modifyContent {
+				bm.Headers[idx].Value = headerValue
+			}
 			return true
 		}
 	}
-	bm.Headers = append(bm.Headers, pairingtypes.Metadata{
-		Name:  bm.LatestBlockHeaderSetter.ApiName,
-		Value: headerValue,
-	})
+	if modifyContent {
+		bm.Headers = append(bm.Headers, pairingtypes.Metadata{
+			Name:  bm.LatestBlockHeaderSetter.ApiName,
+			Value: headerValue,
+		})
+	}
 	return true
 }
 

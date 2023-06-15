@@ -59,7 +59,7 @@ type ChainParser interface {
 
 type ChainMessage interface {
 	RequestedBlock() int64
-	UpdateLatestBlockInMessage(int64)
+	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	ChainMessageForSend
 }
 
