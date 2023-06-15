@@ -62,21 +62,22 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 		Enabled:     true,
 		Policy:      nil,
 	}
-	return k.doCreateProject(ctx, subAddr, projectData, plan, uint64(ctx.BlockHeight()))
+	return k.doCreateProject(ctx, subAddr, projectData, plan)
 }
 
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
-	if err != nil {
-		return utils.LavaFormatError("CreateProject: failed to get NextEpoch", err,
-			utils.Attribute{Key: "index", Value: projectData.Name},
-		)
-	}
-	return k.doCreateProject(ctx, subAddr, projectData, plan, nextEpoch)
+	return k.doCreateProject(ctx, subAddr, projectData, plan)
 }
 
 // add a new project to the subscription
-func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan, block uint64) error {
+func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
+	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return utils.LavaFormatError("CreateProject: failed to get current epoch", err,
+			utils.Attribute{Key: "index", Value: projectData.Name},
+		)
+	}
+
 	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
 		return err
@@ -85,7 +86,7 @@ func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData typ
 	// project creation wll take effect at the designated block - so check
 	// for duplicates (names) by that block and not only for current block.
 	var emptyProject types.Project
-	if found := k.projectsFS.FindEntry(ctx, project.Index, block, &emptyProject); found {
+	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
 		return utils.LavaFormatWarning(
 			"failed to create project",
 			fmt.Errorf("project name already exist for current subscription"),
@@ -100,13 +101,13 @@ func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData typ
 	project.SubscriptionPolicy = project.AdminPolicy
 
 	for _, projectKey := range projectData.GetProjectKeys() {
-		err = k.registerKey(ctx, projectKey, &project, block)
+		err = k.registerKey(ctx, projectKey, &project, epoch)
 		if err != nil {
 			return err
 		}
 	}
 
-	return k.projectsFS.AppendEntry(ctx, project.Index, block, &project)
+	return k.projectsFS.AppendEntry(ctx, project.Index, epoch, &project)
 }
 
 func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
@@ -147,7 +148,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
-func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
 		return sdkerrors.ErrInvalidType
 	}
@@ -157,11 +158,9 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 	}
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
-		ctxBlock := uint64(ctx.BlockHeight())
-
 		// check that the developer key is valid in the current project state
 		var devkeyData types.ProtoDeveloperData
-		found := k.developerKeysFS.FindEntry(ctx, key.Key, ctxBlock, &devkeyData)
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
 		// the developer key may already belong to a different project
 		if found && devkeyData.ProjectID != project.GetIndex() {
@@ -172,10 +171,15 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
+		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, epoch)
+		if err != nil {
+			return utils.LavaFormatError("registerKey: failed to get next epoch", err)
+		}
+
 		// the project may have future (e.g. end of epoch) changes pending; so
 		// check that the developer key is still valid in that future state
 		// (for example, it could be removed and added elsewhere by then).
-		found = k.developerKeysFS.FindEntry(ctx, key.Key, blockHeight, &devkeyData)
+		found = k.developerKeysFS.FindEntry(ctx, key.Key, nextEpoch, &devkeyData)
 
 		// the developer key may already belong to a different project
 		devkeyData = types.ProtoDeveloperData{}
@@ -192,7 +196,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 				ProjectID: project.GetIndex(),
 			}
 
-			err := k.developerKeysFS.AppendEntry(ctx, key.Key, blockHeight, &devkeyData)
+			err := k.developerKeysFS.AppendEntry(ctx, key.Key, epoch, &devkeyData)
 			if err != nil {
 				return utils.LavaFormatError("failed to register key", err,
 					utils.Attribute{Key: "key", Value: key.Key},

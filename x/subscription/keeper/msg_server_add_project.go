@@ -37,7 +37,7 @@ func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (
 		)
 	}
 
-	if msg.GetProjectData().Policy.MaxProvidersToPair <= 1 {
+	if msg.ProjectData.Policy != nil && msg.ProjectData.Policy.MaxProvidersToPair <= 1 {
 		return nil, utils.LavaFormatWarning("cannot add project with invalid providersToPair to subscription (must be >1)", fmt.Errorf("invalid policy"),
 			utils.Attribute{Key: "name", Value: msg.ProjectData.Name},
 		)
