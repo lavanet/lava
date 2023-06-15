@@ -55,6 +55,9 @@ func (cp JsonrpcMessage) GetParams() interface{} {
 }
 
 func (cp JsonrpcMessage) GetResult() json.RawMessage {
+	if cp.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+	}
 	return cp.Result
 }
 
