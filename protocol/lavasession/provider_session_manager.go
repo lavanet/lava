@@ -171,13 +171,10 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 
 	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil { // badgeSession
-		exists := getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionsWithConsumer)
-		if !exists {
-			registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
-		}
-		badgeUserEpochData, err = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionsWithConsumer)
-		if err != nil {
-			return nil, nil, err
+		var exists bool
+		badgeUserEpochData, exists = getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionsWithConsumer)
+		if !exists { // badgeUserEpochData not found, needs to be registered
+			badgeUserEpochData = registerBadgeEpochDataToProviderSessionWithConsumer(badgeSession.BadgeUser, badgeSession.BadgeCuAllocation, providerSessionsWithConsumer)
 		}
 	}
 
@@ -186,27 +183,18 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	return singleSessionFromPSWC, badgeUserEpochData, err
 }
 
-func getBadgeUserEpochDataPointer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (*ProviderSessionsEpochData, error) {
+func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (*ProviderSessionsEpochData, bool) {
 	providerSessionsWithConsumer.Lock.RLock()
 	defer providerSessionsWithConsumer.Lock.RUnlock()
-	badgeUserEpochData, ok := providerSessionsWithConsumer.badgeEpochData[badgeUser]
-	if !ok {
-		return nil, utils.LavaFormatError("getBadgeUserEpochDataPointer Failure", nil, utils.Attribute{Key: "badgeUserEpochData", Value: badgeUserEpochData})
-	}
-	return badgeUserEpochData, nil
+	badgeUserEpochData, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]
+	return badgeUserEpochData, exists
 }
 
-func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) bool {
-	providerSessionsWithConsumer.Lock.RLock()
-	defer providerSessionsWithConsumer.Lock.RUnlock()
-	_, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]
-	return exists
-}
-
-func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) {
+func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) *ProviderSessionsEpochData {
 	providerSessionsWithConsumer.Lock.Lock()
 	defer providerSessionsWithConsumer.Lock.Unlock()
 	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: uint64(math.Min(float64(providerSessionsWithConsumer.epochData.MaxComputeUnits), float64(badgeCuAllocation)))}
+	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
 }
 
 func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, maxCuForConsumer uint64, pairedProviders int64, badgeSession *BadgeSession) (*ProviderSessionsWithConsumer, error) {
@@ -252,9 +240,10 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 	}
 	var badgeUserEpochData *ProviderSessionsEpochData
 	if badgeSession != nil {
-		badgeUserEpochData, err = getBadgeUserEpochDataPointer(badgeSession.BadgeUser, providerSessionWithConsumer)
-		if err != nil {
-			return nil, nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to fetch badgeUserEpochData", err)
+		var exists bool
+		badgeUserEpochData, exists = getBadgeEpochDataFromProviderSessionWithConsumer(badgeSession.BadgeUser, providerSessionWithConsumer)
+		if !exists {
+			return nil, nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer failed to fetch badgeUserEpochData", err)
 		}
 	}
 	singleSessionFromPSWC, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionWithConsumer, sessionId, epoch, relayNumber)
