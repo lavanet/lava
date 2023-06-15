@@ -211,6 +211,15 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, ma
 	}
 }
 
+func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+	for {
+		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
+		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of used cu from the known value
+			return nil
+		}
+	}
+}
+
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
 	for {
 		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
