@@ -2340,7 +2340,7 @@
             "apis": [],
             "headers": [],
             "inheritance_apis": [],
-            "parsing": [
+            "parse_directives": [
               {
                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                 "function_tag": "getChainId",
@@ -2386,7 +2386,7 @@
             "apis": [],
             "headers": [],
             "inheritance_apis": [],
-            "parsing": [
+            "parse_directives": [
               {
                 "function_template": "/node_info",
                 "function_tag": "getChainId",
@@ -2410,7 +2410,7 @@
             "apis": [],
             "headers": [],
             "inheritance_apis": [],
-            "parsing": [
+            "parse_directives": [
               {
                 "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
                 "function_tag": "getChainId",
@@ -2434,7 +2434,7 @@
             "apis": [],
             "headers": [],
             "inheritance_apis": [],
-            "parsing": [
+            "parse_directives": [
               {
                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                 "function_tag": "getChainId",
