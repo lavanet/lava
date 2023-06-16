@@ -421,7 +421,7 @@
                             },
                             {
                                 "function_template": "/",
-                                "function_tag": "getChainId",
+                                "function_tag": "GET_CHAIN_ID",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",

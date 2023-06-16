@@ -646,7 +646,7 @@
             "parse_directives": [
               {
                 "function_template": "/node_info",
-                "function_tag": "getChainId",
+                "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
@@ -1279,7 +1279,7 @@
             "parse_directives": [
               {
                 "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
-                "function_tag": "getChainId",
+                "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
                   "parser_func": "PARSE_CANONICAL"
@@ -1303,7 +1303,7 @@
             "parse_directives": [
               {
                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                "function_tag": "getChainId",
+                "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
@@ -1327,7 +1327,7 @@
             "parse_directives": [
               {
                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                "function_tag": "getChainId",
+                "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG",

@@ -1234,7 +1234,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getChainIdentifier\",\"params\":[],\"id\":1}",
-                                "function_tag": "getChainId",
+                                "function_tag": "GET_CHAIN_ID",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0"

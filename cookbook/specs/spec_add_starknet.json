@@ -425,7 +425,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "getChainId",
+                                "function_tag": "GET_CHAIN_ID",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0"
@@ -476,7 +476,7 @@
                         "parse_directives": [
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "getChainId",
+                                "function_tag": "GET_CHAIN_ID",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0"
