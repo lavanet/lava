@@ -213,8 +213,8 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, ma
 
 func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
-		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
-		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of used cu from the known value
+		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
+		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
 			return nil
 		}
 	}
@@ -253,7 +253,7 @@ func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) onSessionFailure() error {
+func (sps *SingleProviderSession) onSessionFailure(badgeUserEpochData *ProviderSessionsEpochData) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, utils.Attribute{Key: "sessionID", Value: sps.SessionID})
@@ -267,7 +267,11 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
+	if badgeUserEpochData != nil {
+		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, badgeUserEpochData)
+	}
 	sps.LatestRelayCu = 0
+
 	return nil
 }
 

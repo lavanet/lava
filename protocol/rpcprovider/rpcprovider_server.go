@@ -102,7 +102,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	)
 
 	// Init relay
-	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
+	relaySession, consumerAddress, chainMessage, badgeUserEpochData, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
@@ -112,7 +112,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	if err != nil || common.ContextOutOfTime(ctx) {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum, badgeUserEpochData)
 		if relayFailureError != nil {
 			var extraInfo string
 			if err != nil {
@@ -158,7 +158,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
 
-func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
+func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, badgeUserEpochData *lavasession.ProviderSessionsEpochData, err error) {
 	var badgeSession *lavasession.BadgeSession
 	if request.RelaySession.Badge != nil { // badge session
 		badgeSession = &lavasession.BadgeSession{
@@ -166,15 +166,15 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 			BadgeUser:         request.RelaySession.Badge.Address,
 		}
 	}
-	var badgeUserEpochData *lavasession.ProviderSessionsEpochData
+
 	relaySession, consumerAddress, badgeUserEpochData, err = rpcps.verifyRelaySession(ctx, request, badgeSession)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	// parse the message to extract the cu and chainMessage for sending it
 	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata())
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetServiceApi().ComputeUnits
 
@@ -183,9 +183,9 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
 		// The consumer knows the session lost sync using the code and will create a new session.
-		return nil, nil, nil, utils.LavaFormatError("Session Out of sync", lavasession.SessionOutOfSyncError, utils.Attribute{Key: "PrepareSessionForUsage_Error", Value: err.Error()}, utils.Attribute{Key: "GUID", Value: ctx})
+		return nil, nil, nil, nil, utils.LavaFormatError("Session Out of sync", lavasession.SessionOutOfSyncError, utils.Attribute{Key: "PrepareSessionForUsage_Error", Value: err.Error()}, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-	return relaySession, consumerAddress, chainMessage, nil
+	return relaySession, consumerAddress, chainMessage, badgeUserEpochData, nil
 }
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
@@ -199,7 +199,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "GUID", Value: ctx},
 	)
-	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
+	relaySession, consumerAddress, chainMessage, badgeUserEpochData, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
@@ -217,7 +217,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		err = nil // we don't want to return an error here
 	} else {
 		// we didn't even manage to subscribe
-		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
+		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum, badgeUserEpochData)
 		if relayFailureError != nil {
 			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "onSessionFailureError", Value: relayFailureError.Error()}, utils.Attribute{Key: "error", Value: err})
 		} else {

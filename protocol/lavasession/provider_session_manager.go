@@ -287,7 +287,7 @@ func (psm *ProviderSessionManager) ReportConsumer() (address string, epoch uint6
 }
 
 // OnSessionDone unlocks the session gracefully, this happens when session finished with an error
-func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession, relayNumber uint64) (err error) {
+func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *SingleProviderSession, relayNumber uint64, badgeUserEpochData *ProviderSessionsEpochData) (err error) {
 	if !psm.IsValidEpoch(singleProviderSession.PairingEpoch) {
 		// the single provider session is no longer valid, so do not do a onSessionFailure, we don;t want it racing with cleanup touching other objects
 		utils.LavaFormatWarning("epoch changed during session usage, so discarding sessionID changes on failure", nil,
@@ -296,7 +296,7 @@ func (psm *ProviderSessionManager) OnSessionFailure(singleProviderSession *Singl
 			utils.Attribute{Key: "PairingEpoch", Value: singleProviderSession.PairingEpoch})
 		return singleProviderSession.onSessionDone(relayNumber) // to unlock it and resume
 	}
-	return singleProviderSession.onSessionFailure()
+	return singleProviderSession.onSessionFailure(badgeUserEpochData)
 }
 
 // OnSessionDone unlocks the session gracefully, this happens when session finished successfully
