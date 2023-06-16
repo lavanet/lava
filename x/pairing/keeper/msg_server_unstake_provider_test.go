@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -33,11 +32,11 @@ func TestUnstakeStaticProvider(t *testing.T) {
 
 	ctx = testkeeper.AdvanceBlocks(ctx, keepers, int(unstakeHoldBlocks))
 
-	_, found, _ := keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), epochstoragetypes.ProviderKey, provider.Addr)
+	_, found, _ := keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), provider.Addr)
 	require.True(t, found)
 
 	ctx = testkeeper.AdvanceBlocks(ctx, keepers, int(unstakeHoldBlocksStatic-unstakeHoldBlocks))
 
-	_, found, _ = keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), epochstoragetypes.ProviderKey, provider.Addr)
+	_, found, _ = keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), provider.Addr)
 	require.False(t, found)
 }

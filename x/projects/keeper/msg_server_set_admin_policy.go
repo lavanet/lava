@@ -12,7 +12,7 @@ func (k msgServer) SetPolicy(goCtx context.Context, msg *types.MsgSetPolicy) (*t
 
 	policy := msg.GetPolicy()
 
-	err := policy.ValidateBasicPolicy()
+	err := policy.ValidateBasicPolicy(false)
 	if err != nil {
 		return nil, err
 	}

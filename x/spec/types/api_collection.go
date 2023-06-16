@@ -6,7 +6,7 @@ import (
 
 // this means the current collection data can be expanded from other, i.e other is allowed to be in InheritanceApis
 func (cd *CollectionData) CanExpand(other *CollectionData) bool {
-	return cd.ApiInterface == other.ApiInterface && cd.Type == other.Type && cd.InternalPath == other.InternalPath || other.ApiInterface == ""
+	return cd.ApiInterface == other.ApiInterface && cd.Type == other.Type || other.ApiInterface == ""
 }
 
 // expand is called within the same spec apiCollections, to manage inheritance within collections of different add_ons
@@ -34,13 +34,13 @@ func (apic *ApiCollection) Expand(myCollections map[CollectionData]*ApiCollectio
 		}
 	}
 	// since expand is called within the same spec it needs to combine with disabled apiCollections
-	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
 }
 
 // inherit is
 func (apic *ApiCollection) Inherit(relevantCollections []*ApiCollection, dependencies map[CollectionData]struct{}) error {
 	// do not set dependencies because this mechanism protects inheritance within the same spec and inherit is inheritance between different specs so same type is allowed
-	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{}))
+	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
 }
 
 func (apic *ApiCollection) Equals(other *ApiCollection) bool {
@@ -64,13 +64,13 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // this function combines apis, headers and parsers into the api collection from others. it does not check type compatibility
 // changes in place inside the apic
 // nil merge maps means not to combine that field
-func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[string]struct{}) error {
+func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[FUNCTION_TAG]struct{}) error {
 	mergedHeadersList := []*Header{}
 	mergedApisList := []*Api{}
-	mergedParserList := []*Parsing{}
+	mergedParserList := []*ParseDirective{}
 	currentApis := make(map[string]struct{}, 0)
 	currentHeaders := make(map[string]struct{}, 0)
-	currentParsers := make(map[string]struct{}, 0)
+	currentParsers := make(map[FUNCTION_TAG]struct{}, 0)
 	if mergedApis != nil {
 		for _, api := range apic.Apis {
 			currentApis[api.Name] = struct{}{}
@@ -82,7 +82,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 		}
 	}
 	if mergedParsers != nil {
-		for _, parser := range apic.Parsing {
+		for _, parser := range apic.ParseDirectives {
 			currentParsers[parser.FunctionTag] = struct{}{}
 		}
 	}
@@ -127,7 +127,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 			}
 		}
 		if mergedParsers != nil {
-			for _, parsing := range collection.Parsing {
+			for _, parsing := range collection.ParseDirectives {
 				if _, ok := mergedParsers[parsing.FunctionTag]; ok {
 					// was already existing in mergedParsers
 					if !allowOverwrite {
@@ -165,7 +165,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 	// merge collected functionTags into current apiCollection's parsing (unless overridden)
 	for _, parser := range mergedParserList {
 		if _, found := currentParsers[parser.FunctionTag]; !found {
-			apic.Parsing = append(apic.Parsing, parser)
+			apic.ParseDirectives = append(apic.ParseDirectives, parser)
 		} else if !allowOverwrite {
 			return fmt.Errorf("existing api in collection combination %s %v", parser.FunctionTag, apic)
 		}

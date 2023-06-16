@@ -49,12 +49,12 @@ func (apip *JsonRPCChainParser) getSupportedApi(name string, connectionType stri
 	return apip.BaseChainParser.getSupportedApi(name, connectionType)
 }
 
-func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
 	}
 
-	msg := rpcInterfaceMessages.JsonrpcMessage{
+	msg := &rpcInterfaceMessages.JsonrpcMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  parsing.ApiName,
@@ -104,11 +104,11 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing}, utils.Attribute{Key: "service_api", Value: apiCont.api.Name})
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, *msg, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, msg, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		api:            serviceApi,
 		apiCollection:  apiCollection,
@@ -358,7 +358,33 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	if ok {
 		internalPaths = jsonRPCChainParser.GetInternalPaths()
 	}
+	internalPathsLength := len(internalPaths)
+	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
+		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
+	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
+		// provider provided specific endpoints but not enough to fill all requirements
+		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
+	}
 	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+}
+
+func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
+	for _, url := range nodeUrls {
+		_, ok := internalPaths[url.InternalPath]
+		if !ok {
+			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
+		}
+		utils.LavaFormatDebug("connecting:", utils.Attribute{Key: "url", Value: url})
+		conn, err := chainproxy.NewConnector(ctx, nConns, url)
+		if err != nil {
+			return err
+		}
+		cp.conn[url.InternalPath] = conn
+	}
+	if len(cp.conn) != len(internalPaths) {
+		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
+	}
+	return nil
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
@@ -389,7 +415,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	defer cp.conn[internalPath].ReturnRpc(rpc)
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.JsonrpcMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}

@@ -12,7 +12,7 @@ message ApiCollection {
   repeated Api apis = 3;
   repeated Header headers = 4;
 	repeated CollectionData inheritance_apis = 5; // by collectionKey
-	repeated Parsing parsing = 6;
+	repeated ParseDirective parse_directives = 6;
 }
 
 message CollectionData {
@@ -32,6 +32,7 @@ message Header {
   }
 
 	HeaderType kind = 2;
+  FUNCTION_TAG function_tag = 3;
 }
 
 message Api {
@@ -43,8 +44,8 @@ message Api {
 	BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
 }
 
-message Parsing {
-  string function_tag = 1;
+message ParseDirective {
+  FUNCTION_TAG function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
   string api_name = 4;
@@ -56,6 +57,14 @@ message BlockParser {
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
   string encoding =4; // used to parse byte responses: base64,hex,bech32
+}
+
+enum FUNCTION_TAG {
+  DISABLED = 0;
+  GET_BLOCKNUM = 1;
+  GET_BLOCK_BY_NUM = 2;
+  SET_LATEST_IN_METADATA = 3;
+  SET_LATEST_IN_BODY = 4;
 }
 
 enum PARSER_FUNC{

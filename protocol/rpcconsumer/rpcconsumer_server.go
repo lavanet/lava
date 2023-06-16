@@ -128,6 +128,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			break
 		}
 		// future requests need to ask for the same block height to get consensus on the reply
+
+		chainMessage.UpdateLatestBlockInMessage(relayResult.Request.RelayData.RequestBlock)
 		relayRequestData.RequestBlock = relayResult.Request.RelayData.RequestBlock
 	}
 

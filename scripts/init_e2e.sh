@@ -17,6 +17,7 @@ lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json,./cookbook/
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 4
 
+# Plan removal (of one)
 lavad tx gov submit-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
@@ -37,14 +38,30 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2263,tendermintrpc,1 12
 lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2264,tendermintrpc,1 127.0.0.1:2274,rest,1 127.0.0.1:2284,grpc,1" 1 -y --from servicer9 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,tendermintrpc,1 127.0.0.1:2275,rest,1 127.0.0.1:2285,grpc,1" 1 -y --from servicer10 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-# staked clients
+# subscribed clients
 # (actually, only user1 is used in testutils/e2e/e2e.go, but having same count
 # in both chains simplifies the e2e logic that expects same amount of staked
 # clients in all tested chains)
-lavad tx pairing stake-client "ETH1" $STAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "LAV1" $STAKE 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-
+lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy "DefaultPlan" -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "DefaultPlan" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-# we need to wait for the next epoch for the stake to take action.
+user3addr=$(lavad keys show user3 -a)
+
+lavad tx subscription add-project "myproject" ./cookbook/projects/example_policy.yml -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
+
+lavad q subscription list-projects user3addr
+
+lavad tx project add-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
+sleep_until_next_epoch
+
+lavad tx project del-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
+sleep_until_next_epoch
+
+lavad tx subscription del-project myproject -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+sleep_until_next_epoch
+
+lavad q subscription list-projects user3
+
+# the end

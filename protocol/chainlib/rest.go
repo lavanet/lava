@@ -34,13 +34,13 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(parsing *spectypes.Parsing, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)
 	}
 
-	restMessage := rpcInterfaceMessages.RestMessage{
+	restMessage := &rpcInterfaceMessages.RestMessage{
 		Msg:  nil,
 		Path: parsing.ApiName,
 	}
@@ -77,9 +77,9 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	if err != nil {
 		return nil, err
 	}
+	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
-	metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
-
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:         data,
@@ -91,23 +91,30 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		restMessage = rpcInterfaceMessages.RestMessage{
 			Msg:         nil,
 			Path:        url + string(data),
-			BaseMessage: chainproxy.BaseMessage{Headers: metadata},
+			BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
-
-	// Fetch requested block, it is used for data reliability
-	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
-	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+	var requestedBlock int64
+	if overwriteReqBlock == "" {
+		// Fetch requested block, it is used for data reliability
+		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
+		if err != nil {
+			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+		}
+	} else {
+		requestedBlock, err = restMessage.ParseBlock(overwriteReqBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		api:            serviceApi,
 		apiCollection:  apiCollection,
@@ -360,7 +367,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}

@@ -2018,7 +2018,8 @@
                         "headers": [
                             {
                                 "name":"x-cosmos-block-height",
-                                "kind": "pass_both"
+                                "kind": "pass_both",
+                                "function_tag":"SET_LATEST_IN_METADATA"
                             },
                             {
                                 "name":"grpc-metadata-x-cosmos-block-height",
@@ -2026,10 +2027,10 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "/cosmos/base/tendermint/v1beta1/blocks/latest",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -2043,7 +2044,7 @@
                             },
                             {
                                 "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -2054,6 +2055,11 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "/cosmos/base/tendermint/v1beta1/blocks/{height}"
+                            },
+                            {
+                                "function_template": "%d",
+                                "function_tag": "SET_LATEST_IN_METADATA",
+                                "api_name": "x-cosmos-block-height"
                             }
                         ]
                     },
@@ -2179,7 +2185,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -3623,14 +3629,15 @@
                             },
                             {
                                 "name":"grpc-metadata-x-cosmos-block-height",
-                                "kind": "pass_both"
+                                "kind": "pass_both",
+                                "function_tag":"SET_LATEST_IN_METADATA"
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -3644,7 +3651,7 @@
                             },
                             {
                                 "function_template": "{\"height\":\"%d\"}",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -3655,6 +3662,11 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight"
+                            },
+                            {
+                                "function_template": "%d",
+                                "function_tag": "SET_LATEST_IN_METADATA",
+                                "api_name": "grpc-metadata-x-cosmos-block-height"
                             }
                         ]
                     },
@@ -4215,9 +4227,9 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
@@ -4231,7 +4243,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"%d\"]}",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",

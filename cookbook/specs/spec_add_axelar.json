@@ -1,1305 +1,1159 @@
 {
-    "proposal": {
-        "title": "Add Specs: Axelar",
-        "description": "Adding new specification support for relaying axelar data on Lava",
-        "specs": [
-            {
-                "index": "AXELAR",
-                "name": "axelar mainnet",
-                "enabled": true,
-                "imports": [
-                    "COSMOSSDK"
-                ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "5000",
-                "allowed_block_lag_for_qos_sync": "2",
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
-                "api_collections": [
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "GET",
-                            "add_on": ""
-                        },
-                        "apis": [
-                            {
-                                "name": "/axelar/axelarnet/v1beta1/ibc_transfer_count",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/batched_commands/{chain}/{id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/burner_info",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/bytecode/{chain}/{contract}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/chains",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/confirmation_height/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/deposit_state",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/erc20_tokens/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/event/{chain}/{event_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/gateway_address/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/key_address/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/pending_commands/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/evm/v1beta1/token_info/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/multisig/v1beta1/key",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/multisig/v1beta1/key_id/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/multisig/v1beta1/keygen_session",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/multisig/v1beta1/next_key_id/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/assets/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/chain_maintainers/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/chain_state/{chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/chains",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/chains_by_asset/{asset}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/fee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/latest_deposit_address/{recipient_addr}/{recipient_chain}/{deposit_chain}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/recipient_address/{deposit_chain}/{deposit_addr}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/transfer_fee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/transfer_rate_limit/{chain}/{asset}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/nexus/v1beta1/transfers_for_chain/{chain}/{state}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "/axelar/permission/v1beta1/governance_key",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            }
-                        ],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [
-                            {
-                                "function_template": "/node_info",
-                                "function_tag": "getChainId",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "wanted_result": "axelar-dojo-1",
-                                "api_name": "/node_info"
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "grpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [
-                            {
-                                "name": "axelar.axelarnet.v1beta1.QueryService/PendingIBCTransferCount",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/BatchedCommands",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/BurnerInfo",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/Bytecode",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/Chains",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/ConfirmationHeight",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/DepositState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/ERC20Tokens",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/Event",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/GatewayAddress",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/KeyAddress",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/PendingCommands",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.multisig.v1beta1.QueryService/Key",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.multisig.v1beta1.QueryService/KeyID",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.multisig.v1beta1.QueryService/KeygenSession",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.multisig.v1beta1.QueryService/NextKeyID",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/Assets",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/ChainMaintainers",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/ChainState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/Chains",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/ChainsByAsset",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/FeeInfo",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/LatestDepositAddress",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/TransferFee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/TransferRateLimit",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "name": "axelar.permission.v1beta1.Query/GovernanceKey",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": "10",
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": "0"
-                            }
-                        ],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [ {
-                            "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
-                            "function_tag": "getChainId",
-                            "result_parsing": {
-                                "parser_arg": [
-                                    "0",
-                                    "defaultNodeInfo",
-                                    "network"
-                                ],
-                                "parser_func": "PARSE_CANONICAL"
-                            },
-                            "wanted_result": "axelar-dojo-1",
-                            "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
-                        }]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "tendermintrpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                "function_tag": "getChainId",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "wanted_result": "axelar-dojo-1",
-                                "api_name": "status"
-                            }
-                        ]
-                    }
-                ]
+  "proposal": {
+    "title": "Add Specs: Axelar",
+    "description": "Adding new specification support for relaying axelar data on Lava",
+    "specs": [
+      {
+        "index": "AXELAR",
+        "name": "axelar mainnet",
+        "enabled": true,
+        "imports": ["COSMOSSDK"],
+        "reliability_threshold": 268435455,
+        "data_reliability_enabled": true,
+        "block_distance_for_finalized_data": 0,
+        "blocks_in_finalization_proof": 1,
+        "average_block_time": "5000",
+        "allowed_block_lag_for_qos_sync": "2",
+        "min_stake_provider": {
+          "denom": "ulava",
+          "amount": "50000000000"
+        },
+        "min_stake_client": {
+          "denom": "ulava",
+          "amount": "5000000000"
+        },
+        "api_collections": [
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "rest",
+              "internal_path": "",
+              "type": "GET",
+              "add_on": ""
             },
-            {
-                "index": "AXELART",
-                "name": "axelar mainnet",
+            "apis": [
+              {
+                "name": "/axelar/axelarnet/v1beta1/ibc_transfer_count",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
                 "enabled": true,
-                "imports": [
-                    "AXELAR"
-                ],
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 0,
-                "blocks_in_finalization_proof": 1,
-                "average_block_time": "5000",
-                "allowed_block_lag_for_qos_sync": "2",
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "50000000000"
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/batched_commands/{chain}/{id}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
                 },
-                "api_collections": [
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "GET",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [
-                            {
-                                "function_template": "/node_info",
-                                "function_tag": "getChainId",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "wanted_result": "axelar-testnet-lisbon-3",
-                                "api_name": "/node_info"
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "grpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [
-                            {
-                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
-                                "function_tag": "getChainId",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "defaultNodeInfo",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "wanted_result": "axelar-testnet-lisbon-3",
-                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "tendermintrpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parsing": [
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                "function_tag": "getChainId",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "wanted_result": "axelar-testnet-lisbon-3",
-                                "api_name": "status"
-                            }
-                        ]
-                    }
-                ]
-            }
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/burner_info",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/bytecode/{chain}/{contract}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/chains",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/confirmation_height/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/deposit_state",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/erc20_tokens/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/event/{chain}/{event_id}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/gateway_address/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/key_address/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/pending_commands/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/evm/v1beta1/token_info/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/multisig/v1beta1/key",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/multisig/v1beta1/key_id/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/multisig/v1beta1/keygen_session",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/multisig/v1beta1/next_key_id/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/assets/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/chain_maintainers/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/chain_state/{chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/chains",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/chains_by_asset/{asset}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/fee_info/{chain}/{asset}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/fee",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/latest_deposit_address/{recipient_addr}/{recipient_chain}/{deposit_chain}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/recipient_address/{deposit_chain}/{deposit_addr}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/transfer_fee/{source_chain}/{destination_chain}/{amount}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/transfer_fee",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/transfer_rate_limit/{chain}/{asset}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/nexus/v1beta1/transfers_for_chain/{chain}/{state}",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "/axelar/permission/v1beta1/governance_key",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              }
+            ],
+            "headers": [],
+            "inheritance_apis": [],
+            "parse_directives": [
+              {
+                "function_template": "/node_info",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "node_info", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-dojo-1",
+                "api_name": "/node_info"
+              }
+            ]
+          },
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "grpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [
+              {
+                "name": "axelar.axelarnet.v1beta1.QueryService/PendingIBCTransferCount",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/BatchedCommands",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/BurnerInfo",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/Bytecode",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/Chains",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/ConfirmationHeight",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/DepositState",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/ERC20Tokens",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/Event",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/GatewayAddress",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/KeyAddress",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/PendingCommands",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.multisig.v1beta1.QueryService/Key",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.multisig.v1beta1.QueryService/KeyID",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.multisig.v1beta1.QueryService/KeygenSession",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.multisig.v1beta1.QueryService/NextKeyID",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/Assets",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/ChainMaintainers",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/ChainState",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/Chains",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/ChainsByAsset",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/FeeInfo",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/LatestDepositAddress",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/TransferFee",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/TransferRateLimit",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              },
+              {
+                "name": "axelar.permission.v1beta1.Query/GovernanceKey",
+                "block_parsing": {
+                  "parser_arg": ["latest"],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": "10",
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                },
+                "extra_compute_units": "0"
+              }
+            ],
+            "headers": [],
+            "inheritance_apis": [],
+            "parse_directives": [
+              {
+                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "defaultNodeInfo", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-dojo-1",
+                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+              }
+            ]
+          },
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "tendermintrpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [],
+            "headers": [],
+            "inheritance_apis": [],
+            "parsing": [
+              {
+                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "node_info", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-dojo-1",
+                "api_name": "status"
+              }
+            ]
+          }
         ]
-    },
-    "deposit": "10000000ulava"
+      },
+      {
+        "index": "AXELART",
+        "name": "axelar mainnet",
+        "enabled": true,
+        "imports": ["AXELAR"],
+        "reliability_threshold": 268435455,
+        "data_reliability_enabled": true,
+        "block_distance_for_finalized_data": 0,
+        "blocks_in_finalization_proof": 1,
+        "average_block_time": "5000",
+        "allowed_block_lag_for_qos_sync": "2",
+        "min_stake_provider": {
+          "denom": "ulava",
+          "amount": "50000000000"
+        },
+        "min_stake_client": {
+          "denom": "ulava",
+          "amount": "5000000000"
+        },
+        "api_collections": [
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "rest",
+              "internal_path": "",
+              "type": "GET",
+              "add_on": ""
+            },
+            "apis": [],
+            "headers": [],
+            "inheritance_apis": [],
+            "parsing": [
+              {
+                "function_template": "/node_info",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "node_info", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-testnet-lisbon-3",
+                "api_name": "/node_info"
+              }
+            ]
+          },
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "grpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [],
+            "headers": [],
+            "inheritance_apis": [],
+            "parsing": [
+              {
+                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "defaultNodeInfo", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-testnet-lisbon-3",
+                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+              }
+            ]
+          },
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "tendermintrpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [],
+            "headers": [],
+            "inheritance_apis": [],
+            "parsing": [
+              {
+                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                "function_tag": "getChainId",
+                "result_parsing": {
+                  "parser_arg": ["0", "node_info", "network"],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "wanted_result": "axelar-testnet-lisbon-3",
+                "api_name": "status"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "deposit": "10000000ulava"
 }

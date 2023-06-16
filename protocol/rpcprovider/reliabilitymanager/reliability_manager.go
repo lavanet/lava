@@ -113,7 +113,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
 			return
 		}
-		reply.Metadata = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		replyDataHash := sigs.HashMsg(reply.Data)
 		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash)

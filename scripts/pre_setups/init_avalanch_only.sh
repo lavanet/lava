@@ -12,6 +12,10 @@ screen -wipe
 GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_avalanche.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+lavad tx gov submit-proposal plans-add ./cookbook/plans/default.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 sleep 4
 
 CLIENTSTAKE="500000000000ulava"
@@ -19,14 +23,14 @@ PROVIDERSTAKE="500000000000ulava"
 
 PROVIDER1_LISTENER="127.0.0.1:2221"
 
-lavad tx pairing stake-client "AVAX"   $CLIENTSTAKE 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 lavad tx pairing stake-provider "AVAX" $PROVIDERSTAKE "$PROVIDER1_LISTENER,jsonrpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
-$PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
+./config/provider_examples/avalanch_internal_paths_example.yml \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \

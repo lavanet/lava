@@ -100,10 +100,6 @@ func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddr
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 
-func (pst *ProviderStateTracker) GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error) {
-	return pst.stateQuery.GetProvidersCountForConsumer(ctx, consumerAddress, epoch, chainID)
-}
-
 func (pst *ProviderStateTracker) GetEpochSize(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.GetEpochSize(ctx)
 }

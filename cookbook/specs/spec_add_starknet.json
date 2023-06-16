@@ -398,9 +398,9 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxHashes\",\"params\":[{\"block_number\":%d}],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
@@ -414,7 +414,7 @@
                             },
                             {
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_blockNumber\",\"params\":[],\"id\":1}",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0"

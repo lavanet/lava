@@ -393,10 +393,10 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parsing": [
+                        "parse_directives": [
                             {
                                 "function_template": "/",
-                                "function_tag": "getBlockNumber",
+                                "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -408,7 +408,7 @@
                             },
                             {
                                 "function_template": "/blocks/by_height/%d",
-                                "function_tag": "getBlockByNumber",
+                                "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -554,7 +554,7 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parsing": []
+                        "parse_directives": []
                     }
                 ]
             }

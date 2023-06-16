@@ -30041,87 +30041,6 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/clients/{chainID}':
-    get:
-      summary: Queries a list of Clients items.
-      operationId: LavanetLavaPairingClients
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              stakeEntry:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    stake:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    address:
-                      type: string
-                    stake_applied_block:
-                      type: string
-                      format: uint64
-                    endpoints:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          iPPORT:
-                            type: string
-                          useType:
-                            type: string
-                          geolocation:
-                            type: string
-                            format: uint64
-                    geolocation:
-                      type: string
-                      format: uint64
-                    chain:
-                      type: string
-                    moniker:
-                      type: string
-              output:
-                type: string
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: chainID
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   /lavanet/lava/pairing/epoch_payments:
     get:
       summary: Queries a list of EpochPayments items.
@@ -30402,21 +30321,14 @@ paths:
                 properties:
                   mintCoinsPerCU:
                     type: string
-                  burnCoinsPerCU:
-                    type: string
                   fraudStakeSlashingFactor:
                     type: string
                   fraudSlashingAmount:
                     type: string
                     format: uint64
-                  servicersToPairCount:
-                    type: string
-                    format: uint64
                   epochBlocksOverlap:
                     type: string
                     format: uint64
-                  stakeToMaxCUList:
-                    type: string
                   unpayLimit:
                     type: string
                   slashLimit:
@@ -31380,6 +31292,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31412,6 +31344,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31506,6 +31458,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31538,6 +31510,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -31929,6 +31921,15 @@ paths:
                                     - pass_reply
                                     - pass_both
                                   default: pass_send
+                                function_tag:
+                                  type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                           inheritance_apis:
                             type: array
                             items:
@@ -31943,13 +31944,20 @@ paths:
                                 add_on:
                                   type: string
                             title: by collectionKey
-                          parsing:
+                          parse_directives:
                             type: array
                             items:
                               type: object
                               properties:
                                 function_tag:
                                   type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                                 function_template:
                                   type: string
                                 result_parsing:
@@ -32278,6 +32286,15 @@ paths:
                                   - pass_reply
                                   - pass_both
                                 default: pass_send
+                              function_tag:
+                                type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                         inheritance_apis:
                           type: array
                           items:
@@ -32292,13 +32309,20 @@ paths:
                               add_on:
                                 type: string
                           title: by collectionKey
-                        parsing:
+                        parse_directives:
                           type: array
                           items:
                             type: object
                             properties:
                               function_tag:
                                 type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                               function_template:
                                 type: string
                               result_parsing:
@@ -32550,6 +32574,15 @@ paths:
                                     - pass_reply
                                     - pass_both
                                   default: pass_send
+                                function_tag:
+                                  type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                           inheritance_apis:
                             type: array
                             items:
@@ -32564,13 +32597,20 @@ paths:
                                 add_on:
                                   type: string
                             title: by collectionKey
-                          parsing:
+                          parse_directives:
                             type: array
                             items:
                               type: object
                               properties:
                                 function_tag:
                                   type: string
+                                  enum:
+                                    - DISABLED
+                                    - GET_BLOCKNUM
+                                    - GET_BLOCK_BY_NUM
+                                    - SET_LATEST_IN_METADATA
+                                    - SET_LATEST_IN_BODY
+                                  default: DISABLED
                                 function_template:
                                   type: string
                                 result_parsing:
@@ -32899,6 +32939,15 @@ paths:
                                   - pass_reply
                                   - pass_both
                                 default: pass_send
+                              function_tag:
+                                type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                         inheritance_apis:
                           type: array
                           items:
@@ -32913,13 +32962,20 @@ paths:
                               add_on:
                                 type: string
                           title: by collectionKey
-                        parsing:
+                        parse_directives:
                           type: array
                           items:
                             type: object
                             properties:
                               function_tag:
                                 type: string
+                                enum:
+                                  - DISABLED
+                                  - GET_BLOCKNUM
+                                  - GET_BLOCK_BY_NUM
+                                  - SET_LATEST_IN_METADATA
+                                  - SET_LATEST_IN_BODY
+                                default: DISABLED
                               function_template:
                                 type: string
                               result_parsing:
@@ -55073,13 +55129,9 @@ definitions:
     type: object
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
-  lavanet.lava.pairing.MsgStakeClientResponse:
-    type: object
   lavanet.lava.pairing.MsgStakeProviderResponse:
     type: object
   lavanet.lava.pairing.MsgUnfreezeProviderResponse:
-    type: object
-  lavanet.lava.pairing.MsgUnstakeClientResponse:
     type: object
   lavanet.lava.pairing.MsgUnstakeProviderResponse:
     type: object
@@ -55088,21 +55140,14 @@ definitions:
     properties:
       mintCoinsPerCU:
         type: string
-      burnCoinsPerCU:
-        type: string
       fraudStakeSlashingFactor:
         type: string
       fraudSlashingAmount:
         type: string
         format: uint64
-      servicersToPairCount:
-        type: string
-        format: uint64
       epochBlocksOverlap:
         type: string
         format: uint64
-      stakeToMaxCUList:
-        type: string
       unpayLimit:
         type: string
       slashLimit:
@@ -55262,55 +55307,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  lavanet.lava.pairing.QueryClientsResponse:
-    type: object
-    properties:
-      stakeEntry:
-        type: array
-        items:
-          type: object
-          properties:
-            stake:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-            address:
-              type: string
-            stake_applied_block:
-              type: string
-              format: uint64
-            endpoints:
-              type: array
-              items:
-                type: object
-                properties:
-                  iPPORT:
-                    type: string
-                  useType:
-                    type: string
-                  geolocation:
-                    type: string
-                    format: uint64
-            geolocation:
-              type: string
-              format: uint64
-            chain:
-              type: string
-            moniker:
-              type: string
-      output:
-        type: string
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
     type: object
     properties:
@@ -55427,21 +55423,14 @@ definitions:
         properties:
           mintCoinsPerCU:
             type: string
-          burnCoinsPerCU:
-            type: string
           fraudStakeSlashingFactor:
             type: string
           fraudSlashingAmount:
             type: string
             format: uint64
-          servicersToPairCount:
-            type: string
-            format: uint64
           epochBlocksOverlap:
             type: string
             format: uint64
-          stakeToMaxCUList:
-            type: string
           unpayLimit:
             type: string
           slashLimit:
@@ -55937,8 +55926,30 @@ definitions:
       max_providers_to_pair:
         type: string
         format: uint64
+      selected_providers_mode:
+        type: string
+        enum:
+          - ALLOWED
+          - MIXED
+          - EXCLUSIVE
+          - DISABLED
+        default: ALLOWED
+        description: |-
+          - ALLOWED: no providers restrictions
+           - MIXED: use the selected providers mixed with randomly chosen providers
+           - EXCLUSIVE: use only the selected providers
+           - DISABLED: selected providers feature is disabled
+        title: >-
+          the enum below determines the pairing algorithm's behaviour with the
+          selected providers feature
+      selected_providers:
+        type: array
+        items:
+          type: string
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.MsgAddKeysResponse:
+    type: object
+  lavanet.lava.projects.MsgDelKeysResponse:
     type: object
   lavanet.lava.projects.MsgSetPolicyResponse:
     type: object
@@ -55999,6 +56010,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       used_cu:
         type: string
@@ -56029,6 +56060,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
       snapshot:
         type: string
@@ -56098,6 +56149,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56130,6 +56201,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56192,6 +56283,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56224,6 +56335,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -56238,6 +56369,22 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
+    type: string
+    enum:
+      - ALLOWED
+      - MIXED
+      - EXCLUSIVE
+      - DISABLED
+    default: ALLOWED
+    description: |-
+      - ALLOWED: no providers restrictions
+       - MIXED: use the selected providers mixed with randomly chosen providers
+       - EXCLUSIVE: use only the selected providers
+       - DISABLED: selected providers feature is disabled
+    title: >-
+      the enum below determines the pairing algorithm's behaviour with the
+      selected providers feature
   lavanet.lava.spec.Api:
     type: object
     properties:
@@ -56396,6 +56543,15 @@ definitions:
                 - pass_reply
                 - pass_both
               default: pass_send
+            function_tag:
+              type: string
+              enum:
+                - DISABLED
+                - GET_BLOCKNUM
+                - GET_BLOCK_BY_NUM
+                - SET_LATEST_IN_METADATA
+                - SET_LATEST_IN_BODY
+              default: DISABLED
       inheritance_apis:
         type: array
         items:
@@ -56410,13 +56566,20 @@ definitions:
             add_on:
               type: string
         title: by collectionKey
-      parsing:
+      parse_directives:
         type: array
         items:
           type: object
           properties:
             function_tag:
               type: string
+              enum:
+                - DISABLED
+                - GET_BLOCKNUM
+                - GET_BLOCK_BY_NUM
+                - SET_LATEST_IN_METADATA
+                - SET_LATEST_IN_BODY
+              default: DISABLED
             function_template:
               type: string
             result_parsing:
@@ -56513,6 +56676,15 @@ definitions:
         type: string
       add_on:
         type: string
+  lavanet.lava.spec.FUNCTION_TAG:
+    type: string
+    enum:
+      - DISABLED
+      - GET_BLOCKNUM
+      - GET_BLOCK_BY_NUM
+      - SET_LATEST_IN_METADATA
+      - SET_LATEST_IN_BODY
+    default: DISABLED
   lavanet.lava.spec.Header:
     type: object
     properties:
@@ -56525,6 +56697,15 @@ definitions:
           - pass_reply
           - pass_both
         default: pass_send
+      function_tag:
+        type: string
+        enum:
+          - DISABLED
+          - GET_BLOCKNUM
+          - GET_BLOCK_BY_NUM
+          - SET_LATEST_IN_METADATA
+          - SET_LATEST_IN_BODY
+        default: DISABLED
   lavanet.lava.spec.Header.HeaderType:
     type: string
     enum:
@@ -56562,11 +56743,18 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
-  lavanet.lava.spec.Parsing:
+  lavanet.lava.spec.ParseDirective:
     type: object
     properties:
       function_tag:
         type: string
+        enum:
+          - DISABLED
+          - GET_BLOCKNUM
+          - GET_BLOCK_BY_NUM
+          - SET_LATEST_IN_METADATA
+          - SET_LATEST_IN_BODY
+        default: DISABLED
       function_template:
         type: string
       result_parsing:
@@ -56779,6 +56967,15 @@ definitions:
                             - pass_reply
                             - pass_both
                           default: pass_send
+                        function_tag:
+                          type: string
+                          enum:
+                            - DISABLED
+                            - GET_BLOCKNUM
+                            - GET_BLOCK_BY_NUM
+                            - SET_LATEST_IN_METADATA
+                            - SET_LATEST_IN_BODY
+                          default: DISABLED
                   inheritance_apis:
                     type: array
                     items:
@@ -56793,13 +56990,20 @@ definitions:
                         add_on:
                           type: string
                     title: by collectionKey
-                  parsing:
+                  parse_directives:
                     type: array
                     items:
                       type: object
                       properties:
                         function_tag:
                           type: string
+                          enum:
+                            - DISABLED
+                            - GET_BLOCKNUM
+                            - GET_BLOCK_BY_NUM
+                            - SET_LATEST_IN_METADATA
+                            - SET_LATEST_IN_BODY
+                          default: DISABLED
                         function_template:
                           type: string
                         result_parsing:
@@ -57035,6 +57239,15 @@ definitions:
                           - pass_reply
                           - pass_both
                         default: pass_send
+                      function_tag:
+                        type: string
+                        enum:
+                          - DISABLED
+                          - GET_BLOCKNUM
+                          - GET_BLOCK_BY_NUM
+                          - SET_LATEST_IN_METADATA
+                          - SET_LATEST_IN_BODY
+                        default: DISABLED
                 inheritance_apis:
                   type: array
                   items:
@@ -57049,13 +57262,20 @@ definitions:
                       add_on:
                         type: string
                   title: by collectionKey
-                parsing:
+                parse_directives:
                   type: array
                   items:
                     type: object
                     properties:
                       function_tag:
                         type: string
+                        enum:
+                          - DISABLED
+                          - GET_BLOCKNUM
+                          - GET_BLOCK_BY_NUM
+                          - SET_LATEST_IN_METADATA
+                          - SET_LATEST_IN_BODY
+                        default: DISABLED
                       function_template:
                         type: string
                       result_parsing:
@@ -57323,6 +57543,15 @@ definitions:
                       - pass_reply
                       - pass_both
                     default: pass_send
+                  function_tag:
+                    type: string
+                    enum:
+                      - DISABLED
+                      - GET_BLOCKNUM
+                      - GET_BLOCK_BY_NUM
+                      - SET_LATEST_IN_METADATA
+                      - SET_LATEST_IN_BODY
+                    default: DISABLED
             inheritance_apis:
               type: array
               items:
@@ -57337,13 +57566,20 @@ definitions:
                   add_on:
                     type: string
               title: by collectionKey
-            parsing:
+            parse_directives:
               type: array
               items:
                 type: object
                 properties:
                   function_tag:
                     type: string
+                    enum:
+                      - DISABLED
+                      - GET_BLOCKNUM
+                      - GET_BLOCK_BY_NUM
+                      - SET_LATEST_IN_METADATA
+                      - SET_LATEST_IN_BODY
+                    default: DISABLED
                   function_template:
                     type: string
                   result_parsing:
@@ -57409,8 +57645,6 @@ definitions:
     properties:
       name:
         type: string
-      description:
-        type: string
       enabled:
         type: boolean
       projectKeys:
@@ -57450,11 +57684,33 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:
+    type: object
+  lavanet.lava.subscription.MsgDelProjectResponse:
     type: object
   lavanet.lava.subscription.Params:
     type: object

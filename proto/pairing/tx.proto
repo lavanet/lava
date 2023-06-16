@@ -12,9 +12,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 // Msg defines the Msg service.
 service Msg {
   rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
-  rpc StakeClient(MsgStakeClient) returns (MsgStakeClientResponse);
   rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
-  rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
   rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
   rpc FreezeProvider(MsgFreezeProvider) returns (MsgFreezeProviderResponse);
   rpc UnfreezeProvider(MsgUnfreezeProvider) returns (MsgUnfreezeProviderResponse);
@@ -33,31 +31,12 @@ message MsgStakeProvider {
 message MsgStakeProviderResponse {
 }
 
-message MsgStakeClient {
-  reserved 5;
-  string creator = 1;
-  string chainID = 2;
-  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
-  uint64 geolocation = 4;
-}
-
-message MsgStakeClientResponse {
-}
-
 message MsgUnstakeProvider {
   string creator = 1;
   string chainID = 2;
 }
 
 message MsgUnstakeProviderResponse {
-}
-
-message MsgUnstakeClient {
-  string creator = 1;
-  string chainID = 2;
-}
-
-message MsgUnstakeClientResponse {
 }
 
 message MsgRelayPayment {

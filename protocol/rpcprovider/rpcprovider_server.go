@@ -56,7 +56,6 @@ type StateTrackerInf interface {
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
-	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 }
 
 func (rpcps *RPCProviderServer) ServeRPCRequests(
@@ -132,6 +131,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
+		replyBlock := reply.LatestBlock
 		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
@@ -146,6 +146,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
+				utils.Attribute{Key: "replyBlock", Value: replyBlock},
+				utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
 			)
 		}
 	}
@@ -169,6 +172,11 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
+		return nil, nil, nil, utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx})
+	}
+
 	relayCU := chainMessage.GetApi().ComputeUnits
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
 	if err != nil {
@@ -238,7 +246,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-	reply.Metadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	reply.Metadata, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
 		// return the response to the user, and close the session.
@@ -466,6 +474,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
 			}
 		}
+
+		chainMsg.UpdateLatestBlockInMessage(latestBlock)
+
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 		for _, block := range requestedHashes {
 			if block.Block == request.RelayData.RequestBlock {
@@ -506,7 +517,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		reply.Metadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
+		reply.Metadata, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
+		// TODO: use overwriteReqBlock to set the correct latest block
 		if requestedBlockHash != nil || finalized {
 			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
@@ -522,7 +534,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			return nil, err
 		}
 	}
-	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
 
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {

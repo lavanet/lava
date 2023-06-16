@@ -13,7 +13,8 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 	var project types.Project
 
 	if found := k.projectsFS.FindEntry(ctx, projectID, blockHeight, &project); !found {
-		return project, utils.LavaFormatWarning("could not get project for block", fmt.Errorf("project not found"),
+		return project, utils.LavaFormatWarning("failed to get project for block",
+			fmt.Errorf("project or block not found"),
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "blockHeight", Value: blockHeight},
 		)
@@ -23,11 +24,11 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 }
 
 func (k Keeper) GetProjectDeveloperData(ctx sdk.Context, developerKey string, blockHeight uint64) (types.ProtoDeveloperData, error) {
-	var projectDeveloperData types.ProtoDeveloperData
-	if found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &projectDeveloperData); !found {
-		return types.ProtoDeveloperData{}, fmt.Errorf("GetProjectIDForDeveloper_invalid_key, the requesting key is not registered to a project, developer: %s", developerKey)
+	var devkeyData types.ProtoDeveloperData
+	if found := k.developerKeysFS.FindEntry(ctx, developerKey, blockHeight, &devkeyData); !found {
+		return types.ProtoDeveloperData{}, fmt.Errorf("GetProjectIDForDeveloper_invalid_key: %s", developerKey)
 	}
-	return projectDeveloperData, nil
+	return devkeyData, nil
 }
 
 func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj types.Project, errRet error) {
@@ -48,32 +49,117 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 }
 
 func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		return utils.LavaFormatError("AddKeysToProject: failed to get NextEpoch", err,
+			utils.Attribute{Key: "index", Value: projectID},
+		)
+	}
+
+	// validate the admin key against the current project state; but make the
+	// changes on the future (= end of epoch) version if already exists. This
+	// ensures that we do not lose changes if there are e.g. multiple additions
+	// in the same epoch.
+
+	// validate admin key with current state
 	var project types.Project
-	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaFormatWarning("could not add keys to project", fmt.Errorf("project not found"),
+	if found := k.projectsFS.FindEntry(ctx, projectID, ctxBlock, &project); !found {
+		return utils.LavaFormatWarning("failed to add keys",
+			fmt.Errorf("project not found"),
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+		)
+	}
+
+	if !project.IsAdminKey(adminKey) {
+		return utils.LavaFormatWarning("failed to add keys",
+			fmt.Errorf("requesting key must be admin key"),
 			utils.Attribute{Key: "project", Value: projectID},
 		)
 	}
 
-	// check if the admin key is valid
-	if !project.IsAdminKey(adminKey) {
-		return utils.LavaFormatWarning("could not add keys to project", fmt.Errorf("the requesting key is not admin key"),
+	// make changes on the future state
+	project = types.Project{}
+	if found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project); !found {
+		return utils.LavaFormatError("failed to add keys",
+			fmt.Errorf("project not found (for next epoch)"),
 			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
 	for _, projectKey := range projectKeys {
-		err := k.registerKey(ctx, projectKey, &project, uint64(ctx.BlockHeight()))
+		err := k.registerKey(ctx, projectKey, &project, nextEpoch)
 		if err != nil {
 			return utils.LavaFormatError("failed to register key to project", err,
 				utils.Attribute{Key: "project", Value: projectID},
-				utils.Attribute{Key: "key", Value: projectKey.Key},
-				utils.Attribute{Key: "keyTypes", Value: projectKey.Kinds},
 			)
 		}
 	}
 
-	return k.projectsFS.AppendEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project)
+	return k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
+}
+
+func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		return utils.LavaFormatError("DelKeysFromProject: failed to get NextEpoch", err,
+			utils.Attribute{Key: "index", Value: projectID},
+		)
+	}
+
+	// validate the admin key against the current project state; but make the
+	// changes on the future (= end of epoch) version if already exists. This
+	// ensures that we do not lose changes if there are e.g. multiple additions
+	// in the same epoch.
+
+	// validate admin key with current state
+	var project types.Project
+	if found := k.projectsFS.FindEntry(ctx, projectID, ctxBlock, &project); !found {
+		return utils.LavaFormatWarning("failed to delete keys",
+			fmt.Errorf("project not found"),
+			utils.Attribute{Key: "project", Value: projectID},
+		)
+	}
+
+	if !project.IsAdminKey(adminKey) {
+		return utils.LavaFormatWarning("failed to delete keys",
+			fmt.Errorf("requesting key must be admin key"),
+			utils.Attribute{Key: "project", Value: projectID},
+		)
+	}
+
+	project = types.Project{}
+	if found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project); !found {
+		return utils.LavaFormatWarning("failed to delete keys",
+			fmt.Errorf("project not found (for next epoch)"),
+			utils.Attribute{Key: "project", Value: projectID},
+		)
+	}
+
+	// make changes on the future state
+	for _, projectKey := range projectKeys {
+		// check if the deleted key is subscription owner
+		if projectKey.Key == project.Subscription {
+			return utils.LavaFormatWarning("failed to delete keys",
+				fmt.Errorf("subscription key may not be deleted"),
+				utils.Attribute{Key: "project", Value: projectID},
+			)
+		}
+
+		err := k.unregisterKey(ctx, projectKey, &project, nextEpoch)
+		if err != nil {
+			return utils.LavaFormatWarning("failed to unregister key to project", err,
+				utils.Attribute{Key: "project", Value: projectID},
+			)
+		}
+	}
+
+	return k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
 }
 
 func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, blockHeight uint64, cu uint64) (err error) {
@@ -93,41 +179,55 @@ func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Proje
 }
 
 func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		panic("could not set policy. can't get next epoch")
+	}
+
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("project not found"),
-				utils.Attribute{Key: "project", Value: projectID},
-			)
+			return utils.LavaFormatWarning("failed to set project policy", err)
 		}
-		// for admin policy - check if the key is an address of a project admin.
-		// Note, the subscription key is also considered an admin key
-		if setPolicyEnum == types.SET_ADMIN_POLICY {
+
+		// it is possible that the policy was already modified in this epoch, in which
+		// case changes are stored in a future (= end of epoch) policy version. Hence
+		// we must start with that version when applying our change (if not, then e.g.
+		// set admin policy that follows set subscription policy will lose the latter).
+		projectNextEpoch, err := k.GetProjectForBlock(ctx, projectID, nextEpoch)
+		if err != nil {
+			return utils.LavaFormatWarning("failed to set project policy (next epoch)", err)
+		}
+
+		switch setPolicyEnum {
+		case types.SET_ADMIN_POLICY:
+			// for admin policy - check if the key is an address of a project admin.
+			// Note, the subscription key is also considered an admin key
 			if !project.IsAdminKey(key) {
-				return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("the requesting key is not admin key"),
+				return utils.LavaFormatWarning("failed to set project policy",
+					fmt.Errorf("requesting key must be admin key"),
 					utils.Attribute{Key: "project", Value: projectID},
 					utils.Attribute{Key: "key", Value: key},
 				)
 			} else {
-				project.AdminPolicy = policy
+				projectNextEpoch.AdminPolicy = policy
 			}
-		} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
-			// for subscription policy - check if the key is an address of the project's subscription consumer
+		case types.SET_SUBSCRIPTION_POLICY:
+			// for subscription policy - check if the key is an address of the
+			// project's subscription consumer
 			if key != project.GetSubscription() {
-				return utils.LavaFormatWarning("could not set subscription policy", fmt.Errorf("the requesting key is not subscription key"),
+				return utils.LavaFormatWarning("failed to set subscription policy",
+					fmt.Errorf("requesting key must be subscription key"),
 					utils.Attribute{Key: "project", Value: projectID},
 					utils.Attribute{Key: "key", Value: key},
 				)
 			} else {
-				project.SubscriptionPolicy = policy
+				projectNextEpoch.SubscriptionPolicy = policy
 			}
 		}
 
-		nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
-		if err != nil {
-			panic("could not set policy. can't get next epoch")
-		}
-		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
+		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &projectNextEpoch)
 		if err != nil {
 			return err
 		}

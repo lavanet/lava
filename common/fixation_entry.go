@@ -164,12 +164,15 @@ func (fs *FixationStore) getEntryStore(ctx sdk.Context, index string) *prefix.St
 	return &store
 }
 
-func (fs *FixationStore) replaceTimer(ctx sdk.Context, prev, next types.Entry, kind byte) {
+// transferTimer moves a timer (unexpired) from a previous entry to a new entry, with
+// the same expirty block. Useful, for example, when a newer entry takes responsibility
+// for a pending deletion from the previous owner.
+func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, block uint64, kind byte) {
 	key := encodeForTimer(prev.Index, prev.Block, kind)
-	fs.tstore.DelTimerByBlockHeight(ctx, next.DeleteAt, key)
+	fs.tstore.DelTimerByBlockHeight(ctx, block, key)
 
 	key = encodeForTimer(next.Index, next.Block, kind)
-	fs.tstore.AddTimerByBlockHeight(ctx, next.DeleteAt, key, []byte{})
+	fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 }
 
 // getEntry returns an existing entry in the store
@@ -208,10 +211,6 @@ func (fs *FixationStore) AppendEntry(
 
 	ctxBlock := uint64(ctx.BlockHeight())
 
-	if block < ctxBlock {
-		panic(fmt.Sprintf("AppendEntry for block %d < current ctx block %d", block, ctxBlock))
-	}
-
 	// find latest entry, including possible future entries
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
@@ -227,7 +226,7 @@ func (fs *FixationStore) AppendEntry(
 
 		// temporary: do not allow adding new entries for an index that was deleted
 		// and still not fully cleaned up (e.g. not stale or with references held)
-		if latestEntry.IsDeletedBy(ctxBlock) {
+		if latestEntry.IsDeletedBy(block) {
 			return utils.LavaFormatError("AppendEntry",
 				fmt.Errorf("entry already deleted and pending cleanup"),
 				utils.Attribute{Key: "index", Value: index},
@@ -241,19 +240,26 @@ func (fs *FixationStore) AppendEntry(
 			return nil
 		}
 
+		// if the previous latest entry is marked with DeleteAt which is set to expire after
+		// theis future entry's maturity (block), then transfer this DeleteAt to the future
+		// entry, and then replace the old timer with a new timer (below)
+		// (note: deletion, if any, cannot be for the current block, since it would have been
+		// processed at the beginning of the block, and AppendEntry would fail earlier).
+
+		if latestEntry.HasDeleteAt() { // already know !latestEntry.IsDeletedBy(block)
+			deleteAt = latestEntry.DeleteAt
+			latestEntry.DeleteAt = math.MaxUint64
+		}
+
 		// if we are superseding a previous latest entry, then drop the latter's refcount;
 		// otherwise we are a future entry version, so set a timer for when it will become
 		// the new latest entry.
-		// and if indeed we are, and the latest entry has DeleteAt set, then transfer this
-		// DeleteAt to the new entry, drop the old timer, and start a new timer. (note:
-		// deletion, if any, cannot be for the current block, because it would have been
-		// processed at the beginning of the block (and AppendEntry would fail earlier).
 
-		if block == ctxBlock {
-			deleteAt = latestEntry.DeleteAt
-			latestEntry.DeleteAt = math.MaxUint64
+		if block <= ctxBlock {
+			// the new entry is now the latest, put reference on the previous entry
 			fs.putEntry(ctx, latestEntry)
 		} else {
+			// the new entry is not yet in effect, create a timer to put reference back to the latest once this is changed
 			key := encodeForTimer(safeIndex, block, timerFutureEntry)
 			fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 		}
@@ -273,7 +279,7 @@ func (fs *FixationStore) AppendEntry(
 	}
 
 	if entry.HasDeleteAt() {
-		fs.replaceTimer(ctx, latestEntry, entry, timerDeleteEntry)
+		fs.transferTimer(ctx, latestEntry, entry, entry.DeleteAt, timerDeleteEntry)
 	}
 
 	fs.setEntry(ctx, entry)
@@ -302,28 +308,13 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, bl
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block-1)
 	if found {
-		// if the latest entry has DeleteAt set, then transfer this DeleteAt to this
-		// future entry (becoming latest). also, drop the old timer, and start a new
-		// timer. (note: // deletion, if any, cannot be for the current block, since
-		// it would have been processed at the beginning of the block.
+		// previous latest entry should never have its DeleteAt set for this block:
+		// if our AppendEntry happened before the DelEntry, we would get marked (and
+		// not the previous latest entry); if the DelEntry happened first, then we
+		// would inherit the DeleteAt from the previous latest entry.
 
 		if latestEntry.HasDeleteAt() {
-			entry := fs.getEntry(ctx, safeIndex, block)
-			entry.DeleteAt = latestEntry.DeleteAt
-			latestEntry.DeleteAt = math.MaxUint64
-			fs.setEntry(ctx, entry)
-
-			if entry.IsDeletedBy(block) {
-				// if DeleteAt is exactly now as we transition from future entry to
-				// be the latest entry, then simply invoke deleteMarkedEntry().
-				key := encodeForTimer(latestEntry.Index, latestEntry.Block, timerDeleteEntry)
-				fs.tstore.DelTimerByBlockHeight(ctx, block, key)
-				fs.deleteMarkedEntry(ctx, safeIndex, block)
-			} else {
-				// otherwise, then replace the old timer (for the previous latest)
-				// with a new timer (for the new latest).
-				fs.replaceTimer(ctx, latestEntry, entry, timerDeleteEntry)
-			}
+			panic(fmt.Sprintf("Future entry: latest entry has DeleteAt %d", latestEntry.DeleteAt))
 		}
 
 		// latest entry had extra refcount for being the latest; so drop that refcount
@@ -614,7 +605,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		panic(fmt.Sprintf("DelEntry for block %d < current ctx block %d", block, ctxBlock))
 	}
 
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, ctxBlock)
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found || entry.HasDeleteAt() {
 		return sdkerrors.ErrNotFound
 	}
@@ -626,7 +617,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 	// to do the work. otherwise this is a future entry delete, so set a timer for
 	// when it will become imminent.
 
-	if block == uint64(ctx.BlockHeight()) {
+	if block == ctxBlock {
 		fs.deleteMarkedEntry(ctx, safeIndex, entry.Block)
 	} else {
 		key := encodeForTimer(safeIndex, entry.Block, timerDeleteEntry)

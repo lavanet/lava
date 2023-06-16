@@ -25,10 +25,11 @@ import (
 const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
+	debug                     = false
 )
 
 type TaggedContainer struct {
-	Parsing       *spectypes.Parsing
+	Parsing       *spectypes.ParseDirective
 	ApiCollection *spectypes.ApiCollection
 }
 
@@ -38,7 +39,7 @@ type ApiContainer struct {
 }
 
 type BaseChainParser struct {
-	taggedApis     map[string]TaggedContainer
+	taggedApis     map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec           spectypes.Spec
 	rwLock         sync.RWMutex
 	serverApis     map[ApiKey]ApiContainer
@@ -46,11 +47,11 @@ type BaseChainParser struct {
 	headers        map[ApiKey]*spectypes.Header
 }
 
-func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) []pairingtypes.Metadata {
+func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 	if len(metadata) == 0 {
-		return []pairingtypes.Metadata{}
+		return []pairingtypes.Metadata{}, ""
 	}
 	retMeatadata := []pairingtypes.Metadata{}
 	for _, header := range metadata {
@@ -63,13 +64,18 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 		}
 		if headerDirective.Kind == headersDirection || headerDirective.Kind == spectypes.Header_pass_both {
 			retMeatadata = append(retMeatadata, header)
+			if headerDirective.FunctionTag == spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA {
+				// this header sets the latest requested block
+				overwriteRequestedBlock = header.Value
+			}
 		}
 	}
 	utils.LavaFormatDebug("Headers filtering", utils.Attribute{Key: "received", Value: metadata}, utils.Attribute{Key: "filtered", Value: retMeatadata})
-	return retMeatadata
+
+	return retMeatadata, overwriteRequestedBlock
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
@@ -77,7 +83,7 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[string
 	bcp.apiCollections = apiCollections
 }
 
-func (bcp *BaseChainParser) GetParsingByTag(tag string) (parsing *spectypes.Parsing, collectionData *spectypes.CollectionData, existed bool) {
+func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
@@ -149,10 +155,15 @@ func (apip *BaseChainParser) getApiCollection(connectionType string, internalPat
 	return api, nil
 }
 
+type updatableRPCInput interface {
+	parser.RPCInput
+	UpdateLatestBlockInMessage(uint64)
+}
+
 type parsedMessage struct {
 	api            *spectypes.Api
 	requestedBlock int64
-	msg            parser.RPCInput
+	msg            updatableRPCInput
 	apiCollection  *spectypes.ApiCollection
 }
 
@@ -186,6 +197,13 @@ func (pm parsedMessage) RequestedBlock() int64 {
 
 func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
 	return pm.msg
+}
+
+func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64) {
+	if latestBlock <= spectypes.NOT_APPLICABLE || pm.RequestedBlock() != spectypes.LATEST_BLOCK {
+		return
+	}
+	pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock))
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
@@ -230,9 +248,9 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[string]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
 	serverApis := map[ApiKey]ApiContainer{}
-	taggedApis := map[string]TaggedContainer{}
+	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {
@@ -244,7 +262,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				continue
 			}
 			collectionKey := CollectionKey{ConnectionType: apiCollection.CollectionData.Type}
-			for _, parsing := range apiCollection.Parsing {
+			for _, parsing := range apiCollection.ParseDirectives {
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,
 					ApiCollection: apiCollection,
@@ -378,7 +396,7 @@ type CraftData struct {
 	ConnectionType string
 }
 
-func CraftChainMessage(parsing *spectypes.Parsing, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
+func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
 	return chainParser.CraftMessage(parsing, connectionType, craftData)
 }
 

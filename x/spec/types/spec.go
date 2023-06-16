@@ -14,7 +14,7 @@ const minCU = 1
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
-	functionTags := map[string]bool{}
+	functionTags := map[FUNCTION_TAG]bool{}
 
 	availableAPIInterface := map[string]struct{}{
 		APIInterfaceJsonRPC:       {},
@@ -68,22 +68,14 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			}
 		}
 		// validate function tags
-		for _, parsing := range apiCollection.Parsing {
-			// Validate tag name
-			if parsing.FunctionTag == "" {
-				return details, fmt.Errorf("empty parsing function tag %v", parsing.FunctionTag)
-			}
-			result := false
-			for _, tag := range SupportedTags {
-				if tag == parsing.FunctionTag {
-					result = true
-					functionTags[parsing.FunctionTag] = true
-				}
-			}
-			if !result {
+		for _, parsing := range apiCollection.ParseDirectives {
+			// Validate function tag
+			if parsing.FunctionTag == FUNCTION_TAG_DISABLED {
 				details["apiCollection"] = fmt.Sprintf("%v", apiCollection.CollectionData)
-				return details, fmt.Errorf("unsupported function tag %s", parsing.FunctionTag)
+				return details, fmt.Errorf("empty or unsupported function tag %s", parsing.FunctionTag)
 			}
+			functionTags[parsing.FunctionTag] = true
+
 			if parsing.ResultParsing.Encoding != "" {
 				if _, ok := availavleEncodings[parsing.ResultParsing.Encoding]; !ok {
 					return details, fmt.Errorf("unsupported api encoding %s in apiCollection %v ", parsing.ResultParsing.Encoding, apiCollection.CollectionData)
@@ -120,7 +112,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	}
 
 	if spec.DataReliabilityEnabled && spec.Enabled {
-		for _, tag := range []string{GET_BLOCKNUM, GET_BLOCK_BY_NUM} {
+		for _, tag := range []FUNCTION_TAG{FUNCTION_TAG_GET_BLOCKNUM, FUNCTION_TAG_GET_BLOCK_BY_NUM} {
 			if found := functionTags[tag]; !found {
 				return details, fmt.Errorf("missing tagged functions for hash comparison: %s", tag)
 			}

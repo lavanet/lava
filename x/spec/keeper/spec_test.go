@@ -41,8 +41,8 @@ func prepareMockApis(count int) []*types.Api {
 	return mockApis
 }
 
-func prepareMockParsing(count int) []*types.Parsing {
-	mockParsing := make([]*types.Parsing, count)
+func prepareMockParsing(count int) []*types.ParseDirective {
+	mockParsing := make([]*types.ParseDirective, count)
 
 	for i := 0; i < count; i++ {
 		uniqueName := "API-" + strconv.Itoa(i)
@@ -51,8 +51,8 @@ func prepareMockParsing(count int) []*types.Parsing {
 		}
 
 		api.Enabled = true
-		parsing := &types.Parsing{
-			FunctionTag:      uniqueName,
+		parsing := &types.ParseDirective{
+			FunctionTag:      types.FUNCTION_TAG(i + 1),
 			FunctionTemplate: "%s",
 			ResultParsing:    types.BlockParser{},
 			ApiName:          api.Name,
@@ -75,7 +75,7 @@ func createApiCollection(apiCount int, apiIds []int, parsingCount int, apiInterf
 		Apis:            selectMockApis(prepareMockApis(apiCount), apiIds),
 		Headers:         []*types.Header{},
 		InheritanceApis: imports,
-		Parsing:         prepareMockParsing(parsingCount),
+		ParseDirectives: prepareMockParsing(parsingCount),
 	}
 }
 
@@ -600,7 +600,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}) {
 						compareCollection = apiCol
 					}
-					require.Equal(t, 1, len(apiCol.Parsing), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.Parsing)
+					require.Equal(t, 1, len(apiCol.ParseDirectives), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.ParseDirectives)
 					require.Equal(t, 2, len(apiCol.Headers))
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
