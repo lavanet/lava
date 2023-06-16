@@ -1637,7 +1637,7 @@
                   "parser_func": "PARSE_BY_ARG",
                   "encoding": "hex"
                 },
-                "wanted_result": "0x13a",
+                "expected_result": "0x13a",
                 "api_name": "eth_chainId"
               }
             ]

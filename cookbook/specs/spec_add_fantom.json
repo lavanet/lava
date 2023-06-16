@@ -860,7 +860,7 @@
                                     "parser_func": "PARSE_BY_ARG",
                                     "encoding": "hex"
                                 },
-                                "wanted_result": "0xfa",
+                                "expected_result": "0xfa",
                                 "api_name": "ftm_chainId"
                             }
                         ]
@@ -911,7 +911,7 @@
                                     "parser_func": "PARSE_BY_ARG",
                                     "encoding": "hex"
                                 },
-                                "wanted_result": "0xfa2",
+                                "expected_result": "0xfa2",
                                 "api_name": "ftm_chainId"
                             }
                         ]

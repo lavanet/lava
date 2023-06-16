@@ -1242,7 +1242,7 @@
                                     "parser_func": "PARSE_BY_ARG",
                                     "encoding": "hex"
                                 },
-                                "wanted_result": "26e044b2",
+                                "expected_result": "26e044b2",
                                 "api_name": "sui_getChainIdentifier"
                             }
                         ]

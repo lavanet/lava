@@ -1163,7 +1163,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmosis-1",
+                "expected_result": "osmosis-1",
                 "api_name": "/node_info"
               }
             ]
@@ -2324,7 +2324,7 @@
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmosis-1",
+                "expected_result": "osmosis-1",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -2348,7 +2348,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmosis-1",
+                "expected_result": "osmosis-1",
                 "api_name": "status"
               }
             ]
@@ -2394,7 +2394,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmo-test-5",
+                "expected_result": "osmo-test-5",
                 "api_name": "/node_info"
               }
             ]
@@ -2418,7 +2418,7 @@
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmo-test-5",
+                "expected_result": "osmo-test-5",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -2442,7 +2442,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "osmo-test-5",
+                "expected_result": "osmo-test-5",
                 "api_name": "status"
               }
             ]

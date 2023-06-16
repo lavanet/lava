@@ -539,7 +539,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-dojo-1",
+                "expected_result": "axelar-dojo-1",
                 "api_name": "/node_info"
               }
             ]
@@ -1028,7 +1028,7 @@
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-dojo-1",
+                "expected_result": "axelar-dojo-1",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -1052,7 +1052,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-dojo-1",
+                "expected_result": "axelar-dojo-1",
                 "api_name": "status"
               }
             ]
@@ -1098,7 +1098,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-testnet-lisbon-3",
+                "expected_result": "axelar-testnet-lisbon-3",
                 "api_name": "/node_info"
               }
             ]
@@ -1122,7 +1122,7 @@
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-testnet-lisbon-3",
+                "expected_result": "axelar-testnet-lisbon-3",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -1146,7 +1146,7 @@
                   "parser_arg": ["0", "node_info", "network"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "wanted_result": "axelar-testnet-lisbon-3",
+                "expected_result": "axelar-testnet-lisbon-3",
                 "api_name": "status"
               }
             ]

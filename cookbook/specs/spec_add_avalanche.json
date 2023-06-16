@@ -629,7 +629,7 @@
                   "parser_func": "PARSE_BY_ARG",
                   "encoding": "hex"
                 },
-                "wanted_result": "0xa86a",
+                "expected_result": "0xa86a",
                 "api_name": "eth_chainId"
               }
             ]

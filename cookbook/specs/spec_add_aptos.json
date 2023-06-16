@@ -429,7 +429,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "wanted_result": "1",
+                                "expected_result": "1",
                                 "api_name": "/"
                             }
                         ]
