@@ -73,7 +73,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	return psm, sps
 }
 
-func prepareBadgeSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
+func prepareBadgeSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession, *ProviderSessionsEpochData) {
 	// initialize the struct
 	psm := initProviderSessionManager()
 
@@ -112,7 +112,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context) (*ProviderSessionMan
 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
 	require.Equal(t, sps.PairingEpoch, epoch1)
 	require.LessOrEqual(t, sps.CuSum, badgeSession.BadgeCuAllocation)
-	return psm, sps
+	return psm, sps, badgeUserEpochData
 }
 
 func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
@@ -162,7 +162,7 @@ func TestHappyFlowPSM(t *testing.T) {
 
 func TestHappyFlowBadgePSM(t *testing.T) {
 	// init test
-	psm, sps := prepareBadgeSession(t, context.Background())
+	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background())
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
@@ -171,8 +171,26 @@ func TestHappyFlowBadgePSM(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, badgeUserEpochData.UsedComputeUnits, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, relayNumber)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+func TestBadgePSMOnSessionFailure(t *testing.T) {
+	// init test
+	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background())
+
+	// on session done successfully
+	err := psm.OnSessionFailure(sps, relayNumber, badgeUserEpochData)
+
+	// validate session done data
+	require.Nil(t, err)
+	require.Equal(t, sps.LatestRelayCu, uint64(0))
+	require.Equal(t, sps.CuSum, uint64(0))
+	require.Equal(t, badgeUserEpochData.UsedComputeUnits, uint64(0))
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
 	require.Equal(t, sps.PairingEpoch, epoch1)
 }
 
@@ -224,7 +242,7 @@ func TestPSMOnSessionFailure(t *testing.T) {
 	psm, sps := prepareSession(t, context.Background())
 
 	// on session done successfully
-	err := psm.OnSessionFailure(sps, relayNumber)
+	err := psm.OnSessionFailure(sps, relayNumber, nil)
 
 	// validate session done data
 	require.Nil(t, err)
@@ -339,7 +357,7 @@ func TestPSMDataReliabilitySessionFailure(t *testing.T) {
 	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session failure.
-	psm.OnSessionFailure(sps, relayNumber)
+	psm.OnSessionFailure(sps, relayNumber, nil)
 
 	// validate on session failure that the relay number was subtracted
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -355,7 +373,7 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session failure.
-	psm.OnSessionFailure(sps, relayNumber)
+	psm.OnSessionFailure(sps, relayNumber, nil)
 
 	// validate on session failure that the relay number was subtracted
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
@@ -414,7 +432,7 @@ func TestPSMDataReliabilitySessionFailureEpochChange(t *testing.T) {
 	psm, sps := prepareDRSession(t, ctx)
 
 	// perform session done.
-	psm.OnSessionFailure(sps, relayNumber)
+	psm.OnSessionFailure(sps, relayNumber, nil)
 
 	// update epoch to epoch2 height
 	psm.UpdateEpoch(epoch2)
@@ -680,7 +698,7 @@ func TestPSMUsageSync(t *testing.T) {
 						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionDone")
 					} else {
 						// error closing
-						err := psm.OnSessionFailure(sessionStoreTest.session, sessionStoreTest.relayNum)
+						err := psm.OnSessionFailure(sessionStoreTest.session, sessionStoreTest.relayNum, nil)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = false
 						sessionStoreTest.history = append(sessionStoreTest.history, ",OnSessionFailure")
