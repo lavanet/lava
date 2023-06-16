@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -73,14 +74,19 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	return psm, sps
 }
 
-func prepareBadgeSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession, *ProviderSessionsEpochData) {
+func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSession *BadgeSession, badgeSessionIndex int) (*ProviderSessionManager, *SingleProviderSession, *ProviderSessionsEpochData) {
 	// initialize the struct
 	psm := initProviderSessionManager()
 
-	badgeSession := &BadgeSession{
-		BadgeCuAllocation: 100,
-		BadgeUser:         "sampleUser",
-	}
+	// Get unique badgeUser for each goroutine
+	badgeUser := fmt.Sprintf("sampleUser%d", badgeSessionIndex)
+
+	// Get random BadgeCuAllocation between 100 and 5000
+	rand.Seed(time.Now().UnixNano())
+	badgeCuAllocation := rand.Intn(4901) + 100
+
+	badgeSession.BadgeCuAllocation = uint64(badgeCuAllocation)
+	badgeSession.BadgeUser = badgeUser
 
 	// get session for the first time
 	sps, badgeUserEpochData, err := psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, badgeSession)
@@ -161,8 +167,9 @@ func TestHappyFlowPSM(t *testing.T) {
 }
 
 func TestHappyFlowBadgePSM(t *testing.T) {
+	badgeSession := &BadgeSession{}
 	// init test
-	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background())
+	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background(), badgeSession, 0)
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
@@ -177,9 +184,83 @@ func TestHappyFlowBadgePSM(t *testing.T) {
 	require.Equal(t, sps.PairingEpoch, epoch1)
 }
 
+func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
+	// Num of goroutines to run
+	numRoutines := 1000
+
+	// A channel to track goroutine completion
+	done := make(chan struct{})
+
+	var servedCuCounter uint64 // total served CU for onSessionDone
+	badgeSessionsUsedCU := make([]*ProviderSessionsEpochData, numRoutines)
+
+	// Testing in multiple goroutines
+	for i := 0; i < numRoutines; i++ {
+		index := i // Create a new variable and assign loop variable's value to it
+		go func() {
+			// Decrement the wait group counter when the goroutine finishes
+			defer func() {
+				done <- struct{}{}
+			}()
+
+			// Create a unique BadgeSession for each goroutine
+			badgeSession := &BadgeSession{}
+
+			// Initialize the test
+			psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background(), badgeSession, index)
+			// Put session into global array
+			badgeSessionsUsedCU[index] = badgeUserEpochData
+
+			// Randomly determine test success or failure with equal probability
+			rand.Seed(time.Now().UnixNano())
+			isSuccess := rand.Intn(2) == 0
+
+			if isSuccess == true {
+				// On session done successfully
+				err := psm.OnSessionDone(sps, relayNumber)
+				// Validate session done data
+				require.Nil(t, err)
+				require.Equal(t, sps.LatestRelayCu, uint64(0))
+				require.Equal(t, sps.CuSum, relayCu)
+				require.Equal(t, badgeUserEpochData.UsedComputeUnits, relayCu)
+				require.Equal(t, sps.SessionID, sessionId)
+				require.Equal(t, sps.RelayNum, relayNumber)
+				require.Equal(t, sps.PairingEpoch, epoch1)
+
+				// Update used CU global variable
+				servedCuCounter += relayCu
+			} else {
+				// On session failure
+				err := psm.OnSessionFailure(sps, relayNumber, badgeUserEpochData)
+				// validate session failure data
+				require.Nil(t, err)
+				require.Equal(t, sps.LatestRelayCu, uint64(0))
+				require.Equal(t, sps.CuSum, uint64(0))
+				require.Equal(t, badgeUserEpochData.UsedComputeUnits, uint64(0))
+				require.Equal(t, sps.SessionID, sessionId)
+				require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
+				require.Equal(t, sps.PairingEpoch, epoch1)
+			}
+		}()
+	}
+	// Wait for all goroutines to finish
+	for i := 0; i < numRoutines; i++ {
+		<-done
+	}
+
+	// Calculate total used CU for all badge users
+	var badgeUsedCU uint64
+	for i := 0; i < numRoutines; i++ {
+		badgeUsedCU += badgeSessionsUsedCU[i].UsedComputeUnits
+	}
+
+	require.Equal(t, servedCuCounter, badgeUsedCU)
+}
+
 func TestBadgePSMOnSessionFailure(t *testing.T) {
+	badgeSession := &BadgeSession{}
 	// init test
-	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background())
+	psm, sps, badgeUserEpochData := prepareBadgeSession(t, context.Background(), badgeSession, 0)
 
 	// on session done successfully
 	err := psm.OnSessionFailure(sps, relayNumber, badgeUserEpochData)
