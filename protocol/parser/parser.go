@@ -107,46 +107,34 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	return rpcInput.ParseBlock(resString)
 }
 
-func ParseSpecIDFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
+func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
 		return "", err
 	}
 
-	chainID, ok := result[0].(string)
+	response, ok := result[0].(string)
 	if !ok {
 		return "", errors.New("chain ID is not string parseable")
 	}
 
-	if strings.Contains(chainID, "\"") {
-		chainID, err = strconv.Unquote(chainID)
+	if strings.Contains(response, "\"") {
+		response, err = strconv.Unquote(response)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return chainID, nil
+	return response, nil
 }
 
 // this function returns the block that was requested,
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
-	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
-	if err != nil || result == nil {
+	result, err := ParseFromReply(rpcInput, blockParser)
+	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
-
-	blockstr, ok := result[0].(string)
-	if !ok {
-		return spectypes.NOT_APPLICABLE, errors.New("block number is not string parseable")
-	}
-
-	if strings.Contains(blockstr, "\"") {
-		blockstr, err = strconv.Unquote(blockstr)
-		if err != nil {
-			return spectypes.NOT_APPLICABLE, err
-		}
-	}
-	return rpcInput.ParseBlock(blockstr)
+	return rpcInput.ParseBlock(result)
 }
 
 // this function returns the block that was requested,

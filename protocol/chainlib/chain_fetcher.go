@@ -54,7 +54,7 @@ func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error
 	if err != nil {
 		return "", "", err
 	}
-	specID, err := parser.ParseSpecIDFromReply(parserInput, parsing.ResultParsing)
+	specID, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return "", "", utils.LavaFormatWarning("Failed To Parse FetchChainID", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
