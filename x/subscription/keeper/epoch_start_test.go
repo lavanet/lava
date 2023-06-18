@@ -26,30 +26,35 @@ func TestSubscriptionExpire(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
 	require.Nil(t, err)
 
+	block := uint64(ts.ctx.BlockHeight())
+	timestamp := ts.ctx.BlockTime()
+
 	// fill memory
 	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
 		ts.advanceBlock()
 	}
 
-	sub, found := keeper.GetSubscription(ts.ctx, account.String())
+	_, found := keeper.GetSubscription(ts.ctx, account.String())
 	require.True(t, found)
+
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	require.Nil(t, err)
 
 	// fast-forward one month
-	ts.expireSubscription(sub)
+	ts.advanceMonths(timestamp, 1)
+	_, found = keeper.GetSubscription(ts.ctx, creator)
+	require.False(t, found)
 
-	// subscription remains searchable, but with zero duration and CU
-	sub, found = keeper.GetSubscription(ts.ctx, account.String())
-	require.True(t, found)
-	require.Equal(t, uint64(0), sub.DurationLeft)
-	require.Equal(t, uint64(0), sub.MonthCuLeft)
-
-	// fill memory
-	for uint64(ts.ctx.BlockHeight()) < sub.PrevExpiryBlock+blocksToSave {
-		ts.advanceBlock()
-	}
-	ts.advanceEpoch()
-
-	// the subscription is finally gone
+	// subscription no longer searchable, but can still charge for previous usage
 	_, found = keeper.GetSubscription(ts.ctx, account.String())
 	require.False(t, found)
+
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	require.Nil(t, err)
+
+	ts.advanceUntilStale()
+
+	// subscription no longer charge-able for previous usage
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	require.NotNil(t, err)
 }

@@ -8,34 +8,16 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
-
-func createNSubscription(ts *testStruct, n int) []types.Subscription {
-	keeper := &ts.keepers.Subscription
-
-	items := make([]types.Subscription, n)
-	_, creator := sigs.GenerateFloatingKey()
-
-	for i := range items {
-		items[i].Creator = creator.String()
-		items[i].Consumer = "consumer-" + strconv.Itoa(i)
-		items[i].Block = ts.blockHeight()
-		items[i].PlanIndex = "testplan"
-		items[i].PlanBlock = ts.blockHeight()
-
-		keeper.SetSubscription(ts.ctx, items[i])
-	}
-	return items
-}
 
 func createNPlans(ts *testStruct, n int) []planstypes.Plan {
 	keeper := &ts.keepers.Plans
@@ -92,59 +74,21 @@ func (ts *testStruct) advanceEpoch(delta ...time.Duration) {
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 }
 
-func (ts *testStruct) expireSubscription(sub types.Subscription) types.Subscription {
-	keeper := ts.keepers.Subscription
-
-	// expedite: change expiration time to 1 second ago
-	sub.MonthExpiryTime = uint64(ts.ctx.BlockTime().Add(-1 * time.Second).UTC().Unix())
-	keeper.SetSubscription(ts.ctx, sub)
-
-	// trigger EpochStart() processing
-	ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
-	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
-
-	// might not be found - that's ok
-	sub, _ = keeper.GetSubscription(ts.ctx, sub.Consumer)
-	return sub
-}
-
-func TestSubscriptionGet(t *testing.T) {
-	ts := setupTestStruct(t, 1)
-	keeper := ts.keepers.Subscription
-
-	items := createNSubscription(ts, 10)
-	for _, item := range items {
-		rst, found := keeper.GetSubscription(ts.ctx, item.Consumer)
-		require.True(t, found)
-
-		require.Equal(t,
-			nullify.Fill(&item),
-			nullify.Fill(&rst),
-		)
+func (ts *testStruct) advanceUntilStale(delta ...time.Duration) {
+	for i := 0; i < int(commontypes.STALE_ENTRY_TIME); i += 1 {
+		ts.advanceBlock()
 	}
 }
 
-func TestSubscriptionRemove(t *testing.T) {
-	ts := setupTestStruct(t, 1)
-	keeper := &ts.keepers.Subscription
-
-	items := createNSubscription(ts, 10)
-	for _, item := range items {
-		keeper.RemoveSubscription(ts.ctx, item.Creator)
-		_, found := keeper.GetSubscription(ts.ctx, item.Creator)
-		require.False(t, found)
+// advance block time by given months (minus 1 second) from a given time
+// (make sure to trigger begin-epoch for each such month)
+func (ts *testStruct) advanceMonths(from time.Time, months int) {
+	for next := from; months > 0; months -= 1 {
+		next = subscriptionkeeper.NextMonth(next)
+		delta := next.Sub(ts.ctx.BlockTime()) - time.Second
+		ts.advanceBlock(delta)
+		ts.advanceEpoch()
 	}
-}
-
-func TestSubscriptionGetAll(t *testing.T) {
-	ts := setupTestStruct(t, 1)
-	keeper := &ts.keepers.Subscription
-
-	items := createNSubscription(ts, 10)
-	require.ElementsMatch(t,
-		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllSubscription(ts.ctx)),
-	)
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -312,17 +256,12 @@ func TestSubscriptionExpiration(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1)
 	require.Nil(t, err)
 
-	sub, found := keeper.GetSubscription(ts.ctx, creator)
+	_, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
-	sub = ts.expireSubscription(sub)
-	require.NotNil(t, sub)
+	timestamp := ts.ctx.BlockTime()
 
-	for uint64(ts.ctx.BlockHeight()) < sub.PrevExpiryBlock+blocksToSave {
-		ts.advanceBlock()
-	}
-	ts.advanceEpoch()
-
+	ts.advanceMonths(timestamp, 1)
 	_, found = keeper.GetSubscription(ts.ctx, creator)
 	require.False(t, found)
 }
@@ -345,13 +284,15 @@ func TestRenewSubscription(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
 	require.Nil(t, err)
 
+	timestamp := ts.ctx.BlockTime()
+
 	sub, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
 	// fast-forward three months
-	sub = ts.expireSubscription(sub)
-	sub = ts.expireSubscription(sub)
-	sub = ts.expireSubscription(sub)
+	ts.advanceMonths(timestamp, 3)
+	sub, found = keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
 	// with 3 months duration left, asking for 12 more should fail
@@ -395,7 +336,9 @@ func TestRenewSubscription(t *testing.T) {
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 
 	// fast-forward another month, renewal should fail
-	sub = ts.expireSubscription(sub)
+	ts.advanceMonths(timestamp, 1)
+	_, found = keeper.GetSubscription(ts.ctx, creator)
+	require.True(t, found)
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 10)
 	require.NotNil(t, err)
 }
@@ -438,6 +381,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3)
 	require.Nil(t, err)
 
+	timestamp := ts.ctx.BlockTime()
+
 	// add another project under the subcscription
 	projectData := projectstypes.ProjectData{
 		Name:    "another_project",
@@ -473,7 +418,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 
 			// charge the subscription
-			err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, tt.subscription, tt.usedCuPerProject)
+			err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, tt.subscription, block1, tt.usedCuPerProject)
 			require.Nil(t, err)
 
 			sub, found := keeper.GetSubscription(ts.ctx, tt.subscription)
@@ -502,7 +447,9 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			projectKeeper.AddKeysToProject(ts.ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
 
 			// fast-forward one month (since we expire the subscription in every iteration, it depends on the iteration number)
-			sub = ts.expireSubscription(sub)
+			ts.advanceMonths(timestamp, ti+1)
+			sub, found = keeper.GetSubscription(ts.ctx, creator)
+			require.True(t, found)
 			require.Equal(t, sub.DurationTotal-uint64(ti+1), sub.DurationLeft)
 
 			block3 := uint64(ts.ctx.BlockHeight())
@@ -567,7 +514,6 @@ func TestExpiryTime(t *testing.T) {
 
 	for _, tt := range template {
 		now := time.Date(tt.now[0], time.Month(tt.now[1]), tt.now[2], 12, 0, 0, 0, time.UTC)
-		res := time.Date(tt.res[0], time.Month(tt.res[1]), tt.res[2], 12, 0, 0, 0, time.UTC)
 
 		t.Run(now.Format("2006-01-02"), func(t *testing.T) {
 			// TODO: need new creator because Projects doesn't really delete projects
@@ -581,10 +527,12 @@ func TestExpiryTime(t *testing.T) {
 
 			sub, found := keeper.GetSubscription(ts.ctx, creator)
 			require.True(t, found)
-			require.Equal(t, res, time.Unix(int64(sub.MonthExpiryTime), 0).UTC())
 			require.Equal(t, tt.months, sub.DurationTotal)
 
-			keeper.RemoveSubscription(ts.ctx, creator)
+			// will expire and remove
+			timestamp := ts.ctx.BlockTime()
+			ts.advanceMonths(timestamp, int(tt.months))
+		//	ts.advanteUntilStale()
 		})
 	}
 }
@@ -627,7 +575,9 @@ func TestPrice(t *testing.T) {
 			balance := ts.keepers.BankKeeper.GetBalance(ts.ctx, address, epochstoragetypes.TokenDenom)
 			require.Equal(t, balance.Amount.Int64(), 10000-tt.cost)
 
-			keeper.RemoveSubscription(ts.ctx, creator)
+			// will expire and remove
+			timestamp := ts.ctx.BlockTime()
+			ts.advanceMonths(timestamp, int(tt.duration))
 		})
 	}
 }
