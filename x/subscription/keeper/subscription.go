@@ -211,18 +211,15 @@ func (k Keeper) CreateSubscription(
 				utils.Attribute{Key: "duration", Value: sub.DurationLeft},
 			)
 		}
+
+		// use current block's timestamp to calculate next month's time
+		expiry := nextMonth(ctx.BlockTime())
+		sub.MonthExpiryTime = uint64(expiry.Unix())
 	}
 
 	// update total (last requested) duration and remaining duration
 	sub.DurationTotal = duration
 	sub.DurationLeft += duration
-
-	// use current block's timestamp to calculate next month's time
-	timestamp := ctx.BlockTime()
-
-	expiry := nextMonth(timestamp)
-
-	sub.MonthExpiryTime = uint64(expiry.Unix())
 
 	if err := sub.ValidateSubscription(); err != nil {
 		return utils.LavaFormatWarning("create subscription failed", err)
@@ -269,7 +266,7 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 		)
 	}
 
-	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.Block)
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
 		err := utils.LavaFormatError("can't find plan from subscription with consumer address", sdkerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
