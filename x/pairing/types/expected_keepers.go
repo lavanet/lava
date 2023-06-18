@@ -72,7 +72,7 @@ type ProjectsKeeper interface {
 
 type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
-	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, cuAmount uint64) error
+	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block uint64, cuAmount uint64) error
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 }
 

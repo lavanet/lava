@@ -312,12 +312,13 @@ func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, subscription string,
 	return k.projectsKeeper.DeleteProject(ctx, subscription, projectID)
 }
 
-func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block uint64, cuAmount uint64) error {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return utils.LavaFormatError("can't charge cu to subscription",
 			fmt.Errorf("subscription not found"),
 			utils.Attribute{Key: "subscription", Value: consumer},
+			utils.Attribute{Key: "block", Value: block},
 		)
 	}
 
