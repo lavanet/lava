@@ -730,3 +730,28 @@ func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix strin
 
 	return &fs
 }
+
+func (fs *FixationStore) Export(ctx sdk.Context) []types.RawMessage {
+	store := prefix.NewStore(
+		ctx.KVStore(fs.storeKey),
+		types.KeyPrefix(fs.prefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	data := []types.RawMessage{}
+	for ; iterator.Valid(); iterator.Next() {
+		data = append(data, types.RawMessage{Key: iterator.Key(), Value: iterator.Value()})
+	}
+
+	return data
+}
+
+func (fs *FixationStore) Init(ctx sdk.Context, data []types.RawMessage) {
+	store := prefix.NewStore(
+		ctx.KVStore(fs.storeKey),
+		types.KeyPrefix(fs.prefix))
+
+	for _, data := range data {
+		store.Set(data.Key, data.Value)
+	}
+}

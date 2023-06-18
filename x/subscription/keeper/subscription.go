@@ -24,6 +24,13 @@ func (k Keeper) SetSubscription(ctx sdk.Context, sub types.Subscription) {
 	store.Set(types.SubscriptionKey(sub.Consumer), b)
 }
 
+// SetSubscriptions sets subscriptions (of a consumer) in the store
+func (k Keeper) SetSubscriptions(ctx sdk.Context, subs []types.Subscription) {
+	for _, s := range subs {
+		k.SetSubscription(ctx, s)
+	}
+}
+
 // GetSubscription returns the subscription of a given consumer
 func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Subscription, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))

@@ -12,3 +12,8 @@ message Entry {
     bytes data = 5; // the data saved in the entry
     uint64 delete_at = 6; // block when the entry becomes deleted
 }
+
+message RawMessage {
+    bytes key = 1;
+    bytes value = 2;
+}
