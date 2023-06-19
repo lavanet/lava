@@ -33073,7 +33073,7 @@ paths:
                   block:
                     type: string
                     format: uint64
-                    title: when the subscription was created
+                    title: when the subscription was last recharged
                   plan_index:
                     type: string
                     title: index (name) of plan
@@ -33089,14 +33089,6 @@ paths:
                     type: string
                     format: uint64
                     title: remaining duration in months
-                  month_expiry_time:
-                    type: string
-                    format: uint64
-                    title: expiry time of current month
-                  prev_expiry_block:
-                    type: string
-                    format: uint64
-                    title: when previous month expired
                   month_cu_total:
                     type: string
                     format: uint64
@@ -33105,10 +33097,6 @@ paths:
                     type: string
                     format: uint64
                     title: CU remaining during current month
-                  prev_cu_left:
-                    type: string
-                    format: uint64
-                    title: CU remaining for previous month
         default:
           description: An unexpected error response.
           schema:
@@ -57695,7 +57683,7 @@ definitions:
           block:
             type: string
             format: uint64
-            title: when the subscription was created
+            title: when the subscription was last recharged
           plan_index:
             type: string
             title: index (name) of plan
@@ -57711,14 +57699,6 @@ definitions:
             type: string
             format: uint64
             title: remaining duration in months
-          month_expiry_time:
-            type: string
-            format: uint64
-            title: expiry time of current month
-          prev_expiry_block:
-            type: string
-            format: uint64
-            title: when previous month expired
           month_cu_total:
             type: string
             format: uint64
@@ -57727,10 +57707,6 @@ definitions:
             type: string
             format: uint64
             title: CU remaining during current month
-          prev_cu_left:
-            type: string
-            format: uint64
-            title: CU remaining for previous month
   lavanet.lava.subscription.QueryListProjectsResponse:
     type: object
     properties:
@@ -57757,7 +57733,7 @@ definitions:
       block:
         type: string
         format: uint64
-        title: when the subscription was created
+        title: when the subscription was last recharged
       plan_index:
         type: string
         title: index (name) of plan
@@ -57773,14 +57749,6 @@ definitions:
         type: string
         format: uint64
         title: remaining duration in months
-      month_expiry_time:
-        type: string
-        format: uint64
-        title: expiry time of current month
-      prev_expiry_block:
-        type: string
-        format: uint64
-        title: when previous month expired
       month_cu_total:
         type: string
         format: uint64
@@ -57789,7 +57757,3 @@ definitions:
         type: string
         format: uint64
         title: CU remaining during current month
-      prev_cu_left:
-        type: string
-        format: uint64
-        title: CU remaining for previous month
