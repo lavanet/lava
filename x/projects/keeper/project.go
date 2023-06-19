@@ -19,7 +19,6 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 			utils.Attribute{Key: "blockHeight", Value: blockHeight},
 		)
 	}
-
 	return project, nil
 }
 
