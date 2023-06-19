@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -23,6 +24,9 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
+
+		subsFS common.FixationStore
+		subsTS common.TimerStore
 	}
 )
 
@@ -43,7 +47,9 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	fs := *common.NewFixationStore(storeKey, cdc, types.SubsFixationPrefix)
+
+	keeper := &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
 		memKey:     memKey,
@@ -54,7 +60,18 @@ func NewKeeper(
 		epochstorageKeeper: epochstorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
+
+		subsFS: fs,
 	}
+
+	subsTimerCallback := func(ctx sdk.Context, subkey []byte, _ []byte) {
+		keeper.advanceMonth(ctx, subkey)
+	}
+
+	keeper.subsTS = *common.NewTimerStore(storeKey, cdc, types.SubsTimerPrefix).
+		WithCallbackByBlockTime(subsTimerCallback)
+
+	return keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
@@ -62,8 +79,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	if k.epochstorageKeeper.IsEpochStart(ctx) {
-		// run functions that are supposed to run in epoch start
-		k.EpochStart(ctx)
-	}
+	k.subsFS.AdvanceBlock(ctx)
+	k.subsTS.Tick(ctx)
 }

@@ -15,6 +15,12 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_subscription"
+
+	// prefix for the subscription fixation store
+	SubsFixationPrefix = "subs-fs"
+
+	// prefix for the subscription fixation store
+	SubsTimerPrefix = "subs-ts"
 )
 
 const (
