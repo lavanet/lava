@@ -470,7 +470,6 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 }
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
-
 	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
 	if errV != nil {
 		return nil, errV
