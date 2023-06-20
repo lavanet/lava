@@ -205,7 +205,12 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	consumer := string(subkey)
 
 	var sub types.Subscription
-	_ = k.subsFS.FindEntry(ctx, consumer, block, &sub)
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
+		// subscription (monthly) timer has expired for an unknown subscription:
+		// either the timer was set wrongly, or the subscription was incorrectly
+		// removed; and we cannot even return an error about it.
+		panic("subscription month expiry with unknown key " + consumer)
+	}
 
 	if sub.DurationLeft == 0 {
 		utils.LavaFormatError("critical: negative duration for subscription, extend by 1 month",
@@ -245,19 +250,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		}
 	} else {
 		// delete all projects before deleting
-		allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
-		for _, projectID := range allProjectsIDs {
-			err := k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
-			if err != nil {
-				// TODO: should panic (should never fail because these are exactly the
-				// subscription's current projects)
-				utils.LavaFormatError("critical: delete project failed at subscription removal", err,
-					utils.Attribute{Key: "subscription", Value: consumer},
-					utils.Attribute{Key: "project", Value: projectID},
-					utils.Attribute{Key: "block", Value: block},
-				)
-			}
-		}
+		k.delAllProjectsFromSubscription(ctx, consumer)
 
 		// delete subscription effective now (don't wait for end of epoch)
 		k.subsFS.DelEntry(ctx, sub.Consumer, block)
@@ -284,10 +277,10 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 	return plan, nil
 }
 
-func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, projectData projectstypes.ProjectData) error {
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, projectData projectstypes.ProjectData) error {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, subscription, uint64(ctx.BlockHeight()), &sub); !found {
-		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
+	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
 	}
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
@@ -299,17 +292,33 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, subscription string, p
 		panic(err)
 	}
 
-	return k.projectsKeeper.CreateProject(ctx, subscription, projectData, plan)
+	return k.projectsKeeper.CreateProject(ctx, consumer, projectData, plan)
 }
 
-func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, subscription string, name string) error {
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer string, name string) error {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, subscription, uint64(ctx.BlockHeight()), &sub); !found {
-		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", subscription)
+	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
 	}
 
-	projectID := projectstypes.ProjectIndex(subscription, name)
-	return k.projectsKeeper.DeleteProject(ctx, subscription, projectID)
+	projectID := projectstypes.ProjectIndex(consumer, name)
+	return k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+}
+
+func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string) {
+	allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
+	for _, projectID := range allProjectsIDs {
+		err := k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+		if err != nil {
+			// TODO: should panic (should never fail because these are exactly the
+			// subscription's current projects)
+			utils.LavaFormatError("critical: delete project failed at subscription removal", err,
+				utils.Attribute{Key: "subscription", Value: consumer},
+				utils.Attribute{Key: "project", Value: projectID},
+				utils.Attribute{Key: "block", Value: uint64(ctx.BlockHeight())},
+			)
+		}
+	}
 }
 
 func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block uint64, cuAmount uint64) error {
