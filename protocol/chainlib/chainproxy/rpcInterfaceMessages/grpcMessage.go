@@ -51,8 +51,8 @@ func (gm GrpcMessage) GetParams() interface{} {
 	return parsedData
 }
 
-func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
-	gm.SetLatestBlockWithHeader(latestBlock)
+func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return gm.SetLatestBlockWithHeader(latestBlock, modifyContent)
 	// when !done: we need a different setter
 }
 

@@ -43,7 +43,8 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 	return msg, nil
 }
 
-func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(uint64) {
+func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return false
 }
 
 func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {

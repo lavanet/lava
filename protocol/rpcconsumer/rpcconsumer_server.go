@@ -101,7 +101,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
-
+	modifiedOnLatestReq := false
 	for retries := 0; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
@@ -120,17 +120,21 @@ func (rpccs *RPCConsumerServer) SendRelay(
 				break
 			}
 			// decide if we should break here if its something retry won't solve
-			utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err.Error()})
+			utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err.Error()}, utils.Attribute{Key: "endpoint", Value: rpccs.listenEndpoint})
 			continue
 		}
 		relayResults = append(relayResults, relayResult)
+		// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
+		// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
+		if chainMessage.RequestedBlock() == spectypes.LATEST_BLOCK {
+			modifiedOnLatestReq = chainMessage.UpdateLatestBlockInMessage(relayResult.Request.RelayData.RequestBlock, false)
+			if !modifiedOnLatestReq {
+				relayResult.Finalized = false // shut down data reliability
+			}
+		}
 		if len(relayResults) >= rpccs.requiredResponses {
 			break
 		}
-		// future requests need to ask for the same block height to get consensus on the reply
-
-		chainMessage.UpdateLatestBlockInMessage(relayResult.Request.RelayData.RequestBlock)
-		relayRequestData.RequestBlock = relayResult.Request.RelayData.RequestBlock
 	}
 
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
@@ -443,10 +447,11 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 
-	if relayResult.Request.RelayData.RequestBlock <= spectypes.NOT_APPLICABLE {
-		if relayResult.Request.RelayData.RequestBlock <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: relayResult.Request.RelayData.RequestBlock})
+	if chainMessage.RequestedBlock() <= spectypes.NOT_APPLICABLE {
+		if chainMessage.RequestedBlock() <= spectypes.LATEST_BLOCK {
+			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: chainMessage.RequestedBlock()})
 		}
+		// does not support sending data reliability requests on a block that is not specific
 		return nil
 	}
 
@@ -455,7 +460,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	relayRequestData := relayResult.Request.RelayData
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}
@@ -463,6 +468,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if relayResultDataReliability.ProviderAddress != "" {
 			errAttributes = append(errAttributes, utils.Attribute{Key: "address", Value: relayResultDataReliability.ProviderAddress})
 		}
+		errAttributes = append(errAttributes, utils.Attribute{Key: "relayRequestData", Value: relayRequestData})
 		return utils.LavaFormatWarning("failed data reliability relay to provider", err, errAttributes...)
 	}
 	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDataReliability)

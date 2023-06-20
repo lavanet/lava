@@ -271,8 +271,8 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, err)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			chainMessage.UpdateLatestBlockInMessage(test.block)                  // will update the block only if it's a latest request
-			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
+			chainMessage.UpdateLatestBlockInMessage(test.block, true)   // will update the block only if it's a latest request
+			require.Equal(t, test.block, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
 			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)

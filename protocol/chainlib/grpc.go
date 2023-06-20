@@ -417,6 +417,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		utils.LavaFormatDebug("provider sending node message",
 			utils.Attribute{Key: "method", Value: nodeMessage.Path},
 			utils.Attribute{Key: "headers", Value: metadataMap},
+			utils.Attribute{Key: "apiInterface", Value: "grpc"},
 		)
 	}
 	var respHeaders metadata.MD

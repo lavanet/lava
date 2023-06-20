@@ -31112,6 +31112,26 @@ paths:
                       max_providers_to_pair:
                         type: string
                         format: uint64
+                      selected_providers_mode:
+                        type: string
+                        enum:
+                          - ALLOWED
+                          - MIXED
+                          - EXCLUSIVE
+                          - DISABLED
+                        default: ALLOWED
+                        description: |-
+                          - ALLOWED: no providers restrictions
+                           - MIXED: use the selected providers mixed with randomly chosen providers
+                           - EXCLUSIVE: use only the selected providers
+                           - DISABLED: selected providers feature is disabled
+                        title: >-
+                          the enum below determines the pairing algorithm's
+                          behaviour with the selected providers feature
+                      selected_providers:
+                        type: array
+                        items:
+                          type: string
                     title: >-
                       protobuf expected in YAML format: used "moretags" to
                       simplify parsing
@@ -55782,6 +55802,26 @@ definitions:
           max_providers_to_pair:
             type: string
             format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
@@ -55854,6 +55894,26 @@ definitions:
               max_providers_to_pair:
                 type: string
                 format: uint64
+              selected_providers_mode:
+                type: string
+                enum:
+                  - ALLOWED
+                  - MIXED
+                  - EXCLUSIVE
+                  - DISABLED
+                default: ALLOWED
+                description: |-
+                  - ALLOWED: no providers restrictions
+                   - MIXED: use the selected providers mixed with randomly chosen providers
+                   - EXCLUSIVE: use only the selected providers
+                   - DISABLED: selected providers feature is disabled
+                title: >-
+                  the enum below determines the pairing algorithm's behaviour
+                  with the selected providers feature
+              selected_providers:
+                type: array
+                items:
+                  type: string
             title: >-
               protobuf expected in YAML format: used "moretags" to simplify
               parsing
@@ -55947,6 +56007,22 @@ definitions:
         items:
           type: string
     title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
+    type: string
+    enum:
+      - ALLOWED
+      - MIXED
+      - EXCLUSIVE
+      - DISABLED
+    default: ALLOWED
+    description: |-
+      - ALLOWED: no providers restrictions
+       - MIXED: use the selected providers mixed with randomly chosen providers
+       - EXCLUSIVE: use only the selected providers
+       - DISABLED: selected providers feature is disabled
+    title: >-
+      the enum below determines the pairing algorithm's behaviour with the
+      selected providers feature
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
   lavanet.lava.projects.MsgDelKeysResponse:
@@ -56369,22 +56445,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
-    type: string
-    enum:
-      - ALLOWED
-      - MIXED
-      - EXCLUSIVE
-      - DISABLED
-    default: ALLOWED
-    description: |-
-      - ALLOWED: no providers restrictions
-       - MIXED: use the selected providers mixed with randomly chosen providers
-       - EXCLUSIVE: use only the selected providers
-       - DISABLED: selected providers feature is disabled
-    title: >-
-      the enum below determines the pairing algorithm's behaviour with the
-      selected providers feature
   lavanet.lava.spec.Api:
     type: object
     properties:

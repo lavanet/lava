@@ -40,8 +40,8 @@ func (cp RestMessage) GetParams() interface{} {
 	return parameters
 }
 
-func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64) {
-	rm.SetLatestBlockWithHeader(latestBlock)
+func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
 	// if !done else we need a different setter
 }
 
