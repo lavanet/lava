@@ -50,15 +50,19 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			MonthCuLeft:   sub_V2.MonthCuLeft,
 		}
 
+		// each subscription entry in V2 store should have an entry in V3 store
 		err := keeper.subsFS.AppendEntry(ctx, sub_V3.Consumer, sub_V3.Block, &sub_V3)
 		if err != nil {
 			return fmt.Errorf("%w: subscriptions %s", err, sub_V3.Consumer)
 		}
 
+		// if the subscription is alive, then set the timer for the monthly expiry.
+		// otherwise, delete the entry from V3 to induce stale-period state (use the
+		// block from last expiry as the block for deletion).
 		if sub_V3.DurationLeft > 0 {
 			expiry := sub_V2.MonthExpiryTime
 			if expiry >= uint64(ctx.BlockTime().UTC().Unix()) {
-				return fmt.Errorf("epiry time passed for subscription %s", err, sub_V3.Consumer)
+				return fmt.Errorf("expiry time passed for subscription %s", sub_V3.Consumer)
 			}
 			keeper.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub_V3.Consumer), []byte{})
 		} else {
