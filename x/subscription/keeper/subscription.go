@@ -209,7 +209,12 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		// subscription (monthly) timer has expired for an unknown subscription:
 		// either the timer was set wrongly, or the subscription was incorrectly
 		// removed; and we cannot even return an error about it.
-		panic("subscription month expiry with unknown key " + consumer)
+		utils.LavaFormatError("critical: month expirty for unknown subscription, skipping",
+			fmt.Errorf("subscription not found"),
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "block", Value: block},
+		)
+		return
 	}
 
 	if sub.DurationLeft == 0 {
