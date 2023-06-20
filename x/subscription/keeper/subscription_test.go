@@ -287,12 +287,12 @@ func TestRenewSubscription(t *testing.T) {
 
 	timestamp := ts.ctx.BlockTime()
 
-	sub, found := keeper.GetSubscription(ts.ctx, creator)
+	_, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 
 	// fast-forward three months
 	ts.advanceMonths(timestamp, 3)
-	sub, found = keeper.GetSubscription(ts.ctx, creator)
+	sub, found := keeper.GetSubscription(ts.ctx, creator)
 	require.True(t, found)
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
@@ -546,13 +546,12 @@ func TestSubscriptionExpire(t *testing.T) {
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000)))
 	ts.keepers.BankKeeper.SetBalance(ts.ctx, account, coins)
 
-	creator := account.String()
 	consumer := account.String()
 
 	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(ts.ctx, uint64(ts.ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	err = keeper.CreateSubscription(ts.ctx, creator, consumer, "mockPlan1", 1)
+	err = keeper.CreateSubscription(ts.ctx, consumer, consumer, "mockPlan1", 1)
 	require.Nil(t, err)
 
 	block := uint64(ts.ctx.BlockHeight())
@@ -563,28 +562,26 @@ func TestSubscriptionExpire(t *testing.T) {
 		ts.advanceBlock()
 	}
 
-	_, found := keeper.GetSubscription(ts.ctx, account.String())
+	_, found := keeper.GetSubscription(ts.ctx, consumer)
 	require.True(t, found)
 
-	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, consumer, block, 10)
 	require.Nil(t, err)
 
 	// fast-forward one month
 	ts.advanceMonths(timestamp, 1)
-	_, found = keeper.GetSubscription(ts.ctx, creator)
-	require.False(t, found)
 
 	// subscription no longer searchable, but can still charge for previous usage
-	_, found = keeper.GetSubscription(ts.ctx, account.String())
+	_, found = keeper.GetSubscription(ts.ctx, consumer)
 	require.False(t, found)
 
-	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, consumer, block, 10)
 	require.Nil(t, err)
 
 	ts.advanceUntilStale()
 
 	// subscription no longer charge-able for previous usage
-	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, account.String(), block, 10)
+	err = keeper.ChargeComputeUnitsToSubscription(ts.ctx, consumer, block, 10)
 	require.NotNil(t, err)
 }
 
