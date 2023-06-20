@@ -8,6 +8,7 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	subtypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -107,7 +108,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	proj, err := ts.keepers.Projects.GetProjectForDeveloper(_ctx, consumer.Addr.String(), uint64(_ctx.BlockHeight()))
 	require.Nil(t, err)
 
-	policies := []*projectstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
+	policies := []*planstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
 	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.GetSubscription())
 	require.True(t, found)
 	allowedCu := ts.keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, proj.GetUsedCu(), sub.GetMonthCuLeft())
@@ -259,11 +260,11 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	for _, tt := range geolocationTestTemplates {
 		t.Run(tt.name, func(t *testing.T) {
-			adminPolicy := &projectstypes.Policy{
+			adminPolicy := &planstypes.Policy{
 				GeolocationProfile: tt.geolocationAdminPolicy,
 				MaxProvidersToPair: 2,
 			}
-			subscriptionPolicy := &projectstypes.Policy{
+			subscriptionPolicy := &planstypes.Policy{
 				GeolocationProfile: tt.geolocationSubPolicy,
 				MaxProvidersToPair: 2,
 			}
@@ -341,11 +342,11 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 
 	for _, tt := range providersToPairTestTemplates {
 		t.Run(tt.name, func(t *testing.T) {
-			adminPolicy := &projectstypes.Policy{
+			adminPolicy := &planstypes.Policy{
 				GeolocationProfile: 1,
 				MaxProvidersToPair: tt.providersToPairAdminPolicy,
 			}
-			subscriptionPolicy := &projectstypes.Policy{
+			subscriptionPolicy := &planstypes.Policy{
 				GeolocationProfile: 1,
 				MaxProvidersToPair: tt.providersToPairSubPolicy,
 			}
@@ -460,13 +461,13 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				_ctx = sdk.UnwrapSDKContext(ts.ctx)
 			}
 
-			adminPolicy := &projectstypes.Policy{
+			adminPolicy := &planstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochAdminPolicy,
 				TotalCuLimit:       ts.plan.PlanPolicy.TotalCuLimit,
 				MaxProvidersToPair: ts.plan.PlanPolicy.MaxProvidersToPair,
 			}
-			subscriptionPolicy := &projectstypes.Policy{
+			subscriptionPolicy := &planstypes.Policy{
 				GeolocationProfile: 1,
 				EpochCuLimit:       tt.cuPerEpochSubPolicy,
 				TotalCuLimit:       ts.plan.PlanPolicy.TotalCuLimit,

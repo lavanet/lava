@@ -445,7 +445,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 		ProjectKeys: []projectstypes.ProjectKey{
 			projectstypes.ProjectDeveloperKey(anotherAccount.Addr.String()),
 		},
-		Policy: &projectstypes.Policy{
+		Policy: &planstypes.Policy{
 			GeolocationProfile: uint64(1),
 			TotalCuLimit:       1000,
 			EpochCuLimit:       100,

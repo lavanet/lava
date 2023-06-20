@@ -3,16 +3,16 @@ package filters
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 type SelectedProvidersFilter struct {
 	selectedProviders []string
 }
 
-func (f *SelectedProvidersFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
+func (f *SelectedProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	switch strictestPolicy.SelectedProvidersMode {
-	case projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, projectstypes.SELECTED_PROVIDERS_MODE_MIXED:
+	case planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, planstypes.SELECTED_PROVIDERS_MODE_MIXED:
 		f.selectedProviders = strictestPolicy.SelectedProviders
 		return true
 	}
