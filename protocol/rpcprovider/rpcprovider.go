@@ -265,6 +265,38 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
+func parseVersion(version string) (string, string, error) {
+	parts := strings.Split(version, "-")
+	version = parts[0]
+	segments := strings.Split(version, ".")
+	if len(segments) < 2 {
+		return "", "", utils.LavaFormatError("invalid version format", nil)
+	}
+	minimumVersion := segments[0] + segments[1]
+	targetVersion := segments[len(segments)-1]
+	return targetVersion, minimumVersion, nil
+}
+
+func CheckVersion(protocolVersion string, consensusVersion string) (success bool, err error) {
+	protocolTargetVersion, protocolMinVersion, err := parseVersion(protocolVersion)
+	if err != nil {
+		return false, err
+	}
+	consensusTargetVersion, consensusMinVersion, err := parseVersion(consensusVersion)
+	if err != nil {
+		return false, err
+	}
+	if protocolMinVersion != consensusMinVersion {
+		err := fmt.Errorf("version mismatch")
+		utils.LavaFormatFatal("minimum version mismatch for rpcprovider", err)
+		return false, err
+	}
+	if protocolTargetVersion != consensusTargetVersion {
+		utils.LavaFormatWarning("target version mismatch for rpcprovider", nil)
+	}
+	return true, nil
+}
+
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
 		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
@@ -311,6 +343,16 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
+
+			// check version
+			// TODO FETCH VERSION FROM CONSENSUS
+			// consensusVersion := ...
+			consensusVersionPlaceHolder := "1.14.2"
+			ok, err := CheckVersion(version.Version, consensusVersionPlaceHolder)
+			if !ok {
+				return err
+			}
+			utils.LavaFormatInfo("RPCProvider version check OK", utils.Attribute{Key: "protocolVersion: ", Value: version.Version}, utils.Attribute{Key: "consensusVersion: ", Value: consensusVersionPlaceHolder})
 
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
