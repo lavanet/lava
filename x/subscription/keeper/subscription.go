@@ -189,8 +189,9 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if !found {
-		expiry := NextMonth(ctx.BlockTime()).UTC().Unix()
-		k.subsTS.AddTimerByBlockTime(ctx, uint64(expiry), []byte(consumer), []byte{})
+		expiry := uint64(NextMonth(ctx.BlockTime()).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
 	} else {
 		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
@@ -225,8 +226,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			utils.Attribute{Key: "block", Value: block},
 		)
 		// normally would panic! but can "recover" by auto-extending by 1 month
-		expiry := NextMonth(date).UTC().Unix()
-		k.subsTS.AddTimerByBlockTime(ctx, uint64(expiry), []byte(consumer), []byte{})
+		// (don't bother to modfy sub.MonthExpiryTime to minimize state changes)
+		expiry := uint64(NextMonth(date).UTC().Unix())
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		return
 	}
 
@@ -241,8 +243,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.Block = block
 
 		// restart timer and append new (fixated) version of this subscription
-		expiry := NextMonth(date).UTC().Unix()
-		k.subsTS.AddTimerByBlockTime(ctx, uint64(expiry), []byte(consumer), []byte{})
+		expiry := uint64(NextMonth(date).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
 		if err != nil {
 			// normally would panic! but ok to ignore - the subscription remains
