@@ -42,15 +42,16 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			utils.Attribute{Key: "subscription", Value: sub_V2.Consumer})
 
 		sub_V3 := types.Subscription{
-			Creator:       sub_V2.Creator,
-			Consumer:      sub_V2.Consumer,
-			Block:         sub_V2.Block,
-			PlanIndex:     sub_V2.PlanIndex,
-			PlanBlock:     sub_V2.PlanBlock,
-			DurationTotal: sub_V2.DurationTotal,
-			DurationLeft:  sub_V2.DurationLeft,
-			MonthCuTotal:  sub_V2.MonthCuTotal,
-			MonthCuLeft:   sub_V2.MonthCuLeft,
+			Creator:         sub_V2.Creator,
+			Consumer:        sub_V2.Consumer,
+			Block:           sub_V2.Block,
+			PlanIndex:       sub_V2.PlanIndex,
+			PlanBlock:       sub_V2.PlanBlock,
+			DurationTotal:   sub_V2.DurationTotal,
+			DurationLeft:    sub_V2.DurationLeft,
+			MonthExpiryTime: sub_V2.MonthExpiryTime,
+			MonthCuTotal:    sub_V2.MonthCuTotal,
+			MonthCuLeft:     sub_V2.MonthCuLeft,
 		}
 
 		// each subscription entry in V2 store should have an entry in V3 store
