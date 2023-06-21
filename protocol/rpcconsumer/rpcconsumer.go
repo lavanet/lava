@@ -227,7 +227,6 @@ func parseVersion(version string) (string, string, error) {
 		return "", "", utils.LavaFormatError("invalid version format", nil)
 	}
 	minimumVersion := segments[0] + segments[1]
-	fmt.Println("minimum ver: ", minimumVersion)
 	targetVersion := segments[len(segments)-1]
 	return targetVersion, minimumVersion, nil
 }
