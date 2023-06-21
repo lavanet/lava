@@ -214,6 +214,7 @@ func (lt *lavaTest) stakeLava() {
 func (lt *lavaTest) checkStakeLava(
 	planCount int,
 	specCount int,
+	subsCount int,
 	providerCount int,
 	checkedPlans []string,
 	checkedSpecs []string,
@@ -237,6 +238,19 @@ func (lt *lavaTest) checkStakeLava(
 		if !slices.Contains(checkedPlans, plan.Index) {
 			panic("Staking Failed PLAN names")
 		}
+	}
+
+	subsQueryClient := subscriptionTypes.NewQueryClient(lt.grpcConn)
+
+	// query all subscriptions
+	subsQueryRes, err := subsQueryClient.List(context.Background(), &subscriptionTypes.QueryListRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	// check if subscriptions added exist
+	if len(subsQueryRes.SubsInfo) != subsCount {
+		panic("Staking Failed SUBSCRIPTION count")
 	}
 
 	for _, key := range checkedSubscriptions {
@@ -586,7 +600,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 1 plan: "DefaultPlan"
 
-	lt.checkStakeLava(1, 5, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -1051,7 +1065,7 @@ func runE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(1, 5, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
