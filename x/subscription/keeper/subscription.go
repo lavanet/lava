@@ -259,6 +259,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 
 		// delete subscription effective now (don't wait for end of epoch)
 		k.subsFS.DelEntry(ctx, sub.Consumer, block)
+
+		details := map[string]string{"consumer": consumer}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
 	}
 }
 
