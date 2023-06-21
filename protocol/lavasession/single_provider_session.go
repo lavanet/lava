@@ -202,7 +202,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 
 func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
-		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
 		if badgeUsedCu+currentCU > maxCu {
 			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
 				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
@@ -210,7 +210,7 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, ma
 				utils.Attribute{Key: "maxCu", Value: maxCu},
 			)
 		}
-		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
 			return nil
 		}
 	}
@@ -218,8 +218,8 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, ma
 
 func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
-		badgeUsedCu := sps.userSessionsParent.atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
-		if sps.userSessionsParent.atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
 			return nil
 		}
 	}
