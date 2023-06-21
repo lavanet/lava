@@ -219,6 +219,39 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
+func parseVersion(version string) (string, string, error) {
+	parts := strings.Split(version, "-")
+	version = parts[0]
+	segments := strings.Split(version, ".")
+	if len(segments) < 2 {
+		return "", "", utils.LavaFormatError("invalid version format", nil)
+	}
+	minimumVersion := segments[0] + segments[1]
+	fmt.Println("minimum ver: ", minimumVersion)
+	targetVersion := segments[len(segments)-1]
+	return targetVersion, minimumVersion, nil
+}
+
+func CheckVersion(protocolVersion string, consensusVersion string) (success bool, err error) {
+	protocolTargetVersion, protocolMinVersion, err := parseVersion(protocolVersion)
+	if err != nil {
+		return false, err
+	}
+	consensusTargetVersion, consensusMinVersion, err := parseVersion(consensusVersion)
+	if err != nil {
+		return false, err
+	}
+	if protocolMinVersion != consensusMinVersion {
+		err := fmt.Errorf("version mismatch")
+		utils.LavaFormatFatal("minimum version mismatch for rpcconsumer", err)
+		return false, err
+	}
+	if protocolTargetVersion != consensusTargetVersion {
+		utils.LavaFormatWarning("target version mismatch for rpcconsumer", nil)
+	}
+	return true, nil
+}
+
 func CreateRPCConsumerCobraCommand() *cobra.Command {
 	cmdRPCConsumer := &cobra.Command{
 		Use:   "rpcconsumer [config-file] | { {listen-ip:listen-port spec-chain-id api-interface} ... }",
@@ -264,6 +297,16 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if err != nil {
 				return err
 			}
+
+			// check version
+			// TODO FETCH VERSION FROM CONSENSUS
+			// consensusVersion := ...
+			consensusVersionPlaceHolder := "0.14.2"
+			ok, err := CheckVersion(version.Version, consensusVersionPlaceHolder)
+			if !ok {
+				return err
+			}
+			utils.LavaFormatInfo("RPCConsumer version check OK", utils.Attribute{Key: "protocolVersion: ", Value: version.Version}, utils.Attribute{Key: "consensusVersion: ", Value: consensusVersionPlaceHolder})
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
