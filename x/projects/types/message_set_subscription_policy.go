@@ -3,13 +3,14 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 const TypeMsgSetSubscriptionPolicy = "set_subscription_policy"
 
 var _ sdk.Msg = &MsgSetSubscriptionPolicy{}
 
-func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy Policy) *MsgSetSubscriptionPolicy {
+func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy planstypes.Policy) *MsgSetSubscriptionPolicy {
 	return &MsgSetSubscriptionPolicy{
 		Creator:  creator,
 		Projects: projects,

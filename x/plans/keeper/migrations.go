@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/x/plans/migrations/v2"
 	"github.com/lavanet/lava/x/plans/types"
-	projecttypes "github.com/lavanet/lava/x/projects/types"
 )
 
 type Migrator struct {
@@ -34,7 +33,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			m.keeper.plansFS.ReadEntry(ctx, planIndex, block, &plan_v2)
 
 			// create policy struct
-			planPolicy := projecttypes.Policy{
+			planPolicy := types.Policy{
 				GeolocationProfile: uint64(1),
 				TotalCuLimit:       plan_v2.ComputeUnits,
 				EpochCuLimit:       plan_v2.ComputeUnitsPerEpoch,

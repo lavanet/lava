@@ -12,7 +12,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -41,7 +40,7 @@ func CreateMockSpec() spectypes.Spec {
 }
 
 func CreateMockPlan() plantypes.Plan {
-	policy := projectstypes.Policy{
+	policy := plantypes.Policy{
 		TotalCuLimit:       100000,
 		EpochCuLimit:       10000,
 		MaxProvidersToPair: 3,

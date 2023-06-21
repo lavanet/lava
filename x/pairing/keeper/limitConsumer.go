@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/lavanet/lava/utils"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) error {
@@ -19,8 +19,8 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, 
 		}
 
 		planPolicy := plan.GetPlanPolicy()
-		policies := []*projectstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
-		if !projectstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
+		policies := []*planstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
+		if !planstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
 			return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount for the project", fmt.Errorf("consumer CU limit exceeded for project"), []utils.Attribute{{Key: "projectUsedCu", Value: project.GetUsedCu()}}...)
 		}
 
