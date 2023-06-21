@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -41,7 +41,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	}
 
 	planPolicy := plan.GetPlanPolicy()
-	policies := []*projectstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
+	policies := []*planstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
@@ -51,7 +51,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	}
 	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
-	if !projectstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
+	if !planstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
 		allowedCU = 0
 	}
 

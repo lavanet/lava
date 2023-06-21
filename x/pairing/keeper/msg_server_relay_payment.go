@@ -355,17 +355,19 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 }
 
 func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession) error {
-	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
+	epoch := uint64(relay.Epoch)
+
+	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
 	if err != nil {
 		return fmt.Errorf("failed to get project for client")
 	}
 
-	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, uint64(ctx.BlockHeight()), relay.CuSum)
+	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the project")
 	}
 
-	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the subscription")
 	}

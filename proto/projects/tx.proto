@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "projects/project.proto";
+import "plans/plan.proto"; 
 import "gogoproto/gogo.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
@@ -38,7 +39,7 @@ message MsgDelKeysResponse {
 message MsgSetPolicy {
   string creator = 1;
   string project = 2;
-  Policy policy = 3 [(gogoproto.nullable) = false];
+  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
 }
 
 message MsgSetPolicyResponse {
@@ -47,7 +48,7 @@ message MsgSetPolicyResponse {
 message MsgSetSubscriptionPolicy {
   string creator = 1;
   repeated string projects = 2;
-  Policy policy = 3 [(gogoproto.nullable) = false];
+  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
 }
 
 message MsgSetSubscriptionPolicyResponse {

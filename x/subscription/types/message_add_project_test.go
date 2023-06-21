@@ -5,6 +5,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 				Creator: "invalid_address",
 				ProjectData: projectstypes.ProjectData{
 					Name:   "validName",
-					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
+					Policy: &planstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{
 						projectstypes.ProjectAdminKey("invalid address"),
 					},
@@ -34,7 +35,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 				Creator: sample.AccAddress(),
 				ProjectData: projectstypes.ProjectData{
 					Name:   "validName",
-					Policy: &projectstypes.Policy{MaxProvidersToPair: 3},
+					Policy: &planstypes.Policy{MaxProvidersToPair: 3},
 					ProjectKeys: []projectstypes.ProjectKey{
 						projectstypes.ProjectAdminKey(sample.AccAddress()),
 					},

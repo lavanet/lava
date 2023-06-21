@@ -29674,16 +29674,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29941,16 +29931,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/stake_storage/{index}':
@@ -30151,16 +30131,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30483,16 +30453,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30828,16 +30788,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -32112,16 +32062,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/spec/spec/{ChainID}':
@@ -32758,16 +32698,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/spec/spec_raw/{ChainID}':
@@ -33073,7 +33003,7 @@ paths:
                   block:
                     type: string
                     format: uint64
-                    title: when the subscription was created
+                    title: when the subscription was last recharged
                   plan_index:
                     type: string
                     title: index (name) of plan
@@ -33093,10 +33023,6 @@ paths:
                     type: string
                     format: uint64
                     title: expiry time of current month
-                  prev_expiry_block:
-                    type: string
-                    format: uint64
-                    title: when previous month expired
                   month_cu_total:
                     type: string
                     format: uint64
@@ -33105,10 +33031,6 @@ paths:
                     type: string
                     format: uint64
                     title: CU remaining during current month
-                  prev_cu_left:
-                    type: string
-                    format: uint64
-                    title: CU remaining for previous month
         default:
           description: An unexpected error response.
           schema:
@@ -33132,6 +33054,67 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - Query
+  /lavanet/lava/subscription/list:
+    get:
+      summary: Queries a list of List items.
+      operationId: LavanetLavaSubscriptionList
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              subs_info:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    consumer:
+                      type: string
+                      title: beneficiary consumer
+                    plan:
+                      type: string
+                      title: plan assosiated with the subscription
+                    duration_total:
+                      type: string
+                      format: uint64
+                      title: total duration in months (purchase/renewal)
+                    duration_left:
+                      type: string
+                      format: uint64
+                      title: remaining duration in months
+                    month_expiry:
+                      type: string
+                      format: uint64
+                      title: upcoming expiry (of current month) in unix time
+                    month_cu_total:
+                      type: string
+                      format: uint64
+                      title: total CU allowance per month
+                    month_cu_left:
+                      type: string
+                      format: uint64
+                      title: remaining CU allowance this month
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
       tags:
         - Query
   '/lavanet/lava/subscription/list_projects/{subscription}':
@@ -57671,6 +57654,35 @@ definitions:
               type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
+  lavanet.lava.subscription.ListInfoStruct:
+    type: object
+    properties:
+      consumer:
+        type: string
+        title: beneficiary consumer
+      plan:
+        type: string
+        title: plan assosiated with the subscription
+      duration_total:
+        type: string
+        format: uint64
+        title: total duration in months (purchase/renewal)
+      duration_left:
+        type: string
+        format: uint64
+        title: remaining duration in months
+      month_expiry:
+        type: string
+        format: uint64
+        title: upcoming expiry (of current month) in unix time
+      month_cu_total:
+        type: string
+        format: uint64
+        title: total CU allowance per month
+      month_cu_left:
+        type: string
+        format: uint64
+        title: remaining CU allowance this month
   lavanet.lava.subscription.MsgAddProjectResponse:
     type: object
   lavanet.lava.subscription.MsgBuyResponse:
@@ -57695,7 +57707,7 @@ definitions:
           block:
             type: string
             format: uint64
-            title: when the subscription was created
+            title: when the subscription was last recharged
           plan_index:
             type: string
             title: index (name) of plan
@@ -57715,10 +57727,6 @@ definitions:
             type: string
             format: uint64
             title: expiry time of current month
-          prev_expiry_block:
-            type: string
-            format: uint64
-            title: when previous month expired
           month_cu_total:
             type: string
             format: uint64
@@ -57727,10 +57735,6 @@ definitions:
             type: string
             format: uint64
             title: CU remaining during current month
-          prev_cu_left:
-            type: string
-            format: uint64
-            title: CU remaining for previous month
   lavanet.lava.subscription.QueryListProjectsResponse:
     type: object
     properties:
@@ -57738,6 +57742,40 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.subscription.QueryListResponse:
+    type: object
+    properties:
+      subs_info:
+        type: array
+        items:
+          type: object
+          properties:
+            consumer:
+              type: string
+              title: beneficiary consumer
+            plan:
+              type: string
+              title: plan assosiated with the subscription
+            duration_total:
+              type: string
+              format: uint64
+              title: total duration in months (purchase/renewal)
+            duration_left:
+              type: string
+              format: uint64
+              title: remaining duration in months
+            month_expiry:
+              type: string
+              format: uint64
+              title: upcoming expiry (of current month) in unix time
+            month_cu_total:
+              type: string
+              format: uint64
+              title: total CU allowance per month
+            month_cu_left:
+              type: string
+              format: uint64
+              title: remaining CU allowance this month
   lavanet.lava.subscription.QueryParamsResponse:
     type: object
     properties:
@@ -57757,7 +57795,7 @@ definitions:
       block:
         type: string
         format: uint64
-        title: when the subscription was created
+        title: when the subscription was last recharged
       plan_index:
         type: string
         title: index (name) of plan
@@ -57777,10 +57815,6 @@ definitions:
         type: string
         format: uint64
         title: expiry time of current month
-      prev_expiry_block:
-        type: string
-        format: uint64
-        title: when previous month expired
       month_cu_total:
         type: string
         format: uint64
@@ -57789,7 +57823,3 @@ definitions:
         type: string
         format: uint64
         title: CU remaining during current month
-      prev_cu_left:
-        type: string
-        format: uint64
-        title: CU remaining for previous month

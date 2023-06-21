@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -107,7 +108,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
-	var strictestPolicy projectstypes.Policy
+	var strictestPolicy planstypes.Policy
 
 	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
@@ -142,14 +143,14 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, allowedCU, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (projectstypes.Policy, uint64, error) {
+func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, uint64, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return projectstypes.Policy{}, 0, err
+		return planstypes.Policy{}, 0, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
-	policies := []*projectstypes.Policy{&planPolicy}
+	policies := []*planstypes.Policy{&planPolicy}
 	if project.SubscriptionPolicy != nil {
 		policies = append(policies, project.SubscriptionPolicy)
 	}
@@ -157,26 +158,26 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		policies = append(policies, project.AdminPolicy)
 	}
 
-	if !projectstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return projectstypes.Policy{}, 0, fmt.Errorf("chain ID not found in any of the policies")
+	if !planstypes.CheckChainIdExistsInPolicies(chainID, policies) {
+		return planstypes.Policy{}, 0, fmt.Errorf("chain ID not found in any of the policies")
 	}
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return projectstypes.Policy{}, 0, err
+		return planstypes.Policy{}, 0, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return projectstypes.Policy{}, 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return planstypes.Policy{}, 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
-	strictestPolicy := projectstypes.Policy{
+	strictestPolicy := planstypes.Policy{
 		GeolocationProfile:    geolocation,
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,
@@ -186,12 +187,12 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	return strictestPolicy, allowedCU, nil
 }
 
-func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Policy) (projectstypes.SELECTED_PROVIDERS_MODE, []string) {
-	selectedProvidersModeList := []projectstypes.SELECTED_PROVIDERS_MODE{}
+func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Policy) (planstypes.SELECTED_PROVIDERS_MODE, []string) {
+	selectedProvidersModeList := []planstypes.SELECTED_PROVIDERS_MODE{}
 	selectedProvidersList := [][]string{}
 	for _, p := range policies {
 		selectedProvidersModeList = append(selectedProvidersModeList, p.SelectedProvidersMode)
-		if p.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE || p.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_MIXED {
+		if p.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE || p.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_MIXED {
 			if len(p.SelectedProviders) != 0 {
 				selectedProvidersList = append(selectedProvidersList, p.SelectedProviders)
 			}
@@ -204,7 +205,7 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*projectstypes.Po
 	return effectiveMode, effectiveSelectedProviders
 }
 
-func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectstypes.Policy) uint64 {
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) uint64 {
 	geolocation := uint64(math.MaxUint64)
 
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
@@ -217,7 +218,7 @@ func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*projectsty
 	return geolocation
 }
 
-func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projectstypes.Policy) (uint64, error) {
+func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planstypes.Policy) (uint64, error) {
 	providersToPair := uint64(math.MaxUint64)
 
 	for _, policy := range policies {
@@ -234,7 +235,7 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*projec
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*projectstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {

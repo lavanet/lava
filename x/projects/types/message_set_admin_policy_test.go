@@ -5,6 +5,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +19,7 @@ func TestMsgSetPolicy_ValidateBasic(t *testing.T) {
 			name: "invalid address",
 			msg: MsgSetPolicy{
 				Creator: "invalid_address",
-				Policy: Policy{
+				Policy: planstypes.Policy{
 					EpochCuLimit:       100,
 					TotalCuLimit:       1000,
 					MaxProvidersToPair: 3,
@@ -29,7 +30,7 @@ func TestMsgSetPolicy_ValidateBasic(t *testing.T) {
 			name: "valid address",
 			msg: MsgSetPolicy{
 				Creator: sample.AccAddress(),
-				Policy: Policy{
+				Policy: planstypes.Policy{
 					EpochCuLimit:       100,
 					TotalCuLimit:       1000,
 					MaxProvidersToPair: 3,

@@ -3,7 +3,7 @@ package filters
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 // TODO: This is a temp filter until the geolocation mechanism changes (this is not optimal)
@@ -12,9 +12,9 @@ type GeolocationFilter struct {
 	geolocation uint64
 }
 
-func (f *GeolocationFilter) InitFilter(strictestPolicy projectstypes.Policy) bool {
-	if strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
-		strictestPolicy.SelectedProvidersMode == projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
+func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
+	if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
+		strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
 		f.geolocation = strictestPolicy.GeolocationProfile
 		return true
 	}
