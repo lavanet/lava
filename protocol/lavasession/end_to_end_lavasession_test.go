@@ -46,21 +46,21 @@ func TestHappyFlowE2E(t *testing.T) {
 
 		// Provider Side:
 
-		sps, _, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, nil)
+		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, nil)
 		// validate expected results
 		require.Empty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, sps)
 		require.Error(t, err)
 		require.True(t, ConsumerNotRegisteredYet.Is(err))
 		// expect session to be missing, so we need to register it for the first time
-		sps, _, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Client.MaxComputeUnits, pairedProviders, nil)
+		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Client.MaxComputeUnits, pairedProviders, nil)
 		// validate session was added
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, err)
 		require.NotNil(t, sps)
 
 		// prepare session for usage
-		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, nil, nil)
+		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0)
 
 		// validate session was prepared successfully
 		require.Nil(t, err)

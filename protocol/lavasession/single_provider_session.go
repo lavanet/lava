@@ -21,6 +21,7 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
+	BadgeUserData      *ProviderSessionsEpochData
 	occupyingGuid      uint64 // used for tracking errors
 }
 
@@ -28,6 +29,10 @@ type SingleProviderSession struct {
 // is used to determine if the proof is beneficial and needs to be sent to rewardServer
 func (sps *SingleProviderSession) IsPayingRelay() bool {
 	return sps.LatestRelayCu > 0
+}
+
+func (sps *SingleProviderSession) IsBadgeSession() bool {
+	return sps.BadgeUserData != nil
 }
 
 func (sps *SingleProviderSession) writeCuSumAtomically(cuSum uint64) {
@@ -107,7 +112,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
-func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64, badgeSession *BadgeSession, badgeUserEpochData *ProviderSessionsEpochData) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
@@ -172,9 +177,9 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	}
 
 	// Update badgeUsedCu in ProviderSessionsWithConsumer
-	if badgeSession != nil && badgeUserEpochData != nil {
-		maxCuBadge := sps.userSessionsParent.atomicReadBadgeMaxComputeUnits(badgeUserEpochData)
-		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, badgeUserEpochData)
+	if sps.IsBadgeSession() {
+		maxCuBadge := atomicReadBadgeMaxComputeUnits(sps.BadgeUserData)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, sps.BadgeUserData)
 		if err != nil {
 			sps.lock.Unlock() // unlock on error
 			return err
@@ -253,7 +258,7 @@ func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) onSessionFailure(badgeUserEpochData *ProviderSessionsEpochData) error {
+func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in onSessionFailure", err, utils.Attribute{Key: "sessionID", Value: sps.SessionID})
@@ -267,8 +272,8 @@ func (sps *SingleProviderSession) onSessionFailure(badgeUserEpochData *ProviderS
 
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
-	if badgeUserEpochData != nil {
-		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, badgeUserEpochData)
+	if sps.IsBadgeSession() {
+		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, sps.BadgeUserData)
 	}
 	sps.LatestRelayCu = 0
 

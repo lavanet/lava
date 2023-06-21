@@ -144,7 +144,7 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComput
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (maxComputeUnits uint64) {
+func atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (maxComputeUnits uint64) {
 	return atomic.LoadUint64(&badgeUserEpochData.MaxComputeUnits)
 }
 
@@ -158,10 +158,6 @@ func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64)
 
 func (pswc *ProviderSessionsWithConsumer) atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
-}
-
-func (pswc *ProviderSessionsWithConsumer) atomicWriteBadgeUsedComputeUnits(cu uint64, badgeUserEpochData *ProviderSessionsEpochData) {
-	atomic.StoreUint64(&badgeUserEpochData.UsedComputeUnits, cu)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
@@ -208,12 +204,13 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
-func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64, badgeUserEpochData *ProviderSessionsEpochData) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
 		SessionID:          sessionId,
 		PairingEpoch:       epoch,
+		BadgeUserData:      badgeUserEpochData,
 	}
 	pswc.Lock.Lock()
 	defer pswc.Lock.Unlock()
