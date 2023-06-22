@@ -227,7 +227,7 @@ func (fs *FixationStore) AppendEntry(
 		// temporary: do not allow adding new entries for an index that was deleted
 		// and still not fully cleaned up (e.g. not stale or with references held)
 		if latestEntry.IsDeletedBy(block) {
-			return utils.LavaFormatError("AppendEntry",
+			return utils.LavaFormatWarning("AppendEntry",
 				fmt.Errorf("entry already deleted and pending cleanup"),
 				utils.Attribute{Key: "index", Value: index},
 				utils.Attribute{Key: "block", Value: block},
