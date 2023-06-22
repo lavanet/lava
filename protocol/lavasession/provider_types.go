@@ -112,13 +112,13 @@ type BadgeSession struct {
 	BadgeUser         string
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, badgeEpochData map[string]*ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
+func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
 	pswc := &ProviderSessionsWithConsumer{
 		Sessions:          map[uint64]*SingleProviderSession{},
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
-		badgeEpochData:    badgeEpochData,
+		badgeEpochData:    map[string]*ProviderSessionsEpochData{},
 		isDataReliability: isDataReliability,
 		pairedProviders:   pairedProviders,
 	}
@@ -204,13 +204,12 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
-func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64, badgeUserEpochData *ProviderSessionsEpochData) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
 		SessionID:          sessionId,
 		PairingEpoch:       epoch,
-		BadgeUserData:      badgeUserEpochData,
 	}
 	pswc.Lock.Lock()
 	defer pswc.Lock.Unlock()
