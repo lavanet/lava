@@ -44,11 +44,15 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: parsing.ApiName},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
 	}
 	blockNum, err := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning("Failed To Parse FetchLatestBlockNum", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed to parse Response", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
@@ -78,10 +82,22 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: parsing.ApiName},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
 	}
 
-	return parser.ParseMessageResponse(parserInput, parsing.ResultParsing)
+	res, err := parser.ParseMessageResponse(parserInput, parsing.ResultParsing)
+	if err != nil {
+		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: parsing.ApiName},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
+	}
+	return res, nil
 }
 
 func NewChainFetcher(ctx context.Context, chainProxy ChainProxy, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
