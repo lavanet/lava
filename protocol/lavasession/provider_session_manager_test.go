@@ -108,8 +108,12 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 	require.NotNil(t, sps)
 	require.NotNil(t, sps.BadgeUserData)
 
+	return psm, sps
+}
+
+func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleProviderSession) {
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
+	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -118,7 +122,6 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
 	require.Equal(t, sps.PairingEpoch, epoch1)
-	return psm, sps
 }
 
 func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
@@ -169,7 +172,8 @@ func TestHappyFlowPSM(t *testing.T) {
 func TestHappyFlowBadgePSM(t *testing.T) {
 	// init test
 	psm, sps := prepareBadgeSession(t, context.Background(), 0)
-
+	// prepare session for usage
+	prepareBadgeSessionForUsage(t, context.Background(), sps)
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 
@@ -201,11 +205,21 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 			defer func() {
 				done <- struct{}{}
 			}()
+			// Random sleep before starting the goroutine
+			sleepDuration := time.Duration(rand.Intn(3)) * time.Millisecond
+			time.Sleep(sleepDuration)
+
 			// Initialize the test
 			psm, sps := prepareBadgeSession(t, context.Background(), index)
 			// Put session into global array
 			badgeSessionsUsedCU[index] = sps.BadgeUserData
 
+			// Random sleep between GetSession and PrepareSessionForUsage
+			sleepDuration = time.Duration(rand.Intn(3)) * time.Millisecond
+			time.Sleep(sleepDuration)
+
+			// Prepare session for usage
+			prepareBadgeSessionForUsage(t, context.Background(), sps)
 			// Randomly determine test success or failure with equal probability
 			rand.Seed(time.Now().UnixNano())
 			isSuccess := rand.Intn(2) == 0
