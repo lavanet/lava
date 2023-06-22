@@ -83,9 +83,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
-		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		badgeData, badgeFound := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		badgeSig := []byte{}
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
-		if ok {
+		if badgeFound {
 			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
 				return nil, utils.LavaFormatWarning("badge must match traits in relay request", fmt.Errorf("invalid badge"),
 					utils.Attribute{Key: "badgeAddress", Value: badgeData.Badge.Address},
@@ -130,6 +131,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 			// badge is valid & CU enforced -> switch address to badge signer (developer key) and continue with payment
 			clientAddr = badgeData.BadgeSigner
+			badgeSig = badgeData.Badge.ProjectSig
 		}
 
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -237,6 +239,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
+		details["bagde"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
 		details["Mint"] = details["BasePay"]
