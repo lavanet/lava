@@ -239,7 +239,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
-		details["bagde"] = fmt.Sprint(badgeSig)
+		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
 		details["Mint"] = details["BasePay"]
