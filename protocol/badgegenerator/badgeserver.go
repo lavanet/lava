@@ -67,7 +67,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 
 	cmd.Flags().String("grpc-url", "", "--grpc-url=127.0.0.1:9090")
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
-	cmd.Flags().Int("port", 8080, "--port=8080")
+	cmd.Flags().String("port", "8080", "--port=8080")
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
 
@@ -92,7 +92,8 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) {
 }
 
 func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
-	listener, err := net.Listen("tcp", ":"+v.GetString(PortEnvironmentVariable))
+	port := v.GetString(PortEnvironmentVariable)
+	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		utils.LavaFormatFatal("Error in open listener", err)
 	}
