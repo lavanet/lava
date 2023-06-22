@@ -6,12 +6,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 type Filter interface {
 	Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool
-	InitFilter(strictestPolicy projectstypes.Policy) bool // return if filter is usable (by the policy)
+	InitFilter(strictestPolicy planstypes.Policy) bool // return if filter is usable (by the policy)
 }
 
 func GetAllFilters() []Filter {
@@ -23,7 +23,7 @@ func GetAllFilters() []Filter {
 	return filters
 }
 
-func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filter {
+func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
 	activeFilters := []Filter{}
 
 	for _, filter := range filters {
@@ -36,7 +36,7 @@ func initFilters(filters []Filter, strictestPolicy projectstypes.Policy) []Filte
 	return activeFilters
 }
 
-func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy projectstypes.Policy, currentEpoch uint64) ([]epochstoragetypes.StakeEntry, error) {
+func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy planstypes.Policy, currentEpoch uint64) ([]epochstoragetypes.StakeEntry, error) {
 	filters = initFilters(filters, strictestPolicy)
 
 	var filtersResult [][]bool

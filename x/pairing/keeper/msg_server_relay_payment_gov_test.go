@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -657,8 +658,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
 	require.Equal(t, uint64(relayRequest.GetEpoch()), providerPaymentStorageFromEpochPayments.GetEpoch())
 
+	project, err := ts.keepers.Projects.Developer(ts.ctx, &types.QueryDeveloperRequest{Developer: ts.clients[0].Addr.String()})
+	require.Nil(t, err)
 	// Get the UniquePaymentStorageClientProvider key
-	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
+	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), project.Project.Index, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
 
 	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
 	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}

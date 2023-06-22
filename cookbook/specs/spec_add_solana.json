@@ -1152,6 +1152,19 @@
                         "inheritance_apis": [],
                         "parse_directives": [
                             {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getLatestBlockhash\",\"params\":[{\"commitment\":\"finalized\"}],\"id\":1}",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "context",
+                                        "slot"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "getLatestBlockhash"
+                            },
+                            {
                                 "function_tag": "GET_BLOCK_BY_NUM",
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
                                 "result_parsing": {
@@ -1163,17 +1176,6 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "getBlock"
-                            },
-                            {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlockHeight\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_BLOCKNUM",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "api_name": "getBlockHeight"
                             }
                         ]
                     }

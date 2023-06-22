@@ -83,9 +83,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
-		badgeData, ok := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		badgeData, badgeFound := addressEpochBadgeMap[addressEpochBadgeMapKey]
+		badgeSig := []byte{}
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
-		if ok {
+		if badgeFound {
 			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
 				return nil, utils.LavaFormatWarning("badge must match traits in relay request", fmt.Errorf("invalid badge"),
 					utils.Attribute{Key: "badgeAddress", Value: badgeData.Badge.Address},
@@ -130,6 +131,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 			// badge is valid & CU enforced -> switch address to badge signer (developer key) and continue with payment
 			clientAddr = badgeData.BadgeSigner
+			badgeSig = badgeData.Badge.ProjectSig
 		}
 
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -154,7 +156,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, servicersToPair, projectID, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			clientAddr,
@@ -183,7 +185,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, projectID, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
 			return nil, utils.LavaFormatWarning("double spending detected", err,
@@ -237,6 +239,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
+		details["projectID"] = projectID
+		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
 		details["Mint"] = details["BasePay"]
@@ -355,17 +359,19 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 }
 
 func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession) error {
-	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
+	epoch := uint64(relay.Epoch)
+
+	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
 	if err != nil {
 		return fmt.Errorf("failed to get project for client")
 	}
 
-	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, uint64(ctx.BlockHeight()), relay.CuSum)
+	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the project")
 	}
 
-	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), relay.CuSum)
+	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the subscription")
 	}

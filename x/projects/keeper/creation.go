@@ -198,7 +198,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 			err := k.developerKeysFS.AppendEntry(ctx, key.Key, epoch, &devkeyData)
 			if err != nil {
-				return utils.LavaFormatError("failed to register key", err,
+				return utils.LavaFormatWarning("failed to register key", err,
 					utils.Attribute{Key: "key", Value: key.Key},
 					utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				)

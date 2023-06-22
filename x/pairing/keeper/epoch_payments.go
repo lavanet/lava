@@ -79,11 +79,11 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 // Function to add an epoch payment to the epochPayments object
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
+func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	// add a uniquePaymentStorageClientProvider object (the object that represent the actual payment) to this epoch's providerPaymentPayment object
-	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, utils.LavaFormatError("could not add epoch payment", err, []utils.Attribute{{Key: "userAddress", Value: userAddress}, {Key: "providerAddress", Value: providerAddress}, {Key: "uniqueIdentifier", Value: uniqueIdentifier}, {Key: "epoch", Value: epoch}, {Key: "chainID", Value: chainID}}...)
+		return 0, utils.LavaFormatError("could not add epoch payment", err, []utils.Attribute{{Key: "userAddress", Value: projectID}, {Key: "providerAddress", Value: providerAddress}, {Key: "uniqueIdentifier", Value: uniqueIdentifier}, {Key: "epoch", Value: epoch}, {Key: "chainID", Value: chainID}}...)
 	}
 
 	// get this epoch's epochPayments object

@@ -173,7 +173,12 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 						NewLatestCallback: recordMetricsOnNewBlock,
 					}
-					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					var chainFetcher chaintracker.ChainFetcher
+					if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+						chainFetcher = chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					} else {
+						chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
+					}
 					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 					if err != nil {
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})

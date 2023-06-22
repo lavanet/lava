@@ -135,3 +135,24 @@ func FormatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessage
 	}
 	return parserInput, nil
 }
+
+type DummyChainFetcher struct {
+	endpoint *lavasession.RPCProviderEndpoint
+}
+
+func (cf *DummyChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return *cf.endpoint
+}
+
+func (cf *DummyChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+
+func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	return "dummy", nil
+}
+
+func NewDummyChainFetcher(ctx context.Context, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
+	cf := &DummyChainFetcher{endpoint: endpoint}
+	return cf
+}
