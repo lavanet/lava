@@ -269,7 +269,8 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 func TestBadgePSMOnSessionFailure(t *testing.T) {
 	// init test
 	psm, sps := prepareBadgeSession(t, context.Background(), 0)
-
+	// prepare session for usage
+	prepareBadgeSessionForUsage(t, context.Background(), sps)
 	// on session done successfully
 	err := psm.OnSessionFailure(sps, relayNumber)
 
