@@ -38,7 +38,7 @@ const (
 )
 
 // This variable will hold grpc server address
-var grpcListener = "localhost:28353"
+var grpcListener = "localhost:0"
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.Seed(time.Now().UnixNano())
