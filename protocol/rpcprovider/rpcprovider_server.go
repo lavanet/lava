@@ -342,8 +342,8 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	consumerAddressString := extractedConsumerAddress.String()
 
 	// validate & fetch badge to send into provider session manager
-	isBadge, err := rpcps.validateBadgeSession(ctx, request.RelaySession)
-	if isBadge && err != nil {
+	err = rpcps.validateBadgeSession(ctx, request.RelaySession)
+	if err != nil {
 		return nil, nil, utils.LavaFormatWarning("badge validation err", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 
@@ -366,23 +366,23 @@ func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, rela
 	return extractedConsumerAddress, nil
 }
 
-func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relaySession *pairingtypes.RelaySession) (isBadge bool, err error) {
+func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relaySession *pairingtypes.RelaySession) error {
 	if relaySession.Badge != nil {
 		// validating badge signer
 		badgeUserSigner, err := sigs.ExtractSignerAddress(relaySession)
 		if err != nil {
-			return true, utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		if badgeUserSigner.String() != relaySession.Badge.Address {
-			return true, utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// validating badge lavaChainId
 		if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
-			return true, utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		return true, nil
+		return nil
 	} else { // not a badge session
-		return false, nil
+		return nil
 	}
 }
 
