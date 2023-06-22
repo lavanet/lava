@@ -10,6 +10,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,22 +75,23 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	return psm, sps
 }
 
-func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSession *BadgeSession, badgeSessionIndex int) (*ProviderSessionManager, *SingleProviderSession) {
+func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex int) (*ProviderSessionManager, *SingleProviderSession) {
 	// initialize the struct
 	psm := initProviderSessionManager()
 
+	// initialize badge
+	badge := &pairingtypes.Badge{}
 	// Get unique badgeUser for each goroutine
 	badgeUser := fmt.Sprintf("sampleUser%d", badgeSessionIndex)
-
 	// Get random BadgeCuAllocation between 100 and 5000
 	rand.Seed(time.Now().UnixNano())
 	badgeCuAllocation := rand.Intn(4901) + 100
 
-	badgeSession.BadgeCuAllocation = uint64(badgeCuAllocation)
-	badgeSession.BadgeUser = badgeUser
+	badge.CuAllocation = uint64(badgeCuAllocation)
+	badge.Address = badgeUser
 
 	// get session for the first time
-	sps, err := psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, badgeSession)
+	sps, err := psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, badge)
 
 	// validate expected results
 	require.Empty(t, psm.sessionsWithAllConsumers)
@@ -98,7 +100,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSession *BadgeS
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, badgeSession)
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, badge)
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
@@ -165,9 +167,8 @@ func TestHappyFlowPSM(t *testing.T) {
 }
 
 func TestHappyFlowBadgePSM(t *testing.T) {
-	badgeSession := &BadgeSession{}
 	// init test
-	psm, sps := prepareBadgeSession(t, context.Background(), badgeSession, 0)
+	psm, sps := prepareBadgeSession(t, context.Background(), 0)
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
@@ -200,12 +201,8 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 			defer func() {
 				done <- struct{}{}
 			}()
-
-			// Create a unique BadgeSession for each goroutine
-			badgeSession := &BadgeSession{}
-
 			// Initialize the test
-			psm, sps := prepareBadgeSession(t, context.Background(), badgeSession, index)
+			psm, sps := prepareBadgeSession(t, context.Background(), index)
 			// Put session into global array
 			badgeSessionsUsedCU[index] = sps.BadgeUserData
 
@@ -256,9 +253,8 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 }
 
 func TestBadgePSMOnSessionFailure(t *testing.T) {
-	badgeSession := &BadgeSession{}
 	// init test
-	psm, sps := prepareBadgeSession(t, context.Background(), badgeSession, 0)
+	psm, sps := prepareBadgeSession(t, context.Background(), 0)
 
 	// on session done successfully
 	err := psm.OnSessionFailure(sps, relayNumber)
