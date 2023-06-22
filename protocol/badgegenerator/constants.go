@@ -6,3 +6,5 @@ const (
 	GrpcUrlEnvironmentVariable     = "GRPC_URL"
 	LavaChainIDEnvironmentVariable = "CHAIN_ID"
 )
+
+const DefaultProjectId = "default"
