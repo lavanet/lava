@@ -2,6 +2,7 @@ package badgegenerator
 
 import (
 	"context"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"net"
 	"net/http"
 	"strings"
@@ -121,6 +122,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	stateTracker.RegisterForEpochUpdates(ctx, server)
 
 	s := grpc.NewServer()
+	grpc_health_v1.RegisterHealthServer(s, &HealthServer{})
 	pairingtypes.RegisterBadgeGeneratorServer(s, server)
 	gogoreflection.Register(s)
 
