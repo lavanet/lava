@@ -88,11 +88,60 @@ func TestPayments(t *testing.T) {
 func TestSendNewProof(t *testing.T) {
 	rws := rewardserver.NewRewardServer(stubRewardsTxSender{}, nil)
 
-	relaySession := common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil)
-	existingCU, updatedWithProf := rws.SendNewProof(context.TODO(), relaySession, uint64(42), "consumerAddress", "apiInterface")
+	testCases := []struct {
+		Proofs                   []*pairingtypes.RelaySession
+		ExpectedExistingCu       uint64
+		ExpectedUpdatedWithProof bool
+	}{
+		{
+			Proofs: []*pairingtypes.RelaySession{
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil),
+			},
+			ExpectedExistingCu:       uint64(0),
+			ExpectedUpdatedWithProof: true,
+		},
+		{
+			Proofs: []*pairingtypes.RelaySession{
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil),
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "newSpec", nil),
+			},
+			ExpectedExistingCu:       uint64(0),
+			ExpectedUpdatedWithProof: true,
+		},
+		{
+			Proofs: []*pairingtypes.RelaySession{
+				common.BuildRelaySession(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(1), uint64(0), "spec", nil),
+				common.BuildRelaySession(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(2), uint64(0), "spec", nil),
+			},
+			ExpectedExistingCu:       uint64(0),
+			ExpectedUpdatedWithProof: true,
+		},
+		{
+			Proofs: []*pairingtypes.RelaySession{
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil),
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(42), "spec", nil),
+			},
+			ExpectedExistingCu:       uint64(0),
+			ExpectedUpdatedWithProof: true,
+		},
+		{
+			Proofs: []*pairingtypes.RelaySession{
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(42), "spec", nil),
+				common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil),
+			},
+			ExpectedExistingCu:       uint64(42),
+			ExpectedUpdatedWithProof: false,
+		},
+	}
 
-	require.True(t, updatedWithProf)
-	require.Zero(t, existingCU)
+	for _, testCase := range testCases {
+		var existingCU, updatedWithProf = uint64(0), false
+		for _, proof := range testCase.Proofs {
+			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(42), "consumerAddress", "apiInterface")
+		}
+		require.Equal(t, testCase.ExpectedExistingCu, existingCU)
+		require.Equal(t, testCase.ExpectedUpdatedWithProof, updatedWithProf)
+	}
 }
 
 func newSdkContext() sdk.Context {

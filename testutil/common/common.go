@@ -80,11 +80,11 @@ func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepe
 	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
 }
 
-func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+func BuildRelaySession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
 	relaySession := &types.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
-		SessionId:   uint64(1),
+		SessionId:   sessionId,
 		SpecId:      spec,
 		CuSum:       cuSum,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
@@ -93,7 +93,7 @@ func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte,
 		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
 	}
 	if qos != nil {
-		qos.ComputeQoS()
+		_, _ = qos.ComputeQoS()
 	}
 	return relaySession
 }
