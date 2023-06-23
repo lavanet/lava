@@ -2,10 +2,11 @@ package badgegenerator
 
 import (
 	"context"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	"net"
 	"net/http"
 	"strings"
+
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
