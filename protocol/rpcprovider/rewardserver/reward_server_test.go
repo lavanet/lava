@@ -2,8 +2,15 @@ package rewardserver_test
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/lavanet/lava/testutil/common"
+	"github.com/tendermint/tendermint/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
+	"golang.org/x/net/context"
 	"strconv"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -66,7 +73,7 @@ func stubPaymentEvents(num int) (tos []map[string]string) {
 func TestPayments(t *testing.T) {
 	internalRelays := 5
 	attributesList := stubPaymentEvents(internalRelays)
-	eventAttrs := []terderminttypes.EventAttribute{}
+	var eventAttrs []terderminttypes.EventAttribute
 	for _, attributes := range attributesList {
 		for key, val := range attributes {
 			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: []byte(key), Value: []byte(val)})
@@ -76,4 +83,39 @@ func TestPayments(t *testing.T) {
 	paymentRequests, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, 500)
 	require.Nil(t, err)
 	require.Equal(t, internalRelays, len(paymentRequests))
+}
+
+func TestSendNewProof(t *testing.T) {
+	rws := rewardserver.NewRewardServer(stubRewardsTxSender{}, nil)
+
+	relaySession := common.BuildRelayRequest(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, uint64(0), "spec", nil)
+	existingCU, updatedWithProf := rws.SendNewProof(context.TODO(), relaySession, uint64(42), "consumerAddress", "apiInterface")
+
+	require.True(t, updatedWithProf)
+	require.Zero(t, existingCU)
+}
+
+func newSdkContext() sdk.Context {
+	key := sdk.NewKVStoreKey("storekey")
+	db := dbm.NewMemDB()
+	ms := store.NewCommitMultiStore(db)
+	ms.MountStoreWithDB(key, sdk.StoreTypeIAVL, nil)
+	_ = ms.LoadLatestVersion()
+
+	return sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, log.NewNopLogger())
+}
+
+type stubRewardsTxSender struct {
+}
+
+func (rts stubRewardsTxSender) TxRelayPayment(_ context.Context, _ []*pairingtypes.RelaySession, _ string) error {
+	panic("implement me")
+}
+
+func (rts stubRewardsTxSender) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
+	panic("implement me")
+}
+
+func (rts stubRewardsTxSender) EarliestBlockInMemory(_ context.Context) (uint64, error) {
+	panic("implement me")
 }
