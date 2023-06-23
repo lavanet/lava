@@ -13,11 +13,26 @@ import (
 type ProviderSessionManager struct {
 	sessionsWithAllConsumers                map[uint64]sessionData      // first key is epochs, second key is a consumer address
 	dataReliabilitySessionsWithAllConsumers map[uint64]sessionData      // separate handling of data reliability so later on we can use it outside of pairing, first key is epochs, second key is a consumer address
+	badgeSessionsWithAllBadgeUsers          map[uint64]badgeData        // first key is epochs, second key is a badge user address
 	subscriptionSessionsWithAllConsumers    map[uint64]subscriptionData // first key is an epoch, second key is a consumer address, third key is subscriptionId
 	lock                                    sync.RWMutex
 	blockedEpochHeight                      uint64 // requests from this epoch are blocked
 	rpcProviderEndpoint                     *RPCProviderEndpoint
 	blockDistanceForEpochValidity           uint64 // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
+}
+
+func (psm *ProviderSessionManager) GetBadgeSessionsWithAllBadgeUsers(epoch uint64, address string) string {
+	psm.lock.RLock()
+	defer psm.lock.RUnlock()
+	badgeSessionData, found := psm.badgeSessionsWithAllBadgeUsers[epoch]
+	if found {
+		badgeSessionWithConsumer, foundBadgeSession := badgeSessionData.badgeMap[address]
+		if foundBadgeSession {
+			return badgeSessionWithConsumer
+		}
+		return ""
+	}
+	return ""
 }
 
 func (psm *ProviderSessionManager) GetProviderIndexWithConsumer(epoch uint64, consumerAddress string) (int64, error) {
@@ -170,6 +185,7 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 	}
 	singleProviderSession, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
 	setBadgeEpochDataSingleProviderSession(badge, singleProviderSession, providerSessionsWithConsumer)
+	psm.setBadgeUserToBadgeSigner(epoch, address, badge)
 	return singleProviderSession, err
 }
 
@@ -182,6 +198,20 @@ func setBadgeEpochDataSingleProviderSession(badge *pairingtypes.Badge, singlePro
 			badgeUserEpochData = registerBadgeEpochDataToProviderSessionWithConsumer(badge.Address, badge.CuAllocation, providerSessionsWithConsumer)
 		}
 		singleProviderSession.BadgeUserData = badgeUserEpochData
+	}
+}
+
+func (psm *ProviderSessionManager) setBadgeUserToBadgeSigner(epoch uint64, consumerAddress string, badge *pairingtypes.Badge) {
+	if badge != nil {
+		psm.lock.Lock()
+		defer psm.lock.Unlock()
+
+		badgeData := psm.badgeSessionsWithAllBadgeUsers[epoch]
+		if badgeData.badgeMap == nil {
+			badgeData.badgeMap = make(map[string]string)
+		}
+		badgeData.badgeMap[badge.Address] = consumerAddress
+		psm.badgeSessionsWithAllBadgeUsers[epoch] = badgeData
 	}
 }
 
@@ -314,6 +344,7 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 	psm.dataReliabilitySessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.dataReliabilitySessionsWithAllConsumers)
 	psm.subscriptionSessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.subscriptionSessionsWithAllConsumers)
+	psm.badgeSessionsWithAllBadgeUsers = filterOldEpochEntries(psm.blockedEpochHeight, psm.badgeSessionsWithAllBadgeUsers)
 }
 
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
@@ -500,6 +531,7 @@ func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberO
 		rpcProviderEndpoint:                     rpcProviderEndpoint,
 		blockDistanceForEpochValidity:           numberOfBlocksKeptInMemory,
 		sessionsWithAllConsumers:                map[uint64]sessionData{},
+		badgeSessionsWithAllBadgeUsers:          map[uint64]badgeData{},
 		dataReliabilitySessionsWithAllConsumers: map[uint64]sessionData{},
 		subscriptionSessionsWithAllConsumers:    map[uint64]subscriptionData{},
 	}

@@ -78,6 +78,16 @@ type sessionData struct {
 func (sm sessionData) onDeleteEvent() { // do nothing
 }
 
+type badgeData struct {
+	badgeMap map[string]string
+}
+
+func (bm badgeData) onDeleteEvent() {
+	for key := range bm.badgeMap {
+		delete(bm.badgeMap, key)
+	}
+}
+
 type RPCSubscription struct {
 	Id                   string
 	Sub                  *rpcclient.ClientSubscription

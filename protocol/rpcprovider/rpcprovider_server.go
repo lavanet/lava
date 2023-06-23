@@ -362,6 +362,12 @@ func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, rela
 		if err != nil {
 			return nil, utils.LavaFormatWarning("extract signer address from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+		// check if extractedConsumerAddress has found as a badge user inside provider session manager
+		// if found that means it's a recorded badge user address so we should return corresponding consumer address
+		consumerAddress := rpcps.providerSessionManager.GetBadgeSessionsWithAllBadgeUsers(uint64(relaySession.Epoch), extractedConsumerAddress.String())
+		if consumerAddress != "" {
+			extractedConsumerAddress = []byte(consumerAddress)
+		}
 	}
 	return extractedConsumerAddress, nil
 }
