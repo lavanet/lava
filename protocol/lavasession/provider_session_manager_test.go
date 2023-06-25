@@ -191,6 +191,11 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 	// Num of goroutines to run
 	numRoutines := 1000
 
+	// Set the seed for the random number generator
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	fmt.Println("TestHappyFlowBadgePSMMultipleRoutines Random Seed:", seed)
+
 	// A channel to track goroutine completion
 	done := make(chan struct{})
 
