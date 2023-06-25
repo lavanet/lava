@@ -101,46 +101,46 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 }
 
 func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
-	providers, _, err := k.getPairingForClient(ctx, chainID, clientAddress, uint64(ctx.BlockHeight()))
+	providers, _, _, err := k.getPairingForClient(ctx, chainID, clientAddress, uint64(ctx.BlockHeight()))
 	return providers, err
 }
 
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
-func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
 	var strictestPolicy planstypes.Policy
 
 	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid pairing data: %s", err)
+		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
 	}
 
 	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, "", err
 	}
 
 	strictestPolicy, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
 	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
-		return nil, 0, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
+		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
 	filters := pairingfilters.GetAllFilters()
 
 	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, "", err
 	}
 
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, project.Index, block,
 		chainID, epochHash, strictestPolicy.MaxProvidersToPair)
 
-	return providers, allowedCU, err
+	return providers, allowedCU, project.Index, err
 }
 
 func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, uint64, error) {
@@ -253,15 +253,15 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, epoch)
 	if err != nil {
-		return false, allowedCU, 0, err
+		return false, allowedCU, 0, "", err
 	}
 
-	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
+	validAddresses, allowedCU, projectID, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
 	if err != nil {
-		return false, allowedCU, 0, err
+		return false, allowedCU, 0, "", err
 	}
 
 	for _, possibleAddr := range validAddresses {
@@ -271,11 +271,11 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
-			return true, allowedCU, uint64(len(validAddresses)), nil
+			return true, allowedCU, uint64(len(validAddresses)), projectID, nil
 		}
 	}
 
-	return false, allowedCU, 0, nil
+	return false, allowedCU, 0, projectID, nil
 }
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
