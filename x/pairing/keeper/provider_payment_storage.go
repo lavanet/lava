@@ -70,9 +70,9 @@ func (k Keeper) GetProviderPaymentStorageKey(ctx sdk.Context, chainID string, ep
 }
 
 // Function to add a payment (which is represented by a uniquePaymentStorageClientProvider object) to a providerPaymentStorage object
-func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64, err error) {
+func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64, err error) {
 	// create an uniquePaymentStorageClientProvider object and set it in the KVStore
-	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
+	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, projectID, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
 		// the uniquePaymentStorageClientProvider object is not unique -> tried to use an existing identifier!
 		return nil, 0, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
@@ -90,7 +90,7 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProviderKeys = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProviderKeys, uniquePaymentStorageClientProviderEntryAddr.GetIndex())
 
 		// sum up the used CU for this provider and this consumer over this epoch
-		usedCUConsumerTotal, err = k.GetTotalUsedCUForConsumerPerEpoch(ctx, userAddress.String(), userPaymentStorageInEpoch.GetUniquePaymentStorageClientProviderKeys(), providerAddress.String())
+		usedCUConsumerTotal, err = k.GetTotalUsedCUForConsumerPerEpoch(ctx, projectID, userPaymentStorageInEpoch.GetUniquePaymentStorageClientProviderKeys(), providerAddress.String())
 		if err != nil {
 			return nil, 0, err
 		}
