@@ -103,7 +103,7 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 }
 
 // Function to get the total serviced CU by a provider in this epoch for a specific consumer
-func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string, uniquePaymentStorageKeys []string, providerAddress string) (uint64, error) {
+func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID string, uniquePaymentStorageKeys []string, providerAddress string) (uint64, error) {
 	usedCUProviderTotal := uint64(0)
 
 	// go over the uniquePaymentStorageKeys
@@ -113,12 +113,12 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddre
 		if !found {
 			return 0, utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),
 				utils.Attribute{Key: "providerAddress", Value: providerAddress},
-				utils.Attribute{Key: "consumerAddress", Value: consumerAddress},
+				utils.Attribute{Key: "projectID", Value: projectID},
 			)
 		}
 
 		// if the uniquePaymentStorageClientProvider object is between the provider and the specific consumer, add the serviced CU
-		if k.GetConsumerFromUniquePayment(&uniquePayment) == consumerAddress {
+		if k.GetConsumerFromUniquePayment(&uniquePayment) == projectID {
 			usedCUProviderTotal += uniquePayment.UsedCU
 		}
 	}
