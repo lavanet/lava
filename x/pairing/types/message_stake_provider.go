@@ -59,10 +59,19 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
 	}
 
-	// verify that the geolocation arg is a union of the endpoints' geolocation
+	err = ValidateGeoFields(msg.Endpoints, msg.Geolocation)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// verify that the geolocation arg is a union of the endpoints' geolocation
+func ValidateGeoFields(endp []epochstoragetypes.Endpoint, geo uint64) error {
 	geoSeen := map[string]struct{}{}
 	var endpointsGeoStr string
-	for _, endp := range msg.Endpoints {
+	for _, endp := range endp {
 		geoStr := planstypes.Geolocation_name[int32(endp.Geolocation)]
 		_, ok := geoSeen[geoStr]
 		if !ok {
@@ -72,7 +81,7 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 	}
 
 	endpointsGeoStr = strings.TrimSuffix(endpointsGeoStr, ",")
-	geoEnums, geoStr := ExtractGeolocations(msg.Geolocation)
+	geoEnums, geoStr := ExtractGeolocations(geo)
 	for _, geoE := range geoEnums {
 		_, ok := geoSeen[geoE.String()]
 		if !ok {
