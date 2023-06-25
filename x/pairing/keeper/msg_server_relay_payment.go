@@ -156,7 +156,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, servicersToPair, projectID, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			clientAddr,
@@ -239,6 +239,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
+		details["projectID"] = projectID
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
