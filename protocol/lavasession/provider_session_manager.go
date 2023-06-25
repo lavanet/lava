@@ -172,8 +172,9 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 
 	badgeUserEpochData := getOrCreateBadgeUserEpochData(badge, providerSessionsWithConsumer)
 	singleProviderSession, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
-	singleProviderSession.BadgeUserData = badgeUserEpochData
-
+	if badgeUserEpochData != nil {
+		singleProviderSession.BadgeUserData = badgeUserEpochData
+	}
 	return singleProviderSession, err
 }
 
