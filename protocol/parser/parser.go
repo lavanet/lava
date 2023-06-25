@@ -115,7 +115,7 @@ func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (strin
 
 	response, ok := result[0].(string)
 	if !ok {
-		return "", errors.New("chain ID is not string parseable")
+		return "", errors.New("result is not string parseable")
 	}
 
 	if strings.Contains(response, "\"") {
