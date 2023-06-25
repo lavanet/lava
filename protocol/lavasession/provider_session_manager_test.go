@@ -221,7 +221,6 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 			// Prepare session for usage
 			prepareBadgeSessionForUsage(t, context.Background(), sps)
 			// Randomly determine test success or failure with equal probability
-			rand.Seed(time.Now().UnixNano())
 			isSuccess := rand.Intn(2) == 0
 
 			if isSuccess == true {
