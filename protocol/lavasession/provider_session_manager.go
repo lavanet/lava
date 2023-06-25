@@ -170,20 +170,18 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, address strin
 		return nil, err
 	}
 	singleProviderSession, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
-	setBadgeEpochDataSingleProviderSession(badge, singleProviderSession, providerSessionsWithConsumer)
+	if badge != nil {
+		setBadgeEpochDataSingleProviderSession(badge, singleProviderSession, providerSessionsWithConsumer)
+	}
 	return singleProviderSession, err
 }
 
 func setBadgeEpochDataSingleProviderSession(badge *pairingtypes.Badge, singleProviderSession *SingleProviderSession, providerSessionsWithConsumer *ProviderSessionsWithConsumer) {
-	var badgeUserEpochData *ProviderSessionsEpochData
-	if badge != nil {
-		var exists bool
-		badgeUserEpochData, exists = getBadgeEpochDataFromProviderSessionWithConsumer(badge.Address, providerSessionsWithConsumer)
-		if !exists { // badgeUserEpochData not found, needs to be registered
-			badgeUserEpochData = registerBadgeEpochDataToProviderSessionWithConsumer(badge.Address, badge.CuAllocation, providerSessionsWithConsumer)
-		}
-		singleProviderSession.BadgeUserData = badgeUserEpochData
+	badgeUserEpochData, exists := getBadgeEpochDataFromProviderSessionWithConsumer(badge.Address, providerSessionsWithConsumer)
+	if !exists { // badgeUserEpochData not found, needs to be registered
+		badgeUserEpochData = registerBadgeEpochDataToProviderSessionWithConsumer(badge.Address, badge.CuAllocation, providerSessionsWithConsumer)
 	}
+	singleProviderSession.BadgeUserData = badgeUserEpochData
 }
 
 func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumer) (*ProviderSessionsEpochData, bool) {
