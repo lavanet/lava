@@ -194,7 +194,7 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 	// Set the seed for the random number generator
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
-	fmt.Println("TestHappyFlowBadgePSMMultipleRoutines Random Seed:", seed)
+	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
 
 	// A channel to track goroutine completion
 	done := make(chan struct{})
