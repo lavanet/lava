@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	pairingTypes "github.com/lavanet/lava/x/pairing/types"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	pairingTypes "github.com/lavanet/lava/x/pairing/types"
+	"google.golang.org/grpc"
 )
 
 // PairingList struct is used to store seed provider information for lavaOverLava
@@ -83,7 +84,6 @@ func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 	for i, entry := range queryResponse.StakeEntry {
 		var restEndpoint string
 		for _, endpoint := range entry.Endpoints {
-
 			if endpoint.UseType == "rest" {
 				restEndpoint = endpoint.IPPORT
 				break

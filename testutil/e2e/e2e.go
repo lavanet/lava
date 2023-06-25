@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"go/build"
 	"io"
 	"math/big"
@@ -20,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lavanet/lava/testutil/e2e/sdk"
 
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
