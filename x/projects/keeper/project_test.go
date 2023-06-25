@@ -83,7 +83,7 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 		types.ProjectDeveloperKey(ts.accounts["pd3_dev"]),
 	}
 
-	policy1 := &types.Policy{
+	policy1 := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
 		MaxProvidersToPair: 2,
 	}
@@ -93,7 +93,7 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 		name    string
 		enabled bool
 		keys    []types.ProjectKey
-		policy  *types.Policy
+		policy  *planstypes.Policy
 	}{
 		// project with admin key, enabled, has policy
 		{"pd1", "mock_project_1", true, keys_1_admin, policy1},
@@ -518,7 +518,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		creator                      string
 		projectID                    string
 		geolocation                  uint64
-		chainPolicies                []types.ChainPolicy
+		chainPolicies                []planstypes.ChainPolicy
 		totalCuLimit                 uint64
 		epochCuLimit                 uint64
 		maxProvidersToPair           uint64
@@ -527,68 +527,68 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	}{
 		{
 			"valid policy (admin account)", admAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
 			"valid policy (subscription account)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
 			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"invalid geolocation (0)", devAddr, projectID, uint64(0),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			// note: currently, we don't verify the chain policies
 			"bad chainID (doesn't exist)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
 			// note: currently, we don't verify the chain policies
 			"bad API (doesn't exist)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true,
 		},
 		{
 			// note: currently, we don't verify the chain policies
 			"chainID and API not supported (exist in Lava's specs)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
+			[]planstypes.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
 			100, 10, 3, true, true,
 		},
 		{
 			"epoch CU larger than total CU", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			10, 100, 3, false, false,
 		},
 		{
 			"bad maxProvidersToPair", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
 			100, 10, 1, false, false,
 		},
 	}
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
-			newPolicy := types.Policy{
+			newPolicy := planstypes.Policy{
 				ChainPolicies:      tt.chainPolicies,
 				GeolocationProfile: tt.geolocation,
 				TotalCuLimit:       tt.totalCuLimit,
@@ -879,15 +879,15 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 		Name:        "name",
 		Enabled:     true,
 		ProjectKeys: []types.ProjectKey{{Key: adm1Addr, Kinds: uint32(types.ProjectKey_ADMIN)}},
-		Policy:      &types.Policy{MaxProvidersToPair: 2, GeolocationProfile: math.MaxUint64},
+		Policy:      &planstypes.Policy{MaxProvidersToPair: 2, GeolocationProfile: math.MaxUint64},
 	}
 	subAddr := projectData.ProjectKeys[0].Key
 	projPolicy := projectData.Policy
 
-	allowed := types.SELECTED_PROVIDERS_MODE_ALLOWED
-	mixed := types.SELECTED_PROVIDERS_MODE_MIXED
-	exclusive := types.SELECTED_PROVIDERS_MODE_EXCLUSIVE
-	disabled := types.SELECTED_PROVIDERS_MODE_DISABLED
+	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
+	mixed := planstypes.SELECTED_PROVIDERS_MODE_MIXED
+	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
 
 	providersSets := []struct {
 		planProviders []string
@@ -904,9 +904,9 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 
 	templates := []struct {
 		name            string
-		planMode        types.SELECTED_PROVIDERS_MODE
-		subMode         types.SELECTED_PROVIDERS_MODE
-		projMode        types.SELECTED_PROVIDERS_MODE
+		planMode        planstypes.SELECTED_PROVIDERS_MODE
+		subMode         planstypes.SELECTED_PROVIDERS_MODE
+		projMode        planstypes.SELECTED_PROVIDERS_MODE
 		providerSet     int
 		planPolicyValid bool
 		subPolicyValid  bool

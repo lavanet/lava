@@ -43,11 +43,15 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(spectypes.GET_BLOCKNUM+" Failed formatResponseForParsing", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: serviceApi.GetName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
 	}
 	blockNum, err := parser.ParseBlockFromReply(parserInput, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning("Failed To Parse FetchLatestBlockNum", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(spectypes.GET_BLOCKNUM+" Failed to parse Response", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: serviceApi.GetName()},
 			{Key: "Response", Value: string(reply.Data)},
@@ -76,10 +80,21 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	parserInput, err := cf.formatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatWarning(spectypes.GET_BLOCK_BY_NUM+" Failed formatResponseForParsing", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: serviceApi.GetName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
 	}
-
-	return parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
+	res, err := parser.ParseMessageResponse(parserInput, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", utils.LavaFormatWarning(spectypes.GET_BLOCK_BY_NUM+" Failed ParseMessageResponse", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: serviceApi.GetName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
+	}
+	return res, nil
 }
 
 func (cf *ChainFetcher) formatResponseForParsing(reply *types.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {
@@ -132,4 +147,25 @@ func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 func NewLavaChainFetcher(ctx context.Context, clientCtx client.Context) *LavaChainFetcher {
 	lcf := &LavaChainFetcher{clientCtx: clientCtx}
 	return lcf
+}
+
+type DummyChainFetcher struct {
+	endpoint *lavasession.RPCProviderEndpoint
+}
+
+func (cf *DummyChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
+	return *cf.endpoint
+}
+
+func (cf *DummyChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+
+func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	return "dummy", nil
+}
+
+func NewDummyChainFetcher(ctx context.Context, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
+	cf := &DummyChainFetcher{endpoint: endpoint}
+	return cf
 }

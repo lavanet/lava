@@ -17,9 +17,10 @@ func (k Keeper) Current(goCtx context.Context, req *types.QueryCurrentRequest) (
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	res := types.QueryCurrentResponse{}
 
-	// TODO: should indeed allow anyone to query about anyone?
-	sub, found := k.GetSubscription(ctx, req.Consumer)
-	if found {
+	block := uint64(ctx.BlockHeight())
+
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, req.Consumer, block, &sub); found {
 		res.Sub = &sub
 	}
 

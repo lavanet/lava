@@ -11,7 +11,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionypes "github.com/lavanet/lava/x/subscription/types"
@@ -30,7 +30,7 @@ type testStruct struct {
 	providers []*common.Account
 	clients   []*common.Account
 	spec      spectypes.Spec
-	plan      plantypes.Plan
+	plan      planstypes.Plan
 }
 
 func createStubRequest(relaySession *types.RelaySession) *types.RelayRequest {
@@ -726,7 +726,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		ProjectKeys: []projecttypes.ProjectKey{
 			projecttypes.ProjectDeveloperKey(projectAdmin1.String()),
 		},
-		Policy: &projecttypes.Policy{
+		Policy: &planstypes.Policy{
 			GeolocationProfile: uint64(1),
 			MaxProvidersToPair: 3,
 			TotalCuLimit:       1000,

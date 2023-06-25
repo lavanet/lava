@@ -162,7 +162,7 @@ func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataRelia
 	defer apip.rwLock.RUnlock()
 
 	// Return enabled and data reliability threshold from spec
-	return apip.spec.Enabled, apip.spec.GetReliabilityThreshold()
+	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
 }
 
 // ChainBlockStats returns block stats from spec
@@ -366,7 +366,33 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	if ok {
 		internalPaths = jsonRPCChainParser.GetInternalPaths()
 	}
+	internalPathsLength := len(internalPaths)
+	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
+		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
+	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
+		// provider provided specific endpoints but not enough to fill all requirements
+		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
+	}
 	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+}
+
+func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
+	for _, url := range nodeUrls {
+		_, ok := internalPaths[url.InternalPath]
+		if !ok {
+			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
+		}
+		utils.LavaFormatDebug("connecting:", utils.Attribute{Key: "url", Value: url})
+		conn, err := chainproxy.NewConnector(ctx, nConns, url)
+		if err != nil {
+			return err
+		}
+		cp.conn[url.InternalPath] = conn
+	}
+	if len(cp.conn) != len(internalPaths) {
+		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
+	}
+	return nil
 }
 
 func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {

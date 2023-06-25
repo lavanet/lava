@@ -2,6 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commonTypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/types"
 )
@@ -63,4 +64,14 @@ func (k Keeper) PutPlan(ctx sdk.Context, index string, block uint64) {
 // GetAllPlanIndices gets from the KVStore all the plans' indices
 func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 	return k.plansFS.GetAllEntryIndices(ctx)
+}
+
+// Export all plans from the KVStore
+func (k Keeper) ExportPlans(ctx sdk.Context) []commonTypes.RawMessage {
+	return k.plansFS.Export(ctx)
+}
+
+// Init all plans in the KVStore
+func (k Keeper) InitPlans(ctx sdk.Context, data []commonTypes.RawMessage) {
+	k.plansFS.Init(ctx, data)
 }

@@ -9,9 +9,6 @@ import (
 )
 
 func TestHappyFlowE2E(t *testing.T) {
-	s, erro := createGRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
-	require.Nil(t, erro)
-	defer s.Stop() // stop the server when finished.
 	ctx := context.Background()
 
 	// Consumer Side:

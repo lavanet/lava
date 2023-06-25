@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -19,7 +20,6 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 			utils.Attribute{Key: "blockHeight", Value: blockHeight},
 		)
 	}
-
 	return project, nil
 }
 
@@ -178,7 +178,7 @@ func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Proje
 	return nil
 }
 
-func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *planstypes.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
 	if err != nil {

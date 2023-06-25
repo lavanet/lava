@@ -97,7 +97,7 @@ func TestPairingUniqueness(t *testing.T) {
 			require.Equal(t, providers11[i].Address, providers111[i].Address)
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
 		}
 	}
@@ -138,7 +138,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 		for _, provider := range pairedProviders {
 			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
 			require.Nil(t, err)
-			valid, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
+			valid, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
 			require.Nil(t, errPairing)
 			require.True(t, valid)
 		}
@@ -310,7 +310,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
-	projPolicy := &projectstypes.Policy{
+	projPolicy := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
 		MaxProvidersToPair: 3,
 	}
@@ -318,12 +318,12 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	err := ts.addProvider(200)
 	require.Nil(t, err)
 
-	allowed := projectstypes.SELECTED_PROVIDERS_MODE_ALLOWED
-	exclusive := projectstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
-	disabled := projectstypes.SELECTED_PROVIDERS_MODE_DISABLED
+	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
+	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
 
 	maxProvidersToPair, err := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
-		[]*projectstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
+		[]*planstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
 	)
 	require.Nil(t, err)
 
@@ -363,9 +363,9 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	// TODO: add mixed mode test cases (once implemented)
 	templates := []struct {
 		name              string
-		planMode          projectstypes.SELECTED_PROVIDERS_MODE
-		subMode           projectstypes.SELECTED_PROVIDERS_MODE
-		projMode          projectstypes.SELECTED_PROVIDERS_MODE
+		planMode          planstypes.SELECTED_PROVIDERS_MODE
+		subMode           planstypes.SELECTED_PROVIDERS_MODE
+		projMode          planstypes.SELECTED_PROVIDERS_MODE
 		providersSet      int
 		expectedProviders int
 	}{
