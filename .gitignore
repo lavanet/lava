@@ -28,3 +28,9 @@ testutil/debugging/
 scripts/vars/
 rpcprovider.yml
 rpcconsumer.yml
+
+# Node modules
+**/node_modules
+
+# Pairing lsit
+**/pairingList.json

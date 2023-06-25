@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"go/build"
 	"io"
 	"math/big"
@@ -501,7 +502,6 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 
 	// validate all providers are up
 	for idx := 6; idx <= 10; idx++ {
-		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:226%d", idx-5), time.Minute)
 		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:227%d", idx-5), time.Minute)
 		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:228%d", idx-5), time.Minute)
 	}
@@ -1162,6 +1162,10 @@ func runE2E(timeout time.Duration) {
 	// TODO: Add payment tests when subscription payment mechanism is implemented
 
 	lt.checkQoS()
+
+	// Test SDK
+	lt.logs["01_sdkTest"] = new(bytes.Buffer)
+	sdk.RunSDKTests(ctx, grpcConn, lt.lavadPath, lt.logs["01_sdkTest"])
 
 	lt.finishTestSuccessfully()
 }

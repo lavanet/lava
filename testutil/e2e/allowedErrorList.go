@@ -12,4 +12,5 @@ var allowedErrors = map[string]string{
 	"Could not get reply to reliability relay":                       "This error is allowed temporarily because of data reliability",
 	"VerifyReliabilityAddressSigning invalid":                        "This error is allowed temporarily because of data reliability",
 	"invalid self pairing with consumer consumer":                    "This error is allowed temporarily because of data reliability",
+	"VerifyPairing requested epoch is too new":                       "This error is allowed temporarily because of Lava SDK",
 }

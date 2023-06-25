@@ -291,13 +291,10 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
-
-		validProviders = k.returnSubsetOfProvidersByStake(ctx, developerAddress, providers, providersToPair, epochStartBlock, chainID, epochHash)
-	} else {
-		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, providers, providersToPair)
+		providers = k.returnSubsetOfProvidersByStake(ctx, developerAddress, providers, providersToPair, epochStartBlock, chainID, epochHash)
 	}
 
-	return validProviders, nil
+	return providers, nil
 }
 
 // this function randomly chooses count providers by weight
