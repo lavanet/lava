@@ -45,9 +45,9 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG",
+                                    "default_value": "0x14a33",
                                     "encoding": "hex"
                                 },
-                                "expected_result": "0x14a33",
                                 "api_name": "eth_chainId"
                             }
                         ]

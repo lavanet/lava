@@ -40,9 +40,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "juno-1"
                 },
-                "expected_result": "juno-1",
                 "api_name": "/node_info"
               }
             ]
@@ -113,9 +113,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "juno-1"
                 },
-                "expected_result": "juno-1",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -137,9 +137,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "juno-1"
                 },
-                "expected_result": "juno-1",
                 "api_name": "status"
               }
             ]
@@ -183,9 +183,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "uni-6"
                 },
-                "expected_result": "uni-6",
                 "api_name": "/node_info"
               }
             ]
@@ -207,9 +207,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "uni-6"
                 },
-                "expected_result": "uni-6",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -231,9 +231,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "uni-6"
                 },
-                "expected_result": "uni-6",
                 "api_name": "status"
               }
             ]

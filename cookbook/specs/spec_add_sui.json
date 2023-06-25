@@ -41,6 +41,7 @@
                                 },
                                 "compute_units": "100",
                                 "enabled": true,
+                                "enabled": true,
 
                                 "category": {
                                     "deterministic": true,
@@ -1240,9 +1241,9 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex"
+                                    "encoding": "hex",
+                                    "default_value": "6bd1dd20"
                                 },
-                                "expected_result": "26e044b2",
                                 "api_name": "sui_getChainIdentifier"
                             }
                         ]

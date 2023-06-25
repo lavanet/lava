@@ -431,9 +431,9 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex"
+                                    "encoding": "hex",
+                                    "default_value":  "0x534e5f4d41494e"
                                 },
-                                "expected_result": "0x534e5f4d41494e",
                                 "api_name": "starknet_chainId"
                             }
                         ]
@@ -482,9 +482,9 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex"
+                                    "encoding": "hex",
+                                    "default_value":  "0x534e5f474f45524c49"
                                 },
-                                "expected_result": "0x534e5f474f45524c49",
                                 "api_name": "starknet_chainId"
                             }
                         ]

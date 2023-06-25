@@ -649,9 +649,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "canto_7700-1"
                 },
-                "expected_result": "canto_7700-1",
                 "api_name": "/node_info"
               }
             ]
@@ -1282,9 +1282,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "canto_7700-1"
                 },
-                "expected_result": "canto_7700-1",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -1306,9 +1306,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "canto_7700-1"
                 },
-                "expected_result": "canto_7700-1",
                 "api_name": "status"
               }
             ]
@@ -1331,9 +1331,9 @@
                 "result_parsing": {
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG",
-                  "encoding": "hex"
+                  "encoding": "hex",
+                  "default_value":  "0x1e14"
                 },
-                "expected_result": "0x1e40",
                 "api_name": "eth_chainId"
               }
             ]

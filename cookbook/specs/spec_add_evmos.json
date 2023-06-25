@@ -743,9 +743,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "default_node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9001-2"
                 },
-                "expected_result": "evmos_9001-2",
                 "api_name": "/cosmos/base/tendermint/v1beta1/node_info"
               }
             ]
@@ -1470,9 +1470,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9001-2"
                 },
-                "expected_result": "evmos_9001-2",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -1494,9 +1494,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9001-2"
                 },
-                "expected_result": "evmos_9001-2",
                 "api_name": "status"
               }
             ]
@@ -1519,9 +1519,9 @@
                 "result_parsing": {
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG",
-                  "encoding": "hex"
+                  "encoding": "hex",
+                  "default_value":  "0x2329"
                 },
-                "expected_result": "0x2329",
                 "api_name": "eth_chainId"
               }
             ]
@@ -1565,9 +1565,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "default_node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9000-4"
                 },
-                "expected_result": "evmos_9000-4",
                 "api_name": "/cosmos/base/tendermint/v1beta1/node_info"
               }
             ]
@@ -1589,9 +1589,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "defaultNodeInfo", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9000-4"
                 },
-                "expected_result": "evmos_9000-4",
                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
               }
             ]
@@ -1613,9 +1613,9 @@
                 "function_tag": "GET_CHAIN_ID",
                 "result_parsing": {
                   "parser_arg": ["0", "node_info", "network"],
-                  "parser_func": "PARSE_CANONICAL"
+                  "parser_func": "PARSE_CANONICAL",
+                  "default_value":  "evmos_9000-4"
                 },
-                "expected_result": "evmos_9000-4",
                 "api_name": "status"
               }
             ]
@@ -1638,9 +1638,9 @@
                 "result_parsing": {
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG",
-                  "encoding": "hex"
+                  "encoding": "hex",
+                  "default_value":  "0x2328"
                 },
-                "expected_result": "0x2328",
                 "api_name": "eth_chainId"
               }
             ]

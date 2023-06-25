@@ -33,7 +33,7 @@ func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error
 	tagName := spectypes.FUNCTION_TAG_name[int32(spectypes.FUNCTION_TAG_GET_CHAIN_ID)]
 	// If parsing tag or wanted result does not exist
 	// skip chain id check with warning
-	if !ok || parsing.ExpectedResult == "" {
+	if !ok || parsing.ResultParsing.DefaultValue == "" {
 		utils.LavaFormatWarning("skipping chain ID validation, chain ID missing from the spec", nil,
 			utils.Attribute{Key: "Chain ID", Value: cf.endpoint.ChainID},
 		)
@@ -63,7 +63,7 @@ func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error
 		}...)
 	}
 
-	return specID, parsing.ExpectedResult, nil
+	return specID, parsing.ResultParsing.DefaultValue, nil
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {

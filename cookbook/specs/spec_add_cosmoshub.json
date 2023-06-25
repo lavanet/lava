@@ -47,9 +47,9 @@
                                         "node_info",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
                                 },
-                                "expected_result": "cosmoshub-4",
                                 "api_name": "/node_info"
                             }
                         ]
@@ -75,9 +75,9 @@
                                         "defaultNodeInfo",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
                                 },
-                                "expected_result": "cosmoshub-4",
                                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
                             }
                         ]
@@ -103,9 +103,9 @@
                                         "node_info",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
                                 },
-                                "expected_result": "cosmoshub-4",
                                 "api_name": "status"
                             }
                         ]
@@ -155,9 +155,9 @@
                                         "node_info",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
                                 },
-                                "expected_result": "theta-testnet-001",
                                 "api_name": "/node_info"
                             }
                         ]
@@ -183,9 +183,9 @@
                                         "defaultNodeInfo",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
                                 },
-                                "expected_result": "theta-testnet-001",
                                 "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
                             }
                         ]
@@ -211,9 +211,9 @@
                                         "node_info",
                                         "network"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
                                 },
-                                "expected_result": "theta-testnet-001",
                                 "api_name": "status"
                             }
                         ]

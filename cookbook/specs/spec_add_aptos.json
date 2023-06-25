@@ -427,9 +427,9 @@
                                         "0",
                                         "chain_id"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "1"
                                 },
-                                "expected_result": "1",
                                 "api_name": "/"
                             }
                         ]
