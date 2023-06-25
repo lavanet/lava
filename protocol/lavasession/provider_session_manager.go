@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
@@ -195,7 +196,7 @@ func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, provider
 func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) *ProviderSessionsEpochData {
 	providerSessionsWithConsumer.Lock.Lock()
 	defer providerSessionsWithConsumer.Lock.Unlock()
-	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: MinUint64(providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation)}
+	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: commontypes.FindMin([]uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation})}
 	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
 }
 
@@ -507,13 +508,4 @@ func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberO
 
 func IsEpochValidForUse(targetEpoch uint64, blockedEpochHeight uint64) bool {
 	return targetEpoch > blockedEpochHeight
-}
-
-func MinUint64(a, b uint64) uint64 {
-	switch {
-	case a < b:
-		return a
-	default:
-		return b
-	}
 }
