@@ -47,20 +47,16 @@ message ChainPolicy {
     repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
 }
 
-// The geolocations' values are powers of 2 that act as a bit map. Also, the 
-// geolocations order is alphabetically (with the exception of the global fields
-// that are always the start and end of the list).
-//
-// To add a new geolocation, put it on the list alphabetically, and assign it with 
-// a value that is a power of 2 (fix other values as needed).
+// The geolocations' values are powers of 2 that act as a bit map.
+// To add a new geolocation, put it before GL and assign it with the next power of 2.
 enum Geolocation {
     GLS = 0; // Global-strict
-    AF = 0x1;
-    AS = 0x2;
-    AU = 0x4;  // (includes NZ)
-    EU = 0x8;
-    USC = 0x10; // US-Center
-    USE = 0x20; // US-East	
-    USW = 0x40; // US-West
+    USC = 0x1; // US-Center
+    EU = 0x2;
+    USE = 0x4; // US-East
+    USW = 0x8; // US-West	
+    AF = 0x10;
+    AS = 0x20;
+    AU = 0x40;  // (includes NZ)
     GL = 0xFFFF; // Global
 }

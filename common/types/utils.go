@@ -64,7 +64,7 @@ func Intersection[T comparable](arrays ...[]T) []T {
 	return intersection
 }
 
-func RemoveDuplicateFromSlice[T comparable](s []T) []T {
+func RemoveDuplicatesFromSlice[T comparable](s []T) []T {
 	allKeys := make(map[T]bool)
 	list := []T{}
 	for _, item := range s {

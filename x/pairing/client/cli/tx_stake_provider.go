@@ -10,9 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -31,10 +33,13 @@ func CmdStakeProvider() *cobra.Command {
 		Long: `args:
 		[chain-id] is the spec the provider wishes to support
 		[amount] is the ulava amount to be staked
-		[endpoint endpoint ...] are a space separated list of HOST:PORT,useType,geolocation, should be defined within "quotes"
-		[geolocation] should be the geolocation code to be staked for`,
-		Example: `lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com/rpc,jsonrpc,1" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
-		Args:    cobra.ExactArgs(4),
+		[endpoint endpoint ...] are a space separated list of HOST:PORT,useType,geolocation, should be defined within "quotes". Note that you can specify the geolocation using a single uint64 (which will be treated as a bitmask (see plan.proto)) or using one of the geolocation codes. Valid geolocation codes: AF, AS, AU, EU, USE (US east), USC, USW, GL (global).
+		[geolocation] should be the geolocation code to be staked for. You can also use the geolocation codes syntax: EU,AU,AF. Note that this geolocation should be a union of the endpoints' geolocations.`,
+		Example: `
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com/rpc,jsonrpc,1" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com/rpc,jsonrpc,AF" "my-provider.com/rpc,jsonrpc,EU" AF,EU -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+		Args: cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -48,16 +53,63 @@ func CmdStakeProvider() *cobra.Command {
 				if len(splitted) != 3 {
 					return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,geolocation HOST:PORT,useType,geolocation, received: %s", endpointStr)
 				}
-				geoloc, err := strconv.ParseUint(splitted[2], 10, 64)
-				if err != nil {
-					return fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
+
+				// geolocation of an endpoint can be uint or a string representing a single geo region
+				var geoloc uint64
+				geoloc, valid := types.IsValidGeoEnum(splitted[2])
+				if !valid {
+					geoloc, err = strconv.ParseUint(splitted[2], 10, 64)
+					if err != nil {
+						return fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
+					}
 				}
-				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
-				argEndpoints = append(argEndpoints, endpoint)
+
+				// verify that the endpoint's geolocation represents a single geo region
+				geoRegions, _ := types.ExtractGeolocations(geoloc)
+				if len(geoRegions) != 1 {
+					return fmt.Errorf("invalid geolocation for endpoint, must represent one region")
+				}
+
+				// if the user specified global ("GL"), append the endpoint in all possible geolocations
+				if geoloc == uint64(planstypes.Geolocation_value["GL"]) {
+					for geoName, geoVal := range planstypes.Geolocation_value {
+						if geoName == "GL" || geoName == "GLS" {
+							continue
+						}
+						endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: uint64(geoVal)}
+						argEndpoints = append(argEndpoints, endpoint)
+					}
+				} else {
+					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
+					argEndpoints = append(argEndpoints, endpoint)
+				}
 			}
-			argGeolocation, err := cast.ToUint64E(args[3])
-			if err != nil {
-				return err
+
+			var argGeolocation uint64
+
+			// handle the case of string geolocation (example: "EU,AF,AS")
+			splitted := strings.Split(args[3], ",")
+			strEnums := commontypes.RemoveDuplicatesFromSlice(splitted)
+			for _, s := range strEnums {
+				g, valid := types.IsValidGeoEnum(s)
+				if valid {
+					// if one of the endpoints is global, assign global value and break
+					if g == uint64(planstypes.Geolocation_GL) {
+						argGeolocation = types.GetCurrentGlobalGeolocation()
+						break
+					}
+					// for non-global geolocations constructs the final geolocation uint value (addition works because we
+					// removed duplicates and the geo regions represent a bitmap)
+					argGeolocation += g
+				}
+			}
+
+			// geolocation is not a list of enums, try to parse it as an uint
+			if argGeolocation == 0 {
+				argGeolocation, err = cast.ToUint64E(args[3])
+				if err != nil {
+					return err
+				}
 			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
