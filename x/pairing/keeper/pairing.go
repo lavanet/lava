@@ -267,7 +267,13 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	for _, possibleAddr := range validAddresses {
 		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Address)
 		if err != nil {
-			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAccAddr, err))
+			// panic:ok: provider address saved on chain must be valid
+			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
+				utils.Attribute{Key: "chainID", Value: chainID},
+				utils.Attribute{Key: "client", Value: clientAddress},
+				utils.Attribute{Key: "provider", Value: providerAccAddr},
+				utils.Attribute{Key: "epochBlock", Value: epoch},
+			)
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
@@ -280,8 +286,14 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
 	if epochStartBlock > uint64(ctx.BlockHeight()) {
-		k.Logger(ctx).Error("\ninvalid session start\n")
-		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
+		// panic:ok: provider address saved on chain must be valid
+		utils.LavaFormatPanic("critical: pairing session start block mismatch",
+			fmt.Errorf("epoch start block beyond current block height"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "developer", Value: developerAddress},
+			utils.Attribute{Key: "epochBlock", Value: epochStartBlock},
+			utils.Attribute{Key: "ctxBlock", Value: ctx.BlockHeight()},
+		)
 	}
 
 	spec, found := k.specKeeper.GetSpec(ctx, chainID)
@@ -291,7 +303,6 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
-
 		validProviders = k.returnSubsetOfProvidersByStake(ctx, developerAddress, providers, providersToPair, epochStartBlock, chainID, epochHash)
 	} else {
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, providers, providersToPair)
