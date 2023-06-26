@@ -8,7 +8,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -271,7 +270,13 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
 	if !found {
-		panic("called modify when there is no stakeStorage")
+		// should not happen since caller is expected to validate chainID first;
+		// do nothing and return to avoid panic.
+		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", errors.ErrNotFound,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
+		)
+		return
 	}
 	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
@@ -328,7 +333,11 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry,
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
 	if !found {
-		panic("called modify when there is no stakeStorage")
+		// should not happen since stake storage must always exist; do nothing to avoid panic
+		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", errors.ErrNotFound,
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
+		)
+		return
 	}
 	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
