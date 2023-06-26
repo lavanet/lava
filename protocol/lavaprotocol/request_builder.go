@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -136,11 +137,12 @@ func compareRelaysFindConflict(ctx context.Context, result1 *RelayResult, result
 		// they have equal data
 		return false, nil
 	}
+
 	// they have different data! report!
 	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(result1.Reply.Data)}, utils.Attribute{Key: "Data1", Value: result2.Reply.Data})
 	responseConflict = &conflicttypes.ResponseConflict{
-		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
-		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},
+		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(result1.Reply, result1.Request),
+		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(result2.Reply, result2.Request),
 	}
 	if debug {
 		firstAsString := string(result1.Reply.Data)

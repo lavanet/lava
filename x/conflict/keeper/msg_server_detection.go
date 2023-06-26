@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"golang.org/x/exp/slices"
 )
 
@@ -99,9 +98,9 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Data
 
 		conflictVote.FirstProvider.Account = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider
-		conflictVote.FirstProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData0.Reply.Data)
+		conflictVote.FirstProvider.Response = msg.ResponseConflict.ConflictRelayData0.Reply.HashAllDataHash
 		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider
-		conflictVote.SecondProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData1.Reply.Data)
+		conflictVote.SecondProvider.Response = msg.ResponseConflict.ConflictRelayData1.Reply.HashAllDataHash
 		conflictVote.Votes = []types.Vote{}
 		voters := k.Keeper.LotteryVoters(goCtx, epochStart, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
 		for _, voter := range voters {
