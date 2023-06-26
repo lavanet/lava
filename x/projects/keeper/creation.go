@@ -248,7 +248,7 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		if !found {
 			// the developer key must be found, because it was already found in
 			// the developerKeysFS for this project; return error to avoid panic.
-			return utils.LavaFormatError("critical: develper key missing in project", sdkerrors.ErrNotFound,
+			return utils.LavaFormatError("critical: developer key missing in project", sdkerrors.ErrNotFound,
 				utils.Attribute{Key: "projectID", Value: project.Index},
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
