@@ -96,7 +96,12 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epoch
 		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
 			if err != nil {
-				panic(fmt.Sprintf("error getting AccAddress from : %s error: %s", unstakingEntry.Address, err))
+				// panic:ok: staked provider's address on chain must be valid because it
+				// must have been validated and used at staking time.
+				utils.LavaFormatPanic("critical: failed to get unstaking provider address", err,
+					utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
+					utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
+				)
 			}
 			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
 				// transfer stake money to the stake entry account
