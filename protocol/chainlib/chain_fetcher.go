@@ -18,6 +18,13 @@ const (
 	TendermintStatusQuery = "status"
 )
 
+type ChainFetcherIf interface {
+	FetchLatestBlockNum(ctx context.Context) (int64, error)
+	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+	FetchEndpoint() lavasession.RPCProviderEndpoint
+	Validate(ctx context.Context) error
+}
+
 type ChainFetcher struct {
 	endpoint    *lavasession.RPCProviderEndpoint
 	chainProxy  ChainProxy
@@ -26,6 +33,15 @@ type ChainFetcher struct {
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
+}
+
+func (cf *ChainFetcher) Validate(ctx context.Context) error {
+	realChainID, specChainId, err := cf.FetchChainID(ctx)
+	// Validate spec chain id
+	if specChainId != realChainID {
+		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain ID, continuing with other endpoints", err, utils.Attribute{Key: "Spec chain ID", Value: specChainId}, utils.Attribute{Key: "Real chain ID", Value: realChainID}, utils.Attribute{Key: "endpoint", Value: cf.FetchEndpoint()})
+	}
+	return nil
 }
 
 func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
@@ -204,6 +220,10 @@ func (cf *DummyChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, er
 
 func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	return "dummy", nil
+}
+
+func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
+	return nil
 }
 
 func NewDummyChainFetcher(ctx context.Context, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
