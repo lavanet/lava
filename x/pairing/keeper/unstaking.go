@@ -62,51 +62,56 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, un
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 }
 
-func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
+func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
 	// this pops all the entries that had their deadline pass
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 
 	if unstakingEntriesToCredit != nil {
-		err := k.creditUnstakingEntries(ctx, unstakingEntriesToCredit) // true for providers
-		if err != nil {
-			panic(err.Error())
-		}
+		k.creditUnstakingEntries(ctx, unstakingEntriesToCredit) // true for providers
 	}
+}
 
+func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, neededAmount sdk.Coin) error {
+	moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
+	if moduleBalance.IsLT(neededAmount) {
+		return fmt.Errorf("insufficient balance to unstake %s (current balance: %s)", neededAmount, moduleBalance)
+	}
+	err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{neededAmount})
+	if err != nil {
+		return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
+	}
 	return nil
 }
 
 func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) error {
 	logger := k.Logger(ctx)
 
-	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
-		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
-		if moduleBalance.IsLT(neededAmount) {
-			return false, fmt.Errorf("insufficient balance for unstaking %s current balance: %s", neededAmount, moduleBalance)
-		}
-		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{neededAmount})
-		if err != nil {
-			return false, fmt.Errorf("invalid transfer coins from module, %s to account %s", err, addr)
-		}
-		return true, nil
-	}
 	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{"spec": unstakingEntry.Chain, "provider": unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
+		details := map[string]string{
+			"spec":     unstakingEntry.Chain,
+			"provider": unstakingEntry.Address,
+			"stake":    unstakingEntry.Stake.String(),
+		}
+
 		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
-			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
 			if err != nil {
 				panic(fmt.Sprintf("error getting AccAddress from : %s error: %s", unstakingEntry.Address, err))
 			}
 			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
 				// transfer stake money to the stake entry account
-				valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
-				if !valid {
-					details["error"] = err.Error()
-					utils.LavaFormatError("verifySufficientAmountAndSendFromModuleToAddress Failed", err)
-					panic(fmt.Sprintf("error unstaking : %s", err))
+				err := k.refundUnstakingProvider(ctx, receiverAddr, unstakingEntry.Stake)
+				if err != nil {
+					// we should always be able to redund a provider that decides to unstake;
+					// but to avoid panic, just emit a critical error and proceed
+					utils.LavaFormatError("critical: failed to refund staked provider", err,
+						utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
+						utils.Attribute{Key: "provider", Value: receiverAddr},
+						utils.Attribute{Key: "stake", Value: unstakingEntry.Stake},
+					)
+				} else {
+					utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, "Unstaking Providers Commit")
 				}
-				utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, "Unstaking Providers Commit")
 			}
 		} else {
 			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
