@@ -144,7 +144,8 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.Greater(t, block, int64(0))
 	require.NoError(t, err)
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	require.True(t, err.Error()[:len("invalid parser input format")] == "invalid parser input format")
+	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse ErrMsg: invalid parser input format"
+	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
 	if closeServer != nil {
 		closeServer()
 	}
