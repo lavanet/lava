@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
@@ -38,6 +39,7 @@ type RPCConsumerServer struct {
 	requiredResponses      int
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	lavaChainID            string
+	consumerAddress        sdk.AccAddress
 }
 
 type ConsumerTxSender interface {
@@ -54,6 +56,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	lavaChainID string,
 	cache *performance.Cache, // optional
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	consumerAddress sdk.AccAddress,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -65,6 +68,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
+	rpccs.consumerAddress = consumerAddress
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
@@ -399,7 +403,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		// TODO: DETECTION instead of existingSessionLatestBlock, we need proof of last reply to send the previous reply and the current reply
-		finalizedBlocks, finalizationConflict, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
+		finalizedBlocks, finalizationConflict, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.consumerAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
 		if err != nil {
 			if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
 				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil)

@@ -53,12 +53,8 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 	return nil
 }
 
-func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, latestSessionBlock int64, blockDistanceForfinalization uint32) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	strAdd, err := sdk.AccAddressFromBech32(addr)
-	if err != nil {
-		return nil, nil, err
-	}
-	serverKey, err := sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest, strAdd)
+func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock int64, blockDistanceForfinalization uint32) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
+	serverKey, err := sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest, consumerAcc)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,8 +64,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 		return nil, nil, err
 	}
 
-	if serverAddr.String() != addr {
-		return nil, nil, utils.LavaFormatError("reply server address mismatch in finalization data ", ProviderFinzalizationDataError, utils.Attribute{Key: "parsed Address", Value: serverAddr}, utils.Attribute{Key: "expected address", Value: addr})
+	if serverAddr.String() != providerAddr {
+		return nil, nil, utils.LavaFormatError("reply server address mismatch in finalization data ", ProviderFinzalizationDataError, utils.Attribute{Key: "parsed Address", Value: serverAddr.String()}, utils.Attribute{Key: "expected address", Value: providerAddr})
 	}
 
 	finalizedBlocks = map[int64]string{} // TODO:: define struct in relay response
@@ -78,7 +74,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 		return nil, nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", ProviderFinzalizationDataError, utils.Attribute{Key: "FinalizedBlocksHashes", Value: string(reply.FinalizedBlocksHashes)}, utils.Attribute{Key: "errMsg", Value: err.Error()})
 	}
 
-	finalizationConflict, err = verifyFinalizationDataIntegrity(reply, latestSessionBlock, finalizedBlocks, blockDistanceForfinalization, addr)
+	finalizationConflict, err = verifyFinalizationDataIntegrity(reply, latestSessionBlock, finalizedBlocks, blockDistanceForfinalization, providerAddr)
 	if err != nil {
 		return nil, finalizationConflict, err
 	}
