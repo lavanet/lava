@@ -98,7 +98,7 @@ func ExtractSignerAddressFromBadge(badge pairingtypes.Badge) (sdk.AccAddress, er
 
 func AllDataHash(relayResponse *pairingtypes.RelayReply, relayData pairingtypes.RelayPrivateData) (data_hash []byte) {
 	metadataBytes := make([]byte, 0)
-	for _, metadata := range relayResponse.Metadata {
+	for _, metadata := range relayResponse.GetMetadata() {
 		data, err := metadata.Marshal()
 		if err != nil {
 			utils.LavaFormatError("metadata can't be marshaled to bytes", err)
@@ -107,7 +107,7 @@ func AllDataHash(relayResponse *pairingtypes.RelayReply, relayData pairingtypes.
 	}
 	// we remove the salt from the signature because it can be different
 	relayData.Salt = []byte{}
-	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.Data, []byte(relayData.String()), metadataBytes}, nil))
+	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.GetData(), []byte(relayData.String()), metadataBytes}, nil))
 	return
 }
 
@@ -217,8 +217,8 @@ func RecoverPubKeyFromReplyMetadata(relayResponse *conflicttypes.ReplyMetadata) 
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, addr sdk.AccAddress) (secp256k1.PubKey, error) {
-	dataToSign := DataToSignResponseFinalizationData(relayResponse.LatestBlock, relayResponse.FinalizedBlocksHashes, relayReq.RelaySession, addr)
+func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse.LatestBlock, relayResponse.FinalizedBlocksHashes, relayReq.RelaySession, consumerAddr)
 	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
 	if err != nil {
 		return nil, err

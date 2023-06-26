@@ -174,5 +174,5 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 	}
 	reply2.SigBlocks = sigBlocks
 	msg.ResponseConflict.ConflictRelayData1 = conflictconstruct.ConstructConflictRelayData(reply2, msg.ResponseConflict.ConflictRelayData1.Request)
-	return msg, reply1, reply2, err
+	return msg, reply, reply2, err
 }

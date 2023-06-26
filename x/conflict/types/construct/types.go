@@ -10,8 +10,9 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 	if reply == nil || req == nil {
 		return nil
 	}
+	allDataHash := sigs.AllDataHash(reply, *req)
 	res := &types.ReplyMetadata{
-		HashAllDataHash:       sigs.HashMsg(sigs.AllDataHash(reply, *req)),
+		HashAllDataHash:       sigs.HashMsg(allDataHash),
 		Sig:                   reply.Sig,
 		LatestBlock:           reply.LatestBlock,
 		FinalizedBlocksHashes: reply.FinalizedBlocksHashes,
