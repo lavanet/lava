@@ -1,8 +1,11 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -38,7 +41,15 @@ func (k Keeper) RemoveBadgeUsedCu(
 	if store.Has(badgeUsedCuKey) {
 		store.Delete(badgeUsedCuKey)
 	} else {
-		panic("could not remove badgeUsedCu entry. key not found " + string(badgeUsedCuKey))
+		// badge (epoch) timer has expired for an unknown badge: either the
+		// timer was set wrongly, or the badge was incorrectly removed; and
+		// we cannot even return an error about it.
+		utils.LavaFormatError("critical: epoch expiry for unknown badge, skipping",
+			fmt.Errorf("badge not found"),
+			utils.Attribute{Key: "badge", Value: string(badgeUsedCuKey)},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+		)
+		return
 	}
 }
 
