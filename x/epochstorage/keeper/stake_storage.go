@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -79,34 +80,45 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
 func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) // we take the epochs memory size at earliestEpochBlock, and not the current one
-	deletedEpochs := []uint64{}
+
+	// we take the epochs memory size at earliestEpochBlock, and not the current one
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock)
 	if err != nil {
-		// this is critical, no recovery from this
-		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
+		// panic:ok: critical, no recovery, avoid further corruption
+		utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+			utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+			utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+		)
 	}
+
 	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
+
 	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
-	changed := false
+
+	deletedEpochs := []uint64{}
 	for earliestEpochBlock < lastBlockInMemory {
 		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
 		if err != nil {
-			// this is critical, no recovery from this
-			panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+			// panic:ok: critical, no recovery, avoid further corruption
+			utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+				utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+				utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+			)
 		}
-		changed = true
 	}
 
-	if !changed {
+	if len(deletedEpochs) == 0 {
 		return
 	}
 
-	logger := k.Logger(ctx)
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.EarliestEpochEventName,
+		map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)},
+		"updated earliest epoch block")
+
 	// now update the earliest epoch start
-	utils.LogLavaEvent(ctx, logger, types.EarliestEpochEventName, map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock, deletedEpochs)
 }
 
@@ -126,7 +138,11 @@ func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64
 						// if storageBlock is empty its stake entry current. so we dont remove it.
 						continue
 					}
-					panic("failed to convert storage block to int: " + storageBlock)
+					// panic:ok: should never happen; avoid further storage corruption
+					utils.LavaFormatPanic("critical: failed to decode storage block", err,
+						utils.LogAttr("index", entry.Index),
+						utils.LogAttr("storageBlock", storageBlock),
+					)
 				}
 				if blockHeight < block {
 					k.RemoveStakeStorage(ctx, entry.Index)
@@ -167,14 +183,14 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	for idx, entry := range entries {
 		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
 		if err != nil {
-			panic("invalid account address inside StakeStorage: " + entry.Address)
+			// panic:ok: account address on chain must have been validated before
+			utils.LavaFormatPanic("critical: invalid account address inside StakeStorage", err,
+				utils.LogAttr("address", entry.Address),
+			)
 		}
 		if entryAddr.Equals(address) {
 			// found the right thing
-			index = uint64(idx)
-			found = true
-			// remove from the stakeStorage, i checked it supports idx == length-1
-			return
+			return uint64(idx), true
 		}
 	}
 	return 0, false
