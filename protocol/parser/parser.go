@@ -107,25 +107,34 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	return rpcInput.ParseBlock(resString)
 }
 
-// this function returns the block that was requested,
-func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
+func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
-		return spectypes.NOT_APPLICABLE, err
+		return "", err
 	}
 
-	blockstr, ok := result[0].(string)
+	response, ok := result[0].(string)
 	if !ok {
-		return spectypes.NOT_APPLICABLE, errors.New("block number is not string parseable")
+		return "", errors.New("result is not string parseable")
 	}
 
-	if strings.Contains(blockstr, "\"") {
-		blockstr, err = strconv.Unquote(blockstr)
+	if strings.Contains(response, "\"") {
+		response, err = strconv.Unquote(response)
 		if err != nil {
-			return spectypes.NOT_APPLICABLE, err
+			return "", err
 		}
 	}
-	return rpcInput.ParseBlock(blockstr)
+
+	return response, nil
+}
+
+// this function returns the block that was requested,
+func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
+	result, err := ParseFromReply(rpcInput, blockParser)
+	if err != nil {
+		return spectypes.NOT_APPLICABLE, err
+	}
+	return rpcInput.ParseBlock(result)
 }
 
 // this function returns the block that was requested,

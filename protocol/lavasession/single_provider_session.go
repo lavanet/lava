@@ -21,6 +21,7 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
+	BadgeUserData      *ProviderSessionsEpochData
 	occupyingGuid      uint64 // used for tracking errors
 }
 
@@ -28,6 +29,10 @@ type SingleProviderSession struct {
 // is used to determine if the proof is beneficial and needs to be sent to rewardServer
 func (sps *SingleProviderSession) IsPayingRelay() bool {
 	return sps.LatestRelayCu > 0
+}
+
+func (sps *SingleProviderSession) IsBadgeSession() bool {
+	return sps.BadgeUserData != nil
 }
 
 func (sps *SingleProviderSession) writeCuSumAtomically(cuSum uint64) {
@@ -165,6 +170,17 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	if err != nil {
 		return err
 	}
+
+	// Update badgeUsedCu in ProviderSessionsWithConsumer
+	if sps.IsBadgeSession() {
+		maxCuBadge := atomicReadBadgeMaxComputeUnits(sps.BadgeUserData)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, sps.BadgeUserData)
+		if err != nil {
+			sps.lock.Unlock() // unlock on error
+			return err
+		}
+	}
+
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
@@ -190,6 +206,31 @@ func (sps *SingleProviderSession) DisbandSession() error {
 	}
 	sps.lock.Unlock()
 	return nil
+}
+
+func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+	for {
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
+		if badgeUsedCu+currentCU > maxCu {
+			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
+				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
+				utils.Attribute{Key: "currentCU", Value: currentCU},
+				utils.Attribute{Key: "maxCu", Value: maxCu},
+			)
+		}
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
+			return nil
+		}
+	}
+}
+
+func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+	for {
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
+			return nil
+		}
+	}
 }
 
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
@@ -239,7 +280,11 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
+	if sps.IsBadgeSession() {
+		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, sps.BadgeUserData)
+	}
 	sps.LatestRelayCu = 0
+
 	return nil
 }
 
