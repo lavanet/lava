@@ -137,7 +137,7 @@ func TestSendNewProof(t *testing.T) {
 	for _, testCase := range testCases {
 		var existingCU, updatedWithProf = uint64(0), false
 		for _, proof := range testCase.Proofs {
-			rws := rewardserver.NewRewardServerWithStorage(stubRewardsTxSender{}, nil, proofStore)
+			rws := rewardserver.NewRewardServerWithStorage(&rewardsTxSenderDouble{}, nil, proofStore)
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
 		}
 		require.Equal(t, testCase.ExpectedExistingCu, existingCU)
@@ -147,8 +147,9 @@ func TestSendNewProof(t *testing.T) {
 
 func TestUpdateEpoch(t *testing.T) {
 	t.Run("gathers rewards for all epochs", func(t *testing.T) {
+		stubRewardsTxSender := rewardsTxSenderDouble{}
 		proofStore := rewardserver.NewProofStore()
-		rws := rewardserver.NewRewardServerWithStorage(stubRewardsTxSender{}, nil, proofStore)
+		rws := rewardserver.NewRewardServerWithStorage(&stubRewardsTxSender, nil, proofStore)
 
 		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
 			epoch := sessionId%2 + 1
@@ -158,21 +159,13 @@ func TestUpdateEpoch(t *testing.T) {
 			_, _ = rws.SendNewProof(context.Background(), proof, epoch, "consumerAddress", "apiInterface")
 		}
 
-		proofs, err := proofStore.FindAll(context.TODO())
-		require.NoError(t, err)
-		require.Len(t, proofs, 5)
-
 		rws.UpdateEpoch(1)
 
-		proofs, err = proofStore.FindAll(context.Background())
-		require.NoError(t, err)
-		require.Len(t, proofs, 3)
+		require.Len(t, stubRewardsTxSender.sentPayments, 2)
 
 		rws.UpdateEpoch(2)
 
-		proofs, err = proofStore.FindAll(context.Background())
-		require.NoError(t, err)
-		require.Len(t, proofs, 0)
+		require.Len(t, stubRewardsTxSender.sentPayments, 5)
 	})
 }
 
@@ -186,18 +179,20 @@ func newSdkContext() sdk.Context {
 	return sdk.NewContext(ms, tmproto.Header{Time: time.Now().UTC()}, false, log.NewNopLogger())
 }
 
-type stubRewardsTxSender struct {
+type rewardsTxSenderDouble struct {
+	sentPayments []*pairingtypes.RelaySession
 }
 
-func (rts stubRewardsTxSender) TxRelayPayment(_ context.Context, _ []*pairingtypes.RelaySession, _ string) error {
-	// do nothing for now
+func (rts *rewardsTxSenderDouble) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string) error {
+	rts.sentPayments = append(rts.sentPayments, payments...)
+
 	return nil
 }
 
-func (rts stubRewardsTxSender) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
+func (rts *rewardsTxSenderDouble) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
 	return 0, nil
 }
 
-func (rts stubRewardsTxSender) EarliestBlockInMemory(_ context.Context) (uint64, error) {
+func (rts *rewardsTxSenderDouble) EarliestBlockInMemory(_ context.Context) (uint64, error) {
 	return 1, nil
 }

@@ -247,9 +247,15 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	return rewardsForClaim, errRet
 }
 
-func (rws *RewardServer) deleteRewardsForConsumer(ctx context.Context, epoch uint64, consumerAddr string) {
-	rws.proofStore.Delete(ctx, int64(epoch), consumerAddr)
+func (rws *RewardServer) deleteRewardsForConsumer(ctx context.Context, epoch uint64, consumerAddr string) error {
+	err := rws.proofStore.Delete(ctx, int64(epoch), consumerAddr)
+	if err != nil {
+		return fmt.Errorf("could not delete proofs for epoch %d and consumer %s: %w", epoch, consumerAddr, err)
+	}
+
 	delete(rws.rewards[epoch].consumerRewards, consumerAddr)
+
+	return nil
 }
 
 func (rws *RewardServer) deleteRewardsForEpoch(ctx context.Context, epoch uint64) error {
