@@ -11,10 +11,11 @@ import (
 )
 
 // Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
-func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) error {
+func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) {
 	// check the epochsNum consts
 	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
-		return utils.LavaFormatError("epochsNumToCheckCUForUnresponsiveProvider or epochsNumToCheckCUForComplainers are smaller or equal than zero", fmt.Errorf("invalid unresponsive provider consts"),
+		utils.LavaFormatError("epoch to check CU for unresponsive provider or for complainer is zero",
+			fmt.Errorf("invalid unresponsive provider consts"),
 			utils.Attribute{Key: "epochsNumToCheckCUForUnresponsiveProvider", Value: epochsNumToCheckCUForUnresponsiveProvider},
 			utils.Attribute{Key: "epochsNumToCheckCUForComplainers", Value: epochsNumToCheckCUForComplainers},
 		)
@@ -39,21 +40,22 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	minHistoryBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, largerEpochsNumConst+recommendedEpochNumToCollectPayment)
 	if err != nil {
 		// not enough history, do nothing
-		return nil
+		return
 	}
 
-	// Get the current stake storages (from all chains). stake storages contain a list of stake entries. Each stake storage is for a different chain
+	// Get the current stake storages (from all chains).
+	// Stake storages contain a list of stake entries (each for a different chain).
 	providerStakeStorageList := k.getCurrentProviderStakeStorageList(ctx)
 	if len(providerStakeStorageList) == 0 {
 		// no provider is staked -> no one to punish
-		return nil
+		return
 	}
 
 	// Go back recommendedEpochNumToCollectPayment
 	minPaymentBlock, err := k.getBlockEpochsAgo(ctx, currentEpoch, recommendedEpochNumToCollectPayment)
 	if err != nil {
 		// not enough history, do nothiing
-		return nil
+		return
 	}
 
 	// find the minimum number of providers in all the plans
@@ -84,7 +86,10 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
 			providerPaymentStorageKeyList, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
 			if err != nil {
-				return utils.LavaFormatError("couldn't count CU for unreponsiveness", err)
+				utils.LavaFormatError("unstake unresponsive providers failed to count CU", err,
+					utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
+				)
+				continue
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
@@ -92,13 +97,14 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
 				existingProviders[providerStakeEntry.Geolocation]--
 				if err != nil {
-					return utils.LavaFormatError("couldn't punish unresponsive provider", err)
+					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
+						utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
+					)
+					continue
 				}
 			}
 		}
 	}
-
-	return nil
 }
 
 // getBlockEpochsAgo returns the block numEpochs back from the given blockHeight
