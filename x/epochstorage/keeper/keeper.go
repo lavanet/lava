@@ -64,7 +64,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k *Keeper) AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any) {
 	if _, ok := k.fixationRegistries[fixationKey]; ok {
-		panic(fmt.Sprintf("duplicate fixation registry %s", fixationKey))
+		// panic:ok: duplicate fixation registry is severe (triggered at init time)
+		panic("duplicate fixation registry: " + fixationKey)
 	}
 	k.fixationRegistries[fixationKey] = getParamFunction
 }
