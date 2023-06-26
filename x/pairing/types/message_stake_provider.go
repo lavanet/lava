@@ -82,6 +82,10 @@ func ValidateGeoFields(endp []epochstoragetypes.Endpoint, geo uint64) error {
 
 	endpointsGeoStr = strings.TrimSuffix(endpointsGeoStr, ",")
 	geoEnums, geoStr := ExtractGeolocations(geo)
+	if len(geoEnums) != len(geoSeen) {
+		return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
+			"invalid geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
+	}
 	for _, geoE := range geoEnums {
 		_, ok := geoSeen[geoE.String()]
 		if !ok {
