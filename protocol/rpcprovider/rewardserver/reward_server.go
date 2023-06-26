@@ -60,6 +60,7 @@ type RewardServer struct {
 	totalCUServiced  uint64
 	totalCUPaid      uint64
 	providerMetrics  *metrics.ProviderMetricsManager
+	proofStore       *ProofStore
 }
 
 type RewardsTxSender interface {
@@ -71,7 +72,18 @@ type RewardsTxSender interface {
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
+
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
+
+	defer func() {
+		if updatedWithProof {
+			err := rws.proofStore.Save(ctx, consumerRewardsKey, proof)
+			if err != nil {
+				// TODO: what?
+			}
+		}
+	}()
+
 	epochRewards, ok := rws.rewards[epoch]
 	if !ok {
 		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
@@ -278,15 +290,73 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 }
 
 func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager) *RewardServer {
-	//
+	return NewRewardServerWithStorage(rewardsTxSender, providerMetrics, nil)
+}
+
+func NewRewardServerWithStorage(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, proofStore *ProofStore) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
 	rws.expectedPayments = []PaymentRequest{}
-	// TODO: load this from persistency
-	rws.rewards = map[uint64]*EpochRewards{}
+
+	rewards, err := rehydrateProofs(context.TODO(), proofStore)
+	if err != nil {
+		panic(err)
+	}
+
+	rws.rewards = rewards
 	rws.providerMetrics = providerMetrics
+	rws.proofStore = proofStore
 	return rws
+}
+
+func rehydrateProofs(ctx context.Context, store *ProofStore) (map[uint64]*EpochRewards, error) {
+	result := make(map[uint64]*EpochRewards)
+	proofEntities, err := store.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, proofEntity := range proofEntities {
+		epoch := uint64(proofEntity.epoch)
+		epochReward, ok := result[epoch]
+		if !ok {
+			proofs := make(map[uint64]*pairingtypes.RelaySession)
+			proofs[proofEntity.sessionId] = proofEntity.proof
+
+			consumerReward := &ConsumerRewards{
+				epoch:    epoch,
+				consumer: proofEntity.consumer,
+				proofs:   proofs,
+			}
+			consumerRewards := make(map[string]*ConsumerRewards)
+			consumerRewards[proofEntity.consumer] = consumerReward
+
+			result[uint64(proofEntity.epoch)] = &EpochRewards{
+				epoch:           epoch,
+				consumerRewards: consumerRewards,
+			}
+			continue
+		}
+
+		consumerReward, ok := epochReward.consumerRewards[proofEntity.consumer]
+		if !ok {
+			proofs := make(map[uint64]*pairingtypes.RelaySession)
+			proofs[proofEntity.sessionId] = proofEntity.proof
+
+			consumerReward := &ConsumerRewards{
+				epoch:    epoch,
+				consumer: proofEntity.consumer,
+				proofs:   proofs,
+			}
+			epochReward.consumerRewards[proofEntity.consumer] = consumerReward
+			continue
+		}
+
+		consumerReward.proofs[proofEntity.sessionId] = proofEntity.proof
+	}
+
+	return result, nil
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
