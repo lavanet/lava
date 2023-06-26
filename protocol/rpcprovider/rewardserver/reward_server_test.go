@@ -2,15 +2,16 @@ package rewardserver_test
 
 import (
 	"fmt"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	"golang.org/x/net/context"
-	"strconv"
-	"testing"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -144,6 +145,37 @@ func TestSendNewProof(t *testing.T) {
 	}
 }
 
+func TestUpdateEpoch(t *testing.T) {
+	t.Run("gathers rewards for all epochs", func(t *testing.T) {
+		proofStore := rewardserver.NewProofStore()
+		rws := rewardserver.NewRewardServerWithStorage(stubRewardsTxSender{}, nil, proofStore)
+
+		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
+			epoch := sessionId%2 + 1
+			proof := common.BuildRelaySession(sdk.WrapSDKContext(newSdkContext()), "provider", []byte{}, sessionId, uint64(0), "spec", nil)
+			proof.Epoch = int64(epoch)
+
+			_, _ = rws.SendNewProof(context.Background(), proof, epoch, "consumerAddress", "apiInterface")
+		}
+
+		proofs, err := proofStore.FindAll(context.TODO())
+		require.NoError(t, err)
+		require.Len(t, proofs, 5)
+
+		rws.UpdateEpoch(1)
+
+		proofs, err = proofStore.FindAll(context.Background())
+		require.NoError(t, err)
+		require.Len(t, proofs, 3)
+
+		rws.UpdateEpoch(2)
+
+		proofs, err = proofStore.FindAll(context.Background())
+		require.NoError(t, err)
+		require.Len(t, proofs, 0)
+	})
+}
+
 func newSdkContext() sdk.Context {
 	key := sdk.NewKVStoreKey("storekey")
 	db := dbm.NewMemDB()
@@ -158,13 +190,14 @@ type stubRewardsTxSender struct {
 }
 
 func (rts stubRewardsTxSender) TxRelayPayment(_ context.Context, _ []*pairingtypes.RelaySession, _ string) error {
-	panic("implement me")
+	// do nothing for now
+	return nil
 }
 
 func (rts stubRewardsTxSender) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
-	panic("implement me")
+	return 0, nil
 }
 
 func (rts stubRewardsTxSender) EarliestBlockInMemory(_ context.Context) (uint64, error) {
-	panic("implement me")
+	return 1, nil
 }

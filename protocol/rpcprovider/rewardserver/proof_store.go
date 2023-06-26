@@ -2,6 +2,7 @@ package rewardserver
 
 import (
 	"context"
+
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -58,6 +59,32 @@ func (s *ProofStore) FindAll(ctx context.Context) ([]ProofEntity, error) {
 	}
 
 	return result, nil
+}
+
+func (s *ProofStore) Delete(ctx context.Context, epoch int64, consumer string) error {
+	var newStore []*proofEntityInternal
+	for _, proofEntityInternal := range s.store {
+		if proofEntityInternal.epoch != epoch || proofEntityInternal.consumer != consumer {
+			newStore = append(newStore, proofEntityInternal)
+		}
+	}
+
+	s.store = newStore
+
+	return nil
+}
+
+func (s *ProofStore) DeleteAllForEpoch(ctx context.Context, epoch int64) error {
+	var newStore []*proofEntityInternal
+	for _, proofEntityInternal := range s.store {
+		if proofEntityInternal.epoch != epoch {
+			newStore = append(newStore, proofEntityInternal)
+		}
+	}
+
+	s.store = newStore
+
+	return nil
 }
 
 func NewProofStore() *ProofStore {

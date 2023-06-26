@@ -238,13 +238,29 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 				continue
 			}
 			rewardsForClaim = append(rewardsForClaim, claimables...)
-			delete(epochRewards.consumerRewards, consumerAddr)
+			rws.deleteRewardsForConsumer(ctx, epoch, consumerAddr)
 		}
 		if len(epochRewards.consumerRewards) == 0 {
-			delete(rws.rewards, epoch)
+			rws.deleteRewardsForEpoch(ctx, epoch)
 		}
 	}
 	return rewardsForClaim, errRet
+}
+
+func (rws *RewardServer) deleteRewardsForConsumer(ctx context.Context, epoch uint64, consumerAddr string) {
+	rws.proofStore.Delete(ctx, int64(epoch), consumerAddr)
+	delete(rws.rewards[epoch].consumerRewards, consumerAddr)
+}
+
+func (rws *RewardServer) deleteRewardsForEpoch(ctx context.Context, epoch uint64) error {
+	err := rws.proofStore.DeleteAllForEpoch(ctx, int64(epoch))
+	if err != nil {
+		return fmt.Errorf("could not delete proofs for epoch %d: %w", epoch, err)
+	}
+
+	delete(rws.rewards, epoch)
+
+	return nil
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
