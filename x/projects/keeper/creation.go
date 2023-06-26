@@ -224,13 +224,14 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		var devkeyData types.ProtoDeveloperData
 		found = k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
-		// check again that the developer key is valid, and that it belongs to the
-		// project the developer key belongs to a different project.
-		if !found || devkeyData.ProjectID != project.GetIndex() {
-			// ... but we already checked above that it belongs to this project,
-			// so this should never happen!
-			return utils.LavaFormatError("critical: developer key mapped wrongly",
-				fmt.Errorf("developer key included in project but mapped to another"),
+		if !found {
+			return sdkerrors.ErrNotFound
+		}
+
+		// the developer key belongs to a different project
+		if devkeyData.ProjectID != project.GetIndex() {
+			return utils.LavaFormatWarning("failed to unregister key", sdkerrors.ErrNotFound,
+				utils.Attribute{Key: "projectID", Value: project.Index},
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				utils.Attribute{Key: "projectID", Value: project.GetIndex()},
@@ -242,6 +243,25 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		if err != nil {
 			return err
 		}
+
+		found = project.DeleteKey(types.ProjectDeveloperKey(key.Key))
+		if !found {
+			// the developer key must be found, because it was already found in
+			// the developerKeysFS for this project; return error to avoid panic.
+			return utils.LavaFormatError("critical: develper key missing in project", sdkerrors.ErrNotFound,
+				utils.Attribute{Key: "projectID", Value: project.Index},
+				utils.Attribute{Key: "key", Value: key.Key},
+				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
+			)
+		}
+
+		logger := k.Logger(ctx)
+		details := map[string]string{
+			"project": project.GetIndex(),
+			"key":     key.Key,
+			"keytype": strconv.FormatInt(int64(key.Kinds), 10),
+		}
+		utils.LogLavaEvent(ctx, logger, types.DelProjectKeyEventName, details, "key deleted from project")
 	}
 
 	return nil
@@ -251,25 +271,30 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
 	projects := k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscriptionAddr)
 	for _, projectID := range projects {
-		err := k.snapshotProject(ctx, projectID)
-		if err != nil {
-			panic(err)
-		}
+		k.snapshotProject(ctx, projectID)
 	}
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaFormatWarning("snapshot of project failed, project does not exist",
-			fmt.Errorf("project not found"),
-			utils.Attribute{Key: "projectID", Value: projectID},
+		// panic:ok: should not happened because called only on existing projects
+		utils.LavaFormatPanic("critical: snapshot of project failed", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
 	}
 
 	project.UsedCu = 0
 	project.Snapshot += 1
 
-	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	err := k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	if err != nil {
+		// panic:ok: should not happen because append at current (ctx) block always works
+		utils.LavaFormatPanic("critical: snapshot of project failed", err,
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+		)
+	}
 }
