@@ -101,9 +101,15 @@ type ProviderSessionsWithConsumer struct {
 	isBlockListed     uint32
 	consumerAddr      string
 	epochData         *ProviderSessionsEpochData
+	badgeEpochData    map[string]*ProviderSessionsEpochData
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 	pairedProviders   int64
+}
+
+type BadgeSession struct {
+	BadgeCuAllocation uint64
+	BadgeUser         string
 }
 
 func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
@@ -112,6 +118,7 @@ func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSes
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
+		badgeEpochData:    map[string]*ProviderSessionsEpochData{},
 		isDataReliability: isDataReliability,
 		pairedProviders:   pairedProviders,
 	}
@@ -137,6 +144,10 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComput
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
+func atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (maxComputeUnits uint64) {
+	return atomic.LoadUint64(&badgeUserEpochData.MaxComputeUnits)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
@@ -145,11 +156,22 @@ func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64)
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
 }
 
+func atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (usedComputeUnits uint64) {
+	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
+}
+
+func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed uint64, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
+	return atomic.CompareAndSwapUint64(&badgeUserEpochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
