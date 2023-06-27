@@ -484,7 +484,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	var chainProxy ChainProxy
 	chainParser.SetSpec(lavaSpec)
 	endpoint := &lavasession.RPCProviderEndpoint{
-		NetworkAddress: "",
+		NetworkAddress: lavasession.NetworkAddressData{},
 		ChainID:        specIndex,
 		ApiInterface:   apiInterface,
 		Geolocation:    1,

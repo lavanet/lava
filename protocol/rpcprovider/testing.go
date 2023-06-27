@@ -2,7 +2,10 @@ package rpcprovider
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -23,8 +26,15 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+)
+
+const (
+	networkAddressFlag = "network-address"
+	certFlag           = "cert-pem"
 )
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
@@ -196,4 +206,66 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
+}
+
+func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
+	cmdTestProviderCaCert := &cobra.Command{
+		Use:     `provider-ca-cert {network-address}`,
+		Short:   `test the certificate of an rpc provider`,
+		Long:    `test if the rpc provider in the given network address is using the right format of CA certificate`,
+		Example: `provider-ca-cert 127.0.0.1:2211`,
+		Args:    cobra.RangeArgs(0, 1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// handle flags, pass necessary fields
+			networkAddress, err := cmd.Flags().GetString(networkAddressFlag)
+			if err != nil {
+				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
+			}
+			cert, err := cmd.Flags().GetString(certFlag)
+			if err != nil {
+				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
+			}
+
+			ctx := context.Background()
+			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+			caCert, err := ioutil.ReadFile(cert)
+			if err != nil {
+				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
+			}
+
+			certPool := x509.NewCertPool()
+			if !certPool.AppendCertsFromPEM(caCert) {
+				return utils.LavaFormatError("failed to append server certificate", nil)
+			}
+
+			creds := credentials.NewTLS(&tls.Config{
+				RootCAs: certPool,
+			})
+
+			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
+			if err != nil {
+				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
+				utils.LavaFormatError("It means your provider is not setup correctly or is lacking CA certification", nil)
+				return nil
+			}
+			utils.LavaFormatInfo("Finished dialing network address successfully!")
+			utils.LavaFormatInfo("CA certificate is setup correctly!")
+			return nil
+		},
+	}
+
+	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
+	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
+	if err != nil {
+		utils.LavaFormatFatal("MarkFlagRequired Error", err)
+	}
+
+	cmdTestProviderCaCert.Flags().String(certFlag, "", "certificate file")
+	err = cmdTestProviderCaCert.MarkFlagRequired(certFlag)
+	if err != nil {
+		utils.LavaFormatFatal("MarkFlagRequired Error", err)
+	}
+
+	return cmdTestProviderCaCert
 }

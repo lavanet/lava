@@ -68,11 +68,8 @@ func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
 	apip.codec = dyncodec.NewCodec(apip.registry)
 }
 
-func (apip *GrpcChainParser) setupForProvider(grpcEndpoint string) error {
-	remote, err := dyncodec.NewGRPCReflectionProtoFileRegistry(grpcEndpoint)
-	if err != nil {
-		return err
-	}
+func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientConn) error {
+	remote := dyncodec.NewGRPCReflectionProtoFileRegistryFromConn(reflectionConnection)
 	apip.registry = dyncodec.NewRegistry(remote)
 	apip.codec = dyncodec.NewCodec(apip.registry)
 	return nil
@@ -312,7 +309,12 @@ func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime tim
 		return nil, utils.LavaFormatError("g_conn == nil", nil)
 	}
 
-	err := parser.(*GrpcChainParser).setupForProvider(nodeUrl)
+	reflectionConnection, err := conn.GetRpc(context.Background(), true)
+	if err != nil {
+		return nil, utils.LavaFormatError("reflectionConnection Error", err)
+	}
+
+	err = parser.(*GrpcChainParser).setupForProvider(reflectionConnection)
 	if err != nil {
 		return nil, fmt.Errorf("grpc chain proxy: failed to setup parser: %w", err)
 	}

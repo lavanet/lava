@@ -183,6 +183,10 @@ func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 	return resultStatus.SyncInfo.LatestBlockHash.String(), nil
 }
 
+func (lcf *LavaChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
+	return "", "", utils.LavaFormatError("FetchChainID not supported for lava chain fetcher", nil)
+}
+
 func NewLavaChainFetcher(ctx context.Context, clientCtx client.Context) *LavaChainFetcher {
 	lcf := &LavaChainFetcher{clientCtx: clientCtx}
 	return lcf

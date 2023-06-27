@@ -33,7 +33,7 @@ const (
 
 func initProviderSessionManager() *ProviderSessionManager {
 	return NewProviderSessionManager(&RPCProviderEndpoint{
-		NetworkAddress: "127.0.0.1:6666",
+		NetworkAddress: NetworkAddressData{Address: "127.0.0.1:6666"},
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
@@ -754,7 +754,7 @@ type testSessionData struct {
 // this test is running sessions and usage in a sync way to see integrity of behavior, opening and closing of sessions is separate
 func TestPSMUsageSync(t *testing.T) {
 	psm := NewProviderSessionManager(&RPCProviderEndpoint{
-		NetworkAddress: "127.0.0.1:6666",
+		NetworkAddress: NetworkAddressData{Address: "127.0.0.1:6666"},
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
