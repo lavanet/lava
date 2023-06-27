@@ -55,8 +55,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		}
 		return nil
 	}
-	geoEnums, _ := types.ExtractGeolocations(geolocation)
-	if len(geoEnums) == 0 {
+
+	if !types.IsValidGeoEnum(int32(geolocation)) {
 		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)

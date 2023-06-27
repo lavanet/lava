@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"strconv"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -122,48 +121,42 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
-	currentGlobalGeo := types.GetCurrentGlobalGeolocation()
-
 	testCases := []struct {
 		name        string
 		endpoints   []string
 		geolocation string
-		validConfig bool
-		validGeo    bool
+		valid       bool
 	}{
 		// single uint geolocation config tests
 		{
 			name:        "Single uint geolocation - happy flow",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
 			geolocation: "1",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2"},
 			geolocation: "1",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
 			geolocation: "3",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint has geo of multiple regions",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,3"},
 			geolocation: "3",
-			validConfig: false,
+			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - bad endpoint geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,20555"},
 			geolocation: "1",
-			validConfig: false,
+			valid:       false,
 		},
 
 		// single string geolocation config tests
@@ -171,40 +164,37 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 			name:        "Single string geolocation - happy flow",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
 			geolocation: "EU",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS"},
 			geolocation: "EU",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
 			geolocation: "EU,USC",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - endpoint has geo of multiple regions",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU,USC"},
 			geolocation: "3",
-			validConfig: false,
+			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - bad geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
 			geolocation: "BLABLA",
-			validConfig: false,
+			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - bad geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,BLABLA"},
 			geolocation: "EU",
-			validConfig: false,
+			valid:       false,
 		},
 
 		// multiple uint geolocation config tests
@@ -212,21 +202,19 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 			name:        "Multiple uint geolocations - happy flow",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,2"},
 			geolocation: "3",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Multiple uint geolocations - endpoint geo not equal to geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,4"},
 			geolocation: "2",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Multiple uint geolocations - one endpoint has multi-region geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,3"},
 			geolocation: "2",
-			validConfig: false,
+			valid:       false,
 		},
 
 		// multiple string geolocation config tests
@@ -234,73 +222,59 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 			name:        "Multiple string geolocations - happy flow",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS", "127.0.0.1:3352,jsonrpc,EU"},
 			geolocation: "EU,AS",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Multiple string geolocations - endpoint geo not equal to geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,USC"},
 			geolocation: "EU,AS",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 
 		// global config tests
 		{
 			name:        "Global uint geolocation - happy flow",
 			endpoints:   []string{"127.0.0.1:3352,jsonrpc,65535"},
-			geolocation: strconv.FormatUint(currentGlobalGeo, 10),
-			validConfig: true,
-			validGeo:    true,
+			geolocation: "65535",
+			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - happy flow 2 - global in one endpoint",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
 			geolocation: "65535",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - endpoint geo not match geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
 			geolocation: "7",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 		{
 			name:        "Global string geolocation - happy flow",
 			endpoints:   []string{"127.0.0.1:3352,jsonrpc,GL"},
 			geolocation: "GL",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - happy flow 2 - global in one endpoint",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
 			geolocation: "GL",
-			validConfig: true,
-			validGeo:    true,
+			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - endpoint geo not match geo",
 			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
 			geolocation: "EU,AS,USC",
-			validConfig: true,
-			validGeo:    false,
+			valid:       false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			endp, geo, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
-			if tc.validConfig {
+			_, _, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
+			if tc.valid {
 				require.Nil(t, err)
-				err = types.ValidateGeoFields(endp, geo)
-				if tc.validGeo {
-					require.Nil(t, err)
-				} else {
-					require.NotNil(t, err)
-				}
 			} else {
 				require.NotNil(t, err)
 			}

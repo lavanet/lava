@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -47,7 +46,8 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			argEndpoints, argGeolocation, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
+			argEndpoints, argGeolocation32, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
+			argGeolocation := uint64(argGeolocation32)
 			if err != nil {
 				return err
 			}
@@ -200,66 +200,120 @@ func CmdBulkStakeProvider() *cobra.Command {
 	return cmd
 }
 
-func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []epochstoragetypes.Endpoint, geo uint64, err error) {
+// func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []epochstoragetypes.Endpoint, geo uint64, err error) {
+// 	for _, endpointStr := range endpArg {
+// 		splitted := strings.Split(endpointStr, ",")
+// 		if len(splitted) != 3 {
+// 			return nil, 0, fmt.Errorf("invalid argument format in endpoints, received: %s", endpointStr)
+// 		}
+
+// 		// geolocation of an endpoint can be uint or a string representing a single geo region
+// 		var geoloc uint64
+// 		geoloc, valid := types.IsValidGeoEnum(splitted[2])
+// 		if !valid {
+// 			geoloc, err = strconv.ParseUint(splitted[2], 10, 64)
+// 			if err != nil {
+// 				return nil, 0, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number or valid geolocation string")
+// 			}
+// 		}
+
+// 		// if the user specified global ("GL"), append the endpoint in all possible geolocations
+// 		if geoloc == uint64(planstypes.Geolocation_GL) {
+// 			for geoName, geoVal := range planstypes.Geolocation_value {
+// 				if geoName == planstypes.Geolocation_GL.String() || geoName == planstypes.Geolocation_GLS.String() {
+// 					continue
+// 				}
+// 				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: uint64(geoVal)}
+// 				endp = append(endp, endpoint)
+// 			}
+// 		} else {
+// 			// if it's not global, verify that the endpoint's geolocation represents a single geo region
+// 			geoRegions, _ := types.ExtractGeolocations(geoloc)
+// 			if len(geoRegions) != 1 {
+// 				return nil, 0, fmt.Errorf("invalid geolocation for endpoint, must represent one region")
+// 			}
+// 			endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
+// 			endp = append(endp, endpoint)
+// 		}
+// 	}
+
+// 	// handle the case of string geolocation (example: "EU,AF,AS")
+// 	splitted := strings.Split(geoArg, ",")
+// 	strEnums := commontypes.RemoveDuplicatesFromSlice(splitted)
+// 	for _, s := range strEnums {
+// 		g, valid := types.IsValidGeoEnum(s)
+// 		if valid {
+// 			// if one of the endpoints is global, assign global value and break
+// 			if g == uint64(planstypes.Geolocation_GL) {
+// 				geo = types.GetCurrentGlobalGeolocation()
+// 				break
+// 			}
+// 			// for non-global geolocations constructs the final geolocation uint value (addition works because we
+// 			// removed duplicates and the geo regions represent a bitmap)
+// 			geo += g
+// 		}
+// 	}
+
+// 	// geolocation is not a list of enums, try to parse it as an uint
+// 	if geo == 0 {
+// 		geo, err = cast.ToUint64E(geoArg)
+// 		if err != nil {
+// 			return nil, 0, err
+// 		}
+// 	}
+// 	return endp, geo, nil
+// }
+
+func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []epochstoragetypes.Endpoint, geo int32, err error) {
+	var endpointsGeoloc int32
+
+	// handle endpoints
 	for _, endpointStr := range endpArg {
-		splitted := strings.Split(endpointStr, ",")
-		if len(splitted) != 3 {
-			return nil, 0, fmt.Errorf("invalid argument format in endpoints, received: %s", endpointStr)
+		split := strings.Split(endpointStr, ",")
+		if len(split) != 3 {
+			return nil, 0, fmt.Errorf("invalid endpoint format: %s", endpointStr)
 		}
 
-		// geolocation of an endpoint can be uint or a string representing a single geo region
-		var geoloc uint64
-		geoloc, valid := types.IsValidGeoEnum(splitted[2])
-		if !valid {
-			geoloc, err = strconv.ParseUint(splitted[2], 10, 64)
-			if err != nil {
-				return nil, 0, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number or valid geolocation string")
-			}
+		geoloc, err := types.ParseGeoEnum(split[2])
+		if err != nil {
+			return nil, 0, fmt.Errorf("invalid endpoint format: %w", err)
 		}
 
-		// if the user specified global ("GL"), append the endpoint in all possible geolocations
-		if geoloc == uint64(planstypes.Geolocation_GL) {
-			for geoName, geoVal := range planstypes.Geolocation_value {
-				if geoName == planstypes.Geolocation_GL.String() || geoName == planstypes.Geolocation_GLS.String() {
-					continue
+		if geoloc == int32(planstypes.Geolocation_GL) {
+			// if global ("GL"), append the endpoint in all possible geolocations
+			for _, geoloc := range types.GetGeolocations() {
+				endpoint := epochstoragetypes.Endpoint{
+					IPPORT:      split[0],
+					UseType:     split[1],
+					Geolocation: uint64(geoloc),
 				}
-				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: uint64(geoVal)}
 				endp = append(endp, endpoint)
 			}
+			endpointsGeoloc = int32(planstypes.Geolocation_GL)
 		} else {
-			// if it's not global, verify that the endpoint's geolocation represents a single geo region
-			geoRegions, _ := types.ExtractGeolocations(geoloc)
-			if len(geoRegions) != 1 {
-				return nil, 0, fmt.Errorf("invalid geolocation for endpoint, must represent one region")
+			// if not global, verify the geolocation is a single region and append as is
+			if !types.IsGeoEnumSingleBit(geoloc) {
+				return nil, 0, fmt.Errorf("endpoint must include exactly one geolocation code: %s", split[2])
 			}
-			endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:      split[0],
+				UseType:     split[1],
+				Geolocation: uint64(geoloc),
+			}
 			endp = append(endp, endpoint)
+			endpointsGeoloc |= geoloc
 		}
 	}
 
-	// handle the case of string geolocation (example: "EU,AF,AS")
-	splitted := strings.Split(geoArg, ",")
-	strEnums := commontypes.RemoveDuplicatesFromSlice(splitted)
-	for _, s := range strEnums {
-		g, valid := types.IsValidGeoEnum(s)
-		if valid {
-			// if one of the endpoints is global, assign global value and break
-			if g == uint64(planstypes.Geolocation_GL) {
-				geo = types.GetCurrentGlobalGeolocation()
-				break
-			}
-			// for non-global geolocations constructs the final geolocation uint value (addition works because we
-			// removed duplicates and the geo regions represent a bitmap)
-			geo += g
-		}
+	// handle geolocation
+	geo, err = types.ParseGeoEnum(geoArg)
+	if err != nil {
+		return nil, 0, fmt.Errorf("invalid geolocation format: %w", err)
 	}
 
-	// geolocation is not a list of enums, try to parse it as an uint
-	if geo == 0 {
-		geo, err = cast.ToUint64E(geoArg)
-		if err != nil {
-			return nil, 0, err
-		}
+	if geo != endpointsGeoloc {
+		return nil, 0, types.GeolocationNotMatchWithEndpointsError
 	}
+
 	return endp, geo, nil
 }

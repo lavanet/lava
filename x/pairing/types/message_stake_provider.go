@@ -1,12 +1,9 @@
 package types
 
 import (
-	"strings"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 const TypeMsgStakeProvider = "stake_provider"
@@ -59,46 +56,41 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
 	}
 
-	err = ValidateGeoFields(msg.Endpoints, msg.Geolocation)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// verify that the geolocation arg is a union of the endpoints' geolocation
-func ValidateGeoFields(endp []epochstoragetypes.Endpoint, geo uint64) error {
-	geoSeen := map[string]struct{}{}
-	var endpointsGeoStr string
-	for _, endp := range endp {
-		geoStr := planstypes.Geolocation_name[int32(endp.Geolocation)]
-		_, ok := geoSeen[geoStr]
-		if !ok {
-			geoSeen[geoStr] = struct{}{}
-			endpointsGeoStr += geoStr + ","
-		}
-	}
+// // verify that the geolocation arg is a union of the endpoints' geolocation
+// func ValidateGeoFields(endp []epochstoragetypes.Endpoint, geo uint64) error {
+// 	geoSeen := map[string]struct{}{}
+// 	var endpointsGeoStr string
+// 	for _, endp := range endp {
+// 		geoStr := planstypes.Geolocation_name[int32(endp.Geolocation)]
+// 		_, ok := geoSeen[geoStr]
+// 		if !ok {
+// 			geoSeen[geoStr] = struct{}{}
+// 			endpointsGeoStr += geoStr + ","
+// 		}
+// 	}
 
-	endpointsGeoStr = strings.TrimSuffix(endpointsGeoStr, ",")
-	geoEnums, geoStr := ExtractGeolocations(geo)
-	if len(geoEnums) != len(geoSeen) {
-		return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
-			"invalid geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
-	}
-	for _, geoE := range geoEnums {
-		_, ok := geoSeen[geoE.String()]
-		if !ok {
-			if geoE != planstypes.Geolocation_GL {
-				return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
-					"invalid geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
-			} else if len(geoSeen) != len(planstypes.Geolocation_name)-2 {
-				// handle the global case (should see all geos minus 2 global geos)
-				return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
-					"invalid global geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
-			}
-		}
-	}
+// 	endpointsGeoStr = strings.TrimSuffix(endpointsGeoStr, ",")
+// 	geoEnums, geoStr := ExtractGeolocations(geo)
+// 	if len(geoEnums) != len(geoSeen) {
+// 		return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
+// 			"invalid geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
+// 	}
+// 	for _, geoE := range geoEnums {
+// 		_, ok := geoSeen[geoE.String()]
+// 		if !ok {
+// 			if geoE != planstypes.Geolocation_GL {
+// 				return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
+// 					"invalid geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
+// 			} else if len(geoSeen) != len(planstypes.Geolocation_name)-2 {
+// 				// handle the global case (should see all geos minus 2 global geos)
+// 				return sdkerrors.Wrapf(GeolocationNotMatchWithEndpointsError,
+// 					"invalid global geolocation (endpoints combined geolocation: {%s}, provider geolocation: {%s})", endpointsGeoStr, geoStr)
+// 			}
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

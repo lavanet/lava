@@ -1,56 +1,65 @@
 package types
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-func ExtractGeolocations(g uint64) ([]planstypes.Geolocation, string) {
-	locations := make([]planstypes.Geolocation, 0)
-	var printStr string
+// for convenience (calculate once only)
+var (
+	allGeoEnumRegionsList []int32
+	allGeoEnumRegions     int32
+)
 
-	for geoName, geo := range planstypes.Geolocation_value {
-		if geoName == planstypes.Geolocation_GL.String() || geoName == planstypes.Geolocation_GLS.String() {
-			continue
-		}
-		if g&uint64(geo) == uint64(geo) {
-			locations = append(locations, planstypes.Geolocation(geo))
-			printStr += geoName + ","
+// initialize convenience vars at start-up
+func init() {
+	for _, geoloc := range planstypes.Geolocation_value {
+		if geoloc != int32(planstypes.Geolocation_GLS) && geoloc != int32(planstypes.Geolocation_GL) {
+			allGeoEnumRegionsList = append(allGeoEnumRegionsList, geoloc)
+			allGeoEnumRegions |= geoloc
 		}
 	}
-
-	return locations, strings.TrimSuffix(printStr, ",")
 }
 
-func IsValidGeoEnum(s string) (uint64, bool) {
-	val, ok := planstypes.Geolocation_value[s]
-	if ok && val != planstypes.Geolocation_value[planstypes.Geolocation_GLS.String()] && val > 0 {
-		return uint64(val), true
-	}
-
-	return uint64(val), false
+// IsValidGeoEnum tests the validity of a given geolocation
+func IsValidGeoEnum(geoloc int32) bool {
+	return geoloc != int32(planstypes.Geolocation_GLS) && (geoloc & ^allGeoEnumRegions) == 0
 }
 
-func GetCurrentGlobalGeolocation() uint64 {
-	var globalGeo int32
-	for k := range planstypes.Geolocation_name {
-		if planstypes.Geolocation_name[k] == planstypes.Geolocation_GL.String() ||
-			planstypes.Geolocation_name[k] == planstypes.Geolocation_GLS.String() {
-			continue
+// IsGeoEnumSingleBit returns true if at most one bit is set
+func IsGeoEnumSingleBit(geoloc int32) bool {
+	return (geoloc & (geoloc - 1)) == 0
+}
+
+// ParseGeoEnum parses a string into GeoEnum bitmask.
+// The string may be a number or a comma-separated geolocations codes.
+func ParseGeoEnum(arg string) (geoloc int32, err error) {
+	geoloc64, err := strconv.ParseUint(arg, 10, 32)
+	geoloc = int32(geoloc64)
+	if err == nil {
+		if geoloc != int32(planstypes.Geolocation_GL) {
+			if !IsValidGeoEnum(geoloc) {
+				return 0, fmt.Errorf("invalid geolocation value: %s", arg)
+			}
 		}
-		globalGeo += k
+		return geoloc, nil
 	}
 
-	return uint64(globalGeo)
+	split := strings.Split(arg, ",")
+	for _, s := range split {
+		val, ok := planstypes.Geolocation_value[s]
+		if !ok || val == int32(planstypes.Geolocation_GLS) {
+			return 0, fmt.Errorf("invalid geolocation code: %s", s)
+		}
+		geoloc |= val
+	}
+
+	return geoloc, nil
 }
 
-func CalculateGeoUintFromStrings(geos []string) uint64 {
-	var uintGeo uint64
-	for _, geo := range geos {
-		geoVal := planstypes.Geolocation_value[geo]
-		uintGeo += uint64(geoVal)
-	}
-
-	return uintGeo
+func GetGeolocations() []int32 {
+	return allGeoEnumRegionsList
 }
