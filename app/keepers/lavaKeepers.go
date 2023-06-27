@@ -21,6 +21,7 @@ import (
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
+	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
@@ -56,4 +57,5 @@ type LavaKeepers struct {
 	ConflictKeeper     conflictmodulekeeper.Keeper
 	ProjectsKeeper     projectsmodulekeeper.Keeper
 	PlansKeeper        plansmodulekeeper.Keeper
+	ProtocolKeeper     protocolmodulekeeper.Keeper
 }
