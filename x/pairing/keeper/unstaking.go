@@ -83,7 +83,7 @@ func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, ne
 	return nil
 }
 
-func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) error {
+func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) {
 	logger := k.Logger(ctx)
 
 	for _, unstakingEntry := range entriesToUnstake {
@@ -127,7 +127,6 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epoch
 			)
 		}
 	}
-	return nil
 }
 
 func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string) (uint64, error) {
