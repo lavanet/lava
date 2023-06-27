@@ -29674,6 +29674,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/fixated_params/{index}':
@@ -29931,6 +29941,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/stake_storage/{index}':
@@ -30131,6 +30151,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30453,6 +30483,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30788,6 +30828,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -32062,6 +32112,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/spec/spec/{ChainID}':
@@ -32695,6 +32755,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -55684,6 +55754,15 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.plans.ChainPolicy:
+    type: object
+    properties:
+      chain_id:
+        type: string
+      apis:
+        type: array
+        items:
+          type: string
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -55792,6 +55871,53 @@ definitions:
             items:
               type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.plans.Policy:
+    type: object
+    properties:
+      chain_policies:
+        type: array
+        items:
+          type: object
+          properties:
+            chain_id:
+              type: string
+            apis:
+              type: array
+              items:
+                type: string
+      geolocation_profile:
+        type: string
+        format: uint64
+      total_cu_limit:
+        type: string
+        format: uint64
+      epoch_cu_limit:
+        type: string
+        format: uint64
+      max_providers_to_pair:
+        type: string
+        format: uint64
+      selected_providers_mode:
+        type: string
+        enum:
+          - ALLOWED
+          - MIXED
+          - EXCLUSIVE
+          - DISABLED
+        default: ALLOWED
+        description: |-
+          - ALLOWED: no providers restrictions
+           - MIXED: use the selected providers mixed with randomly chosen providers
+           - EXCLUSIVE: use only the selected providers
+           - DISABLED: selected providers feature is disabled
+        title: >-
+          the enum below determines the pairing algorithm's behaviour with the
+          selected providers feature
+      selected_providers:
+        type: array
+        items:
+          type: string
+    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
@@ -55920,63 +56046,7 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.projects.ChainPolicy:
-    type: object
-    properties:
-      chain_id:
-        type: string
-      apis:
-        type: array
-        items:
-          type: string
-  lavanet.lava.projects.Policy:
-    type: object
-    properties:
-      chain_policies:
-        type: array
-        items:
-          type: object
-          properties:
-            chain_id:
-              type: string
-            apis:
-              type: array
-              items:
-                type: string
-      geolocation_profile:
-        type: string
-        format: uint64
-      total_cu_limit:
-        type: string
-        format: uint64
-      epoch_cu_limit:
-        type: string
-        format: uint64
-      max_providers_to_pair:
-        type: string
-        format: uint64
-      selected_providers_mode:
-        type: string
-        enum:
-          - ALLOWED
-          - MIXED
-          - EXCLUSIVE
-          - DISABLED
-        default: ALLOWED
-        description: |-
-          - ALLOWED: no providers restrictions
-           - MIXED: use the selected providers mixed with randomly chosen providers
-           - EXCLUSIVE: use only the selected providers
-           - DISABLED: selected providers feature is disabled
-        title: >-
-          the enum below determines the pairing algorithm's behaviour with the
-          selected providers feature
-      selected_providers:
-        type: array
-        items:
-          type: string
-    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
-  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
+  lavanet.lava.plans.SELECTED_PROVIDERS_MODE:
     type: string
     enum:
       - ALLOWED

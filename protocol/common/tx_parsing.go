@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/lavanet/lava/utils"
+	"github.com/spf13/pflag"
 )
 
 // extract requested sequence number from tx error.
@@ -38,4 +40,16 @@ func ParseTransactionResult(transactionResult string) (string, int) {
 		return summarizedResult, 1 // not zero
 	}
 	return summarizedResult, retCode
+}
+
+func VerifyAndHandleUnsupportedFlags(currentFlags *pflag.FlagSet) error {
+	fees, err := currentFlags.GetString(flags.FlagFees)
+	if err != nil {
+		return err
+	}
+	if fees != "" {
+		currentFlags.Set(flags.FlagFees, "")
+		utils.LavaFormatWarning("fees flag was used and is not supported, rpcprovider will ignore it. No action is required", nil)
+	}
+	return nil
 }
