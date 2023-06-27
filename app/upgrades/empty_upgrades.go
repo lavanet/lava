@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 	plansmoduletypes "github.com/lavanet/lava/x/plans/types"
 	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
+	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
 	subscriptionmoduletypes "github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -206,4 +207,15 @@ var Upgrade_0_15_1 = Upgrade{
 	UpgradeName:          "v0.15.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+// Upgrade_0_15_2 adds new modules: protocol
+var Upgrade_0_15_2 = Upgrade{
+	UpgradeName:          "v0.15.2",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{
+			protocolmoduletypes.StoreKey,
+		},
+	},
 }
