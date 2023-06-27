@@ -3,6 +3,7 @@ package rewardserver
 import (
 	"context"
 
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -79,6 +80,31 @@ func (s *ProofStore) DeleteAllForEpoch(ctx context.Context, epoch int64) error {
 	for _, proofEntityInternal := range s.store {
 		if proofEntityInternal.epoch != epoch {
 			newStore = append(newStore, proofEntityInternal)
+		}
+	}
+
+	s.store = newStore
+
+	return nil
+}
+
+func (s *ProofStore) DeleteClaimedRewards(ctx context.Context, claimedRewards []*pairingtypes.RelaySession) error {
+	var newStore []*proofEntityInternal
+
+	for _, claimedReward := range claimedRewards {
+		consumer, err := sigs.ExtractSignerAddress(claimedReward)
+		if err != nil {
+			continue
+		}
+
+		for _, proofEntityInternal := range s.store {
+			found := proofEntityInternal.epoch == claimedReward.Epoch &&
+				proofEntityInternal.consumer == consumer.String() &&
+				proofEntityInternal.sessionId == claimedReward.SessionId
+
+			if !found {
+				newStore = append(newStore, proofEntityInternal)
+			}
 		}
 	}
 

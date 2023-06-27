@@ -140,6 +140,11 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		if err != nil {
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
+
+		err = rws.proofStore.DeleteClaimedRewards(ctx, rewardsToClaim)
+		if err != nil {
+			utils.LavaFormatWarning("failed deleting claimed rewards", err)
+		}
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
 	}
@@ -238,35 +243,13 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 				continue
 			}
 			rewardsForClaim = append(rewardsForClaim, claimables...)
-			rws.deleteRewardsForConsumer(ctx, epoch, consumerAddr)
+			delete(epochRewards.consumerRewards, consumerAddr)
 		}
 		if len(epochRewards.consumerRewards) == 0 {
-			rws.deleteRewardsForEpoch(ctx, epoch)
+			delete(rws.rewards, epoch)
 		}
 	}
 	return rewardsForClaim, errRet
-}
-
-func (rws *RewardServer) deleteRewardsForConsumer(ctx context.Context, epoch uint64, consumerAddr string) error {
-	err := rws.proofStore.Delete(ctx, int64(epoch), consumerAddr)
-	if err != nil {
-		return fmt.Errorf("could not delete proofs for epoch %d and consumer %s: %w", epoch, consumerAddr, err)
-	}
-
-	delete(rws.rewards[epoch].consumerRewards, consumerAddr)
-
-	return nil
-}
-
-func (rws *RewardServer) deleteRewardsForEpoch(ctx context.Context, epoch uint64) error {
-	err := rws.proofStore.DeleteAllForEpoch(ctx, int64(epoch))
-	if err != nil {
-		return fmt.Errorf("could not delete proofs for epoch %d: %w", epoch, err)
-	}
-
-	delete(rws.rewards, epoch)
-
-	return nil
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
