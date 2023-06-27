@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,10 +67,10 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 				QosReport:   badQoS,
@@ -143,10 +144,10 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -222,10 +223,10 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -306,10 +307,10 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -379,10 +380,10 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.epoch),
 				RelayNum:    0,
 			}
@@ -471,10 +472,10 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelaySession{
 				Provider:    ts.providers[0].Addr.String(),
-				ContentHash: []byte(ts.spec.Apis[0].Name),
+				ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 				SessionId:   uint64(ti),
 				SpecId:      ts.spec.Name,
-				CuSum:       ts.spec.Apis[0].ComputeUnits * 10,
+				CuSum:       ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 				Epoch:       int64(tt.paymentEpoch),
 				RelayNum:    0,
 			}
@@ -490,84 +491,6 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, true, tt.valid, ts.clients[0].Addr, ts.providers[0].Addr)
 		})
-	}
-}
-
-func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing.T) {
-	// setup testnet with mock spec, stake a client and a provider
-	ts := setupForPaymentTest(t)
-
-	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
-	// Also, the client and provider will be paired (new pairing is determined every epoch)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
-
-	// The test assumes that EpochBlocks default value is 20,and the default StakeToMaxCU list below - make sure it is
-	epochBlocksTwenty := uint64(20)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
-	require.Nil(t, err)
-	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, MaxComputeUnits: 5000},
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, MaxComputeUnits: 15000},
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, MaxComputeUnits: 50000},
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, MaxComputeUnits: 250000},
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(100000)}, MaxComputeUnits: 500000},
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, MaxComputeUnits: 9999999999},
-	}}
-	stakeToMaxCUListBytes, _ := DefaultStakeToMaxCUList.MarshalJSON()
-	stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
-	require.Nil(t, err)
-
-	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
-
-	// Get the StakeToMaxCU list
-	stakeToMaxCUList, _ := ts.keepers.Pairing.StakeToMaxCUList(sdk.UnwrapSDKContext(ts.ctx), 0)
-
-	// struct that holds the new values for EpochBlocks and the block the chain will advance to
-	stakeToMaxCUThresholdTests := []struct {
-		newStakeThreshold int64  // newStakeThreshold new value
-		newMaxCU          uint64 // MaxCU new value
-		stakeToMaxCUIndex int    // stakeToMaxCU entry index that will change (see types/params.go for the default values)
-	}{
-		{10, 20000, 0},   // Test #0
-		{400, 16000, 1},  // Test #1
-		{2001, 14000, 2}, // Test #2
-		{1, 0, 0},        // Test #3
-	}
-
-	// define tests - for each test, the paymentEpoch will be +-1 of the latest epoch start of the test
-	tests := []struct {
-		name  string // Test name
-		valid bool   // Is the change of StakeToMaxCUList entry valid?
-	}{
-		{"Test #0", false},
-		{"Test #1", true},
-		{"Test #2", false},
-		{"Test #3", true},
-	}
-
-	for ti, tt := range tests {
-		// Get current StakeToMaxCU list
-		stakeToMaxCUList = ts.keepers.Pairing.StakeToMaxCUListRaw(sdk.UnwrapSDKContext(ts.ctx))
-
-		// Create new stakeToMaxCUEntry with the same stake threshold but higher MaxComuteUnits and put it in stakeToMaxCUList. I picked the stake entry with: StakeThreshold = 100000ulava, MaxCU = 500000
-		newStakeToMaxCUEntry := pairingtypes.StakeToMaxCU{StakeThreshold: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stakeToMaxCUThresholdTests[ti].newStakeThreshold)), MaxComputeUnits: stakeToMaxCUThresholdTests[ti].newMaxCU}
-		stakeToMaxCUList.List[stakeToMaxCUThresholdTests[ti].stakeToMaxCUIndex] = newStakeToMaxCUEntry
-
-		// change the stakeToMaxCUList parameter
-		stakeToMaxCUListBytes, _ := stakeToMaxCUList.MarshalJSON()
-		stakeToMaxCUListStr := string(stakeToMaxCUListBytes)
-		err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
-
-		// Advance an epoch (only then the parameter change will be applied) and get current epoch
-		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-		if tt.valid {
-			require.Nil(t, err)
-		} else {
-			require.NotNil(t, err)
-		}
 	}
 }
 
@@ -595,7 +518,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	relayRequest := &pairingtypes.RelaySession{
 		Provider:    ts.providers[0].Addr.String(),
-		ContentHash: []byte(ts.spec.Apis[0].Name),
+		ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 		SessionId:   uint64(1),
 		SpecId:      ts.spec.Name,
 		CuSum:       uint64(10000),
@@ -668,7 +591,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		relayRequest := &pairingtypes.RelaySession{
 			Provider:    ts.providers[0].Addr.String(),
-			ContentHash: []byte(ts.spec.Apis[0].Name),
+			ContentHash: []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:   uint64(1),
 			SpecId:      ts.spec.Name,
 			CuSum:       uint64(10000),
@@ -735,8 +658,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
 	require.Equal(t, uint64(relayRequest.GetEpoch()), providerPaymentStorageFromEpochPayments.GetEpoch())
 
+	project, err := ts.keepers.Projects.Developer(ts.ctx, &types.QueryDeveloperRequest{Developer: ts.clients[0].Addr.String()})
+	require.Nil(t, err)
 	// Get the UniquePaymentStorageClientProvider key
-	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].Addr, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
+	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), project.Project.Index, ts.providers[0].Addr, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
 
 	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
 	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}

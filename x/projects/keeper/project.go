@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -19,7 +20,6 @@ func (k Keeper) GetProjectForBlock(ctx sdk.Context, projectID string, blockHeigh
 			utils.Attribute{Key: "blockHeight", Value: blockHeight},
 		)
 	}
-
 	return project, nil
 }
 
@@ -178,42 +178,56 @@ func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Proje
 	return nil
 }
 
-func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *types.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *planstypes.Policy, key string, setPolicyEnum types.SetPolicyEnum) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		panic("could not set policy. can't get next epoch")
+	}
+
 	for _, projectID := range projectIDs {
 		project, err := k.GetProjectForBlock(ctx, projectID, uint64(ctx.BlockHeight()))
 		if err != nil {
-			return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("project not found"),
-				utils.Attribute{Key: "project", Value: projectID},
-			)
+			return utils.LavaFormatWarning("failed to set project policy", err)
 		}
-		// for admin policy - check if the key is an address of a project admin.
-		// Note, the subscription key is also considered an admin key
-		if setPolicyEnum == types.SET_ADMIN_POLICY {
+
+		// it is possible that the policy was already modified in this epoch, in which
+		// case changes are stored in a future (= end of epoch) policy version. Hence
+		// we must start with that version when applying our change (if not, then e.g.
+		// set admin policy that follows set subscription policy will lose the latter).
+		projectNextEpoch, err := k.GetProjectForBlock(ctx, projectID, nextEpoch)
+		if err != nil {
+			return utils.LavaFormatWarning("failed to set project policy (next epoch)", err)
+		}
+
+		switch setPolicyEnum {
+		case types.SET_ADMIN_POLICY:
+			// for admin policy - check if the key is an address of a project admin.
+			// Note, the subscription key is also considered an admin key
 			if !project.IsAdminKey(key) {
-				return utils.LavaFormatWarning("could not set project policy", fmt.Errorf("the requesting key is not admin key"),
+				return utils.LavaFormatWarning("failed to set project policy",
+					fmt.Errorf("requesting key must be admin key"),
 					utils.Attribute{Key: "project", Value: projectID},
 					utils.Attribute{Key: "key", Value: key},
 				)
 			} else {
-				project.AdminPolicy = policy
+				projectNextEpoch.AdminPolicy = policy
 			}
-		} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
-			// for subscription policy - check if the key is an address of the project's subscription consumer
+		case types.SET_SUBSCRIPTION_POLICY:
+			// for subscription policy - check if the key is an address of the
+			// project's subscription consumer
 			if key != project.GetSubscription() {
-				return utils.LavaFormatWarning("could not set subscription policy", fmt.Errorf("the requesting key is not subscription key"),
+				return utils.LavaFormatWarning("failed to set subscription policy",
+					fmt.Errorf("requesting key must be subscription key"),
 					utils.Attribute{Key: "project", Value: projectID},
 					utils.Attribute{Key: "key", Value: key},
 				)
 			} else {
-				project.SubscriptionPolicy = policy
+				projectNextEpoch.SubscriptionPolicy = policy
 			}
 		}
 
-		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
-		if err != nil {
-			panic("could not set policy. can't get next epoch")
-		}
-		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &project)
+		err = k.projectsFS.AppendEntry(ctx, projectID, nextEpoch, &projectNextEpoch)
 		if err != nil {
 			return err
 		}

@@ -1,123 +1,103 @@
 package chainlib
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"net"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavasession"
+	keepertest "github.com/lavanet/lava/testutil/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/proto/tendermint/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestMatchSpecApiByName(t *testing.T) {
 	t.Parallel()
-
+	connectionType := ""
 	testTable := []struct {
 		name        string
-		serverApis  map[string]spectypes.ServiceApi
+		serverApis  map[ApiKey]ApiContainer
 		inputName   string
-		expectedApi spectypes.ServiceApi
+		expectedApi spectypes.Api
 		expectedOk  bool
 	}{
 		{
 			name: "test1",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/blocks/[^\\/\\s]+": {
-					Name: "/blocks/{height}",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
-					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/blocks/[^\\/\\s]+", ConnectionType: connectionType}: {
+					api: &spectypes.Api{
+						Name: "/blocks/{height}",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
 						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "",
-						FunctionTemplate: "",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{},
-							ParserFunc: spectypes.PARSER_FUNC_EMPTY,
-						},
-					},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/blocks/10",
-			expectedApi: spectypes.ServiceApi{Name: "/blocks/{height}"},
+			expectedApi: spectypes.Api{Name: "/blocks/{height}"},
 			expectedOk:  true,
 		},
 		{
 			name: "test2",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+": {
-					Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
-					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/[^\\/\\s]+", ConnectionType: connectionType}: {
+					api: &spectypes.Api{
+						Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
 						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "getBlockByNumber",
-						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/%d",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{"block_id", "hash"},
-							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
-						},
-					},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/10",
-			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}"},
+			expectedApi: spectypes.Api{Name: "/cosmos/base/tendermint/v1beta1/blocks/{height}"},
 			expectedOk:  true,
 		},
 		{
 			name: "test3",
-			serverApis: map[string]spectypes.ServiceApi{
-				"/cosmos/base/tendermint/v1beta1/blocks/latest": {
-					Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
-					BlockParsing: spectypes.BlockParser{
-						ParserArg:  []string{"0"},
-						ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
-					},
-					ComputeUnits: 10,
-					Enabled:      true,
-					ApiInterfaces: []spectypes.ApiInterface{
-						{
-							Interface: "REST",
-							Type:      "GET",
-							Category:  &spectypes.SpecCategory{Deterministic: true},
+			serverApis: map[ApiKey]ApiContainer{
+				{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest", ConnectionType: connectionType}: {
+					api: &spectypes.Api{
+						Name: "/cosmos/base/tendermint/v1beta1/blocks/latest",
+						BlockParsing: spectypes.BlockParser{
+							ParserArg:  []string{"0"},
+							ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
 						},
+						ComputeUnits: 10,
+						Enabled:      true,
+						Category:     spectypes.SpecCategory{Deterministic: true},
 					},
-					Parsing: spectypes.Parsing{
-						FunctionTag:      "getBlockByNumber",
-						FunctionTemplate: "/cosmos/base/tendermint/v1beta1/blocks/latest",
-						ResultParsing: spectypes.BlockParser{
-							ParserArg:  []string{"block", "header", "height"},
-							ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
-						},
-					},
+					collectionKey: CollectionKey{ConnectionType: connectionType},
 				},
 			},
 			inputName:   "/cosmos/base/tendermint/v1beta1/blocks/latest",
-			expectedApi: spectypes.ServiceApi{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
+			expectedApi: spectypes.Api{Name: "/cosmos/base/tendermint/v1beta1/blocks/latest"},
 			expectedOk:  true,
 		},
 	}
@@ -127,12 +107,12 @@ func TestMatchSpecApiByName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, ok := matchSpecApiByName(testCase.inputName, testCase.serverApis)
+			api, ok := matchSpecApiByName(testCase.inputName, connectionType, testCase.serverApis)
 			if ok != testCase.expectedOk {
 				t.Fatalf("expected ok value %v, but got %v", testCase.expectedOk, ok)
 			}
-			if api.Name != testCase.expectedApi.Name {
-				t.Fatalf("expected api %v, but got %v", testCase.expectedApi.Name, api.Name)
+			if api.api.Name != testCase.expectedApi.Name {
+				t.Fatalf("expected api %v, but got %v", testCase.expectedApi.Name, api.api.Name)
 			}
 		})
 	}
@@ -339,16 +319,16 @@ func TestConstructFiberCallbackWithDappIDExtraction(t *testing.T) {
 
 func TestParsedMessage_GetServiceApi(t *testing.T) {
 	pm := parsedMessage{
-		serviceApi: &spectypes.ServiceApi{},
+		api: &spectypes.Api{},
 	}
-	assert.Equal(t, &spectypes.ServiceApi{}, pm.GetServiceApi())
+	assert.Equal(t, &spectypes.Api{}, pm.GetApi())
 }
 
-func TestParsedMessage_GetInterface(t *testing.T) {
+func TestParsedMessage_GetApiCollection(t *testing.T) {
 	pm := parsedMessage{
-		apiInterface: &spectypes.ApiInterface{},
+		apiCollection: &spectypes.ApiCollection{},
 	}
-	assert.Equal(t, &spectypes.ApiInterface{}, pm.GetInterface())
+	assert.Equal(t, &spectypes.ApiCollection{}, pm.GetApiCollection())
 }
 
 func TestParsedMessage_RequestedBlock(t *testing.T) {
@@ -367,7 +347,9 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 	assert.Equal(t, rpcInput, pm.GetRPCMessage())
 }
 
-type mockRPCInput struct{}
+type mockRPCInput struct {
+	chainproxy.BaseMessage
+}
 
 func (m *mockRPCInput) GetParams() interface{} {
 	return nil
@@ -377,6 +359,10 @@ func (m *mockRPCInput) GetResult() json.RawMessage {
 	return nil
 }
 
+func (m *mockRPCInput) UpdateLatestBlockInMessage(uint64, bool) bool {
+	return false
+}
+
 func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 	return 0, nil
 }
@@ -384,63 +370,159 @@ func (m *mockRPCInput) ParseBlock(block string) (int64, error) {
 func TestGetServiceApis(t *testing.T) {
 	spec := spectypes.Spec{
 		Enabled: true,
-		Apis: []spectypes.ServiceApi{
+		ApiCollections: []*spectypes.ApiCollection{
 			{
 				Enabled: true,
-				Name:    "test-api",
-				ApiInterfaces: []spectypes.ApiInterface{
-					{
-						Interface: spectypes.APIInterfaceRest,
-					},
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: spectypes.APIInterfaceRest,
 				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "tag",
+				Apis: []*spectypes.Api{
+					{
+						Enabled: true,
+						Name:    "test-api",
+					},
+					{
+						Enabled: true,
+						Name:    "test-api-2",
+					},
+					{
+						Enabled: false,
+						Name:    "test-api-disabled",
+					},
+					{
+						Enabled: true,
+						Name:    "test-api-3",
+					},
 				},
 			},
 			{
 				Enabled: true,
-				Name:    "test-api-2",
-				ApiInterfaces: []spectypes.ApiInterface{
+				CollectionData: spectypes.CollectionData{
+					ApiInterface: spectypes.APIInterfaceGrpc,
+				},
+				Apis: []*spectypes.Api{
 					{
-						Interface: spectypes.APIInterfaceRest,
+						Enabled: true,
+						Name:    "gtest-api",
 					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
-				},
-			},
-			{
-				Enabled: false,
-				Name:    "test-api-disabled",
-				ApiInterfaces: []spectypes.ApiInterface{
 					{
-						Interface: spectypes.APIInterfaceRest,
+						Enabled: true,
+						Name:    "gtest-api-2",
 					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
-				},
-			},
-			{
-				Enabled: true,
-				Name:    "test-api-3",
-				ApiInterfaces: []spectypes.ApiInterface{
 					{
-						Interface: spectypes.APIInterfaceGrpc,
+						Enabled: false,
+						Name:    "gtest-api-disabled",
 					},
-				},
-				Parsing: spectypes.Parsing{
-					FunctionTag: "",
+					{
+						Enabled: true,
+						Name:    "gtest-api-3",
+					},
 				},
 			},
 		},
 	}
 
 	rpcInterface := spectypes.APIInterfaceRest
-	serverApis, _ := getServiceApis(spec, rpcInterface)
+	serverApis, _, _, _ := getServiceApis(spec, rpcInterface)
 
 	// Test serverApis
-	if len(serverApis) != 2 {
-		t.Errorf("Expected serverApis length to be 2, but got %d", len(serverApis))
+	if len(serverApis) != 3 {
+		t.Errorf("Expected serverApis length to be 3, but got %d", len(serverApis))
 	}
+}
+
+type mockResponseWriter struct {
+	blockToReturn *int
+}
+
+func (mockResponseWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (mockResponseWriter) Write(in []byte) (int, error) {
+	return 0, nil
+}
+
+func (mrw mockResponseWriter) WriteHeader(statusCode int) {
+	*mrw.blockToReturn = statusCode
+}
+
+type myServiceImplementation struct {
+	*tmservice.UnimplementedServiceServer
+	serverCallback http.HandlerFunc
+}
+
+func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
+	metadata, exists := metadata.FromIncomingContext(ctx)
+	req := &http.Request{}
+	if exists {
+		headers := map[string][]string{}
+		for key, val := range metadata {
+			headers[key] = val
+		}
+		req = &http.Request{
+			Header: headers,
+		}
+	}
+	num := 5
+	respWriter := mockResponseWriter{blockToReturn: &num}
+	bbb.serverCallback(respWriter, req)
+	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
+}
+
+// generates a chain parser, a chain fetcher messages based on it
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+	closeServer = nil
+	lavaSpec, err := keepertest.GetASpec(specIndex)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	chainParser, err := NewChainParser(apiInterface)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	var chainProxy ChainProxy
+	chainParser.SetSpec(lavaSpec)
+	endpoint := &lavasession.RPCProviderEndpoint{
+		NetworkAddress: "",
+		ChainID:        specIndex,
+		ApiInterface:   apiInterface,
+		Geolocation:    1,
+		NodeUrls:       []common.NodeUrl{},
+	}
+	if apiInterface == spectypes.APIInterfaceGrpc {
+		// Start a new gRPC server using the buffered connection
+		grpcServer := grpc.NewServer()
+		lis, err := net.Listen("tcp", "localhost:0")
+		if err != nil {
+			return nil, nil, nil, closeServer, err
+		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String()})
+		go func() {
+			service := myServiceImplementation{serverCallback: serverCallback}
+			tmservice.RegisterServiceServer(grpcServer, service)
+			gogoreflection.Register(grpcServer)
+			// Serve requests on the buffered connection
+			if err := grpcServer.Serve(lis); err != nil {
+				return
+			}
+		}()
+		time.Sleep(10 * time.Millisecond)
+		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		if err != nil {
+			return nil, nil, nil, closeServer, err
+		}
+	} else {
+		mockServer := httptest.NewServer(serverCallback)
+		closeServer = mockServer.Close
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
+		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		if err != nil {
+			return nil, nil, nil, closeServer, err
+		}
+	}
+
+	chainFetcher := NewChainFetcher(ctx, chainProxy, chainParser, endpoint)
+
+	return chainParser, chainProxy, chainFetcher, closeServer, err
 }

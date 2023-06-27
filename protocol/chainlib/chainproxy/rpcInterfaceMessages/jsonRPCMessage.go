@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -18,6 +19,7 @@ type JsonrpcMessage struct {
 	Params  interface{}          `json:"params,omitempty"`
 	Error   *rpcclient.JsonError `json:"error,omitempty"`
 	Result  json.RawMessage      `json:"result,omitempty"`
+	chainproxy.BaseMessage
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
@@ -41,6 +43,10 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 	return msg, nil
 }
 
+func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return false
+}
+
 func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msg := &JsonrpcMessage{}
 	err := json.Unmarshal(input, msg)
@@ -55,6 +61,9 @@ func (cp JsonrpcMessage) GetParams() interface{} {
 }
 
 func (cp JsonrpcMessage) GetResult() json.RawMessage {
+	if cp.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+	}
 	return cp.Result
 }
 

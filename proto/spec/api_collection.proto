@@ -6,28 +6,49 @@ option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
 
-message ServiceApi {
-  string name = 1; 
-  BlockParser block_parsing = 2 [(gogoproto.nullable) = false];
-  uint64 compute_units = 3; 
-  bool enabled = 4; 
-  repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
-  SpecCategory reserved = 6;
-  Parsing parsing = 7 [(gogoproto.nullable) = false];
-  string internal_path = 8;
+message ApiCollection {
+  bool enabled = 1;
+  CollectionData collection_data =2 [(gogoproto.nullable) = false];
+  repeated Api apis = 3;
+  repeated Header headers = 4;
+	repeated CollectionData inheritance_apis = 5; // by collectionKey
+	repeated ParseDirective parse_directives = 6;
 }
 
-message Parsing {
-  string function_tag = 1;
+message CollectionData {
+  string api_interface = 1;
+  string internal_path = 2;
+  string type = 3;
+	string add_on = 4;
+}
+
+message Header {
+	string name = 1;
+	
+	enum HeaderType {
+    pass_send = 0;
+    pass_reply = 1;
+    pass_both = 2;
+  }
+
+	HeaderType kind = 2;
+  FUNCTION_TAG function_tag = 3;
+}
+
+message Api {
+  bool enabled = 1; 
+  string name = 2; 
+  uint64 compute_units = 3; 
+  uint64 extra_compute_units = 4;
+  SpecCategory category = 6 [(gogoproto.nullable) = false];
+	BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
+}
+
+message ParseDirective {
+  FUNCTION_TAG function_tag = 1;
   string function_template = 2;
   BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
-}
-message ApiInterface {
-  string interface = 1;
-  string type = 2;
-  uint64 extra_compute_units = 3;
-  SpecCategory category = 4;
-  BlockParser overwrite_block_parsing = 5;
+  string api_name = 4;
 }
 
 message BlockParser {
@@ -35,6 +56,14 @@ message BlockParser {
   PARSER_FUNC parser_func = 2;
   string default_value = 3; // default value when set allows parsing failures to assume the default value
   string encoding =4; // used to parse byte responses: base64,hex,bech32
+}
+
+enum FUNCTION_TAG {
+  DISABLED = 0;
+  GET_BLOCKNUM = 1;
+  GET_BLOCK_BY_NUM = 2;
+  SET_LATEST_IN_METADATA = 3;
+  SET_LATEST_IN_BODY = 4;
 }
 
 enum PARSER_FUNC{

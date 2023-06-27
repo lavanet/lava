@@ -24,2264 +24,1803 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": [
+                "api_collections": [
                     {
-                        "name": "Filecoin.ChainGetBlock",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
                             {
+                                "name": "Filecoin.ChainGetBlock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetBlockMessages",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetBlockMessages",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetGenesis",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetGenesis",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetMessage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetMessage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetNode",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetNode",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetParentMessages",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetParentMessages",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetParentReceipts",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetParentReceipts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetPath",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetPath",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetTipSet",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetTipSet",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetTipSetAfterHeight",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetTipSetAfterHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainGetTipSetByHeight",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainGetTipSetByHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainHasObj",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainHasObj",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainHead",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainHead",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainNotify",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainNotify",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ChainReadObj",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ChainReadObj",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.ClientQueryAsk",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.ClientQueryAsk",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.GasEstimateFeeCap",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.GasEstimateFeeCap",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.GasEstimateGasLimit",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.GasEstimateGasLimit",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.GasEstimateGasPremium",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.GasEstimateGasPremium",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.MpoolGetNonce",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.MpoolGetNonce",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.MpoolPending",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.MpoolPending",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.MpoolPush",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.MpoolPush",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateAccountKey",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateAccountKey",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateAllMinerFaults",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateAllMinerFaults",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateCall",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateCall",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateChangedActors",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateChangedActors",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateCompute",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateCompute",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateDealProviderCollateralBounds",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateDealProviderCollateralBounds",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateDecodeParams",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateDecodeParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateGetActor",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateGetActor",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateGetReceipt",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateGetReceipt",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateListActors",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateListActors",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateListMessages",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateListMessages",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateListMiners",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateListMiners",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateLookupID",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateLookupID",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMarketBalance",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMarketBalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMarketDeals",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMarketDeals",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMarketParticipants",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMarketParticipants",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMarketStorageDeal",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMarketStorageDeal",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerActiveSectors",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerActiveSectors",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerAvailableBalance",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerAvailableBalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerDeadlines",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerDeadlines",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerFaults",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerFaults",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerInitialPledgeCollateral",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerInitialPledgeCollateral",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerPartitions",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerPartitions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerPower",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerPower",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerPreCommitDepositForPower",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerPreCommitDepositForPower",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerProvingDeadline",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerProvingDeadline",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerRecoveries",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerRecoveries",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerSectorAllocated",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerSectorAllocated",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerSectorCount",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerSectorCount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateMinerSectors",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateMinerSectors",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateNetworkName",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateNetworkName",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateNetworkVersion",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateNetworkVersion",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateReadState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateReadState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateReplay",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateReplay",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSearchMsg",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSearchMsg",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSearchMsgLimited",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSearchMsgLimited",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSectorExpiration",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSectorExpiration",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSectorGetInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSectorGetInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSectorPartition",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSectorPartition",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateSectorPreCommitInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateSectorPreCommitInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateVMCirculatingSupplyInternal",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateVMCirculatingSupplyInternal",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateVerifiedClientStatus",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateVerifiedClientStatus",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateVerifiedRegistryRootKey",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateVerifiedRegistryRootKey",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.StateVerifierStatus",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.StateVerifierStatus",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.SyncState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.SyncState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.WalletBalance",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.WalletBalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.WalletValidateAddress",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.WalletValidateAddress",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.WalletVerify",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.WalletVerify",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthAccounts",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthAccounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthBlockNumber",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthBlockNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthCall",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "1"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthCall",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthChainId",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthChainId",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthEstimateGas",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthEstimateGas",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthFeeHistory",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthFeeHistory",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGasPrice",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGasPrice",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetBalance",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "1"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetBalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetBlockByHash",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetBlockByHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetBlockByNumber",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetBlockByNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetBlockTransactionCountByHash",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetBlockTransactionCountByHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetBlockTransactionCountByNumber",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetBlockTransactionCountByNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetCode",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "1"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetCode",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetFilterChanges",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "1"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetFilterChanges",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetFilterLogs",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetFilterLogs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetLogs",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0",
-                                "toBlock"
-                            ],
-                            "parser_func": "PARSE_CANONICAL"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetLogs",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "toBlock"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetMessageCidByTransactionHash",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetMessageCidByTransactionHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetStorageAt",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "2"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetStorageAt",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "2"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetTransactionByHash",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetTransactionByHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetTransactionCount",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "1"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetTransactionCount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetTransactionHashByCid",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetTransactionHashByCid",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthGetTransactionReceipt",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthGetTransactionReceipt",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Filecoin.EthMaxPriorityFeePerGas",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "Filecoin.EthMaxPriorityFeePerGas",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
+
                                 "extra_compute_units": "0"
                             }
-                        ]
-                    }                    
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
+                    }
                 ]
             }
         ]

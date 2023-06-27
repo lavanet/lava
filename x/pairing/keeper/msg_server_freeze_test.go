@@ -14,7 +14,7 @@ import (
 func TestFreeze(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -91,7 +91,7 @@ func TestFreeze(t *testing.T) {
 func TestProvidersQuery(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -141,7 +141,7 @@ func TestProvidersQuery(t *testing.T) {
 func TestUnstakeFrozen(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -175,7 +175,7 @@ func TestUnstakeFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	err = ts.keepers.Pairing.UnstakeEntry(sdk.UnwrapSDKContext(ts.ctx), true, ts.spec.Index, providerToFreeze.Address, "")
+	err = ts.keepers.Pairing.UnstakeEntry(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Index, providerToFreeze.Address, "")
 	require.Nil(t, err)
 
 	// unfreeze the provider and verify he's not in the pairing list
@@ -208,7 +208,7 @@ func TestUnstakeFrozen(t *testing.T) {
 func TestPaymentFrozen(t *testing.T) {
 	providersNum := 2
 	clientsNum := 1
-	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, clientsNum, providersNum, providersNum)
 
 	// advance epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -249,7 +249,7 @@ func TestPaymentFrozen(t *testing.T) {
 		Provider:  providerToFreeze.Address,
 		SessionId: uint64(1),
 		SpecId:    ts.spec.Name,
-		CuSum:     ts.spec.Apis[0].ComputeUnits * 10,
+		CuSum:     ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 		Epoch:     blockForPaymentBeforeFreeze,
 		RelayNum:  0,
 	}

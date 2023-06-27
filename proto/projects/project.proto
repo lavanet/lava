@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
+import "plans/plan.proto"; 
 option (gogoproto.equal_all) = true;
 option go_package = "github.com/lavanet/lava/x/projects/types";
 
@@ -11,9 +12,9 @@ message Project {
     reserved 3;
     bool enabled = 4; // enabled flag
     repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
-    Policy admin_policy = 6;
+    lavanet.lava.plans.Policy admin_policy = 6;
     uint64 used_cu = 7;
-    Policy subscription_policy = 8;
+    lavanet.lava.plans.Policy subscription_policy = 8;
     uint64 snapshot = 9; // snapshot id to uniquely identify snapshots
 }
 
@@ -32,20 +33,6 @@ message ProjectKey {
     uint32 kinds = 4;
 }
 
-// protobuf expected in YAML format: used "moretags" to simplify parsing
-message Policy {
-    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"chain_policies\""];
-    uint64 geolocation_profile = 2 [(gogoproto.moretags) = "mapstructure:\"geolocation_profile\"", (gogoproto.jsontag) = "geolocation_profile"];
-    uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\"", (gogoproto.jsontag) = "total_cu_limit"];
-    uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\"", (gogoproto.jsontag) = "epoch_cu_limit"];
-    uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair", (gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
-}
-
-message ChainPolicy {
-    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\""];
-    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
-}
-
 message ProtoDeveloperData {
     string projectID = 1;
     reserved 2;
@@ -57,5 +44,5 @@ message ProjectData {
     reserved 2;
     bool enabled = 3;
     repeated ProjectKey projectKeys = 4 [(gogoproto.nullable) = false];
-    Policy policy = 5;
+    lavanet.lava.plans.Policy policy = 5;
 }

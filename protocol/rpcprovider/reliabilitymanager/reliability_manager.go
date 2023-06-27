@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/exp/slices"
 )
@@ -112,6 +113,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
 			return
 		}
+		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		replyDataHash := sigs.HashMsg(reply.Data)
 		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash)

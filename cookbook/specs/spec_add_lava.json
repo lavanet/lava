@@ -24,1496 +24,1152 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": [
+                "api_collections": [
                     {
-                        "name": "/blocks/latest",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [
                             {
+                                "name": "/blocks/latest",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/blocks/{height}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/cosmos/authz/v1beta1/grants",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/ibc/apps/router/v1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/conflict/conflict_vote",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/conflict/conflict_vote/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/conflict/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/epochstorage/epoch_details",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/epochstorage/fixated_params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/epochstorage/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/epochstorage/stake_storage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/clients/{chainID}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/epoch_payments",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/epoch_payments/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/provider_payment_storage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/providers/{chainID}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "3"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/plans/show_all_plans",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/chain/{chainID}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/show_all_chains",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/spec",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "/lavanet/lava/spec/spec/{index}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
                     },
                     {
-                        "name": "/blocks/{height}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "0"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmos/authz/v1beta1/grants",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
                         },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
+                        "apis": [
                             {
+                                "name": "cosmos.authz.v1beta1.Query/Grants",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.conflict.Query/ConflictVote",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/ibc/apps/router/v1/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/conflict/conflict_vote",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.conflict.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/conflict/conflict_vote/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/EpochDetails",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/conflict/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/FixatedParams",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/epoch_details",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/fixated_params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/StakeStorage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/stake_storage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/Clients",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/clients/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/EpochPayments",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/epoch_payments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/epoch_payments/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/GetPairing",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/provider_payment_storage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/Providers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/providers/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/UserEntry",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.pairing.Query/VerifyPairing",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "block",
+                                        "=",
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_DICTIONARY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "3"
-                            ],
-                            "parser_func": "PARSE_BY_ARG"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/Chain",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/plans/show_all_plans",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/plans/show_plan_info/{plan_index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/ShowAllChains",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/chain/{chainID}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/Spec",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/show_all_chains",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "lavanet.lava.spec.Query/SpecAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/show_chain_info/{chainName}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "router.v1.Query.Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/spec",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/lavanet/lava/spec/spec/{index}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "rest",
-                                "type": "GET",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmos.authz.v1beta1.Query/Grants",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/ConflictVote",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.conflict.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/EpochDetails",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/FixatedParams",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/StakeStorage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Clients",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/EpochPayments",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/GetPairing",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/Providers",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/UserEntry",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.pairing.Query/VerifyPairing",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "block",
-                                "=",
-                                "0"
-                            ],
-                            "parser_func": "PARSE_DICTIONARY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/Chain",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/ShowAllChains",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/ShowChainInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/Spec",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "lavanet.lava.spec.Query/SpecAll",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "router.v1.Query.Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": false,
-                        "api_interfaces": [
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "grpc",
-                                "type": "",
-                                "extra_compute_units": "0"
-                            }
-                        ]
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
                     }
                 ]
             }

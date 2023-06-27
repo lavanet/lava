@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
@@ -44,7 +45,7 @@ func CmdAddProject() *cobra.Command {
 
 			creator := clientCtx.GetFromAddress().String()
 
-			var policy projectstypes.Policy
+			var policy *planstypes.Policy
 
 			policyFilePath, err := cmd.Flags().GetString("policy-file")
 			if err != nil {
@@ -52,13 +53,12 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if policyFilePath != "" {
-				err = commontypes.ReadYaml(policyFilePath, "Policy", &policy)
+				err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
 				if err != nil {
 					return err
 				}
 			} else {
-				// create dummy policy to pass the ValidateBasic() check
-				policy = projectstypes.Policy{MaxProvidersToPair: 2}
+				policy = nil
 			}
 
 			var projectKeys []projectstypes.ProjectKey
@@ -79,7 +79,7 @@ func CmdAddProject() *cobra.Command {
 				Name:        projectName,
 				Enabled:     !disable,
 				ProjectKeys: projectKeys,
-				Policy:      &policy,
+				Policy:      policy,
 			}
 
 			msg := types.NewMsgAddProject(

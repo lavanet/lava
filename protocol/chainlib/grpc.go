@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
@@ -38,9 +37,6 @@ import (
 )
 
 type GrpcChainParser struct {
-	spec       spectypes.Spec
-	rwLock     sync.RWMutex
-	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
 
 	registry *dyncodec.Registry
@@ -50,6 +46,21 @@ type GrpcChainParser struct {
 // NewGrpcChainParser creates a new instance of GrpcChainParser
 func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
+}
+
+func (apip *GrpcChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
+}
+
+func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getSupportedApi(name, connectionType)
 }
 
 func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
@@ -64,16 +75,24 @@ func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientC
 	return nil
 }
 
-func (apip *GrpcChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, nil)
 	}
 
 	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
 		Msg:  nil,
-		Path: serviceApi.GetName(),
+		Path: parsing.ApiName,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, grpcMessage), nil
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
+	if err != nil {
+		return nil, err
+	}
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -84,72 +103,58 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Check API is supported and save it in nodeMsg.
-	serviceApi, err := apip.getSupportedApi(url)
+	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err)
 	}
 
-	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
-	if apiInterface == nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to getApiCollection gRPC", err)
 	}
+
+	// handle headers
+	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 
 	// Construct grpcMessage
 	grpcMessage := rpcInterfaceMessages.GrpcMessage{
-		Msg:      data,
-		Path:     url,
-		Codec:    apip.codec,
-		Registry: apip.registry,
-		Header:   metadata,
+		Msg:         data,
+		Path:        url,
+		Codec:       apip.codec,
+		Registry:    apip.registry,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 	}
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	blockParser := serviceApi.BlockParsing
-	requestedBlock, err := parser.ParseBlockFromParams(grpcMessage, blockParser)
-	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	blockParser := apiCont.api.BlockParsing
+	var requestedBlock int64
+	if overwriteReqBlock == "" {
+		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser)
+		if err != nil {
+			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+		}
+	} else {
+		requestedBlock, err = grpcMessage.ParseBlock(overwriteReqBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteRequestedBlock", Value: overwriteReqBlock})
+		}
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, &grpcMessage)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*GrpcChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage) *parsedMessage {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
+		api:            api,
 		msg:            grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		requestedBlock: requestedBlock,
+		apiCollection:  apiCollection,
 	}
 	return nodeMsg
-}
-
-// getSupportedApi fetches service api from spec by name
-func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the GrpcChainParser instance exists
-	if apip == nil {
-		return nil, errors.New("GrpcChainParser not defined")
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Fetch server api by name
-	api, ok := apip.serverApis[name]
-
-	// Return an error if spec does not exist
-	if !ok {
-		return nil, utils.LavaFormatError("GRPC api not supported", nil, utils.Attribute{Key: "name", Value: name})
-	}
-
-	// Return an error if api is disabled
-	if !api.Enabled {
-		return nil, utils.LavaFormatError("GRPC api is disabled", nil, utils.Attribute{Key: "name", Value: name})
-	}
-
-	return &api, nil
 }
 
 // SetSpec sets the spec for the GrpcChainParser
@@ -164,12 +169,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-
-	// Set the spec field of the JsonRPCChainParser object
-	apip.spec = spec
-	apip.serverApis = serverApis
-	apip.BaseChainParser.SetTaggedApis(taggedApis)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -184,7 +185,7 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 	defer apip.rwLock.RUnlock()
 
 	// Return enabled and data reliability threshold from spec
-	return apip.spec.Enabled, apip.spec.GetReliabilityThreshold()
+	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
 }
 
 // ChainBlockStats returns block stats from spec
@@ -277,21 +278,31 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 type GrpcChainProxy struct {
 	BaseChainProxy
-	conn *chainproxy.GRPCConnector
+	conn grpcConnectorIf
+}
+type grpcConnectorIf interface {
+	Close()
+	GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error)
+	ReturnRpc(rpc *grpc.ClientConn)
 }
 
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, averageBlockTime time.Duration, parser ChainParser) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
-	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
-	}
+
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(nodeUrl.Url, "/") // remove suffix if exists
 	conn, err := chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
 	if err != nil {
 		return nil, err
+	}
+	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn)
+}
+
+func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
+	cp := &GrpcChainProxy{
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -325,18 +336,20 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in grpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
-	if len(nodeMessage.Header) > 0 {
-		metadataMap := make(map[string]string)
-		for _, metaData := range nodeMessage.Header {
-			metadataMap[metaData.Name] = metaData.Value
-		}
+
+	metadataMap := make(map[string]string, 0)
+	for _, metaData := range nodeMessage.GetHeaders() {
+		metadataMap[metaData.Name] = metaData.Value
+	}
+
+	if len(metadataMap) > 0 {
 		md := metadata.New(metadataMap)
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetInterface().Category.HangingApi {
+	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
 	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
@@ -402,7 +415,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-
+	if debug {
+		utils.LavaFormatDebug("provider sending node message",
+			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "headers", Value: metadataMap},
+			utils.Attribute{Key: "apiInterface", Value: "grpc"},
+		)
+	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))

@@ -55,7 +55,6 @@ type ProviderStateTrackerInf interface {
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
-	GetProvidersCountForConsumer(ctx context.Context, consumerAddress string, epoch uint64, chainID string) (uint32, error)
 	GetEpochSize(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
@@ -174,7 +173,12 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 						NewLatestCallback: recordMetricsOnNewBlock,
 					}
-					chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					var chainFetcher chaintracker.ChainFetcher
+					if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+						chainFetcher = chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+					} else {
+						chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
+					}
 					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 					if err != nil {
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})

@@ -23,16 +23,6 @@ func (p Plan) ValidatePlan() error {
 		return sdkerrors.Wrap(ErrInvalidPlanOveruse, "plan can't forbid CU overuse and have a non-zero overuse rate")
 	}
 
-	// check the compute units field are non-zero
-	if p.PlanPolicy.GetTotalCuLimit() == 0 || p.PlanPolicy.GetEpochCuLimit() == 0 {
-		return sdkerrors.Wrap(ErrInvalidPlanComputeUnits, "plan's compute units fields can't be zero")
-	}
-
-	// check that the plan's servicersToPair is larger than 1
-	if p.PlanPolicy.GetMaxProvidersToPair() <= 1 {
-		return sdkerrors.Wrap(ErrInvalidPlanServicersToPair, "plan's servicersToPair field can't be one or lower")
-	}
-
 	// check that the plan's description length is below the max length
 	if len(p.GetDescription()) > MAX_LEN_PLAN_DESCRIPTION {
 		return sdkerrors.Wrap(ErrInvalidPlanDescription, "plan's description is too long")
@@ -46,6 +36,11 @@ func (p Plan) ValidatePlan() error {
 	// check that the plan's annual discount is valid
 	if p.GetAnnualDiscountPercentage() > uint64(100) {
 		return sdkerrors.Wrap(ErrInvalidPlanAnnualDiscount, "plan's annual discount is invalid (not between 0-100 percent)")
+	}
+
+	err := p.PlanPolicy.ValidateBasicPolicy(true)
+	if err != nil {
+		return err
 	}
 
 	return nil

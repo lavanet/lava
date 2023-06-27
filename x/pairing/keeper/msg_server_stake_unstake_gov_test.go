@@ -85,7 +85,7 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// check if the provider/client are staked
-			_, foundProvider, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
+			_, foundProvider, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, foundProvider)
 		})
 	}
@@ -168,7 +168,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// check if the provider/client are staked
-			_, found, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
+			_, found, _ := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, found)
 		})
 	}

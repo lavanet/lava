@@ -107,6 +107,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
+// if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
 func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
@@ -134,11 +135,10 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 			relayRequestTotalCU = sps.CuSum // sets cuToAdd to 0
 		}
 
-		var cuErr error = nil
 		// verify there are enough missing cus allowed
 		canAddMissingCU := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
 		if !canAddMissingCU {
-			cuErr = utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
+			return utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
 				utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
 				utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
 				utils.Attribute{Key: "specCU", Value: cuFromSpec},
@@ -151,10 +151,6 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		}
 		// verify missing cus aren't immediately expended and are scattered across the session duration
 
-		if cuErr != nil {
-			sps.lock.Unlock() // unlock on error
-			return cuErr
-		}
 		// there are missing CU but that's fine because it's within the threshold, and provider gets paid for the new request
 		// reading userSessionParent address because it's a fixed string value that isn't changing
 		utils.LavaFormatWarning("CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
@@ -167,7 +163,6 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	// this must happen first, as we also validate and add the used cu to parent here
 	err = sps.validateAndAddUsedCU(cuToAdd, maxCu)
 	if err != nil {
-		sps.lock.Unlock() // unlock on error
 		return err
 	}
 	// finished validating, can add all info.
@@ -181,6 +176,19 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID},
 		utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 	)
+	return nil
+}
+
+func (sps *SingleProviderSession) DisbandSession() error {
+	if sps.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer sps.lock.Unlock()
+		return utils.LavaFormatError("verifyLock failure, lock was free", LockMisUseDetectedError)
+	}
+	if sps.LatestRelayCu != 0 {
+		return utils.LavaFormatError("verifyLock failure, lock was free", LockMisUseDetectedError)
+	}
+	sps.lock.Unlock()
 	return nil
 }
 

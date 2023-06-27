@@ -13,7 +13,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +54,7 @@ func TestPlanEntryGet(t *testing.T) {
 // createTestPlans returns a slice of plans for testing
 func createTestPlans(planAmount int, withSameIndex bool, startIndex int) []types.Plan {
 	testPlans := []types.Plan{}
-	policy := projectstypes.Policy{
+	policy := types.Policy{
 		TotalCuLimit:       1000,
 		EpochCuLimit:       100,
 		MaxProvidersToPair: 3,

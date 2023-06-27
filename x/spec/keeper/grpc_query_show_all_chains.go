@@ -32,16 +32,20 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 			return nil, err
 		}
 		// get the spec's expected interfaces
-		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&fullspec, expectedInterfaces)
+		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&fullspec, expectedInterfaces, true)
 
 		// copy the expectedInterfaces's keys (which are the interface names) to a string list
 		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)
 
 		apiCount := uint64(0)
 
-		for _, api := range fullspec.Apis {
-			if api.Enabled {
-				apiCount++
+		for _, apiCollection := range fullspec.ApiCollections {
+			if apiCollection.Enabled {
+				for _, api := range apiCollection.Apis {
+					if api.Enabled {
+						apiCount++
+					}
+				}
 			}
 		}
 		// create a chainInfoEntry which includes the chain's name, ID and enabled interfaces

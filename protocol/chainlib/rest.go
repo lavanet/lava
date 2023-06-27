@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -27,9 +26,6 @@ import (
 )
 
 type RestChainParser struct {
-	spec       spectypes.Spec
-	rwLock     sync.RWMutex
-	serverApis map[string]spectypes.ServiceApi
 	BaseChainParser
 }
 
@@ -38,17 +34,27 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
-func (apip *RestChainParser) CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		return apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, nil)
 	}
 
-	restMessage := rpcInterfaceMessages.RestMessage{
+	restMessage := &rpcInterfaceMessages.RestMessage{
 		Msg:  nil,
-		Path: serviceApi.GetName(),
+		Path: parsing.ApiName,
 	}
-	return apip.newChainMessage(&serviceApi, &serviceApi.ApiInterfaces[0], spectypes.NOT_APPLICABLE, restMessage), nil
+
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
+	if err != nil {
+		return nil, err
+	}
+	api := apiCont.api
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
+	}
+	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -59,58 +65,74 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// Check api is supported and save it in nodeMsg
-	serviceApi, err := apip.getSupportedApi(url)
+	apiCont, err := apip.getSupportedApi(url, connectionType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract default block parser
-	blockParser := serviceApi.BlockParsing
+	blockParser := apiCont.api.BlockParsing
 
-	apiInterface := GetApiInterfaceFromServiceApi(serviceApi, connectionType)
-	if apiInterface == nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+	if err != nil {
+		return nil, err
 	}
+	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
-		Msg:    data,
-		Path:   url,
-		Header: metadata,
+		Msg:         data,
+		Path:        url,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
 	if connectionType == http.MethodGet {
 		// support for optional params, our listener puts them inside Msg data
 		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:    nil,
-			Path:   url + string(data),
-			Header: metadata,
+			Msg:         nil,
+			Path:        url + string(data),
+			BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 		}
 	}
 	// add spec path to rest message so we can extract the requested block.
-	restMessage.SpecPath = serviceApi.Name
-
-	// Fetch requested block, it is used for data reliability
-	requestedBlock, err := parser.ParseBlockFromParams(restMessage, blockParser)
-	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: serviceApi.BlockParsing})
+	restMessage.SpecPath = apiCont.api.Name
+	var requestedBlock int64
+	if overwriteReqBlock == "" {
+		// Fetch requested block, it is used for data reliability
+		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
+		if err != nil {
+			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+		}
+	} else {
+		requestedBlock, err = restMessage.ParseBlock(overwriteReqBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+		}
 	}
 
-	nodeMsg := apip.newChainMessage(serviceApi, apiInterface, requestedBlock, restMessage)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
 	return nodeMsg, nil
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.ServiceApi, apiInterface *spectypes.ApiInterface, requestBlock int64, restMessage rpcInterfaceMessages.RestMessage) *parsedMessage {
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
+		api:            serviceApi,
+		apiCollection:  apiCollection,
 		msg:            restMessage,
 		requestedBlock: requestBlock,
 	}
 	return nodeMsg
 }
 
-// getSupportedApi fetches service api from spec by name
-func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
+func (apip *RestChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
+}
+
+// overwrites the base class match for a supported api
+func (apip *RestChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -120,25 +142,26 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	apip.rwLock.RLock()
 	defer apip.rwLock.RUnlock()
 
-	// Fetch server api by name
-	api, ok := matchSpecApiByName(name, apip.serverApis)
+	// Fetch server apiCont by name
+	apiCont, ok := matchSpecApiByName(name, connectionType, apip.serverApis)
 
 	// Return an error if spec does not exist
 	if !ok {
 		return nil, errors.New("rest api not supported " + name)
 	}
+	api := apiCont.api
 
 	// Return an error if api is disabled
 	if !api.Enabled {
 		return nil, errors.New("api is disabled")
 	}
 
-	return &api, nil
+	return apiCont, nil
 }
 
-// SetSpec sets the spec for the RestChainParser
+// SetSpec sets the spec for the TendermintChainParser
 func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
-	// Guard that the RestChainParser instance exists
+	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return
 	}
@@ -148,12 +171,8 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceRest)
-
-	// Set the spec field of the RestChainParser object
-	apip.spec = spec
-	apip.serverApis = serverApis
-	apip.BaseChainParser.SetTaggedApis(taggedApis)
+	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceRest)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -168,7 +187,7 @@ func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 	defer apip.rwLock.RUnlock()
 
 	// Return enabled and data reliability threshold from spec
-	return apip.spec.Enabled, apip.spec.GetReliabilityThreshold()
+	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
 }
 
 // ChainBlockStats returns block stats from spec
@@ -344,31 +363,32 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
 	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
 	}
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	nodeMessage, ok := rpcInputMessage.(rpcInterfaceMessages.RestMessage)
+	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
 	}
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	if chainMessage.GetInterface().Type != "" {
-		connectionTypeSlected = chainMessage.GetInterface().Type
+	if chainMessage.GetApiCollection().CollectionData.Type != "" {
+		connectionTypeSlected = chainMessage.GetApiCollection().CollectionData.Type
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.NodeUrl.Url + nodeMessage.Path
 
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits)
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetInterface().Category.HangingApi {
+	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += rcp.averageBlockTime
 	}
 
 	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
+
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
@@ -379,14 +399,21 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if len(nodeMessage.Header) > 0 {
-		for _, metadata := range nodeMessage.Header {
+	if len(nodeMessage.GetHeaders()) > 0 {
+		for _, metadata := range nodeMessage.GetHeaders() {
 			req.Header.Set(metadata.Name, metadata.Value)
 		}
 	}
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
+	if debug {
+		utils.LavaFormatDebug("provider sending node message",
+			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "headers", Value: req.Header},
+			utils.Attribute{Key: "apiInterface", Value: "rest"},
+		)
+	}
 	res, err := httpClient.Do(req)
 	if err != nil {
 		if err != nil && connectCtx.Err() == context.DeadlineExceeded {

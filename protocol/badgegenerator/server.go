@@ -17,7 +17,7 @@ import (
 
 type Server struct {
 	pairingtypes.UnimplementedBadgeGeneratorServer
-	ProjectsConfiguration map[string]*ProjectConfiguration // userid/project_public_key
+	ProjectsConfiguration map[string]*ProjectConfiguration // project_id/project_data
 	epoch                 uint64
 	grpcFetcher           *grpc.GRPCFetcher
 	ChainId               string
@@ -97,19 +97,22 @@ func (s *Server) validateRequest(in *pairingtypes.GenerateBadgeRequest) (*Projec
 
 	projectData, exist := s.ProjectsConfiguration[in.ProjectId]
 	if !exist {
-		err := fmt.Errorf("bad request, invalid project to perform this request")
-		utils.LavaFormatError(
-			"Validation failed",
-			err,
-			utils.Attribute{
-				Key:   "BadgeAddress",
-				Value: in.BadgeAddress,
-			}, utils.Attribute{
-				Key:   "ProjectId",
-				Value: in.ProjectId,
-			},
-		)
-		return nil, err
+		projectData, exist = s.ProjectsConfiguration[DefaultProjectId]
+		if !exist {
+			err := fmt.Errorf("default project not found")
+			utils.LavaFormatError(
+				"Validation failed",
+				err,
+				utils.Attribute{
+					Key:   "BadgeAddress",
+					Value: in.BadgeAddress,
+				}, utils.Attribute{
+					Key:   "ProjectId",
+					Value: in.ProjectId,
+				},
+			)
+			return nil, err
+		}
 	}
 	return projectData, nil
 }

@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/common"
+	commonTypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -59,4 +60,20 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) ExportProjects(ctx sdk.Context) []commonTypes.RawMessage {
+	return k.projectsFS.Export(ctx)
+}
+
+func (k Keeper) InitProjects(ctx sdk.Context, data []commonTypes.RawMessage) {
+	k.projectsFS.Init(ctx, data)
+}
+
+func (k Keeper) ExportDevelopers(ctx sdk.Context) []commonTypes.RawMessage {
+	return k.developerKeysFS.Export(ctx)
+}
+
+func (k Keeper) InitDevelopers(ctx sdk.Context, data []commonTypes.RawMessage) {
+	k.developerKeysFS.Init(ctx, data)
 }

@@ -12,7 +12,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -34,14 +33,13 @@ func CreateMockSpec() spectypes.Spec {
 	spec.DataReliabilityEnabled = true
 	spec.MinStakeClient = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(100))
 	spec.MinStakeProvider = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1000))
-	apiInterface := spectypes.ApiInterface{Interface: "mockInt", Type: "GET"}
-	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: []spectypes.ApiInterface{apiInterface}})
+	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
 	spec.BlockDistanceForFinalizedData = 0
 	return spec
 }
 
 func CreateMockPlan() plantypes.Plan {
-	policy := projectstypes.Policy{
+	policy := plantypes.Policy{
 		TotalCuLimit:       100000,
 		EpochCuLimit:       10000,
 		MaxProvidersToPair: 3,
@@ -70,7 +68,7 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64) {
 	endpoints := []epochstoragetypes.Endpoint{}
-	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
+	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
 	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 	require.Nil(t, err)
 }

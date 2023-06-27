@@ -17,9 +17,10 @@ func (k Keeper) ListProjects(goCtx context.Context, req *types.QueryListProjects
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	block := uint64(ctx.BlockHeight())
 
-	_, found := k.GetSubscription(ctx, req.Subscription)
-	if !found {
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, req.Subscription, block, &sub); !found {
 		return nil, utils.LavaFormatWarning("subscription not found", sdkerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "subscription", Value: req.Subscription},
 		)

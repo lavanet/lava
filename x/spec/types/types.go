@@ -33,12 +33,8 @@ const (
 )
 
 const (
-	GET_BLOCKNUM                = "getBlockNumber"
-	GET_BLOCK_BY_NUM            = "getBlockByNumber"
 	DEFAULT_PARSED_RESULT_INDEX = 0
 )
-
-var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
 
 // allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {
@@ -57,6 +53,46 @@ func (s *PARSER_FUNC) UnmarshalJSON(b []byte) error {
 	}
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
 	*s = PARSER_FUNC(PARSER_FUNC_value[j])
+	return nil
+}
+
+// allows unmarshaling parser func
+func (s FUNCTION_TAG) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(FUNCTION_TAG_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (s *FUNCTION_TAG) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = FUNCTION_TAG(FUNCTION_TAG_value[j])
+	return nil
+}
+
+// allows unmarshaling header type
+func (s Header_HeaderType) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(Header_HeaderType_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshals a quoted json string to the enum value
+func (s *Header_HeaderType) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = Header_HeaderType(Header_HeaderType_value[j])
 	return nil
 }
 

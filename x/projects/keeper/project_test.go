@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -82,7 +83,7 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 		types.ProjectDeveloperKey(ts.accounts["pd3_dev"]),
 	}
 
-	policy1 := &types.Policy{
+	policy1 := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
 		MaxProvidersToPair: 2,
 	}
@@ -92,7 +93,7 @@ func (ts *testStruct) prepareData(numSub, numAdmin, numDevel int) {
 		name    string
 		enabled bool
 		keys    []types.ProjectKey
-		policy  *types.Policy
+		policy  *planstypes.Policy
 	}{
 		// project with admin key, enabled, has policy
 		{"pd1", "mock_project_1", true, keys_1_admin, policy1},
@@ -316,6 +317,39 @@ func TestProjectsServerAPI(t *testing.T) {
 	require.Equal(t, 1, len(res.Project.ProjectKeys))
 }
 
+func TestDeleteProject(t *testing.T) {
+	ts := newTestStruct(t)
+	ts.prepareData(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	projectData := ts.projects["pd2"]
+	plan := common.CreateMockPlan()
+
+	subAddr := ts.accounts["sub1"]
+	projectID := types.ProjectIndex(subAddr, projectData.Name)
+
+	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.Nil(t, err)
+
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, "nonsense")
+	require.NotNil(t, err)
+
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, subAddr, projectID)
+	require.Nil(t, err)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch(1)
+
+	_, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, ts.BlockHeight())
+	require.NotNil(t, err)
+}
+
 func TestAddDelKeys(t *testing.T) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 2) // 1 sub, 0 adm, 2 dev
@@ -447,14 +481,14 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 }
 
 func TestSetPolicy(t *testing.T) {
-	SetPolicyTest(t, true)
+	setPolicyTest(t, true)
 }
 
 func TestSetSubscriptionPolicy(t *testing.T) {
-	SetPolicyTest(t, false)
+	setPolicyTest(t, false)
 }
 
-func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
+func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	ts := newTestStruct(t)
 	ts.prepareData(1, 0, 1) // 1 sub, 0 admin, 1 data
 
@@ -470,6 +504,8 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	err := ts.keepers.Projects.CreateProject(ts.ctx, subAddr, projectData, plan)
 	require.Nil(t, err)
 
+	ts.AdvanceEpoch(1)
+
 	pk := types.ProjectDeveloperKey(devAddr)
 	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID, admAddr, []types.ProjectKey{pk})
 	require.Nil(t, err)
@@ -482,7 +518,7 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 		creator                      string
 		projectID                    string
 		geolocation                  uint64
-		chainPolicies                []types.ChainPolicy
+		chainPolicies                []planstypes.ChainPolicy
 		totalCuLimit                 uint64
 		epochCuLimit                 uint64
 		maxProvidersToPair           uint64
@@ -491,68 +527,68 @@ func SetPolicyTest(t *testing.T, testAdminPolicy bool) {
 	}{
 		{
 			"valid policy (admin account)", admAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, false,
 		},
 
 		{
 			"valid policy (subscription account)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
 			"bad creator (developer account -- not admin)", devAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"bad projectID (doesn't exist)", devAddr, "fakeProjectId", uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			"invalid geolocation (0)", devAddr, projectID, uint64(0),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, false, false,
 		},
 
 		{
 			// note: currently, we don't verify the chain policies
 			"bad chainID (doesn't exist)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: "LOL", Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 3, true, true,
 		},
 
 		{
 			// note: currently, we don't verify the chain policies
 			"bad API (doesn't exist)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{"lol"}}},
 			100, 10, 3, true, true,
 		},
 		{
 			// note: currently, we don't verify the chain policies
 			"chainID and API not supported (exist in Lava's specs)", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
+			[]planstypes.ChainPolicy{{ChainId: "ETH1", Apis: []string{"eth_accounts"}}},
 			100, 10, 3, true, true,
 		},
 		{
 			"epoch CU larger than total CU", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			10, 100, 3, false, false,
 		},
 		{
 			"bad maxProvidersToPair", subAddr, projectID, uint64(1),
-			[]types.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.Apis[0].Name}}},
+			[]planstypes.ChainPolicy{{ChainId: spec.Index, Apis: []string{spec.ApiCollections[0].Apis[0].Name}}},
 			100, 10, 1, false, false,
 		},
 	}
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
-			newPolicy := types.Policy{
+			newPolicy := planstypes.Policy{
 				ChainPolicies:      tt.chainPolicies,
 				GeolocationProfile: tt.geolocation,
 				TotalCuLimit:       tt.totalCuLimit,
@@ -832,4 +868,125 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	require.Equal(t, 2, len(proj1.ProjectKeys))
 	require.Equal(t, 1, len(proj2.ProjectKeys))
+}
+
+func TestSetPolicySelectedProviders(t *testing.T) {
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	adm1Addr := common.CreateNewAccount(_ctx, *keepers, 10000).Addr.String()
+	projectData := types.ProjectData{
+		Name:        "name",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{{Key: adm1Addr, Kinds: uint32(types.ProjectKey_ADMIN)}},
+		Policy:      &planstypes.Policy{MaxProvidersToPair: 2, GeolocationProfile: math.MaxUint64},
+	}
+	subAddr := projectData.ProjectKeys[0].Key
+	projPolicy := projectData.Policy
+
+	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
+	mixed := planstypes.SELECTED_PROVIDERS_MODE_MIXED
+	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
+
+	providersSets := []struct {
+		planProviders []string
+		subProviders  []string
+		projProviders []string
+	}{
+		{[]string{}, []string{}, []string{}},
+		{[]string{subAddr}, []string{subAddr}, []string{subAddr}},
+		{[]string{subAddr}, []string{subAddr}, []string{}},
+		{[]string{"lalala"}, []string{"lalala"}, []string{"lalala"}},
+		{[]string{subAddr, subAddr}, []string{subAddr, subAddr}, []string{subAddr, subAddr}},
+		{[]string{subAddr}, []string{}, []string{}},
+	}
+
+	templates := []struct {
+		name            string
+		planMode        planstypes.SELECTED_PROVIDERS_MODE
+		subMode         planstypes.SELECTED_PROVIDERS_MODE
+		projMode        planstypes.SELECTED_PROVIDERS_MODE
+		providerSet     int
+		planPolicyValid bool
+		subPolicyValid  bool
+		projPolicyValid bool
+	}{
+		{"ALLOWED mode happy flow", allowed, allowed, allowed, 0, true, true, true},
+		{"ALLOWED mode non empty providers list", allowed, allowed, allowed, 1, false, false, false},
+
+		{"EXCLUSIVE mode happy flow", exclusive, exclusive, exclusive, 2, true, true, true},
+		{"EXCLUSIVE mode invalid providers addresses", exclusive, exclusive, exclusive, 3, false, false, false},
+		{"EXCLUSIVE mode providers addresses duplicates", exclusive, exclusive, exclusive, 4, false, false, false},
+
+		{"MIXED mode happy flow", mixed, mixed, mixed, 2, true, true, true},
+		{"MIXED mode invalid providers addresses", mixed, mixed, mixed, 3, false, false, false},
+		{"MIXED mode providers addresses duplicates", mixed, mixed, mixed, 4, false, false, false},
+
+		{"DISABLED mode happy flow", disabled, mixed, mixed, 0, true, true, true},
+		{"DISABLED mode non empty providers list", disabled, mixed, mixed, 5, false, true, true},
+		{"DISABLED mode configured to proj/sub policy", mixed, disabled, disabled, 2, true, false, false},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			providersSet := providersSets[tt.providerSet]
+			plan := common.CreateMockPlan()
+
+			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
+			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
+
+			err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, []planstypes.Plan{plan})
+			if tt.planPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+
+			_, err = servers.SubscriptionServer.Buy(_ctx, &subscriptiontypes.MsgBuy{
+				Creator:  subAddr,
+				Consumer: subAddr,
+				Index:    plan.Index,
+				Duration: 1,
+			})
+			require.Nil(t, err)
+
+			subProjects, err := keepers.Subscription.ListProjects(_ctx, &subscriptiontypes.QueryListProjectsRequest{
+				Subscription: subAddr,
+			})
+			require.Nil(t, err)
+			require.Equal(t, 1, len(subProjects.Projects))
+
+			adminProject, err := keepers.Projects.GetProjectForBlock(ctx, subProjects.Projects[0], uint64(ctx.BlockHeight()))
+			require.Nil(t, err)
+
+			projPolicy.SelectedProvidersMode = tt.projMode
+			projPolicy.SelectedProviders = providersSet.projProviders
+
+			_, err = servers.ProjectServer.SetPolicy(_ctx, &types.MsgSetPolicy{
+				Creator: subAddr,
+				Project: adminProject.Index,
+				Policy:  *projPolicy,
+			})
+			if tt.projPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+
+			projPolicy.SelectedProvidersMode = tt.subMode
+			projPolicy.SelectedProviders = providersSet.subProviders
+
+			_, err = servers.ProjectServer.SetSubscriptionPolicy(_ctx, &types.MsgSetSubscriptionPolicy{
+				Creator:  subAddr,
+				Projects: []string{adminProject.Index},
+				Policy:   *projPolicy,
+			})
+			if tt.subPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
+	}
 }

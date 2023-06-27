@@ -5,32 +5,28 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
 )
 
 var _ = strconv.Itoa(0)
 
-func CmdClients() *cobra.Command {
+func CmdList() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "clients [chain-id]",
-		Short: "Query clients",
-		Args:  cobra.ExactArgs(1),
+		Use:   "list",
+		Short: "Query all current subscriptions to service packages",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqChainID := args[0]
-
-			clientCtx, err := client.GetClientQueryContext(cmd)
+			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryClientsRequest{
-				ChainID: reqChainID,
-			}
+			params := &types.QueryListRequest{}
 
-			res, err := queryClient.Clients(cmd.Context(), params)
+			res, err := queryClient.List(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

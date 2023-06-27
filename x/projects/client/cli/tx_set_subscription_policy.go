@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	commontypes "github.com/lavanet/lava/common/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +33,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 
 			subscriptionPolicyFilePath := args[1]
 
-			var policy types.Policy
+			var policy planstypes.Policy
 			err = commontypes.ReadYaml(subscriptionPolicyFilePath, "Policy", &policy)
 			if err != nil {
 				return err
