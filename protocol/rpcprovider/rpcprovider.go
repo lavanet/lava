@@ -184,17 +184,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 					}
 					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
-
-					// Fetch chain id
-					realChainID, specChainId, err := chainFetcher.FetchChainID(ctx)
-					if err != nil {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-					}
-
-					// Validate spec chain id
-					if specChainId != realChainID {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain ID, continuing with other endpoints", err, utils.Attribute{Key: "Spec chain ID", Value: specChainId}, utils.Attribute{Key: "Real chain ID", Value: realChainID}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-					}
 				} else {
 					var ok bool
 					chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)

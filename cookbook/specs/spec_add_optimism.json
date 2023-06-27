@@ -1,184 +1,159 @@
 {
-  "proposal": {
-    "title": "Add Specs: Optimism",
-    "description": "Adding new specification support for relaying Optimism data on Lava, slow lookup for latest block to reduce provider load",
-    "specs": [
-      {
-        "index": "OPTM",
-        "name": "optimism mainnet",
-        "enabled": true,
-        "imports": ["ETH1"],
-        "reliability_threshold": 268435455,
-        "data_reliability_enabled": true,
-        "block_distance_for_finalized_data": 1,
-        "blocks_in_finalization_proof": 1,
-        "average_block_time": "5000",
-        "allowed_block_lag_for_qos_sync": "200",
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "50000000000"
-        },
-        "min_stake_client": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
-        "api_collections": [
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": ""
+    "proposal": {
+        "title": "Add Specs: Optimism",
+        "description": "Adding new specification support for relaying Optimism data on Lava, slow lookup for latest block to reduce provider load",
+        "specs": [
+            {
+                "index": "OPTM",
+                "name": "optimism mainnet",
+                "enabled": true,
+                "imports": [
+                    "ETH1"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 1,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": "5000",
+                "allowed_block_lag_for_qos_sync": "200",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "eth_getAccounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "eth_getBlockRange",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "eth_sendTransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "rollup_gasPrices",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            },
+                            {
+                                "name": "rollup_getInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
+                    }
+                ]
             },
-            "apis": [
-              {
-                "name": "eth_getAccounts",
-                "block_parsing": {
-                  "parser_arg": [""],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": "10",
-                "enabled": false,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": "0"
-              },
-              {
-                "name": "eth_getBlockRange",
-                "block_parsing": {
-                  "parser_arg": ["1"],
-                  "parser_func": "PARSE_BY_ARG"
-                },
-                "compute_units": "10",
+            {
+                "index": "OPTMT",
+                "name": "optimism goerli testnet",
                 "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
+                "imports": [
+                    "OPTM"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 1,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": "5000",
+                "allowed_block_lag_for_qos_sync": "200",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "50000000000"
                 },
-                "extra_compute_units": "0"
-              },
-              {
-                "name": "eth_sendTransaction",
-                "block_parsing": {
-                  "parser_arg": [""],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": "10",
-                "enabled": false,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": "0"
-              },
-              {
-                "name": "rollup_gasPrices",
-                "block_parsing": {
-                  "parser_arg": ["latest"],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": "0"
-              },
-              {
-                "name": "rollup_getInfo",
-                "block_parsing": {
-                  "parser_arg": [""],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "category": {
-                  "deterministic": false,
-                  "local": true,
-                  "subscription": false,
-                  "stateful": 0
-                },
-                "extra_compute_units": "0"
-              }
-            ],
-            "headers": [],
-            "inheritance_apis": [],
-            "parse_directives": [
-              {
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                "function_tag": "GET_CHAIN_ID",
-                "result_parsing": {
-                  "parser_arg": ["0"],
-                  "parser_func": "PARSE_BY_ARG",
-                  "encoding": "hex",
-                  "default_value":  "0xa"
-                },
-                "api_name": "eth_chainId"
-              }
-            ]
-          }
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                }
+            }
         ]
-      },
-      {
-        "index": "OPTMT",
-        "name": "optimism goerli testnet",
-        "enabled": true,
-        "imports": ["OPTM"],
-        "reliability_threshold": 268435455,
-        "data_reliability_enabled": true,
-        "block_distance_for_finalized_data": 1,
-        "blocks_in_finalization_proof": 1,
-        "average_block_time": "5000",
-        "allowed_block_lag_for_qos_sync": "200",
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "50000000000"
-        },
-        "min_stake_client": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
-        "api_collections": [
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": ""
-            },
-            "apis": [],
-            "headers": [],
-            "inheritance_apis": [],
-            "parse_directives": [
-              {
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                "function_tag": "GET_CHAIN_ID",
-                "result_parsing": {
-                  "parser_arg": ["0"],
-                  "parser_func": "PARSE_BY_ARG",
-                  "encoding": "hex",
-                  "default_value":  "0x1a4"
-                },
-                "api_name": "eth_chainId"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  "deposit": "10000000ulava"
+    },
+    "deposit": "10000000ulava"
 }

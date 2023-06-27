@@ -28,44 +28,6 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
 }
 
-func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
-	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_CHAIN_ID)
-	tagName := spectypes.FUNCTION_TAG_name[int32(spectypes.FUNCTION_TAG_GET_CHAIN_ID)]
-	// If parsing tag or wanted result does not exist
-	// skip chain id check with warning
-	if !ok || parsing.ResultParsing.DefaultValue == "" {
-		utils.LavaFormatWarning("skipping chain ID validation, chain ID missing from the spec", nil,
-			utils.Attribute{Key: "Chain ID", Value: cf.endpoint.ChainID},
-		)
-		return "", "", nil
-	}
-
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil)
-	if err != nil {
-		return "", "", utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
-	}
-
-	reply, _, _, err := cf.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
-	if err != nil {
-		return "", "", utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
-	}
-
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
-	if err != nil {
-		return "", "", err
-	}
-	specID, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
-	if err != nil {
-		return "", "", utils.LavaFormatWarning("Failed To Parse FetchChainID", err, []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
-			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.Data)},
-		}...)
-	}
-
-	return specID, parsing.ResultParsing.DefaultValue, nil
-}
-
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	tagName := spectypes.FUNCTION_TAG_name[int32(spectypes.FUNCTION_TAG_GET_BLOCKNUM)]
