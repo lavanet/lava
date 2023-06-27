@@ -9,6 +9,7 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/client/cli"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -291,7 +292,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			endp, geo, err := types.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
+			endp, geo, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
 			if tc.validConfig {
 				require.Nil(t, err)
 				err = types.ValidateGeoFields(endp, geo)
