@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -144,7 +145,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.Greater(t, block, int64(0))
 	require.NoError(t, err)
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	require.True(t, err.Error()[:len("invalid parser input format")] == "invalid parser input format")
+	require.True(t, strings.Contains(err.Error(), "invalid parser input format"))
 	if closeServer != nil {
 		closeServer()
 	}
