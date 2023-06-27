@@ -84,7 +84,6 @@ func createGRPCServer(serverStarted chan struct{}) error {
 
 	// Create a new server with insecure credentials
 	tlsConfig := GetTlsConfig(NetworkAddressData{})
-	
 	s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 
 	go func() {
