@@ -160,6 +160,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			recordMetricsOnNewBlock := func(block int64, hash string) {
 				providerMetricsManager.SetLatestBlock(chainID, uint64(block))
 			}
+
 			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 			chainCommonSetup := func() error {
 				chainMutexes[chainID].Lock()
