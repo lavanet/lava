@@ -18,7 +18,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -82,7 +82,8 @@ func createGRPCServer(serverStarted chan struct{}) error {
 	grpcListener = lis.Addr().String()
 
 	// Create a new server with insecure credentials
-	s := grpc.NewServer()
+	tlsConfig := GetTlsConfig(NetworkAddressData{})
+	s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -585,7 +586,7 @@ func TestContext(t *testing.T) {
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := ConnectgRPCClient(ctx, grpcListener)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()
