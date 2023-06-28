@@ -175,6 +175,48 @@ func TestUpdateEpoch(t *testing.T) {
 	require.Len(t, stubRewardsTxSender.sentPayments, 5)
 }
 
+func BenchmarkSendNewProofInMemory(b *testing.B) {
+	ts := setup(b)
+	db := rewardserver.NewMemoryDB()
+	rewardStore := rewardserver.NewRewardStore(db)
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
+	proofs := generateProofs(ts.ctx, b.N)
+
+	b.ResetTimer()
+	sendProofs(ts.ctx, proofs, rws)
+}
+
+func BenchmarkSendNewProofLocal(b *testing.B) {
+	ts := setup(b)
+	db := rewardserver.NewLocalDB("badger_test")
+	rewardStore := rewardserver.NewRewardStore(db)
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
+
+	proofs := generateProofs(ts.ctx, b.N)
+
+	b.ResetTimer()
+	sendProofs(ts.ctx, proofs, rws)
+}
+
+func generateProofs(ctx context.Context, n int) []*pairingtypes.RelaySession {
+	var proofs []*pairingtypes.RelaySession
+	for i := 0; i < n; i++ {
+		proof := common.BuildRelaySession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil)
+		proof.Epoch = 1
+		proofs = append(proofs, proof)
+	}
+	return proofs
+}
+
+func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *rewardserver.RewardServer) {
+	for index, proof := range proofs {
+		prefix := index%2 + 1
+		consumerKey := fmt.Sprintf("consumer%d", prefix)
+		apiInterface := fmt.Sprintf("apiInterface%d", prefix)
+		rws.SendNewProof(ctx, proof, uint64(proof.Epoch), consumerKey, apiInterface)
+	}
+}
+
 type testStruct struct {
 	ctx      context.Context
 	keepers  *testkeeper.Keepers
@@ -182,7 +224,7 @@ type testStruct struct {
 	consumer common.Account
 }
 
-func setup(t *testing.T) *testStruct {
+func setup(t testing.TB) *testStruct {
 	ts := &testStruct{}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
@@ -190,7 +232,7 @@ func setup(t *testing.T) *testStruct {
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), spec)
 
 	plan := common.CreateMockPlan()
-	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), plan)
+	_ = ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), plan)
 
 	ctx := testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
