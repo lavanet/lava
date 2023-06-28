@@ -12,7 +12,7 @@ type BadgerDB struct {
 
 var _ DB = (*BadgerDB)(nil)
 
-func (mdb *BadgerDB) Save(ctx context.Context, key string, data []byte) error {
+func (mdb *BadgerDB) Save(_ context.Context, key string, data []byte) error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
 		return txn.Set([]byte(key), data)
 	})
@@ -20,7 +20,7 @@ func (mdb *BadgerDB) Save(ctx context.Context, key string, data []byte) error {
 	return err
 }
 
-func (mdb *BadgerDB) FindOne(ctx context.Context, key string) (one []byte, err error) {
+func (mdb *BadgerDB) FindOne(_ context.Context, key string) (one []byte, err error) {
 	err = mdb.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
 		if err != nil {
@@ -42,7 +42,7 @@ func (mdb *BadgerDB) FindOne(ctx context.Context, key string) (one []byte, err e
 	return
 }
 
-func (mdb *BadgerDB) FindAll(ctx context.Context) (map[string][]byte, error) {
+func (mdb *BadgerDB) FindAll(context.Context) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 
 	err := mdb.db.View(func(txn *badger.Txn) error {
@@ -74,7 +74,7 @@ func (mdb *BadgerDB) FindAll(ctx context.Context) (map[string][]byte, error) {
 	return result, nil
 }
 
-func (mdb *BadgerDB) Delete(ctx context.Context, key string) error {
+func (mdb *BadgerDB) Delete(_ context.Context, key string) error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(key))
 	})
@@ -82,7 +82,7 @@ func (mdb *BadgerDB) Delete(ctx context.Context, key string) error {
 	return err
 }
 
-func (mdb *BadgerDB) DeletePrefix(ctx context.Context, prefix string) error {
+func (mdb *BadgerDB) DeletePrefix(_ context.Context, prefix string) error {
 	err := mdb.db.DropPrefix([]byte(prefix))
 	if err != nil {
 		return err
