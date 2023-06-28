@@ -54,13 +54,12 @@ type EpochRewards struct {
 type RewardServer struct {
 	rewardsTxSender  RewardsTxSender
 	lock             sync.RWMutex
-	rewards          map[uint64]*EpochRewards // key is epoch
 	serverID         uint64
 	expectedPayments []PaymentRequest
 	totalCUServiced  uint64
 	totalCUPaid      uint64
 	providerMetrics  *metrics.ProviderMetricsManager
-	proofStore       *ProofStore
+	rewardStore      *RewardStore
 }
 
 type RewardsTxSender interface {
@@ -70,48 +69,20 @@ type RewardsTxSender interface {
 }
 
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
-	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
-	defer rws.lock.Unlock()
-
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 
-	defer func() {
-		if updatedWithProof {
-			err := rws.proofStore.Save(ctx, consumerRewardsKey, proof)
-			if err != nil {
-				// TODO: what?
-			}
-		}
-	}()
+	prevProof, err := rws.rewardStore.FindOne(ctx, epoch, consumerAddr, consumerRewardsKey, proof.SessionId)
+	if err != nil {
+		saved, _ := rws.rewardStore.Save(ctx, consumerAddr, consumerRewardsKey, proof)
+		return 0, saved
+	}
 
-	epochRewards, ok := rws.rewards[epoch]
-	if !ok {
-		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
-		consumerRewardsMap := map[string]*ConsumerRewards{consumerRewardsKey: {epoch: epoch, consumer: consumerAddr, proofs: proofs}}
-		rws.rewards[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewardsMap}
-		return 0, true
+	if prevProof.CuSum < proof.CuSum {
+		saved, _ := rws.rewardStore.Save(ctx, consumerAddr, consumerRewardsKey, proof)
+		return 0, saved
 	}
-	consumerRewards, ok := epochRewards.consumerRewards[consumerRewardsKey]
-	if !ok {
-		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
-		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: proofs}
-		epochRewards.consumerRewards[consumerRewardsKey] = consumerRewards
-		return 0, true
-	}
-	relayProof, ok := consumerRewards.proofs[proof.SessionId]
-	if !ok {
-		consumerRewards.proofs[proof.SessionId] = proof
-		return 0, true
-	}
-	cuSumStored := relayProof.CuSum
-	if cuSumStored >= proof.CuSum {
-		return cuSumStored, false
-	}
-	if relayProof.Badge != nil && proof.Badge == nil {
-		proof.Badge = relayProof.Badge
-	}
-	consumerRewards.proofs[proof.SessionId] = proof
-	return 0, true
+
+	return prevProof.CuSum, false
 }
 
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {
@@ -141,7 +112,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
 
-		err = rws.proofStore.DeleteClaimedRewards(ctx, rewardsToClaim)
+		err = rws.rewardStore.DeleteClaimedRewards(ctx, rewardsToClaim)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
@@ -219,8 +190,6 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 }
 
 func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
-	rws.lock.Lock()
-	defer rws.lock.Unlock()
 	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
@@ -230,23 +199,25 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
-	for epoch, epochRewards := range rws.rewards {
+
+	rewards, err := rws.rewardStore.FindAll(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to FindAll", err)
+	}
+
+	for epoch, epochRewards := range rewards {
 		if lavasession.IsEpochValidForUse(epoch, activeEpochThreshold) {
 			// Epoch is still active so we don't claim the rewards yet.
 			continue
 		}
 
-		for consumerAddr, rewards := range epochRewards.consumerRewards {
+		for _, rewards := range epochRewards.consumerRewards {
 			claimables, err := rewards.PrepareRewardsForClaim()
 			if err != nil {
 				// can't claim this now
 				continue
 			}
 			rewardsForClaim = append(rewardsForClaim, claimables...)
-			delete(epochRewards.consumerRewards, consumerAddr)
-		}
-		if len(epochRewards.consumerRewards) == 0 {
-			delete(rws.rewards, epoch)
 		}
 	}
 	return rewardsForClaim, errRet
@@ -298,70 +269,15 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	return NewRewardServerWithStorage(rewardsTxSender, providerMetrics, nil)
 }
 
-func NewRewardServerWithStorage(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, proofStore *ProofStore) *RewardServer {
+func NewRewardServerWithStorage(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardStore *RewardStore) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
 	rws.expectedPayments = []PaymentRequest{}
-
-	rewards, err := rehydrateProofs(context.TODO(), proofStore)
-	if err != nil {
-		panic(err)
-	}
-
-	rws.rewards = rewards
 	rws.providerMetrics = providerMetrics
-	rws.proofStore = proofStore
+	rws.rewardStore = rewardStore
+
 	return rws
-}
-
-func rehydrateProofs(ctx context.Context, store *ProofStore) (map[uint64]*EpochRewards, error) {
-	result := make(map[uint64]*EpochRewards)
-	proofEntities, err := store.FindAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, proofEntity := range proofEntities {
-		epoch := uint64(proofEntity.epoch)
-		epochReward, ok := result[epoch]
-		if !ok {
-			proofs := make(map[uint64]*pairingtypes.RelaySession)
-			proofs[proofEntity.sessionId] = proofEntity.proof
-
-			consumerReward := &ConsumerRewards{
-				epoch:    epoch,
-				consumer: proofEntity.consumer,
-				proofs:   proofs,
-			}
-			consumerRewards := make(map[string]*ConsumerRewards)
-			consumerRewards[proofEntity.consumer] = consumerReward
-
-			result[uint64(proofEntity.epoch)] = &EpochRewards{
-				epoch:           epoch,
-				consumerRewards: consumerRewards,
-			}
-			continue
-		}
-
-		consumerReward, ok := epochReward.consumerRewards[proofEntity.consumer]
-		if !ok {
-			proofs := make(map[uint64]*pairingtypes.RelaySession)
-			proofs[proofEntity.sessionId] = proofEntity.proof
-
-			consumerReward := &ConsumerRewards{
-				epoch:    epoch,
-				consumer: proofEntity.consumer,
-				proofs:   proofs,
-			}
-			epochReward.consumerRewards[proofEntity.consumer] = consumerReward
-			continue
-		}
-
-		consumerReward.proofs[proofEntity.sessionId] = proofEntity.proof
-	}
-
-	return result, nil
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
