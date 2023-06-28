@@ -145,6 +145,43 @@ func TestSendNewProof(t *testing.T) {
 	}
 }
 
+func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
+	ts := setup(t)
+	db := rewardserver.NewMemoryDB()
+	rewardStore := rewardserver.NewRewardStore(db)
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
+
+	prevProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{})
+	prevProof.Epoch = int64(1)
+	newProof := common.BuildRelaySession(ts.ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil)
+	newProof.Epoch = int64(1)
+
+	rws.SendNewProof(ts.ctx, prevProof, uint64(1), "consumer", "apiinterface")
+	_, updated := rws.SendNewProof(ts.ctx, newProof, uint64(1), "consumer", "apiinterface")
+
+	require.NotNil(t, newProof.Badge)
+	require.True(t, updated)
+}
+
+func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
+	ts := setup(t)
+	db := rewardserver.NewMemoryDB()
+	rewardStore := rewardserver.NewRewardStore(db)
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
+
+	prevProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{LavaChainId: "43"})
+	prevProof.Epoch = int64(1)
+	newProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil, &pairingtypes.Badge{LavaChainId: "42"})
+	newProof.Epoch = int64(1)
+
+	rws.SendNewProof(ts.ctx, prevProof, uint64(1), "consumer", "apiinterface")
+	_, updated := rws.SendNewProof(ts.ctx, newProof, uint64(1), "consumer", "apiinterface")
+
+	require.NotNil(t, newProof.Badge)
+	require.Equal(t, "42", newProof.Badge.LavaChainId)
+	require.True(t, updated)
+}
+
 func TestUpdateEpoch(t *testing.T) {
 	ts := setup(t)
 	stubRewardsTxSender := rewardsTxSenderDouble{}

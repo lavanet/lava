@@ -78,6 +78,9 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 	}
 
 	if prevProof.CuSum < proof.CuSum {
+		if prevProof.Badge != nil && proof.Badge == nil {
+			proof.Badge = prevProof.Badge
+		}
 		saved, _ := rws.rewardStore.Save(ctx, consumerAddr, consumerRewardsKey, proof)
 		return 0, saved
 	}
