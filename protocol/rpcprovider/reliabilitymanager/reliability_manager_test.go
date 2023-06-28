@@ -192,6 +192,7 @@ func (m mockTx) SendVoteCommitment(voteID string, voteData *reliabilitymanager.V
 	m.callbackCommit(voteID, voteData)
 	return nil
 }
+
 func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteData) error {
 	m.callbackReveal(voteID, voteData)
 	return nil
@@ -208,6 +209,21 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	providerDR_sk, providerDR_address := ts.Providers[1].SK, ts.Providers[1].Addr
 	unwrapedCtx := sdk.UnwrapSDKContext(ts.ctx)
 	epoch := int64(ts.keepers.Epochstorage.GetEpochStart(unwrapedCtx))
+	replyDataBuf := []byte("REPLY-STUB")
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, string(replyDataBuf))
+	})
+	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../")
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:                       20,
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
@@ -237,8 +253,10 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	relayRequestData := lavaprotocol.NewRelayData(ts.ctx, "GET", "/blocks/latest", []byte{}, spectypes.LATEST_BLOCK, spectypes.APIInterfaceRest, metadataValue)
-	require.Equal(t, relayRequestData.Metadata, metadataValue)
+	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue)
+	require.NoError(t, err)
+	relayRequestData := lavaprotocol.NewRelayData(ts.ctx, "GET", "/blocks/latest", []byte{}, chainMessage.RequestedBlock(), spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders())
+
 	relay, err := lavaprotocol.ConstructRelayRequest(ts.ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
@@ -250,7 +268,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	latestBlock := int64(123)
 	// provider handling the response
 	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
-	replyDataBuf := []byte("REPLY-STUB")
+
 	reply := &pairingtypes.RelayReply{Data: replyDataBuf}
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	require.NoError(t, err)
@@ -270,6 +288,9 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		ReplyServer:     nil,
 		Finalized:       true,
 	}
+
+	allDataHash := sigs.AllDataHash(reply, *relay.RelayData)
+	utils.LavaFormatDebug("honest provider allDataHash", utils.Attribute{Key: "hash", Value: fmt.Sprintf("%#v", allDataHash)})
 
 	// now send this to another provider
 	relayRequestDataDR := lavaprotocol.NewRelayData(ts.ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata)
@@ -316,19 +337,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	voteParams, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
 	require.Nil(t, err)
 	require.Equal(t, specId, voteParams.ChainID)
-	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Handle the incoming request and provide the desired response
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, replyDataBuf)
-	})
-	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../")
-	if closeServer != nil {
-		defer closeServer()
-	}
-	require.NoError(t, err)
-	require.NotNil(t, chainParser)
-	require.NotNil(t, chainProxy)
-	require.NotNil(t, chainFetcher)
+
 	commitCalled := false
 	revealCalled := false
 	sendVoteCommit := func(voteID string, vote *reliabilitymanager.VoteData) {
@@ -374,4 +383,13 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	}
 	event = terderminttypes.Event(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1])
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName, event.Type)
+	require.True(t, func() bool {
+		for _, attr := range event.Attributes {
+			if string(attr.Key) == "winner" {
+				require.Equal(t, provider_address.String(), string(attr.Value))
+				return true
+			}
+		}
+		return false
+	}())
 }

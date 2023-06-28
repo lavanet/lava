@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -106,6 +107,14 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		for _, voter := range voters {
 			conflictVote.Votes = append(conflictVote.Votes, types.Vote{Address: voter, Hash: []byte{}, Result: types.NoVote})
 		}
+		metadataBytes, err := json.Marshal(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Metadata)
+		if err != nil {
+			return nil, utils.LavaFormatError("could not marshal metadata in the event", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
+		}
 
 		k.SetConflictVote(ctx, conflictVote)
 
@@ -119,6 +128,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
 		eventData["apiInterface"] = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiInterface
+		eventData["metadata"] = string(metadataBytes)
 
 		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Simulation: Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil

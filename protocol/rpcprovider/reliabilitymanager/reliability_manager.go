@@ -2,6 +2,7 @@ package reliabilitymanager
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -109,8 +110,8 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		}
 		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
-		relayData := pairingtypes.RelayPrivateData{}
-		replyDataHash := sigs.AllDataHash(reply, relayData)
+		relayData := BuildRelayDataFromVoteParams(voteParams)
+		replyDataHash := sigs.AllDataHash(reply, *relayData)
 		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash, rm.publicAddress)
 
 		vote = &VoteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
@@ -160,6 +161,7 @@ type VoteParams struct {
 	VoteDeadline   uint64
 	VoteID         string
 	ParamsType     uint
+	Metadata       []pairingtypes.Metadata
 }
 
 func (vp *VoteParams) GetCloseVote() bool {
@@ -229,14 +231,28 @@ func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams
 	if err != nil {
 		return nil, utils.LavaFormatError("vote requested block could not be parsed", err, utils.Attribute{Key: "requested block", Value: num_str}, utils.Attribute{Key: "voteID", Value: voteID})
 	}
+
 	num_str, ok = attributes["voteDeadline"]
 	if !ok {
 		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{Key: "attributes", Value: attributes})
 	}
+
+	metadataStr, ok := attributes["metadata"]
+	if !ok {
+		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{Key: "attributes", Value: attributes})
+	}
+
+	metadata := make([]pairingtypes.Metadata, 0)
+	err = json.Unmarshal([]byte(metadataStr), &metadata)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed unmarshaling metadata json", err, utils.Attribute{Key: "metadataStr", Value: metadataStr}, utils.Attribute{Key: "voteID", Value: voteID})
+	}
+
 	voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
 	if err != nil {
 		return nil, utils.LavaFormatError("vote deadline could not be parsed", err, utils.Attribute{Key: "deadline", Value: num_str}, utils.Attribute{Key: "voteID", Value: voteID})
 	}
+
 	voters_st, ok := attributes["voters"]
 	if !ok {
 		return nil, utils.LavaFormatError("failed building BuildVoteParamsFromRevealEvent", nil, utils.Attribute{Key: "attributes", Value: attributes})
@@ -256,4 +272,17 @@ func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams
 		ParamsType:     DetectionVoteType,
 	}
 	return voteParams, nil
+}
+
+func BuildRelayDataFromVoteParams(voteParams *VoteParams) *pairingtypes.RelayPrivateData {
+	reply := pairingtypes.RelayPrivateData{
+		ConnectionType: voteParams.ConnectionType,
+		ApiUrl:         voteParams.ApiURL,
+		Data:           voteParams.RequestData,
+		RequestBlock:   int64(voteParams.RequestBlock),
+		ApiInterface:   voteParams.ApiInterface,
+		Salt:           []byte{},
+		Metadata:       voteParams.Metadata,
+	}
+	return &reply
 }
