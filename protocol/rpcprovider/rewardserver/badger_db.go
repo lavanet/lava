@@ -91,6 +91,10 @@ func (mdb *BadgerDB) DeletePrefix(ctx context.Context, prefix string) error {
 	return err
 }
 
+func (mdb *BadgerDB) Close() error {
+	return mdb.db.Close()
+}
+
 func NewMemoryDB() *BadgerDB {
 	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
 	if err != nil {

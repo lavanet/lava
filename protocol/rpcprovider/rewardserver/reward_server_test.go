@@ -189,6 +189,9 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 func BenchmarkSendNewProofLocal(b *testing.B) {
 	ts := setup(b)
 	db := rewardserver.NewLocalDB("badger_test")
+	defer func(db *rewardserver.BadgerDB) {
+		_ = db.Close()
+	}(db)
 	rewardStore := rewardserver.NewRewardStore(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 

@@ -8,4 +8,5 @@ type DB interface {
 	FindAll(ctx context.Context) (map[string][]byte, error)
 	Delete(ctx context.Context, key string) error
 	DeletePrefix(ctx context.Context, prefix string) error
+	Close() error
 }
