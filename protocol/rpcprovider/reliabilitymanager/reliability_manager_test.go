@@ -25,6 +25,12 @@ import (
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
+type mockFilter struct{}
+
+func (m mockFilter) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata) {
+	return metadata, "", []pairingtypes.Metadata{}
+}
+
 func TestFullFlowReliabilityCompare(t *testing.T) {
 	ctx := context.Background()
 	// consumer
@@ -129,7 +135,8 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		ReplyServer:     nil,
 		Finalized:       true,
 	}
-	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDR)
+
+	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDR, nil, mockFilter{})
 	require.Nil(t, conflict)
 }
 
@@ -324,7 +331,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		ReplyServer:     nil,
 		Finalized:       true,
 	}
-	conflict := lavaprotocol.VerifyReliabilityResults(ts.ctx, relayResult, relayResultDR)
+	conflict := lavaprotocol.VerifyReliabilityResults(ts.ctx, relayResult, relayResultDR, chainMessage.GetApiCollection(), chainParser)
 	require.NotNil(t, conflict)
 	msg := conflicttypes.NewMsgDetection(consumer_address.String(), nil, conflict, nil)
 	_, err = ts.servers.ConflictServer.Detection(ts.ctx, msg)

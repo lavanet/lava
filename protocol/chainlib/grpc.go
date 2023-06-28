@@ -114,7 +114,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	// handle headers
-	metadata, overwriteReqBlock := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+	metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
 
 	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 

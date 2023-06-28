@@ -108,7 +108,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 			return utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
 		}
-		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+		reply.Metadata, _, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		relayData := BuildRelayDataFromVoteParams(voteParams)
 		replyDataHash := sigs.AllDataHash(reply, *relayData)

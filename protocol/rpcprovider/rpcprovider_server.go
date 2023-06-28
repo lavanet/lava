@@ -263,7 +263,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-	reply.Metadata, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
 		// return the response to the user, and close the session.
@@ -578,6 +578,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply = nil
 	var err error = nil
+	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
 		reply, err = cache.GetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized)
 	}
@@ -590,7 +591,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		reply.Metadata, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
+		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock to set the correct latest block
 		if requestedBlockHash != nil || finalized {
 			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
@@ -615,12 +616,11 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	}
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
-
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err
 	}
-
+	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
 	// return reply to user
 	return reply, nil
 }
