@@ -68,7 +68,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	consumer_sk, consumer_address := sigs.GenerateFloatingKey()
 	// provider
 	provider_sk, provider_address := sigs.GenerateFloatingKey()
-	specId := "LAV1"
+	testSpecId := "BLAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:                       20,
@@ -89,7 +89,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	}
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
-	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
+	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", testSpecId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
 	// provider checks
