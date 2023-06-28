@@ -10,7 +10,7 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyVersion     = []byte("Version")
+	KeyVersion = []byte("Version")
 	// TODO: Determine the default value
 	DefaultVersion = Version{
 		ProviderTarget: "",
@@ -71,7 +71,7 @@ func validateVersion(v interface{}) error {
 	}
 
 	// TODO implement validation
-	_ = providerVersion
+	_ = version
 
 	return nil
 }

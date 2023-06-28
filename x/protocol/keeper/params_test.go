@@ -15,8 +15,5 @@ func TestGetParams(t *testing.T) {
 	k.SetParams(ctx, params)
 
 	require.EqualValues(t, params, k.GetParams(ctx))
-	require.EqualValues(t, params.ProviderVersion, k.ProviderVersion(ctx))
-	require.EqualValues(t, params.ProviderMinVersion, k.ProviderMinVersion(ctx))
-	require.EqualValues(t, params.ConsumerVersion, k.ConsumerVersion(ctx))
-	require.EqualValues(t, params.ConsumerMinVersion, k.ConsumerMinVersion(ctx))
+	require.EqualValues(t, params.Version, k.Version(ctx))
 }
