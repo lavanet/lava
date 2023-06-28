@@ -57,3 +57,4 @@ ecosystem/lava-sdk/pairingList.json
 
 # Reward server ignores
 .storage/rewardserver/badger
+badger_test
