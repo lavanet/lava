@@ -39,7 +39,7 @@ type ReliabilityManager struct {
 	chainParser   chainlib.ChainParser
 }
 
-func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uint64) {
+func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uint64) error {
 	// got a vote event, handle the cases here
 	voteID := voteParams.VoteID
 	voteDeadline := voteParams.VoteDeadline
@@ -47,10 +47,9 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		// meaning we dont close a vote, so we should check stuff
 		if voteDeadline < nodeHeight {
 			// its too late to vote
-			utils.LavaFormatError("Vote Event received but it's too late to vote", nil,
+			return utils.LavaFormatError("Vote Event received but it's too late to vote", nil,
 				utils.Attribute{Key: "deadline", Value: voteDeadline},
 				utils.Attribute{Key: "nodeHeight", Value: nodeHeight})
-			return
 		}
 	}
 	rm.votes_mutex.Lock()
@@ -64,55 +63,49 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry",
 					utils.Attribute{Key: "voteID", Value: voteID})
 				delete(rm.votes, voteID)
-				return
+				return nil
 			}
 			// expected to start a new vote but found an existing one
-			utils.LavaFormatError("new vote Request for vote had existing entry", nil,
+			return utils.LavaFormatError("new vote Request for vote had existing entry", nil,
 				utils.Attribute{Key: "voteParams", Value: voteParams}, utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
-			return
 		}
 		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result",
 			utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
 		rm.txSender.SendVoteReveal(voteID, vote)
-		return
+		return nil
 	} else {
 		// new vote
 		if voteParams == nil {
-			utils.LavaFormatError("vote commit Request didn't have a vote entry", nil,
+			return utils.LavaFormatError("vote commit Request didn't have a vote entry", nil,
 				utils.Attribute{Key: "voteID", Value: voteID})
-			return
 		}
 		if voteParams.GetCloseVote() {
-			utils.LavaFormatError("vote closing received but didn't have a vote entry", nil,
+			return utils.LavaFormatError("vote closing received but didn't have a vote entry", nil,
 				utils.Attribute{Key: "voteID", Value: voteID})
-			return
 		}
 		if voteParams.ParamsType != DetectionVoteType {
-			utils.LavaFormatError("new voteID without DetectionVoteType", nil,
+			return utils.LavaFormatError("new voteID without DetectionVoteType", nil,
 				utils.Attribute{Key: "voteParams", Value: voteParams})
-			return
 		}
 		// try to find this provider in the jury
 		found := slices.Contains(voteParams.Voters, rm.publicAddress)
 		if !found {
 			utils.LavaFormatInfo("new vote initiated but not for this provider to vote")
 			// this is a new vote but not for us
-			return
+			return nil
 		}
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		// TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		ctx := context.Background()
 		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil)
 		if err != nil {
-			utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
+			return utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
-			return
 		}
 		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
 		if err != nil {
-			utils.LavaFormatError("vote relay send has failed", err,
+			return utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
-			return
 		}
 		reply.Metadata, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
@@ -124,7 +117,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		rm.votes[voteID] = vote
 		utils.LavaFormatInfo("Received Vote start, sending commitment for result", utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
 		rm.txSender.SendVoteCommitment(voteID, vote)
-		return
+		return nil
 	}
 }
 

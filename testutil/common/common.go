@@ -69,8 +69,10 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64) {
 	endpoints := []epochstoragetypes.Endpoint{}
-	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
-	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
+	for _, collection := range spec.ApiCollections {
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: collection.CollectionData.ApiInterface, Geolocation: 1})
+	}
+	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 	require.Nil(t, err)
 }
 
