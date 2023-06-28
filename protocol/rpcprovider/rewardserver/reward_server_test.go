@@ -166,10 +166,12 @@ func TestUpdateEpoch(t *testing.T) {
 
 	rws.UpdateEpoch(1)
 
+	// 2 payments for epoch 1
 	require.Len(t, stubRewardsTxSender.sentPayments, 2)
 
 	rws.UpdateEpoch(2)
 
+	// another 3 payments for epoch 2
 	require.Len(t, stubRewardsTxSender.sentPayments, 5)
 }
 
