@@ -265,11 +265,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager) *RewardServer {
-	return NewRewardServerWithStorage(rewardsTxSender, providerMetrics, nil)
-}
-
-func NewRewardServerWithStorage(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardStore *RewardStore) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardStore *RewardStore) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
