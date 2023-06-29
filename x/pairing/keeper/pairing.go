@@ -10,6 +10,8 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
+	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
+	pairingscorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -135,6 +137,26 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
+	}
+
+	slots := pairingscores.CalcSlots(strictestPolicy)
+
+	slotGroups := pairingscores.GroupAndSortSlots(slots)
+
+	prevGroup := pairingscorestypes.PairingSlotGroup{}
+	for _, group := range slotGroups {
+		providerScores := []uint64{}
+		for _, provider := range possibleProviders {
+			diffSlot := pairingscores.DiffSlot(prevGroup.Slot, group.Slot)
+			score := pairingscores.CalcPairingScore(provider, pairingscores.GetStrategy(), *diffSlot)
+			providerScores = append(providerScores, score)
+		}
+
+		pickedProvider := pairingscores.PickProvider(providerScores)
+
+		providers = append(providers, pickedProvider)
+
+		prevGroup = group
 	}
 
 	providers, err = k.calculatePairingForClient(ctx, possibleProviders, project.Index, block,
