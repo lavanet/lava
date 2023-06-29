@@ -18,25 +18,25 @@ import (
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error) {
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
 	// TODO: add support for spec changes
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	foundAndActive, _, providersType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
-		return 0, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
+		return 0, providersType, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}
 	earliestSavedEpoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 	if block < earliestSavedEpoch {
-		return 0, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
+		return 0, providersType, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
 	}
 
 	requestedEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
-		return 0, err
+		return 0, providersType, err
 	}
 	currentEpochStart := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	if requestedEpochStart > currentEpochStart {
-		return 0, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
+		return 0, providersType, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
 			utils.Attribute{Key: "requested block", Value: block},
 			utils.Attribute{Key: "requested epoch", Value: requestedEpochStart},
 			utils.Attribute{Key: "current epoch", Value: currentEpochStart},
@@ -45,13 +45,13 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
-		return 0, err
+		return 0, providersType, err
 	}
 
 	if requestedEpochStart+blocksToSave < currentEpochStart {
-		return 0, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
+		return 0, providersType, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
 	}
-	return requestedEpochStart, nil
+	return requestedEpochStart, providersType, nil
 }
 
 func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
@@ -112,9 +112,14 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
 	var strictestPolicy planstypes.Policy
 
-	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
+	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
+	}
+
+	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
+	if !found {
+		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
 	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
@@ -127,9 +132,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
-	if !found {
-		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
+	if providersType == spectypes.Spec_static {
+		return possibleProviders, allowedCU, project.Index, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
