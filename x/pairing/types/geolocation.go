@@ -26,8 +26,7 @@ func init() {
 
 // IsValidGeoEnum tests the validity of a given geolocation
 func IsValidGeoEnum(geoloc int32) bool {
-	_, ok := planstypes.Geolocation_name[geoloc]
-	return geoloc != int32(planstypes.Geolocation_GLS) && ok
+	return geoloc != int32(planstypes.Geolocation_GLS) && (geoloc & ^allGeoEnumRegions) == 0
 }
 
 // IsGeoEnumSingleBit returns true if at most one bit is set
