@@ -153,7 +153,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 	if !success {
 		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	}
-	utils.LavaFormatError("Succeeded sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	return nil
 }
 
