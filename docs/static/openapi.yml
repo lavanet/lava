@@ -31949,6 +31949,7 @@ paths:
                                     - GET_BLOCK_BY_NUM
                                     - SET_LATEST_IN_METADATA
                                     - SET_LATEST_IN_BODY
+                                    - GET_CHAIN_ID
                                   default: DISABLED
                           inheritance_apis:
                             type: array
@@ -31977,6 +31978,7 @@ paths:
                                     - GET_BLOCK_BY_NUM
                                     - SET_LATEST_IN_METADATA
                                     - SET_LATEST_IN_BODY
+                                    - GET_CHAIN_ID
                                   default: DISABLED
                                 function_template:
                                   type: string
@@ -32314,6 +32316,7 @@ paths:
                                   - GET_BLOCK_BY_NUM
                                   - SET_LATEST_IN_METADATA
                                   - SET_LATEST_IN_BODY
+                                  - GET_CHAIN_ID
                                 default: DISABLED
                         inheritance_apis:
                           type: array
@@ -32342,6 +32345,7 @@ paths:
                                   - GET_BLOCK_BY_NUM
                                   - SET_LATEST_IN_METADATA
                                   - SET_LATEST_IN_BODY
+                                  - GET_CHAIN_ID
                                 default: DISABLED
                               function_template:
                                 type: string
@@ -32602,6 +32606,7 @@ paths:
                                     - GET_BLOCK_BY_NUM
                                     - SET_LATEST_IN_METADATA
                                     - SET_LATEST_IN_BODY
+                                    - GET_CHAIN_ID
                                   default: DISABLED
                           inheritance_apis:
                             type: array
@@ -32630,6 +32635,7 @@ paths:
                                     - GET_BLOCK_BY_NUM
                                     - SET_LATEST_IN_METADATA
                                     - SET_LATEST_IN_BODY
+                                    - GET_CHAIN_ID
                                   default: DISABLED
                                 function_template:
                                   type: string
@@ -32967,6 +32973,7 @@ paths:
                                   - GET_BLOCK_BY_NUM
                                   - SET_LATEST_IN_METADATA
                                   - SET_LATEST_IN_BODY
+                                  - GET_CHAIN_ID
                                 default: DISABLED
                         inheritance_apis:
                           type: array
@@ -32995,6 +33002,7 @@ paths:
                                   - GET_BLOCK_BY_NUM
                                   - SET_LATEST_IN_METADATA
                                   - SET_LATEST_IN_BODY
+                                  - GET_CHAIN_ID
                                 default: DISABLED
                               function_template:
                                 type: string
@@ -56664,6 +56672,7 @@ definitions:
                 - GET_BLOCK_BY_NUM
                 - SET_LATEST_IN_METADATA
                 - SET_LATEST_IN_BODY
+                - GET_CHAIN_ID
               default: DISABLED
       inheritance_apis:
         type: array
@@ -56692,6 +56701,7 @@ definitions:
                 - GET_BLOCK_BY_NUM
                 - SET_LATEST_IN_METADATA
                 - SET_LATEST_IN_BODY
+                - GET_CHAIN_ID
               default: DISABLED
             function_template:
               type: string
@@ -56797,6 +56807,7 @@ definitions:
       - GET_BLOCK_BY_NUM
       - SET_LATEST_IN_METADATA
       - SET_LATEST_IN_BODY
+      - GET_CHAIN_ID
     default: DISABLED
   lavanet.lava.spec.Header:
     type: object
@@ -56818,6 +56829,7 @@ definitions:
           - GET_BLOCK_BY_NUM
           - SET_LATEST_IN_METADATA
           - SET_LATEST_IN_BODY
+          - GET_CHAIN_ID
         default: DISABLED
   lavanet.lava.spec.Header.HeaderType:
     type: string
@@ -56867,6 +56879,7 @@ definitions:
           - GET_BLOCK_BY_NUM
           - SET_LATEST_IN_METADATA
           - SET_LATEST_IN_BODY
+          - GET_CHAIN_ID
         default: DISABLED
       function_template:
         type: string
@@ -57088,6 +57101,7 @@ definitions:
                             - GET_BLOCK_BY_NUM
                             - SET_LATEST_IN_METADATA
                             - SET_LATEST_IN_BODY
+                            - GET_CHAIN_ID
                           default: DISABLED
                   inheritance_apis:
                     type: array
@@ -57116,6 +57130,7 @@ definitions:
                             - GET_BLOCK_BY_NUM
                             - SET_LATEST_IN_METADATA
                             - SET_LATEST_IN_BODY
+                            - GET_CHAIN_ID
                           default: DISABLED
                         function_template:
                           type: string
@@ -57360,6 +57375,7 @@ definitions:
                           - GET_BLOCK_BY_NUM
                           - SET_LATEST_IN_METADATA
                           - SET_LATEST_IN_BODY
+                          - GET_CHAIN_ID
                         default: DISABLED
                 inheritance_apis:
                   type: array
@@ -57388,6 +57404,7 @@ definitions:
                           - GET_BLOCK_BY_NUM
                           - SET_LATEST_IN_METADATA
                           - SET_LATEST_IN_BODY
+                          - GET_CHAIN_ID
                         default: DISABLED
                       function_template:
                         type: string
@@ -57664,6 +57681,7 @@ definitions:
                       - GET_BLOCK_BY_NUM
                       - SET_LATEST_IN_METADATA
                       - SET_LATEST_IN_BODY
+                      - GET_CHAIN_ID
                     default: DISABLED
             inheritance_apis:
               type: array
@@ -57692,6 +57710,7 @@ definitions:
                       - GET_BLOCK_BY_NUM
                       - SET_LATEST_IN_METADATA
                       - SET_LATEST_IN_BODY
+                      - GET_CHAIN_ID
                     default: DISABLED
                   function_template:
                     type: string
