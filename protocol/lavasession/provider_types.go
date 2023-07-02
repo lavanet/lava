@@ -182,25 +182,26 @@ func (pswc *ProviderSessionsWithConsumer) atomicWriteMissingComputeUnits(cu uint
 	atomic.StoreUint64(&pswc.epochData.MissingComputeUnits, cu)
 }
 
-func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool) {
+func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool, totalMissingCu uint64) {
 	missing := pswc.atomicReadMissingComputeUnits()
 	used := pswc.atomicReadUsedComputeUnits()
 	max := pswc.atomicReadMaxComputeUnits()
+	totalMissingCu = missing + currentMissingCU
 	// do not allow bypassing max used CU
 	if currentMissingCU+missing+used > max {
-		return false
+		return false, totalMissingCu
 	}
 	// do not allow having more missing than threshold
 	if currentMissingCU+missing > uint64(float64(max)*allowedThreshold) {
-		return false
+		return false, totalMissingCu
 	}
 	// do not allow having more missing than already used
 	if currentMissingCU+missing > used {
-		return false
+		return false, totalMissingCu
 	}
 	// TODO: use compare and swap for race avoidance
 	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
-	return true
+	return true, totalMissingCu
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent

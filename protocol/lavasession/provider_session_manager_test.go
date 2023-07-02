@@ -169,6 +169,61 @@ func TestHappyFlowPSM(t *testing.T) {
 	require.Equal(t, sps.PairingEpoch, epoch1)
 }
 
+func TestMissingCu(t *testing.T) {
+	ctx := context.Background()
+	psm, sps := prepareSession(t, ctx)
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	// validate session done data
+	require.Nil(t, err)
+	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
+	// (relayCu * number of requests {2}) !=
+	for i := 0; i < 10; i++ {
+		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07)
+		require.Nil(t, err)
+		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
+		require.Nil(t, err)
+	}
+}
+
+func TestMissingCuFailureOnThreshold(t *testing.T) {
+	ctx := context.Background()
+	psm, sps := prepareSession(t, ctx)
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	// validate session done successfully
+	require.Nil(t, err)
+	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
+	// (relayCu * number of requests {2}) !=
+	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01)
+	require.True(t, ProviderConsumerCuMisMatch.Is(err))
+}
+
+func TestMissingMultipleMissingAttempts(t *testing.T) {
+	ctx := context.Background()
+	psm, sps := prepareSession(t, ctx)
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	// validate session done data
+	require.Nil(t, err)
+	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
+	// (relayCu * number of requests {2}) !=
+	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5)
+	require.Nil(t, err)
+	err = psm.OnSessionDone(sps, relayNumber+1)
+	require.Nil(t, err)
+	for i := 0; i < 10; i++ {
+		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5)
+		require.Nil(t, err)
+		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+2)
+		require.Nil(t, err)
+	}
+}
+
 func TestHappyFlowBadgePSM(t *testing.T) {
 	// init test
 	psm, sps := prepareBadgeSession(t, context.Background(), 0)

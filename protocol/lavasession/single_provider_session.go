@@ -141,7 +141,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 
 		var cuErr error = nil
 		// verify there are enough missing cus allowed
-		canAddMissingCU := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
+		canAddMissingCU, totalMissingCu := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
 		if !canAddMissingCU {
 			cuErr = utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
 				utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
@@ -150,7 +150,8 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 				utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
 				utils.Attribute{Key: "GUID", Value: ctx},
 				utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
-				utils.Attribute{Key: "missingCUs", Value: missingCU},
+				utils.Attribute{Key: "currentMissingCUs", Value: missingCU},
+				utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
 				utils.Attribute{Key: "allowedThreshold", Value: allowedThreshold},
 			)
 		}
@@ -162,8 +163,13 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		}
 		// there are missing CU but that's fine because it's within the threshold, and provider gets paid for the new request
 		// reading userSessionParent address because it's a fixed string value that isn't changing
-		utils.LavaFormatWarning("CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
-			utils.Attribute{Key: "sessionID", Value: sps.SessionID}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
+		utils.LavaFormatWarning("CU Mismatch within the threshold", nil,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "currentMissingCU", Value: missingCU},
+			utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
+			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
+			utils.Attribute{Key: "sessionID", Value: sps.SessionID},
+			utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
 	}
 
 	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
