@@ -335,6 +335,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
+			err = commonlib.VerifyAndHandleUnsupportedFlags(cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to verify cmd flags", err)
+			}
+
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
