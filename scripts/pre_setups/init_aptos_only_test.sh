@@ -30,11 +30,11 @@ lavad tx pairing stake-provider "APT1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,rest,
 
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER APT1 rest '$APTOS_REST' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3360 APT1 rest \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 

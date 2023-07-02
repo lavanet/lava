@@ -12,7 +12,7 @@ GASPRICE="0.000000001ulava"
 
 lavad tx pairing bulk-stake-provider LAV1 $PROVIDERSTAKE "$PROVIDER4_LISTENER,1" 1 -y --from servicer4 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad rpcprovider \
+lava-protocol rpcprovider \
 $PROVIDER4_LISTENER LAV1 rest http://127.0.0.1:3360/1 \
 $PROVIDER4_LISTENER LAV1 tendermintrpc http://127.0.0.1:3361/1 \
 $PROVIDER4_LISTENER LAV1 grpc 127.0.0.1:3362 \
