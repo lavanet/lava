@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"math"
-	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
@@ -15,7 +14,6 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
 func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
@@ -147,24 +145,27 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	slotGroups := pairingscores.GroupAndSortSlots(slots)
 
-	prevGroup := pairingscorestypes.PairingSlotGroup{}
-	for _, group := range slotGroups {
-		providerScores := []uint64{}
-		for _, provider := range possibleProviders {
-			diffSlot := pairingscores.DiffSlot(prevGroup.Slot, group.Slot)
-			score := pairingscores.CalcPairingScore(provider, pairingscores.GetStrategy(), *diffSlot)
-			providerScores = append(providerScores, score)
-		}
-
-		pickedProvider := pairingscores.PickProvider(providerScores)
-
-		providers = append(providers, pickedProvider)
-
-		prevGroup = group
+	prevGroup := pairingscorestypes.NewPairingSlotGroup()
+	providerScores := []*pairingscorestypes.PairingScore{}
+	for i := range possibleProviders {
+		providerScore := pairingscorestypes.NewPairingScore(&possibleProviders[i])
+		providerScores = append(providerScores, providerScore)
 	}
 
-	providers, err = k.calculatePairingForClient(ctx, possibleProviders, project.Index, block,
-		chainID, epochHash, strictestPolicy.MaxProvidersToPair)
+	for _, group := range slotGroups {
+		diffSlot := pairingscores.DiffSlot(prevGroup.Slot, group.Slot)
+
+		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
+		if err != nil {
+			return nil, 0, "", err
+		}
+
+		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, group.Count, block, chainID, epochHash)
+
+		providers = append(providers, pickedProviders...)
+
+		prevGroup = &group
+	}
 
 	return providers, allowedCU, project.Index, err
 }
@@ -302,88 +303,4 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	}
 
 	return false, allowedCU, 0, projectID, nil
-}
-
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
-	if epochStartBlock > uint64(ctx.BlockHeight()) {
-		k.Logger(ctx).Error("\ninvalid session start\n")
-		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
-	}
-
-	spec, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found {
-		return nil, fmt.Errorf("spec not found or not enabled")
-	}
-
-	if spec.ProvidersTypes == spectypes.Spec_dynamic {
-		// calculates a hash and randomly chooses the providers
-
-		validProviders = k.returnSubsetOfProvidersByStake(ctx, developerAddress, providers, providersToPair, epochStartBlock, chainID, epochHash)
-	} else {
-		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, providers, providersToPair)
-	}
-
-	return validProviders, nil
-}
-
-// this function randomly chooses count providers by weight
-func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress string, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
-	stakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
-	hashData := make([]byte, 0)
-	for _, stakedProvider := range providersMaps {
-		stakeSum = stakeSum.Add(stakedProvider.Stake)
-	}
-	if stakeSum.IsZero() {
-		// list is empty
-		return returnedProviders
-	}
-
-	// add the session start block hash to the function to make it as unpredictable as we can
-	hashData = append(hashData, epochHash...)
-	hashData = append(hashData, chainID...)       // to make this pairing unique per chainID
-	hashData = append(hashData, clientAddress...) // to make this pairing unique per consumer
-
-	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
-	for it := 0; it < int(count); it++ {
-		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
-		bigIntNum := new(big.Int).SetBytes(hash)
-		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
-		modRes := hashAsNumber.Mod(stakeSum.Amount)
-
-		newStakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
-		// we loop the servicers list form the end because the list is sorted, biggest is last,
-		// and statistically this will have less iterations
-
-		for idx := len(providersMaps) - 1; idx >= 0; idx-- {
-			stakedProvider := providersMaps[idx]
-			if indexToSkip[idx] {
-				// this is an index we added
-				continue
-			}
-			newStakeSum = newStakeSum.Add(stakedProvider.Stake)
-			if modRes.LT(newStakeSum.Amount) {
-				// we hit our chosen provider
-				returnedProviders = append(returnedProviders, stakedProvider)
-				stakeSum = stakeSum.Sub(stakedProvider.Stake) // we remove this provider from the random pool, so the sum is lower now
-				indexToSkip[idx] = true
-				break
-			}
-		}
-		if uint64(len(returnedProviders)) >= count {
-			return returnedProviders
-		}
-		if stakeSum.IsZero() {
-			break
-		}
-		hashData = append(hashData, []byte{uint8(it)}...)
-	}
-	return returnedProviders
-}
-
-func (k Keeper) returnSubsetOfProvidersByHighestStake(ctx sdk.Context, providersEntries []epochstoragetypes.StakeEntry, count uint64) (returnedProviders []epochstoragetypes.StakeEntry) {
-	if uint64(len(providersEntries)) <= count {
-		return providersEntries
-	} else {
-		return providersEntries[0:count]
-	}
 }
