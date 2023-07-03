@@ -39,14 +39,14 @@ var (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 )
 
-type VersionInfo struct {
-	MinVersion    string `json:"consumer_min"`
-	TargetVersion string `json:"consumer_target"`
+type versionInfo struct {
+	minVersion    string
+	targetVersion string
 }
 
-var initVersion = VersionInfo{
-	MinVersion:    "0.0.0",
-	TargetVersion: "0.0.1",
+var initVersion = versionInfo{
+	minVersion:    "0.0.0",
+	targetVersion: "0.0.1",
 }
 
 type strategyValue struct {
@@ -256,12 +256,12 @@ func CheckVersion() (err error) {
 	if err != nil {
 		return err
 	}
-	if consumerMinVersionResp != initVersion.MinVersion {
+	if consumerMinVersionResp != initVersion.minVersion {
 		err := fmt.Errorf("version mismatch")
 		utils.LavaFormatFatal("minimum version mismatch for rpcconsumer", err)
 		return err
 	}
-	if consumerTargetVersionResp != initVersion.TargetVersion {
+	if consumerTargetVersionResp != initVersion.targetVersion {
 		utils.LavaFormatWarning("target version mismatch for rpcconsumer", nil)
 	}
 	return nil
@@ -318,7 +318,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if err != nil {
 				return err
 			}
-			// utils.LavaFormatInfo("RPCConsumer version check OK", utils.Attribute{Key: "currentConsumerMinVersion: ", Value: currentConsumerVersion.minVersion})
+			utils.LavaFormatInfo("RPCConsumer version check OK")
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
