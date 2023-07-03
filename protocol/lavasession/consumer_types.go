@@ -348,7 +348,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	return expectedLatency
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	// Add current Session QoS
 	cs.QoSInfo.TotalRelays++    // increase total relays
 	cs.QoSInfo.AnsweredRelays++ // increase answered relays

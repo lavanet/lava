@@ -644,7 +644,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	return nil
 }
 
@@ -671,7 +671,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Client.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
 	return nil
 }

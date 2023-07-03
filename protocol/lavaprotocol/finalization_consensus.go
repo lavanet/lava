@@ -181,7 +181,6 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	defer s.providerDataContainersMu.RUnlock()
 	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 	averageBlockTime_ms := averageBlockTime
-	listExpectedBlockHeights := []int64{}
 
 	var highestBlockNumber int64 = 0
 	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
@@ -198,24 +197,33 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	highestBlockNumber = FindHighestBlockNumber(s.currentProviderHashesConsensus)
 
 	now := time.Now()
-	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
-		listExpectedBH := []int64{}
+	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, listProviderHashesConsensus []ProviderHashesConsensus) map[string]int64 {
+
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
-			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
-				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime) / averageBlockTime_ms).Milliseconds() // interpolation
+			for providerAddress, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)
+				expected := providerDataContainer.LatestFinalizedBlock + interpolation
 				// limit the interpolation to the highest seen block height
 				if expected > highestBlockNumber {
 					expected = highestBlockNumber
 				}
-				listExpectedBH = append(listExpectedBH, expected)
+				mapExpectedBlockHeights[providerAddress] = expected
 			}
 		}
-		return listExpectedBH
+		return mapExpectedBlockHeights
 	}
-	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.prevEpochProviderHashesConsensus)...)
-	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.currentProviderHashesConsensus)...)
+	mapExpectedBlockHeights := map[string]int64{}
+	// prev must be before current because we overwrite
+	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, s.prevEpochProviderHashesConsensus)
+	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, s.currentProviderHashesConsensus)
 
-	median := func(data []int64) int64 {
+	median := func(dataMap map[string]int64) int64 {
+		data := make([]int64, len(dataMap))
+		i := 0
+		for _, latestBlock := range dataMap {
+			data[i] = latestBlock
+			i++
+		}
 		slices.Sort(data)
 
 		var median int64
@@ -229,5 +237,14 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		}
 		return median
 	}
-	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(listExpectedBlockHeights)
+	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
+	// then we move forward blockDistanceForFinalizedData to get the expected latest block
+	return median(mapExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(mapExpectedBlockHeights)
+}
+
+func InterpolateBlocks(timeNow time.Time, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {
+	if timeNow.Before(latestBlockTime) {
+		return 0
+	}
+	return int64(timeNow.Sub(latestBlockTime) / averageBlockTime) // interpolation
 }
