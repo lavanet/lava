@@ -168,8 +168,6 @@ func TestConsensusHashesInsertion(t *testing.T) {
 	}
 }
 
-// check this: FindRequestedBlockHash
-
 // func TestQoS(t *testing.T) {
 // 	finalizationConsensus := &FinalizationConsensus{}
 // 	_ = finalizationConsensus

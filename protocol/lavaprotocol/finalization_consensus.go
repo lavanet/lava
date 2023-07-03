@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -231,18 +230,4 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		return median
 	}
 	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(listExpectedBlockHeights)
-}
-
-func FindRequestedBlockHash(requestedHashes []*chaintracker.BlockStore, requestBlock int64, toBlock int64, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesRet map[int64]interface{}) {
-	for _, block := range requestedHashes {
-		if block.Block == requestBlock {
-			requestedBlockHash = []byte(block.Hash)
-			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
-				finalizedBlockHashes[block.Block] = block.Hash
-			}
-		} else {
-			finalizedBlockHashes[block.Block] = block.Hash
-		}
-	}
-	return requestedBlockHash, finalizedBlockHashes
 }

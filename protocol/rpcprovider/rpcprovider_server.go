@@ -551,10 +551,15 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
-		requestedBlockHash, finalizedBlockHashes = lavaprotocol.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
+		requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
 		if requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
-			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "hashes", Value: requestedHashes})
+			reqHashesAttr := utils.Attribute{Key: "hashes", Value: requestedHashes}
+			elementsToTake := 10
+			if len(requestedHashes) > elementsToTake {
+				reqHashesAttr = utils.Attribute{Key: "hashes", Value: requestedHashes[len(requestedHashes)-elementsToTake:]}
+			}
+			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
 		}
 
 		// TODO: add a mechanism to handle this
