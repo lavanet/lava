@@ -59,6 +59,7 @@ type lavaTest struct {
 	testFinishedProperly bool
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
+	protocolPath         string
 	lavadArgs            string
 	logs                 map[string]*bytes.Buffer
 	commands             map[string]*exec.Cmd
@@ -197,6 +198,22 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 	panic("Lava Check Failed")
 }
 
+func (lt *lavaTest) compileLavaProtocol() {
+	buildCommand := "./scripts/build_env_e2e.sh"
+	lt.logs["01_buildProtocol"] = new(bytes.Buffer)
+	cmd := exec.Cmd{
+		Path:   buildCommand,
+		Args:   strings.Split(buildCommand, " "),
+		Stdout: lt.logs["01_buildProtocol"],
+		Stderr: lt.logs["01_buildProtocol"],
+	}
+	err := cmd.Start()
+	if err != nil {
+		panic("compileLavaProtocol Failed " + err.Error())
+	}
+	cmd.Wait()
+}
+
 func (lt *lavaTest) stakeLava() {
 	stakeCommand := "./scripts/init_e2e.sh"
 	lt.logs["01_stakeLava"] = new(bytes.Buffer)
@@ -322,7 +339,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d %s",
-			lt.lavadPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
@@ -341,7 +358,7 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/ethConsumer%d.yml --from %s %s",
-			lt.lavadPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
@@ -497,7 +514,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/lavaProvider%d --from servicer%d %s",
-			lt.lavadPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
@@ -518,7 +535,7 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --from %s %s",
-			lt.lavadPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
@@ -1041,6 +1058,7 @@ func runE2E(timeout time.Duration) {
 	lt := &lavaTest{
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
+		protocolPath: gopath + "/bin/lava-protocol",
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
@@ -1060,6 +1078,9 @@ func runE2E(timeout time.Duration) {
 	go lt.startLava(context.Background())
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
+	lt.compileLavaProtocol()
+	utils.LavaFormatInfo("Compiling Protocol OK")
+
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava()
 

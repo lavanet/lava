@@ -88,6 +88,69 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	return rootCmd, encodingConfig
 }
 
+func NewLavaProtocolRootCmd() *cobra.Command {
+	encodingConfig := app.MakeEncodingConfig()
+	initClientCtx := client.Context{}.
+		WithCodec(encodingConfig.Marshaler).
+		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
+		WithTxConfig(encodingConfig.TxConfig).
+		WithLegacyAmino(encodingConfig.Amino).
+		WithInput(os.Stdin).
+		WithAccountRetriever(types.AccountRetriever{}).
+		WithHomeDir(app.DefaultNodeHome).
+		WithViper("")
+
+	rootCmd := &cobra.Command{
+		Use:   "lava-protocol",
+		Short: "Lava Protocol daemon",
+		Long:  "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// set the default command outputs
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
+			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
+			if err != nil {
+				return err
+			}
+
+			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
+				return err
+			}
+
+			customAppTemplate, customAppConfig := initAppConfig()
+			return server.InterceptConfigsPreRunHandler(
+				cmd, customAppTemplate, customAppConfig,
+			)
+		},
+	}
+
+	initLavaProtocolRootCmd(rootCmd)
+	overwriteFlagDefaults(rootCmd, map[string]string{
+		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagKeyringBackend: "test",
+	})
+
+	return rootCmd
+}
+
+func initLavaProtocolRootCmd(
+	rootCmd *cobra.Command,
+) {
+	initSDKConfig()
+	rootCmd.AddCommand(
+		tmcli.NewCompletionCmd(rootCmd, true),
+	)
+	rootCmd.AddCommand(
+		queryCommand(),
+		txCommand(),
+		keys.Commands(app.DefaultNodeHome),
+	)
+}
+
 // initTendermintConfig helps to override default Tendermint Config values.
 // return tmcfg.DefaultConfig if no custom configuration is required for the application.
 func initTendermintConfig() *tmcfg.Config {
