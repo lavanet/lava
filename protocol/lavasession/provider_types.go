@@ -207,7 +207,6 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 			return true, totalMissingCu
 		}
 	}
-
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
