@@ -11,6 +11,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
 
@@ -53,7 +54,8 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if policyFilePath != "" {
-				err = commontypes.ReadYaml(policyFilePath, "Policy", policy)
+				hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
+				err = commontypes.ReadYaml(policyFilePath, "Policy", policy, hooks)
 				if err != nil {
 					return err
 				}
@@ -68,7 +70,7 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if projectKeysFilePath != "" {
-				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
+				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil)
 				if err != nil {
 					return err
 				}
