@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -39,6 +40,16 @@ const (
 	ChainTrackerDefaultMemory  = 100
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 )
+
+type versionInfo struct {
+	minVersion    string
+	targetVersion string
+}
+
+var initVersion = versionInfo{
+	minVersion:    "0.0.0",
+	targetVersion: "0.0.1",
+}
 
 var (
 	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-urls.url"}
@@ -270,6 +281,43 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
+// Function to execute the command and retrieve the version information
+func fetchVersionFromConsensus() (string, string, error) {
+	cmd := exec.Command("lavad", "q", "protocol", "params")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", "", err
+	}
+	response := string(output)
+	// Parsing the response
+	var providerMin, providerTarget string
+	lines := strings.Split(response, "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "    provider_min:") {
+			providerMin = strings.TrimSpace(strings.TrimPrefix(line, "    provider_min:"))
+		} else if strings.HasPrefix(line, "    provider_target:") {
+			providerTarget = strings.TrimSpace(strings.TrimPrefix(line, "    provider_target:"))
+		}
+	}
+	return providerMin, providerTarget, nil
+}
+
+func CheckVersion() (err error) {
+	providerMinVersionResp, providerTargetVersionResp, err := fetchVersionFromConsensus()
+	if err != nil {
+		return err
+	}
+	if providerMinVersionResp != initVersion.minVersion {
+		err := fmt.Errorf("version mismatch")
+		utils.LavaFormatFatal("minimum version mismatch for rpcprovider", err)
+		return err
+	}
+	if providerTargetVersionResp != initVersion.targetVersion {
+		utils.LavaFormatWarning("target version mismatch for rpcprovider", nil)
+	}
+	return nil
+}
+
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
 		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
@@ -316,6 +364,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
+
+			// validate consumer version
+			err = CheckVersion()
+			if err != nil {
+				return err
+			}
+			utils.LavaFormatInfo("RPCProvider version check OK")
 
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
