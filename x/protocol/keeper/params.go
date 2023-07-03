@@ -17,8 +17,12 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
 }
 
-// ProviderVersion returns the ProviderVersion param
+// Version returns the Version param
 func (k Keeper) Version(ctx sdk.Context) (res types.Version) {
+	if !k.paramstore.Has(ctx, types.KeyVersion) {
+		params := types.DefaultParams()
+		k.paramstore.SetParamSet(ctx, &params)
+	}
 	k.paramstore.Get(ctx, types.KeyVersion, &res)
 	return
 }
