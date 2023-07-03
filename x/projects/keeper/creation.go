@@ -55,6 +55,7 @@ import (
 //        if not belong to project: bail
 //        else: del from project, DelEntry(dev-key, when)
 
+// CreateAdminProject creates the (default) admin project
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
@@ -62,33 +63,34 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 		Enabled:     true,
 		Policy:      nil,
 	}
-	return k.doCreateProject(ctx, subAddr, projectData, plan)
+	return k.CreateProject(ctx, subAddr, projectData, plan)
 }
 
+// CreateProject adds a new project to a subscription
+// (takes effect retroactively at the beginning of this epoch)
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	return k.doCreateProject(ctx, subAddr, projectData, plan)
-}
+	ctxBlock := uint64(ctx.BlockHeight())
 
-// add a new project to the subscription
-func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	// project creation takes effect retroactively at the beginning of the current epoch
+	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ctxBlock)
 	if err != nil {
-		return utils.LavaFormatError("CreateProject: failed to get current epoch", err,
+		return utils.LavaFormatError("critical: CreateProject failed to get current epoch", err,
 			utils.Attribute{Key: "index", Value: projectData.Name},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
 	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("create project failed", err,
+			utils.Attribute{Key: "subscription", Value: subAddr},
+		)
 	}
 
-	// project creation wll take effect at the designated block - so check
-	// for duplicates (names) by that block and not only for current block.
+	// project name per subscription is unique: check for duplicates
 	var emptyProject types.Project
 	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
-		return utils.LavaFormatWarning(
-			"failed to create project",
+		return utils.LavaFormatWarning("create project failed",
 			fmt.Errorf("project name already exist for current subscription"),
 			utils.Attribute{Key: "subscription", Value: subAddr},
 		)
@@ -110,13 +112,17 @@ func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData typ
 	return k.projectsFS.AppendEntry(ctx, project.Index, epoch, &project)
 }
 
+// DeleteProject deletes a project from a subscription
+// (takes effect at the beginning of next epoch)
 func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
+	// project deletion takes effect at the beginning of the next epoch
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
 	if err != nil {
-		return utils.LavaFormatError("DeleteProject: failed to get NextEpoch", err,
+		return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
 			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
