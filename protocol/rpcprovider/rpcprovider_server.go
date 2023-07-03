@@ -551,19 +551,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
-		for _, block := range requestedHashes {
-			if block.Block == request.RelayData.RequestBlock {
-				requestedBlockHash = []byte(block.Hash)
-				if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
-					finalizedBlockHashes[block.Block] = block.Hash
-				}
-			} else {
-				finalizedBlockHashes[block.Block] = block.Hash
-			}
-		}
+		requestedBlockHash, finalizedBlockHashes = lavaprotocol.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
 		if requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
-			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "hashes", Value: requestedHashes})
 		}
 
 		// TODO: add a mechanism to handle this

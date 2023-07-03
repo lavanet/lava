@@ -134,7 +134,6 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 			Endpoints:         pairingEndpoints,
 			Sessions:          map[int64]*lavasession.SingleConsumerSession{},
 			MaxComputeUnits:   maxcu,
-			ReliabilitySent:   false,
 			PairingEpoch:      epoch,
 		}
 	}

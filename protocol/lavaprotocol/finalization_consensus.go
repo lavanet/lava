@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -85,7 +86,8 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 // create new consensus group if no consensus matched
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
-func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+	latestBlock := reply.LatestBlock
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
 
@@ -93,23 +95,34 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
 		fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
 	} else {
+		inserted := false
 		// Looks for discrepancy with current epoch providers
+		// go over all consensus groups, if there is a mismatch add it as a consensus group and send a conflict
 		for _, consensus := range fc.currentProviderHashesConsensus {
 			err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
 				// TODO: bring the other data as proof
 				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
-				// TODO: before returning, we need to create a new ProviderHashesConsensus group if there isn't one that matches
-				// TODO: check there is no matching consensus group and add him to a new one
-				// create new consensus group if no consensus matched
-				// newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-				// fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-				return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err)
+				// we need to insert into a new consensus group before returning
+				// or create new consensus group if no consensus matched
+				continue
 			}
 
-			// if no discrepency with this group -> insert into consensus
-			fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
+			if !inserted {
+				// if no discrepency with this group and not inserted yet -> insert into consensus
+				fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
+				inserted = true
+			}
 			// keep comparing with other groups, if there is a new message with a conflict we need to report it too
+		}
+		if !inserted {
+			// means there was a consensus mismatch with everything, so it wasn't inserted and we add it here
+			newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
+			fc.currentProviderHashesConsensus = append(fc.currentProviderHashesConsensus, newHashConsensus)
+		}
+		if finalizationConflict != nil {
+			// means there was a conflict and we need to report
+			return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err)
 		}
 
 		// check for discrepancy with old epoch
@@ -162,7 +175,8 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	}
 }
 
-// returns the expected latest block, does the calculation on finalized entries then extrapolates the ending based on blockDistance
+// returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for
+// does the calculation on finalized entries then extrapolates the ending based on blockDistance
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
@@ -217,4 +231,18 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		return median
 	}
 	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(listExpectedBlockHeights)
+}
+
+func FindRequestedBlockHash(requestedHashes []*chaintracker.BlockStore, requestBlock int64, toBlock int64, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesRet map[int64]interface{}) {
+	for _, block := range requestedHashes {
+		if block.Block == requestBlock {
+			requestedBlockHash = []byte(block.Hash)
+			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
+				finalizedBlockHashes[block.Block] = block.Hash
+			}
+		} else {
+			finalizedBlockHashes[block.Block] = block.Hash
+		}
+	}
+	return requestedBlockHash, finalizedBlockHashes
 }
