@@ -198,7 +198,6 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 
 	now := time.Now()
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, listProviderHashesConsensus []ProviderHashesConsensus) map[string]int64 {
-
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for providerAddress, providerDataContainer := range providerHashesConsensus.agreeingProviders {
 				interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)

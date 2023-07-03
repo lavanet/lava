@@ -71,7 +71,6 @@ func finalizationInsertionForProviders(chainID string, epoch uint64, latestBlock
 func TestConsensusHashesInsertion(t *testing.T) {
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
-
 		ctx := context.Background()
 		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../")
 		if closeServer != nil {
@@ -80,23 +79,6 @@ func TestConsensusHashesInsertion(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, chainParser)
 		epoch := uint64(200)
-
-		// consumerSessionsWithProvider := lavasession.ConsumerSessionsWithProvider{
-		// 	PublicLavaAddress: "",
-		// 	Endpoints:         []*lavasession.Endpoint{},
-		// 	Sessions:          map[int64]*lavasession.SingleConsumerSession{},
-		// 	MaxComputeUnits:   10000,
-		// 	UsedComputeUnits:  0,
-		// 	PairingEpoch:      epoch,
-		// }
-		// singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.Endpoint{
-		// 	NetworkAddress:     "",
-		// 	Enabled:            true,
-		// 	Client:             nil,
-		// 	ConnectionRefusals: 0,
-		// }, 1)
-		// require.NoError(t, err)
-		// require.NotNil(t, singleConsumerSession)
 
 		_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := chainParser.ChainBlockStats()
 		require.Greater(t, blocksInFinalizationProof, uint32(0))
@@ -318,5 +300,4 @@ func TestQoS(t *testing.T) {
 			require.Equal(t, int64(0), interpolation)
 		})
 	}
-
 }
