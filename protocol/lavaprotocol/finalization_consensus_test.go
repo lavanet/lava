@@ -72,7 +72,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 				rets = append(rets, finalizationTestInsertion{
 					providerAddr:    "lava@provider" + strconv.Itoa(i),
 					latestBlock:     latestBlock,
-					finalizedBlocks: createStubHashes(fromBlock, fromBlock+uint64(blocksInFinalizationProof), identifier),
+					finalizedBlocks: createStubHashes(fromBlock, fromBlock+uint64(blocksInFinalizationProof)-1, identifier),
 					success:         success,
 					relaySession: &pairingtypes.RelaySession{
 						SpecId:                chainID,
@@ -98,6 +98,12 @@ func TestConsensusHashesInsertion(t *testing.T) {
 			return rets
 		}
 
+		shouldSucceedOnOneBeofreOrAfter := blocksInFinalizationProof <= 1
+
+		consensusHashesCountOnOneBeofreOrAfter := 2
+		if shouldSucceedOnOneBeofreOrAfter {
+			consensusHashesCountOnOneBeofreOrAfter = 1
+		}
 		playbook := []testPlays{
 			{
 				name:                 "happy-flow",
@@ -126,15 +132,15 @@ func TestConsensusHashesInsertion(t *testing.T) {
 			},
 			{
 				name:                 "mismatch-with-others-one-after",
-				consensusHashesCount: 2,
+				consensusHashesCount: consensusHashesCountOnOneBeofreOrAfter,
 				finalizationInsertions: append(finalizationInsertionForProviders(100, 1, 3, true, ""),
-					finalizationInsertionForProviders(101, 0, 1, false, "A")...),
+					finalizationInsertionForProviders(101, 0, 1, shouldSucceedOnOneBeofreOrAfter, "A")...),
 			},
 			{
 				name:                 "mismatch-with-others-one-before",
-				consensusHashesCount: 2,
+				consensusHashesCount: consensusHashesCountOnOneBeofreOrAfter,
 				finalizationInsertions: append(finalizationInsertionForProviders(100, 1, 3, true, ""),
-					finalizationInsertionForProviders(99, 0, 1, false, "A")...),
+					finalizationInsertionForProviders(99, 0, 1, shouldSucceedOnOneBeofreOrAfter, "A")...),
 			},
 			{
 				name:                 "mismatch-three-groups",
