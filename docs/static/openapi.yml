@@ -53870,88 +53870,101 @@ definitions:
       request:
         type: object
         properties:
-          chainID:
-            type: string
-          connection_type:
-            type: string
-          api_url:
-            type: string
-            title: >-
-              some relays have associated urls that are filled with params
-              ('/block/{height}')
-          session_id:
-            type: string
-            format: uint64
-          cu_sum:
-            type: string
-            format: uint64
-            title: total compute unit used including this relay
-          data:
-            type: string
-            format: byte
-          sig:
-            type: string
-            format: byte
-          provider:
-            type: string
-          block_height:
-            type: string
-            format: int64
-          relay_num:
-            type: string
-            format: uint64
-          request_block:
-            type: string
-            format: int64
-          DataReliability:
+          relay_session:
             type: object
             properties:
-              differentiator:
-                type: boolean
-              vrf_value:
+              spec_id:
+                type: string
+              content_hash:
                 type: string
                 format: byte
-              vrf_proof:
+              session_id:
+                type: string
+                format: uint64
+              cu_sum:
+                type: string
+                format: uint64
+                title: total compute unit used including this relay
+              provider:
+                type: string
+              relay_num:
+                type: string
+                format: uint64
+              qos_report:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
+              epoch:
+                type: string
+                format: int64
+              unresponsive_providers:
                 type: string
                 format: byte
-              provider_sig:
+              lava_chain_id:
                 type: string
-                format: byte
-              allDataHash:
-                type: string
-                format: byte
-              queryHash:
-                type: string
-                format: byte
-                title: we only need it for payment later
               sig:
                 type: string
                 format: byte
-          QoSReport:
+              badge:
+                type: object
+                properties:
+                  cu_allocation:
+                    type: string
+                    format: uint64
+                  epoch:
+                    type: string
+                    format: uint64
+                  address:
+                    type: string
+                  lava_chain_id:
+                    type: string
+                  project_sig:
+                    type: string
+                    format: byte
+          relay_data:
             type: object
             properties:
-              latency:
+              connection_type:
                 type: string
-              availability:
+              api_url:
                 type: string
-              sync:
+                title: >-
+                  some relays have associated urls that are filled with params
+                  ('/block/{height}')
+              data:
                 type: string
-          unresponsive_providers:
-            type: string
-            format: byte
+                format: byte
+              request_block:
+                type: string
+                format: int64
+              api_interface:
+                type: string
+              salt:
+                type: string
+                format: byte
+              metadata:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
       reply:
         type: object
         properties:
-          data:
+          hash_all_data_hash:
             type: string
             format: byte
           sig:
             type: string
             format: byte
-            title: sign the data hash+query hash+nonce
-          nonce:
-            type: integer
-            format: int64
           latest_block:
             type: string
             format: int64
@@ -53961,9 +53974,6 @@ definitions:
           sig_blocks:
             type: string
             format: byte
-            title: >-
-              sign
-              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.ConflictVote:
     type: object
     properties:
@@ -54032,9 +54042,6 @@ definitions:
             type: string
             format: byte
             title: sign the data hash+query hash+nonce
-          nonce:
-            type: integer
-            format: int64
           latest_block:
             type: string
             format: int64
@@ -54047,6 +54054,15 @@ definitions:
             title: >-
               sign
               latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+          metadata:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                value:
+                  type: string
       relayReply1:
         type: object
         properties:
@@ -54057,9 +54073,6 @@ definitions:
             type: string
             format: byte
             title: sign the data hash+query hash+nonce
-          nonce:
-            type: integer
-            format: int64
           latest_block:
             type: string
             format: int64
@@ -54072,6 +54085,15 @@ definitions:
             title: >-
               sign
               latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+          metadata:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                value:
+                  type: string
   lavanet.lava.conflict.MsgConflictVoteCommitResponse:
     type: object
   lavanet.lava.conflict.MsgConflictVoteRevealResponse:
@@ -54275,6 +54297,24 @@ definitions:
               votersRewardPercent:
                 type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.conflict.ReplyMetadata:
+    type: object
+    properties:
+      hash_all_data_hash:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
+      latest_block:
+        type: string
+        format: int64
+      finalized_blocks_hashes:
+        type: string
+        format: byte
+      sig_blocks:
+        type: string
+        format: byte
   lavanet.lava.conflict.ResponseConflict:
     type: object
     properties:
@@ -54284,88 +54324,101 @@ definitions:
           request:
             type: object
             properties:
-              chainID:
-                type: string
-              connection_type:
-                type: string
-              api_url:
-                type: string
-                title: >-
-                  some relays have associated urls that are filled with params
-                  ('/block/{height}')
-              session_id:
-                type: string
-                format: uint64
-              cu_sum:
-                type: string
-                format: uint64
-                title: total compute unit used including this relay
-              data:
-                type: string
-                format: byte
-              sig:
-                type: string
-                format: byte
-              provider:
-                type: string
-              block_height:
-                type: string
-                format: int64
-              relay_num:
-                type: string
-                format: uint64
-              request_block:
-                type: string
-                format: int64
-              DataReliability:
+              relay_session:
                 type: object
                 properties:
-                  differentiator:
-                    type: boolean
-                  vrf_value:
+                  spec_id:
+                    type: string
+                  content_hash:
                     type: string
                     format: byte
-                  vrf_proof:
+                  session_id:
+                    type: string
+                    format: uint64
+                  cu_sum:
+                    type: string
+                    format: uint64
+                    title: total compute unit used including this relay
+                  provider:
+                    type: string
+                  relay_num:
+                    type: string
+                    format: uint64
+                  qos_report:
+                    type: object
+                    properties:
+                      latency:
+                        type: string
+                      availability:
+                        type: string
+                      sync:
+                        type: string
+                  epoch:
+                    type: string
+                    format: int64
+                  unresponsive_providers:
                     type: string
                     format: byte
-                  provider_sig:
+                  lava_chain_id:
                     type: string
-                    format: byte
-                  allDataHash:
-                    type: string
-                    format: byte
-                  queryHash:
-                    type: string
-                    format: byte
-                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
-              QoSReport:
+                  badge:
+                    type: object
+                    properties:
+                      cu_allocation:
+                        type: string
+                        format: uint64
+                      epoch:
+                        type: string
+                        format: uint64
+                      address:
+                        type: string
+                      lava_chain_id:
+                        type: string
+                      project_sig:
+                        type: string
+                        format: byte
+              relay_data:
                 type: object
                 properties:
-                  latency:
+                  connection_type:
                     type: string
-                  availability:
+                  api_url:
                     type: string
-                  sync:
+                    title: >-
+                      some relays have associated urls that are filled with
+                      params ('/block/{height}')
+                  data:
                     type: string
-              unresponsive_providers:
-                type: string
-                format: byte
+                    format: byte
+                  request_block:
+                    type: string
+                    format: int64
+                  api_interface:
+                    type: string
+                  salt:
+                    type: string
+                    format: byte
+                  metadata:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
           reply:
             type: object
             properties:
-              data:
+              hash_all_data_hash:
                 type: string
                 format: byte
               sig:
                 type: string
                 format: byte
-                title: sign the data hash+query hash+nonce
-              nonce:
-                type: integer
-                format: int64
               latest_block:
                 type: string
                 format: int64
@@ -54375,97 +54428,107 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
-                title: >-
-                  sign
-                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
       conflictRelayData1:
         type: object
         properties:
           request:
             type: object
             properties:
-              chainID:
-                type: string
-              connection_type:
-                type: string
-              api_url:
-                type: string
-                title: >-
-                  some relays have associated urls that are filled with params
-                  ('/block/{height}')
-              session_id:
-                type: string
-                format: uint64
-              cu_sum:
-                type: string
-                format: uint64
-                title: total compute unit used including this relay
-              data:
-                type: string
-                format: byte
-              sig:
-                type: string
-                format: byte
-              provider:
-                type: string
-              block_height:
-                type: string
-                format: int64
-              relay_num:
-                type: string
-                format: uint64
-              request_block:
-                type: string
-                format: int64
-              DataReliability:
+              relay_session:
                 type: object
                 properties:
-                  differentiator:
-                    type: boolean
-                  vrf_value:
+                  spec_id:
+                    type: string
+                  content_hash:
                     type: string
                     format: byte
-                  vrf_proof:
+                  session_id:
+                    type: string
+                    format: uint64
+                  cu_sum:
+                    type: string
+                    format: uint64
+                    title: total compute unit used including this relay
+                  provider:
+                    type: string
+                  relay_num:
+                    type: string
+                    format: uint64
+                  qos_report:
+                    type: object
+                    properties:
+                      latency:
+                        type: string
+                      availability:
+                        type: string
+                      sync:
+                        type: string
+                  epoch:
+                    type: string
+                    format: int64
+                  unresponsive_providers:
                     type: string
                     format: byte
-                  provider_sig:
+                  lava_chain_id:
                     type: string
-                    format: byte
-                  allDataHash:
-                    type: string
-                    format: byte
-                  queryHash:
-                    type: string
-                    format: byte
-                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
-              QoSReport:
+                  badge:
+                    type: object
+                    properties:
+                      cu_allocation:
+                        type: string
+                        format: uint64
+                      epoch:
+                        type: string
+                        format: uint64
+                      address:
+                        type: string
+                      lava_chain_id:
+                        type: string
+                      project_sig:
+                        type: string
+                        format: byte
+              relay_data:
                 type: object
                 properties:
-                  latency:
+                  connection_type:
                     type: string
-                  availability:
+                  api_url:
                     type: string
-                  sync:
+                    title: >-
+                      some relays have associated urls that are filled with
+                      params ('/block/{height}')
+                  data:
                     type: string
-              unresponsive_providers:
-                type: string
-                format: byte
+                    format: byte
+                  request_block:
+                    type: string
+                    format: int64
+                  api_interface:
+                    type: string
+                  salt:
+                    type: string
+                    format: byte
+                  metadata:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
           reply:
             type: object
             properties:
-              data:
+              hash_all_data_hash:
                 type: string
                 format: byte
               sig:
                 type: string
                 format: byte
-                title: sign the data hash+query hash+nonce
-              nonce:
-                type: integer
-                format: int64
               latest_block:
                 type: string
                 format: int64
@@ -54475,9 +54538,6 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
-                title: >-
-                  sign
-                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.Rewards:
     type: object
     properties:
@@ -54498,6 +54558,29 @@ definitions:
       Result:
         type: string
         format: int64
+  lavanet.lava.pairing.Badge:
+    type: object
+    properties:
+      cu_allocation:
+        type: string
+        format: uint64
+      epoch:
+        type: string
+        format: uint64
+      address:
+        type: string
+      lava_chain_id:
+        type: string
+      project_sig:
+        type: string
+        format: byte
+  lavanet.lava.pairing.Metadata:
+    type: object
+    properties:
+      name:
+        type: string
+      value:
+        type: string
   lavanet.lava.pairing.QualityOfServiceReport:
     type: object
     properties:
@@ -54507,6 +54590,36 @@ definitions:
         type: string
       sync:
         type: string
+  lavanet.lava.pairing.RelayPrivateData:
+    type: object
+    properties:
+      connection_type:
+        type: string
+      api_url:
+        type: string
+        title: >-
+          some relays have associated urls that are filled with params
+          ('/block/{height}')
+      data:
+        type: string
+        format: byte
+      request_block:
+        type: string
+        format: int64
+      api_interface:
+        type: string
+      salt:
+        type: string
+        format: byte
+      metadata:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            value:
+              type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -54517,9 +54630,6 @@ definitions:
         type: string
         format: byte
         title: sign the data hash+query hash+nonce
-      nonce:
-        type: integer
-        format: int64
       latest_block:
         type: string
         format: int64
@@ -54544,75 +54654,6 @@ definitions:
   lavanet.lava.pairing.RelayRequest:
     type: object
     properties:
-      chainID:
-        type: string
-      connection_type:
-        type: string
-      api_url:
-        type: string
-        title: >-
-          some relays have associated urls that are filled with params
-          ('/block/{height}')
-      session_id:
-        type: string
-        format: uint64
-      cu_sum:
-        type: string
-        format: uint64
-        title: total compute unit used including this relay
-      data:
-        type: string
-        format: byte
-      sig:
-        type: string
-        format: byte
-      provider:
-        type: string
-      block_height:
-        type: string
-        format: int64
-      relay_num:
-        type: string
-        format: uint64
-      request_block:
-        type: string
-        format: int64
-      DataReliability:
-        type: object
-        properties:
-          differentiator:
-            type: boolean
-          vrf_value:
-            type: string
-            format: byte
-          vrf_proof:
-            type: string
-            format: byte
-          provider_sig:
-            type: string
-            format: byte
-          allDataHash:
-            type: string
-            format: byte
-          queryHash:
-            type: string
-            format: byte
-            title: we only need it for payment later
-          sig:
-            type: string
-            format: byte
-      QoSReport:
-        type: object
-        properties:
-          latency:
-            type: string
-          availability:
-            type: string
-          sync:
-            type: string
-      unresponsive_providers:
-        type: string
-        format: byte
       relay_session:
         type: object
         properties:
@@ -54699,30 +54740,62 @@ definitions:
                   type: string
                 value:
                   type: string
-  lavanet.lava.pairing.VRFData:
+  lavanet.lava.pairing.RelaySession:
     type: object
     properties:
-      differentiator:
-        type: boolean
-      vrf_value:
+      spec_id:
+        type: string
+      content_hash:
         type: string
         format: byte
-      vrf_proof:
+      session_id:
+        type: string
+        format: uint64
+      cu_sum:
+        type: string
+        format: uint64
+        title: total compute unit used including this relay
+      provider:
+        type: string
+      relay_num:
+        type: string
+        format: uint64
+      qos_report:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
+      epoch:
+        type: string
+        format: int64
+      unresponsive_providers:
         type: string
         format: byte
-      provider_sig:
+      lava_chain_id:
         type: string
-        format: byte
-      allDataHash:
-        type: string
-        format: byte
-      queryHash:
-        type: string
-        format: byte
-        title: we only need it for payment later
       sig:
         type: string
         format: byte
+      badge:
+        type: object
+        properties:
+          cu_allocation:
+            type: string
+            format: uint64
+          epoch:
+            type: string
+            format: uint64
+          address:
+            type: string
+          lava_chain_id:
+            type: string
+          project_sig:
+            type: string
+            format: byte
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -55100,22 +55173,6 @@ definitions:
       epochBlockHash:
         type: string
         format: byte
-  lavanet.lava.pairing.Badge:
-    type: object
-    properties:
-      cu_allocation:
-        type: string
-        format: uint64
-      epoch:
-        type: string
-        format: uint64
-      address:
-        type: string
-      lava_chain_id:
-        type: string
-      project_sig:
-        type: string
-        format: byte
   lavanet.lava.pairing.CacheUsage:
     type: object
     properties:
@@ -55198,13 +55255,6 @@ definitions:
             moniker:
               type: string
       badge_signer_address:
-        type: string
-  lavanet.lava.pairing.Metadata:
-    type: object
-    properties:
-      name:
-        type: string
-      value:
         type: string
   lavanet.lava.pairing.MsgFreezeProviderResponse:
     type: object
@@ -55679,92 +55729,6 @@ definitions:
       cu_per_epoch:
         type: string
         format: uint64
-  lavanet.lava.pairing.RelayPrivateData:
-    type: object
-    properties:
-      connection_type:
-        type: string
-      api_url:
-        type: string
-        title: >-
-          some relays have associated urls that are filled with params
-          ('/block/{height}')
-      data:
-        type: string
-        format: byte
-      request_block:
-        type: string
-        format: int64
-      api_interface:
-        type: string
-      salt:
-        type: string
-        format: byte
-      metadata:
-        type: array
-        items:
-          type: object
-          properties:
-            name:
-              type: string
-            value:
-              type: string
-  lavanet.lava.pairing.RelaySession:
-    type: object
-    properties:
-      spec_id:
-        type: string
-      content_hash:
-        type: string
-        format: byte
-      session_id:
-        type: string
-        format: uint64
-      cu_sum:
-        type: string
-        format: uint64
-        title: total compute unit used including this relay
-      provider:
-        type: string
-      relay_num:
-        type: string
-        format: uint64
-      qos_report:
-        type: object
-        properties:
-          latency:
-            type: string
-          availability:
-            type: string
-          sync:
-            type: string
-      epoch:
-        type: string
-        format: int64
-      unresponsive_providers:
-        type: string
-        format: byte
-      lava_chain_id:
-        type: string
-      sig:
-        type: string
-        format: byte
-      badge:
-        type: object
-        properties:
-          cu_allocation:
-            type: string
-            format: uint64
-          epoch:
-            type: string
-            format: uint64
-          address:
-            type: string
-          lava_chain_id:
-            type: string
-          project_sig:
-            type: string
-            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:

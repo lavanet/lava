@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -136,7 +135,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle)
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -145,7 +144,8 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	require.Greater(t, block, int64(0))
 	require.NoError(t, err)
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
-	require.True(t, strings.Contains(err.Error(), "invalid parser input format"))
+	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse ErrMsg: invalid parser input format"
+	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
 	if closeServer != nil {
 		closeServer()
 	}

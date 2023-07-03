@@ -2,13 +2,13 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"golang.org/x/exp/slices"
 )
 
@@ -99,13 +99,21 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Data
 
 		conflictVote.FirstProvider.Account = msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider
-		conflictVote.FirstProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData0.Reply.Data)
+		conflictVote.FirstProvider.Response = msg.ResponseConflict.ConflictRelayData0.Reply.HashAllDataHash
 		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider
-		conflictVote.SecondProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData1.Reply.Data)
+		conflictVote.SecondProvider.Response = msg.ResponseConflict.ConflictRelayData1.Reply.HashAllDataHash
 		conflictVote.Votes = []types.Vote{}
 		voters := k.Keeper.LotteryVoters(goCtx, epochStart, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
 		for _, voter := range voters {
 			conflictVote.Votes = append(conflictVote.Votes, types.Vote{Address: voter, Hash: []byte{}, Result: types.NoVote})
+		}
+		metadataBytes, err := json.Marshal(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.Metadata)
+		if err != nil {
+			return nil, utils.LavaFormatError("could not marshal metadata in the event", err,
+				utils.Attribute{Key: "client", Value: msg.Creator},
+				utils.Attribute{Key: "provider0", Value: msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Provider},
+				utils.Attribute{Key: "provider1", Value: msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider},
+			)
 		}
 
 		k.SetConflictVote(ctx, conflictVote)
@@ -120,6 +128,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
 		eventData["apiInterface"] = msg.ResponseConflict.ConflictRelayData0.Request.RelayData.ApiInterface
+		eventData["metadata"] = string(metadataBytes)
 
 		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Simulation: Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil

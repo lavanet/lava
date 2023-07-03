@@ -13,7 +13,7 @@ const (
 )
 
 type VoteUpdatable interface {
-	VoteHandler(*reliabilitymanager.VoteParams, uint64)
+	VoteHandler(*reliabilitymanager.VoteParams, uint64) error
 }
 
 type VoteUpdater struct {

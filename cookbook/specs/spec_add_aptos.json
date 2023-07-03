@@ -385,7 +385,7 @@
                             },
                             {
                                 "name":"x-aptos-ledger-timestampusec",
-                                "kind": "pass_reply"
+                                "kind": "pass_ignore"
                             },
                             {
                                 "name":"x-aptos-cursor",

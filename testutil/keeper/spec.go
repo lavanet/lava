@@ -64,12 +64,16 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	return k, ctx, nil
 }
 
-func GetASpec(specIndex string) (spectypes.Spec, error) {
-	keeper, ctx, err := specKeeper()
-	if err != nil {
-		return spectypes.Spec{}, err
+func GetASpec(specIndex string, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+	var ctx sdk.Context
+	if keeper == nil || ctxArg == nil {
+		keeper, ctx, err = specKeeper()
+		if err != nil {
+			return spectypes.Spec{}, err
+		}
+	} else {
+		ctx = *ctxArg
 	}
-	getToTopMostPath := "../../"
 	proposalFile := "./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json"
 	for _, fileName := range strings.Split(proposalFile, ",") {
 		proposal := utils.SpecAddProposalJSON{}

@@ -174,7 +174,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 						NewLatestCallback: recordMetricsOnNewBlock,
 					}
-					var chainFetcher chaintracker.ChainFetcher
+					var chainFetcher chainlib.ChainFetcherIf
 					if enabled, _ := chainParser.DataReliabilityParams(); enabled {
 						chainFetcher = chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
 					} else {
@@ -187,14 +187,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
 
 					// Fetch chain id
-					realChainID, specChainId, err := chainFetcher.FetchChainID(ctx)
+					err := chainFetcher.Validate(ctx)
 					if err != nil {
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-					}
-
-					// Validate spec chain id
-					if specChainId != realChainID {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain ID, continuing with other endpoints", err, utils.Attribute{Key: "Spec chain ID", Value: specChainId}, utils.Attribute{Key: "Real chain ID", Value: realChainID}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 					}
 				} else {
 					var ok bool
@@ -328,7 +323,6 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
-
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper

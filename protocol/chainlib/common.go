@@ -47,11 +47,11 @@ type BaseChainParser struct {
 	headers        map[ApiKey]*spectypes.Header
 }
 
-func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string) {
+func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 	if len(metadata) == 0 {
-		return []pairingtypes.Metadata{}, ""
+		return []pairingtypes.Metadata{}, "", []pairingtypes.Metadata{}
 	}
 	retMeatadata := []pairingtypes.Metadata{}
 	for _, header := range metadata {
@@ -68,11 +68,13 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 				// this header sets the latest requested block
 				overwriteRequestedBlock = header.Value
 			}
+		} else if headerDirective.Kind == spectypes.Header_pass_ignore {
+			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
 	utils.LavaFormatDebug("Headers filtering", utils.Attribute{Key: "received", Value: metadata}, utils.Attribute{Key: "filtered", Value: retMeatadata})
 
-	return retMeatadata, overwriteRequestedBlock
+	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
 }
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
