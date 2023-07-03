@@ -46,3 +46,18 @@ message ChainPolicy {
     string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\""];
     repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
 }
+
+// The geolocation values are encoded as bits in a bitmask, with two special values:
+// GLS is set to 0 so it will be restrictive with the AND operator.
+// GL is set to -1 so it will be permissive with the AND operator.
+enum Geolocation {
+    GLS = 0; // Global-strict
+    USC = 0x1; // US-Center
+    EU = 0x2;
+    USE = 0x4; // US-East
+    USW = 0x8; // US-West	
+    AF = 0x10;
+    AS = 0x20;
+    AU = 0x40;  // (includes NZ)
+    GL = 0xFFFF; // Global
+}
