@@ -45,7 +45,7 @@ type VersionInfo struct {
 }
 
 var initVersion = VersionInfo{
-	MinVersion:    "0.0.3",
+	MinVersion:    "0.0.0",
 	TargetVersion: "0.0.1",
 }
 
