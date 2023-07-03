@@ -143,6 +143,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	// create the pairing slots with assigned reqs (using a bitmap)
 	slots := pairingscores.CalcSlots(strictestPolicy)
+	providersToPair := uint64(len(slots))
 
 	// group identical slots (in terms of reqs types) and sort the groups by hamming distance
 	slotGroups := pairingscores.GroupAndSortSlots(slots)
@@ -164,10 +165,16 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 			return nil, 0, "", err
 		}
 
-		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, group.Count, block, chainID, epochHash)
+		providersFromGroup := group.Count
+		if providersFromGroup > providersToPair {
+			providersFromGroup = providersToPair
+		}
+
+		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, providersFromGroup, block, chainID, epochHash)
 		providers = append(providers, pickedProviders...)
 
 		prevReqs = group.Slot.Reqs
+		providersToPair -= group.Count
 	}
 
 	return providers, allowedCU, project.Index, err
