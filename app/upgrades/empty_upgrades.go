@@ -209,9 +209,9 @@ var Upgrade_0_15_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-// Upgrade_0_15_2 adds new modules: protocol
-var Upgrade_0_15_2 = Upgrade{
-	UpgradeName:          "v0.15.2",
+// Upgrade_0_16_0 adds new modules: protocol
+var Upgrade_0_16_0 = Upgrade{
+	UpgradeName:          "v0.16.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{
