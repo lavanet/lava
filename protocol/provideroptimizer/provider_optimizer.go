@@ -163,7 +163,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 
 // calculate the expected average time until this provider catches up with the given latestSync block
 func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64, sampleTime time.Time) time.Duration {
-	if latestSync < providerBlock {
+	if latestSync <= providerBlock {
 		return 0
 	}
 	timeLag := sampleTime.Sub(timeSync)                                        // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
