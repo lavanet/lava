@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"google.golang.org/grpc/health/grpc_health_v1"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
@@ -121,6 +123,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	stateTracker.RegisterForEpochUpdates(ctx, server)
 
 	s := grpc.NewServer()
+	grpc_health_v1.RegisterHealthServer(s, &HealthServer{})
 	pairingtypes.RegisterBadgeGeneratorServer(s, server)
 	gogoreflection.Register(s)
 

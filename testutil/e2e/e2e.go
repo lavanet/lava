@@ -250,7 +250,7 @@ func (lt *lavaTest) checkStakeLava(
 
 	// check if plans added exist
 	if len(planQueryRes.PlansInfo) != planCount {
-		panic(fmt.Sprintf("Staking Failed PLAN count %d", len(planQueryRes.PlansInfo)))
+		panic("Staking Failed PLAN count" + fmt.Sprintf("expected %d, got %d", planCount, len(planQueryRes.PlansInfo)))
 	}
 
 	for _, plan := range planQueryRes.PlansInfo {

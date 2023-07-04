@@ -55,5 +55,6 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 	if len(msg.Moniker) > MAX_LEN_MONIKER {
 		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
 	}
+
 	return nil
 }

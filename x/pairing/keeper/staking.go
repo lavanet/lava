@@ -55,8 +55,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		}
 		return nil
 	}
-	geolocations := k.specKeeper.GeolocationCount(ctx)
-	if geolocation == 0 || geolocation > (1<<geolocations) {
+
+	if !types.IsValidGeoEnum(int32(geolocation)) {
 		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)
