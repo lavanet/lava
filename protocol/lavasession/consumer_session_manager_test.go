@@ -194,7 +194,6 @@ func TestPairingResetWithFailures(t *testing.T) {
 	}
 }
 
-// TODO failed
 func TestPairingResetWithMultipleFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
@@ -243,7 +242,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
-		require.GreaterOrEqual(t, relayNumberAfterFirstFail, cs.Session.RelayNum)
+		require.GreaterOrEqual(t, cs.Session.RelayNum, relayNumberAfterFirstFail)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/client/cli"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -117,4 +118,166 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	require.True(t, foundProvider)
 
 	require.Equal(t, moniker, stakeEntry.Moniker)
+}
+
+func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
+	testCases := []struct {
+		name        string
+		endpoints   []string
+		geolocation string
+		valid       bool
+	}{
+		// single uint geolocation config tests
+		{
+			name:        "Single uint geolocation - happy flow",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			geolocation: "1",
+			valid:       true,
+		},
+		{
+			name:        "Single uint geolocation - endpoint geo not equal to geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2"},
+			geolocation: "1",
+			valid:       false,
+		},
+		{
+			name:        "Single uint geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			geolocation: "3",
+			valid:       false,
+		},
+		{
+			name:        "Single uint geolocation - endpoint has geo of multiple regions",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,3"},
+			geolocation: "3",
+			valid:       false,
+		},
+		{
+			name:        "Single uint geolocation - bad endpoint geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,20555"},
+			geolocation: "1",
+			valid:       false,
+		},
+
+		// single string geolocation config tests
+		{
+			name:        "Single string geolocation - happy flow",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			geolocation: "EU",
+			valid:       true,
+		},
+		{
+			name:        "Single string geolocation - endpoint geo not equal to geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS"},
+			geolocation: "EU",
+			valid:       false,
+		},
+		{
+			name:        "Single string geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			geolocation: "EU,USC",
+			valid:       false,
+		},
+		{
+			name:        "Single string geolocation - endpoint has geo of multiple regions",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU,USC"},
+			geolocation: "3",
+			valid:       false,
+		},
+		{
+			name:        "Single string geolocation - bad geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			geolocation: "BLABLA",
+			valid:       false,
+		},
+		{
+			name:        "Single string geolocation - bad geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,BLABLA"},
+			geolocation: "EU",
+			valid:       false,
+		},
+
+		// multiple uint geolocation config tests
+		{
+			name:        "Multiple uint geolocations - happy flow",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,2"},
+			geolocation: "3",
+			valid:       true,
+		},
+		{
+			name:        "Multiple uint geolocations - endpoint geo not equal to geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,4"},
+			geolocation: "2",
+			valid:       false,
+		},
+		{
+			name:        "Multiple uint geolocations - one endpoint has multi-region geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,3"},
+			geolocation: "2",
+			valid:       false,
+		},
+
+		// multiple string geolocation config tests
+		{
+			name:        "Multiple string geolocations - happy flow",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS", "127.0.0.1:3352,jsonrpc,EU"},
+			geolocation: "EU,AS",
+			valid:       true,
+		},
+		{
+			name:        "Multiple string geolocations - endpoint geo not equal to geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,USC"},
+			geolocation: "EU,AS",
+			valid:       false,
+		},
+
+		// global config tests
+		{
+			name:        "Global uint geolocation - happy flow",
+			endpoints:   []string{"127.0.0.1:3352,jsonrpc,65535"},
+			geolocation: "65535",
+			valid:       true,
+		},
+		{
+			name:        "Global uint geolocation - happy flow 2 - global in one endpoint",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			geolocation: "65535",
+			valid:       true,
+		},
+		{
+			name:        "Global uint geolocation - endpoint geo not match geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			geolocation: "7",
+			valid:       false,
+		},
+		{
+			name:        "Global string geolocation - happy flow",
+			endpoints:   []string{"127.0.0.1:3352,jsonrpc,GL"},
+			geolocation: "GL",
+			valid:       true,
+		},
+		{
+			name:        "Global string geolocation - happy flow 2 - global in one endpoint",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			geolocation: "GL",
+			valid:       true,
+		},
+		{
+			name:        "Global string geolocation - endpoint geo not match geo",
+			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			geolocation: "EU,AS,USC",
+			valid:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
+			if tc.valid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
+	}
 }
