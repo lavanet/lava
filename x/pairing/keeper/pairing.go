@@ -145,7 +145,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	slots := pairingscores.CalcSlots(strictestPolicy)
 
 	// group identical slots (in terms of reqs types) and sort the groups by hamming distance
-	slotGroups := pairingscores.GroupAndSortSlots(slots)
+	slotGroups := pairingscores.GroupSlots(slots)
 
 	// create providerScore array with all possible providers
 	providerScores := []*pairingscorestypes.PairingScore{}
@@ -155,19 +155,19 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevReqs := uint64(0) // init dummy reqs to compare to
+	prevGroupSlot := pairingscorestypes.NewPairingSlot(map[string]pairingscorestypes.ScoreReq{}) // init dummy slot to compare to
+	indexToSkipMapPtr := make(map[int]bool)                                                      // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
 	for _, group := range slotGroups {
-		diffSlot := prevReqs ^ group.Slot.Reqs
-
+		diffSlot := group.Slot.Diff(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
 			return nil, 0, "", err
 		}
 
-		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, group.Count, block, chainID, epochHash)
+		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, group.Count, block, chainID, epochHash, &indexToSkipMapPtr)
 		providers = append(providers, pickedProviders...)
 
-		prevReqs = group.Slot.Reqs
+		prevGroupSlot = group.Slot
 	}
 
 	return providers, allowedCU, project.Index, err

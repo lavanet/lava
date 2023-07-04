@@ -3,7 +3,6 @@ package scores
 import (
 	"fmt"
 	"math/big"
-	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,45 +13,40 @@ import (
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-var (
-	uniformStrategy scorestypes.ScoreStrategy
-	maxBitInBitMap  uint64
-)
+var uniformStrategy scorestypes.ScoreStrategy
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
 	uniformStrategy = make(scorestypes.ScoreStrategy)
-	uniformStrategy[scorestypes.STAKE_REQ] = 1
-	maxBitInBitMap = 1
+	uniformStrategy[scorestypes.STAKE_REQ_NAME] = 1
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
 // TODO: this function should be changed in the future since it only supports stake reqs
 func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
+	stakeReq := scorestypes.StakeReq{}
+	stakeReqMap := map[string]scorestypes.ScoreReq{stakeReq.GetName(): stakeReq}
 	for i := range slots {
-		slots[i] = scorestypes.NewPairingSlot(scorestypes.STAKE_REQ)
+		slots[i] = scorestypes.NewPairingSlot(stakeReqMap)
 	}
 
 	return slots
 }
 
 // group the slots and sort them by their sort priority
-func GroupAndSortSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSlotGroup {
+func GroupSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSlotGroup {
 	slotGroups := []scorestypes.PairingSlotGroup{}
 	if len(slots) == 0 {
 		utils.LavaFormatError("no slots", sdkerrors.ErrLogic)
 		return slotGroups
 	}
 
-	// create groups for the slots
-	initSlotGroup := scorestypes.NewPairingSlotGroup(slots[0].Reqs)
-	slotGroups = append(slotGroups, *initSlotGroup)
-	for k := 1; k < len(slots); k++ {
+	for k := range slots {
 		foundGroup := false
 		for i := range slotGroups {
-			reqsDiff := slots[k].Reqs ^ slotGroups[i].Slot.Reqs
-			if reqsDiff == 0 {
+			diff := slots[k].Diff(slotGroups[i].Slot)
+			if len(diff.Reqs) == 0 {
 				slotGroups[i].Count += 1
 				foundGroup = true
 				break
@@ -60,13 +54,10 @@ func GroupAndSortSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSl
 		}
 
 		if !foundGroup {
-			newGroup := scorestypes.NewPairingSlotGroup(slots[k].Reqs)
+			newGroup := scorestypes.NewPairingSlotGroup(slots[k])
 			slotGroups = append(slotGroups, *newGroup)
 		}
 	}
-
-	// sort the groups by hamming distance of the Reqs field (in a PairingSlot object)
-	sort.Sort(scorestypes.ByHammingDistance(slotGroups))
 
 	return slotGroups
 }
@@ -78,62 +69,40 @@ func GetStrategy() scorestypes.ScoreStrategy {
 
 // calculates the final pairing score for all slot groups (with strategy)
 // we calculate only the diff between the current and previous slot groups
-func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, reqsDiff uint64) error {
-	// convert the reqsDiff bitmap to ScoreReq objects
-	scoreReqs := createScoreReqsFromBitmap(reqsDiff)
-
+func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, diffSlot *scorestypes.PairingSlot) error {
 	// calculate the score for each req for each provider
-	for _, req := range scoreReqs {
-		reqBitmapVal := req.GetBitmapValue()
-		weight, ok := strategy[reqBitmapVal]
+	for _, req := range diffSlot.Reqs {
+		reqName := req.GetName()
+		weight, ok := strategy[reqName]
 		if !ok {
 			return utils.LavaFormatError("req not in strategy", sdkerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "req_bitmap_value", Value: reqBitmapVal})
+				utils.Attribute{Key: "req_bitmap_value", Value: reqName})
 		}
 
 		for _, score := range scores {
 			newScoreComp := req.Score(*score.Provider, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
-			prevReqScoreComp, ok := score.ScoreComponents[reqBitmapVal]
+			prevReqScoreComp, ok := score.ScoreComponents[reqName]
 			if ok {
 				if prevReqScoreComp == 0 {
 					return utils.LavaFormatError("previous req score is zero", fmt.Errorf("invalid req score"),
-						utils.Attribute{Key: "req_bitmap_value", Value: reqBitmapVal})
+						utils.Attribute{Key: "req_bitmap_value", Value: reqName})
 				}
 				score.Score /= prevReqScoreComp
 			}
 			score.Score *= newScoreComp
 
 			// update the score component map
-			score.ScoreComponents[reqBitmapVal] = newScoreComp
+			score.ScoreComponents[reqName] = newScoreComp
 		}
 	}
 
 	return nil
 }
 
-// TODO: add cases when adding new reqs
-func createScoreReqsFromBitmap(bitmap uint64) []scorestypes.ScoreReq {
-	scoreReqs := []scorestypes.ScoreReq{}
-
-	for i := uint64(0); i < maxBitInBitMap; i++ {
-		bit := (bitmap >> i) & 1 // Get the bit value at position i
-
-		switch i {
-		case scorestypes.STAKE_REQ:
-			if bit == 1 {
-				stakeReq := scorestypes.StakeReq{}
-				scoreReqs = append(scoreReqs, stakeReq)
-			}
-		}
-	}
-
-	return scoreReqs
-}
-
 // given a list of scores, pick a <group-count> providers with a pseudo-random weighted choice
-func PickProviders(ctx sdk.Context, projectIndex string, scores []*scorestypes.PairingScore, groupCount uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, projectIndex string, scores []*scorestypes.PairingScore, groupCount uint64, block uint64, chainID string, epochHash []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
 	scoreSum := sdk.NewUint(0)
 	hashData := make([]byte, 0)
 	for _, providerScore := range scores {
@@ -149,7 +118,7 @@ func PickProviders(ctx sdk.Context, projectIndex string, scores []*scorestypes.P
 	hashData = append(hashData, chainID...)      // to make this pairing unique per chainID
 	hashData = append(hashData, projectIndex...) // to make this pairing unique per consumer
 
-	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
+	indexToSkip := *indexToSkipPtr
 	for it := 0; it < int(groupCount); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)

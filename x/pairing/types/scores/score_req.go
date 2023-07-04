@@ -1,8 +1,6 @@
 package score
 
 import (
-	"math/bits"
-
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -15,30 +13,37 @@ import (
 const (
 	// TODO: temp strategy weight until we implement taking it out of the policy
 	UNIFORM_WEIGHT uint64 = 1
-
-	// reqs bitmap
-	STAKE_REQ uint64 = 0x1
 )
 
-// Equal() checks equality between ScoreReq
 // Score() calculates a provider's score according to the requirement
 // GetName() gets the ScoreReq's name
-// SortPriority() return the sort priority for a ScoreReq type
 type ScoreReq interface {
 	Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64
-	GetBitmapValue() uint64
+	GetName() string
 }
 
 // object to hold the requirements for a specific slot (map of req names pointing to req object)
 type PairingSlot struct {
-	Reqs uint64
+	Reqs map[string]ScoreReq
 }
 
-func NewPairingSlot(reqs uint64) *PairingSlot {
+func NewPairingSlot(reqs map[string]ScoreReq) *PairingSlot {
 	slot := PairingSlot{
 		Reqs: reqs,
 	}
 	return &slot
+}
+
+// generate a diff slot that contains the reqs that are in the slot receiver but not in the "other" slot
+func (s PairingSlot) Diff(other *PairingSlot) *PairingSlot {
+	reqsDiff := make(map[string]ScoreReq)
+	for key := range s.Reqs {
+		if _, found := other.Reqs[key]; !found {
+			reqsDiff[key] = s.Reqs[key]
+		}
+	}
+
+	return NewPairingSlot(reqsDiff)
 }
 
 // object to hold a slot and the number of times it's required
@@ -47,53 +52,29 @@ type PairingSlotGroup struct {
 	Count uint64
 }
 
-func NewPairingSlotGroup(reqs uint64) *PairingSlotGroup {
+func NewPairingSlotGroup(slot *PairingSlot) *PairingSlotGroup {
 	slotGroup := PairingSlotGroup{
-		Slot:  NewPairingSlot(reqs),
+		Slot:  slot,
 		Count: 1,
 	}
 	return &slotGroup
-}
-
-// type that satisfies the sort interface. The groups will be sorted by hamming distance
-type ByHammingDistance []PairingSlotGroup
-
-func (s ByHammingDistance) Len() int {
-	return len(s)
-}
-
-func (s ByHammingDistance) Less(i, j int) bool {
-	hammingDistanceI := hammingDistance(s[i].Slot.Reqs, s[j].Slot.Reqs)
-	hammingDistanceJ := hammingDistance(s[j].Slot.Reqs, s[(j+1)%len(s)].Slot.Reqs)
-
-	return hammingDistanceI < hammingDistanceJ
-}
-
-func (s ByHammingDistance) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// Calculate the Hamming distance between two bitmaps
-func hammingDistance(a, b uint64) int {
-	xor := a ^ b
-	return bits.OnesCount64(xor)
 }
 
 // object to hold a provider's score and the requirements that construct the score (map[scoreReqName] -> score from that req)
 type PairingScore struct {
 	Provider        *epochstoragetypes.StakeEntry
 	Score           uint64
-	ScoreComponents map[uint64]uint64
+	ScoreComponents map[string]uint64
 }
 
 func NewPairingScore(provider *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
 		Provider:        provider,
 		Score:           1,
-		ScoreComponents: map[uint64]uint64{},
+		ScoreComponents: map[string]uint64{},
 	}
 	return &score
 }
 
 // map: key: ScoreReq bitmap value, value: weight in the final pairing score
-type ScoreStrategy map[uint64]uint64
+type ScoreStrategy map[string]uint64

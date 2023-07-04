@@ -11,6 +11,7 @@ type StakeReq struct {
 }
 
 const (
+	STAKE_REQ_NAME             = "stake-req"
 	STAKE_NORMALIZATION_FACTOR = 16 // normalize the stake so we won't overflow the final score uint64
 )
 
@@ -19,6 +20,6 @@ func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) u
 	return provider.Stake.Amount.Uint64() ^ weight
 }
 
-func (sr StakeReq) GetBitmapValue() uint64 {
-	return STAKE_REQ
+func (sr StakeReq) GetName() string {
+	return STAKE_REQ_NAME
 }
