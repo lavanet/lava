@@ -1,6 +1,8 @@
 package score
 
 import (
+	"math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -16,7 +18,7 @@ const (
 
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	return provider.Stake.Amount.Uint64() ^ weight
+	return uint64(math.Pow(provider.Stake.Amount.ToDec().MustFloat64(), float64(weight)))
 }
 
 func (sr StakeReq) GetName() string {
