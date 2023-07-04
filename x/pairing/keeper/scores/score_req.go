@@ -48,7 +48,7 @@ func GroupAndSortSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSl
 	// create groups for the slots
 	initSlotGroup := scorestypes.NewPairingSlotGroup(slots[0].Reqs)
 	slotGroups = append(slotGroups, *initSlotGroup)
-	for k := range slots {
+	for k := 1; k < len(slots); k++ {
 		foundGroup := false
 		for i := range slotGroups {
 			reqsDiff := slots[k].Reqs ^ slotGroups[i].Slot.Reqs
