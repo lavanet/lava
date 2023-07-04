@@ -394,3 +394,34 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 		}
 	})
 }
+
+func TestFindRequestedBlockHash(t *testing.T) {
+	mockBlocks := int64(100)
+	fetcherBlocks := 50
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
+	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
+
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+	require.NoError(t, err)
+	latestBlock, onlyLatestBlockData, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	require.NoError(t, err)
+	require.Equal(t, currentLatestBlockInMock, latestBlock)
+	requestedHash, hashesMap := chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, map[int64]interface{}{})
+	require.NotNil(t, requestedHash)
+	require.Len(t, hashesMap, 1)
+
+	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK-3, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	require.NoError(t, err)
+	require.Equal(t, currentLatestBlockInMock, latestBlock)
+	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK-3, map[int64]interface{}{})
+	require.NotNil(t, requestedHash)
+	require.Len(t, hashesMap, 4)
+
+	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(currentLatestBlockInMock-3, currentLatestBlockInMock, currentLatestBlockInMock)
+	require.NoError(t, err)
+	require.Equal(t, currentLatestBlockInMock, latestBlock)
+	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, currentLatestBlockInMock, currentLatestBlockInMock-3, map[int64]interface{}{})
+	require.NotNil(t, requestedHash)
+	require.Len(t, hashesMap, 4)
+}

@@ -5,15 +5,21 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
+	testcommon "github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/proto/tendermint/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -59,18 +65,23 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 }
 
 // generates a chain parser, a chain fetcher messages based on it
+// apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
 func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
-	lavaSpec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
+	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	index, err := strconv.Atoi(apiInterface)
+	if err == nil && index < len(spec.ApiCollections) {
+		apiInterface = spec.ApiCollections[index].CollectionData.ApiInterface
 	}
 	chainParser, err := NewChainParser(apiInterface)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	var chainProxy ChainProxy
-	chainParser.SetSpec(lavaSpec)
+	chainParser.SetSpec(spec)
 	endpoint := &lavasession.RPCProviderEndpoint{
 		NetworkAddress: lavasession.NetworkAddressData{},
 		ChainID:        specIndex,
@@ -113,4 +124,53 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	chainFetcher := NewChainFetcher(ctx, chainProxy, chainParser, endpoint)
 
 	return chainParser, chainProxy, chainFetcher, closeServer, err
+}
+
+type TestStruct struct {
+	Ctx       context.Context
+	Keepers   *keepertest.Keepers
+	Servers   *keepertest.Servers
+	Providers []testcommon.Account
+	Spec      spectypes.Spec
+	Plan      plantypes.Plan
+	Consumer  testcommon.Account
+}
+
+func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
+	ts := TestStruct{}
+	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
+	// init keepers state
+	var balance int64 = 100000000000
+
+	// setup consumer
+	ts.Consumer = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
+
+	// setup providers
+	for i := 0; i < numOfProviders; i++ {
+		ts.Providers = append(ts.Providers, testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance))
+	}
+	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
+	spec, err := keepertest.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	ts.Spec = spec
+	ts.Keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.Ctx), ts.Spec)
+
+	ts.Plan = testcommon.CreateMockPlan()
+	ts.Keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.Ctx), ts.Plan)
+
+	var stake int64 = 50000000000
+
+	// subscribe consumer
+	testcommon.BuySubscription(t, ts.Ctx, *ts.Keepers, *ts.Servers, ts.Consumer, ts.Plan.Index)
+
+	// stake providers
+	for _, provider := range ts.Providers {
+		testcommon.StakeAccount(t, ts.Ctx, *ts.Keepers, *ts.Servers, provider, ts.Spec, stake)
+	}
+
+	// advance for the staking to be valid
+	ts.Ctx = keepertest.AdvanceEpoch(ts.Ctx, ts.Keepers)
+	return ts
 }
