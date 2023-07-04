@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	debug                      = true
+	debug                      = false
 	CacheMaxCost               = 2000  // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
