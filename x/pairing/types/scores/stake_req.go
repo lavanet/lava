@@ -11,13 +11,12 @@ type StakeReq struct {
 }
 
 const (
-	STAKE_REQ_NAME             = "stake-req"
-	STAKE_NORMALIZATION_FACTOR = 16 // normalize the stake so we won't overflow the final score uint64
+	STAKE_REQ_NAME = "stake-req"
 )
 
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	return (provider.Stake.Amount.Uint64() / STAKE_NORMALIZATION_FACTOR) ^ weight
+	return provider.Stake.Amount.Uint64() ^ weight
 }
 
 func (sr StakeReq) GetName() string {

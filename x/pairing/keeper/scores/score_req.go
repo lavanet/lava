@@ -69,7 +69,7 @@ func GetStrategy() scorestypes.ScoreStrategy {
 
 // calculates the final pairing score for all slot groups (with strategy)
 // we calculate only the diff between the current and previous slot groups
-func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, diffSlot *scorestypes.PairingSlot) error {
+func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, diffSlot *scorestypes.PairingSlot, minStake sdk.Int) error {
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
 		reqName := req.GetName()
@@ -79,16 +79,8 @@ func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.S
 				utils.Attribute{Key: "req_bitmap_value", Value: reqName})
 		}
 
-		// get min stake
-		minStake := scores[0].Provider.Stake.Amount
 		for _, score := range scores {
-			stake := score.Provider.Stake.Amount
-			if stake.LT(minStake) {
-				minStake = stake
-			}
-		}
-
-		for _, score := range scores {
+			// normalize stake so we won't overflow the score result (uint64)
 			providerWithNormalizedStake := score.Provider
 			providerWithNormalizedStake.Stake.Amount = providerWithNormalizedStake.Stake.Amount.Quo(minStake)
 			newScoreComp := req.Score(*providerWithNormalizedStake, weight)
