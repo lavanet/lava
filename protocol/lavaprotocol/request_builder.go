@@ -74,7 +74,7 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
 	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
 		if reportToCopy != nil {
-			QOS := *singleConsumerSession.QoSInfo.LastQoSReport
+			QOS := *reportToCopy
 			return &QOS
 		}
 		return nil

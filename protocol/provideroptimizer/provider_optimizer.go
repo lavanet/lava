@@ -451,6 +451,9 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Availability: availabilityScore,
 		Sync:         syncScore,
 	}
+	if debug {
+		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
+	}
 	return ret
 }
 
