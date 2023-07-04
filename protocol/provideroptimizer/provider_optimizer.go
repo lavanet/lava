@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/score"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -432,4 +433,8 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
 	perturb := rand.NormFloat64() * percentage * orig
 	return orig + perturb
+}
+
+func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) *pairingtypes.QualityOfServiceReport {
+	return nil
 }

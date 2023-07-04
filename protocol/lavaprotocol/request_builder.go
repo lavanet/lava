@@ -72,11 +72,16 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 }
 
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
-	var pQOS *pairingtypes.QualityOfServiceReport = nil
-	if singleConsumerSession.QoSInfo.LastQoSReport != nil {
-		QOS := *singleConsumerSession.QoSInfo.LastQoSReport
-		pQOS = &QOS
+	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
+		if reportToCopy != nil {
+			QOS := *singleConsumerSession.QoSInfo.LastQoSReport
+			return &QOS
+		}
+		return nil
 	}
+
+	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastQoSReport)
+	copiedExcellenceQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastExcellenceQoSReport)
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
@@ -85,12 +90,13 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		CuSum:                 singleConsumerSession.CuSum + singleConsumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
 		RelayNum:              singleConsumerSession.RelayNum, // RelayNum is always incremented
-		QosReport:             pQOS,
+		QosReport:             copiedQOS,
 		Epoch:                 epoch,
 		UnresponsiveProviders: reportedProviders,
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
 		Badge:                 nil,
+		QosExcellenceReport:   copiedExcellenceQOS,
 	}
 }
 

@@ -348,6 +348,8 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					ReportedProviders: reportedProviders,
 				}
 
+				consumerSession.QoSInfo.LastExcellenceQoSReport = csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
+
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 
