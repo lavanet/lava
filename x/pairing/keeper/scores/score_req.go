@@ -34,7 +34,7 @@ func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	return slots
 }
 
-// group the slots and sort them by their sort priority
+// group the slots
 func GroupSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSlotGroup {
 	slotGroups := []scorestypes.PairingSlotGroup{}
 	if len(slots) == 0 {
@@ -79,8 +79,19 @@ func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.S
 				utils.Attribute{Key: "req_bitmap_value", Value: reqName})
 		}
 
+		// get min stake
+		minStake := scores[0].Provider.Stake.Amount
 		for _, score := range scores {
-			newScoreComp := req.Score(*score.Provider, weight)
+			stake := score.Provider.Stake.Amount
+			if stake.LT(minStake) {
+				minStake = stake
+			}
+		}
+
+		for _, score := range scores {
+			providerWithNormalizedStake := score.Provider
+			providerWithNormalizedStake.Stake.Amount = providerWithNormalizedStake.Stake.Amount.Quo(minStake)
+			newScoreComp := req.Score(*providerWithNormalizedStake, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]

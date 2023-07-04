@@ -4,11 +4,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-// How to add new reqs:
-// 1. add a hex const for all possible req scenarios
-// 2. update createScoreReqsFromBitmap()
-// 3. update CalcSlots()
-// 4. update init() (in x/pairing/keeper/scores/score_req.go)
+// when adding a new req, update CalcSlots()
 
 const (
 	// TODO: temp strategy weight until we implement taking it out of the policy
@@ -76,5 +72,5 @@ func NewPairingScore(provider *epochstoragetypes.StakeEntry) *PairingScore {
 	return &score
 }
 
-// map: key: ScoreReq bitmap value, value: weight in the final pairing score
+// map: key: ScoreReq name, value: weight in the final pairing score
 type ScoreStrategy map[string]uint64

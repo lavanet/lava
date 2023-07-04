@@ -17,7 +17,7 @@ const (
 
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	return provider.Stake.Amount.Uint64() ^ weight
+	return (provider.Stake.Amount.Uint64() / STAKE_NORMALIZATION_FACTOR) ^ weight
 }
 
 func (sr StakeReq) GetName() string {
