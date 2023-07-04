@@ -32,8 +32,10 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -41,14 +43,16 @@ const (
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 )
 
-type versionInfo struct {
+var providerVersion = struct {
 	minVersion    string
 	targetVersion string
-}
-
-var initVersion = versionInfo{
+}{
 	minVersion:    "0.0.0",
 	targetVersion: "0.0.1",
+}
+
+type ParamsQueryResponse struct {
+	Params protocoltypes.Params `yaml:"params"`
 }
 
 var (
@@ -281,23 +285,23 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
-// Function to execute the command and retrieve the version information
 func fetchVersionFromConsensus() (string, string, error) {
 	cmd := exec.Command("lavad", "q", "protocol", "params")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", "", err
 	}
-	response := string(output)
-	// Parsing the response
-	var providerMin, providerTarget string
-	lines := strings.Split(response, "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "    provider_min:") {
-			providerMin = strings.TrimSpace(strings.TrimPrefix(line, "    provider_min:"))
-		} else if strings.HasPrefix(line, "    provider_target:") {
-			providerTarget = strings.TrimSpace(strings.TrimPrefix(line, "    provider_target:"))
-		}
+	queryResponse := &ParamsQueryResponse{}
+	// Unmarshal the response into the QueryResponse struct
+	if err := yaml.Unmarshal(output, queryResponse); err != nil {
+		return "", "", err
+	}
+	version := queryResponse.Params.Version
+	providerMin := version.ProviderMin
+	providerTarget := version.ProviderTarget
+	// Check if the required values are present
+	if providerMin == "" || providerTarget == "" {
+		return "", "", utils.LavaFormatError("provider_min or provider_target not found in the response", nil)
 	}
 	return providerMin, providerTarget, nil
 }
@@ -307,12 +311,12 @@ func CheckVersion() (err error) {
 	if err != nil {
 		return err
 	}
-	if providerMinVersionResp != initVersion.minVersion {
+	if providerMinVersionResp != providerVersion.minVersion {
 		err := fmt.Errorf("version mismatch")
 		utils.LavaFormatFatal("minimum version mismatch for rpcprovider", err)
 		return err
 	}
-	if providerTargetVersionResp != initVersion.targetVersion {
+	if providerTargetVersionResp != providerVersion.targetVersion {
 		utils.LavaFormatWarning("target version mismatch for rpcprovider", nil)
 	}
 	return nil
