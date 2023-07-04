@@ -307,8 +307,6 @@ func TestProjectsServerAPI(t *testing.T) {
 	ts.AdvanceBlock(1)
 
 	require.True(t, ts.isKeyInProject(projectID, dev1Addr, types.ProjectKey_DEVELOPER))
-	require.False(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
-	ts.AdvanceEpoch(1)
 	require.True(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
 
 	msgQueryDev := &types.QueryDeveloperRequest{Developer: sub1Addr}
@@ -398,21 +396,16 @@ func TestAddDelKeys(t *testing.T) {
 	err = ts.addProjectKeys(project.Index, admAddr, pk)
 	require.Nil(t, err)
 
-	// additions above will only take effect in next epoch
-	require.False(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
-	require.False(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
-	ts.AdvanceEpoch(1)
 	require.True(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
 	require.True(t, ts.isKeyInProject(project.Index, dev2Addr, types.ProjectKey_DEVELOPER))
+
+	ts.AdvanceEpoch(1)
 
 	// new admin adding another developer
 	pk = types.ProjectDeveloperKey(dev3Addr)
 	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
 	require.Nil(t, err)
 
-	// additions above will only take effect in next epoch
-	require.False(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
-	ts.AdvanceEpoch(1)
 	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 
 	// fetch project with new developer
@@ -439,13 +432,18 @@ func TestAddDelKeys(t *testing.T) {
 	err = ts.delProjectKeys(project.Index, subAddr, pk)
 	require.Nil(t, err)
 
-	// admin delete developer
+	// admin delete developer (admin removed already!)
 	pk = types.ProjectDeveloperKey(dev3Addr)
 	err = ts.delProjectKeys(project.Index, admAddr, pk)
+	require.NotNil(t, err)
+
+	// subscription owner (admin) delete developer
+	pk = types.ProjectDeveloperKey(dev3Addr)
+	err = ts.delProjectKeys(project.Index, subAddr, pk)
 	require.Nil(t, err)
 
-	// deletion above will only take effect in next epoch
-	require.True(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	// deletion of admin is immediate; delete of developer take effect in next epoch
+	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
 	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 	ts.AdvanceEpoch(1)
 	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
@@ -664,14 +662,14 @@ func TestChargeComputeUnits(t *testing.T) {
 	project, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectID, block1)
 	require.Nil(t, err)
 
-	// add developer key (created fixation)
-	err = ts.addProjectKeys(project.Index, subAddr, types.ProjectDeveloperKey(devAddr))
-	require.Nil(t, err)
-
-	// first epoch for the developer key addition to take place.
+	// first epoch to add some delay before adding the developer key.
 
 	ts.AdvanceEpoch(1)
 	block2 := ts.BlockHeight()
+
+	// add developer key (created fixation)
+	err = ts.addProjectKeys(project.Index, subAddr, types.ProjectDeveloperKey(devAddr))
+	require.Nil(t, err)
 
 	// second epoch to move further, otherwise snapshot will affect the current new
 	// dev key instead of creating a separate fixation version.
@@ -758,9 +756,6 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)})
 	require.Nil(t, err)
 
-	require.False(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
-	require.False(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
-	ts.AdvanceEpoch(1)
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
 
