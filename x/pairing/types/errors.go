@@ -17,4 +17,5 @@ var (
 	FreezeStakeEntryNotFoundError                      = sdkerrors.New("FreezeStakeEntryNotFoundError Error", 690, "can't get stake entry to freeze")
 	MonikerTooLongError                                = sdkerrors.New("MonikerTooLongError Error", 691, "The provider's moniker is too long. Keep it less than 50 characters")
 	MonikerEmptyError                                  = sdkerrors.New("MonikerEmptyError Error", 692, "The provider's moniker cannot be empty")
+	GeolocationNotMatchWithEndpointsError              = sdkerrors.New("GeolocationNotMatchWithEndpointsError Error", 693, "The combination of the endpoints' geolocation does not match to the provider's geolocation")
 )

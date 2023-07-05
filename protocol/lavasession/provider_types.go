@@ -178,29 +178,35 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missi
 	return atomic.LoadUint64(&pswc.epochData.MissingComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicWriteMissingComputeUnits(cu uint64) {
-	atomic.StoreUint64(&pswc.epochData.MissingComputeUnits, cu)
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteMissingComputeUnits(newUsed uint64, knownUsed uint64) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
+	return atomic.CompareAndSwapUint64(&pswc.epochData.MissingComputeUnits, knownUsed, newUsed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool) {
-	missing := pswc.atomicReadMissingComputeUnits()
-	used := pswc.atomicReadUsedComputeUnits()
-	max := pswc.atomicReadMaxComputeUnits()
-	// do not allow bypassing max used CU
-	if currentMissingCU+missing+used > max {
-		return false
+func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool, totalMissingCu uint64) {
+	for {
+		missing := pswc.atomicReadMissingComputeUnits()
+		used := pswc.atomicReadUsedComputeUnits()
+		max := pswc.atomicReadMaxComputeUnits()
+		totalMissingCu = missing + currentMissingCU
+		// do not allow bypassing max used CU
+		if totalMissingCu+used > max {
+			return false, totalMissingCu
+		}
+		// do not allow having more missing than threshold
+		if totalMissingCu > uint64(float64(max)*allowedThreshold) {
+			return false, totalMissingCu
+		}
+		// do not allow having more missing than already used
+		if totalMissingCu > used {
+			return false, totalMissingCu
+		}
+		if pswc.atomicCompareAndWriteMissingComputeUnits(totalMissingCu, missing) {
+			return true, totalMissingCu
+		}
 	}
-	// do not allow having more missing than threshold
-	if currentMissingCU+missing > uint64(float64(max)*allowedThreshold) {
-		return false
-	}
-	// do not allow having more missing than already used
-	if currentMissingCU+missing > used {
-		return false
-	}
-	// TODO: use compare and swap for race avoidance
-	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
-	return true
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
