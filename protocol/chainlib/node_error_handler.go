@@ -57,8 +57,8 @@ func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError e
 
 type TendermintRPCErrorHandler struct{ genericErrorHandler }
 
-func (teh *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	return teh.handleGenericErrors(ctx, nodeError)
+func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
 }
 
 type GRPCErrorHandler struct{ genericErrorHandler }
