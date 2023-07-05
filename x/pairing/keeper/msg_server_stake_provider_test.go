@@ -49,7 +49,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 			require.Nil(t, err)
 			endpoints := []epochstoragetypes.Endpoint{}
-			endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
+			endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
 			_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: tt.moniker})
 			require.Nil(t, err)
 
@@ -93,7 +93,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 	require.Nil(t, err)
 	endpoints := []epochstoragetypes.Endpoint{}
-	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
+	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
 	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake/2)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
 	require.Nil(t, err)
 
@@ -121,6 +121,11 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
+	buildEndpoint := func(geoloc string) []string {
+		hostip := "127.0.0.1:3351"
+		apiInterface := "jsonrpc"
+		return []string{hostip + "," + geoloc + "," + apiInterface}
+	}
 	testCases := []struct {
 		name        string
 		endpoints   []string
@@ -130,31 +135,31 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// single uint geolocation config tests
 		{
 			name:        "Single uint geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			endpoints:   buildEndpoint("1"),
 			geolocation: "1",
 			valid:       true,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2"},
+			endpoints:   buildEndpoint("2"),
 			geolocation: "1",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			endpoints:   buildEndpoint("1"),
 			geolocation: "3",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint has geo of multiple regions",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,3"},
+			endpoints:   buildEndpoint("3"),
 			geolocation: "3",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - bad endpoint geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,20555"},
+			endpoints:   buildEndpoint("20555"),
 			geolocation: "1",
 			valid:       false,
 		},
@@ -162,37 +167,31 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// single string geolocation config tests
 		{
 			name:        "Single string geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "EU",
 			valid:       true,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS"},
+			endpoints:   buildEndpoint("AS"),
 			geolocation: "EU",
 			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "EU,USC",
 			valid:       false,
 		},
 		{
-			name:        "Single string geolocation - endpoint has geo of multiple regions",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU,USC"},
-			geolocation: "3",
-			valid:       false,
-		},
-		{
 			name:        "Single string geolocation - bad geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "BLABLA",
 			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - bad geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,BLABLA"},
+			endpoints:   buildEndpoint("BLABLA"),
 			geolocation: "EU",
 			valid:       false,
 		},
@@ -200,19 +199,19 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// multiple uint geolocation config tests
 		{
 			name:        "Multiple uint geolocations - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,2"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("2")...),
 			geolocation: "3",
 			valid:       true,
 		},
 		{
 			name:        "Multiple uint geolocations - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,4"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("4")...),
 			geolocation: "2",
 			valid:       false,
 		},
 		{
 			name:        "Multiple uint geolocations - one endpoint has multi-region geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,3"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("3")...),
 			geolocation: "2",
 			valid:       false,
 		},
@@ -220,13 +219,13 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// multiple string geolocation config tests
 		{
 			name:        "Multiple string geolocations - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS", "127.0.0.1:3352,jsonrpc,EU"},
+			endpoints:   append(buildEndpoint("AS"), buildEndpoint("EU")...),
 			geolocation: "EU,AS",
 			valid:       true,
 		},
 		{
 			name:        "Multiple string geolocations - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,USC"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("USC")...),
 			geolocation: "EU,AS",
 			valid:       false,
 		},
@@ -234,37 +233,37 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// global config tests
 		{
 			name:        "Global uint geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   buildEndpoint("65535"),
 			geolocation: "65535",
 			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - happy flow 2 - global in one endpoint",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   append(buildEndpoint("2"), buildEndpoint("65535")...),
 			geolocation: "65535",
 			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - endpoint geo not match geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   append(buildEndpoint("2"), buildEndpoint("65535")...),
 			geolocation: "7",
 			valid:       false,
 		},
 		{
 			name:        "Global string geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   buildEndpoint("GL"),
 			geolocation: "GL",
 			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - happy flow 2 - global in one endpoint",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("GL")...),
 			geolocation: "GL",
 			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - endpoint geo not match geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("GL")...),
 			geolocation: "EU,AS,USC",
 			valid:       false,
 		},

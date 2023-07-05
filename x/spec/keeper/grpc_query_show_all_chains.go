@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"context"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,15 +28,14 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 		chainName := spec.GetName()
 		chainId := spec.GetIndex()
 
-		expectedInterfaces := make(map[string]bool)
 		fullspec, err := k.ExpandSpec(ctx, spec)
 		if err != nil {
 			return nil, err
 		}
 		// get the spec's expected interfaces
-		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&fullspec, expectedInterfaces, true)
+		expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
 
-		// copy the expectedInterfaces's keys (which are the interface names) to a string list
+		// TODO: print addons too
 		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)
 
 		apiCount := uint64(0)
@@ -58,11 +59,11 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 	return &types.QueryShowAllChainsResponse{ChainInfoList: chainInfoList}, nil
 }
 
-func getInterfacesNamesFromMap(expectedInterfaces map[string]bool) []string {
+func getInterfacesNamesFromMap(expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) []string {
 	var apiInterfacesNames []string
-	for apiInterfacesName := range expectedInterfaces {
-		apiInterfacesNames = append(apiInterfacesNames, apiInterfacesName)
+	for endpointService := range expectedInterfaces {
+		apiInterfacesNames = append(apiInterfacesNames, endpointService.ApiInterface)
 	}
-
+	sort.Strings(apiInterfacesNames)
 	return apiInterfacesNames
 }

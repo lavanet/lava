@@ -29834,11 +29834,17 @@ paths:
                               properties:
                                 iPPORT:
                                   type: string
-                                useType:
-                                  type: string
+                                api_interfaces:
+                                  type: array
+                                  items:
+                                    type: string
                                 geolocation:
                                   type: string
                                   format: uint64
+                                addons:
+                                  type: array
+                                  items:
+                                    type: string
                           geolocation:
                             type: string
                             format: uint64
@@ -30001,11 +30007,17 @@ paths:
                             properties:
                               iPPORT:
                                 type: string
-                              useType:
-                                type: string
+                              api_interfaces:
+                                type: array
+                                items:
+                                  type: string
                               geolocation:
                                 type: string
                                 format: uint64
+                              addons:
+                                type: array
+                                items:
+                                  type: string
                         geolocation:
                           type: string
                           format: uint64
@@ -30252,11 +30264,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30594,11 +30612,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30679,11 +30703,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30929,11 +30959,17 @@ paths:
                       properties:
                         iPPORT:
                           type: string
-                        useType:
-                          type: string
+                        api_interfaces:
+                          type: array
+                          items:
+                            type: string
                         geolocation:
                           type: string
                           format: uint64
+                        addons:
+                          type: array
+                          items:
+                            type: string
                   geolocation:
                     type: string
                     format: uint64
@@ -31989,7 +32025,11 @@ paths:
                                     - pass_send
                                     - pass_reply
                                     - pass_both
+                                    - pass_ignore
                                   default: pass_send
+                                  title: >-
+                                    - pass_ignore: allows it to pass around but
+                                    is not signed
                                 function_tag:
                                   type: string
                                   enum:
@@ -32356,7 +32396,11 @@ paths:
                                   - pass_send
                                   - pass_reply
                                   - pass_both
+                                  - pass_ignore
                                 default: pass_send
+                                title: >-
+                                  - pass_ignore: allows it to pass around but is
+                                  not signed
                               function_tag:
                                 type: string
                                 enum:
@@ -32646,7 +32690,11 @@ paths:
                                     - pass_send
                                     - pass_reply
                                     - pass_both
+                                    - pass_ignore
                                   default: pass_send
+                                  title: >-
+                                    - pass_ignore: allows it to pass around but
+                                    is not signed
                                 function_tag:
                                   type: string
                                   enum:
@@ -33013,7 +33061,11 @@ paths:
                                   - pass_send
                                   - pass_reply
                                   - pass_both
+                                  - pass_ignore
                                 default: pass_send
+                                title: >-
+                                  - pass_ignore: allows it to pass around but is
+                                  not signed
                               function_tag:
                                 type: string
                                 enum:
@@ -54669,6 +54721,8 @@ definitions:
               type: string
             value:
               type: string
+      addon:
+        type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -54789,6 +54843,8 @@ definitions:
                   type: string
                 value:
                   type: string
+          addon:
+            type: string
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
@@ -54850,11 +54906,17 @@ definitions:
     properties:
       iPPORT:
         type: string
-      useType:
-        type: string
+      api_interfaces:
+        type: array
+        items:
+          type: string
       geolocation:
         type: string
         format: uint64
+      addons:
+        type: array
+        items:
+          type: string
   lavanet.lava.epochstorage.EpochDetails:
     type: object
     properties:
@@ -54982,11 +55044,17 @@ definitions:
                       properties:
                         iPPORT:
                           type: string
-                        useType:
-                          type: string
+                        api_interfaces:
+                          type: array
+                          items:
+                            type: string
                         geolocation:
                           type: string
                           format: uint64
+                        addons:
+                          type: array
+                          items:
+                            type: string
                   geolocation:
                     type: string
                     format: uint64
@@ -55093,11 +55161,17 @@ definitions:
                     properties:
                       iPPORT:
                         type: string
-                      useType:
-                        type: string
+                      api_interfaces:
+                        type: array
+                        items:
+                          type: string
                       geolocation:
                         type: string
                         format: uint64
+                      addons:
+                        type: array
+                        items:
+                          type: string
                 geolocation:
                   type: string
                   format: uint64
@@ -55158,11 +55232,17 @@ definitions:
           properties:
             iPPORT:
               type: string
-            useType:
-              type: string
+            api_interfaces:
+              type: array
+              items:
+                type: string
             geolocation:
               type: string
               format: uint64
+            addons:
+              type: array
+              items:
+                type: string
       geolocation:
         type: string
         format: uint64
@@ -55207,11 +55287,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55291,11 +55377,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55534,11 +55626,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55658,11 +55756,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55707,11 +55811,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55752,11 +55862,17 @@ definitions:
               properties:
                 iPPORT:
                   type: string
-                useType:
-                  type: string
+                api_interfaces:
+                  type: array
+                  items:
+                    type: string
                 geolocation:
                   type: string
                   format: uint64
+                addons:
+                  type: array
+                  items:
+                    type: string
           geolocation:
             type: string
             format: uint64
@@ -56519,6 +56635,53 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.protocol.Params:
+    type: object
+    properties:
+      version:
+        type: object
+        properties:
+          provider_target:
+            type: string
+          provider_min:
+            type: string
+          consumer_target:
+            type: string
+          consumer_min:
+            type: string
+        description: Params defines the parameters for the module.
+  lavanet.lava.protocol.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+        properties:
+          version:
+            type: object
+            properties:
+              provider_target:
+                type: string
+              provider_min:
+                type: string
+              consumer_target:
+                type: string
+              consumer_min:
+                type: string
+            description: Params defines the parameters for the module.
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.protocol.Version:
+    type: object
+    properties:
+      provider_target:
+        type: string
+      provider_min:
+        type: string
+      consumer_target:
+        type: string
+      consumer_min:
+        type: string
+    description: Params defines the parameters for the module.
   lavanet.lava.spec.Api:
     type: object
     properties:
@@ -56676,7 +56839,9 @@ definitions:
                 - pass_send
                 - pass_reply
                 - pass_both
+                - pass_ignore
               default: pass_send
+              title: '- pass_ignore: allows it to pass around but is not signed'
             function_tag:
               type: string
               enum:
@@ -56833,7 +56998,9 @@ definitions:
           - pass_send
           - pass_reply
           - pass_both
+          - pass_ignore
         default: pass_send
+        title: '- pass_ignore: allows it to pass around but is not signed'
       function_tag:
         type: string
         enum:
@@ -56850,7 +57017,9 @@ definitions:
       - pass_send
       - pass_reply
       - pass_both
+      - pass_ignore
     default: pass_send
+    title: '- pass_ignore: allows it to pass around but is not signed'
   lavanet.lava.spec.PARSER_FUNC:
     type: string
     enum:
@@ -57105,7 +57274,11 @@ definitions:
                             - pass_send
                             - pass_reply
                             - pass_both
+                            - pass_ignore
                           default: pass_send
+                          title: >-
+                            - pass_ignore: allows it to pass around but is not
+                            signed
                         function_tag:
                           type: string
                           enum:
@@ -57379,7 +57552,11 @@ definitions:
                           - pass_send
                           - pass_reply
                           - pass_both
+                          - pass_ignore
                         default: pass_send
+                        title: >-
+                          - pass_ignore: allows it to pass around but is not
+                          signed
                       function_tag:
                         type: string
                         enum:
@@ -57685,7 +57862,9 @@ definitions:
                       - pass_send
                       - pass_reply
                       - pass_both
+                      - pass_ignore
                     default: pass_send
+                    title: '- pass_ignore: allows it to pass around but is not signed'
                   function_tag:
                     type: string
                     enum:
@@ -57785,62 +57964,6 @@ definitions:
         format: int64
       hanging_api:
         type: boolean
-  lavanet.lava.projects.ChainPolicy:
-    type: object
-    properties:
-      chain_id:
-        type: string
-      apis:
-        type: array
-        items:
-          type: string
-  lavanet.lava.projects.Policy:
-    type: object
-    properties:
-      chain_policies:
-        type: array
-        items:
-          type: object
-          properties:
-            chain_id:
-              type: string
-            apis:
-              type: array
-              items:
-                type: string
-      geolocation_profile:
-        type: string
-        format: uint64
-      total_cu_limit:
-        type: string
-        format: uint64
-      epoch_cu_limit:
-        type: string
-        format: uint64
-      max_providers_to_pair:
-        type: string
-        format: uint64
-      selected_providers_mode:
-        type: string
-        enum:
-          - ALLOWED
-          - MIXED
-          - EXCLUSIVE
-          - DISABLED
-        default: ALLOWED
-        description: |-
-          - ALLOWED: no providers restrictions
-           - MIXED: use the selected providers mixed with randomly chosen providers
-           - EXCLUSIVE: use only the selected providers
-           - DISABLED: selected providers feature is disabled
-        title: >-
-          the enum below determines the pairing algorithm's behaviour with the
-          selected providers feature
-      selected_providers:
-        type: array
-        items:
-          type: string
-    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.projects.ProjectData:
     type: object
     properties:
@@ -57907,22 +58030,6 @@ definitions:
               type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
     title: used as a container struct for the subscription module
-  lavanet.lava.projects.SELECTED_PROVIDERS_MODE:
-    type: string
-    enum:
-      - ALLOWED
-      - MIXED
-      - EXCLUSIVE
-      - DISABLED
-    default: ALLOWED
-    description: |-
-      - ALLOWED: no providers restrictions
-       - MIXED: use the selected providers mixed with randomly chosen providers
-       - EXCLUSIVE: use only the selected providers
-       - DISABLED: selected providers feature is disabled
-    title: >-
-      the enum below determines the pairing algorithm's behaviour with the
-      selected providers feature
   lavanet.lava.subscription.ListInfoStruct:
     type: object
     properties:

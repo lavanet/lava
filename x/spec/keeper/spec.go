@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -203,8 +204,9 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 	return
 }
 
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[string]bool) {
-	expectedInterfaces = make(map[string]bool)
+// returns map[apiInterface][]addons
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) {
+	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
@@ -216,10 +218,14 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 	return
 }
 
-func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[string]bool, mandatory bool) map[string]bool {
+func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
 	for _, apiCollection := range spec.ApiCollections {
 		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
-			expectedInterfaces[apiCollection.CollectionData.ApiInterface] = true
+			service := epochstoragetypes.EndpointService{
+				ApiInterface: apiCollection.CollectionData.ApiInterface,
+				Addon:        apiCollection.CollectionData.AddOn,
+			}
+			expectedInterfaces[service] = struct{}{}
 		}
 	}
 	return expectedInterfaces
