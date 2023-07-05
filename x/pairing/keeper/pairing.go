@@ -67,7 +67,13 @@ func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress
 	for i, clientStakeEntry := range userStakedEntries {
 		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
 		if err != nil {
-			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
+			// this should not happen; to avoid panic we simply skip this one (thus
+			// freeze the situation so it can be investigated and orderly resolved).
+			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
+				utils.LogAttr("address", clientStakeEntry.Address),
+				utils.LogAttr("chainID", clientStakeEntry.Chain),
+			)
+			continue
 		}
 		if clientAddr.Equals(clientAddress) {
 			if clientStakeEntry.StakeAppliedBlock > block {

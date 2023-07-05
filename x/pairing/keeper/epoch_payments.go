@@ -142,12 +142,14 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 
 			// validate its an old entry, for sanity
 			if uniquePaymentStorage.Block > blockForDelete {
-				// panic:ok: all payments retrieves must match the requested block (for delete)
-				utils.LavaFormatPanic("critical: failed to delete epoch payment",
+				// this should not happen; to avoid panic we simply skip this one (thus
+				// freeze the situation so it can be investigated and orderly resolved).
+				utils.LavaFormatError("critical: failed to delete epoch payment",
 					fmt.Errorf("payment block greater than block for delete"),
 					utils.Attribute{Key: "paymentBlock", Value: uniquePaymentStorage.Block},
 					utils.Attribute{Key: "deleteBlock", Value: blockForDelete},
 				)
+				continue
 			}
 
 			// delete the uniquePaymentStorageClientProvider object
