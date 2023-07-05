@@ -243,25 +243,6 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		if err != nil {
 			return err
 		}
-
-		found = project.DeleteKey(types.ProjectDeveloperKey(key.Key))
-		if !found {
-			// the developer key must be found, because it was already found in
-			// the developerKeysFS for this project; return error to avoid panic.
-			return utils.LavaFormatError("critical: developer key missing in project", sdkerrors.ErrNotFound,
-				utils.Attribute{Key: "projectID", Value: project.Index},
-				utils.Attribute{Key: "key", Value: key.Key},
-				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
-			)
-		}
-
-		logger := k.Logger(ctx)
-		details := map[string]string{
-			"project": project.GetIndex(),
-			"key":     key.Key,
-			"keytype": strconv.FormatInt(int64(key.Kinds), 10),
-		}
-		utils.LogLavaEvent(ctx, logger, types.DelProjectKeyEventName, details, "key deleted from project")
 	}
 
 	return nil
@@ -279,11 +260,11 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		// panic:ok: should not happened because called only on existing projects
-		utils.LavaFormatPanic("critical: snapshot of project failed", sdkerrors.ErrKeyNotFound,
+		utils.LavaFormatError("critical: snapshot of project failed (find)", sdkerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
+		return
 	}
 
 	project.UsedCu = 0
@@ -291,10 +272,10 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 
 	err := k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
 	if err != nil {
-		// panic:ok: should not happen because append at current (ctx) block always works
-		utils.LavaFormatPanic("critical: snapshot of project failed", err,
+		utils.LavaFormatError("critical: snapshot of project failed (append)", err,
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
+		return
 	}
 }
