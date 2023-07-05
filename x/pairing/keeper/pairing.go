@@ -236,7 +236,8 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 		}
 	}
 
-	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
+	maxIndex := commontypes.FindMax(selectedProvidersModeList)
+	effectiveMode := selectedProvidersModeList[maxIndex]
 	effectiveSelectedProviders := commontypes.Intersection(selectedProvidersList...)
 
 	return effectiveMode, effectiveSelectedProviders
@@ -282,12 +283,17 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 		}
 	}
 
-	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
+	minIndex := commontypes.FindMin(policyTotalCuLimit)
+	effectiveTotalCuOfProject := policyTotalCuLimit[minIndex]
 	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
 
-	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+	minIndex = commontypes.FindMin(policyEpochCuLimit)
+	effectiveEpochCuOfProject := policyEpochCuLimit[minIndex]
 
-	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
+	cuList := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
+	minIndex = commontypes.FindMin(cuList)
+
+	return cuList[minIndex]
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
