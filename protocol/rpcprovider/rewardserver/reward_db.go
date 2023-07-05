@@ -74,7 +74,7 @@ func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 		return nil, err
 	}
 
-	result := make(map[uint64]*EpochRewards)
+	result := make(map[uint64]*EpochRewards, len(rawRewards))
 	for _, rewards := range rawRewards {
 		re := RewardEntity{}
 		err := json.Unmarshal(rewards, &re)
