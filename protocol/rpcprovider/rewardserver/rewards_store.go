@@ -75,9 +75,7 @@ func (rs *RewardStore) FindAll() (map[uint64]*EpochRewards, error) {
 	}
 
 	result := make(map[uint64]*EpochRewards)
-	for key, rewards := range rawRewards {
-		epoch, consumerAddr, sessionId, consumerKey := keyParts(key)
-
+	for _, rewards := range rawRewards {
 		re := RewardEntity{}
 		err := json.Unmarshal(rewards, &re)
 		if err != nil {
@@ -85,24 +83,24 @@ func (rs *RewardStore) FindAll() (map[uint64]*EpochRewards, error) {
 			continue
 		}
 
-		epochRewards, ok := result[epoch]
+		epochRewards, ok := result[re.Epoch]
 		if !ok {
-			proofs := map[uint64]*pairingtypes.RelaySession{sessionId: re.Proof}
-			consumerRewards := map[string]*ConsumerRewards{consumerKey: &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: proofs}}
-			result[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewards}
+			proofs := map[uint64]*pairingtypes.RelaySession{re.SessionId: re.Proof}
+			consumerRewards := map[string]*ConsumerRewards{re.ConsumerKey: &ConsumerRewards{epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}}
+			result[re.Epoch] = &EpochRewards{epoch: re.Epoch, consumerRewards: consumerRewards}
 			continue
 		}
 
-		consumerRewards, ok := epochRewards.consumerRewards[consumerKey]
+		consumerRewards, ok := epochRewards.consumerRewards[re.ConsumerKey]
 		if !ok {
-			proofs := map[uint64]*pairingtypes.RelaySession{sessionId: re.Proof}
-			epochRewards.consumerRewards[consumerKey] = &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: proofs}
+			proofs := map[uint64]*pairingtypes.RelaySession{re.SessionId: re.Proof}
+			epochRewards.consumerRewards[re.ConsumerKey] = &ConsumerRewards{epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}
 			continue
 		}
 
-		_, ok = consumerRewards.proofs[sessionId]
+		_, ok = consumerRewards.proofs[re.SessionId]
 		if !ok {
-			consumerRewards.proofs[sessionId] = re.Proof
+			consumerRewards.proofs[re.SessionId] = re.Proof
 			continue
 		}
 	}
@@ -153,15 +151,4 @@ func assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKe
 	}
 
 	return strings.Join(keyParts, keySeparator)
-}
-
-func keyParts(key string) (epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) {
-	parts := strings.Split(key, keySeparator)
-
-	epoch, _ = strconv.ParseUint(parts[0], 10, 64)
-	consumerAddr = parts[1]
-	sessionId, _ = strconv.ParseUint(parts[2], 10, 64)
-	consumerKey = parts[3]
-
-	return
 }
