@@ -58,7 +58,7 @@ func (endpoint *Endpoint) SetApiInterfacesFromAddons(allowedServices map[Endpoin
 			continue
 		}
 		service := EndpointService{
-			ApiInterface: addon, //we check if the addon is actually an ApiInterface
+			ApiInterface: addon, // we check if the addon is actually an ApiInterface
 			Addon:        "",    // intentionally don't set the addon here to check if it's an api interface
 		}
 		if _, ok := allowedServices[service]; ok {
@@ -96,9 +96,9 @@ func (endpoint *Endpoint) GetSupportedServices() (services []EndpointService) {
 }
 
 func (stakeEntry *StakeEntry) GetEndpointsSupportingService(apiInterface string, addon string) (endpoints []*Endpoint) {
-	for _, endpoint := range stakeEntry.Endpoints {
+	for idx, endpoint := range stakeEntry.Endpoints {
 		if endpoint.IsSupportedService(apiInterface, addon) {
-			endpoints = append(endpoints, &endpoint)
+			endpoints = append(endpoints, &stakeEntry.Endpoints[idx])
 		}
 	}
 	return endpoints

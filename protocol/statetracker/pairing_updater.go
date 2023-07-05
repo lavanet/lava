@@ -115,7 +115,6 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 					break
 				}
 			}
-
 		}
 		if len(relevantEndpoints) == 0 {
 			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: providerEndpoints})

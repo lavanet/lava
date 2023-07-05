@@ -188,7 +188,6 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 						Chain:     chainID,
 					}
 					stakedProviderChains = append(stakedProviderChains, providerEntry)
-
 				}
 			} else {
 				for _, chainStructInfo := range allChains.ChainInfoList {
