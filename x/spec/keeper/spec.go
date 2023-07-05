@@ -225,6 +225,10 @@ func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInte
 				ApiInterface: apiCollection.CollectionData.ApiInterface,
 				Addon:        apiCollection.CollectionData.AddOn,
 			}
+			// if this is an optional apiInterface, we set addon as ""
+			if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
+				service.Addon = ""
+			}
 			expectedInterfaces[service] = struct{}{}
 		}
 	}

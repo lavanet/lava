@@ -98,7 +98,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			if newEndpointsStr != "" {
 				tmpArg := strings.Fields(newEndpointsStr)
-				argEndpoints, _, err := HandleEndpointsAndGeolocationArgs(tmpArg, strconv.FormatUint(geolocation, 10))
+				argEndpoints, _, err := HandleEndpointsAndGeolocationArgs(tmpArg, strconv.FormatUint(providerEntry.Geolocation, 10))
 				if err != nil {
 					return err
 				}
