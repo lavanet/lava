@@ -3,6 +3,7 @@ package chainlib
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/fullstorydev/grpcurl"
@@ -34,7 +36,13 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"google.golang.org/grpc/status"
 )
+
+type GrpcNodeErrorResponse struct {
+	ErrorMessage string `json:"error_message"`
+	ErrorCode    uint32 `json:"error_code"`
+}
 
 type GrpcChainParser struct {
 	BaseChainParser
@@ -258,6 +266,13 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
 		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
+
+		// try checking for node errors.
+		nodeError := &GrpcNodeErrorResponse{}
+		unMarshalingError := json.Unmarshal(relayReply.Data, nodeError)
+		if unMarshalingError == nil {
+			return nil, convertRelayMetaDataToMDMetaData(relayReply.Metadata), status.Error(codes.Code(nodeError.ErrorCode), nodeError.ErrorMessage)
+		}
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(relayReply.Metadata), nil
 	}
 
@@ -302,7 +317,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 
 func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -384,11 +399,11 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			msgLocal := msgFactory.NewMessage(methodDescriptor.GetInputType())
 			err = proto.Unmarshal(nodeMessage.Msg, msgLocal)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", nil, utils.LavaFormatError("Failed to unmarshal proto.Unmarshal(nodeMessage.Msg, msgLocal)", err)
 			}
 			jsonBytes, err := marshalJSON(msgLocal)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", nil, utils.LavaFormatError("Failed to unmarshal marshalJSON(msgLocal)", err)
 			}
 			reader = bytes.NewReader(jsonBytes)
 		} else {
@@ -427,11 +442,19 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 
 	if err != nil {
-		if connectCtx.Err() == context.DeadlineExceeded {
-			// Not an rpc error, return provider error without disclosing the endpoint address
-			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		if parsedError := cp.BaseChainProxy.ErrorHandler.HandleNodeError(ctx, err); parsedError != nil {
+			return nil, "", nil, parsedError
 		}
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Method", Value: nodeMessage.Path}, utils.Attribute{Key: "msg", Value: nodeMessage.Msg})
+		// return the node's error back to the client as the error type is a invalid request which is cu deductible
+		respBytes, handlingError := handleGrpcNodeError(ctx, err)
+		if handlingError != nil {
+			return nil, "", nil, handlingError
+		}
+		reply := &pairingtypes.RelayReply{
+			Data:     respBytes,
+			Metadata: convertToMetadataMapOfSlices(respHeaders),
+		}
+		return reply, "", nil, nil
 	}
 
 	var respBytes []byte
@@ -445,6 +468,23 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		Metadata: convertToMetadataMapOfSlices(respHeaders),
 	}
 	return reply, "", nil, nil
+}
+
+func handleGrpcNodeError(ctx context.Context, err error) ([]byte, error) {
+	var respBytes []byte
+	var marshalingError error
+	if statusError, ok := status.FromError(err); ok {
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: uint32(statusError.Code())})
+		if marshalingError != nil {
+			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+	} else {
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: uint32(32)})
+		if marshalingError != nil {
+			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+	}
+	return respBytes, nil
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {
