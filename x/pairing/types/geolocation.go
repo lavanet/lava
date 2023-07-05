@@ -60,6 +60,18 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 	return geoloc, nil
 }
 
-func GetGeolocations() []int32 {
+func GetAllGeolocations() []int32 {
 	return allGeoEnumRegionsList
+}
+
+func GetGeolocationsFromUint(geoloc int32) []planstypes.Geolocation {
+	geoList := []planstypes.Geolocation{}
+	allGeos := GetAllGeolocations()
+	for _, geo := range allGeos {
+		if geo&geoloc != 0 {
+			geoList = append(geoList, planstypes.Geolocation(geo))
+		}
+	}
+
+	return geoList
 }
