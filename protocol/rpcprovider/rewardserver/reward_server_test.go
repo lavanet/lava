@@ -86,7 +86,7 @@ func TestPayments(t *testing.T) {
 func TestSendNewProof(t *testing.T) {
 	ts := setup(t)
 	db := rewardserver.NewMemoryDB()
-	rewardStore := rewardserver.NewRewardStore(db)
+	rewardDB := rewardserver.NewRewardDB(db)
 
 	testCases := []struct {
 		Proofs                   []*pairingtypes.RelaySession
@@ -137,7 +137,7 @@ func TestSendNewProof(t *testing.T) {
 	for _, testCase := range testCases {
 		var existingCU, updatedWithProf = uint64(0), false
 		for _, proof := range testCase.Proofs {
-			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
+			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB)
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
 		}
 		require.Equal(t, testCase.ExpectedExistingCu, existingCU)
@@ -186,8 +186,8 @@ func TestUpdateEpoch(t *testing.T) {
 	ts := setup(t)
 	stubRewardsTxSender := rewardsTxSenderDouble{}
 	db := rewardserver.NewMemoryDB()
-	rewardStore := rewardserver.NewRewardStore(db)
-	rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardStore)
+	rewardDB := rewardserver.NewRewardDB(db)
+	rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB)
 
 	for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
 		epoch := sessionId%2 + 1

@@ -13,7 +13,7 @@ import (
 
 const keySeparator = "."
 
-type RewardStore struct {
+type RewardDB struct {
 	db DB
 }
 
@@ -25,7 +25,7 @@ type RewardEntity struct {
 	Proof        *pairingtypes.RelaySession
 }
 
-func (rs *RewardStore) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
+func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
 	key := assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
@@ -46,7 +46,7 @@ func (rs *RewardStore) Save(consumerAddr string, consumerKey string, proof *pair
 	return true, nil
 }
 
-func (rs *RewardStore) FindOne(
+func (rs *RewardDB) FindOne(
 	epoch uint64,
 	consumerAddr string,
 	consumerKey string,
@@ -68,7 +68,7 @@ func (rs *RewardStore) FindOne(
 	return re.Proof, nil
 }
 
-func (rs *RewardStore) FindAll() (map[uint64]*EpochRewards, error) {
+func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 	rawRewards, err := rs.db.FindAll()
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (rs *RewardStore) FindAll() (map[uint64]*EpochRewards, error) {
 	return result, nil
 }
 
-func (rs *RewardStore) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
+func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
 	var deletedPrefixes []string
 	for _, claimedReward := range claimedRewards {
 		consumer, err := sigs.ExtractSignerAddress(claimedReward)
@@ -133,8 +133,8 @@ func (rs *RewardStore) DeleteClaimedRewards(claimedRewards []*pairingtypes.Relay
 	return nil
 }
 
-func NewRewardStore(db DB) *RewardStore {
-	return &RewardStore{
+func NewRewardDB(db DB) *RewardDB {
+	return &RewardDB{
 		db: db,
 	}
 }

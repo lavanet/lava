@@ -59,7 +59,7 @@ type RewardServer struct {
 	totalCUServiced  uint64
 	totalCUPaid      uint64
 	providerMetrics  *metrics.ProviderMetricsManager
-	rewardStore      *RewardStore
+	rewardDB         *RewardDB
 }
 
 type RewardsTxSender interface {
@@ -71,9 +71,9 @@ type RewardsTxSender interface {
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 
-	prevProof, err := rws.rewardStore.FindOne(epoch, consumerAddr, consumerRewardsKey, proof.SessionId)
+	prevProof, err := rws.rewardDB.FindOne(epoch, consumerAddr, consumerRewardsKey, proof.SessionId)
 	if err != nil {
-		saved, _ := rws.rewardStore.Save(consumerAddr, consumerRewardsKey, proof)
+		saved, _ := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
 		return 0, saved
 	}
 
@@ -81,7 +81,7 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 		if prevProof.Badge != nil && proof.Badge == nil {
 			proof.Badge = prevProof.Badge
 		}
-		saved, _ := rws.rewardStore.Save(consumerAddr, consumerRewardsKey, proof)
+		saved, _ := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
 		return 0, saved
 	}
 
@@ -115,7 +115,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
 
-		err = rws.rewardStore.DeleteClaimedRewards(rewardsToClaim)
+		err = rws.rewardDB.DeleteClaimedRewards(rewardsToClaim)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
@@ -203,7 +203,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 
-	rewards, err := rws.rewardStore.FindAll()
+	rewards, err := rws.rewardDB.FindAll()
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to FindAll", err)
 	}
@@ -268,13 +268,13 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardStore *RewardStore) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
 	rws.expectedPayments = []PaymentRequest{}
 	rws.providerMetrics = providerMetrics
-	rws.rewardStore = rewardStore
+	rws.rewardDB = rewardDB
 
 	return rws
 }

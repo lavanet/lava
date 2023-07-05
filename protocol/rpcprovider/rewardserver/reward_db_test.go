@@ -14,7 +14,7 @@ func TestSave(t *testing.T) {
 	ts := setup(t)
 
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardStore(db)
+	rs := rewardserver.NewRewardDB(db)
 	proof := common.BuildRelayRequest(ts.ctx, "provider", []byte{}, uint64(0), "spec", nil)
 
 	saved, err := rs.Save("consumerAddr", "consumerKey", proof)
@@ -31,7 +31,7 @@ func TestFindOne(t *testing.T) {
 	ts := setup(t)
 
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardStore(db)
+	rs := rewardserver.NewRewardDB(db)
 	proof := common.BuildRelayRequest(ts.ctx, "provider", []byte{}, uint64(0), "spec", nil)
 	proof.Epoch = 1
 
@@ -47,7 +47,7 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	ts := setup(t)
 
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardStore(db)
+	rs := rewardserver.NewRewardDB(db)
 
 	proof := common.BuildRelayRequest(ts.ctx, "provider", []byte{}, uint64(0), "spec", nil)
 	proof.Epoch = 1
