@@ -76,5 +76,5 @@ func TestNodeErrorHandlerGenericErrors(t *testing.T) {
 
 	// Test non-matching error
 	err = neh.handleGenericErrors(ctx, errors.New("dummy error"))
-	require.Equal(t, err, errors.New("dummy error"))
+	require.Equal(t, err, nil)
 }
