@@ -47,20 +47,20 @@ lavad tx subscription buy "DefaultPlan" -y --from user3 --gas-adjustment "1.5" -
 
 user3addr=$(lavad keys show user3 -a)
 
-lavad tx subscription add-project "myproject" ./cookbook/projects/example_policy.yml -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-sleep_until_next_epoch
+lavad tx subscription add-project "myproject1" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription add-project "myproject" --policy-file ./cookbook/projects/example_policy.yml -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad q subscription list-projects user3addr
+count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
+if [ "$count" -ne 3 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 3"; exit 1; fi
 
 lavad tx project add-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
-sleep_until_next_epoch
-
 lavad tx project del-keys -y "$user3addr-myproject" --from user3 cookbook/projects/example_project_keys.yml --gas-prices=$GASPRICE
 sleep_until_next_epoch
 
 lavad tx subscription del-project myproject -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
 
-lavad q subscription list-projects user3
+count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
+if [ "$count" -ne 2 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 2"; exit 1; fi
 
 # the end
