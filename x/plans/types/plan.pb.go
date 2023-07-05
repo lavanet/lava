@@ -56,8 +56,9 @@ func (SELECTED_PROVIDERS_MODE) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_e5909a10cd0e3497, []int{0}
 }
 
-// The geolocations' values are powers of 2 that act as a bit map.
-// To add a new geolocation, put it before GL and assign it with the next power of 2.
+// The geolocation values are encoded as bits in a bitmask, with two special values:
+// GLS is set to 0 so it will be restrictive with the AND operator.
+// GL is set to -1 so it will be permissive with the AND operator.
 type Geolocation int32
 
 const (

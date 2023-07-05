@@ -3,6 +3,7 @@ package scores
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -13,12 +14,24 @@ import (
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-var uniformStrategy scorestypes.ScoreStrategy
+var (
+	uniformStrategy scorestypes.ScoreStrategy
+	allReqTypes     []reflect.Type
+
+	// req types (syntactic sugar)
+	stakeReqType reflect.Type = reflect.TypeOf(scorestypes.StakeReq{})
+)
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
+	// gather all req types to a list
+	allReqTypes = append(allReqTypes, stakeReqType)
+
+	// init strategy
 	uniformStrategy = make(scorestypes.ScoreStrategy)
-	uniformStrategy[scorestypes.STAKE_REQ_NAME] = 1
+	for _, reqType := range allReqTypes {
+		uniformStrategy[reqType] = 1
+	}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -26,7 +39,7 @@ func init() {
 func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
 	stakeReq := scorestypes.StakeReq{}
-	stakeReqMap := map[string]scorestypes.ScoreReq{stakeReq.GetName(): stakeReq}
+	stakeReqMap := map[reflect.Type]scorestypes.ScoreReq{stakeReqType: stakeReq}
 	for i := range slots {
 		slots[i] = scorestypes.NewPairingSlot(stakeReqMap)
 	}
@@ -72,11 +85,10 @@ func GetStrategy() scorestypes.ScoreStrategy {
 func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, diffSlot *scorestypes.PairingSlot, minStake sdk.Int) error {
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
-		reqName := req.GetName()
-		weight, ok := strategy[reqName]
+		weight, ok := strategy[reflect.TypeOf(req)]
 		if !ok {
 			return utils.LavaFormatError("req not in strategy", sdkerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "req_bitmap_value", Value: reqName})
+				utils.Attribute{Key: "req_name", Value: reflect.TypeOf(req).String()})
 		}
 
 		for _, score := range scores {
@@ -86,18 +98,18 @@ func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.S
 			newScoreComp := req.Score(*providerWithNormalizedStake, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
-			prevReqScoreComp, ok := score.ScoreComponents[reqName]
+			prevReqScoreComp, ok := score.ScoreComponents[reflect.TypeOf(req)]
 			if ok {
 				if prevReqScoreComp == 0 {
 					return utils.LavaFormatError("previous req score is zero", fmt.Errorf("invalid req score"),
-						utils.Attribute{Key: "req_bitmap_value", Value: reqName})
+						utils.Attribute{Key: "req_bitmap_value", Value: reflect.TypeOf(req).String()})
 				}
 				score.Score /= prevReqScoreComp
 			}
 			score.Score *= newScoreComp
 
 			// update the score component map
-			score.ScoreComponents[reqName] = newScoreComp
+			score.ScoreComponents[reflect.TypeOf(req)] = newScoreComp
 		}
 	}
 

@@ -1,6 +1,8 @@
 package score
 
 import (
+	"reflect"
+
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -15,15 +17,14 @@ const (
 // GetName() gets the ScoreReq's name
 type ScoreReq interface {
 	Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64
-	GetName() string
 }
 
 // object to hold the requirements for a specific slot (map of req names pointing to req object)
 type PairingSlot struct {
-	Reqs map[string]ScoreReq
+	Reqs map[reflect.Type]ScoreReq
 }
 
-func NewPairingSlot(reqs map[string]ScoreReq) *PairingSlot {
+func NewPairingSlot(reqs map[reflect.Type]ScoreReq) *PairingSlot {
 	slot := PairingSlot{
 		Reqs: reqs,
 	}
@@ -32,7 +33,7 @@ func NewPairingSlot(reqs map[string]ScoreReq) *PairingSlot {
 
 // generate a diff slot that contains the reqs that are in the slot receiver but not in the "other" slot
 func (s PairingSlot) Diff(other *PairingSlot) *PairingSlot {
-	reqsDiff := make(map[string]ScoreReq)
+	reqsDiff := make(map[reflect.Type]ScoreReq)
 	for key := range s.Reqs {
 		if _, found := other.Reqs[key]; !found {
 			reqsDiff[key] = s.Reqs[key]
@@ -60,17 +61,17 @@ func NewPairingSlotGroup(slot *PairingSlot) *PairingSlotGroup {
 type PairingScore struct {
 	Provider        *epochstoragetypes.StakeEntry
 	Score           uint64
-	ScoreComponents map[string]uint64
+	ScoreComponents map[reflect.Type]uint64
 }
 
 func NewPairingScore(provider *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
 		Provider:        provider,
 		Score:           1,
-		ScoreComponents: map[string]uint64{},
+		ScoreComponents: map[reflect.Type]uint64{},
 	}
 	return &score
 }
 
 // map: key: ScoreReq name, value: weight in the final pairing score
-type ScoreStrategy map[string]uint64
+type ScoreStrategy map[reflect.Type]uint64

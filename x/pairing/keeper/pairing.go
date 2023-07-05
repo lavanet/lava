@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"math"
+	"reflect"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
@@ -155,8 +156,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscorestypes.NewPairingSlot(map[string]pairingscorestypes.ScoreReq{}) // init dummy slot to compare to
-	indexToSkipMapPtr := make(map[int]bool)                                                      // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
+	prevGroupSlot := pairingscorestypes.NewPairingSlot(map[reflect.Type]pairingscorestypes.ScoreReq{}) // init dummy slot to compare to
+	indexToSkipMapPtr := make(map[int]bool)                                                            // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
 	for _, group := range slotGroups {
 		diffSlot := group.Slot.Diff(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot, minStake)

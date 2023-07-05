@@ -10,15 +10,7 @@ type StakeReq struct {
 	stake sdk.Coin
 }
 
-const (
-	STAKE_REQ_NAME = "stake-req"
-)
-
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
 	return provider.Stake.Amount.ToDec().Power(weight).BigInt().Uint64()
-}
-
-func (sr StakeReq) GetName() string {
-	return STAKE_REQ_NAME
 }
