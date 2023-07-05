@@ -18,6 +18,11 @@ import (
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
+const (
+	RewardServerStorageFlagName = "reward-server-storage"
+	DefaultRewardServerStorage  = ".storage/rewardserver"
+)
+
 type PaymentRequest struct {
 	CU                  uint64
 	BlockHeightDeadline int64
