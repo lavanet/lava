@@ -17,11 +17,11 @@ func TestSave(t *testing.T) {
 	rs := rewardserver.NewRewardStore(db)
 	proof := common.BuildRelayRequest(ts.ctx, "provider", []byte{}, uint64(0), "spec", nil)
 
-	saved, err := rs.Save(ts.ctx, "consumerAddr", "consumerKey", proof)
+	saved, err := rs.Save("consumerAddr", "consumerKey", proof)
 	require.True(t, saved)
 	require.NoError(t, err)
 
-	rewards, err := rs.FindAll(ts.ctx)
+	rewards, err := rs.FindAll()
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(rewards))
@@ -35,10 +35,10 @@ func TestFindOne(t *testing.T) {
 	proof := common.BuildRelayRequest(ts.ctx, "provider", []byte{}, uint64(0), "spec", nil)
 	proof.Epoch = 1
 
-	_, err := rs.Save(ts.ctx, "consumerAddr", "consumerKey", proof)
+	_, err := rs.Save("consumerAddr", "consumerKey", proof)
 	require.NoError(t, err)
 
-	reward, err := rs.FindOne(ts.ctx, uint64(proof.Epoch), "consumerAddr", "consumerKey", proof.SessionId)
+	reward, err := rs.FindOne(uint64(proof.Epoch), "consumerAddr", "consumerKey", proof.SessionId)
 	require.NoError(t, err)
 	require.NotNil(t, reward)
 }
@@ -56,13 +56,13 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, err = rs.Save(ts.ctx, ts.consumer.Addr.String(), "consumerKey", proof)
+	_, err = rs.Save(ts.consumer.Addr.String(), "consumerKey", proof)
 	require.NoError(t, err)
 
-	err = rs.DeleteClaimedRewards(ts.ctx, []*pairingtypes.RelaySession{proof})
+	err = rs.DeleteClaimedRewards([]*pairingtypes.RelaySession{proof})
 	require.NoError(t, err)
 
-	rewards, err := rs.FindAll(ts.ctx)
+	rewards, err := rs.FindAll()
 	require.NoError(t, err)
 	require.Equal(t, 0, len(rewards))
 }

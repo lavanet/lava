@@ -1,7 +1,6 @@
 package rewardserver
 
 import (
-	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -26,7 +25,7 @@ type RewardEntity struct {
 	Proof        *pairingtypes.RelaySession
 }
 
-func (rs *RewardStore) Save(ctx context.Context, consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
+func (rs *RewardStore) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
 	key := assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
@@ -42,13 +41,12 @@ func (rs *RewardStore) Save(ctx context.Context, consumerAddr string, consumerKe
 		return false, utils.LavaFormatError("failed to encode proof: %s", err)
 	}
 
-	rs.db.Save(ctx, key, buf)
+	rs.db.Save(key, buf)
 
 	return true, nil
 }
 
 func (rs *RewardStore) FindOne(
-	ctx context.Context,
 	epoch uint64,
 	consumerAddr string,
 	consumerKey string,
@@ -56,7 +54,7 @@ func (rs *RewardStore) FindOne(
 ) (*pairingtypes.RelaySession, error) {
 	key := assembleKey(epoch, consumerAddr, sessionId, consumerKey)
 
-	rawReward, err := rs.db.FindOne(ctx, key)
+	rawReward, err := rs.db.FindOne(key)
 	if err != nil {
 		return nil, utils.LavaFormatDebug("reward not found")
 	}
@@ -70,8 +68,8 @@ func (rs *RewardStore) FindOne(
 	return re.Proof, nil
 }
 
-func (rs *RewardStore) FindAll(ctx context.Context) (map[uint64]*EpochRewards, error) {
-	rawRewards, err := rs.db.FindAll(ctx)
+func (rs *RewardStore) FindAll() (map[uint64]*EpochRewards, error) {
+	rawRewards, err := rs.db.FindAll()
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +109,7 @@ func (rs *RewardStore) FindAll(ctx context.Context) (map[uint64]*EpochRewards, e
 	return result, nil
 }
 
-func (rs *RewardStore) DeleteClaimedRewards(ctx context.Context, claimedRewards []*pairingtypes.RelaySession) error {
+func (rs *RewardStore) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
 	var deletedPrefixes []string
 	for _, claimedReward := range claimedRewards {
 		consumer, err := sigs.ExtractSignerAddress(claimedReward)
@@ -125,7 +123,7 @@ func (rs *RewardStore) DeleteClaimedRewards(ctx context.Context, claimedRewards 
 			continue
 		}
 
-		err = rs.db.DeletePrefix(ctx, prefix)
+		err = rs.db.DeletePrefix(prefix)
 		if err != nil {
 			utils.LavaFormatError("failed to delete rewards: %s", err)
 			continue

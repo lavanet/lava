@@ -27,6 +27,7 @@ require (
 
 require (
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
+	github.com/dgraph-io/badger/v4 v4.1.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
@@ -43,7 +44,6 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/dgraph-io/badger/v4 v4.1.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
