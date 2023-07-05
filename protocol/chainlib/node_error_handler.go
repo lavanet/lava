@@ -10,8 +10,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-type NodeErrorHandler struct {
-}
+type NodeErrorHandler struct{}
 
 func (neh *NodeErrorHandler) handleConnectionError(err error) error {
 	if err == net.ErrWriteToConnected {
