@@ -219,8 +219,8 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 			continue
 		}
 
-		for _, rewards := range epochRewards.consumerRewards {
-			claimables, err := rewards.PrepareRewardsForClaim()
+		for _, consumerRewards := range epochRewards.consumerRewards {
+			claimables, err := consumerRewards.PrepareRewardsForClaim()
 			if err != nil {
 				// can't claim this now
 				continue
