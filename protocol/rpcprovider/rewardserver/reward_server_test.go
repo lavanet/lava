@@ -146,36 +146,36 @@ func TestSendNewProof(t *testing.T) {
 }
 
 func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
-	ts := setup(t)
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewMemoryDB()
-	rewardStore := rewardserver.NewRewardStore(db)
+	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	prevProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{})
+	prevProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelaySession(ts.ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil)
+	newProof := common.BuildRelaySession(ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil)
 	newProof.Epoch = int64(1)
 
-	rws.SendNewProof(ts.ctx, prevProof, uint64(1), "consumer", "apiinterface")
-	_, updated := rws.SendNewProof(ts.ctx, newProof, uint64(1), "consumer", "apiinterface")
+	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
+	_, updated := rws.SendNewProof(ctx, newProof, uint64(1), "consumer", "apiinterface")
 
 	require.NotNil(t, newProof.Badge)
 	require.True(t, updated)
 }
 
 func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
-	ts := setup(t)
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewMemoryDB()
-	rewardStore := rewardserver.NewRewardStore(db)
+	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	prevProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{LavaChainId: "43"})
+	prevProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{LavaChainId: "43"})
 	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelaySessionWithBadge(ts.ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil, &pairingtypes.Badge{LavaChainId: "42"})
+	newProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil, &pairingtypes.Badge{LavaChainId: "42"})
 	newProof.Epoch = int64(1)
 
-	rws.SendNewProof(ts.ctx, prevProof, uint64(1), "consumer", "apiinterface")
-	_, updated := rws.SendNewProof(ts.ctx, newProof, uint64(1), "consumer", "apiinterface")
+	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
+	_, updated := rws.SendNewProof(ctx, newProof, uint64(1), "consumer", "apiinterface")
 
 	require.NotNil(t, newProof.Badge)
 	require.Equal(t, "42", newProof.Badge.LavaChainId)
@@ -215,29 +215,29 @@ func TestUpdateEpoch(t *testing.T) {
 }
 
 func BenchmarkSendNewProofInMemory(b *testing.B) {
-	ts := setup(b)
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewMemoryDB()
-	rewardStore := rewardserver.NewRewardStore(db)
+	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
-	proofs := generateProofs(ts.ctx, b.N)
+	proofs := generateProofs(ctx, b.N)
 
 	b.ResetTimer()
-	sendProofs(ts.ctx, proofs, rws)
+	sendProofs(ctx, proofs, rws)
 }
 
 func BenchmarkSendNewProofLocal(b *testing.B) {
-	ts := setup(b)
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewLocalDB("badger_test")
 	defer func(db *rewardserver.BadgerDB) {
 		_ = db.Close()
 	}(db)
-	rewardStore := rewardserver.NewRewardStore(db)
+	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	proofs := generateProofs(ts.ctx, b.N)
+	proofs := generateProofs(ctx, b.N)
 
 	b.ResetTimer()
-	sendProofs(ts.ctx, proofs, rws)
+	sendProofs(ctx, proofs, rws)
 }
 
 func generateProofs(ctx context.Context, n int) []*pairingtypes.RelaySession {
@@ -257,30 +257,6 @@ func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *r
 		apiInterface := fmt.Sprintf("apiInterface%d", prefix)
 		rws.SendNewProof(ctx, proof, uint64(proof.Epoch), consumerKey, apiInterface)
 	}
-}
-
-type testStruct struct {
-	ctx      context.Context
-	keepers  *testkeeper.Keepers
-	servers  *testkeeper.Servers
-	consumer common.Account
-}
-
-func setup(t testing.TB) *testStruct {
-	ts := &testStruct{}
-	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-
-	spec := common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), spec)
-
-	plan := common.CreateMockPlan()
-	_ = ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), plan)
-
-	ctx := testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	ts.consumer = common.CreateNewAccount(ctx, *ts.keepers, 10000)
-
-	return ts
 }
 
 type rewardsTxSenderDouble struct {
