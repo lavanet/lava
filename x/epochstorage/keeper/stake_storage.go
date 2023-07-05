@@ -137,10 +137,11 @@ func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64
 						// if storageBlock is empty its stake entry current. so we dont remove it.
 						continue
 					}
-					// panic:ok: should never happen; avoid further storage corruption
-					utils.LavaFormatPanic("critical: failed to decode storage block", err,
+					utils.LavaFormatError("critical: failed to decode storage block", err,
+						utils.LogAttr("chainID", chainId),
 						utils.LogAttr("index", entry.Index),
 						utils.LogAttr("storageBlock", storageBlock),
+						utils.LogAttr("block", block),
 					)
 				}
 				if blockHeight < block {
@@ -182,10 +183,13 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	for idx, entry := range entries {
 		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
 		if err != nil {
-			// panic:ok: account address on chain must have been validated before
-			utils.LavaFormatPanic("critical: invalid account address inside StakeStorage", err,
+			// this should not happen; to avoid panic we simply skip this one (thus
+			// freeze the situation so it can be investigated and orderly resolved).
+			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
 				utils.LogAttr("address", entry.Address),
+				utils.LogAttr("chainID", entry.Chain),
 			)
+			continue
 		}
 		if entryAddr.Equals(address) {
 			// found the right thing
