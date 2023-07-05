@@ -53,6 +53,7 @@ type parsedMessage struct {
 type BaseChainProxy struct {
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
+	ErrorHandler     NodeErrorHandler
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {

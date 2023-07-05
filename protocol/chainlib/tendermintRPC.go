@@ -569,9 +569,10 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		defer cancel()
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
-		if err != nil && connectCtx.Err() == context.DeadlineExceeded {
-			// Not an rpc error, return provider error without disclosing the endpoint address
-			return nil, "", nil, utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+		if err != nil {
+			if handledError := cp.BaseChainProxy.ErrorHandler.HandleTendermintRPCErrors(connectCtx, err); handledError != nil {
+				return nil, "", nil, handledError
+			}
 		}
 	}
 
