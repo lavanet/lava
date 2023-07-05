@@ -37,11 +37,14 @@ func init() {
 // get the overall requirements from the policy and assign slots that'll fulfil them
 // TODO: this function should be changed in the future since it only supports stake reqs
 func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
+	// init slot array (should be as the number of providers to pair)
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
+
+	// all slots should consider the stake, so we init them with stakeReq
 	stakeReq := scorestypes.StakeReq{}
-	stakeReqMap := map[reflect.Type]scorestypes.ScoreReq{stakeReqType: stakeReq}
+	slotReqs := map[reflect.Type]scorestypes.ScoreReq{stakeReqType: stakeReq}
 	for i := range slots {
-		slots[i] = scorestypes.NewPairingSlot(stakeReqMap)
+		slots[i] = scorestypes.NewPairingSlot(slotReqs)
 	}
 
 	return slots
