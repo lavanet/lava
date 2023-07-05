@@ -69,13 +69,15 @@ func (k Keeper) GetAllBadgeUsedCu(ctx sdk.Context) (list []types.BadgeUsedCu) {
 }
 
 func (k Keeper) BadgeUsedCuExpiry(ctx sdk.Context, badge types.Badge) uint64 {
-	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, badge.Epoch)
 	if err != nil {
-		// panic:ok: BlocksToSave() should never fail for ctx.BlockHeight()
-		utils.LavaFormatPanic("critical: BadgeUsedCuExpiry failed to get BlocksToSave", err,
+		utils.LavaFormatError("critical: BadgeUsedCuExpiry failed to get BlocksToSave", err,
 			utils.LogAttr("badge", badge.Address),
 			utils.LogAttr("block", ctx.BlockHeight()),
 		)
+		// on error, blocksToSave will be zero, so to avoid immediate expiry (and user
+		// discontent) use a reasonable default: the current EpochToSave * EpochBlocks
+		blocksToSave = k.epochStorageKeeper.BlocksToSaveRaw(ctx)
 	}
 
 	return badge.Epoch + blocksToSave
