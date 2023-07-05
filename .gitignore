@@ -56,5 +56,5 @@ ecosystem/lava-sdk/bin/examples/jsonRPC_badge_test.js
 ecosystem/lava-sdk/pairingList.json
 
 # Reward server ignores
-.storage/rewardserver/badger
+.storage/
 badger_test
