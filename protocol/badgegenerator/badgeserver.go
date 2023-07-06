@@ -104,7 +104,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)
 	userData := v.GetString(UserDataEnvironmentVariable)
-
+	utils.LavaFormatDebug("debug information: ", utils.Attribute{Key: "userdata", Value: userData})
 	server, err := NewServer(grpcUrl, chainId, userData)
 	if err != nil {
 		utils.LavaFormatFatal("Error in server creation", err)
