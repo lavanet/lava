@@ -365,7 +365,6 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, bl
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _ uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
-	ctxBlock := uint64(ctx.BlockHeight())
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
@@ -415,7 +414,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _
 		}
 
 		// entry is not stale: skip
-		if !entry.IsStaleBy(ctxBlock) {
+		if !entry.IsStale(ctx) {
 			safeToDeleteEntry = false
 			safeToDeleteIndex = false
 			continue
@@ -680,7 +679,7 @@ func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, b
 // and onward, and not more than delta blocks further (skip stale entries).
 func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, block, delta uint64) (blocks []uint64) {
 	filter := func(entry *types.Entry) bool {
-		if entry.IsStaleBy(uint64(ctx.BlockHeight())) {
+		if entry.IsStale(ctx) {
 			return false
 		}
 		if entry.Block > block+delta {

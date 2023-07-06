@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// IsStale tests whether an entry is stale, i.e. has refcount zero _and_
+// IsStaleBy tests whether an entry is stale, i.e. has refcount zero _and_
 // has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
 func (entry Entry) IsStaleBy(block uint64) bool {
 	if entry.GetRefcount() == 0 {
@@ -15,6 +15,12 @@ func (entry Entry) IsStaleBy(block uint64) bool {
 		}
 	}
 	return false
+}
+
+// IsStale tests whether an entry is currently stale, i.e. has refcount zero _and_
+// has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
+func (entry Entry) IsStale(ctx sdk.Context) bool {
+	return entry.IsStaleBy(uint64(ctx.BlockHeight()))
 }
 
 // IsDeletedBy tests whether an entry is deleted, with respect to a given
