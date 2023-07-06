@@ -32,6 +32,8 @@ import (
 //    - GetEntry(index, *entry): get a copy (and reference) of the latest version of an entry
 //    - PutEntry(index, block): drop reference to an existing entry with "index" and exact "block" (*)
 //    - DelEntry(index, block): mark an entry as unavailable for new GetEntry() calls
+//    - HasEntry(index, block): checks for existence of a specific version of an entry
+//    - IsEntryStale(index, block): checks if a specific version of an entry is stale
 //    - GetAllEntryIndices(): get all the entries indices (without versions)
 //    - GetAllEntryVersions(index): get all the versions of an entry (for testing)
 //    - GetEntryVersionsRange(index, block, delta): get range of entry versions (**)
@@ -176,7 +178,16 @@ func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, 
 	fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 }
 
+// hasEntry returns wether a specific entry exists in the store
+// (any kind of entry, even deleted or stale)
+func (fs *FixationStore) hasEntry(ctx sdk.Context, safeIndex string, block uint64) bool {
+	store := fs.getEntryStore(ctx, safeIndex)
+	byteKey := types.EncodeKey(block)
+	return store.Has(byteKey)
+}
+
 // getEntry returns an existing entry in the store
+// (any kind of entry, even deleted or stale)
 func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint64) (entry types.Entry) {
 	store := fs.getEntryStore(ctx, safeIndex)
 	byteKey := types.EncodeKey(block)
@@ -542,6 +553,26 @@ func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64,
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
 	_, found := fs.FindEntry2(ctx, index, block, entryData)
 	return found
+}
+
+// IsEntryStale returns true if an entry version exists and is stale.
+func (fs *FixationStore) IsEntryStale(ctx sdk.Context, index string, block uint64) bool {
+	safeIndex, err := types.SanitizeIndex(index)
+	if err != nil {
+		panic("IsEntryStale invalid non-ascii entry: " + index)
+	}
+	entry := fs.getEntry(ctx, safeIndex, block)
+	return entry.IsStale(ctx)
+}
+
+// HasEntry returns true if an entry version exists for the given index, block tuple
+// (any kind of entry, even deleted or stale).
+func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) bool {
+	safeIndex, err := types.SanitizeIndex(index)
+	if err != nil {
+		panic("HasEntry invalid non-ascii entry: " + index)
+	}
+	return fs.hasEntry(ctx, safeIndex, block)
 }
 
 // GetEntry returns the latest entry by index and increments the refcount
