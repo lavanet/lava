@@ -142,28 +142,28 @@ const (
 	timerStaleEntry  = 0x03
 )
 
-func encodeForTimer(index string, block uint64, kind byte) []byte {
+func encodeForTimer(safeIndex types.SafeIndex, block uint64, kind byte) []byte {
 	// NOTE: the encoding places callback type first to ensure the order of
 	// callbacks when there are multiple at the same block (for some entry);
 	// it is followed by the entry version (block) and index.
-	encodedKey := make([]byte, 8+1+len(index))
-	copy(encodedKey[9:], []byte(index))
+	encodedKey := make([]byte, 8+1+len(safeIndex))
+	copy(encodedKey[9:], []byte(safeIndex))
 	binary.BigEndian.PutUint64(encodedKey[1:9], block)
 	encodedKey[0] = kind
 	return encodedKey
 }
 
-func decodeFromTimer(encodedKey []byte) (index string, block uint64, kind byte) {
-	index = string(encodedKey[9:])
+func decodeFromTimer(encodedKey []byte) (safeIndex types.SafeIndex, block uint64, kind byte) {
+	safeIndex = types.SafeIndex(encodedKey[9:])
 	block = binary.BigEndian.Uint64(encodedKey[1:9])
 	kind = encodedKey[0]
-	return index, block, kind
+	return safeIndex, block, kind
 }
 
-func (fs *FixationStore) getEntryStore(ctx sdk.Context, index string) *prefix.Store {
+func (fs *FixationStore) getEntryStore(ctx sdk.Context, safeIndex types.SafeIndex) *prefix.Store {
 	store := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.createEntryStoreKey(index)))
+		types.KeyPrefix(fs.createEntryStoreKey(string(safeIndex))))
 	return &store
 }
 
@@ -171,16 +171,16 @@ func (fs *FixationStore) getEntryStore(ctx sdk.Context, index string) *prefix.St
 // the same expirty block. Useful, for example, when a newer entry takes responsibility
 // for a pending deletion from the previous owner.
 func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, block uint64, kind byte) {
-	key := encodeForTimer(prev.Index, prev.Block, kind)
+	key := encodeForTimer(prev.SafeIndex(), prev.Block, kind)
 	fs.tstore.DelTimerByBlockHeight(ctx, block, key)
 
-	key = encodeForTimer(next.Index, next.Block, kind)
+	key = encodeForTimer(next.SafeIndex(), next.Block, kind)
 	fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 }
 
 // hasEntry returns wether a specific entry exists in the store
 // (any kind of entry, even deleted or stale)
-func (fs *FixationStore) hasEntry(ctx sdk.Context, safeIndex string, block uint64) bool {
+func (fs *FixationStore) hasEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) bool {
 	store := fs.getEntryStore(ctx, safeIndex)
 	byteKey := types.EncodeKey(block)
 	return store.Has(byteKey)
@@ -188,12 +188,13 @@ func (fs *FixationStore) hasEntry(ctx sdk.Context, safeIndex string, block uint6
 
 // getEntry returns an existing entry in the store
 // (any kind of entry, even deleted or stale)
-func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint64) (entry types.Entry) {
+func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) (entry types.Entry) {
 	store := fs.getEntryStore(ctx, safeIndex)
 	byteKey := types.EncodeKey(block)
 	b := store.Get(byteKey)
 	if b == nil {
-		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d", types.DesanitizeIndex(safeIndex), block))
+		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d",
+			types.DesanitizeIndex(safeIndex), block))
 	}
 	fs.cdc.MustUnmarshal(b, &entry)
 	return entry
@@ -201,7 +202,7 @@ func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex string, block uint6
 
 // setEntry modifies an existing entry in the store
 func (fs *FixationStore) setEntry(ctx sdk.Context, entry types.Entry) {
-	store := fs.getEntryStore(ctx, entry.Index)
+	store := fs.getEntryStore(ctx, entry.SafeIndex())
 	byteKey := types.EncodeKey(entry.Block)
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 	store.Set(byteKey, marshaledEntry)
@@ -282,7 +283,7 @@ func (fs *FixationStore) AppendEntry(
 
 	// create a new entry
 	entry := types.Entry{
-		Index:    safeIndex,
+		Index:    string(safeIndex),
 		Block:    block,
 		StaleAt:  math.MaxUint64,
 		DeleteAt: deleteAt,
@@ -313,7 +314,7 @@ func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, da
 	}
 }
 
-func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, block uint64) {
+func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
 	if block != uint64(ctx.BlockHeight()) {
 		panic(fmt.Sprintf("Future entry: future block %d != current block %d", block, ctx.BlockHeight()))
 	}
@@ -336,7 +337,7 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex string, bl
 	}
 }
 
-func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, block uint64) {
+func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
 	entry := fs.getEntry(ctx, safeIndex, block)
 	ctxBlock := uint64(ctx.BlockHeight())
 
@@ -368,13 +369,13 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex string, bl
 	}
 
 	for _, entry := range entriesToRemove {
-		key := encodeForTimer(entry.Index, entry.Block, timerFutureEntry)
+		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
 		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
-		fs.removeEntry(ctx, entry.Index, entry.Block)
+		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
 	}
 }
 
-func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex string, _ uint64) {
+func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.SafeIndex, _ uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -476,7 +477,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
 // nearest-smaller block version for the given block arg.
-func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex string, block uint64) (types.Entry, bool) {
+func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) (types.Entry, bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryStore(ctx, safeIndex)
 	ctxBlock := uint64(ctx.BlockHeight())
@@ -610,7 +611,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
 		// never overflows because ctx.BlockHeight is int64
 		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
-		key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
+		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
 
@@ -665,7 +666,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 }
 
 // removeEntry removes an entry from the store
-func (fs *FixationStore) removeEntry(ctx sdk.Context, safeIndex string, block uint64) {
+func (fs *FixationStore) removeEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 	store.Delete(types.EncodeKey(block))
 }
