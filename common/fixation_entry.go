@@ -193,8 +193,12 @@ func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex types.SafeIndex, bl
 	byteKey := types.EncodeKey(block)
 	b := store.Get(byteKey)
 	if b == nil {
-		panic(fmt.Sprintf("getEntry: unknown entry: %s block: %d",
-			types.DesanitizeIndex(safeIndex), block))
+		// panic:ok: internal API that expects the <entry, block> to exist
+		utils.LavaFormatPanic("fixation: getEntry failed (unknown entry)", sdkerrors.ErrNotFound,
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+			utils.Attribute{Key: "block", Value: block},
+		)
 	}
 	fs.cdc.MustUnmarshal(b, &entry)
 	return entry
@@ -234,7 +238,14 @@ func (fs *FixationStore) AppendEntry(
 		fs.setEntryIndex(ctx, safeIndex, true)
 	} else {
 		if block < latestEntry.Block {
-			panic(fmt.Sprintf("AppendEntry for block %d < latest entry block %d", block, latestEntry.Block))
+			// how come getUnmarshaledEntryForBlock lied to us?!
+			utils.LavaFormatError("critical: AppendEntry block smaller than latest",
+				fmt.Errorf("block %d < latest entry block %d", block, latestEntry.Block),
+				utils.Attribute{Key: "prefix", Value: fs.prefix},
+				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "latest", Value: latestEntry.Block},
+			)
 		}
 
 		// temporary: do not allow adding new entries for an index that was deleted
@@ -254,7 +265,7 @@ func (fs *FixationStore) AppendEntry(
 		}
 
 		// if the previous latest entry is marked with DeleteAt which is set to expire after
-		// theis future entry's maturity (block), then transfer this DeleteAt to the future
+		// this future entry's maturity (block), then transfer this DeleteAt to the future
 		// entry, and then replace the old timer with a new timer (below)
 		// (note: deletion, if any, cannot be for the current block, since it would have been
 		// processed at the beginning of the block, and AppendEntry would fail earlier).
@@ -311,23 +322,50 @@ func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, da
 		fs.deleteMarkedEntry(ctx, safeIndex, block)
 	case timerStaleEntry:
 		fs.deleteStaleEntries(ctx, safeIndex, block)
+	default:
+		utils.LavaFormatPanic("fixation: timer callback unknown type",
+			// panic:ok: state is badly invalid, because we expect the kind of the timer
+			// to always be one of the above.
+			fmt.Errorf("unknown callback kind = %x", kind),
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+		)
 	}
 }
 
 func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
-	if block != uint64(ctx.BlockHeight()) {
-		panic(fmt.Sprintf("Future entry: future block %d != current block %d", block, ctx.BlockHeight()))
+	// sanity check: future entries should get timeout on their block reachs now
+	ctxBlock := uint64(ctx.BlockHeight())
+	if block != ctxBlock {
+		// panic:ok: state is badly invalid, because we expect the expiry block of a
+		// timer that expired now to be same as current block height.
+		utils.LavaFormatPanic("fixation: future callback block mismatch",
+			fmt.Errorf("wrong expiry block %d != current block %d", block, ctxBlock),
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+			utils.Attribute{Key: "expiry", Value: block},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+		)
 	}
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block-1)
 	if found {
 		// previous latest entry should never have its DeleteAt set for this block:
-		// if our AppendEntry happened before the DelEntry, we would get marked (and
-		// not the previous latest entry); if the DelEntry happened first, then we
-		// would inherit the DeleteAt from the previous latest entry.
+		// if our AppendEntry happened before some DelEntry, we would get marked for
+		// delete with DeleteAt (and not the previous latest entry); if the DelEntry
+		// happened first, then upon our AppendEntry() we would inherit the DeleteAt
+		// from the previous latest entry.
 
 		if latestEntry.HasDeleteAt() {
-			panic(fmt.Sprintf("Future entry: latest entry has DeleteAt %d", latestEntry.DeleteAt))
+			// panic:ok: internal state mismatch, unknown outcome if we proceed
+			utils.LavaFormatPanic("fixation: future entry callback invalid state",
+				fmt.Errorf("previous latest entry marked delete at %d", latestEntry.DeleteAt),
+				utils.Attribute{Key: "prefix", Value: fs.prefix},
+				utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "latest", Value: latestEntry.Block},
+			)
 		}
 
 		// latest entry had extra refcount for being the latest; so drop that refcount
@@ -342,7 +380,14 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	if entry.DeleteAt != ctxBlock {
-		panic(fmt.Sprintf("DelEntry entry deleted %d != current ctx block %d", entry.DeleteAt, ctxBlock))
+		// panic:ok: internal state mismatch, unknown outcome if we proceed
+		utils.LavaFormatPanic("fixation: delete entry callback invalid state",
+			fmt.Errorf("entry delete at %d != current block %d", entry.DeleteAt, ctxBlock),
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+			utils.Attribute{Key: "delete", Value: entry.DeleteAt},
+		)
 	}
 
 	fs.setEntryIndex(ctx, safeIndex, false)
@@ -453,10 +498,15 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 }
 
 // ReadEntry returns and existing entry with index and specific block
+// (should be called only for existing entries; will panic otherwise)
 func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("ReadEntry invalid non-ascii entry: " + index)
+		// panic:ok: entry expected to exist as is
+		utils.LavaFormatPanic("fixation: ReadEntry failed (invalid index)", err,
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	entry := fs.getEntry(ctx, safeIndex, block)
@@ -464,10 +514,15 @@ func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, 
 }
 
 // ModifyEntry modifies an existing entry in the store
+// (should be called only for existing entries; will panic otherwise)
 func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("ModifyEntry with non-ascii index: " + index)
+		// panic:ok: entry expected to exist as is
+		utils.LavaFormatPanic("fixation: ModifyEntry failed (invalid index)", err,
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	entry := fs.getEntry(ctx, safeIndex, block)
@@ -527,7 +582,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (uint64, bool) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		utils.LavaFormatError("FindEntry failed", err,
+		utils.LavaFormatError("FindEntry failed (invalid index)", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 		return 0, false
@@ -560,7 +615,10 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 func (fs *FixationStore) IsEntryStale(ctx sdk.Context, index string, block uint64) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("IsEntryStale invalid non-ascii entry: " + index)
+		utils.LavaFormatError("IsEntryStale failed (invalid index)", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
+		return false
 	}
 	entry := fs.getEntry(ctx, safeIndex, block)
 	return entry.IsStale(ctx)
@@ -571,7 +629,10 @@ func (fs *FixationStore) IsEntryStale(ctx sdk.Context, index string, block uint6
 func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("HasEntry invalid non-ascii entry: " + index)
+		utils.LavaFormatError("HasEntry failed (invalid index)", err,
+			utils.Attribute{Key: "index", Value: index},
+		)
+		return false
 	}
 	return fs.hasEntry(ctx, safeIndex, block)
 }
@@ -580,7 +641,7 @@ func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) b
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		utils.LavaFormatError("GetEntry failed", err,
+		utils.LavaFormatError("GetEntry failed (invalid index)", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
 		return false
@@ -603,7 +664,13 @@ func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec
 // putEntry decrements the refcount of an entry and marks for staleness if needed
 func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	if entry.Refcount == 0 {
-		panic("Fixation: prefix " + fs.prefix + ": negative refcount safeIndex: " + entry.Index)
+		// panic:ok: double putEntry() is bad news like double free
+		safeIndex := types.SafeIndex(entry.Index)
+		utils.LavaFormatPanic("fixation: putEntry invalid refcount state",
+			fmt.Errorf("unable to put entry with refcount 0"),
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+		)
 	}
 
 	entry.Refcount -= 1
@@ -619,10 +686,15 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 }
 
 // PutEntry finds the entry by index and block and decrements the refcount
+// (should be called only for existing entries; will panic otherwise)
 func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		panic("PutEntry invalid non-ascii entry: " + index)
+		// panic:ok: entry expected to exist as is
+		utils.LavaFormatPanic("fixation: PutEntry failed (invalid index)", err,
+			utils.Attribute{Key: "prefix", Value: fs.prefix},
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	entry := fs.getEntry(ctx, safeIndex, block)
@@ -634,13 +706,16 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		return sdkerrors.ErrNotFound.Wrapf("invalid non-ascii index")
+		return sdkerrors.ErrNotFound.Wrapf("invalid non-ascii index: %s", index)
 	}
 
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	if block < ctxBlock {
-		panic(fmt.Sprintf("DelEntry for block %d < current ctx block %d", block, ctxBlock))
+		return utils.LavaFormatError("critical: DelEntry of past block",
+			fmt.Errorf("delete requested at an old block %d < %d", block, ctxBlock),
+			utils.Attribute{Key: "index", Value: index},
+		)
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
