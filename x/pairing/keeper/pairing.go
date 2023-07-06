@@ -143,7 +143,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	// create the pairing slots with assigned reqs
-	slots := pairingscores.CalcSlots(strictestPolicy)
+	slots := pairingscores.CalcSlots(strictestPolicy, minStake)
 
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
