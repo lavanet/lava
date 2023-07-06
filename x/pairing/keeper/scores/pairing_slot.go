@@ -1,4 +1,4 @@
-package score
+package scores
 
 import "reflect"
 

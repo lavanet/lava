@@ -11,7 +11,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	pairingscorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -149,15 +148,15 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	slotGroups := pairingscores.GroupSlots(slots)
 
 	// create providerScore array with all possible providers
-	providerScores := []*pairingscorestypes.PairingScore{}
+	providerScores := []*pairingscores.PairingScore{}
 	for i := range possibleProviders {
-		providerScore := pairingscorestypes.NewPairingScore(&possibleProviders[i])
+		providerScore := pairingscores.NewPairingScore(&possibleProviders[i])
 		providerScores = append(providerScores, providerScore)
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscorestypes.NewPairingSlot(map[reflect.Type]pairingscorestypes.ScoreReq{}) // init dummy slot to compare to
-	indexToSkipMapPtr := make(map[int]bool)                                                            // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
+	prevGroupSlot := pairingscores.NewPairingSlot(map[reflect.Type]pairingscores.ScoreReq{}) // init dummy slot to compare to
+	indexToSkipMapPtr := make(map[int]bool)                                                  // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
 	for _, group := range slotGroups {
 		diffSlot := group.Slot.Diff(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot, minStake)
