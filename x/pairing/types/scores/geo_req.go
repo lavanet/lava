@@ -11,7 +11,7 @@ import (
 
 // stake requirement that implements the ScoreReq interface
 type GeoReq struct {
-	geo uint64
+	Geo uint64
 }
 
 const (
@@ -21,7 +21,7 @@ const (
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
 	providerGeo := int32(provider.Geolocation)
-	missingGeos := providerGeo ^ int32(gr.geo)
+	missingGeos := providerGeo ^ int32(gr.Geo)
 
 	providerGeoEnums := types.GetGeolocationsFromUint(providerGeo)
 	missingGeoEnums := types.GetGeolocationsFromUint(missingGeos)

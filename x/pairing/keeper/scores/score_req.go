@@ -8,6 +8,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/types"
 	scorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -25,10 +26,18 @@ func init() {
 // TODO: this function should be changed in the future since it only supports stake reqs
 func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
+	reqMap := map[string]scorestypes.ScoreReq{}
+
+	// stake requirements
 	stakeReq := scorestypes.StakeReq{}
-	stakeReqMap := map[string]scorestypes.ScoreReq{stakeReq.GetName(): stakeReq}
+	reqMap[stakeReq.GetName()] = stakeReq
+
+	// geo requirements
+	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
 	for i := range slots {
-		slots[i] = scorestypes.NewPairingSlot(stakeReqMap)
+		geoReq := scorestypes.GeoReq{Geo: uint64(policyGeoEnums[i%len(policyGeoEnums)])}
+		reqMap[geoReq.GetName()] = geoReq
+		slots[i] = scorestypes.NewPairingSlot(reqMap)
 	}
 
 	return slots
