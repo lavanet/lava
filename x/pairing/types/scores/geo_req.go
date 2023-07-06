@@ -106,8 +106,8 @@ func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLa
 // latency data from: https://wondernetwork.com/pings
 var GEO_LATENCY_MAP = map[planstypes.Geolocation][]GeoLatency{
 	AS: {
-		{geo: EU, latency: 140},
-		{geo: AU, latency: 219},
+		{geo: AU, latency: 146},
+		{geo: EU, latency: 155},
 	},
 	USE: {
 		{geo: USC, latency: 42},
@@ -122,17 +122,17 @@ var GEO_LATENCY_MAP = map[planstypes.Geolocation][]GeoLatency{
 		{geo: USW, latency: 45},
 	},
 	EU: {
-		{geo: AF, latency: 111},
-		{geo: USE, latency: 117},
-		{geo: AS, latency: 140},
+		{geo: USE, latency: 116},
+		{geo: AF, latency: 138},
+		{geo: AS, latency: 155},
 	},
 	AF: {
-		{geo: EU, latency: 111},
-		{geo: USE, latency: 187},
-		{geo: AS, latency: 237},
+		{geo: EU, latency: 138},
+		{geo: USE, latency: 203},
+		{geo: AS, latency: 263},
 	},
 	AU: {
+		{geo: AS, latency: 146},
 		{geo: USW, latency: 179},
-		{geo: AS, latency: 219},
 	},
 }
