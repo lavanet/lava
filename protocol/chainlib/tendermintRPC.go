@@ -417,7 +417,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 	}
 	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}}, conn: map[string]*chainproxy.Connector{}},
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, errorHandler: &TendermintRPCErrorHandler{}}, conn: map[string]*chainproxy.Connector{}},
 		httpNodeUrl:    httpUrl,
 		httpConnector:  nil,
 	}
@@ -478,7 +478,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	// create a new http request
 	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.httpNodeUrl.AuthConfig.AddAuthPath(url), nil)
 	if err != nil {
-		if parsedError := cp.BaseChainProxy.ErrorHandler.HandleNodeError(ctx, err); parsedError != nil {
+		if parsedError := cp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
 		// TODO: if not parsed return error as reply or as error?
@@ -557,7 +557,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
 		if err != nil {
-			if parsedError := cp.BaseChainProxy.ErrorHandler.HandleNodeError(ctx, err); parsedError != nil {
+			if parsedError := cp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}

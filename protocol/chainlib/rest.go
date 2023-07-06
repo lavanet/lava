@@ -353,7 +353,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], ErrorHandler: &RestErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], errorHandler: &RestErrorHandler{}},
 	}
 	return rcp, nil
 }
@@ -416,7 +416,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 	res, err := httpClient.Do(req)
 	if err != nil {
-		if parsedError := rcp.BaseChainProxy.ErrorHandler.HandleNodeError(ctx, err); parsedError != nil {
+		if parsedError := rcp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
 		return nil, "", nil, err

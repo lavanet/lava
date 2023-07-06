@@ -317,7 +317,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 
 func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, errorHandler: &GRPCErrorHandler{}},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -442,7 +442,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 
 	if err != nil {
-		if parsedError := cp.BaseChainProxy.ErrorHandler.HandleNodeError(ctx, err); parsedError != nil {
+		if parsedError := cp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
 		// return the node's error back to the client as the error type is a invalid request which is cu deductible
