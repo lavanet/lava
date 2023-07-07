@@ -13,46 +13,43 @@ import (
 // Keys management logic:
 //
 // upon CreateProject(project):
-//   -> registerKey(now)
-//     -> AppendEntry(project, now)
+//   -> registerKey(this epch)
+//     -> AppendEntry(project, this epch)
 //
 // upon AddKeysToProject(project, key-by, keys-to-add)
 //   -> FindEntry(project, now)
-//   -> validate key-by is admin-key in project
-//   -> FindEntry(project, nextEpoch)
-//   -> registerKey(keys-to-add, project, nextEpoch) (see below)
-//   -> AppendEntry(project, nextEpoch)
+//   -> FindEntry(project-next, epoch-next)
+//   -> validate key-by is admin-key in project-next
+//   -> registerKey(keys-to-add, project, epoch)
+//   -> AppendEntry(project, epoch)
+//   if needed:
+//   -> registerKey(keys-to-add, project-next, epoch-next)
+//   -> AppendEntry(project, epoch-next)
 //
 // upon DelKeysFromProject(project, key-by, keys-to-del)
-//   -> FindEntry(project, now)
-//   -> validate key-by is admin-key in project
-//   -> FindEntry(project, nextEpoch)
-//   -> unregisterKey(dev-keys-to-del, project, nextEpoch) (see below)
-//   -> AppendEntry(project, nextEpoch)
+//   -> FindEntry(project-next, epoch-next)
+//   -> validate key-by is admin-key in project-next
+//   -> unregisterKey(dev-keys-to-del, project-next, epoch-next)
+//   -> AppendEntry(project-next, epoch-next)
 //
 // upon DeleteProject(project)
 //   -> find project (now)
 //   -> unregisterKey(all-keys, project, nextEpoch) (see below)
 //   -> DelEntry(project, nextEpoch)
 //
-// upon registerKey(project, when)
+// upon registerKey(project, epoch)
 //   -> if admin: add to project
 //   -> if devel:
-//        find devel-key (now)
-//        if not belong to project: bail
-//        find devel-key (when)
-//        if the key not belong to this project: bail
-//        else if not found: add to project, AppendEntry(dev-key, when)
+//        find devel-key (epoch)
+//        if belongs to another project: bail
+//        else if not already ours: add to project, AppendEntry(dev-key, epoch)
 //
-// upon unregisterKey(project, when)
+// upon unregisterKey(project, epoch)
 //   -> if admin: del from project
 //   -> if devel:
-//        find devel-key (now)
-//        if not belong to project: bail
-//        find devel-key (when)
-//        if not found: nothing to do
-//        if not belong to project: bail
-//        else: del from project, DelEntry(dev-key, when)
+//        find devel-key (epoch-next)
+//        if belongs to another project bail
+//        else: if ours: del from project-next, DelEntry(dev-key, epoch-next)
 
 // CreateAdminProject creates the (default) admin project
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
@@ -156,7 +153,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 // registerKey adds a key to a project. For developer keys it also updates the
 // developer key registry (that maps them to projects). The block argument is
 // expected to be current block height (takes effect immediately).
-func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, block uint64) error {
+func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
 		return sdkerrors.ErrInvalidType
 	}
@@ -167,15 +164,11 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
 		var devkeyData types.ProtoDeveloperData
-
-		// we may be called with a future block (e.g. if unRegisterKey removed keys
-		// earlier in the same epoch; see AddKeysToProject). in that case, realBlock
-		// will report in which version the developer key was found (if at all).
-		realBlock, found := k.developerKeysFS.FindEntry2(ctx, key.Key, block, &devkeyData)
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
 		// check that the developer key is valid, and that it does not already
 		// belong to a different project.
-		if found && devkeyData.ProjectID != project.GetIndex() {
+		if found && devkeyData.ProjectID != project.Index {
 			return utils.LavaFormatWarning("failed to register key",
 				fmt.Errorf("key already exists"),
 				utils.Attribute{Key: "key", Value: key.Key},
@@ -183,25 +176,22 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
-		// by now, the key was either not found, or found and belongs to us already.
-		// if the former, then we surely need to add it. if the latter, we may still
-		// need to add it if realBlock != block (to cover the case where the key was
-		// first removed and a future version without it was created, and re-added).
+		project.AppendKey(types.ProjectDeveloperKey(key.Key))
 
-		if !found || realBlock != block {
+		// by now, the key was either not found, or found and belongs to us already.
+		// if the former, then we surely need to add it.
+		if !found {
 			devkeyData := types.ProtoDeveloperData{
 				ProjectID: project.GetIndex(),
 			}
 
-			err := k.developerKeysFS.AppendEntry(ctx, key.Key, block, &devkeyData)
+			err := k.developerKeysFS.AppendEntry(ctx, key.Key, epoch, &devkeyData)
 			if err != nil {
 				return utils.LavaFormatWarning("failed to register key", err,
 					utils.Attribute{Key: "key", Value: key.Key},
 					utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				)
 			}
-
-			project.AppendKey(types.ProjectDeveloperKey(key.Key))
 		}
 	}
 
