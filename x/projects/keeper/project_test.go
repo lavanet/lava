@@ -710,16 +710,18 @@ func TestChargeComputeUnits(t *testing.T) {
 
 func TestAddDelKeysSameEpoch(t *testing.T) {
 	ts := newTestStruct(t)
-	ts.prepareData(2, 1, 5) // 2 sub, 1 adm, 5 dev
+	ts.prepareData(2, 2, 6) // 2 sub, 1 adm, 5 dev
 
 	sub1Addr := ts.accounts["sub1"]
 	sub2Addr := ts.accounts["sub2"]
 	adm1Addr := ts.accounts["adm1"]
+	adm2Addr := ts.accounts["adm2"]
 	dev1Addr := ts.accounts["dev1"]
 	dev2Addr := ts.accounts["dev2"]
 	dev3Addr := ts.accounts["dev3"]
 	dev4Addr := ts.accounts["dev4"]
 	dev5Addr := ts.accounts["dev5"]
+	dev6Addr := ts.accounts["dev6"]
 
 	plan := common.CreateMockPlan()
 
@@ -749,6 +751,7 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	err = ts.keepers.Projects.AddKeysToProject(ts.ctx, projectID1, sub1Addr,
 		[]types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)})
 	require.Nil(t, err)
+	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 
 	ts.AdvanceBlock(1)
 
@@ -787,20 +790,36 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.False(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
 	require.False(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
 
-	// add, del in same epoch
+	// add, del (and add again) in same epoch
 	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
 	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
 
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	err = ts.addProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev4Addr))
+	err = ts.delProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
 	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
+	require.NotNil(t, err)
+
+	// add, del: admin, should be invalid immediately
+	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
+	require.Nil(t, err)
+	err = ts.addProjectKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
+	require.NotNil(t, err)
 
 	ts.AdvanceEpoch(1)
-	require.False(t, ts.isKeyInProject(projectID2, adm1Addr, types.ProjectKey_ADMIN))
-	require.False(t, ts.isKeyInProject(projectID2, dev3Addr, types.ProjectKey_DEVELOPER))
+	require.True(t, ts.isKeyInProject(projectID2, adm1Addr, types.ProjectKey_ADMIN))
+	require.False(t, ts.isKeyInProject(projectID2, dev4Addr, types.ProjectKey_DEVELOPER))
+	require.False(t, ts.isKeyInProject(projectID2, adm2Addr, types.ProjectKey_ADMIN))
+	require.True(t, ts.isKeyInProject(projectID2, dev6Addr, types.ProjectKey_DEVELOPER))
 
 	// add dev to two projects in same epoch - latter fails
 	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev5Addr))
