@@ -1,8 +1,14 @@
 package types
 
 import (
+	"bytes"
+	"encoding/json"
+	fmt "fmt"
+	"reflect"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/mitchellh/mapstructure"
 )
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
@@ -27,13 +33,13 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 				(EpochCuLimit = %v, TotalCuLimit = %v)`, policy.EpochCuLimit, policy.TotalCuLimit)
 		}
 
-		if policy.SelectedProvidersMode == 3 && len(policy.SelectedProviders) != 0 {
+		if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_DISABLED && len(policy.SelectedProviders) != 0 {
 			return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) and non-empty list of selected providers`)
 		}
 
 		// non-plan policy checks
-	} else if policy.SelectedProvidersMode == 3 {
+	} else if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_DISABLED {
 		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) for a policy that is not plan policy`)
 	}
@@ -47,7 +53,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		return sdkerrors.Wrapf(ErrInvalidPolicyMaxProvidersToPair, "invalid policy's MaxProvidersToPair fields (MaxProvidersToPair = %v)", policy.MaxProvidersToPair)
 	}
 
-	if policy.SelectedProvidersMode == 0 && len(policy.SelectedProviders) != 0 {
+	if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_ALLOWED && len(policy.SelectedProviders) != 0 {
 		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no 
 			providers restrictions) and non-empty list of selected providers`)
 	}
@@ -90,4 +96,53 @@ func VerifyTotalCuUsage(policies []*Policy, cuUsage uint64) bool {
 	}
 
 	return true
+}
+
+// allows unmarshaling parser func
+func (s SELECTED_PROVIDERS_MODE) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(SELECTED_PROVIDERS_MODE_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = SELECTED_PROVIDERS_MODE(SELECTED_PROVIDERS_MODE_value[j])
+	return nil
+}
+
+// hook function to allow correct SELECTED_PROVIDERS_MODE enum read from yaml
+func SelectedProvidersModeHookFunc() mapstructure.DecodeHookFuncType {
+	return DecodeSelectedProvidersMode
+}
+
+func DecodeSelectedProvidersMode(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	// Check that the data is string
+	if f.Kind() != reflect.String {
+		return data, nil
+	}
+
+	// Check that the target type is policy
+	if t != reflect.TypeOf(SELECTED_PROVIDERS_MODE(0)) {
+		return data, nil
+	}
+
+	dataStr, ok := data.(string)
+	if ok {
+		mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
+		if found {
+			return SELECTED_PROVIDERS_MODE(mode), nil
+		} else {
+			return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+		}
+	}
+
+	return data, nil
 }
