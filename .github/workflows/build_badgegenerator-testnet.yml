@@ -59,7 +59,7 @@ jobs:
 
       - name: Build, tag, and push docker image to GCP
         env:
-          REGISTRY: "us-central1-docker.pkg.dev/lavanet-testnet/growth-testnet-us-central1/badgegenerator"
+          REGISTRY: "us-central1-docker.pkg.dev/lavanet-testnet/growth-testnet-us-central1/badgegenerator-testnet"
           IMAGE_TAG: ${{ github.sha }}
           NOW: ${{ env.NOW }}
         run: |

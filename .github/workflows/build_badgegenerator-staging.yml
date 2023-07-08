@@ -1,4 +1,4 @@
-name: Build Badge Generator Staging
+name: Build Badge Generator (Staging)
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
 
       - name: Build, tag, and push docker image to GCP
         env:
-          REGISTRY: "us-central1-docker.pkg.dev/lavanet-staging/growth-staging-us-central1/badgegenerator"
+          REGISTRY: "us-central1-docker.pkg.dev/lavanet-staging/growth-staging-us-central1/badgegenerator-staging"
           IMAGE_TAG: ${{ github.sha }}
           NOW: ${{ env.NOW }}
         run: |
