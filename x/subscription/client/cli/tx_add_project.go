@@ -45,7 +45,7 @@ func CmdAddProject() *cobra.Command {
 
 			creator := clientCtx.GetFromAddress().String()
 
-			var policy *planstypes.Policy
+			policy := &planstypes.Policy{}
 
 			policyFilePath, err := cmd.Flags().GetString("policy-file")
 			if err != nil {
