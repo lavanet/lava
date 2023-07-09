@@ -15,6 +15,7 @@ const (
 // GetName() gets the ScoreReq's name
 type ScoreReq interface {
 	Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64
+	Equal(other ScoreReq) bool
 	GetName() string
 }
 
@@ -35,6 +36,8 @@ func (s PairingSlot) Diff(other *PairingSlot) *PairingSlot {
 	reqsDiff := make(map[string]ScoreReq)
 	for key := range s.Reqs {
 		if _, found := other.Reqs[key]; !found {
+			reqsDiff[key] = s.Reqs[key]
+		} else if !s.Reqs[key].Equal(other.Reqs[key]) {
 			reqsDiff[key] = s.Reqs[key]
 		}
 	}

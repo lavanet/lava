@@ -45,6 +45,16 @@ func (gr GeoReq) GetName() string {
 	return GEO_REQ_NAME
 }
 
+// Equal() used to compare slots to determine slot groups
+func (gr GeoReq) Equal(other ScoreReq) bool {
+	otherGeoReq, ok := other.(GeoReq)
+	if !ok {
+		return false
+	}
+
+	return otherGeoReq.Geo == gr.Geo
+}
+
 // a single geolocation and the latency to it (in millieseconds)
 type GeoLatency struct {
 	geo     planstypes.Geolocation
