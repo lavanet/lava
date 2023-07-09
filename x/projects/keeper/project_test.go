@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -826,6 +827,125 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.Nil(t, err)
 	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev5Addr))
 	require.NotNil(t, err)
+}
+
+func TestDelKeysDelProjectSameEpoch(t *testing.T) {
+	var err error
+
+	ts := newTestStruct(t)
+	ts.prepareData(1, 1, 2) // 1 sub, 1 adm, 1 dev
+
+	sub1Addr := ts.accounts["sub1"]
+	adm1Addr := ts.accounts["adm1"]
+	dev1Addr := ts.accounts["dev1"]
+	dev2Addr := ts.accounts["dev2"]
+
+	plan := common.CreateMockPlan()
+
+	projectsData := []types.ProjectData{
+		{
+			Name:        "mockname1",
+			Enabled:     true,
+			ProjectKeys: []types.ProjectKey{types.ProjectAdminKey(adm1Addr)},
+			Policy:      &plan.PlanPolicy,
+		},
+		{
+			Name:        "mockname2",
+			Enabled:     true,
+			ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev1Addr)},
+			Policy:      &plan.PlanPolicy,
+		},
+		{
+			Name:        "mockname3",
+			Enabled:     true,
+			ProjectKeys: []types.ProjectKey{types.ProjectAdminKey(adm1Addr)},
+			Policy:      &plan.PlanPolicy,
+		},
+		{
+			Name:        "mockname4",
+			Enabled:     true,
+			ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)},
+			Policy:      &plan.PlanPolicy,
+		},
+	}
+
+	projectsID := make([]string, 4)
+
+	for i := range projectsData {
+		projectsID[i] = types.ProjectIndex(sub1Addr, projectsData[i].Name)
+		err = ts.keepers.Projects.CreateProject(ts.ctx, sub1Addr, projectsData[i], plan)
+		require.Nil(t, err)
+	}
+
+	ts.AdvanceEpoch(1)
+
+	// part (1): delete keys then project
+
+	// delete key from each project
+	err = ts.delProjectKeys(projectsID[0], sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.Nil(t, err)
+	err = ts.delProjectKeys(projectsID[1], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.Nil(t, err)
+
+	// now delete the projects (double delete) in same epoch
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, sub1Addr, projectsID[0])
+	require.Nil(t, err)
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, sub1Addr, projectsID[1])
+	require.Nil(t, err)
+
+	proj, err := ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[0], ts.BlockHeight())
+	require.Nil(t, err)
+	require.Equal(t, 1, len(proj.ProjectKeys))
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[1], ts.BlockHeight())
+	require.Nil(t, err)
+	require.Equal(t, 1, len(proj.ProjectKeys))
+
+	// wait for next epoch for delete(s) to take effect
+	ts.AdvanceEpoch(1)
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[0], ts.BlockHeight())
+	require.NotNil(t, err)
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[1], ts.BlockHeight())
+	require.NotNil(t, err)
+
+	// should not panic
+	ts.AdvanceBlock(2 * int(commontypes.STALE_ENTRY_TIME))
+
+	// part (2): delete project then keys
+
+	// delete the projects
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, sub1Addr, projectsID[2])
+	require.Nil(t, err)
+	err = ts.keepers.Projects.DeleteProject(ts.ctx, sub1Addr, projectsID[3])
+	require.Nil(t, err)
+
+	// delete key from each project: should being  (project being deleted)
+	err = ts.delProjectKeys(projectsID[2], sub1Addr, types.ProjectAdminKey(adm1Addr))
+	require.NotNil(t, err)
+	err = ts.delProjectKeys(projectsID[3], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.NotNil(t, err)
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[2], ts.BlockHeight())
+	require.Nil(t, err)
+	require.Equal(t, 1, len(proj.ProjectKeys))
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[3], ts.BlockHeight())
+	require.Nil(t, err)
+	require.Equal(t, 1, len(proj.ProjectKeys))
+
+	// wait for next epoch for delete(s) to take effect
+	ts.AdvanceEpoch(1)
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[2], ts.BlockHeight())
+	require.NotNil(t, err)
+
+	proj, err = ts.keepers.Projects.GetProjectForBlock(ts.ctx, projectsID[3], ts.BlockHeight())
+	require.NotNil(t, err)
+
+	// should not panic
+	ts.AdvanceBlock(2 * int(commontypes.STALE_ENTRY_TIME))
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
