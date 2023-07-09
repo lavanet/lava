@@ -45,6 +45,8 @@ func (geh *genericErrorHandler) handleGenericErrors(ctx context.Context, nodeErr
 
 type RestErrorHandler struct{ genericErrorHandler }
 
+// Validating if the error is related to the provider connection or not
+// returning nil if its not one of the expected connectivity error types
 func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
 	return rne.handleGenericErrors(ctx, nodeError)
 }

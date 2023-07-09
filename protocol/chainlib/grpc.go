@@ -317,7 +317,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 
 func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, errorHandler: &GRPCErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -442,11 +442,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 
 	if err != nil {
-		if parsedError := cp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
+		// Validate if the error is related to the provider connection to the node or it is a valid error
+		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
+		if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
 		// return the node's error back to the client as the error type is a invalid request which is cu deductible
-		respBytes, handlingError := handleGrpcNodeError(ctx, err)
+		respBytes, handlingError := parseGrpcNodeErrorToReply(ctx, err)
 		if handlingError != nil {
 			return nil, "", nil, handlingError
 		}
@@ -470,7 +472,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	return reply, "", nil, nil
 }
 
-func handleGrpcNodeError(ctx context.Context, err error) ([]byte, error) {
+// This method assumes that the error is due to misuse of the request arguments, meaning the user would like to get
+// the response from the server to fix the request arguments. this method will make sure the user will get the response
+// from the node in the same format as expected.
+func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, error) {
 	var respBytes []byte
 	var marshalingError error
 	if statusError, ok := status.FromError(err); ok {

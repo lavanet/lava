@@ -349,7 +349,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *la
 	}
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, errorHandler: &JsonRPCErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}},
 		conn:           map[string]*chainproxy.Connector{},
 	}
 	verifyRPCEndpoint(nodeUrl.Url)
@@ -436,7 +436,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
 		if err != nil {
-			if parsedError := cp.BaseChainProxy.errorHandler.HandleNodeError(ctx, err); parsedError != nil {
+			// Validate if the error is related to the provider connection to the node or it is a valid error
+			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
+			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
 				return nil, "", nil, parsedError
 			}
 		}
