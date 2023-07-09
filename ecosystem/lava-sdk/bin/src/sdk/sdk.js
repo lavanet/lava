@@ -59,7 +59,7 @@ class LavaSDK {
         this.chainID = chainID;
         this.rpcInterface = rpcInterface ? rpcInterface : "";
         this.privKey = privateKey ? privateKey : "";
-        this.badge = badge ? badge : { badgeServerAddress: "", projectId: "" };
+        this.badgeManager = new fetchBadge_1.BadgeManager(badge);
         this.network = network;
         this.geolocation = geolocation;
         this.lavaChainId = lavaChainId;
@@ -68,22 +68,33 @@ class LavaSDK {
         this.relayer = errors_1.default.errRelayerServiceNotInitialized;
         this.lavaProviders = errors_1.default.errLavaProvidersNotInitialized;
         this.activeSessionManager = errors_1.default.errSessionNotInitialized;
-        this.isBadge = Boolean(badge);
         // Init sdk
         return (() => __awaiter(this, void 0, void 0, function* () {
             yield this.init();
             return this;
         }))();
     }
+    /*
+     * Initialize LavaSDK, by using :
+     * let sdk = await LavaSDK.create({... options})
+     */
+    static create(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new LavaSDK(options);
+        });
+    }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             let wallet;
             let badge;
-            if (this.isBadge) {
+            if (this.badgeManager.isActive()) {
                 const { wallet, privKey } = yield (0, wallet_1.createDynamicWallet)();
                 this.privKey = privKey;
                 const walletAddress = (yield wallet.getConsumerAccount()).address;
-                const badgeResponse = yield (0, fetchBadge_1.fetchBadge)(this.badge.badgeServerAddress, walletAddress, this.badge.projectId);
+                const badgeResponse = yield this.badgeManager.fetchBadge(walletAddress);
+                if (badgeResponse instanceof Error) {
+                    throw fetchBadge_1.TimoutFailureFetchingBadgeError;
+                }
                 badge = badgeResponse.getBadge();
                 const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
                 this.account = {
