@@ -8,6 +8,10 @@ import (
 
 // Function to validate a plan object fields
 func (p Plan) ValidatePlan() error {
+	// validate denom is not empty
+	if p.GetPrice().Denom == "" {
+		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price denom is empty")
+	}
 	// check that the plan's price is non-zero
 	if p.GetPrice().IsEqual(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())) {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price can't be zero")

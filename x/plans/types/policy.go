@@ -28,13 +28,13 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 
 		if policy.SelectedProvidersMode == 3 && len(policy.SelectedProviders) != 0 {
-			return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
+			return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) and non-empty list of selected providers`)
 		}
 
 		// non-plan policy checks
 	} else if policy.SelectedProvidersMode == 3 {
-		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
+		return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) for a policy that is not plan policy`)
 	}
 
@@ -48,8 +48,12 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	}
 
 	if policy.SelectedProvidersMode == 0 && len(policy.SelectedProviders) != 0 {
-		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no 
+		return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no 
 			providers restrictions) and non-empty list of selected providers`)
+	}
+
+	if policy.GeolocationProfile == uint64(Geolocation_value["GLS"]) && !isPlanPolicy {
+		return sdkerrors.Wrap(ErrPolicyGeolocation, `cannot configure geolocation = GLS (0)`)
 	}
 
 	seen := map[string]bool{}
@@ -60,7 +64,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 
 		if seen[addr] {
-			return sdkerrors.Wrapf(ErrInvalidSelectedProvidersConfig, "found duplicate provider address %s", addr)
+			return sdkerrors.Wrapf(ErrPolicyInvalidSelectedProvidersConfig, "found duplicate provider address %s", addr)
 		}
 		seen[addr] = true
 	}

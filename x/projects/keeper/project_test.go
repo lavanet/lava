@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
@@ -984,6 +985,141 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			})
 			if tt.subPolicyValid {
 				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
+	}
+}
+
+func TestSetPolicyByGeolocation(t *testing.T) {
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	ctx := sdk.UnwrapSDKContext(_ctx)
+
+	// for convinience
+	GLS := uint64(planstypes.Geolocation_value["GLS"])
+	GL := uint64(planstypes.Geolocation_value["GL"])
+	USE := uint64(planstypes.Geolocation_value["USE"])
+	EU := uint64(planstypes.Geolocation_value["EU"])
+	USE_EU := USE + EU
+
+	// propose all plans
+	freePlan := planstypes.Plan{
+		Index: "free",
+		Block: uint64(ctx.BlockHeight()),
+		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: planstypes.Policy{
+			GeolocationProfile: 4, // USE
+			TotalCuLimit:       10,
+			EpochCuLimit:       2,
+			MaxProvidersToPair: 2,
+		},
+	}
+
+	basicPlan := planstypes.Plan{
+		Index: "basic",
+		Block: uint64(ctx.BlockHeight()),
+		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: planstypes.Policy{
+			GeolocationProfile: 0, // GLS
+			TotalCuLimit:       10,
+			EpochCuLimit:       2,
+			MaxProvidersToPair: 2,
+		},
+	}
+
+	premiumPlan := planstypes.Plan{
+		Index: "premium",
+		Block: uint64(ctx.BlockHeight()),
+		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: planstypes.Policy{
+			GeolocationProfile: 65535, // GL
+			TotalCuLimit:       10,
+			EpochCuLimit:       2,
+			MaxProvidersToPair: 2,
+		},
+	}
+
+	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
+	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans)
+	require.Nil(t, err)
+
+	freeUser := common.CreateNewAccount(_ctx, *keepers, 10000)
+	basicUser := common.CreateNewAccount(_ctx, *keepers, 10000)
+	premiumUser := common.CreateNewAccount(_ctx, *keepers, 10000)
+
+	common.BuySubscription(t, _ctx, *keepers, *servers, freeUser, freePlan.Index)
+	common.BuySubscription(t, _ctx, *keepers, *servers, basicUser, basicPlan.Index)
+	common.BuySubscription(t, _ctx, *keepers, *servers, premiumUser, premiumPlan.Index)
+
+	templates := []struct {
+		name           string
+		dev            common.Account
+		planIndex      int
+		setGeo         uint64
+		expectedGeo    uint64
+		setPolicyValid bool
+		badGeo         bool // config that results in geo = 0
+	}{
+		// free plan users should not be able to change geo at all (default geo=USE)
+		// note: setPolicy is valid, but the project's geo shouldn't change
+		{"free plan invalid regular geo", freeUser, 0, EU, USE, true, true},
+		{"free plan invalid geo GL", freeUser, 0, GL, USE, true, false},
+		{"free plan invalid geo GLS", freeUser, 0, GLS, USE, false, true},
+
+		// basic plan users should not be able to change geo at all (default geo=GLS)
+		{"basic plan invalid regular geo", basicUser, 1, USE, GL, true, false},
+		{"basic plan invalid geo GL", basicUser, 1, GL, GL, true, false},
+		{"basic plan invalid geo GLS", basicUser, 1, GLS, GL, false, true},
+
+		// premium/enterprise plan users should be able to change geo (default geo=GL)
+		{"premium/enterprise plan - happy flow - regular geo", premiumUser, 2, USE, USE, true, false},
+		{"premium/enterprise plan - happy flow - multiple regular geo", premiumUser, 2, USE_EU, USE_EU, true, false},
+		{"premium/enterprise plan - happy flow - global geo", premiumUser, 2, GL, GL, true, false},
+		{"premium/enterprise plan invalid geo GLS", premiumUser, 2, GLS, GL, false, true},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			devResponse, err := keepers.Projects.Developer(_ctx, &types.QueryDeveloperRequest{
+				Developer: tt.dev.Addr.String(),
+			})
+			require.Nil(t, err)
+
+			projIndex := devResponse.Project.Index
+
+			_, err = servers.ProjectServer.SetPolicy(_ctx, &types.MsgSetPolicy{
+				Creator: tt.dev.Addr.String(),
+				Project: projIndex,
+				Policy: planstypes.Policy{
+					GeolocationProfile: tt.setGeo,
+					TotalCuLimit:       10,
+					EpochCuLimit:       2,
+					MaxProvidersToPair: 2,
+				},
+			})
+			if tt.setPolicyValid {
+				require.Nil(t, err)
+			} else {
+				require.NotNil(t, err)
+				return
+			}
+			_ctx = testkeeper.AdvanceEpoch(_ctx, keepers) // apply the new policy
+
+			devResponse, err = keepers.Projects.Developer(_ctx, &types.QueryDeveloperRequest{
+				Developer: tt.dev.Addr.String(),
+			})
+			require.Nil(t, err)
+
+			policies := []*planstypes.Policy{
+				&plans[tt.planIndex].PlanPolicy,
+				devResponse.Project.AdminPolicy,
+				devResponse.Project.SubscriptionPolicy,
+			}
+			strictestGeo, err := keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
+			if !tt.badGeo {
+				require.Nil(t, err)
+				require.Equal(t, tt.expectedGeo, strictestGeo)
 			} else {
 				require.NotNil(t, err)
 			}

@@ -199,7 +199,10 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 
 	minStake := spec.MinStakeProvider.Amount
 
-	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	if err != nil {
+		return planstypes.Policy{}, 0, sdk.Int{}, err
+	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
@@ -243,17 +246,25 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 	return effectiveMode, effectiveSelectedProviders
 }
 
-func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) uint64 {
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) (uint64, error) {
 	geolocation := uint64(math.MaxUint64)
 
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	for _, policy := range policies {
 		if policy != nil {
-			geolocation &= policy.GetGeolocationProfile()
+			geo := policy.GetGeolocationProfile()
+			if geo == uint64(planstypes.Geolocation_value["GLS"]) {
+				return uint64(planstypes.Geolocation_value["GL"]), nil
+			}
+			geolocation &= geo
 		}
 	}
 
-	return geolocation
+	if geolocation == 0 {
+		return 0, utils.LavaFormatWarning("invalid strictest geolocation", fmt.Errorf("strictest geo = 0"))
+	}
+
+	return geolocation, nil
 }
 
 func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planstypes.Policy) (uint64, error) {
