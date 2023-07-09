@@ -81,7 +81,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	common.BuySubscription(t, ctx, *keepers, *servers, subscriptionConsumer, plan.Index)
 	projects := keepers.Projects.GetAllProjectsForSubscription(sdk.UnwrapSDKContext(ctx), subscriptionConsumer.Addr.String())
 
-	// takes effect in the next epoch
+	// takes effect retroactively in the current epoch
 	_, err := servers.ProjectServer.AddKeys(ctx, &projectTypes.MsgAddKeys{
 		Creator:     subscriptionConsumer.Addr.String(),
 		Project:     projects[0],
@@ -91,7 +91,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 
 	ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
-	// should fail, the key is in use in the future
+	// should fail, the key is in use
 	_, err = servers.SubscriptionServer.AddProject(ctx,
 		&subTypes.MsgAddProject{
 			Creator: subscriptionConsumer.Addr.String(),
@@ -107,13 +107,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 
 	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
 
-	// check pairing in the same epoch
-	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr)
-	require.NotNil(t, err)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-
-	// check pairing in the next epoch
+	// check pairing in the same epoch (key added retroactively to this epoch)
 	_, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr, epoch)
 	require.Nil(t, err)
 

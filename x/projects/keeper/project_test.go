@@ -442,8 +442,8 @@ func TestAddDelKeys(t *testing.T) {
 	err = ts.delProjectKeys(project.Index, subAddr, pk)
 	require.Nil(t, err)
 
-	// deletion of admin is immediate; delete of developer take effect in next epoch
-	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
+	// deletion take effect in next epoch
+	require.True(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
 	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 	ts.AdvanceEpoch(1)
 	require.False(t, ts.isKeyInProject(project.Index, admAddr, types.ProjectKey_ADMIN))
