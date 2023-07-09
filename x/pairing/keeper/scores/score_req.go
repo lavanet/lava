@@ -33,6 +33,7 @@ func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	reqMap[stakeReq.GetName()] = stakeReq
 
 	// geo requirements
+	// TODO: handle case where number of geos is larger than number of slots
 	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
 	for i := range slots {
 		geoReq := scorestypes.GeoReq{Geo: uint64(policyGeoEnums[i%len(policyGeoEnums)])}

@@ -6,18 +6,19 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-// TODO: This is a temp filter until the geolocation mechanism changes (this is not optimal)
+// TODO: This is a filter is disabled (InitFilter always returns false)
+// will be used in the future to exclude geolocations (thus keeping this code)
 
 type GeolocationFilter struct {
 	geolocation uint64
 }
 
 func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
-	if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
-		strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
-		f.geolocation = strictestPolicy.GeolocationProfile
-		return true
-	}
+	// if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
+	// 	strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
+	// 	f.geolocation = strictestPolicy.GeolocationProfile
+	// 	return true
+	// }
 	return false
 }
 
