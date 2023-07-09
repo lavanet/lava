@@ -10,4 +10,5 @@ import (
 // GetName() gets the ScoreReq's name
 type ScoreReq interface {
 	Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64
+	GetName() string
 }

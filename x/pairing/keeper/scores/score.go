@@ -65,7 +65,6 @@ package scores
 import (
 	"fmt"
 	"math/big"
-	"reflect"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -77,21 +76,18 @@ import (
 
 var (
 	uniformStrategy ScoreStrategy
-	allReqTypes     []reflect.Type
-
-	// req types (syntactic sugar)
-	stakeReqType reflect.Type = reflect.TypeOf(StakeReq{})
+	allReqNames     []string
 )
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
-	// gather all req types to a list
-	allReqTypes = append(allReqTypes, stakeReqType)
+	// gather all req names to a list
+	allReqNames = append(allReqNames, stake_req_name)
 
 	// init strategy
 	uniformStrategy = make(ScoreStrategy)
-	for _, reqType := range allReqTypes {
-		uniformStrategy[reqType] = 1
+	for _, reqName := range allReqNames {
+		uniformStrategy[reqName] = 1
 	}
 }
 
@@ -103,7 +99,7 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 
 	// all slots should consider the stake, so we init them with stakeReq
 	stakeReq := StakeReq{MinStake: minStake}
-	slotReqs := map[reflect.Type]ScoreReq{stakeReqType: stakeReq}
+	slotReqs := map[string]ScoreReq{stakeReq.GetName(): stakeReq}
 	for i := range slots {
 		slots[i] = NewPairingSlot(slotReqs)
 	}
@@ -149,10 +145,11 @@ func GetStrategy() ScoreStrategy {
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot, minStake sdk.Int) error {
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
-		weight, ok := strategy[reflect.TypeOf(req)]
+		reqName := req.GetName()
+		weight, ok := strategy[reqName]
 		if !ok {
 			return utils.LavaFormatError("req not in strategy", sdkerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "req_name", Value: reflect.TypeOf(req).String()})
+				utils.Attribute{Key: "req_name", Value: reqName})
 		}
 
 		for _, score := range scores {
@@ -160,18 +157,18 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			newScoreComp := req.Score(*score.Provider, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
-			prevReqScoreComp, ok := score.ScoreComponents[reflect.TypeOf(req)]
+			prevReqScoreComp, ok := score.ScoreComponents[reqName]
 			if ok {
 				if prevReqScoreComp == 0 {
 					return utils.LavaFormatError("previous req score is zero", fmt.Errorf("invalid req score"),
-						utils.Attribute{Key: "req_bitmap_value", Value: reflect.TypeOf(req).String()})
+						utils.Attribute{Key: "req_name", Value: reqName})
 				}
 				score.Score /= prevReqScoreComp
 			}
 			score.Score *= newScoreComp
 
 			// update the score component map
-			score.ScoreComponents[reflect.TypeOf(req)] = newScoreComp
+			score.ScoreComponents[reqName] = newScoreComp
 		}
 	}
 
