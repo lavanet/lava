@@ -70,8 +70,9 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 // from the imported Spec(s). It returns the expanded Spec.
 func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error) {
 	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
 
-	details, err := k.doExpandSpec(ctx, &spec, depends, spec.Index)
+	details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index)
 	if err != nil {
 		return spec, utils.LavaFormatError("spec expand failed", err,
 			utils.Attribute{Key: "imports", Value: details},
@@ -81,11 +82,22 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 }
 
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
-func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
+func (k Keeper) doExpandSpec(
+	ctx sdk.Context,
+	spec *types.Spec,
+	depends map[string]bool,
+	inherit *map[string]bool,
+	details string,
+) (string, error) {
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 
 	if len(spec.Imports) != 0 {
 		var parents []types.Spec
+
+		// update (cumulative) inherit
+		for _, index := range spec.Imports {
+			(*inherit)[index] = true
+		}
 
 		// visual markers when import deepens
 		details += "->["
@@ -108,7 +120,7 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 			}
 
 			depends[index] = true
-			details, err := k.doExpandSpec(ctx, &imported, depends, details)
+			details, err := k.doExpandSpec(ctx, &imported, depends, inherit, details)
 			if err != nil {
 				return details, err
 			}
