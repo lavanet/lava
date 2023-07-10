@@ -160,6 +160,7 @@ func (apip *BaseChainParser) getApiCollection(connectionType string, internalPat
 type updatableRPCInput interface {
 	parser.RPCInput
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
+	AppendHeader(metadata []pairingtypes.Metadata)
 }
 
 type parsedMessage struct {
@@ -184,6 +185,10 @@ type BaseChainProxy struct {
 	ErrorHandler
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
+}
+
+func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+	pm.msg.AppendHeader(metadata)
 }
 
 func (pm parsedMessage) GetApi() *spectypes.Api {
@@ -404,8 +409,8 @@ type CraftData struct {
 	ConnectionType string
 }
 
-func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
-	return chainParser.CraftMessage(parsing, connectionType, craftData)
+func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(parsing, connectionType, craftData, metadata)
 }
 
 // rest request headers are formatted like map[string]string

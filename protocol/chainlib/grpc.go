@@ -83,14 +83,17 @@ func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientC
 	return nil
 }
 
-func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, nil)
+		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage.AppendHeader(metadata)
+		return chainMessage, err
 	}
 
 	grpcMessage := &rpcInterfaceMessages.GrpcMessage{
-		Msg:  nil,
-		Path: parsing.ApiName,
+		Msg:         nil,
+		Path:        parsing.ApiName,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
 	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
 	if err != nil {
