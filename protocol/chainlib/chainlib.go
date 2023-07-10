@@ -53,13 +53,14 @@ type ChainParser interface {
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
-	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error)
+	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 }
 
 type ChainMessage interface {
 	RequestedBlock() int64
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
+	AppendHeader(metadata []pairingtypes.Metadata)
 	ChainMessageForSend
 }
 

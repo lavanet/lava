@@ -11,11 +11,13 @@ import (
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
-	TendermintStatusQuery = "status"
+	TendermintStatusQuery  = "status"
+	ChainFetcherHeaderName = "X-LAVA-Provider"
 )
 
 type ChainFetcherIf interface {
@@ -44,6 +46,13 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	return nil
 }
 
+func (cf *ChainFetcher) ChainFetcherMetadata() []pairingtypes.Metadata {
+	ret := []pairingtypes.Metadata{
+		{Name: ChainFetcherHeaderName, Value: cf.FetchEndpoint().NetworkAddress.Address},
+	}
+	return ret
+}
+
 func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
 	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_CHAIN_ID)
 	tagName := spectypes.FUNCTION_TAG_name[int32(spectypes.FUNCTION_TAG_GET_CHAIN_ID)]
@@ -56,7 +65,7 @@ func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error
 		return "", "", nil
 	}
 
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil)
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil, cf.ChainFetcherMetadata())
 	if err != nil {
 		return "", "", utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -88,7 +97,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil)
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil, cf.ChainFetcherMetadata())
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -126,7 +135,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type})
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}, cf.ChainFetcherMetadata())
 	if err != nil {
 		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}

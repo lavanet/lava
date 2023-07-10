@@ -48,16 +48,19 @@ func (apip *TendermintChainParser) getSupportedApi(name string, connectionType s
 	return apip.BaseChainParser.getSupportedApi(name, connectionType)
 }
 
-func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData) (ChainMessageForSend, error) {
+func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		return apip.ParseMsg("", craftData.Data, craftData.ConnectionType, nil)
+		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage.AppendHeader(metadata)
+		return chainMessage, err
 	}
 
 	msg := rpcInterfaceMessages.JsonrpcMessage{
-		Version: "2.0",
-		ID:      []byte("1"),
-		Method:  parsing.ApiName,
-		Params:  nil,
+		Version:     "2.0",
+		ID:          []byte("1"),
+		Method:      parsing.ApiName,
+		Params:      nil,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
 
 	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
@@ -129,20 +132,27 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
 
-	// Extract default block parser
-	blockParser := apiCont.api.BlockParsing
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
 		return nil, err
 	}
-	// TODO:when we use metadata on tendermintrpc this needs to be here
-	// metadata = apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
-
-	// Fetch requested block, it is used for data reliability
-	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
-	if err != nil {
-		return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+	metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
+	var requestedBlock int64
+	if overwriteReqBlock == "" {
+		// Fetch requested block, it is used for data reliability
+		requestedBlock, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+		if err != nil {
+			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+		}
+	} else {
+		requestedBlock, err = msg.ParseBlock(overwriteReqBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+		}
 	}
+	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+	msg.BaseMessage = chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective}
+
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
 	if !isJsonrpc {
 		tenderMsg.Path = url // add path
@@ -487,6 +497,12 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		return nil, "", nil, err
 	}
 
+	if len(nodeMessage.GetHeaders()) > 0 {
+		for _, metadata := range nodeMessage.GetHeaders() {
+			req.Header.Set(metadata.Name, metadata.Value)
+		}
+	}
+
 	cp.httpNodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
 	cp.httpNodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
@@ -540,7 +556,13 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	var rpcMessage *rpcclient.JsonrpcMessage
 	var replyMessage *rpcInterfaceMessages.RPCResponse
 	var sub *rpcclient.ClientSubscription
-
+	if len(nodeMessage.GetHeaders()) > 0 {
+		for _, metadata := range nodeMessage.GetHeaders() {
+			rpc.SetHeader(metadata.Name, metadata.Value)
+			// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
+			defer rpc.SetHeader(metadata.Name, "")
+		}
+	}
 	// If ch is not nil do subscription
 	if ch != nil {
 		// subscribe to the rpc call if the channel is not nil
