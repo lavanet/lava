@@ -281,13 +281,13 @@ build-protocol:
 	@echo "--> Building protocol"
 	@go build -o $(BUILDDIR)/lava-protocol ./protocol
 	@if [ -n "$$(which lava-protocol)" ]; then \
-		echo "Replacing existing lava-protocol binary"; \
+		echo "Replacing existing lava-protocol binary at: $$(which lava-protocol)"; \
 		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lava-protocol)); \
 	elif [ -n "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to the folder location of lavad"; \
+		echo "Copying lava-protocol binary to the folder location of lavad at: $$(which lavad)"; \
 		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lavad)); \
 	elif [ -z "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to GOPATH/bin"; \
+		echo "Copying lava-protocol binary to GOPATH/bin at: $(GOPATH)/bin"; \
 		cp $(BUILDDIR)/lava-protocol $(GOPATH)/bin; \
 	fi
   

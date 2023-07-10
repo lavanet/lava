@@ -214,20 +214,13 @@ func (lt *lavaTest) compileLavaProtocol() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) stakeLava() {
-	stakeCommand := "./scripts/init_e2e.sh"
-	lt.logs["01_stakeLava"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   stakeCommand,
-		Args:   strings.Split(stakeCommand, " "),
-		Stdout: lt.logs["01_stakeLava"],
-		Stderr: lt.logs["01_stakeLava"],
-	}
-	err := cmd.Start()
-	if err != nil {
-		panic("Staking Failed " + err.Error())
-	}
-	cmd.Wait()
+func (lt *lavaTest) stakeLava(ctx context.Context) {
+	command := "./scripts/init_e2e.sh"
+	logName := "01_stakeLava"
+	funcName := "stakeLava"
+
+	lt.execCommand(ctx, funcName, logName, command, true)
+	utils.LavaFormatInfo(funcName + " OK")
 }
 
 func (lt *lavaTest) checkStakeLava(
@@ -1081,8 +1074,11 @@ func runE2E(timeout time.Duration) {
 	lt.compileLavaProtocol()
 	utils.LavaFormatInfo("Compiling Protocol OK")
 
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	utils.LavaFormatInfo("Staking Lava")
-	lt.stakeLava()
+	lt.stakeLava(ctx)
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
@@ -1105,9 +1101,6 @@ func runE2E(timeout time.Duration) {
 			f(i)
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)

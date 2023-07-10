@@ -1,4 +1,5 @@
 #!/bin/bash 
+echo "dont use this script with vscode debugger"
 killall lava-protocol
 make build-protocol
 rm -rf build

@@ -181,6 +181,7 @@ type CollectionKey struct {
 }
 
 type BaseChainProxy struct {
+	ErrorHandler
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
 }
