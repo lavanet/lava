@@ -78,7 +78,41 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 			utils.Attribute{Key: "imports", Value: details},
 		)
 	}
+
 	return spec, nil
+}
+
+// RefreshSpec checks which one Spec inherits from another (just recently
+// updated) Spec, and if so updates the the BlockLastUpdated of the former.
+func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.Spec) ([]string, error) {
+	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
+
+	if details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index); err != nil {
+		return nil, utils.LavaFormatWarning("spec refresh failed (import)", err,
+			utils.Attribute{Key: "imports", Value: details},
+		)
+	}
+
+	if details, err := spec.ValidateSpec(k.MaxCU(ctx)); err != nil {
+		details["invalidates"] = spec.Index
+		attrs := utils.StringMapToAttributes(details)
+		return nil, utils.LavaFormatWarning("spec refresh failed (invalidate)", err, attrs...)
+	}
+
+	var inherited []string
+	for _, ancestor := range ancestors {
+		if _, ok := inherit[ancestor.Index]; ok {
+			inherited = append(inherited, ancestor.Index)
+		}
+	}
+
+	if len(inherited) > 0 {
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+		k.SetSpec(ctx, spec)
+	}
+
+	return inherited, nil
 }
 
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
