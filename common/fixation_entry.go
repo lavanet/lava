@@ -239,7 +239,7 @@ func (fs *FixationStore) AppendEntry(
 	} else {
 		if block < latestEntry.Block {
 			// how come getUnmarshaledEntryForBlock lied to us?!
-			utils.LavaFormatError("critical: AppendEntry block smaller than latest",
+			return utils.LavaFormatError("critical: AppendEntry block smaller than latest",
 				fmt.Errorf("block %d < latest entry block %d", block, latestEntry.Block),
 				utils.Attribute{Key: "prefix", Value: fs.prefix},
 				utils.Attribute{Key: "index", Value: index},
