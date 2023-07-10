@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -123,37 +122,6 @@ func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 
 func (k Keeper) StakeStorageKey(block uint64, chainID string) string {
 	return strconv.FormatUint(block, 10) + chainID
-}
-
-func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64, allChainID []string) {
-	allStorage := k.GetAllStakeStorage(ctx)
-	for _, chainId := range allChainID {
-		for _, entry := range allStorage {
-			if strings.Contains(entry.Index, chainId) {
-				storageBlock := entry.Index[:(len(entry.Index) - len(chainId))]
-				blockHeight, err := strconv.ParseUint(storageBlock, 10, 64)
-				if err != nil {
-					if storageBlock == "" {
-						// if storageBlock is empty its stake entry current. so we dont remove it.
-						continue
-					}
-					utils.LavaFormatError("critical: failed to decode storage block", err,
-						utils.LogAttr("chainID", chainId),
-						utils.LogAttr("index", entry.Index),
-						utils.LogAttr("storageBlock", storageBlock),
-						utils.LogAttr("block", block),
-					)
-				}
-				if blockHeight < block {
-					k.RemoveStakeStorage(ctx, entry.Index)
-				}
-			}
-		}
-	}
-}
-
-func (k Keeper) RemoveAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64, allChainID []string) {
-	k.removeAllEntriesPriorToBlockNumber(ctx, block, allChainID)
 }
 
 func (k Keeper) RemoveStakeStorageByBlockAndChain(ctx sdk.Context, block uint64, chainID string) {
