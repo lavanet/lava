@@ -23,6 +23,19 @@ type BaseMessage struct {
 	LatestBlockHeaderSetter *spectypes.ParseDirective
 }
 
+// appends only headers that do not exist
+func (bm *BaseMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+	existing := map[string]struct{}{}
+	for _, metadataEntry := range bm.Headers {
+		existing[metadataEntry.Name] = struct{}{}
+	}
+	for _, metadataEntry := range metadata {
+		if _, ok := existing[metadataEntry.Name]; !ok {
+			bm.Headers = append(bm.Headers, metadataEntry)
+		}
+	}
+}
+
 func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64, modifyContent bool) (done bool) {
 	if bm.LatestBlockHeaderSetter == nil {
 		return false

@@ -7,11 +7,13 @@ import (
 	"sync"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/score"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -26,6 +28,7 @@ const (
 	RELAY_UPDATE_WEIGHT        = 1
 	DEFAULT_EXPLORATION_CHANCE = 0.1
 	COST_EXPLORATION_CHANCE    = 0.01
+	WANTED_PRECISION           = int64(8)
 )
 
 type ConcurrentBlockStore struct {
@@ -432,4 +435,29 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
 	perturb := rand.NormFloat64() * percentage * orig
 	return orig + perturb
+}
+
+func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) *pairingtypes.QualityOfServiceReport {
+	providerData, found := po.getProviderData(providerAddress)
+	if !found {
+		return nil
+	}
+	precision := WANTED_PRECISION
+	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
+	syncScore := turnFloatToDec(providerData.Sync.Num/providerData.Sync.Denom, precision)
+	availabilityScore := turnFloatToDec(providerData.Availability.Num/providerData.Availability.Denom, precision)
+	ret := &pairingtypes.QualityOfServiceReport{
+		Latency:      latencyScore,
+		Availability: availabilityScore,
+		Sync:         syncScore,
+	}
+	if debug {
+		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
+	}
+	return ret
+}
+
+func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {
+	integerNum := int64(math.Round(floatNum * math.Pow(10, float64(precision))))
+	return sdk.NewDecWithPrec(integerNum, precision)
 }
