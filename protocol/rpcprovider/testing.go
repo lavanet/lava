@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -229,7 +228,7 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 			ctx := context.Background()
 			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			caCert, err := ioutil.ReadFile(cert)
+			caCert, err := os.ReadFile(cert)
 			if err != nil {
 				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
 			}
