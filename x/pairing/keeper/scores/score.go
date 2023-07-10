@@ -105,38 +105,41 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 	stakeReq := StakeReq{MinStake: minStake}
 	slotReqs := map[string]ScoreReq{stakeReq.GetName(): stakeReq}
 	for i := range slots {
-		slots[i] = NewPairingSlot(slotReqs)
+		slots[i] = NewPairingSlot()
+		slots[i].Reqs = slotReqs
 	}
 
 	return slots
 }
 
 // group the slots
-func GroupSlots(slots []*PairingSlot) []PairingSlotGroup {
-	slotGroups := []PairingSlotGroup{}
+func GroupSlots(slots []*PairingSlot) []*PairingSlot {
+	uniqueSlots := make(map[string]*PairingSlot)
 	if len(slots) == 0 {
 		utils.LavaFormatError("no slots", sdkerrors.ErrLogic)
-		return slotGroups
+		return []*PairingSlot{}
 	}
 
-	for k := range slots {
-		foundGroup := false
-		for i := range slotGroups {
-			diff := slots[k].Subtract(slotGroups[i].Slot)
-			if len(diff.Reqs) == 0 {
-				slotGroups[i].Count += 1
-				foundGroup = true
-				break
-			}
-		}
+	for i := 0; i < len(slots); i++ {
+		slot := slots[i]
+		key := slot.GetSlotKey()
 
-		if !foundGroup {
-			newGroup := NewPairingSlotGroup(slots[k])
-			slotGroups = append(slotGroups, *newGroup)
+		if existingSlot, ok := uniqueSlots[key]; ok {
+			// Duplicate slot found
+			existingSlot.Count++
+		} else {
+			// New unique slot
+			uniqueSlots[key] = slot
 		}
 	}
 
-	return slotGroups
+	// Convert map values to slice
+	uniqueSlotList := make([]*PairingSlot, 0, len(uniqueSlots))
+	for _, slot := range uniqueSlots {
+		uniqueSlotList = append(uniqueSlotList, slot)
+	}
+
+	return uniqueSlotList
 }
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
