@@ -12,6 +12,9 @@
     
 JavaScript/TypeScript SDK reference implementation designed for developers looking for access through the Lava Network. It can be added to your app/dapp and run in browsers to provide multi-chain peer-to-peer access to blockchain APIs.
 
+# Official Documentation
+https://bit.ly/43pyhwA
+
 <!-- Roadmap -->
 # Roadmap
 The SDK is currently in the Alpha stage and is not production-ready for all usecases. 

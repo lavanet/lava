@@ -7,7 +7,11 @@ import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import Relayer from "../relayer/relayer";
 import { RelayReply } from "../grpc_web_services/pairing/relay_pb";
-import { fetchBadge } from "../badge/fetchBadge";
+import {
+  TimoutFailureFetchingBadgeError as TimeoutFailureFetchingBadgeError,
+  BadgeOptions,
+  BadgeManager,
+} from "../badge/fetchBadge";
 import { Badge } from "../grpc_web_services/pairing/relay_pb";
 import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
 import {
@@ -24,16 +28,48 @@ import {
 } from "../config/default";
 import { QueryShowAllChainsResponse } from "../codec/spec/query";
 
+/**
+ * Options for sending RPC relay.
+ */
+export interface SendRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
+}
+
+/**
+ * Options for sending Rest relay.
+ */
+export interface SendRestRelayOptions {
+  method: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
+  url: string; // Required: The URL to send the request to
+  // eslint-disable-next-line
+  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
+}
+
+/**
+ * Options for initializing the LavaSDK.
+ */
+export interface LavaSDKOptions {
+  privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
+  badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
+  chainID: string; // Required: The ID of the chain you want to query
+  rpcInterface?: string; // Optional: The interface that will be used for sending relays
+  pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
+  network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
+  geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
+  lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
+  secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
+}
+
 export class LavaSDK {
   private privKey: string;
-  private badge: { badgeServerAddress: string; projectId: string };
-  private isBadge: boolean; // isBadge=false if privKey defined, isBadge=true if badge is defined
   private chainID: string;
   private rpcInterface: string;
   private network: string;
   private pairingListConfig: string;
   private geolocation: string;
   private lavaChainId: string;
+  private badgeManager: BadgeManager;
 
   private lavaProviders: LavaProviders | Error;
   private account: AccountData | Error;
@@ -80,7 +116,7 @@ export class LavaSDK {
     this.chainID = chainID;
     this.rpcInterface = rpcInterface ? rpcInterface : "";
     this.privKey = privateKey ? privateKey : "";
-    this.badge = badge ? badge : { badgeServerAddress: "", projectId: "" };
+    this.badgeManager = new BadgeManager(badge);
     this.network = network;
     this.geolocation = geolocation;
     this.lavaChainId = lavaChainId;
@@ -89,7 +125,6 @@ export class LavaSDK {
     this.relayer = SDKErrors.errRelayerServiceNotInitialized;
     this.lavaProviders = SDKErrors.errLavaProvidersNotInitialized;
     this.activeSessionManager = SDKErrors.errSessionNotInitialized;
-    this.isBadge = Boolean(badge);
 
     // Init sdk
     return (async (): Promise<LavaSDK> => {
@@ -99,19 +134,25 @@ export class LavaSDK {
     })() as unknown as LavaSDK;
   }
 
+  /*
+   * Initialize LavaSDK, by using :
+   * let sdk = await LavaSDK.create({... options})
+   */
+  static async create(options: LavaSDKOptions): Promise<LavaSDK> {
+    return await new LavaSDK(options);
+  }
+
   private async init() {
     let wallet: LavaWallet;
     let badge: Badge | undefined;
-
-    if (this.isBadge) {
+    if (this.badgeManager.isActive()) {
       const { wallet, privKey } = await createDynamicWallet();
       this.privKey = privKey;
       const walletAddress = (await wallet.getConsumerAccount()).address;
-      const badgeResponse = await fetchBadge(
-        this.badge.badgeServerAddress,
-        walletAddress,
-        this.badge.projectId
-      );
+      const badgeResponse = await this.badgeManager.fetchBadge(walletAddress);
+      if (badgeResponse instanceof Error) {
+        throw TimeoutFailureFetchingBadgeError;
+      }
       badge = badgeResponse.getBadge();
       const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
       this.account = {
@@ -444,41 +485,4 @@ export class LavaSDK {
 
     return new Uint8Array(buffer);
   };
-}
-
-/**
- * Options for sending RPC relay.
- */
-export interface SendRelayOptions {
-  method: string; // Required: The RPC method to be called
-  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
-}
-
-/**
- * Options for sending Rest relay.
- */
-export interface SendRestRelayOptions {
-  method: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
-  url: string; // Required: The URL to send the request to
-  // eslint-disable-next-line
-  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
-}
-
-/**
- * Options for initializing the LavaSDK.
- */
-export interface LavaSDKOptions {
-  privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
-  badge?: // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
-  {
-    badgeServerAddress: string;
-    projectId: string;
-  };
-  chainID: string; // Required: The ID of the chain you want to query
-  rpcInterface?: string; // Optional: The interface that will be used for sending relays
-  pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
-  network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
-  geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
-  lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
-  secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
 }
