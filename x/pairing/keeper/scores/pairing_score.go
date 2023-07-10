@@ -16,9 +16,9 @@ type PairingScore struct {
 	ScoreComponents map[string]uint64
 }
 
-func NewPairingScore(provider *epochstoragetypes.StakeEntry) *PairingScore {
+func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
-		Provider:        provider,
+		Provider:        stakeEntry,
 		Score:           1,
 		ScoreComponents: map[string]uint64{},
 	}

@@ -13,8 +13,8 @@ type StakeReq struct {
 }
 
 // calculates the stake score of a provider (which is simply the normalized stake)
-func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	normalizedStake := provider.Stake.Amount.Quo(sr.MinStake)
+func (sr StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry, weight uint64) uint64 {
+	normalizedStake := stakeEntry.Stake.Amount.Quo(sr.MinStake)
 	return normalizedStake.ToDec().Power(weight).BigInt().Uint64()
 }
 

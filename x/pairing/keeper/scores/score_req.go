@@ -9,6 +9,6 @@ import (
 // Score() calculates a provider's score according to the requirement
 // GetName() gets the ScoreReq's name
 type ScoreReq interface {
-	Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64
+	Score(stakeEntry epochstoragetypes.StakeEntry, weight uint64) uint64
 	GetName() string
 }
