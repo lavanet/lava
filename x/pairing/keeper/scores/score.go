@@ -1,64 +1,38 @@
-// Package scores implements the scoring mechanism used when picking providers in the pairing process.
-// The scoring process gets the list of filtered providers and outputs the picked providers to be paired.
+// Package scores implements the scoring mechanism used for picking providers in the pairing process.
 //
-// General pairing scoring process:
-// 	1. Get the pairing requirements and strategy from the policy.
-// 	2. Assign slots with requirements.
-// 	3. Calculate the score of each provider for each slot (in relation with the strategy and the slot's requirements).
-// 	4. Pick a provider for each slot with a pseudo-random weighted choice.
+// The pairing process involves the following steps:
+// 1. Collect pairing requirements and strategy from the policy.
+// 2. Generate pairing slots with requirements (one slot per provider).
+// 3. Compute the pairing score of each provider with respect to each slot.
+// 4. Pick a provider for each slot with a pseudo-random weighted choice.
 //
-// Glossary:
-// 	- Pairing requirements:
-//		What is it?
-// 			Pairing requirements defines the requirements the paired providers must fulfill.
-// 	  		For example, a consumer might need a list of providers that will be operate from Africa,
-//    		will be able to reply to archive calls, and provide great QoS.
-//		Data structure:
-//			Each requirement is defined by an object that satisifies the ScoreReq interface.
+// Pairing requirements describe the policy-imposed requirements for paired providers. Examples include
+// geolocation constraints, ability to service archive requests, and expectations regarding QoS ranking
+// of selected providers. Pairing requirements must satisfy the ScoreReq interface, whose methods can
+// identify the ScoreReq (by name), and compute a score for a provider with respect to that requirement.
 //
-// 	- Pairing slot:
-//		What is it?
-// 			A Pairing slot represents a part of the pairing list. When a consumer asks to be paired
-//  		with a list of providers, he gets a certain number of providers (defined by the policy). Each
-// 			slot is a "placeholder" for a provider to be picked which will satisfy part of the pairing requirements.
-//			For example, let's say the consumer is supposed to get 6 providers and he needs providers
-//			from Asia and Europe. In this scenario, we'll have 6 pairing slots that will have to satisfy
-//			the consumer's geo requirements. So there will be 3 slots that will require providers operating
-//			from Asia and 3 other slots that will require providers that operate from Europe.
-//		Data structure:
-//			The PairingSlot object holds a map of requirements. The map keys are the requirement object's type (
-//			an object that satisfies the ScoreReq interface) and the map values are the requirement object
-//			itself. The slots are assigned with requirements in the CalcSlots() function.
+// A pairing slot represents a single provider slot in the pairing list (The number of slots for pairing
+// is defined by the policy). Each pairing slot holds a set of pairing requirements (a pairing slot may
+// repeat). For example, a policy may state that the pairing list has 6 slots, and providers should be
+// located in Asia and Europe. This can be satisfied with a pairing list that has 3 (identical) slots
+// that require providers in Asia and 3 (identical) slots that require providers in Europe.
 //
-// 	- Pairing score:
-//		What is it?
-// 			The Pairing score defines the score for each provider when picking providers to pair. The score is
-//			calculated for all providers for each slot. It depends on the slot requirements since the score of
-//			a provider can change with different requirements. For example, say that slot A requires a provider from
-//			Europe and slot B requires a provider from Asia. We have 2 possible providers: provider A which operates
-//			from Europe and and provider B that operates from Asia. Clearly, provider A's score for the Europe slot
-//			will be better than provider B's score for the Europe slot.
-//		Data structure:
-//			The PairingScore object is created for each provider, holding a pointer to the provider, its final pairing
-//			score and the score components (the provider's stake score, geo score, etc.). The ScoreComponents map keys
-//			are the requirement object's type and the map values are the score for this requirement.
+// A pairing score describes the suitability of a provider for a pairing slot (under a given strategy).
+// The score depends on the slot's requirements: for example, given a slot which requires geolocation in
+// Asia, a provider in Asia will generally get higher score than one in Europe. The score is calculated for
+// each <provider, slot> combination.
 //
-// 	- Pairing score stratgy:
-//		What is it?
-// 			A Pairing score strategy (or just strategy) defines the weight of each score component in the
-// 			final score calculation for each provider. The calculation is done as follows: req1^w1 + req2^w2 + ...
-//			For example, say that the score components are stake and geolocation. To make the pairing process
-// 			biased towards stake, we could define the strategy: w_stake = 2, w_geo = 1. So the final score
-//			will be providerStakeScore^2 + providerGeoScore^1.
-//		Data structure:
-//			The ScoreStrategy object is a map in which the keys are the requirement object's type and the values
-//			are the requirement's weight.
+// A pairing score strategy defines the weight of each score requirement in the final score calculation
+// for a <provider, slot> combination. For example, given a slot with several requirements, then the
+// overall pairing score would be calculated as score1^w1 + score2^w2 + ... (where score1 is the score
+// of the provider with respect to the first requirement, score2 with respect to the second requirement
+// and so on).
 //
-//	Adding new requirements:
-// 	  To add a new requirement, one should create a new object that satisfies the ScoreReq interface and update the
-//	  CalcSlots() function so the new requirement will be assigned to the pairing slots (according to some logic).
-//	  Lastly, append the new requirement object to the allReqTypes var in the init() function in this file. Use
-//	  StakeReq or GeoReq as examples.
+//
+// To add a new requirement, one should create a new object that satisfies the ScoreReq interface and update the
+// CalcSlots() function so the new requirement will be assigned to the pairing slots (according to some logic).
+// Lastly, append the new requirement object to the allReqTypes var in the init() function in this file. Use
+// StakeReq or GeoReq as examples.
 
 package scores
 
