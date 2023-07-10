@@ -26,6 +26,7 @@ message RelaySession {
     string lava_chain_id = 10;
     bytes sig = 11;
     Badge badge = 12;
+    QualityOfServiceReport qos_excellence_report = 13;
 }
 
 message Badge {

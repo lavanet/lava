@@ -29,6 +29,7 @@ type ProviderOptimizer interface {
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
+	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
 }
 
 type ignoredProviders struct {
@@ -37,12 +38,13 @@ type ignoredProviders struct {
 }
 
 type QoSReport struct {
-	LastQoSReport    *pairingtypes.QualityOfServiceReport
-	LatencyScoreList []sdk.Dec
-	SyncScoreSum     int64
-	TotalSyncScore   int64
-	TotalRelays      uint64
-	AnsweredRelays   uint64
+	LastQoSReport           *pairingtypes.QualityOfServiceReport
+	LastExcellenceQoSReport *pairingtypes.QualityOfServiceReport
+	LatencyScoreList        []sdk.Dec
+	SyncScoreSum            int64
+	TotalSyncScore          int64
+	TotalRelays             uint64
+	AnsweredRelays          uint64
 }
 
 type SingleConsumerSession struct {

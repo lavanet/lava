@@ -433,3 +433,30 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 	require.Less(t, float64(pickFaults), float64(runs)*0.01)
 	require.Less(t, same, runs/2)
 }
+
+func TestExcellence(t *testing.T) {
+	floatVal := 0.25
+	dec := turnFloatToDec(floatVal, 8)
+	floatNew, err := dec.Float64()
+	require.NoError(t, err)
+	require.Equal(t, floatVal, floatNew)
+
+	providerOptimizer := setupProviderOptimizer(1)
+	providersCount := 5
+	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+	requestCU := uint64(10)
+	syncBlock := uint64(1000)
+	// set a basic state for all of them
+	sampleTime := time.Now()
+	for i := 0; i < 10; i++ {
+		for _, address := range providersGen.providersAddresses {
+			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime)
+		}
+		time.Sleep(4 * time.Millisecond)
+	}
+	report := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[0])
+	require.NotNil(t, report)
+	report2 := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[1])
+	require.NotNil(t, report2)
+	require.Equal(t, report, report2)
+}

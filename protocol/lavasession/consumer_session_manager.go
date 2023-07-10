@@ -348,6 +348,10 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					ReportedProviders: reportedProviders,
 				}
 
+				if consumerSession.RelayNum > 1 {
+					// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
+					consumerSession.QoSInfo.LastExcellenceQoSReport = csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
+				}
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 

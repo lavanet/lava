@@ -239,6 +239,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
+		if relay.QosExcellenceReport != nil {
+			details["ExcellenceQoSLatency"] = relay.QosExcellenceReport.Latency.String()
+			details["ExcellenceQoSAvailability"] = relay.QosExcellenceReport.Availability.String()
+			details["ExcellenceQoSSync"] = relay.QosExcellenceReport.Sync.String()
+		}
+
 		details["projectID"] = projectID
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"

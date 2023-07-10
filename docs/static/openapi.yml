@@ -54775,6 +54775,15 @@ definitions:
               project_sig:
                 type: string
                 format: byte
+          qos_excellence_report:
+            type: object
+            properties:
+              latency:
+                type: string
+              availability:
+                type: string
+              sync:
+                type: string
       relay_data:
         type: object
         properties:
@@ -54861,6 +54870,15 @@ definitions:
           project_sig:
             type: string
             format: byte
+      qos_excellence_report:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
