@@ -14,7 +14,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type SessionInfo struct {
@@ -30,6 +29,7 @@ type ProviderOptimizer interface {
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
+	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
 }
 
 type ignoredProviders struct {
@@ -38,12 +38,13 @@ type ignoredProviders struct {
 }
 
 type QoSReport struct {
-	LastQoSReport    *pairingtypes.QualityOfServiceReport
-	LatencyScoreList []sdk.Dec
-	SyncScoreSum     int64
-	TotalSyncScore   int64
-	TotalRelays      uint64
-	AnsweredRelays   uint64
+	LastQoSReport           *pairingtypes.QualityOfServiceReport
+	LastExcellenceQoSReport *pairingtypes.QualityOfServiceReport
+	LatencyScoreList        []sdk.Dec
+	SyncScoreSum            int64
+	TotalSyncScore          int64
+	TotalRelays             uint64
+	AnsweredRelays          uint64
 }
 
 type SingleConsumerSession struct {
@@ -114,7 +115,6 @@ type ConsumerSessionsWithProvider struct {
 	Sessions          map[int64]*SingleConsumerSession
 	MaxComputeUnits   uint64
 	UsedComputeUnits  uint64
-	ReliabilitySent   bool
 	PairingEpoch      uint64
 }
 
@@ -207,8 +207,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-
-	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := ConnectgRPCClient(connectCtx, addr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -218,7 +217,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	return &c, conn, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
@@ -351,7 +350,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	return expectedLatency
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	// Add current Session QoS
 	cs.QoSInfo.TotalRelays++    // increase total relays
 	cs.QoSInfo.AnsweredRelays++ // increase answered relays

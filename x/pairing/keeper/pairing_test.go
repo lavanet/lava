@@ -475,9 +475,9 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:] // remove p1 from expected providers
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
 				endpoints := []epochstoragetypes.Endpoint{{
-					IPPORT:      "123",
-					UseType:     ts.spec.GetApis()[0].ApiInterfaces[0].Interface,
-					Geolocation: uint64(1),
+					IPPORT:        "123",
+					ApiInterfaces: []string{ts.spec.GetApiCollections()[0].CollectionData.ApiInterface},
+					Geolocation:   uint64(1),
 				}}
 				_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{
 					Creator:     p1,

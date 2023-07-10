@@ -14,6 +14,10 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
+const (
+	debug = false
+)
+
 type EventTracker struct {
 	lock               sync.RWMutex
 	clientCtx          client.Context
@@ -55,7 +59,9 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+				if debug {
+					utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+				}
 				payments = append(payments, paymentList...)
 			}
 		}

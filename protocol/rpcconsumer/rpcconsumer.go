@@ -106,8 +106,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 
-	var addr sdk.AccAddress
-	err = addr.Unmarshal(clientKey.GetPubKey().Address())
+	var consumerAddr sdk.AccAddress
+	err = consumerAddr.Unmarshal(clientKey.GetPubKey().Address())
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
 	}
@@ -127,7 +127,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
 	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
-	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
+	utils.LavaFormatInfo("RPCConsumer pubkey: " + consumerAddr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -183,7 +183,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err

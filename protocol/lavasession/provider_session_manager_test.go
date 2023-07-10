@@ -33,7 +33,7 @@ const (
 
 func initProviderSessionManager() *ProviderSessionManager {
 	return NewProviderSessionManager(&RPCProviderEndpoint{
-		NetworkAddress: "127.0.0.1:6666",
+		NetworkAddress: NetworkAddressData{Address: "127.0.0.1:6666"},
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
@@ -141,8 +141,8 @@ func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManage
 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
-
+	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
+	require.NoError(t, err)
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
 	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
@@ -350,6 +350,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	// prepare session for usage
 	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0)
 	require.Error(t, err)
+	sps.lock.Unlock()
 }
 
 // Test the basic functionality of the ProviderSessionsManager
@@ -438,6 +439,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	// prepare session with max cu overflow. expect an error
 	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0)
 	require.Error(t, err)
+	sps.lock.Unlock()
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
 }
 
@@ -457,6 +459,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
 	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0)
 	require.Error(t, err)
+	sps.lock.Unlock()
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
 
@@ -539,8 +542,8 @@ func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// // prepare session for usage
-	sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
-
+	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
+	require.NoError(t, err)
 	// validate session was prepared successfully
 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
 	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
@@ -806,7 +809,7 @@ type testSessionData struct {
 // this test is running sessions and usage in a sync way to see integrity of behavior, opening and closing of sessions is separate
 func TestPSMUsageSync(t *testing.T) {
 	psm := NewProviderSessionManager(&RPCProviderEndpoint{
-		NetworkAddress: "127.0.0.1:6666",
+		NetworkAddress: NetworkAddressData{Address: "127.0.0.1:6666"},
 		ChainID:        "LAV1",
 		ApiInterface:   "tendermint",
 		Geolocation:    1,
@@ -908,6 +911,7 @@ func TestPSMUsageSync(t *testing.T) {
 						}
 						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0)
 						require.Error(t, err)
+						sessionStoreTest.session.lock.Unlock()
 						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")
 					}
 				} else {

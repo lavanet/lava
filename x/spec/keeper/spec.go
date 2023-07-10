@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -82,75 +83,75 @@ func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error)
 
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
 func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
-	if len(spec.Imports) == 0 {
-		return details, nil
-	}
+	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 
-	var parents []types.Spec
+	if len(spec.Imports) != 0 {
+		var parents []types.Spec
 
-	// visual markers when import deepens
-	details += "->["
+		// visual markers when import deepens
+		details += "->["
 
-	// recursion to get all parent specs (DFS)
-	comma := ""
-	for _, index := range spec.Imports {
-		imported, found := k.GetSpec(ctx, index)
-		// import of unknown Spec not allowed
-		if !found {
-			details += fmt.Sprintf("%s%s(unknown)", comma, index)
-			return details, fmt.Errorf("imported spec unknown: %s", index)
+		// recursion to get all parent specs (DFS)
+		comma := ""
+		for _, index := range spec.Imports {
+			imported, found := k.GetSpec(ctx, index)
+			// import of unknown Spec not allowed
+			if !found {
+				details += fmt.Sprintf("%s%s(unknown)", comma, index)
+				return details, fmt.Errorf("imported spec unknown: %s", index)
+			}
+
+			details += fmt.Sprintf("%s%s", comma, index)
+
+			// loop in the recursion not allowed
+			if _, found := depends[index]; found {
+				return details, fmt.Errorf("import loops not allowed for spec: %s", index)
+			}
+
+			depends[index] = true
+			details, err := k.doExpandSpec(ctx, &imported, depends, details)
+			if err != nil {
+				return details, err
+			}
+			delete(depends, index)
+
+			parents = append(parents, imported)
+			comma = ","
 		}
 
-		details += fmt.Sprintf("%s%s", comma, index)
+		details += "]"
 
-		// loop in the recursion not allowed
-		if _, found := depends[index]; found {
-			return details, fmt.Errorf("import loops not allowed for spec: %s", index)
-		}
-
-		depends[index] = true
-		details, err := k.doExpandSpec(ctx, &imported, depends, details)
-		if err != nil {
-			return details, err
-		}
-		delete(depends, index)
-
-		parents = append(parents, imported)
-		comma = ","
-	}
-
-	details += "]"
-
-	currentApis := make(map[string]bool)
-	for _, api := range spec.Apis {
-		currentApis[api.Name] = true
-	}
-
-	var mergedApis []types.ServiceApi
-	mergedApisMap := make(map[string]types.ServiceApi)
-
-	// collect all parents' Specs' APIs
-	for _, imported := range parents {
-		for _, api := range imported.Apis {
-			if api.Enabled {
-				// duplicate API(s) not allowed
-				// (unless current Spec has an override for same API)
-				if _, found := mergedApisMap[api.Name]; found {
-					if _, found := currentApis[api.Name]; !found {
-						return details, fmt.Errorf("duplicate imported api: %s (in spec: %s)", api.Name, imported.Index)
-					}
+		for _, parent := range parents {
+			for _, parentCollection := range parent.ApiCollections {
+				// ignore disabled apiCollections
+				if !parentCollection.Enabled {
+					continue
 				}
-				mergedApisMap[api.Name] = api
-				mergedApis = append(mergedApis, api)
+				if parentsCollections[parentCollection.CollectionData] == nil {
+					parentsCollections[parentCollection.CollectionData] = []*types.ApiCollection{}
+				}
+				parentsCollections[parentCollection.CollectionData] = append(parentsCollections[parentCollection.CollectionData], parentCollection)
 			}
 		}
 	}
 
-	// merge collected APIs into current spec's APIs (unless overridden)
-	for _, api := range mergedApis {
-		if _, found := currentApis[api.Name]; !found {
-			spec.Apis = append(spec.Apis, api)
+	myCollections := map[types.CollectionData]*types.ApiCollection{}
+	for _, collection := range spec.ApiCollections {
+		myCollections[collection.CollectionData] = collection
+	}
+
+	for _, collection := range spec.ApiCollections {
+		err := collection.InheritAllFields(myCollections, parentsCollections[collection.CollectionData])
+		if err != nil {
+			return details, err
 		}
+		delete(parentsCollections, collection.CollectionData)
+	}
+
+	// combine left over apis not overwritten by current spec
+	err := spec.CombineCollections(parentsCollections)
+	if err != nil {
+		return details, err
 	}
 
 	return details, nil
@@ -203,25 +204,32 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 	return
 }
 
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (expectedInterfaces map[string]bool) {
-	expectedInterfaces = make(map[string]bool)
+// returns map[apiInterface][]addons
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) {
+	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
 		if err != nil { // should not happen! (all specs on chain must be valid)
 			panic(err)
 		}
-		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces)
+		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
 	}
 	return
 }
 
-func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[string]bool) map[string]bool {
-	for _, api := range spec.Apis {
-		if api.Enabled {
-			for _, apiInterface := range api.ApiInterfaces {
-				expectedInterfaces[apiInterface.Interface] = true
+func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
+	for _, apiCollection := range spec.ApiCollections {
+		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
+			service := epochstoragetypes.EndpointService{
+				ApiInterface: apiCollection.CollectionData.ApiInterface,
+				Addon:        apiCollection.CollectionData.AddOn,
 			}
+			// if this is an optional apiInterface, we set addon as ""
+			if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
+				service.Addon = ""
+			}
+			expectedInterfaces[service] = struct{}{}
 		}
 	}
 	return expectedInterfaces

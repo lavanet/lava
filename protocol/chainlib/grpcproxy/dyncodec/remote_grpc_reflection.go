@@ -6,21 +6,11 @@ import (
 
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-func NewGRPCReflectionProtoFileRegistry(grpcEndpoint string) (*GRPCReflectionProtoFileRegistry, error) {
-	conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
-	}
-
-	return NewGRPCReflectionProtoFileRegistryFromConn(conn), nil
-}
 
 func NewGRPCReflectionProtoFileRegistryFromConn(conn *grpc.ClientConn) *GRPCReflectionProtoFileRegistry {
 	return &GRPCReflectionProtoFileRegistry{

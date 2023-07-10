@@ -91,7 +91,7 @@ To ensure collaborative efforts and proper versioning, kindly submit a pull requ
 
 > Note: the "local" and "stateful" is not currently supported, so they may be set with arbitrary values.
 
-The following example is a spec proposal of Optimism mainnet and testnet. Note that Optimism imports `ETH1` since it supports all of the Ethereum API. Additional APIs are explicitly defined (like `eth_getBlockRange` and more).
+The following example is an OUTDATED spec proposal of Optimism mainnet and testnet. Note that Optimism imports `ETH1` since it supports all of the Ethereum API. Additional APIs are explicitly defined (like `eth_getBlockRange` and more).
 
 ```json
 {

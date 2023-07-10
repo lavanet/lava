@@ -109,14 +109,17 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, f
 
 func CreateEventsCobraCommand() *cobra.Command {
 	cmdEvents := &cobra.Command{
-		Use:   `events blocks {--value keyword | --event event_name | --from <wallet>} [--timeout duration]`,
+		Use:   `events <blocks(int)> [start_block(int)] {--value keyword | --event event_name | --from <wallet>} [--timeout duration]`,
 		Short: `reads events from the current block and backwards and prints on match criteria, after it's done reads events forward`,
 		Long: `reads events from the current block and backwards and prints on match criteria, after it's done reads events forward
-need to provider either provider_address or --from wallet_name
-optional flag: --endpoints in order to validate provider process before submitting a stake command`,
-		Example: `rpcprovider lava@myprovideraddress
-		rpcprovider --from providerWallet
-		rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
+blocks is the amount of blocks to read, when provided without a start_block will read the last X blocks going back from the current one, 0 will only read forward from now
+start_blocks is an optional argument to specify the block you want to start reading events from, in case you have a specific block range you need
+you must specify either: --value/--event/--from flags
+--value & --event can be used at the same time, from & value conflict`,
+		Example: `lavad test events 100 --event lava_relay_payment // show all events of the name lava_relay_payment from current-block - 100 and forwards
+lavad test events 0 --from servicer1 // show all events from current block forwards that has my wallet address in one of their fields
+lavad test events 100 5000 --value banana // show all events from 5000-5100 and current block forward that has in one of their fields the string banana
+		`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
