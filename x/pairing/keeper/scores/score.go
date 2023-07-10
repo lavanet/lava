@@ -89,6 +89,10 @@ func init() {
 	for _, reqName := range allReqNames {
 		uniformStrategy[reqName] = 1
 	}
+
+	if len(allReqNames) != len(uniformStrategy) {
+		panic("strategy does not contain all score reqs")
+	}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -147,11 +151,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
 		reqName := req.GetName()
-		weight, ok := strategy[reqName]
-		if !ok {
-			return utils.LavaFormatError("req not in strategy", sdkerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "req_name", Value: reqName})
-		}
+		weight := strategy[reqName] // not checking if key is found because it's verified in init()
 
 		for _, score := range scores {
 			// normalize stake so we won't overflow the score result (uint64)
