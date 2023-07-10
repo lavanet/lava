@@ -19,16 +19,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@master
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
         with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::529724559987:role/gh-action-cicd
-          role-session-name: badgegenerator-builder
+          workload_identity_provider: 'projects/813817494934/locations/global/workloadIdentityPools/oidc-github-identity-pool/providers/oidc-github-provider'
+          service_account: 'oidc-github-access@lavanet-testnet.iam.gserviceaccount.com'
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: 'Set up GCP CLI'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'GCP CLI Info'
+        run: |
+          gcloud info
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      - name: 'GCP set project'
+        run: |
+          gcloud config set project lavanet-testnet
+
+      - name: 'Authenticate to Google Artifact'
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev,europe-west4-docker.pkg.dev
 
       - name: Set up NOW environment variable
         id: "env-now"
@@ -46,16 +57,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build, tag, and push docker image to Amazon ECR
+      - name: Build, tag, and push docker image to GCP
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REGISTRY: "us-central1-docker.pkg.dev/lavanet-testnet/growth-testnet-us-central1/badgegenerator-testnet"
           IMAGE_TAG: ${{ github.sha }}
           NOW: ${{ env.NOW }}
         run: |
           docker buildx build \
-            -t $REGISTRY/badgegenerator:latest \
-            -t $REGISTRY/badgegenerator:$IMAGE_TAG \
-            -t $REGISTRY/badgegenerator:$IMAGE_TAG-$NOW \
+            -t $REGISTRY:latest \
+            -t $REGISTRY:$IMAGE_TAG \
+            -t $REGISTRY:$IMAGE_TAG-$NOW \
             --cache-from="type=local,src=/tmp/.buildx-cache" \
             --cache-to="type=local,dest=/tmp/.buildx-cache-new" \
             --push -f Dockerfile .
