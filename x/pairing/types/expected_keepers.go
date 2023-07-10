@@ -15,7 +15,7 @@ type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 	GeolocationCount(ctx sdk.Context) uint64
-	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) map[string]bool
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{})
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 

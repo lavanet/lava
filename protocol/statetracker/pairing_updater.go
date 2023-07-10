@@ -109,8 +109,11 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
 			// only take into account endpoints that use the same api interface and the same geolocation
-			if endpoint.UseType == rpcEndpoint.ApiInterface && endpoint.Geolocation == rpcEndpoint.Geolocation {
-				relevantEndpoints = append(relevantEndpoints, endpoint)
+			for _, endpointApiInterface := range endpoint.ApiInterfaces {
+				if endpointApiInterface == rpcEndpoint.ApiInterface && endpoint.Geolocation == rpcEndpoint.Geolocation {
+					relevantEndpoints = append(relevantEndpoints, endpoint)
+					break
+				}
 			}
 		}
 		if len(relevantEndpoints) == 0 {

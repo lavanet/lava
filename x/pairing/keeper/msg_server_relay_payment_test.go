@@ -71,7 +71,7 @@ func (ts *testStruct) addProviderGeolocation(amount int, geolocation uint64) err
 			return err
 		}
 		endpoints := []epochstoragetypes.Endpoint{}
-		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: geolocation})
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: geolocation})
 		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: geolocation, Endpoints: endpoints})
 		if err != nil {
 			return err

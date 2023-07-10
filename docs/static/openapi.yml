@@ -29834,11 +29834,17 @@ paths:
                               properties:
                                 iPPORT:
                                   type: string
-                                useType:
-                                  type: string
                                 geolocation:
                                   type: string
                                   format: uint64
+                                addons:
+                                  type: array
+                                  items:
+                                    type: string
+                                api_interfaces:
+                                  type: array
+                                  items:
+                                    type: string
                           geolocation:
                             type: string
                             format: uint64
@@ -30001,11 +30007,17 @@ paths:
                             properties:
                               iPPORT:
                                 type: string
-                              useType:
-                                type: string
                               geolocation:
                                 type: string
                                 format: uint64
+                              addons:
+                                type: array
+                                items:
+                                  type: string
+                              api_interfaces:
+                                type: array
+                                items:
+                                  type: string
                         geolocation:
                           type: string
                           format: uint64
@@ -30252,11 +30264,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30594,11 +30612,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30679,11 +30703,17 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          useType:
-                            type: string
+                          api_interfaces:
+                            type: array
+                            items:
+                              type: string
                           geolocation:
                             type: string
                             format: uint64
+                          addons:
+                            type: array
+                            items:
+                              type: string
                     geolocation:
                       type: string
                       format: uint64
@@ -30929,11 +30959,17 @@ paths:
                       properties:
                         iPPORT:
                           type: string
-                        useType:
-                          type: string
+                        api_interfaces:
+                          type: array
+                          items:
+                            type: string
                         geolocation:
                           type: string
                           format: uint64
+                        addons:
+                          type: array
+                          items:
+                            type: string
                   geolocation:
                     type: string
                     format: uint64
@@ -54685,6 +54721,8 @@ definitions:
               type: string
             value:
               type: string
+      addon:
+        type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -54814,6 +54852,8 @@ definitions:
                   type: string
                 value:
                   type: string
+          addon:
+            type: string
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
@@ -54884,11 +54924,17 @@ definitions:
     properties:
       iPPORT:
         type: string
-      useType:
-        type: string
       geolocation:
         type: string
         format: uint64
+      addons:
+        type: array
+        items:
+          type: string
+      api_interfaces:
+        type: array
+        items:
+          type: string
   lavanet.lava.epochstorage.EpochDetails:
     type: object
     properties:
@@ -55016,11 +55062,17 @@ definitions:
                       properties:
                         iPPORT:
                           type: string
-                        useType:
-                          type: string
                         geolocation:
                           type: string
                           format: uint64
+                        addons:
+                          type: array
+                          items:
+                            type: string
+                        api_interfaces:
+                          type: array
+                          items:
+                            type: string
                   geolocation:
                     type: string
                     format: uint64
@@ -55127,11 +55179,17 @@ definitions:
                     properties:
                       iPPORT:
                         type: string
-                      useType:
-                        type: string
                       geolocation:
                         type: string
                         format: uint64
+                      addons:
+                        type: array
+                        items:
+                          type: string
+                      api_interfaces:
+                        type: array
+                        items:
+                          type: string
                 geolocation:
                   type: string
                   format: uint64
@@ -55192,11 +55250,17 @@ definitions:
           properties:
             iPPORT:
               type: string
-            useType:
-              type: string
             geolocation:
               type: string
               format: uint64
+            addons:
+              type: array
+              items:
+                type: string
+            api_interfaces:
+              type: array
+              items:
+                type: string
       geolocation:
         type: string
         format: uint64
@@ -55241,11 +55305,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55325,11 +55395,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55568,11 +55644,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55692,11 +55774,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55741,11 +55829,17 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  useType:
-                    type: string
+                  api_interfaces:
+                    type: array
+                    items:
+                      type: string
                   geolocation:
                     type: string
                     format: uint64
+                  addons:
+                    type: array
+                    items:
+                      type: string
             geolocation:
               type: string
               format: uint64
@@ -55786,11 +55880,17 @@ definitions:
               properties:
                 iPPORT:
                   type: string
-                useType:
-                  type: string
+                api_interfaces:
+                  type: array
+                  items:
+                    type: string
                 geolocation:
                   type: string
                   format: uint64
+                addons:
+                  type: array
+                  items:
+                    type: string
           geolocation:
             type: string
             format: uint64

@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
+	testcommon "github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,13 +18,13 @@ import (
 func TestStakeProviderWithMoniker(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*common.Account, 0),
-		clients:   make([]*common.Account, 0),
+		providers: make([]*testcommon.Account, 0),
+		clients:   make([]*testcommon.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 	// Create a mock spec
-	ts.spec = common.CreateMockSpec()
+	ts.spec = testcommon.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	// define tests (valid indicates whether the test should succeed)
@@ -45,11 +46,11 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 			// Stake provider with moniker
 			sk, address := sigs.GenerateFloatingKey()
-			ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
+			ts.providers = append(ts.providers, &testcommon.Account{SK: sk, Addr: address})
 			err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 			require.Nil(t, err)
 			endpoints := []epochstoragetypes.Endpoint{}
-			endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
+			endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
 			_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: tt.moniker})
 			require.Nil(t, err)
 
@@ -73,13 +74,13 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	// Create teststruct ts
 	ts := &testStruct{
-		providers: make([]*common.Account, 0),
-		clients:   make([]*common.Account, 0),
+		providers: make([]*testcommon.Account, 0),
+		clients:   make([]*testcommon.Account, 0),
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 	// Create a mock spec
-	ts.spec = common.CreateMockSpec()
+	ts.spec = testcommon.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	// Advance epoch
@@ -89,11 +90,11 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// Stake provider with moniker
 	sk, address := sigs.GenerateFloatingKey()
-	ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
+	ts.providers = append(ts.providers, &testcommon.Account{SK: sk, Addr: address})
 	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
 	require.Nil(t, err)
 	endpoints := []epochstoragetypes.Endpoint{}
-	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.ApiCollections[0].CollectionData.ApiInterface, Geolocation: 1})
+	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
 	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake/2)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
 	require.Nil(t, err)
 
@@ -121,6 +122,11 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
+	buildEndpoint := func(geoloc string) []string {
+		hostip := "127.0.0.1:3351"
+		apiInterface := "jsonrpc"
+		return []string{hostip + "," + geoloc + "," + apiInterface}
+	}
 	testCases := []struct {
 		name        string
 		endpoints   []string
@@ -130,31 +136,31 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// single uint geolocation config tests
 		{
 			name:        "Single uint geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			endpoints:   buildEndpoint("1"),
 			geolocation: "1",
 			valid:       true,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2"},
+			endpoints:   buildEndpoint("2"),
 			geolocation: "1",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1"},
+			endpoints:   buildEndpoint("1"),
 			geolocation: "3",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - endpoint has geo of multiple regions",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,3"},
+			endpoints:   buildEndpoint("3"),
 			geolocation: "3",
 			valid:       false,
 		},
 		{
 			name:        "Single uint geolocation - bad endpoint geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,20555"},
+			endpoints:   buildEndpoint("20555"),
 			geolocation: "1",
 			valid:       false,
 		},
@@ -162,37 +168,31 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// single string geolocation config tests
 		{
 			name:        "Single string geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "EU",
 			valid:       true,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS"},
+			endpoints:   buildEndpoint("AS"),
 			geolocation: "EU",
 			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - endpoint geo not equal to geo (geo includes endpoint geo)",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "EU,USC",
 			valid:       false,
 		},
 		{
-			name:        "Single string geolocation - endpoint has geo of multiple regions",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU,USC"},
-			geolocation: "3",
-			valid:       false,
-		},
-		{
 			name:        "Single string geolocation - bad geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU"},
+			endpoints:   buildEndpoint("EU"),
 			geolocation: "BLABLA",
 			valid:       false,
 		},
 		{
 			name:        "Single string geolocation - bad geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,BLABLA"},
+			endpoints:   buildEndpoint("BLABLA"),
 			geolocation: "EU",
 			valid:       false,
 		},
@@ -200,19 +200,19 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// multiple uint geolocation config tests
 		{
 			name:        "Multiple uint geolocations - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,2"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("2")...),
 			geolocation: "3",
 			valid:       true,
 		},
 		{
 			name:        "Multiple uint geolocations - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,4"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("4")...),
 			geolocation: "2",
 			valid:       false,
 		},
 		{
 			name:        "Multiple uint geolocations - one endpoint has multi-region geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,1", "127.0.0.1:3352,jsonrpc,3"},
+			endpoints:   append(buildEndpoint("1"), buildEndpoint("3")...),
 			geolocation: "2",
 			valid:       false,
 		},
@@ -220,13 +220,13 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// multiple string geolocation config tests
 		{
 			name:        "Multiple string geolocations - happy flow",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,AS", "127.0.0.1:3352,jsonrpc,EU"},
+			endpoints:   append(buildEndpoint("AS"), buildEndpoint("EU")...),
 			geolocation: "EU,AS",
 			valid:       true,
 		},
 		{
 			name:        "Multiple string geolocations - endpoint geo not equal to geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,USC"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("USC")...),
 			geolocation: "EU,AS",
 			valid:       false,
 		},
@@ -234,37 +234,37 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		// global config tests
 		{
 			name:        "Global uint geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   buildEndpoint("65535"),
 			geolocation: "65535",
 			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - happy flow 2 - global in one endpoint",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   append(buildEndpoint("2"), buildEndpoint("65535")...),
 			geolocation: "65535",
 			valid:       true,
 		},
 		{
 			name:        "Global uint geolocation - endpoint geo not match geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,2", "127.0.0.1:3352,jsonrpc,65535"},
+			endpoints:   append(buildEndpoint("2"), buildEndpoint("65535")...),
 			geolocation: "7",
 			valid:       false,
 		},
 		{
 			name:        "Global string geolocation - happy flow",
-			endpoints:   []string{"127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   buildEndpoint("GL"),
 			geolocation: "GL",
 			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - happy flow 2 - global in one endpoint",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("GL")...),
 			geolocation: "GL",
 			valid:       true,
 		},
 		{
 			name:        "Global string geolocation - endpoint geo not match geo",
-			endpoints:   []string{"127.0.0.1:3351,jsonrpc,EU", "127.0.0.1:3352,jsonrpc,GL"},
+			endpoints:   append(buildEndpoint("EU"), buildEndpoint("GL")...),
 			geolocation: "EU,AS,USC",
 			valid:       false,
 		},
@@ -277,6 +277,303 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 				require.Nil(t, err)
 			} else {
 				require.NotNil(t, err)
+			}
+		})
+	}
+}
+
+func TestStakeEndpoints(t *testing.T) {
+	ts := &testStruct{
+		providers: make([]*testcommon.Account, 0),
+		clients:   make([]*testcommon.Account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
+	// Create a mock spec
+	ts.spec = testcommon.CreateMockSpec() // basic stuff
+
+	apiCollections := []*spectypes.ApiCollection{
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory2",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory2",
+				InternalPath: "",
+				Type:         "banana",
+				AddOn:        "",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "addon",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory2",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "addon",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "mandatory",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "unique-addon",
+			},
+			Enabled: true,
+		},
+		{
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "optional",
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "optional",
+			},
+			Enabled: true,
+		},
+	}
+
+	ts.spec.ApiCollections = apiCollections
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	// Advance epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	provider := testcommon.CreateNewAccount(ts.ctx, *ts.keepers, balance)
+	ts.providers = append(ts.providers, &provider)
+
+	getEndpoint := func(host string, apiInterfaces []string, addons []string, geoloc uint64) epochstoragetypes.Endpoint {
+		return epochstoragetypes.Endpoint{
+			IPPORT:        host,
+			Geolocation:   geoloc,
+			Addons:        addons,
+			ApiInterfaces: apiInterfaces,
+		}
+	}
+	type testEndpoint struct {
+		name        string
+		endpoints   []epochstoragetypes.Endpoint
+		success     bool
+		geolocation uint64
+	}
+	playbook := []testEndpoint{
+		{
+			name:        "empty single",
+			endpoints:   append([]epochstoragetypes.Endpoint{}, getEndpoint("123", []string{}, []string{}, 1)),
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name:        "partial apiInterface implementation",
+			endpoints:   append([]epochstoragetypes.Endpoint{}, getEndpoint("123", []string{"mandatory"}, []string{}, 1)),
+			success:     false,
+			geolocation: 1,
+		},
+		{
+			name:        "explicit",
+			endpoints:   append([]epochstoragetypes.Endpoint{}, getEndpoint("123", []string{"mandatory", "mandatory2"}, []string{}, 1)),
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name:        "divided explicit",
+			endpoints:   append([]epochstoragetypes.Endpoint{getEndpoint("123", []string{"mandatory"}, []string{}, 1)}, getEndpoint("123", []string{"mandatory2"}, []string{}, 1)),
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name:        "partial in each geolocation",
+			endpoints:   append([]epochstoragetypes.Endpoint{getEndpoint("123", []string{"mandatory"}, []string{}, 1)}, getEndpoint("123", []string{"mandatory2"}, []string{}, 2)),
+			success:     false,
+			geolocation: 3,
+		},
+		{
+			name: "empty multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{}, 1),
+				getEndpoint("123", []string{}, []string{}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "explicit divided multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{"mandatory"}, []string{}, 1),
+				getEndpoint("123", []string{"mandatory2"}, []string{}, 1),
+				getEndpoint("123", []string{"mandatory"}, []string{}, 2),
+				getEndpoint("123", []string{"mandatory2"}, []string{}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "explicit divided multi geo in addons split",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"mandatory"}, 1),
+				getEndpoint("123", []string{}, []string{"mandatory2"}, 1),
+				getEndpoint("123", []string{}, []string{"mandatory"}, 2),
+				getEndpoint("123", []string{}, []string{"mandatory2"}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "explicit divided multi geo in addons together",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"mandatory", "mandatory2"}, 1),
+				getEndpoint("123", []string{}, []string{"mandatory", "mandatory2"}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "empty with addon partial-geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"addon"}, 1),
+				getEndpoint("123", []string{}, []string{""}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "empty with addon multi-geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"addon"}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "empty with unique addon",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"addon", "unique-addon"}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 2),
+			},
+			success:     false,
+			geolocation: 3,
+		},
+		{
+			name: "explicit with unique addon partial geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{"mandatory"}, []string{"unique-addon"}, 1),
+				getEndpoint("123", []string{"mandatory2"}, []string{}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "explicit with addon + unique addon partial geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{"mandatory"}, []string{"addon", "unique-addon"}, 1),
+				getEndpoint("123", []string{"mandatory2"}, []string{"addon"}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "partial explicit and full emptry with addon + unique addon",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{"mandatory"}, []string{"addon", "unique-addon"}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 1),
+			},
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name: "empty + explicit optional",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{}, 1),
+				getEndpoint("123", []string{"optional"}, []string{}, 1),
+			},
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name: "empty + explicit optional in addon",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{}, 1),
+				getEndpoint("123", []string{}, []string{"optional"}, 1),
+			},
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name: "empty + explicit optional + optional addon",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{}, 1),
+				getEndpoint("123", []string{"optional"}, []string{"optional"}, 1),
+			},
+			success:     true,
+			geolocation: 1,
+		},
+		{
+			name: "explicit optional",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{"optional"}, []string{"optional"}, 1),
+			},
+			success:     false,
+			geolocation: 1,
+		},
+		{
+			name: "full partial geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"addon"}, 1),
+				getEndpoint("123", []string{"mandatory"}, []string{"unique-addon"}, 1),
+				getEndpoint("123", []string{"optional"}, []string{}, 1),
+				getEndpoint("123", []string{}, []string{}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+		{
+			name: "full multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"addon"}, 1),
+				getEndpoint("123", []string{"mandatory"}, []string{"unique-addon"}, 1),
+				getEndpoint("123", []string{"optional"}, []string{}, 1),
+				getEndpoint("123", []string{}, []string{"addon"}, 2),
+				getEndpoint("123", []string{"mandatory"}, []string{"unique-addon"}, 2),
+				getEndpoint("123", []string{"optional"}, []string{}, 2),
+			},
+			success:     true,
+			geolocation: 3,
+		},
+	}
+
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			_, err := ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: ts.providers[0].Addr.String(), ChainID: ts.spec.Index, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: play.geolocation, Endpoints: play.endpoints})
+			if play.success {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
 			}
 		})
 	}

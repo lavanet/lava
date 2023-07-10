@@ -23,6 +23,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingcli "github.com/lavanet/lava/x/pairing/client/cli"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
@@ -51,11 +52,11 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func() (time.Duration, error) {
+			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
-					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				defer conn.Close()
 				relayerClient := *relayerClientPt
@@ -63,34 +64,37 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				relaySentTime := time.Now()
 				returned, err := relayerClient.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
 				if err != nil {
-					return 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				relayLatency := time.Since(relaySentTime)
 				if guid != returned.Value {
-					return 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: returned.Value}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: returned.Value}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
 					RelaySession: &pairingtypes.RelaySession{SpecId: providerEntry.Chain},
-					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: endpoint.UseType},
+					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: apiInterface, Addon: addons},
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				return relayLatency, nil
 			}
-			probeLatency, err := checkOneProvider()
-			if err != nil {
-				badChains = append(badChains, providerEntry.Chain+" "+endpoint.UseType)
-				continue
+			endpointServices := endpoint.GetSupportedServices()
+			for _, endpointService := range endpointServices {
+				probeLatency, err := checkOneProvider(endpointService.ApiInterface, []string{endpointService.Addon})
+				if err != nil {
+					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
+					continue
+				}
+				utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
+				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String())
 			}
-			utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "apiInterface", Value: endpoint.UseType}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
-			goodChains = append(goodChains, providerEntry.Chain+"-"+endpoint.UseType)
 		}
 	}
 	fmt.Printf("----------------------------------------SUMMARY----------------------------------------\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
@@ -99,11 +103,13 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 
 func CreateTestRPCProviderCobraCommand() *cobra.Command {
 	cmdTestRPCProvider := &cobra.Command{
-		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,api-interface,spec-chain-id ..."]`,
+		Use:   `rpcprovider {provider_address | --from <wallet>} [--endpoints "listen-ip:listen-port,[api-interface|addon,...],spec-chain-id ..."]`,
 		Short: `test an rpc provider by reading stake entries and querying it directly in all api interfaces`,
 		Long: `sets up a test-client that probes the rpc provider in all staked chains
 need to provider either provider_address or --from wallet_name
-optional flag: --endpoints in order to validate provider process before submitting a stake command`,
+optional flag: --endpoints in order to validate provider process before submitting a stake command
+endpoints is a space separated list of endpoint,
+each endpoint is: listen-ip:listen-port(the url),[optional: the api interfaces and addons to check],spec-id(the spec identifier to test)`,
 		Example: `rpcprovider lava@myprovideraddress
 rpcprovider --from providerWallet
 rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
@@ -164,13 +170,22 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				tmpArg := strings.Fields(endpointConf)
 				for _, endpointStr := range tmpArg {
 					splitted := strings.Split(endpointStr, ",")
-					if len(splitted) != 3 {
-						return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,chainid HOST:PORT,useType,chainid, received: %s", endpointStr)
+					if len(splitted) < 2 {
+						return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,[optional:apiInterface|addon...],chainid HOST:PORT,[optional:apiInterface|addon...],chainid, received: %s", endpointStr)
 					}
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1]}
+					chainID := splitted[len(splitted)-1]
+					// add dummy geoloc
+					firstElement := splitted[0]
+					splitted[0] = "1" // add dummpy geoLoc
+					endpointsToParse := []string{firstElement}
+					endpointsToParseJoin := []string{strings.Join(append(endpointsToParse, splitted[len(splitted)-1]), ",")}
+					endpoints, _, err := pairingcli.HandleEndpointsAndGeolocationArgs(endpointsToParseJoin, "*")
+					if err != nil {
+						return err
+					}
 					providerEntry := epochstoragetypes.StakeEntry{
-						Endpoints: []epochstoragetypes.Endpoint{endpoint},
-						Chain:     splitted[2],
+						Endpoints: endpoints,
+						Chain:     chainID,
 					}
 					stakedProviderChains = append(stakedProviderChains, providerEntry)
 				}

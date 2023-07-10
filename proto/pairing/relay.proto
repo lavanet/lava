@@ -45,6 +45,7 @@ message RelayPrivateData {
     string api_interface = 5;
     bytes salt = 6;
     repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
+    repeated string addon = 8;
 }
 
 message Metadata {
