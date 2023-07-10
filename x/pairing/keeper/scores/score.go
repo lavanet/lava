@@ -82,7 +82,7 @@ var (
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
 	// gather all req names to a list
-	allReqNames = append(allReqNames, stake_req_name)
+	allReqNames = append(allReqNames, stakeReqName)
 
 	// init strategy
 	uniformStrategy = make(ScoreStrategy)
@@ -118,7 +118,7 @@ func GroupSlots(slots []*PairingSlot) []PairingSlotGroup {
 	for k := range slots {
 		foundGroup := false
 		for i := range slotGroups {
-			diff := slots[k].Diff(slotGroups[i].Slot)
+			diff := slots[k].Subtract(slotGroups[i].Slot)
 			if len(diff.Reqs) == 0 {
 				slotGroups[i].Count += 1
 				foundGroup = true
@@ -140,8 +140,9 @@ func GetStrategy() ScoreStrategy {
 	return uniformStrategy
 }
 
-// calculates the final pairing score for all slot groups (with strategy)
-// we calculate only the diff between the current and previous slot groups
+// CalcPairingScore calculates the final pairing score for a pairing slot (with strategy)
+// For efficiency purposes, we calculate the score on a diff slot which represents the diff reqs of the current slot
+// and the previous slot
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot, minStake sdk.Int) error {
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
@@ -175,8 +176,8 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 	return nil
 }
 
-// given a list of scores, pick a <group-count> providers with a pseudo-random weighted choice
-func PickProviders(ctx sdk.Context, projectIndex string, scores []*PairingScore, groupCount uint64, block uint64, chainID string, epochHash []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+// PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
+func PickProviders(ctx sdk.Context, projectIndex string, scores []*PairingScore, groupCount uint64, chainID string, epochHash []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
 	scoreSum := sdk.NewUint(0)
 	hashData := make([]byte, 0)
 	for _, providerScore := range scores {
@@ -200,7 +201,7 @@ func PickProviders(ctx sdk.Context, projectIndex string, scores []*PairingScore,
 		modRes := hashAsNumber.Mod(scoreSum)
 
 		newScoreSum := sdk.NewUint(0)
-		// we loop the servicers list form the end because the list is sorted, biggest is last,
+		// we loop the servicers list from the end because the list is sorted, biggest is last,
 		// and statistically this will have less iterations
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {

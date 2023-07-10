@@ -1,19 +1,16 @@
 package scores
 
-// object to hold the requirements for a specific slot (map of req names pointing to req object)
+// PairingSlot holds the set of requirements for a slot
 type PairingSlot struct {
 	Reqs map[string]ScoreReq
 }
 
 func NewPairingSlot(reqs map[string]ScoreReq) *PairingSlot {
-	slot := PairingSlot{
-		Reqs: reqs,
-	}
-	return &slot
+	return &PairingSlot{Reqs: reqs}
 }
 
-// generate a diff slot that contains the reqs that are in the slot receiver but not in the "other" slot
-func (s PairingSlot) Diff(other *PairingSlot) *PairingSlot {
+// Subtract generates a diff slot that contains the reqs that are in the slot receiver but not in the "other" slot
+func (s PairingSlot) Subtract(other *PairingSlot) *PairingSlot {
 	reqsDiff := make(map[string]ScoreReq)
 	for key := range s.Reqs {
 		if _, found := other.Reqs[key]; !found {

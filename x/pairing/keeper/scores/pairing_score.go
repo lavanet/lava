@@ -9,7 +9,7 @@ const (
 	UNIFORM_WEIGHT uint64 = 1
 )
 
-// object to hold a provider's score and the requirements that construct the score (map[scoreReqName] -> score from that req)
+// PairingScore holds a provider's score with respect to a set of requirements (ScoreReq), indexed by their unique name.
 type PairingScore struct {
 	Provider        *epochstoragetypes.StakeEntry
 	Score           uint64

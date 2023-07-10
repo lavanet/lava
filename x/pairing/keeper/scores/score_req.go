@@ -6,9 +6,10 @@ import (
 
 // when adding a new req, update CalcSlots()
 
-// Score() calculates a provider's score according to the requirement
-// GetName() gets the ScoreReq's name
+// ScoreReq is an interface for pairing requirement scoring
 type ScoreReq interface {
+	// Score() calculates a provider's score according to the requirement
 	Score(stakeEntry epochstoragetypes.StakeEntry, weight uint64) uint64
+	// GetName returns the unique name of the ScoreReq implementation
 	GetName() string
 }
