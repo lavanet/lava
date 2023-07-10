@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,47 +13,45 @@ import (
 // Keys management logic:
 //
 // upon CreateProject(project):
-//   -> registerKey(now)
-//     -> AppendEntry(project, now)
+//   -> registerKey(this epch)
+//     -> AppendEntry(project, this epch)
 //
 // upon AddKeysToProject(project, key-by, keys-to-add)
 //   -> FindEntry(project, now)
-//   -> validate key-by is admin-key in project
-//   -> FindEntry(project, nextEpoch)
-//   -> registerKey(keys-to-add, project, nextEpoch) (see below)
-//   -> AppendEntry(project, nextEpoch)
+//   -> FindEntry(project-next, epoch-next)
+//   -> validate key-by is admin-key in project-next
+//   -> registerKey(keys-to-add, project, epoch)
+//   -> AppendEntry(project, epoch)
+//   if needed:
+//   -> registerKey(keys-to-add, project-next, epoch-next)
+//   -> AppendEntry(project, epoch-next)
 //
 // upon DelKeysFromProject(project, key-by, keys-to-del)
-//   -> FindEntry(project, now)
-//   -> validate key-by is admin-key in project
-//   -> FindEntry(project, nextEpoch)
-//   -> unregisterKey(dev-keys-to-del, project, nextEpoch) (see below)
-//   -> AppendEntry(project, nextEpoch)
+//   -> FindEntry(project-next, epoch-next)
+//   -> validate key-by is admin-key in project-next
+//   -> unregisterKey(dev-keys-to-del, project-next, epoch-next)
+//   -> AppendEntry(project-next, epoch-next)
 //
 // upon DeleteProject(project)
 //   -> find project (now)
 //   -> unregisterKey(all-keys, project, nextEpoch) (see below)
 //   -> DelEntry(project, nextEpoch)
 //
-// upon registerKey(project, when)
+// upon registerKey(project, epoch)
 //   -> if admin: add to project
 //   -> if devel:
-//        find devel-key (now)
-//        if not belong to project: bail
-//        find devel-key (when)
-//        if the key not belong to this project: bail
-//        else if not found: add to project, AppendEntry(dev-key, when)
+//        find devel-key (epoch)
+//        if belongs to another project: bail
+//        else if not already ours: add to project, AppendEntry(dev-key, epoch)
 //
-// upon unregisterKey(project, when)
+// upon unregisterKey(project, epoch)
 //   -> if admin: del from project
 //   -> if devel:
-//        find devel-key (now)
-//        if not belong to project: bail
-//        find devel-key (when)
-//        if not found: nothing to do
-//        if not belong to project: bail
-//        else: del from project, DelEntry(dev-key, when)
+//        find devel-key (epoch-next)
+//        if belongs to another project bail
+//        else: if ours: del from project-next, DelEntry(dev-key, epoch-next)
 
+// CreateAdminProject creates the (default) admin project
 func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantypes.Plan) error {
 	projectData := types.ProjectData{
 		Name:        types.ADMIN_PROJECT_NAME,
@@ -62,33 +59,34 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 		Enabled:     true,
 		Policy:      nil,
 	}
-	return k.doCreateProject(ctx, subAddr, projectData, plan)
+	return k.CreateProject(ctx, subAddr, projectData, plan)
 }
 
+// CreateProject adds a new project to a subscription
+// (takes effect retroactively at the beginning of this epoch)
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	return k.doCreateProject(ctx, subAddr, projectData, plan)
-}
+	ctxBlock := uint64(ctx.BlockHeight())
 
-// add a new project to the subscription
-func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
-	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	// project creation takes effect retroactively at the beginning of the current epoch
+	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ctxBlock)
 	if err != nil {
-		return utils.LavaFormatError("CreateProject: failed to get current epoch", err,
+		return utils.LavaFormatError("critical: CreateProject failed to get current epoch", err,
 			utils.Attribute{Key: "index", Value: projectData.Name},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
 	project, err := types.NewProject(subAddr, projectData.GetName(), projectData.GetEnabled())
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("create project failed", err,
+			utils.Attribute{Key: "subscription", Value: subAddr},
+		)
 	}
 
-	// project creation wll take effect at the designated block - so check
-	// for duplicates (names) by that block and not only for current block.
+	// project name per subscription is unique: check for duplicates
 	var emptyProject types.Project
 	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
-		return utils.LavaFormatWarning(
-			"failed to create project",
+		return utils.LavaFormatWarning("create project failed",
 			fmt.Errorf("project name already exist for current subscription"),
 			utils.Attribute{Key: "subscription", Value: subAddr},
 		)
@@ -110,13 +108,17 @@ func (k Keeper) doCreateProject(ctx sdk.Context, subAddr string, projectData typ
 	return k.projectsFS.AppendEntry(ctx, project.Index, epoch, &project)
 }
 
+// DeleteProject deletes a project from a subscription
+// (takes effect at the beginning of next epoch)
 func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
+	// project deletion takes effect at the beginning of the next epoch
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
 	if err != nil {
-		return utils.LavaFormatError("DeleteProject: failed to get NextEpoch", err,
+		return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
 			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
 		)
 	}
 
@@ -148,6 +150,9 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
+// registerKey adds a key to a project. For developer keys it also updates the
+// developer key registry (that maps them to projects). The block argument is
+// expected to be current block height (takes effect immediately).
 func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
 		return sdkerrors.ErrInvalidType
@@ -158,12 +163,12 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 	}
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
-		// check that the developer key is valid in the current project state
 		var devkeyData types.ProtoDeveloperData
 		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
-		// the developer key may already belong to a different project
-		if found && devkeyData.ProjectID != project.GetIndex() {
+		// check that the developer key is valid, and that it does not already
+		// belong to a different project.
+		if found && devkeyData.ProjectID != project.Index {
 			return utils.LavaFormatWarning("failed to register key",
 				fmt.Errorf("key already exists"),
 				utils.Attribute{Key: "key", Value: key.Key},
@@ -171,26 +176,10 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
-		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, epoch)
-		if err != nil {
-			return utils.LavaFormatError("registerKey: failed to get next epoch", err)
-		}
+		project.AppendKey(types.ProjectDeveloperKey(key.Key))
 
-		// the project may have future (e.g. end of epoch) changes pending; so
-		// check that the developer key is still valid in that future state
-		// (for example, it could be removed and added elsewhere by then).
-		found = k.developerKeysFS.FindEntry(ctx, key.Key, nextEpoch, &devkeyData)
-
-		// the developer key may already belong to a different project
-		devkeyData = types.ProtoDeveloperData{}
-		if found && devkeyData.ProjectID != project.GetIndex() {
-			return utils.LavaFormatWarning("failed to register key",
-				fmt.Errorf("key already exists in next epoch"),
-				utils.Attribute{Key: "key", Value: key.Key},
-				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
-			)
-		}
-
+		// by now, the key was either not found, or found and belongs to us already.
+		// if the former, then we surely need to add it.
 		if !found {
 			devkeyData := types.ProtoDeveloperData{
 				ProjectID: project.GetIndex(),
@@ -203,23 +192,16 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 					utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				)
 			}
-
-			logger := k.Logger(ctx)
-			details := map[string]string{
-				"project": project.GetIndex(),
-				"key":     key.Key,
-				"keytype": strconv.FormatInt(int64(key.Kinds), 10),
-			}
-			utils.LogLavaEvent(ctx, logger, types.AddProjectKeyEventName, details, "key added to project")
-
-			project.AppendKey(types.ProjectDeveloperKey(key.Key))
 		}
 	}
 
 	return nil
 }
 
-func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, blockHeight uint64) error {
+// unregsiterKey removes a key from a project. For developer keys it also updates
+// the developer key registry (that maps them to projects). The epoch argument is
+// expected to be the next epoch start (takes effect upon next epoch).
+func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
 		return sdkerrors.ErrInvalidType
 	}
@@ -232,46 +214,34 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 	}
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
-		ctxBlock := uint64(ctx.BlockHeight())
+		// check that the developer key belongs to the project (and remove it)
+		found := project.DeleteKey(types.ProjectDeveloperKey(key.Key))
+		if !found {
+			return sdkerrors.ErrKeyNotFound
+		}
 
-		// check that the developer key is valid in the current project state
+		// and now remove it from the developer keys mapping (to projects)
 		var devkeyData types.ProtoDeveloperData
-		found := k.developerKeysFS.FindEntry(ctx, key.Key, ctxBlock, &devkeyData)
-		if !found {
-			// if not found now, check if it is valid in the future (e.g. end of
-			// epoch) state, as it may have been added in this epoch and pending
-			// to become visible).
-			found = k.developerKeysFS.FindEntry(ctx, key.Key, blockHeight, &devkeyData)
-		}
+		found = k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
-		if !found {
-			return sdkerrors.ErrNotFound
-		}
-
-		// the developer key belongs to a different project
-		if devkeyData.ProjectID != project.GetIndex() {
-			return utils.LavaFormatWarning("failed to unregister key", sdkerrors.ErrNotFound,
+		// check again that the developer key is valid, and that it belongs to the
+		// project the developer key belongs to a different project.
+		if !found || devkeyData.ProjectID != project.GetIndex() {
+			// ... but we already checked above that it belongs to this project,
+			// so this should never happen!
+			return utils.LavaFormatError("critical: developer key mapped wrongly",
+				fmt.Errorf("developer key included in project but mapped to another"),
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
+				utils.Attribute{Key: "projectID", Value: project.GetIndex()},
+				utils.Attribute{Key: "otherID", Value: devkeyData.ProjectID},
 			)
 		}
 
-		err := k.developerKeysFS.DelEntry(ctx, key.Key, blockHeight)
+		err := k.developerKeysFS.DelEntry(ctx, key.Key, epoch)
 		if err != nil {
 			return err
 		}
-		found = project.DeleteKey(types.ProjectDeveloperKey(key.Key))
-		if !found {
-			panic("unregisterKey: developer key not found")
-		}
-
-		logger := k.Logger(ctx)
-		details := map[string]string{
-			"project": project.GetIndex(),
-			"key":     key.Key,
-			"keytype": strconv.FormatInt(int64(key.Kinds), 10),
-		}
-		utils.LogLavaEvent(ctx, logger, types.DelProjectKeyEventName, details, "key deleted from project")
 	}
 
 	return nil
@@ -292,7 +262,8 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaFormatWarning("snapshot of project failed, project does not exist", fmt.Errorf("project not found"),
+		return utils.LavaFormatWarning("snapshot of project failed, project does not exist",
+			fmt.Errorf("project not found"),
 			utils.Attribute{Key: "projectID", Value: projectID},
 		)
 	}
