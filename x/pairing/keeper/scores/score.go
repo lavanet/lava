@@ -139,8 +139,13 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
 			if ok {
 				if prevReqScoreComp == 0 {
-					return utils.LavaFormatError("previous req score is zero", fmt.Errorf("invalid req score"),
-						utils.Attribute{Key: "req_name", Value: reqName})
+					utils.LavaFormatFatal("previous req score is zero", fmt.Errorf("invalid req score"),
+						utils.Attribute{Key: "req_name", Value: reqName},
+						utils.Attribute{Key: "provider", Value: score.Provider.Address},
+						utils.Attribute{Key: "stake", Value: score.Provider.Stake.Amount},
+						utils.Attribute{Key: "chain_id", Value: score.Provider.Chain},
+						utils.Attribute{Key: "geolocation", Value: score.Provider.Geolocation},
+					)
 				}
 				score.Score /= prevReqScoreComp
 			}
