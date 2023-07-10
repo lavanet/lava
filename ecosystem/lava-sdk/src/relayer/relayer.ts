@@ -127,7 +127,7 @@ class Relayer {
       });
     });
 
-    return this.relayWithTimeout(2000, requestPromise);
+    return this.relayWithTimeout(5000, requestPromise);
   }
 
   extractErrorMessage(error: string) {

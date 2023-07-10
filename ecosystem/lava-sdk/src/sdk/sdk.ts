@@ -19,6 +19,7 @@ import {
   fetchRpcInterface,
   validateRpcInterfaceWithChainID,
 } from "../util/chains";
+import { base64ToUint8Array, generateRPCData } from "../util/common";
 import { LavaProviders } from "../lavaOverLava/providers";
 import {
   LAVA_CHAIN_ID,
@@ -59,6 +60,7 @@ export interface LavaSDKOptions {
   geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
   lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
   secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
+  debug?: boolean; // Optional for debugging the LavaSDK mostly prints to speed up development
 }
 
 export class LavaSDK {
@@ -75,6 +77,7 @@ export class LavaSDK {
   private account: AccountData | Error;
   private relayer: Relayer | Error;
   private secure: boolean;
+  private debugMode: boolean;
 
   private activeSessionManager: SessionManager | Error;
 
@@ -125,6 +128,7 @@ export class LavaSDK {
     this.relayer = SDKErrors.errRelayerServiceNotInitialized;
     this.lavaProviders = SDKErrors.errLavaProvidersNotInitialized;
     this.activeSessionManager = SDKErrors.errSessionNotInitialized;
+    this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
 
     // Init sdk
     return (async (): Promise<LavaSDK> => {
@@ -142,9 +146,16 @@ export class LavaSDK {
     return await new LavaSDK(options);
   }
 
+  private debugPrint(message?: any, ...optionalParams: any[]) {
+    if (this.debugMode) {
+      console.log(message, ...optionalParams);
+    }
+  }
+
   private async init() {
     let wallet: LavaWallet;
     let badge: Badge | undefined;
+    const start = performance.now();
     if (this.badgeManager.isActive()) {
       const { wallet, privKey } = await createDynamicWallet();
       this.privKey = privKey;
@@ -160,6 +171,10 @@ export class LavaSDK {
         address: badgeSignerAddress,
         pubkey: new Uint8Array([]),
       };
+      this.debugPrint(
+        "time took to get badge from badge server",
+        performance.now() - start
+      );
     } else {
       wallet = await createWallet(this.privKey);
       this.account = await wallet.getConsumerAccount();
@@ -173,6 +188,7 @@ export class LavaSDK {
       this.secure,
       badge
     );
+    this.debugPrint("time took relayer", performance.now() - start);
 
     // Create new instance of lava providers
     const lavaProviders = await new LavaProviders(
@@ -181,12 +197,14 @@ export class LavaSDK {
       lavaRelayer,
       this.geolocation
     );
+    this.debugPrint("time took lava providers", performance.now() - start);
 
     // Init lava providers
     await lavaProviders.init(this.pairingListConfig);
+    this.debugPrint("time took lava providers init", performance.now() - start);
 
     const sendRelayOptions = {
-      data: this.generateRPCData("abci_query", [
+      data: generateRPCData("abci_query", [
         "/lavanet.lava.spec.Query/ShowAllChains",
         "",
         "0",
@@ -202,11 +220,7 @@ export class LavaSDK {
       10,
       "tendermintrpc"
     );
-
-    const byteArrayResponse = this.base64ToUint8Array(
-      info.result.response.value
-    );
-
+    const byteArrayResponse = base64ToUint8Array(info.result.response.value);
     const parsedChainList =
       QueryShowAllChainsResponse.decode(byteArrayResponse);
 
@@ -214,16 +228,22 @@ export class LavaSDK {
     if (!isValidChainID(this.chainID, parsedChainList)) {
       throw SDKErrors.errChainIDUnsupported;
     }
+    this.debugPrint("time took ShowAllChains", performance.now() - start);
 
     // If rpc is not defined use default for specified chainID
     this.rpcInterface =
       this.rpcInterface || fetchRpcInterface(this.chainID, parsedChainList);
+    this.debugPrint("time took fetchRpcInterface", performance.now() - start);
 
     // Validate rpc interface with chain id
     validateRpcInterfaceWithChainID(
       this.chainID,
       parsedChainList,
       this.rpcInterface
+    );
+    this.debugPrint(
+      "time took validateRpcInterfaceWithChainID",
+      performance.now() - start
     );
 
     // Save lava providers as local attribute
@@ -243,6 +263,7 @@ export class LavaSDK {
       this.secure,
       badge
     );
+    this.debugPrint("time took getSession", performance.now() - start);
   }
 
   private async handleRpcRelay(options: SendRelayOptions): Promise<string> {
@@ -259,7 +280,7 @@ export class LavaSDK {
       // Get cuSum for specified method
       const cuSum = this.getCuSumForMethod(method);
 
-      const data = this.generateRPCData(method, params);
+      const data = generateRPCData(method, params);
 
       // Check if relay was initialized
       if (this.relayer instanceof Error) {
@@ -384,24 +405,6 @@ export class LavaSDK {
     return await this.handleRpcRelay(options);
   }
 
-  private generateRPCData(method: string, params: Array<any>): string {
-    const stringifyMethod = JSON.stringify(method);
-    const stringifyParam = JSON.stringify(params, (key, value) => {
-      if (typeof value === "bigint") {
-        return value.toString();
-      }
-      return value;
-    });
-    // TODO make id changable
-    return (
-      '{"jsonrpc": "2.0", "id": 1, "method": ' +
-      stringifyMethod +
-      ', "params": ' +
-      stringifyParam +
-      "}"
-    );
-  }
-
   private decodeRelayResponse(relayResponse: RelayReply): string {
     // Decode relay response
     const dec = new TextDecoder();
@@ -479,10 +482,4 @@ export class LavaSDK {
   ): options is SendRestRelayOptions {
     return (options as SendRestRelayOptions).url !== undefined;
   }
-
-  private base64ToUint8Array = (str: string): Uint8Array => {
-    const buffer = Buffer.from(str, "base64");
-
-    return new Uint8Array(buffer);
-  };
 }

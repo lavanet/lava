@@ -60,7 +60,7 @@ class BadgeManager {
                         if (code == grpc_web_1.grpc.Code.OK || msg == undefined) {
                             return;
                         }
-                        reject(new Error(msg));
+                        reject(new Error("Failed Fetching badge, message: " + msg));
                     },
                 });
             });

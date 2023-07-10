@@ -68,6 +68,7 @@ class LavaSDK {
         this.relayer = errors_1.default.errRelayerServiceNotInitialized;
         this.lavaProviders = errors_1.default.errLavaProvidersNotInitialized;
         this.activeSessionManager = errors_1.default.errSessionNotInitialized;
+        this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
         // Init sdk
         return (() => __awaiter(this, void 0, void 0, function* () {
             yield this.init();
@@ -83,10 +84,16 @@ class LavaSDK {
             return yield new LavaSDK(options);
         });
     }
+    debugPrint(message, ...optionalParams) {
+        if (this.debugMode) {
+            console.log(message, ...optionalParams);
+        }
+    }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             let wallet;
             let badge;
+            const start = performance.now();
             if (this.badgeManager.isActive()) {
                 const { wallet, privKey } = yield (0, wallet_1.createDynamicWallet)();
                 this.privKey = privKey;
@@ -102,6 +109,7 @@ class LavaSDK {
                     address: badgeSignerAddress,
                     pubkey: new Uint8Array([]),
                 };
+                this.debugPrint("time took to get badge from badge server", performance.now() - start);
             }
             else {
                 wallet = yield (0, wallet_1.createWallet)(this.privKey);
@@ -109,10 +117,13 @@ class LavaSDK {
             }
             // Init relayer for lava providers
             const lavaRelayer = new relayer_1.default(default_1.LAVA_CHAIN_ID, this.privKey, this.lavaChainId, this.secure, badge);
+            this.debugPrint("time took relayer", performance.now() - start);
             // Create new instance of lava providers
             const lavaProviders = yield new providers_1.LavaProviders(this.account.address, this.network, lavaRelayer, this.geolocation);
+            this.debugPrint("time took lava providers", performance.now() - start);
             // Init lava providers
             yield lavaProviders.init(this.pairingListConfig);
+            this.debugPrint("time took lava providers init", performance.now() - start);
             const sendRelayOptions = {
                 data: this.generateRPCData("abci_query", [
                     "/lavanet.lava.spec.Query/ShowAllChains",
@@ -130,17 +141,21 @@ class LavaSDK {
             if (!(0, chains_1.isValidChainID)(this.chainID, parsedChainList)) {
                 throw errors_1.default.errChainIDUnsupported;
             }
+            this.debugPrint("time took ShowAllChains", performance.now() - start);
             // If rpc is not defined use default for specified chainID
             this.rpcInterface =
                 this.rpcInterface || (0, chains_1.fetchRpcInterface)(this.chainID, parsedChainList);
+            this.debugPrint("time took fetchRpcInterface", performance.now() - start);
             // Validate rpc interface with chain id
             (0, chains_1.validateRpcInterfaceWithChainID)(this.chainID, parsedChainList, this.rpcInterface);
+            this.debugPrint("time took validateRpcInterfaceWithChainID", performance.now() - start);
             // Save lava providers as local attribute
             this.lavaProviders = lavaProviders;
             // Get pairing list for current epoch
             this.activeSessionManager = yield this.lavaProviders.getSession(this.chainID, this.rpcInterface);
             // Create relayer for querying network
             this.relayer = new relayer_1.default(this.chainID, this.privKey, this.lavaChainId, this.secure, badge);
+            this.debugPrint("time took getSession", performance.now() - start);
         });
     }
     handleRpcRelay(options) {

@@ -27,6 +27,7 @@ export interface LavaSDKOptions {
     geolocation?: string;
     lavaChainId?: string;
     secure?: boolean;
+    debug?: boolean;
 }
 export declare class LavaSDK {
     private privKey;
@@ -41,6 +42,7 @@ export declare class LavaSDK {
     private account;
     private relayer;
     private secure;
+    private debugMode;
     private activeSessionManager;
     /**
      * Create Lava-SDK instance
@@ -54,6 +56,7 @@ export declare class LavaSDK {
      */
     constructor(options: LavaSDKOptions);
     static create(options: LavaSDKOptions): Promise<LavaSDK>;
+    private debugPrint;
     private init;
     private handleRpcRelay;
     private handleRestRelay;
