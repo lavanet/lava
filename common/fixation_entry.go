@@ -28,6 +28,7 @@ import (
 //    - ModifyEntry(index, block, *entry): modify an existing entry with "index" and exact "block" (*)
 //    - ReadEntry(index, block, *entry): copy an existing entry with "index" and exact "block" (*)
 //    - FindEntry(index, block, *entry): get a copy (no reference) of a version of an entry (**)
+//    - FindEntry2(index, block, *entry): get a copy (no reference) of a version of an entry (**)
 //    - GetEntry(index, *entry): get a copy (and reference) of the latest version of an entry
 //    - PutEntry(index, block): drop reference to an existing entry with "index" and exact "block" (*)
 //    - DelEntry(index, block): mark an entry as unavailable for new GetEntry() calls
@@ -511,14 +512,14 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	return types.Entry{}, false
 }
 
-// FindEntry returns the entry by index and block without changing the refcount
-func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
+// FindEntry2 returns the entry by index and block without changing the refcount
+func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (uint64, bool) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		utils.LavaFormatError("FindEntry failed", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
-		return false
+		return 0, false
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -531,11 +532,17 @@ func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, 
 	// true in this case.
 
 	if !found || entry.IsDeletedBy(block) {
-		return false
+		return 0, false
 	}
 
 	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
-	return true
+	return entry.Block, true
+}
+
+// FindEntry returns the entry by index and block without changing the refcount
+func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
+	_, found := fs.FindEntry2(ctx, index, block, entryData)
+	return found
 }
 
 // GetEntry returns the latest entry by index and increments the refcount
