@@ -38,6 +38,7 @@ package scores
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -131,8 +132,8 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 		weight := strategy[reqName] // not checking if key is found because it's verified in init()
 
 		for _, score := range scores {
-			// normalize stake so we won't overflow the score result (uint64)
-			newScoreComp := req.Score(*score.Provider, weight)
+			newScoreComp := req.Score(*score.Provider)
+			newScoreComp = uint64(math.Pow(float64(newScoreComp), float64(weight)))
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
