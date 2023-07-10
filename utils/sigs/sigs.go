@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -250,6 +251,10 @@ func CalculateContentHashForRelayData(relayRequestData *pairingtypes.RelayPrivat
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
 	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(relayRequestData.RequestBlock))
-	msgData := bytes.Join([][]byte{metadataBytes, []byte(relayRequestData.Addon), []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
+	addon := relayRequestData.Addon
+	if addon == nil {
+		addon = []string{}
+	}
+	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(addon, "")), []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
 	return HashMsg(msgData)
 }
