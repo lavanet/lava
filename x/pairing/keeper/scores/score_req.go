@@ -8,7 +8,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
 	scorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -23,8 +22,7 @@ func init() {
 	uniformStrategy[scorestypes.GEO_REQ_NAME] = 1
 }
 
-// get the overall requirements from the policy and assign slots that'll fulfil them
-// TODO: this function should be changed in the future since it only supports stake reqs
+// CalcSlots gets the overall requirements from the policy and assign slots that'll fulfil them
 func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
 	reqMap := map[string]scorestypes.ScoreReq{}
@@ -34,18 +32,17 @@ func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
 	reqMap[stakeReq.GetName()] = stakeReq
 
 	// geo requirements
-	// TODO: handle case where number of geos is larger than number of slots
-	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
+	geoReqsForSlots := scorestypes.GetGeoReqsForSlots(policy)
+	geoReqName := geoReqsForSlots[0].GetName()
 	for i := range slots {
-		geoReq := scorestypes.GeoReq{Geo: uint64(policyGeoEnums[i%len(policyGeoEnums)])}
-		reqMap[geoReq.GetName()] = geoReq
+		reqMap[geoReqName] = geoReqsForSlots[i]
 		slots[i] = scorestypes.NewPairingSlot(reqMap)
 	}
 
 	return slots
 }
 
-// group the slots
+// GroupSlots groups the slots to allow an efficient calculation of the pairing score
 func GroupSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSlotGroup {
 	slotGroups := []scorestypes.PairingSlotGroup{}
 	if len(slots) == 0 {
@@ -73,12 +70,13 @@ func GroupSlots(slots []*scorestypes.PairingSlot) []scorestypes.PairingSlotGroup
 	return slotGroups
 }
 
+// GetStrategy gets the score strategy
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func GetStrategy() scorestypes.ScoreStrategy {
 	return uniformStrategy
 }
 
-// calculates the final pairing score for all slot groups (with strategy)
+// CalcPairingScore calculates the final pairing score for all slot groups (with strategy)
 // we calculate only the diff between the current and previous slot groups
 func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.ScoreStrategy, diffSlot *scorestypes.PairingSlot, minStake sdk.Int) error {
 	// calculate the score for each req for each provider
@@ -115,7 +113,7 @@ func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.S
 	return nil
 }
 
-// given a list of scores, pick a <group-count> providers with a pseudo-random weighted choice
+// PickProviders gets a list of scores and picks a <group-count> providers with a pseudo-random weighted choice
 func PickProviders(ctx sdk.Context, projectIndex string, scores []*scorestypes.PairingScore, groupCount uint64, block uint64, chainID string, epochHash []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
 	scoreSum := sdk.NewUint(0)
 	hashData := make([]byte, 0)

@@ -9,16 +9,17 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-// stake requirement that implements the ScoreReq interface
+// geo requirement that implements the ScoreReq interface
 type GeoReq struct {
 	Geo uint64
 }
 
 const (
-	GEO_REQ_NAME = "geo-req"
+	GEO_REQ_NAME     = "geo-req"
+	noGeoSupportCost = 10000 // highest geo cost < 300
 )
 
-// calculates the stake score of a provider (which is simply the normalized stake)
+// calculates the geo score of a provider (using the GEO_LATENCY_MAP)
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
 	providerGeo := int32(provider.Geolocation)
 	missingGeos := providerGeo ^ int32(gr.Geo)
@@ -55,6 +56,23 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 	return otherGeoReq.Geo == gr.Geo
 }
 
+func GetGeoReqsForSlots(policy planstypes.Policy) []GeoReq {
+	geoReqsForSlots := []GeoReq{}
+
+	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
+	switch {
+	// TODO: implement the case below
+	// case len(policyGeoEnums) > int(policy.MaxProvidersToPair):
+	default:
+		for i := 0; i < int(policy.MaxProvidersToPair); i++ {
+			geoReq := GeoReq{Geo: uint64(policyGeoEnums[i%len(policyGeoEnums)])}
+			geoReqsForSlots = append(geoReqsForSlots, geoReq)
+		}
+	}
+
+	return geoReqsForSlots
+}
+
 // a single geolocation and the latency to it (in millieseconds)
 type GeoLatency struct {
 	geo     planstypes.Geolocation
@@ -65,19 +83,8 @@ func (gl GeoLatency) Less(other GeoLatency) bool {
 	return gl.latency < other.latency
 }
 
-// define shortened names for geolocations (for convinience only)
-var (
-	USC = planstypes.Geolocation_USC
-	EU  = planstypes.Geolocation_EU
-	USE = planstypes.Geolocation_USE
-	USW = planstypes.Geolocation_USW
-	AF  = planstypes.Geolocation_AF
-	AS  = planstypes.Geolocation_AS
-	AU  = planstypes.Geolocation_AU
-)
-
 // GetGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
-func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (planstypes.Geolocation, uint64) {
+func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minCostGeo planstypes.Geolocation, minCost uint64) {
 	geoLatencies := []GeoLatency{}
 	latencies := []uint64{}
 	for _, pGeo := range providerGeos {
@@ -90,13 +97,14 @@ func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloca
 	}
 
 	// no geo latencies found -> provider can't support this geo
-	// returning latency=0 so he'll never be picked
 	if len(geoLatencies) == 0 {
-		return -1, 0
+		return -1, noGeoSupportCost
 	}
 
 	minIndex := commontypes.FindMin(latencies)
-	return geoLatencies[minIndex].geo, geoLatencies[minIndex].latency
+	minCostGeo = geoLatencies[minIndex].geo
+	minCost = geoLatencies[minIndex].latency
+	return minCostGeo, minCost
 }
 
 func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLatency {
@@ -109,6 +117,17 @@ func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLa
 
 	return GeoLatency{}
 }
+
+// define shortened names for geolocations (for convinience only)
+var (
+	USC = planstypes.Geolocation_USC
+	EU  = planstypes.Geolocation_EU
+	USE = planstypes.Geolocation_USE
+	USW = planstypes.Geolocation_USW
+	AF  = planstypes.Geolocation_AF
+	AS  = planstypes.Geolocation_AS
+	AU  = planstypes.Geolocation_AU
+)
 
 // GEO_LATENCY_MAP is a map of lists of GeoLatency that defines the cost of geo mismatch
 // for each single geolocation. The map key is a single geolocation and the value is an
