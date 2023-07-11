@@ -7,7 +7,7 @@ import (
 
 // stake requirement that implements the ScoreReq interface
 type StakeReq struct {
-	stake sdk.Coin
+	MinStake sdk.Int
 }
 
 const (
@@ -15,8 +15,12 @@ const (
 )
 
 // calculates the stake score of a provider (which is simply the normalized stake)
-func (sr StakeReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	return provider.Stake.Amount.ToDec().Power(weight).BigInt().Uint64()
+func (sr StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry, weight uint64) uint64 {
+	res := stakeEntry.Stake.Amount.Quo(sr.MinStake).ToDec().BigInt().Uint64()
+	if res == 0 {
+		return 1
+	}
+	return res
 }
 
 func (sr StakeReq) GetName() string {

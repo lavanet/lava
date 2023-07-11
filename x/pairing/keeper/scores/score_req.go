@@ -23,12 +23,12 @@ func init() {
 }
 
 // CalcSlots gets the overall requirements from the policy and assign slots that'll fulfil them
-func CalcSlots(policy planstypes.Policy) []*scorestypes.PairingSlot {
+func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
 	reqMap := map[string]scorestypes.ScoreReq{}
 
 	// stake requirements
-	stakeReq := scorestypes.StakeReq{}
+	stakeReq := scorestypes.StakeReq{MinStake: minStake}
 	reqMap[stakeReq.GetName()] = stakeReq
 
 	// geo requirements
@@ -89,10 +89,7 @@ func CalcPairingScore(scores []*scorestypes.PairingScore, strategy scorestypes.S
 		}
 
 		for _, score := range scores {
-			// normalize stake so we won't overflow the score result (uint64)
-			providerWithNormalizedStake := score.Provider
-			providerWithNormalizedStake.Stake.Amount = providerWithNormalizedStake.Stake.Amount.Quo(minStake)
-			newScoreComp := req.Score(*providerWithNormalizedStake, weight)
+			newScoreComp := req.Score(*score.Provider, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
