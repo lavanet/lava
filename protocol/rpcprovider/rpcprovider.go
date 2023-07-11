@@ -29,6 +29,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -61,6 +62,7 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
+	RegisterForVersionUpdates(ctx context.Context, versionUpdatable statetracker.VersionUpdatable)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
@@ -105,6 +107,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
+
+	upgradeManager := upgrade.NewUpdateManager()
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
+
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -369,12 +375,12 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 				return err
 			}
 
-			// validate consumer version
-			err = CheckVersion()
-			if err != nil {
-				return err
-			}
-			utils.LavaFormatInfo("RPCProvider version check OK")
+			// // validate consumer version
+			// err = CheckVersion()
+			// if err != nil {
+			// 	return err
+			// }
+			// utils.LavaFormatInfo("RPCProvider version check OK")
 
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
