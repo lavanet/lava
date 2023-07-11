@@ -89,32 +89,31 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 
 // group the slots
 func GroupSlots(slots []*PairingSlot) []*PairingSlot {
-	uniqueSlots := make(map[string]*PairingSlot)
+	uniqueSlots := []*PairingSlot{}
+
 	if len(slots) == 0 {
 		utils.LavaFormatError("no slots", sdkerrors.ErrLogic)
-		return []*PairingSlot{}
+		return uniqueSlots
 	}
 
-	for i := 0; i < len(slots); i++ {
-		slot := slots[i]
-		key := slot.GetSlotKey()
+	uniqueSlots = append(uniqueSlots, slots[0])
+	for k := 1; k < len(slots); k++ {
+		isUnique := true
 
-		if existingSlot, ok := uniqueSlots[key]; ok {
-			// Duplicate slot found
-			existingSlot.Count++
-		} else {
-			// New unique slot
-			uniqueSlots[key] = slot
+		for i := range uniqueSlots {
+			if slots[k].Equal(uniqueSlots[i]) {
+				uniqueSlots[i].Count += 1
+				isUnique = false
+				break
+			}
+		}
+
+		if isUnique {
+			uniqueSlots = append(uniqueSlots, slots[k])
 		}
 	}
 
-	// Convert map values to slice
-	uniqueSlotList := make([]*PairingSlot, 0, len(uniqueSlots))
-	for _, slot := range uniqueSlots {
-		uniqueSlotList = append(uniqueSlotList, slot)
-	}
-
-	return uniqueSlotList
+	return uniqueSlots
 }
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy

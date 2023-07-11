@@ -1,7 +1,5 @@
 package scores
 
-import "strings"
-
 // PairingSlot holds the set of requirements for a slot.
 // It also holds the number of identical slots required for the pairing (count)
 type PairingSlot struct {
@@ -29,13 +27,17 @@ func (s PairingSlot) Subtract(other *PairingSlot) *PairingSlot {
 	return diffSlot
 }
 
-// GetSlotKey generates a unique key of the slot based on its requirements
-func (s PairingSlot) GetSlotKey() string {
-	// TODO: non deterministic - fix
-	key := ""
-	for reqName := range s.Reqs {
-		key += reqName + "-"
+func (s PairingSlot) Equal(other *PairingSlot) bool {
+	if len(s.Reqs) != len(other.Reqs) {
+		return false
 	}
 
-	return strings.TrimSuffix(key, "-")
+	for key, req := range s.Reqs {
+		otherReq, exists := other.Reqs[key]
+		if !exists || !req.Equal(otherReq) {
+			return false
+		}
+	}
+
+	return true
 }
