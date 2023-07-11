@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -87,6 +88,7 @@ func (s *strategyValue) Type() string {
 }
 
 type ConsumerStateTrackerInf interface {
+	RegisterForVersionUpdates(ctx context.Context, versionUpdatable statetracker.VersionUpdatable)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
@@ -144,6 +146,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
+
+	upgradeManager := upgrade.NewUpdateManager()
+	consumerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
+
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -317,12 +323,12 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				return err
 			}
 
-			// validate consumer version
-			err = CheckVersion()
-			if err != nil {
-				return err
-			}
-			utils.LavaFormatInfo("RPCConsumer version check OK")
+			// // validate consumer version
+			// err = CheckVersion()
+			// if err != nil {
+			// 	return err
+			// }
+			// utils.LavaFormatInfo("RPCConsumer version check OK")
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
