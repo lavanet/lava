@@ -15,12 +15,18 @@ type GeoReq struct {
 }
 
 const (
-	GEO_REQ_NAME     = "geo-req"
-	noGeoSupportCost = 10000 // highest geo cost < 300
+	GEO_REQ_NAME  = "geo-req"
+	maxGeoLatency = 10000 // highest geo cost < 300
+	minGeoLatency = 1
 )
 
-// calculates the geo score of a provider (using the GEO_LATENCY_MAP)
+// Score calculates the geo score of a provider (using the GEO_LATENCY_MAP)
+// The score is (maxGeoLatency / minLatency)^geoWeight
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
+	if gr.Geo == provider.Geolocation {
+		return calculateCostFromLatency(minGeoLatency)
+	}
+
 	providerGeo := int32(provider.Geolocation)
 	missingGeos := providerGeo ^ int32(gr.Geo)
 
@@ -84,7 +90,7 @@ func (gl GeoLatency) Less(other GeoLatency) bool {
 }
 
 // GetGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
-func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minCostGeo planstypes.Geolocation, minCost uint64) {
+func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost uint64) {
 	geoLatencies := []GeoLatency{}
 	latencies := []uint64{}
 	for _, pGeo := range providerGeos {
@@ -96,15 +102,15 @@ func GetGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloca
 		latencies = append(latencies, geoLatency.latency)
 	}
 
-	// no geo latencies found -> provider can't support this geo
+	// no geo latencies found -> provider can't support this geo (score = 1 -> max latency)
 	if len(geoLatencies) == 0 {
-		return -1, noGeoSupportCost
+		return -1, calculateCostFromLatency(maxGeoLatency)
 	}
 
 	minIndex := commontypes.FindMin(latencies)
-	minCostGeo = geoLatencies[minIndex].geo
-	minCost = geoLatencies[minIndex].latency
-	return minCostGeo, minCost
+	minLatencyGeo = geoLatencies[minIndex].geo
+	minLatencyCost = calculateCostFromLatency(geoLatencies[minIndex].latency)
+	return minLatencyGeo, minLatencyCost
 }
 
 func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLatency {
@@ -116,6 +122,10 @@ func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLa
 	}
 
 	return GeoLatency{}
+}
+
+func calculateCostFromLatency(latency uint64) uint64 {
+	return maxGeoLatency / latency
 }
 
 // define shortened names for geolocations (for convinience only)
