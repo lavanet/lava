@@ -40,6 +40,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -182,6 +183,17 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 		return returnedProviders
 	}
 
+	// sort the list by score (larger scores last). If there are equal scores, sort by provider address (alphabetically)
+	sort.SliceStable(scores, func(i, j int) bool {
+		// First, compare the Score field
+		if scores[i].Score != scores[j].Score {
+			return scores[i].Score < scores[j].Score
+		}
+
+		// If scores are equal, compare Provider.addr.string field alphabetically
+		return scores[i].Provider.Address < scores[j].Provider.Address
+	})
+
 	indexToSkip := *indexToSkipPtr
 	for it := 0; it < int(groupCount); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
@@ -190,7 +202,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 		modRes := hashAsNumber.Mod(scoreSum)
 
 		newScoreSum := sdk.NewUint(0)
-		// we loop the servicers list from the end because the list is sorted, biggest is last,
+		// we loop the scores list from the end because the list is sorted, biggest is last,
 		// and statistically this will have less iterations
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
