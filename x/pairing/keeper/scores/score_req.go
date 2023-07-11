@@ -20,6 +20,7 @@ var uniformStrategy scorestypes.ScoreStrategy
 func init() {
 	uniformStrategy = make(scorestypes.ScoreStrategy)
 	uniformStrategy[scorestypes.STAKE_REQ_NAME] = 1
+	uniformStrategy[scorestypes.GEO_REQ_NAME] = 1
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
