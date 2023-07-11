@@ -13,6 +13,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -29,6 +30,7 @@ type StateQuery struct {
 	SpecQueryClient         spectypes.QueryClient
 	PairingQueryClient      pairingtypes.QueryClient
 	EpochStorageQueryClient epochstoragetypes.QueryClient
+	ProtocolClient          protocoltypes.QueryClient
 	ResponsesCache          *ristretto.Cache
 }
 
@@ -37,12 +39,25 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq.SpecQueryClient = spectypes.NewQueryClient(clientCtx)
 	sq.PairingQueryClient = pairingtypes.NewQueryClient(clientCtx)
 	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
+	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
 	}
 	sq.ResponsesCache = cache
 	return sq
+}
+
+type VersionStateQuery struct {
+	StateQuery
+}
+
+func (csq *StateQuery) GetVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return &param.Params.Version, nil
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
