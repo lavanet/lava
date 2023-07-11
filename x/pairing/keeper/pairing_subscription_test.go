@@ -230,8 +230,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
 
-	// make the plan policy's geolocation 7(=111)
-	ts.plan.PlanPolicy.GeolocationProfile = 7
+	ts.plan.PlanPolicy.GeolocationProfile = uint64(planstypes.Geolocation_value["GL"])
 	err := ts.keepers.Plans.AddPlan(_ctx, ts.plan)
 	require.Nil(t, err)
 
@@ -249,13 +248,14 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 		name                   string
 		geolocationAdminPolicy uint64
 		geolocationSubPolicy   uint64
-		success                bool
+		expectedProviderPaired int
+		validPairing           bool
 	}{
-		{"effective geo = 1", uint64(1), uint64(1), true},
-		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), true},
-		{"effective geo = 2", uint64(3), uint64(2), false},
-		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), false},
-		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), false},
+		{"effective geo = 1", uint64(1), uint64(1), len(ts.providers), true},
+		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), len(ts.providers), true},
+		{"effective geo = 2", uint64(3), uint64(2), len(ts.providers), true},
+		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), 0, false},
+		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), 0, false},
 	}
 
 	for _, tt := range geolocationTestTemplates {
@@ -295,12 +295,14 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 				ChainID: ts.spec.Index,
 				Client:  ts.clients[0].Addr.String(),
 			})
-			require.Nil(t, err)
-			if tt.success {
-				require.NotEqual(t, 0, len(getPairingResponse.Providers))
+			if tt.validPairing {
+				require.Nil(t, err)
 			} else {
-				require.Equal(t, 0, len(getPairingResponse.Providers))
+				require.NotNil(t, err)
+				return
 			}
+
+			require.Equal(t, tt.expectedProviderPaired, len(getPairingResponse.Providers))
 		})
 	}
 }
