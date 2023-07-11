@@ -6,7 +6,7 @@ export declare class SessionManager {
     getCuSumFromApi(name: string, chainID: string): number | undefined;
 }
 export declare class ConsumerSessionWithProvider {
-    Acc: string;
+    ConsumerAddress: string;
     Endpoints: Array<Endpoint>;
     Session: SingleConsumerSession;
     MaxComputeUnits: number;

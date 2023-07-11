@@ -54,6 +54,14 @@ class Relayer {
         }
         this.badge = badge;
     }
+    // when an epoch changes we need to update the badge
+    setBadge(badge) {
+        if (this.badge && !badge) {
+            // we have a badge and trying to set it to undefined
+            throw new Error("Trying to set an undefined badge to an existing badge, bad flow");
+        }
+        this.badge = badge;
+    }
     sendRelay(options, consumerProviderSession, cuSum, apiInterface) {
         return __awaiter(this, void 0, void 0, function* () {
             // Extract attributes from options
@@ -129,7 +137,7 @@ class Relayer {
                     },
                 });
             });
-            return this.relayWithTimeout(2000, requestPromise);
+            return this.relayWithTimeout(5000, requestPromise);
         });
     }
     extractErrorMessage(error) {

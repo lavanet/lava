@@ -26,7 +26,7 @@ export class SessionManager {
 }
 
 export class ConsumerSessionWithProvider {
-  Acc: string;
+  ConsumerAddress: string;
   Endpoints: Array<Endpoint>;
   Session: SingleConsumerSession;
   MaxComputeUnits: number;
@@ -41,7 +41,7 @@ export class ConsumerSessionWithProvider {
     usedComputeUnits: number,
     reliabilitySent: boolean
   ) {
-    this.Acc = acc;
+    this.ConsumerAddress = acc;
     this.Endpoints = endpoints;
     this.Session = session;
     this.MaxComputeUnits = maxComputeUnits;

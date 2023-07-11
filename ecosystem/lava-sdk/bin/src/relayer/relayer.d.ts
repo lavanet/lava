@@ -8,6 +8,7 @@ declare class Relayer {
     private prefix;
     private badge?;
     constructor(chainID: string, privKey: string, lavaChainId: string, secure: boolean, badge?: Badge);
+    setBadge(badge: Badge | undefined): void;
     sendRelay(options: SendRelayOptions, consumerProviderSession: ConsumerSessionWithProvider, cuSum: number, apiInterface: string): Promise<RelayReply>;
     extractErrorMessage(error: string): string;
     relayWithTimeout(timeLimit: number, task: any): Promise<any>;
