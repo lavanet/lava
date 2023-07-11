@@ -19,6 +19,15 @@ const (
 	EventPrefix = "lava_"
 )
 
+const (
+	LAVA_LOG_DEBUG = iota
+	LAVA_LOG_INFO
+	LAVA_LOG_WARN
+	LAVA_LOG_ERROR
+	LAVA_LOG_FATAL
+	LAVA_LOG_PANIC
+)
+
 var JsonFormat = false
 
 type Attribute struct {
@@ -71,20 +80,22 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 
 	var logEvent *zerolog.Event
 	switch severity {
-	case 4:
+	case LAVA_LOG_PANIC:
+		// prefix = "Panic:"
+		logEvent = zerologlog.Panic()
+	case LAVA_LOG_FATAL:
 		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
-
-	case 3:
+	case LAVA_LOG_ERROR:
 		// prefix = "Error:"
 		logEvent = zerologlog.Error()
-	case 2:
+	case LAVA_LOG_WARN:
 		// prefix = "Warning:"
 		logEvent = zerologlog.Warn()
-	case 1:
+	case LAVA_LOG_INFO:
 		logEvent = zerologlog.Info()
 		// prefix = "Info:"
-	case 0:
+	case LAVA_LOG_DEBUG:
 		logEvent = zerologlog.Debug()
 		// prefix = "Debug:"
 	}
@@ -152,26 +163,30 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	return errRet
 }
 
+func LavaFormatPanic(description string, err error, attributes ...Attribute) {
+	attributes = append(attributes, Attribute{Key: "StackTrace", Value: debug.Stack()})
+	LavaFormatLog(description, err, attributes, LAVA_LOG_PANIC)
+}
+
 func LavaFormatFatal(description string, err error, attributes ...Attribute) {
 	attributes = append(attributes, Attribute{Key: "StackTrace", Value: debug.Stack()})
-	LavaFormatLog(description, err, attributes, 4)
-	os.Exit(1)
+	LavaFormatLog(description, err, attributes, LAVA_LOG_FATAL)
 }
 
 func LavaFormatError(description string, err error, attributes ...Attribute) error {
-	return LavaFormatLog(description, err, attributes, 3)
+	return LavaFormatLog(description, err, attributes, LAVA_LOG_ERROR)
 }
 
 func LavaFormatWarning(description string, err error, attributes ...Attribute) error {
-	return LavaFormatLog(description, err, attributes, 2)
+	return LavaFormatLog(description, err, attributes, LAVA_LOG_WARN)
 }
 
 func LavaFormatInfo(description string, attributes ...Attribute) error {
-	return LavaFormatLog(description, nil, attributes, 1)
+	return LavaFormatLog(description, nil, attributes, LAVA_LOG_INFO)
 }
 
 func LavaFormatDebug(description string, attributes ...Attribute) error {
-	return LavaFormatLog(description, nil, attributes, 0)
+	return LavaFormatLog(description, nil, attributes, LAVA_LOG_DEBUG)
 }
 
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T) string {

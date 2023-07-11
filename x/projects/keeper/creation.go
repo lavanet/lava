@@ -224,13 +224,14 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		var devkeyData types.ProtoDeveloperData
 		found = k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
-		// check again that the developer key is valid, and that it belongs to the
-		// project the developer key belongs to a different project.
-		if !found || devkeyData.ProjectID != project.GetIndex() {
-			// ... but we already checked above that it belongs to this project,
-			// so this should never happen!
-			return utils.LavaFormatError("critical: developer key mapped wrongly",
-				fmt.Errorf("developer key included in project but mapped to another"),
+		if !found {
+			return sdkerrors.ErrNotFound
+		}
+
+		// the developer key belongs to a different project
+		if devkeyData.ProjectID != project.GetIndex() {
+			return utils.LavaFormatWarning("failed to unregister key", sdkerrors.ErrNotFound,
+				utils.Attribute{Key: "projectID", Value: project.Index},
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
 				utils.Attribute{Key: "projectID", Value: project.GetIndex()},
@@ -251,25 +252,30 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
 	projects := k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscriptionAddr)
 	for _, projectID := range projects {
-		err := k.snapshotProject(ctx, projectID)
-		if err != nil {
-			panic(err)
-		}
+		k.snapshotProject(ctx, projectID)
 	}
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) error {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		return utils.LavaFormatWarning("snapshot of project failed, project does not exist",
-			fmt.Errorf("project not found"),
-			utils.Attribute{Key: "projectID", Value: projectID},
+		utils.LavaFormatError("critical: snapshot of project failed (find)", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
+		return
 	}
 
 	project.UsedCu = 0
 	project.Snapshot += 1
 
-	return k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	err := k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	if err != nil {
+		utils.LavaFormatError("critical: snapshot of project failed (append)", err,
+			utils.Attribute{Key: "project", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+		)
+		return
+	}
 }

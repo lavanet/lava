@@ -255,15 +255,19 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if !rewardCoins.AmountOf(epochstoragetypes.TokenDenom).IsZero() {
 			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
 			if err != nil {
-				utils.LavaFormatError("MintCoins Failed", err)
-				panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
+				// panic:ok: mint coins should never fail
+				utils.LavaFormatPanic("critical: failed to mint coins to reward provider", err,
+					utils.Attribute{Key: "provider", Value: providerAddr},
+					utils.Attribute{Key: "reward", Value: rewardCoins},
+				)
 			}
-			//
-			// Send to provider
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
 			if err != nil {
-				utils.LavaFormatError("SendCoinsFromModuleToAccount Failed", err)
-				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+				// panic:ok: reward transfer should never fail
+				utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+					utils.Attribute{Key: "provider", Value: providerAddr},
+					utils.Attribute{Key: "reward", Value: rewardCoins},
+				)
 			}
 		}
 

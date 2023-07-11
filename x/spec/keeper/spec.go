@@ -205,13 +205,17 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 }
 
 // returns map[apiInterface][]addons
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) {
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
 	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
-		if err != nil { // should not happen! (all specs on chain must be valid)
-			panic(err)
+		if err != nil {
+			// spec expansion should work because all specs on chain must be valid;
+			// to avoid panic return an error so the caller can bail.
+			return nil, utils.LavaFormatError("critical: failed to expand spec on chain", err,
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
 		}
 		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
 	}
