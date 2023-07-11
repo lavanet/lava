@@ -42,8 +42,6 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -66,7 +64,7 @@ func init() {
 	}
 
 	if len(allReqNames) != len(uniformStrategy) {
-		panic("strategy does not contain all score reqs")
+		panic("uniform strategy does not contain all score reqs")
 	}
 }
 
@@ -92,8 +90,7 @@ func GroupSlots(slots []*PairingSlot) []*PairingSlot {
 	uniqueSlots := []*PairingSlot{}
 
 	if len(slots) == 0 {
-		utils.LavaFormatError("no slots", sdkerrors.ErrLogic)
-		return uniqueSlots
+		panic("no pairing slots available")
 	}
 
 	uniqueSlots = append(uniqueSlots, slots[0])
