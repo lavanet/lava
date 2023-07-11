@@ -159,10 +159,21 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 	return nil
 }
 
+// PrepareHashData prepares the hash needed in the pseudo-random choice of providers
+func PrepareHashData(projectIndex string, chainID string, epochHash []byte) []byte {
+	hashData := []byte{}
+
+	// add the session start block hash to the function to make it as unpredictable as we can
+	hashData = append(hashData, epochHash...)
+	hashData = append(hashData, chainID...)      // to make this pairing unique per chainID
+	hashData = append(hashData, projectIndex...) // to make this pairing unique per consumer
+
+	return hashData
+}
+
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
-func PickProviders(ctx sdk.Context, projectIndex string, scores []*PairingScore, groupCount uint64, chainID string, epochHash []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, hashData []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
 	scoreSum := sdk.NewUint(0)
-	hashData := make([]byte, 0)
 	for _, providerScore := range scores {
 		scoreSum = scoreSum.Add(sdk.NewUint(providerScore.Score))
 	}
@@ -170,11 +181,6 @@ func PickProviders(ctx sdk.Context, projectIndex string, scores []*PairingScore,
 		// list is empty
 		return returnedProviders
 	}
-
-	// add the session start block hash to the function to make it as unpredictable as we can
-	hashData = append(hashData, epochHash...)
-	hashData = append(hashData, chainID...)      // to make this pairing unique per chainID
-	hashData = append(hashData, projectIndex...) // to make this pairing unique per consumer
 
 	indexToSkip := *indexToSkipPtr
 	for it := 0; it < int(groupCount); it++ {
