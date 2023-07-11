@@ -31,6 +31,7 @@ export interface LavaSDKOptions {
 }
 export declare class LavaSDK {
     private privKey;
+    private walletAddress;
     private chainID;
     private rpcInterface;
     private network;
@@ -38,6 +39,7 @@ export declare class LavaSDK {
     private geolocation;
     private lavaChainId;
     private badgeManager;
+    private currentEpochBadge;
     private lavaProviders;
     private account;
     private relayer;
@@ -57,6 +59,8 @@ export declare class LavaSDK {
     constructor(options: LavaSDKOptions);
     static create(options: LavaSDKOptions): Promise<LavaSDK>;
     private debugPrint;
+    private fetchNewBadge;
+    private initLavaProviders;
     private init;
     private handleRpcRelay;
     private handleRestRelay;
@@ -71,11 +75,9 @@ export declare class LavaSDK {
      *
      */
     sendRelay(options: SendRelayOptions | SendRestRelayOptions): Promise<string>;
-    private generateRPCData;
     private decodeRelayResponse;
     private getCuSumForMethod;
     private getConsumerProviderSession;
     private newEpochStarted;
     private isRest;
-    private base64ToUint8Array;
 }

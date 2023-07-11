@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lava-sdk",
-  "version": "0.13.1",
+  "version": "0.16.1",
   "description": "An SDK for interacting with Lava provider",
   "main": "./bin/src/sdk/sdk.js",
   "author": "Lava Protocol Inc",
@@ -16,7 +16,9 @@
     "run_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI.js",
     "run_jsonrpc_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC.js",
     "run_jsonrpc_badge_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC_badge_test.js",
+
     "run_test_tendermint_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/tendermintRPC_test.js",
+    "node_test_tendermint_example": "node ./bin/examples/tendermintRPC_test.js",
     "run_test_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI_test.js",
     "run_test_jsonrpc_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC_test.js",
     "node_test_jsonrpc_example": "node ./bin/examples/jsonRPC_test.js",

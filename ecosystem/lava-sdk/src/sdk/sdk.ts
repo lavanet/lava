@@ -22,13 +22,13 @@ import {
 import { base64ToUint8Array, generateRPCData } from "../util/common";
 import { LavaProviders } from "../lavaOverLava/providers";
 import {
-  LAVA_CHAIN_ID,
+  LAVA_CHAIN_ID as LAVA_SPEC_ID,
   DEFAULT_LAVA_PAIRING_NETWORK,
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
 import { QueryShowAllChainsResponse } from "../codec/spec/query";
-
+import { GenerateBadgeResponse } from "../grpc_web_services/pairing/badges_pb";
 /**
  * Options for sending RPC relay.
  */
@@ -65,6 +65,7 @@ export interface LavaSDKOptions {
 
 export class LavaSDK {
   private privKey: string;
+  private walletAddress: string;
   private chainID: string;
   private rpcInterface: string;
   private network: string;
@@ -72,6 +73,7 @@ export class LavaSDK {
   private geolocation: string;
   private lavaChainId: string;
   private badgeManager: BadgeManager;
+  private currentEpochBadge: Badge | undefined; // The current badge is the badge for the current epoch
 
   private lavaProviders: LavaProviders | Error;
   private account: AccountData | Error;
@@ -119,6 +121,7 @@ export class LavaSDK {
     this.chainID = chainID;
     this.rpcInterface = rpcInterface ? rpcInterface : "";
     this.privKey = privateKey ? privateKey : "";
+    this.walletAddress = "";
     this.badgeManager = new BadgeManager(badge);
     this.network = network;
     this.geolocation = geolocation;
@@ -152,77 +155,42 @@ export class LavaSDK {
     }
   }
 
-  private async init() {
-    let wallet: LavaWallet;
-    let badge: Badge | undefined;
-    const start = performance.now();
-    if (this.badgeManager.isActive()) {
-      const { wallet, privKey } = await createDynamicWallet();
-      this.privKey = privKey;
-      const walletAddress = (await wallet.getConsumerAccount()).address;
-      const badgeResponse = await this.badgeManager.fetchBadge(walletAddress);
-      if (badgeResponse instanceof Error) {
-        throw TimeoutFailureFetchingBadgeError;
-      }
-      badge = badgeResponse.getBadge();
-      const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
-      this.account = {
-        algo: "secp256k1",
-        address: badgeSignerAddress,
-        pubkey: new Uint8Array([]),
-      };
-      this.debugPrint(
-        "time took to get badge from badge server",
-        performance.now() - start
-      );
-    } else {
-      wallet = await createWallet(this.privKey);
-      this.account = await wallet.getConsumerAccount();
+  private async fetchNewBadge(): Promise<GenerateBadgeResponse> {
+    const badgeResponse = await this.badgeManager.fetchBadge(
+      this.walletAddress
+    );
+    if (badgeResponse instanceof Error) {
+      throw TimeoutFailureFetchingBadgeError;
     }
+    return badgeResponse;
+  }
 
-    // Init relayer for lava providers
-    const lavaRelayer = new Relayer(
-      LAVA_CHAIN_ID,
-      this.privKey,
-      this.lavaChainId,
-      this.secure,
-      badge
-    );
-    this.debugPrint("time took relayer", performance.now() - start);
-
+  private async initLavaProviders(start: number) {
+    if (this.account instanceof Error) {
+      throw new Error("initLavaProviders failed: " + String(this.account));
+    }
     // Create new instance of lava providers
-    const lavaProviders = await new LavaProviders(
-      this.account.address,
-      this.network,
-      lavaRelayer,
-      this.geolocation
-    );
+    this.lavaProviders = await new LavaProviders({
+      accountAddress: this.account.address,
+      network: this.network,
+      relayer: new Relayer(
+        LAVA_SPEC_ID,
+        this.privKey,
+        this.lavaChainId,
+        this.secure,
+        this.currentEpochBadge
+      ),
+      geolocation: this.geolocation,
+      debug: this.debugMode,
+    });
     this.debugPrint("time took lava providers", performance.now() - start);
 
     // Init lava providers
-    await lavaProviders.init(this.pairingListConfig);
+    await this.lavaProviders.init(this.pairingListConfig);
     this.debugPrint("time took lava providers init", performance.now() - start);
 
-    const sendRelayOptions = {
-      data: generateRPCData("abci_query", [
-        "/lavanet.lava.spec.Query/ShowAllChains",
-        "",
-        "0",
-        false,
-      ]),
-      url: "",
-      connectionType: "",
-    };
-
-    const info = await lavaProviders.SendRelayWithRetry(
-      sendRelayOptions,
-      lavaProviders.GetNextLavaProvider(),
-      10,
-      "tendermintrpc"
-    );
-    const byteArrayResponse = base64ToUint8Array(info.result.response.value);
-    const parsedChainList =
-      QueryShowAllChainsResponse.decode(byteArrayResponse);
+    const parsedChainList: QueryShowAllChainsResponse =
+      await this.lavaProviders.showAllChains();
 
     // Validate chainID
     if (!isValidChainID(this.chainID, parsedChainList)) {
@@ -246,14 +214,39 @@ export class LavaSDK {
       performance.now() - start
     );
 
-    // Save lava providers as local attribute
-    this.lavaProviders = lavaProviders;
-
     // Get pairing list for current epoch
     this.activeSessionManager = await this.lavaProviders.getSession(
       this.chainID,
-      this.rpcInterface
+      this.rpcInterface,
+      this.currentEpochBadge
     );
+
+    this.debugPrint("time took getSession", performance.now() - start);
+  }
+
+  private async init() {
+    const start = performance.now();
+    if (this.badgeManager.isActive()) {
+      const { wallet, privKey } = await createDynamicWallet();
+      this.privKey = privKey;
+      this.walletAddress = (await wallet.getConsumerAccount()).address;
+      const badgeResponse = await this.fetchNewBadge();
+      this.currentEpochBadge = badgeResponse.getBadge();
+      const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
+      this.account = {
+        algo: "secp256k1",
+        address: badgeSignerAddress,
+        pubkey: new Uint8Array([]),
+      };
+      this.debugPrint(
+        "time took to get badge from badge server",
+        performance.now() - start
+      );
+      // this.debugPrint("badge", badge);
+    } else {
+      const wallet = await createWallet(this.privKey);
+      this.account = await wallet.getConsumerAccount();
+    }
 
     // Create relayer for querying network
     this.relayer = new Relayer(
@@ -261,9 +254,10 @@ export class LavaSDK {
       this.privKey,
       this.lavaChainId,
       this.secure,
-      badge
+      this.currentEpochBadge
     );
-    this.debugPrint("time took getSession", performance.now() - start);
+
+    await this.initLavaProviders(start);
   }
 
   private async handleRpcRelay(options: SendRelayOptions): Promise<string> {
@@ -452,9 +446,21 @@ export class LavaSDK {
 
     // Check if new epoch has started
     if (this.newEpochStarted()) {
+      // fetch a new badge:
+      if (this.badgeManager.isActive()) {
+        const badgeResponse = await this.fetchNewBadge();
+        this.currentEpochBadge = badgeResponse.getBadge();
+        if (this.relayer instanceof Relayer) {
+          this.relayer.setBadge(this.currentEpochBadge);
+        }
+        this.lavaProviders.updateLavaProvidersRelayersBadge(
+          this.currentEpochBadge
+        );
+      }
       this.activeSessionManager = await this.lavaProviders.getSession(
         this.chainID,
-        this.rpcInterface
+        this.rpcInterface,
+        this.currentEpochBadge
       );
     }
 

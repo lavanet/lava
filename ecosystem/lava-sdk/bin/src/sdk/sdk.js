@@ -18,9 +18,9 @@ const errors_1 = __importDefault(require("./errors"));
 const relayer_1 = __importDefault(require("../relayer/relayer"));
 const fetchBadge_1 = require("../badge/fetchBadge");
 const chains_1 = require("../util/chains");
+const common_1 = require("../util/common");
 const providers_1 = require("../lavaOverLava/providers");
 const default_1 = require("../config/default");
-const query_1 = require("../codec/spec/query");
 class LavaSDK {
     /**
      * Create Lava-SDK instance
@@ -33,10 +33,6 @@ class LavaSDK {
      * @returns A promise that resolves when the LavaSDK has been successfully initialized, returns LavaSDK object.
      */
     constructor(options) {
-        this.base64ToUint8Array = (str) => {
-            const buffer = Buffer.from(str, "base64");
-            return new Uint8Array(buffer);
-        };
         // Extract attributes from options
         const { privateKey, badge, chainID, rpcInterface } = options;
         let { pairingListConfig, network, geolocation, lavaChainId } = options;
@@ -59,6 +55,7 @@ class LavaSDK {
         this.chainID = chainID;
         this.rpcInterface = rpcInterface ? rpcInterface : "";
         this.privKey = privateKey ? privateKey : "";
+        this.walletAddress = "";
         this.badgeManager = new fetchBadge_1.BadgeManager(badge);
         this.network = network;
         this.geolocation = geolocation;
@@ -89,54 +86,33 @@ class LavaSDK {
             console.log(message, ...optionalParams);
         }
     }
-    init() {
+    fetchNewBadge() {
         return __awaiter(this, void 0, void 0, function* () {
-            let wallet;
-            let badge;
-            const start = performance.now();
-            if (this.badgeManager.isActive()) {
-                const { wallet, privKey } = yield (0, wallet_1.createDynamicWallet)();
-                this.privKey = privKey;
-                const walletAddress = (yield wallet.getConsumerAccount()).address;
-                const badgeResponse = yield this.badgeManager.fetchBadge(walletAddress);
-                if (badgeResponse instanceof Error) {
-                    throw fetchBadge_1.TimoutFailureFetchingBadgeError;
-                }
-                badge = badgeResponse.getBadge();
-                const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
-                this.account = {
-                    algo: "secp256k1",
-                    address: badgeSignerAddress,
-                    pubkey: new Uint8Array([]),
-                };
-                this.debugPrint("time took to get badge from badge server", performance.now() - start);
+            const badgeResponse = yield this.badgeManager.fetchBadge(this.walletAddress);
+            if (badgeResponse instanceof Error) {
+                throw fetchBadge_1.TimoutFailureFetchingBadgeError;
             }
-            else {
-                wallet = yield (0, wallet_1.createWallet)(this.privKey);
-                this.account = yield wallet.getConsumerAccount();
+            return badgeResponse;
+        });
+    }
+    initLavaProviders(start) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.account instanceof Error) {
+                throw new Error("initLavaProviders failed: " + String(this.account));
             }
-            // Init relayer for lava providers
-            const lavaRelayer = new relayer_1.default(default_1.LAVA_CHAIN_ID, this.privKey, this.lavaChainId, this.secure, badge);
-            this.debugPrint("time took relayer", performance.now() - start);
             // Create new instance of lava providers
-            const lavaProviders = yield new providers_1.LavaProviders(this.account.address, this.network, lavaRelayer, this.geolocation);
+            this.lavaProviders = yield new providers_1.LavaProviders({
+                accountAddress: this.account.address,
+                network: this.network,
+                relayer: new relayer_1.default(default_1.LAVA_CHAIN_ID, this.privKey, this.lavaChainId, this.secure, this.currentEpochBadge),
+                geolocation: this.geolocation,
+                debug: this.debugMode,
+            });
             this.debugPrint("time took lava providers", performance.now() - start);
             // Init lava providers
-            yield lavaProviders.init(this.pairingListConfig);
+            yield this.lavaProviders.init(this.pairingListConfig);
             this.debugPrint("time took lava providers init", performance.now() - start);
-            const sendRelayOptions = {
-                data: this.generateRPCData("abci_query", [
-                    "/lavanet.lava.spec.Query/ShowAllChains",
-                    "",
-                    "0",
-                    false,
-                ]),
-                url: "",
-                connectionType: "",
-            };
-            const info = yield lavaProviders.SendRelayWithRetry(sendRelayOptions, lavaProviders.GetNextLavaProvider(), 10, "tendermintrpc");
-            const byteArrayResponse = this.base64ToUint8Array(info.result.response.value);
-            const parsedChainList = query_1.QueryShowAllChainsResponse.decode(byteArrayResponse);
+            const parsedChainList = yield this.lavaProviders.showAllChains();
             // Validate chainID
             if (!(0, chains_1.isValidChainID)(this.chainID, parsedChainList)) {
                 throw errors_1.default.errChainIDUnsupported;
@@ -149,13 +125,36 @@ class LavaSDK {
             // Validate rpc interface with chain id
             (0, chains_1.validateRpcInterfaceWithChainID)(this.chainID, parsedChainList, this.rpcInterface);
             this.debugPrint("time took validateRpcInterfaceWithChainID", performance.now() - start);
-            // Save lava providers as local attribute
-            this.lavaProviders = lavaProviders;
             // Get pairing list for current epoch
-            this.activeSessionManager = yield this.lavaProviders.getSession(this.chainID, this.rpcInterface);
-            // Create relayer for querying network
-            this.relayer = new relayer_1.default(this.chainID, this.privKey, this.lavaChainId, this.secure, badge);
+            this.activeSessionManager = yield this.lavaProviders.getSession(this.chainID, this.rpcInterface, this.currentEpochBadge);
             this.debugPrint("time took getSession", performance.now() - start);
+        });
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const start = performance.now();
+            if (this.badgeManager.isActive()) {
+                const { wallet, privKey } = yield (0, wallet_1.createDynamicWallet)();
+                this.privKey = privKey;
+                this.walletAddress = (yield wallet.getConsumerAccount()).address;
+                const badgeResponse = yield this.fetchNewBadge();
+                this.currentEpochBadge = badgeResponse.getBadge();
+                const badgeSignerAddress = badgeResponse.getBadgeSignerAddress();
+                this.account = {
+                    algo: "secp256k1",
+                    address: badgeSignerAddress,
+                    pubkey: new Uint8Array([]),
+                };
+                this.debugPrint("time took to get badge from badge server", performance.now() - start);
+                // this.debugPrint("badge", badge);
+            }
+            else {
+                const wallet = yield (0, wallet_1.createWallet)(this.privKey);
+                this.account = yield wallet.getConsumerAccount();
+            }
+            // Create relayer for querying network
+            this.relayer = new relayer_1.default(this.chainID, this.privKey, this.lavaChainId, this.secure, this.currentEpochBadge);
+            yield this.initLavaProviders(start);
         });
     }
     handleRpcRelay(options) {
@@ -170,7 +169,7 @@ class LavaSDK {
                 const pairingList = yield this.getConsumerProviderSession();
                 // Get cuSum for specified method
                 const cuSum = this.getCuSumForMethod(method);
-                const data = this.generateRPCData(method, params);
+                const data = (0, common_1.generateRPCData)(method, params);
                 // Check if relay was initialized
                 if (this.relayer instanceof Error) {
                     throw errors_1.default.errRelayerServiceNotInitialized;
@@ -268,21 +267,6 @@ class LavaSDK {
             return yield this.handleRpcRelay(options);
         });
     }
-    generateRPCData(method, params) {
-        const stringifyMethod = JSON.stringify(method);
-        const stringifyParam = JSON.stringify(params, (key, value) => {
-            if (typeof value === "bigint") {
-                return value.toString();
-            }
-            return value;
-        });
-        // TODO make id changable
-        return ('{"jsonrpc": "2.0", "id": 1, "method": ' +
-            stringifyMethod +
-            ', "params": ' +
-            stringifyParam +
-            "}");
-    }
     decodeRelayResponse(relayResponse) {
         // Decode relay response
         const dec = new TextDecoder();
@@ -318,7 +302,16 @@ class LavaSDK {
             }
             // Check if new epoch has started
             if (this.newEpochStarted()) {
-                this.activeSessionManager = yield this.lavaProviders.getSession(this.chainID, this.rpcInterface);
+                // fetch a new badge:
+                if (this.badgeManager.isActive()) {
+                    const badgeResponse = yield this.fetchNewBadge();
+                    this.currentEpochBadge = badgeResponse.getBadge();
+                    if (this.relayer instanceof relayer_1.default) {
+                        this.relayer.setBadge(this.currentEpochBadge);
+                    }
+                    this.lavaProviders.updateLavaProvidersRelayersBadge(this.currentEpochBadge);
+                }
+                this.activeSessionManager = yield this.lavaProviders.getSession(this.chainID, this.rpcInterface, this.currentEpochBadge);
             }
             // Return randomized pairing list
             return this.lavaProviders.pickRandomProviders(this.activeSessionManager.PairingList);

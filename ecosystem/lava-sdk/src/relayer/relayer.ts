@@ -35,6 +35,17 @@ class Relayer {
     this.badge = badge;
   }
 
+  // when an epoch changes we need to update the badge
+  public setBadge(badge: Badge | undefined) {
+    if (this.badge && !badge) {
+      // we have a badge and trying to set it to undefined
+      throw new Error(
+        "Trying to set an undefined badge to an existing badge, bad flow"
+      );
+    }
+    this.badge = badge;
+  }
+
   async sendRelay(
     options: SendRelayOptions,
     consumerProviderSession: ConsumerSessionWithProvider,

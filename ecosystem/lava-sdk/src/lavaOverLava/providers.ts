@@ -16,6 +16,17 @@ import { fetchLavaPairing } from "../util/lavaPairing";
 import Relayer from "../relayer/relayer";
 import ProvidersErrors from "./errors";
 import { base64ToUint8Array, generateRPCData } from "../util/common";
+import { Badge } from "../grpc_web_services/pairing/relay_pb";
+import { QueryShowAllChainsResponse } from "../codec/spec/query";
+
+const BOOT_RETRY_ATTEMPTS = 2;
+export interface LavaProvidersOptions {
+  accountAddress: string;
+  network: string;
+  relayer: Relayer | null;
+  geolocation: string;
+  debug?: boolean;
+}
 
 export class LavaProviders {
   private providers: ConsumerSessionWithProvider[];
@@ -24,18 +35,21 @@ export class LavaProviders {
   private accountAddress: string;
   private relayer: Relayer | null;
   private geolocation: string;
+  private debugMode: boolean;
 
-  constructor(
-    accountAddress: string,
-    network: string,
-    relayer: Relayer | null,
-    geolocation: string
-  ) {
+  constructor(options: LavaProvidersOptions) {
     this.providers = [];
-    this.network = network;
-    this.accountAddress = accountAddress;
-    this.relayer = relayer;
-    this.geolocation = geolocation;
+    this.network = options.network;
+    this.accountAddress = options.accountAddress;
+    this.relayer = options.relayer;
+    this.geolocation = options.geolocation;
+    this.debugMode = options.debug ? options.debug : false;
+  }
+
+  public updateLavaProvidersRelayersBadge(badge: Badge | undefined) {
+    if (this.relayer) {
+      this.relayer.setBadge(badge);
+    }
   }
 
   async init(pairingListConfig: string) {
@@ -74,9 +88,30 @@ export class LavaProviders {
       // Add newly created pairing in the pairing list
       pairing.push(newPairing);
     }
-
     // Save providers as local attribute
     this.providers = pairing;
+  }
+
+  public async showAllChains(): Promise<QueryShowAllChainsResponse> {
+    const sendRelayOptions = {
+      data: generateRPCData("abci_query", [
+        "/lavanet.lava.spec.Query/ShowAllChains",
+        "",
+        "0",
+        false,
+      ]),
+      url: "",
+      connectionType: "",
+    };
+
+    const info = await this.SendRelayToAllProvidersAndRace(
+      sendRelayOptions,
+      10,
+      "tendermintrpc"
+    );
+    const byteArrayResponse = base64ToUint8Array(info.result.response.value);
+    const response = QueryShowAllChainsResponse.decode(byteArrayResponse);
+    return response;
   }
 
   async initDefaultConfig(): Promise<any> {
@@ -166,7 +201,8 @@ export class LavaProviders {
   // getSession returns providers for current epoch
   async getSession(
     chainID: string,
-    rpcInterface: string
+    rpcInterface: string,
+    badge?: Badge
   ): Promise<SessionManager> {
     let lastRelayResponse = null;
     if (this.providers == null) {
@@ -176,7 +212,7 @@ export class LavaProviders {
     // Get lava providers list
     const lavaProviders = this.GetLavaProviders();
 
-    // Iterate over each and try t oreturn pairing list
+    // Iterate over each and try to return pairing list
     for (let i = 0; i < lavaProviders.length; i++) {
       try {
         // Fetch lava provider which will be used for fetching pairing list
@@ -185,7 +221,7 @@ export class LavaProviders {
         // Create request for fetching api methods for LAV1
         const lavaApis = await this.getServiceApis(
           lavaRPCEndpoint,
-          {ChainID: "LAV1"},
+          { ChainID: "LAV1" },
           "grpc",
           new Map([["lavanet.lava.spec.Query/Spec", 10]])
         );
@@ -193,7 +229,7 @@ export class LavaProviders {
         // Create request for getServiceApis method for chainID
         const apis = await this.getServiceApis(
           lavaRPCEndpoint,
-          {ChainID: chainID},
+          { ChainID: chainID },
           rpcInterface,
           lavaApis
         );
@@ -232,11 +268,16 @@ export class LavaProviders {
         };
 
         // Fetch max compute units
-        const maxcu = await this.getMaxCuForUser(
-          lavaRPCEndpoint,
-          userEntityRequest,
-          lavaApis
-        );
+        let maxcu: number;
+        if (badge) {
+          maxcu = badge.getCuAllocation();
+        } else {
+          maxcu = await this.getMaxCuForUser(
+            lavaRPCEndpoint,
+            userEntityRequest,
+            lavaApis
+          );
+        }
 
         // Iterate over providers to populate pairing list
         for (const provider of providers) {
@@ -306,10 +347,17 @@ export class LavaProviders {
     throw lastRelayResponse;
   }
 
+  private debugPrint(message?: any, ...optionalParams: any[]) {
+    if (this.debugMode) {
+      console.log(message, ...optionalParams);
+    }
+  }
+
   pickRandomProviders(
     providers: Array<ConsumerSessionWithProvider>
   ): ConsumerSessionWithProvider[] {
     // Remove providers which does not match criteria
+    this.debugPrint("pickRandomProviders Providers list", providers);
     const validProviders = providers.filter(
       (item) => item.MaxComputeUnits > item.UsedComputeUnits
     );
@@ -333,6 +381,7 @@ export class LavaProviders {
   pickRandomProvider(
     providers: Array<ConsumerSessionWithProvider>
   ): ConsumerSessionWithProvider {
+    this.debugPrint("pickRandomProvider Providers list", providers);
     // Remove providers which does not match criteria
     const validProviders = providers.filter(
       (item) => item.MaxComputeUnits > item.UsedComputeUnits
@@ -502,6 +551,61 @@ export class LavaProviders {
     return name.replace(regex, "[^/s]+");
   }
 
+  async SendRelayToAllProvidersAndRace(
+    options: any,
+    relayCu: number,
+    rpcInterface: string
+  ): Promise<any> {
+    for (
+      let retryAttempt = 0;
+      retryAttempt < BOOT_RETRY_ATTEMPTS;
+      retryAttempt++
+    ) {
+      const allRelays: Map<string, Promise<any>> = new Map();
+      let response;
+      for (const provider of this.GetLavaProviders()) {
+        const uniqueKey =
+          provider.Session.ProviderAddress +
+          String(Math.floor(Math.random() * 10000000));
+        const providerRelayPromise = this.SendRelayWithRetry(
+          options,
+          provider,
+          relayCu,
+          rpcInterface
+        )
+          .then((result) => {
+            this.debugPrint("response succeeded", result);
+            response = result;
+            allRelays.delete(uniqueKey);
+          })
+          .catch((err: any) => {
+            this.debugPrint(
+              "one of the promises failed in SendRelayToAllProvidersAndRace reason:",
+              err,
+              uniqueKey
+            );
+            allRelays.delete(uniqueKey);
+          });
+        allRelays.set(uniqueKey, providerRelayPromise);
+      }
+      const promisesToWait = allRelays.size;
+      for (let i = 0; i < promisesToWait; i++) {
+        const returnedPromise = await Promise.race(allRelays);
+        await returnedPromise[1];
+        if (response) {
+          return response;
+        }
+      }
+      this.debugPrint(
+        "Failed all promises SendRelayToAllProvidersAndRace, trying again",
+        retryAttempt,
+        "out of",
+        BOOT_RETRY_ATTEMPTS
+      );
+    }
+    throw new Error("Failed all promises SendRelayToAllProvidersAndRace");
+  }
+
   async SendRelayWithRetry(
     options: any,
     lavaRPCEndpoint: ConsumerSessionWithProvider,
@@ -509,11 +613,10 @@ export class LavaProviders {
     rpcInterface: string
   ): Promise<any> {
     let response;
+    if (this.relayer == null) {
+      throw ProvidersErrors.errNoRelayer;
+    }
     try {
-      if (this.relayer == null) {
-        throw ProvidersErrors.errNoRelayer;
-      }
-
       // For now we have hardcode relay cu
       response = await this.relayer.sendRelay(
         options,
@@ -536,10 +639,6 @@ export class LavaProviders {
         // Save current block height
         lavaRPCEndpoint.Session.PairingEpoch = parseInt(currentBlockHeight);
 
-        // Validate that relayer exists
-        if (this.relayer == null) {
-          throw ProvidersErrors.errNoRelayer;
-        }
         // Retry same relay with added block height
         try {
           response = await this.relayer.sendRelay(
