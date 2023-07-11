@@ -114,7 +114,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
+	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
@@ -130,12 +130,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	if providersType == spectypes.Spec_static {
-		return possibleProviders, allowedCU, project.Index, nil
+		return stakeEntries, allowedCU, project.Index, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
 
-	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
+	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -148,8 +148,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	// create providerScore array with all possible providers
 	providerScores := []*pairingscores.PairingScore{}
-	for i := range possibleProviders {
-		providerScore := pairingscores.NewPairingScore(&possibleProviders[i])
+	for i := range stakeEntries {
+		providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
 		providerScores = append(providerScores, providerScore)
 	}
 
