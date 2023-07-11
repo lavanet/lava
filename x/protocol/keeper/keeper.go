@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/protocol/types"
 )
 
@@ -45,5 +46,14 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	params := k.GetParams(ctx)
-	types.UpdateLatestParams(params)
+	if types.UpdateLatestParams(params) {
+		details := map[string]string{
+			"Version.ProviderTarget": params.Version.ProviderTarget,
+			"Version.ProviderMin": params.Version.ProviderMin,
+			"Version.ConsumerTarget": params.Version.ConsumerTarget,
+			"Version.ConsumerMin": params.Version.ConsumerMin,
+		}
+		utils.LogLavaEvent(ctx, k.Logger(ctx),
+			types.ParamChangeEventName, details, "protocol params changed")
+	}
 }

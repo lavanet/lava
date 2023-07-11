@@ -44,8 +44,12 @@ const (
 var latestParams Params = DefaultParams()
 
 // UpdateLatestParams updates the local (in memory) copy of the params from the store
-func UpdateLatestParams(params Params) {
-	latestParams = params
+func UpdateLatestParams(params Params) bool {
+	if params != latestParams {
+		latestParams = params
+		return true
+	}
+	return false
 }
 
 // ParamKeyTable the param key table for launch module
