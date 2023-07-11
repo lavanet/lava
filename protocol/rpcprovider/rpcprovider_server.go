@@ -28,7 +28,7 @@ import (
 
 type RPCProviderServer struct {
 	cache                     *performance.Cache
-	chainProxy                chainlib.ChainProxy
+	chainRouter               chainlib.ChainRouter
 	privKey                   *btcec.PrivateKey
 	reliabilityManager        ReliabilityManagerInf
 	providerSessionManager    *lavasession.ProviderSessionManager
@@ -66,7 +66,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerSessionManager *lavasession.ProviderSessionManager,
 	reliabilityManager ReliabilityManagerInf,
 	privKey *btcec.PrivateKey,
-	cache *performance.Cache, chainProxy chainlib.ChainProxy,
+	cache *performance.Cache,
+	chainRouter chainlib.ChainRouter,
 	stateTracker StateTrackerInf,
 	providerAddress sdk.AccAddress,
 	lavaChainID string,
@@ -74,7 +75,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerMetrics *metrics.ProviderMetrics,
 ) {
 	rpcps.cache = cache
-	rpcps.chainProxy = chainProxy
+	rpcps.chainRouter = chainRouter
 	rpcps.privKey = privKey
 	rpcps.providerSessionManager = providerSessionManager
 	rpcps.reliabilityManager = reliabilityManager
@@ -259,7 +260,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, err := rpcps.chainProxy.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage)
+	reply, subscriptionID, clientSub, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -583,7 +584,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg)
+		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, nil)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
