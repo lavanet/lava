@@ -40,7 +40,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -134,20 +133,15 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 
 		for _, score := range scores {
 			newScoreComp := req.Score(*score.Provider)
+			if newScoreComp == 0 {
+				err := fmt.Errorf("score component is zero. score component name: %s, provider address: %s", reqName, score.Provider.Address)
+				panic(err)
+			}
 			newScoreComp = uint64(math.Pow(float64(newScoreComp), float64(weight)))
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
 			if ok {
-				if prevReqScoreComp == 0 {
-					utils.LavaFormatFatal("previous req score is zero", fmt.Errorf("invalid req score"),
-						utils.Attribute{Key: "req_name", Value: reqName},
-						utils.Attribute{Key: "provider", Value: score.Provider.Address},
-						utils.Attribute{Key: "stake", Value: score.Provider.Stake.Amount},
-						utils.Attribute{Key: "chain_id", Value: score.Provider.Chain},
-						utils.Attribute{Key: "geolocation", Value: score.Provider.Geolocation},
-					)
-				}
 				score.Score /= prevReqScoreComp
 			}
 			score.Score *= newScoreComp
@@ -173,28 +167,21 @@ func PrepareHashData(projectIndex string, chainID string, epochHash []byte) []by
 }
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
-func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, hashData []byte, indexToSkipPtr *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, hashData []byte, chosenProvidersIdx *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+	if len(scores) == 0 {
+		return returnedProviders
+	}
+
 	scoreSum := sdk.NewUint(0)
 	for _, providerScore := range scores {
 		scoreSum = scoreSum.Add(sdk.NewUint(providerScore.Score))
 	}
 	if scoreSum.IsZero() {
-		// list is empty
-		return returnedProviders
+		err := fmt.Errorf("score sum is zero. Cannot pick providers for pairing")
+		panic(err)
 	}
 
-	// sort the list by score (larger scores last). If there are equal scores, sort by provider address (alphabetically)
-	sort.SliceStable(scores, func(i, j int) bool {
-		// First, compare the Score field
-		if scores[i].Score != scores[j].Score {
-			return scores[i].Score < scores[j].Score
-		}
-
-		// If scores are equal, compare Provider.addr.string field alphabetically
-		return scores[i].Provider.Address < scores[j].Provider.Address
-	})
-
-	indexToSkip := *indexToSkipPtr
+	indexToSkip := *chosenProvidersIdx
 	for it := 0; it < int(groupCount); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
@@ -202,8 +189,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 		modRes := hashAsNumber.Mod(scoreSum)
 
 		newScoreSum := sdk.NewUint(0)
-		// we loop the scores list from the end because the list is sorted, biggest is last,
-		// and statistically this will have less iterations
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			providerScore := scores[idx]

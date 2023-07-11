@@ -10,4 +10,6 @@ type ScoreReq interface {
 	Score(stakeEntry epochstoragetypes.StakeEntry) uint64
 	// GetName returns the unique name of the ScoreReq implementation
 	GetName() string
+	// Equal compares two ScoreReq objects
+	Equal(other ScoreReq) bool
 }

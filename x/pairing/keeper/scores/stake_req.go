@@ -20,3 +20,10 @@ func (sr StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry) uint64 {
 func (sr StakeReq) GetName() string {
 	return stakeReqName
 }
+
+// Equal() used to compare slots to determine slot groups.
+// Usually Equal() compares the internal values of the ScoreReq,
+// but StakeReq returns always true because the stake is the score itself
+func (sr StakeReq) Equal(other ScoreReq) bool {
+	return true
+}

@@ -19,6 +19,8 @@ func (s PairingSlot) Subtract(other *PairingSlot) *PairingSlot {
 	for key := range s.Reqs {
 		if _, found := other.Reqs[key]; !found {
 			reqsDiff[key] = s.Reqs[key]
+		} else if !s.Reqs[key].Equal(other.Reqs[key]) {
+			reqsDiff[key] = s.Reqs[key]
 		}
 	}
 
@@ -29,6 +31,7 @@ func (s PairingSlot) Subtract(other *PairingSlot) *PairingSlot {
 
 // GetSlotKey generates a unique key of the slot based on its requirements
 func (s PairingSlot) GetSlotKey() string {
+	// TODO: non deterministic - fix
 	key := ""
 	for reqName := range s.Reqs {
 		key += reqName + "-"
