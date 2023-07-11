@@ -72,3 +72,13 @@ func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	}
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
+
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, versionUpdatable VersionUpdatable) {
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker)
+	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
+	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
+	}
+	versionUpdater.RegisterVersionUpdatable(ctx, versionUpdatable)
+}
