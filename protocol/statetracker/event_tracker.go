@@ -64,18 +64,15 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 	return payments, nil
 }
 
-func (et *EventTracker) getLatestVersionEvents() (version *upgrade.ProtocolVersion, err error) {
+func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 	et.lock.RLock()
 	defer et.lock.RUnlock()
 	for _, event := range et.blockResults.EndBlockEvents {
-		if event.Type == utils.EventPrefix+"param_change" {
-			version, err = upgrade.BuildVersionFromParamChangeEvent(event) // @audit return bool here
-			if err != nil {
-				return nil, utils.LavaFormatError("failed param_change version parsing", err, utils.Attribute{Key: "event", Value: event})
-			}
+		if event.Type == utils.EventPrefix+"protocol_params_change_event" {
+			updated = upgrade.BuildVersionFromParamChangeEvent(event)
 		}
 	}
-	return version, nil
+	return updated
 }
 
 func (et *EventTracker) getLatestSpecModifyEvents() (updated bool) {
