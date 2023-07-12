@@ -3,6 +3,7 @@ package upgrade
 import (
 	"sync"
 
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -29,7 +30,9 @@ func NewUpdateManager() *UpgradeManager {
 	return &UpgradeManager{}
 }
 
-func (um *UpgradeManager) SetProtocolVersion(newVersion *ProtocolVersion) {
+func (um *UpgradeManager) SetProtocolVersion(newVersion *protocoltypes.Version) {
+	um.lock.Lock()
+	defer um.lock.Unlock()
 	LavaProtocolVersion.ProviderMin = newVersion.ProviderMin
 	LavaProtocolVersion.ProviderTarget = newVersion.ProviderTarget
 	LavaProtocolVersion.ConsumerTarget = newVersion.ConsumerTarget
