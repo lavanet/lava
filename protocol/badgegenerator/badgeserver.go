@@ -99,7 +99,12 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error in open listener", err)
 	}
-	// set up the grpc server
+
+	logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read log level flag", err)
+	}
+	utils.LoggingLevel(logLevel)
 
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)
