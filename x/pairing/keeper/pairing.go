@@ -164,7 +164,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 			return nil, 0, "", err
 		}
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash)
-		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData, &indexToSkip)
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData, indexToSkip)
 		providers = append(providers, pickedProviders...)
 
 		prevGroupSlot = group
