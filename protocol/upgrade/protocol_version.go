@@ -1,8 +1,11 @@
 package upgrade
 
 import (
+	"strconv"
+	"strings"
 	"sync"
 
+	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
@@ -58,4 +61,58 @@ func BuildVersionFromParamChangeEvent(event terderminttypes.Event) bool {
 		}
 	}
 	return true
+}
+
+// helper function to parse version major/middle/minor fields
+type ParsedVersion struct {
+	Major  int
+	Middle int
+	Minor  int
+}
+
+func ParseVersion(versionString string) (ParsedVersion, error) {
+	splitVersion := strings.Split(versionString, ".")
+	if len(splitVersion) != 3 {
+		return ParsedVersion{}, utils.LavaFormatError("invalid version string", nil)
+	}
+
+	major, err := strconv.Atoi(splitVersion[0])
+	if err != nil {
+		return ParsedVersion{}, err
+	}
+
+	middle, err := strconv.Atoi(splitVersion[1])
+	if err != nil {
+		return ParsedVersion{}, err
+	}
+
+	minor, err := strconv.Atoi(splitVersion[2])
+	if err != nil {
+		return ParsedVersion{}, err
+	}
+
+	return ParsedVersion{Major: major, Middle: middle, Minor: minor}, nil
+}
+
+func ParseMultipleVersions(versions []string) ([]ParsedVersion, error) {
+	parsedVersions := make([]ParsedVersion, len(versions))
+
+	for i, version := range versions {
+		parsed, err := ParseVersion(version)
+		if err != nil {
+			return nil, err
+		}
+
+		parsedVersions[i] = parsed
+	}
+
+	return parsedVersions, nil
+}
+
+func ParseLavadVersion(version string) (ParsedVersion, error) {
+	parts := strings.Split(version, "-")
+	if len(parts) == 0 {
+		return ParsedVersion{}, utils.LavaFormatError("invalid version format", nil)
+	}
+	return ParseVersion(parts[0])
 }
