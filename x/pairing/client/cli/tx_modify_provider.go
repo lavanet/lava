@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -86,27 +85,6 @@ func CmdModifyProvider() *cobra.Command {
 				}
 				providerEntry.Stake = newStake
 			}
-			newEndpointsStr, err := cmd.Flags().GetString(EndpointsFlagName)
-			if err != nil {
-				return err
-			}
-			if newEndpointsStr != "" {
-				tmpArg := strings.Fields(newEndpointsStr)
-				argEndpoints := []epochstoragetypes.Endpoint{}
-				for _, endpointStr := range tmpArg {
-					splitted := strings.Split(endpointStr, ",")
-					if len(splitted) != 3 {
-						return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,geolocation HOST:PORT,useType,geolocation, received: %s", endpointStr)
-					}
-					geoloc, err := strconv.ParseUint(splitted[2], 10, 64)
-					if err != nil {
-						return fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
-					}
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
-					argEndpoints = append(argEndpoints, endpoint)
-				}
-				providerEntry.Endpoints = argEndpoints
-			}
 			geolocation, err := cmd.Flags().GetUint64(GeolocationFlag)
 			if err != nil {
 				return err
@@ -114,6 +92,19 @@ func CmdModifyProvider() *cobra.Command {
 			if geolocation != 0 {
 				providerEntry.Geolocation = geolocation
 			}
+			newEndpointsStr, err := cmd.Flags().GetString(EndpointsFlagName)
+			if err != nil {
+				return err
+			}
+			if newEndpointsStr != "" {
+				tmpArg := strings.Fields(newEndpointsStr)
+				argEndpoints, _, err := HandleEndpointsAndGeolocationArgs(tmpArg, strconv.FormatUint(providerEntry.Geolocation, 10))
+				if err != nil {
+					return err
+				}
+				providerEntry.Endpoints = argEndpoints
+			}
+
 			moniker, err := cmd.Flags().GetString(types.FlagMoniker)
 			if err != nil {
 				return err

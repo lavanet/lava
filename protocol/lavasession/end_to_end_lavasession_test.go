@@ -27,7 +27,6 @@ func TestHappyFlowE2E(t *testing.T) {
 		Endpoints:         pairingEndpoints,
 		Sessions:          map[int64]*SingleConsumerSession{},
 		MaxComputeUnits:   200,
-		ReliabilitySent:   false,
 		PairingEpoch:      epoch1,
 	}
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
@@ -71,7 +70,7 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.NoError(t, err)
 
 		// Consumer Side:
-		err = csm.OnSessionDone(cs.Session, epoch1, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
 		require.Nil(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)

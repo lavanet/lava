@@ -16,8 +16,7 @@ func ProjectIndex(subscriptionAddress string, projectName string) string {
 
 func NewProject(subscriptionAddress string, projectName string, enable bool) (Project, error) {
 	if !ValidateProjectName(projectName) {
-		return Project{}, fmt.Errorf("project name must be ASCII, cannot contain \",\" and its length must be less than %d. "+
-			"Name: %s", MAX_PROJECT_NAME_LEN, projectName)
+		return Project{}, fmt.Errorf("invalid project name: %s", projectName)
 	}
 
 	return Project{
@@ -46,6 +45,11 @@ func NewProjectKey(key string) ProjectKey {
 
 func (projectKey ProjectKey) AddType(kind ProjectKey_Type) ProjectKey {
 	projectKey.Kinds |= uint32(kind)
+	return projectKey
+}
+
+func (projectKey ProjectKey) SetType(kind ProjectKey_Type) ProjectKey {
+	projectKey.Kinds = uint32(kind)
 	return projectKey
 }
 

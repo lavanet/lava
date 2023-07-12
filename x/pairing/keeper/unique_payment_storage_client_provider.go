@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -86,12 +84,7 @@ func maxAddressLengths() int {
 }
 
 func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
-	maxAdrLengthProvider := maxAddressLengths()
-	providerLength, clientLength := len(providerAddress.String()), len(projectID)
-	if providerLength > maxAdrLengthProvider {
-		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %d == %d", providerAddress.String(), maxAdrLengthProvider, len(providerAddress.String())))
-	}
-	leadingChar := asciiNumberToChar(clientLength)
+	leadingChar := asciiNumberToChar(len(projectID))
 	key := string(leadingChar) + projectID + providerAddress.String() + uniqueIdentifier + chainID
 	return key
 }

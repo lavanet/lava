@@ -15,7 +15,7 @@ PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
 #ETH providers
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -56,8 +56,9 @@ $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+# $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
-screen -d -m -S provider2 bash -c "source ~/.bashrc; lavad rpcprovider \
+screen -d -m -S provider2 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER2_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER2_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -98,8 +99,9 @@ $PROVIDER2_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER2_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER2_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
+# $PROVIDER2_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
-screen -d -m -S provider3 bash -c "source ~/.bashrc; lavad rpcprovider \
+screen -d -m -S provider3 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER3_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER3_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -140,9 +142,10 @@ $PROVIDER3_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER3_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER3_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
+# $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 # Setup Portal
-screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer \
+screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3333 ETH1 jsonrpc \
 127.0.0.1:3334 GTH1 jsonrpc \
 127.0.0.1:3335 FTM250 jsonrpc \
@@ -168,6 +171,7 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lavad rpcconsumer \
 127.0.0.1:3383 AVAX jsonrpc \
 127.0.0.1:3384 FVM jsonrpc \
 $EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+# 127.0.0.1:3385 MANTLE jsonrpc \
 
 echo "--- setting up screens done ---"
 screen -ls

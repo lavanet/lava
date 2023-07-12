@@ -104,11 +104,11 @@ type mockEntry2to3 struct {
 }
 
 // V2_setEntryIndex stores an Entry index in the store
-func (fs FixationStore) V2_setEntryIndex(ctx sdk.Context, safeIndex string) {
+func (fs FixationStore) V2_setEntryIndex(ctx sdk.Context, safeIndex types.SafeIndex) {
 	storePrefix := types.EntryIndexPrefix + fs.prefix
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(storePrefix))
 	appendedValue := []byte(safeIndex) // convert the index value to a byte array
-	store.Set(types.KeyPrefix(storePrefix+safeIndex), appendedValue)
+	store.Set(types.KeyPrefix(storePrefix+string(safeIndex)), appendedValue)
 }
 
 // V2_setEntry modifies an existing entry in the store
@@ -167,7 +167,7 @@ func TestMigrate2to3(t *testing.T) {
 			numHeads += 1
 		}
 		entry := types.Entry{
-			Index:    safeIndex,
+			Index:    string(safeIndex),
 			Block:    tt.block,
 			StaleAt:  math.MaxUint64,
 			Data:     fs.cdc.MustMarshal(&coin),

@@ -21,486 +21,394 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": [
+                "api_collections": [
                     {
-                        "name": "/cosmwasm/wasm/v1/code",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [
                             {
+                                "name": "/cosmwasm/wasm/v1/code",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/code/{code_id}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/code/{code_id}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/code/{code_id}/contracts",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/code/{code_id}/contracts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/codes/params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/codes/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/codes/pinned",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/codes/pinned",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/contract/{address}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/contract/{address}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/contract/{address}/history",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/contract/{address}/history",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/contract/{address}/raw/{query_data}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/contract/{address}/raw/{query_data}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/contract/{address}/smart/{query_data}",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/contract/{address}/smart/{query_data}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "/cosmwasm/wasm/v1/contract/{address}/state",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "/cosmwasm/wasm/v1/contract/{address}/state",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "GET",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
                     },
                     {
-                        "name": "cosmwasm.wasm.v1.Query/AllContractState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [
                             {
+                                "name": "cosmwasm.wasm.v1.Query/AllContractState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/Code",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/Code",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/Codes",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/Codes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/ContractHistory",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/ContractHistory",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/ContractInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/ContractInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/ContractsByCode",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/ContractsByCode",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/Params",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/PinnedCodes",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/PinnedCodes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/RawContractState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/RawContractState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "cosmwasm.wasm.v1.Query/SmartContractState",
-                        "block_parsing": {
-                            "parser_arg": [
-                                ""
-                            ],
-                            "parser_func": "EMPTY"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "cosmwasm.wasm.v1.Query/SmartContractState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "grpc",
-                                "type": "",
                                 "extra_compute_units": "0"
                             }
-                        ]
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
                     }
                 ]
             }

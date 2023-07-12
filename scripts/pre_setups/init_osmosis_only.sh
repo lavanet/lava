@@ -26,17 +26,17 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad tx pairing stake-provider "COS3" $PROVIDERSTAKE "$PROVIDER1_LISTENER,tendermintrpc,1 $PROVIDER1_LISTENER,rest,1 $PROVIDER1_LISTENER,grpc,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "COS3" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lavad rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER COS3 rest '$OSMO_REST' \
 $PROVIDER1_LISTENER COS3 tendermintrpc '$OSMO_RPC,$OSMO_RPC' \
 $PROVIDER1_LISTENER COS3 grpc '$OSMO_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lavad rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3360 COS3 rest 127.0.0.1:3361 COS3 tendermintrpc 127.0.0.1:3362 COS3 grpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 

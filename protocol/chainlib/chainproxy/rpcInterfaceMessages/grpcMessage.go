@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/dynamicpb"
-
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type GrpcMessage struct {
@@ -29,7 +28,7 @@ type GrpcMessage struct {
 
 	Registry *dyncodec.Registry
 	Codec    *dyncodec.Codec
-	Header   []pairingtypes.Metadata
+	chainproxy.BaseMessage
 }
 
 // GetParams will be deprecated after we remove old client
@@ -50,6 +49,11 @@ func (gm GrpcMessage) GetParams() interface{} {
 		return nil
 	}
 	return parsedData
+}
+
+func (gm *GrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return gm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// when !done: we need a different setter
 }
 
 func (gm GrpcMessage) dynamicResolve() (interface{}, error) {
