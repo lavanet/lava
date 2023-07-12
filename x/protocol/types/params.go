@@ -14,10 +14,10 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyVersion     = []byte("Version")
 	DefaultVersion = Version{
-		ProviderTarget: "0.0.1",
-		ProviderMin:    "0.0.0",
-		ConsumerTarget: "0.0.1",
-		ConsumerMin:    "0.0.0",
+		ProviderTarget: "0.16.1",
+		ProviderMin:    "0.16.0",
+		ConsumerTarget: "0.16.1",
+		ConsumerMin:    "0.16.0",
 	}
 )
 
@@ -44,9 +44,17 @@ const (
 var latestParams Params = DefaultParams()
 
 // UpdateLatestParams updates the local (in memory) copy of the params from the store
-func UpdateLatestParams(params Params) {
-	latestParams = params
+func UpdateLatestParams(params Params) bool {
+	if params != latestParams {
+		latestParams = params
+		return true
+	}
+	return false
 }
+
+const (
+	ParamChangeEventName = "protocol_params_change_event"
+)
 
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
