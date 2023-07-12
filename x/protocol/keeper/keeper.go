@@ -49,9 +49,9 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if types.UpdateLatestParams(params) {
 		details := map[string]string{
 			"Version.ProviderTarget": params.Version.ProviderTarget,
-			"Version.ProviderMin": params.Version.ProviderMin,
+			"Version.ProviderMin":    params.Version.ProviderMin,
 			"Version.ConsumerTarget": params.Version.ConsumerTarget,
-			"Version.ConsumerMin": params.Version.ConsumerMin,
+			"Version.ConsumerMin":    params.Version.ConsumerMin,
 		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx),
 			types.ParamChangeEventName, details, "protocol params changed")
