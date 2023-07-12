@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"strings"
@@ -10,11 +11,51 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
+	"github.com/lavanet/lava/x/spec"
 	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
+
+type testStruct struct {
+	t       *testing.T
+	servers *keepertest.Servers
+	keepers *keepertest.Keepers
+	_ctx    context.Context
+	ctx     sdk.Context
+}
+
+func newTestStruct(t *testing.T) *testStruct {
+	servers, keepers, _ctx := keepertest.InitAllKeepers(t)
+	ts := &testStruct{
+		t:       t,
+		servers: servers,
+		keepers: keepers,
+		_ctx:    _ctx,
+		ctx:     sdk.UnwrapSDKContext(_ctx),
+	}
+	ts.AdvanceEpoch(1)
+	return ts
+}
+
+func (ts *testStruct) BlockHeight() uint64 {
+	return uint64(ts.ctx.BlockHeight())
+}
+
+func (ts *testStruct) AdvanceBlock(count int) {
+	for i := 0; i < count; i += 1 {
+		ts._ctx = keepertest.AdvanceBlock(ts._ctx, ts.keepers)
+	}
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+}
+
+func (ts *testStruct) AdvanceEpoch(count int) {
+	for i := 0; i < count; i += 1 {
+		ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
+	}
+	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+}
 
 // prepareMockApis returns a slice of mock ServiceApi for use in Spec
 func prepareMockApis(count int) []*types.Api {
@@ -113,7 +154,6 @@ func createNSpec(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Spec {
 	items := make([]types.Spec, n)
 	for i := range items {
 		items[i].Index = strconv.Itoa(i)
-
 		keeper.SetSpec(ctx, items[i])
 	}
 	return items
@@ -289,24 +329,39 @@ var specTemplates = []struct {
 	},
 }
 
+func simulateSpecProposal(ts *testStruct, name, title string, specs []types.Spec) error {
+	proposal := types.NewSpecAddProposal(name, title, specs)
+	proposalHandler := spec.NewSpecProposalsHandler(ts.keepers.Spec)
+	return proposalHandler(ts.ctx, proposal)
+}
+
 // Test Spec with "import" directives (using to the templates above).
 func TestSpecWithImport(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
+	ts := newTestStruct(t)
+	keeper := ts.keepers.Spec
 
 	apis := prepareMockApis(8)
-	_ = prepareMockCurrentSpecs(keeper, ctx, apis)
+	_ = prepareMockCurrentSpecs(&keeper, ts.ctx, apis)
 
 	for _, tt := range specTemplates {
-		spec := types.Spec{
-			Name:           tt.name,
-			Index:          tt.name,
-			Imports:        tt.imports,
-			Enabled:        true,
-			ApiCollections: []*types.ApiCollection{{Enabled: true, CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+		sp := types.Spec{
+			Name:    tt.name,
+			Index:   tt.name,
+			Imports: tt.imports,
+			Enabled: true,
+			ApiCollections: []*types.ApiCollection{
+				{
+					Enabled: true,
+					CollectionData: types.CollectionData{
+						ApiInterface: "stub",
+					},
+					Apis: selectMockApis(apis, tt.apis),
+				},
+			},
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
-			fullspec, err := keeper.ExpandSpec(ctx, spec)
+			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
 			if tt.ok == true {
 				require.Nil(t, err, err)
 				require.Len(t, fullspec.ApiCollections[0].Apis, len(tt.result))
@@ -324,7 +379,7 @@ func TestSpecWithImport(t *testing.T) {
 					require.True(t, found)
 				}
 
-				keeper.SetSpec(ctx, fullspec)
+				keeper.SetSpec(ts.ctx, sp)
 			} else {
 				require.NotNil(t, err)
 			}
@@ -387,9 +442,94 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 	return currentSpecs
 }
 
+func TestSpecUpdateInherit(t *testing.T) {
+	ts := newTestStruct(t)
+	keeper := ts.keepers.Spec
+
+	api := types.Api{
+		Enabled:      true,
+		Name:         "eth_blockNumber",
+		ComputeUnits: 10,
+	}
+
+	parentSpec := types.Spec{
+		Index:                         "parent",
+		Name:                          "parent spec",
+		Enabled:                       true,
+		ReliabilityThreshold:          268435455,
+		DataReliabilityEnabled:        false,
+		BlockDistanceForFinalizedData: 64,
+		BlocksInFinalizationProof:     3,
+		AverageBlockTime:              13000,
+		AllowedBlockLagForQosSync:     2,
+		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		ApiCollections: []*types.ApiCollection{
+			{
+				Enabled:        true,
+				CollectionData: types.CollectionData{ApiInterface: "jsonrpc"},
+				Apis:           []*types.Api{&api},
+			},
+		},
+	}
+
+	childSpec := types.Spec{
+		Index:                         "child",
+		Name:                          "child spec",
+		Enabled:                       true,
+		ReliabilityThreshold:          268435455,
+		DataReliabilityEnabled:        false,
+		BlockDistanceForFinalizedData: 64,
+		BlocksInFinalizationProof:     3,
+		AverageBlockTime:              13000,
+		AllowedBlockLagForQosSync:     2,
+		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		Imports:                       []string{"parent"},
+	}
+
+	// add a parent spec and a child spec
+	err := simulateSpecProposal(ts, "parent", "propose parent spec", []types.Spec{parentSpec})
+	require.Nil(t, err)
+
+	err = simulateSpecProposal(ts, "child", "propose child spec", []types.Spec{childSpec})
+	require.Nil(t, err)
+
+	block1 := ts.BlockHeight()
+
+	sp, found := keeper.GetSpec(ts.ctx, "child")
+	require.True(t, found)
+	sp, err = keeper.ExpandSpec(ts.ctx, sp)
+	require.Nil(t, err)
+	require.Equal(t, uint64(10), sp.ApiCollections[0].Apis[0].ComputeUnits)
+	require.Equal(t, block1, sp.BlockLastUpdated)
+
+	ts.AdvanceBlock(1)
+
+	// modify the parent spec and verify that the child is refreshed
+
+	parentSpec.ApiCollections[0].Apis[0].ComputeUnits = 20
+	err = simulateSpecProposal(ts, "parent", "propose parent spec", []types.Spec{parentSpec})
+	require.Nil(t, err)
+
+	sp, found = keeper.GetSpec(ts.ctx, "parent")
+	require.True(t, found)
+	require.Equal(t, uint64(20), sp.ApiCollections[0].Apis[0].ComputeUnits)
+	require.Equal(t, block1+1, sp.BlockLastUpdated)
+
+	sp, found = keeper.GetSpec(ts.ctx, "child")
+	require.True(t, found)
+	sp, err = keeper.ExpandSpec(ts.ctx, sp)
+	require.Nil(t, err)
+	require.Equal(t, uint64(20), sp.ApiCollections[0].Apis[0].ComputeUnits)
+	require.Equal(t, block1+1, sp.BlockLastUpdated)
+}
+
 func TestApiCollectionsExpandAndInheritance(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
-	debugme := prepareMockCurrentSpecsForApiCollectionInheritance(keeper, ctx)
+	ts := newTestStruct(t)
+	keeper := ts.keepers.Spec
+
+	debugme := prepareMockCurrentSpecsForApiCollectionInheritance(&keeper, ts.ctx)
 
 	specTemplates := []struct {
 		desc                 string
@@ -564,9 +704,11 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 			ok:      false,
 		},
 	}
+
 	apis := prepareMockApis(20)
+
 	for _, tt := range specTemplates {
-		spec := types.Spec{
+		sp := types.Spec{
 			Name:           tt.name,
 			Index:          tt.name,
 			Imports:        tt.imports,
@@ -575,7 +717,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
-			fullspec, err := keeper.ExpandSpec(ctx, spec)
+			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
 			_ = debugme
 			if tt.ok == true {
 				// check Result against the baseline spec  "test1", "", "",
@@ -626,18 +768,21 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}
 					require.True(t, found)
 				}
-				keeper.SetSpec(ctx, fullspec)
+				keeper.SetSpec(ts.ctx, sp)
 			} else {
-				require.Error(t, err, "spec with no error although expected %s", spec.Index)
+				require.Error(t, err, "spec with no error although expected %s", sp.Index)
 			}
 		})
 	}
 }
 
 func TestCookbookSpecs(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
+	ts := newTestStruct(t)
+	keeper := ts.keepers.Spec
+
 	getToTopMostPath := "../../../"
 	proposalFile := "./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json"
+
 	for _, fileName := range strings.Split(proposalFile, ",") {
 		proposal := utils.SpecAddProposalJSON{}
 
@@ -647,9 +792,9 @@ func TestCookbookSpecs(t *testing.T) {
 		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
 		require.Nil(t, err)
 
-		for _, spec := range proposal.Proposal.Specs {
-			keeper.SetSpec(ctx, spec)
-			fullspec, err := keeper.ExpandSpec(ctx, spec)
+		for _, sp := range proposal.Proposal.Specs {
+			keeper.SetSpec(ts.ctx, sp)
+			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, fullspec)
 		}

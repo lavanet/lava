@@ -3,6 +3,7 @@ package spec
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -87,18 +88,21 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	logger := k.Logger(ctx)
 
+	type event struct {
+		name    string
+		event   string
+		details map[string]string
+	}
+
+	var events []event
+
 	for _, spec := range p.Specs {
 		_, found := k.GetSpec(ctx, spec.Index)
 
 		details, err := k.ValidateSpec(ctx, spec)
-		detailsList := []utils.Attribute{}
-		for key, val := range details {
-			detailsList = append(detailsList, utils.Attribute{Key: key, Value: val})
-		}
 		if err != nil {
-			return utils.LavaFormatWarning("invalid spec", err,
-				detailsList...,
-			)
+			attrs := utils.StringMapToAttributes(details)
+			return utils.LavaFormatWarning("invalid spec", err, attrs...)
 		}
 
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
@@ -110,23 +114,40 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 			name = types.SpecModifyEventName
 		}
 
-		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")
+		// collect the events first, and only log them after everything succeeded
+		events = append(events, event{
+			name:    name,
+			event:   "Gov Proposal Accepted Spec",
+			details: details,
+		})
+
 		// TODO: add api types once its implemented to the event
 	}
 
 	// re-validate all the specs, in case the modified spec is imported by
-	// other specs and the new version creates a conflict.
+	// other specs and the new version creates a conflict; also update the
+	// BlockLastUpdated of all specs that inherit from the modified spec.
 	for _, spec := range k.GetAllSpec(ctx) {
-		if details, err := k.ValidateSpec(ctx, spec); err != nil {
-			details["invalidates"] = spec.Index
-			detailsList := []utils.Attribute{}
-			for key, val := range details {
-				detailsList = append(detailsList, utils.Attribute{Key: key, Value: val})
-			}
-			return utils.LavaFormatWarning("invalidated_spec", err,
-				detailsList...,
-			)
+		inherits, err := k.RefreshSpec(ctx, spec, p.Specs)
+		if err != nil {
+			return utils.LavaFormatWarning("invalidated spec", err)
 		}
+		if len(inherits) > 0 {
+			details := map[string]string{
+				"name":   spec.Index,
+				"import": strings.Join(inherits, ","),
+			}
+			name := types.SpecRefreshEventName
+			events = append(events, event{
+				name:    name,
+				event:   "Gov Proposal Refreshsed Spec",
+				details: details,
+			})
+		}
+	}
+
+	for _, e := range events {
+		utils.LogLavaEvent(ctx, logger, e.name, e.details, e.event)
 	}
 
 	return nil
