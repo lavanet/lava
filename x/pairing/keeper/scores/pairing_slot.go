@@ -4,7 +4,7 @@ package scores
 // It also holds the number of identical slots required for the pairing (count)
 type PairingSlot struct {
 	Reqs  map[string]ScoreReq
-	Count uint64
+	Count int
 }
 
 func NewPairingSlot() *PairingSlot {

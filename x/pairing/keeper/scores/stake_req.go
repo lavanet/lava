@@ -21,9 +21,8 @@ func (sr StakeReq) GetName() string {
 	return stakeReqName
 }
 
-// Equal() used to compare slots to determine slot groups.
-// Usually Equal() compares the internal values of the ScoreReq,
-// but StakeReq returns always true because the stake is the score itself
+// Equal used to compare slots to determine slot groups.
+// Equal always returns true (StakeReq score of an entry is the entry's stake)
 func (sr StakeReq) Equal(other ScoreReq) bool {
 	return true
 }

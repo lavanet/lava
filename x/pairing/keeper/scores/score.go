@@ -163,7 +163,7 @@ func PrepareHashData(projectIndex string, chainID string, epochHash []byte) []by
 }
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
-func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, hashData []byte, chosenProvidersIdx *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte, chosenProvidersIdx *map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
 	if len(scores) == 0 {
 		return returnedProviders
 	}
@@ -178,7 +178,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 	}
 
 	indexToSkip := *chosenProvidersIdx
-	for it := 0; it < int(groupCount); it++ {
+	for it := 0; it < groupCount; it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
 		hashAsNumber := sdk.NewUintFromBigInt(bigIntNum)
@@ -189,7 +189,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			providerScore := scores[idx]
 			if indexToSkip[idx] {
-				// this is an index we added
+				// skip index of providers already selected
 				continue
 			}
 			newScoreSum = newScoreSum.Add(sdk.NewUint(providerScore.Score))
@@ -201,7 +201,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount uint64, h
 				break
 			}
 		}
-		if uint64(len(returnedProviders)) >= groupCount {
+		if len(returnedProviders) >= groupCount {
 			return returnedProviders
 		}
 		if scoreSum.IsZero() {
