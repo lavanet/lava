@@ -82,3 +82,7 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	}
 	versionUpdater.RegisterVersionUpdatable(ctx, versionUpdatable)
 }
+
+func (cst *ConsumerStateTracker) CheckProtocolVersion(ctx context.Context) error {
+	return cst.stateQuery.CheckProtocolVersion(ctx)
+}

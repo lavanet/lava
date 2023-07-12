@@ -125,3 +125,7 @@ func (pst *ProviderStateTracker) GetRecommendedEpochNumToCollectPayment(ctx cont
 func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 }
+
+func (pst *ProviderStateTracker) CheckProtocolVersion(ctx context.Context) error {
+	return pst.stateQuery.CheckProtocolVersion(ctx)
+}
