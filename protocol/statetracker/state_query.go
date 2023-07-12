@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/upgrade"
@@ -64,13 +65,38 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 
 	}
 	currentProtocolVersion := upgrade.LavaProtocolVersion
+	// check lavad major version
+	lavadVersion, err := upgrade.ParseLavadVersion(version.Version)
+	if err != nil {
+		return err
+	}
+	networkVersions, err := upgrade.ParseMultipleVersions([]string{networkVersion.ProviderMin, networkVersion.ConsumerMin, networkVersion.ProviderTarget, networkVersion.ConsumerTarget})
+	if err != nil {
+		return err
+	}
+	currentProtocolVersions, err := upgrade.ParseMultipleVersions([]string{currentProtocolVersion.ProviderMin, currentProtocolVersion.ConsumerMin, currentProtocolVersion.ProviderTarget, currentProtocolVersion.ConsumerTarget})
+	if err != nil {
+		return err
+	}
+	// Helper function to check major and middle version
+	isMajorAndMiddleMatch := func(lavadVersion, otherVersion upgrade.ParsedVersion) bool {
+		return lavadVersion.Major == otherVersion.Major && lavadVersion.Middle == otherVersion.Middle
+	}
+	// Check if all versions match with lavadVersion
+	for _, v := range append(networkVersions, currentProtocolVersions...) {
+		if !isMajorAndMiddleMatch(lavadVersion, v) {
+			utils.LavaFormatFatal("protocol lavad version mismatch!", nil)
+		}
+	}
+
 	// check min version
 	if networkVersion.ConsumerMin != currentProtocolVersion.ConsumerMin || networkVersion.ProviderMin != currentProtocolVersion.ProviderMin {
-		return utils.LavaFormatError("minimum protocol version mismatch!", nil)
+		utils.LavaFormatFatal("minimum protocol version mismatch!", nil)
 	}
+	// check target version
 	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
 		// don't return this error since we don't need to panic exit on target version mismatch
-		utils.LavaFormatError("target protocol version mismatch", nil)
+		return utils.LavaFormatError("target protocol version mismatch", nil)
 	}
 	return err
 }
