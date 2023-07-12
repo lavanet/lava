@@ -168,11 +168,11 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	scoreSum := sdk.NewUint(0)
+	var scoreSum uint64
 	for _, providerScore := range scores {
-		scoreSum = scoreSum.Add(sdk.NewUint(providerScore.Score))
+		scoreSum += providerScore.Score
 	}
-	if scoreSum.IsZero() {
+	if scoreSum == 0 {
 		err := fmt.Errorf("score sum is zero. Cannot pick providers for pairing")
 		panic(err)
 	}
@@ -181,9 +181,10 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
 		hashAsNumber := sdk.NewUintFromBigInt(bigIntNum)
-		modRes := hashAsNumber.Mod(scoreSum)
+		scoreSumUint := sdk.NewUint(scoreSum)
+		modRes := hashAsNumber.Mod(scoreSumUint).Uint64()
 
-		newScoreSum := sdk.NewUint(0)
+		newScoreSum := uint64(0)
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if chosenProvidersIdx[idx] {
@@ -191,17 +192,17 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				continue
 			}
 			providerScore := scores[idx]
-			newScoreSum = newScoreSum.Add(sdk.NewUint(providerScore.Score))
-			if modRes.LT(newScoreSum) {
+			newScoreSum += providerScore.Score
+			if modRes < newScoreSum {
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				scoreSum = scoreSum.Sub(sdk.NewUint(providerScore.Score)) // we remove this provider from the random pool, so the sum is lower now
+				scoreSum -= providerScore.Score // we remove this provider from the random pool, so the sum is lower now
 				chosenProvidersIdx[idx] = true
 				break
 			}
 		}
 
-		if scoreSum.IsZero() {
+		if scoreSum == 0 {
 			break
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
