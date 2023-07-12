@@ -69,7 +69,8 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 		return utils.LavaFormatError("minimum protocol version mismatch!", nil)
 	}
 	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
-		utils.LavaFormatWarning("target protocol version mismatch", nil)
+		// don't return this error since we don't need to panic exit on target version mismatch
+		utils.LavaFormatError("target protocol version mismatch", nil)
 	}
 	return err
 }
