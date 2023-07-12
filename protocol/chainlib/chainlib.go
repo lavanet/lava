@@ -88,6 +88,7 @@ type ChainListener interface {
 
 type ChainRouter interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, addons []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	GetSupportedExtensions() []string
 }
 
 type ChainProxy interface {

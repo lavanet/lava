@@ -180,7 +180,6 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	relayCU := chainMessage.GetApi().ComputeUnits
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
 	if err != nil {
@@ -192,7 +191,38 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	return relaySession, consumerAddress, chainMessage, nil
 }
 
-func (*RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
+// go over the request addons, makes sure the requested addon and extensions within it are supported
+func (rpcps *RPCProviderServer) VerifyAddons(addons []string, chainMessage chainlib.ChainMessage) error {
+	parsedAddon := chainMessage.GetApiCollection().CollectionData.AddOn
+	valid := false
+	extensions := map[string]struct{}{}
+	if parsedAddon == "" {
+		valid = true
+	} else {
+		for _, requestAddon := range addons {
+			if requestAddon == parsedAddon {
+				// we have found the request addon
+				valid = true
+			} else {
+				// anything that is not an addon is an extensions
+				extensions[requestAddon] = struct{}{}
+			}
+		}
+	}
+	if !valid {
+		return utils.LavaFormatError("invalid request data, addon is missing", nil, utils.Attribute{Key: "addons", Value: addons}, utils.Attribute{Key: "parsedAddon", Value: parsedAddon})
+	}
+	// now make sure all other requirements are extensions and not addons
+	supportedExtensions := rpcps.chainRouter.GetSupportedExtensions()
+	for _, supportedExtension := range supportedExtensions {
+		if _, ok := extensions[supportedExtension]; !ok {
+			return utils.LavaFormatError("invalid request data, unsupported extension", nil, utils.Attribute{Key: "extensions", Value: extensions}, utils.Attribute{Key: "supportedExtensions", Value: supportedExtensions})
+		}
+	}
+	return nil
+}
+
+func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
 	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
 		// the consumer eiuther configured an invalid value or is modifying the requested block as part of a data reliability message
 		// see if this modification is supported
@@ -203,7 +233,8 @@ func (*RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, re
 			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
-	return nil
+	err := rpcps.VerifyAddons(request.RelayData.Addon, chainMessage)
+	return err
 }
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {

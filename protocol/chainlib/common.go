@@ -274,7 +274,11 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 			if apiCollection.CollectionData.ApiInterface != rpcInterface {
 				continue
 			}
-			collectionKey := CollectionKey{ConnectionType: apiCollection.CollectionData.Type}
+			collectionKey := CollectionKey{
+				ConnectionType: apiCollection.CollectionData.Type,
+				InternalPath:   apiCollection.CollectionData.InternalPath,
+				Addon:          apiCollection.CollectionData.AddOn,
+			}
 			for _, parsing := range apiCollection.ParseDirectives {
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,

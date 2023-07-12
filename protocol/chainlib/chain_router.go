@@ -61,7 +61,18 @@ possibilitiesLoop:
 	return selected.chainProxy
 }
 
+func (cri chainRouterImpl) GetSupportedExtensions() []string {
+	return nil
+}
+
 func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, addons []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// add the parsed addon from the apiCollection
+	addon := chainMessage.GetApiCollection().CollectionData.AddOn
+	if addons == nil {
+		addons = []string{addon}
+	} else {
+		addons = append(addons, addon)
+	}
 	selectedChainProxy := cri.getChainProxySupporting(addons)
 	if selectedChainProxy == nil {
 		return nil, "", nil, utils.LavaFormatError("no chain proxy supporting requested addons", nil, utils.Attribute{
