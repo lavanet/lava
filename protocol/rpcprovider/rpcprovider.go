@@ -92,7 +92,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	// check version
 	err = rpcp.providerStateTracker.CheckProtocolVersion(ctx)
 	if err != nil {
-		utils.LavaFormatFatal("provider version check failed ", err)
+		utils.LavaFormatError("provider version check failed ", err)
 	}
 	utils.LavaFormatInfo("RPCProvider version OK!")
 

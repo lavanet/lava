@@ -136,7 +136,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	// check version
 	err = consumerStateTracker.CheckProtocolVersion(ctx)
 	if err != nil {
-		utils.LavaFormatFatal("consumer version check failed ", err)
+		utils.LavaFormatError("consumer version check failed ", err)
 	}
 	utils.LavaFormatInfo("RPCConsumer version OK!")
 
