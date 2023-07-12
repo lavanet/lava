@@ -146,6 +146,7 @@ class LavaSDK {
                     pubkey: new Uint8Array([]),
                 };
                 this.debugPrint("time took to get badge from badge server", performance.now() - start);
+                this.debugPrint("Badge:", badgeResponse);
                 // this.debugPrint("badge", badge);
             }
             else {

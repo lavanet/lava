@@ -242,6 +242,7 @@ export class LavaSDK {
         "time took to get badge from badge server",
         performance.now() - start
       );
+      this.debugPrint("Badge:", badgeResponse);
       // this.debugPrint("badge", badge);
     } else {
       const wallet = await createWallet(this.privKey);
