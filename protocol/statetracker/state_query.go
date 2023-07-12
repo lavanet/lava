@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -48,16 +49,29 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	return sq
 }
 
-type VersionStateQuery struct {
-	StateQuery
-}
-
-func (csq *StateQuery) GetVersion(ctx context.Context) (*protocoltypes.Version, error) {
+func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
 	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{})
 	if err != nil {
 		return nil, err
 	}
 	return &param.Params.Version, nil
+}
+
+func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
+	networkVersion, err := csq.GetProtocolVersion(ctx)
+	if err != nil {
+		return utils.LavaFormatError("could not get protocol version from network", err)
+
+	}
+	currentProtocolVersion := upgrade.LavaProtocolVersion
+	// check min version
+	if networkVersion.ConsumerMin != currentProtocolVersion.ConsumerMin || networkVersion.ProviderMin != currentProtocolVersion.ProviderMin {
+		return utils.LavaFormatError("minimum protocol version mismatch!", nil)
+	}
+	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
+		utils.LavaFormatWarning("target protocol version mismatch", nil)
+	}
+	return err
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
