@@ -201,9 +201,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				break
 			}
 		}
-		if len(returnedProviders) >= groupCount {
-			return returnedProviders
-		}
+
 		if scoreSum.IsZero() {
 			break
 		}
