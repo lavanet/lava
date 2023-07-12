@@ -80,7 +80,15 @@ func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepe
 	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
 }
 
-func BuildRelaySessionWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport, badge *types.Badge) *types.RelaySession {
+func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+	return BuildRelayRequestWithBadge(ctx, provider, contentHash, uint64(1), cuSum, spec, qos, nil)
+}
+
+func BuildRelayRequestWithSession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+	return BuildRelayRequestWithBadge(ctx, provider, contentHash, sessionId, cuSum, spec, qos, nil)
+}
+
+func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport, badge *types.Badge) *types.RelaySession {
 	relaySession := &types.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
@@ -94,7 +102,7 @@ func BuildRelaySessionWithBadge(ctx context.Context, provider string, contentHas
 		Badge:       badge,
 	}
 	if qos != nil {
-		_, _ = qos.ComputeQoS()
+		qos.ComputeQoS()
 	}
 	return relaySession
 }

@@ -95,39 +95,39 @@ func TestSendNewProof(t *testing.T) {
 	}{
 		{
 			Proofs: []*pairingtypes.RelaySession{
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil),
 			},
 			ExpectedExistingCu:       uint64(0),
 			ExpectedUpdatedWithProof: true,
 		},
 		{
 			Proofs: []*pairingtypes.RelaySession{
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(2), uint64(0), "spec", nil),
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(2), uint64(0), "newSpec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(2), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(2), uint64(0), "newSpec", nil),
 			},
 			ExpectedExistingCu:       uint64(0),
 			ExpectedUpdatedWithProof: true,
 		},
 		{
 			Proofs: []*pairingtypes.RelaySession{
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(3), uint64(0), "spec", nil),
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(4), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(3), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(4), uint64(0), "spec", nil),
 			},
 			ExpectedExistingCu:       uint64(0),
 			ExpectedUpdatedWithProof: true,
 		},
 		{
 			Proofs: []*pairingtypes.RelaySession{
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(5), uint64(0), "spec", nil),
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(5), uint64(42), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(5), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(5), uint64(42), "spec", nil),
 			},
 			ExpectedExistingCu:       uint64(0),
 			ExpectedUpdatedWithProof: true,
 		},
 		{
 			Proofs: []*pairingtypes.RelaySession{
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(6), uint64(42), "spec", nil),
-				common.BuildRelaySession(ctx, "provider", []byte{}, uint64(6), uint64(0), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(6), uint64(42), "spec", nil),
+				common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(6), uint64(0), "spec", nil),
 			},
 			ExpectedExistingCu:       uint64(42),
 			ExpectedUpdatedWithProof: false,
@@ -151,9 +151,9 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	prevProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{})
+	prevProof := common.BuildRelayRequestWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelaySession(ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil)
+	newProof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(42), "spec", nil)
 	newProof.Epoch = int64(1)
 
 	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
@@ -169,9 +169,9 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	rewardStore := rewardserver.NewRewardDB(db)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	prevProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{LavaChainId: "43"})
+	prevProof := common.BuildRelayRequestWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil, &pairingtypes.Badge{LavaChainId: "43"})
 	prevProof.Epoch = int64(1)
-	newProof := common.BuildRelaySessionWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil, &pairingtypes.Badge{LavaChainId: "42"})
+	newProof := common.BuildRelayRequestWithBadge(ctx, "provider", []byte{}, uint64(1), uint64(42), "spec", nil, &pairingtypes.Badge{LavaChainId: "42"})
 	newProof.Epoch = int64(1)
 
 	rws.SendNewProof(ctx, prevProof, uint64(1), "consumer", "apiinterface")
@@ -193,7 +193,7 @@ func TestUpdateEpoch(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
 		epoch := sessionId%2 + 1
-		proof := common.BuildRelaySession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
+		proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
 		proof.Epoch = int64(epoch)
 
 		sig, err := sigs.SignRelay(privKey, *proof)
@@ -243,7 +243,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 func generateProofs(ctx context.Context, n int) []*pairingtypes.RelaySession {
 	var proofs []*pairingtypes.RelaySession
 	for i := 0; i < n; i++ {
-		proof := common.BuildRelaySession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil)
+		proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil)
 		proof.Epoch = 1
 		proofs = append(proofs, proof)
 	}
