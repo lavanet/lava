@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -33,28 +32,14 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 const (
 	ChainTrackerDefaultMemory  = 100
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 )
-
-var providerVersion = struct {
-	minVersion    string
-	targetVersion string
-}{
-	minVersion:    "0.0.0",
-	targetVersion: "0.0.1",
-}
-
-type ParamsQueryResponse struct {
-	Params protocoltypes.Params `yaml:"params"`
-}
 
 var (
 	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface", "node-urls.url"}
@@ -291,43 +276,6 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
-func fetchVersionFromConsensus() (string, string, error) {
-	cmd := exec.Command("lavad", "q", "protocol", "params")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", "", err
-	}
-	queryResponse := &ParamsQueryResponse{}
-	// Unmarshal the response into the QueryResponse struct
-	if err := yaml.Unmarshal(output, queryResponse); err != nil {
-		return "", "", err
-	}
-	version := queryResponse.Params.Version
-	providerMin := version.ProviderMin
-	providerTarget := version.ProviderTarget
-	// Check if the required values are present
-	if providerMin == "" || providerTarget == "" {
-		return "", "", utils.LavaFormatError("provider_min or provider_target not found in the response", nil)
-	}
-	return providerMin, providerTarget, nil
-}
-
-func CheckVersion() (err error) {
-	providerMinVersionResp, providerTargetVersionResp, err := fetchVersionFromConsensus()
-	if err != nil {
-		return err
-	}
-	if providerMinVersionResp != providerVersion.minVersion {
-		err := fmt.Errorf("version mismatch")
-		utils.LavaFormatFatal("minimum version mismatch for rpcprovider", err)
-		return err
-	}
-	if providerTargetVersionResp != providerVersion.targetVersion {
-		utils.LavaFormatWarning("target version mismatch for rpcprovider", nil)
-	}
-	return nil
-}
-
 func CreateRPCProviderCobraCommand() *cobra.Command {
 	cmdRPCProvider := &cobra.Command{
 		Use:   `rpcprovider [config-file] | { {listen-ip:listen-port spec-chain-id api-interface "comma-separated-node-urls"} ... } --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
@@ -374,13 +322,6 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				return err
 			}
-
-			// // validate consumer version
-			// err = CheckVersion()
-			// if err != nil {
-			// 	return err
-			// }
-			// utils.LavaFormatInfo("RPCProvider version check OK")
 
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
