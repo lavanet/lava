@@ -67,7 +67,11 @@ export class BadgeManager {
             if (code == grpc.Code.OK || msg == undefined) {
               return;
             }
-            reject(new Error(msg));
+            reject(
+              new Error(
+                "Failed fetching a badge from the badge server, message: " + msg
+              )
+            );
           },
         });
       }

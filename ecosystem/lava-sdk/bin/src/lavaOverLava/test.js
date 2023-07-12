@@ -26,7 +26,13 @@ it("Test convertRestApiName method", () => {
             output: "/lavanet/lava/pairing/verify_pairing/[^/s]+/[^/s]+/[^/s]+/[^/s]+",
         },
     ];
-    const lavaProviders = new providers_1.LavaProviders("", "", null, default_1.DEFAULT_GEOLOCATION);
+    const options = {
+        accountAddress: "",
+        network: "",
+        relayer: null,
+        geolocation: default_1.DEFAULT_GEOLOCATION,
+    };
+    const lavaProviders = new providers_1.LavaProviders(options);
     testCasses.map((test) => {
         expect(lavaProviders.convertRestApiName(test.name)).toBe(test.output);
     });
@@ -49,7 +55,13 @@ it("Test pickRandomProvider method", () => {
             shouldFail: true,
         },
     ];
-    const lavaProviders = new providers_1.LavaProviders("", "", null, default_1.DEFAULT_GEOLOCATION);
+    const options = {
+        accountAddress: "",
+        network: "",
+        relayer: null,
+        geolocation: default_1.DEFAULT_GEOLOCATION,
+    };
+    const lavaProviders = new providers_1.LavaProviders(options);
     testCasses.map((test) => {
         const consumerSessionWithProviderArr = [
             // default consumer session with provider with only compute units set
