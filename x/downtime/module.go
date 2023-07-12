@@ -108,7 +108,7 @@ func (a AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (a AppModule) RegisterServices(configurator module.Configurator) {
-
+	v1.RegisterQueryServer(configurator.QueryServer(), keeper.NewQueryServer(a.k))
 }
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
