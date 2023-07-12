@@ -71,7 +71,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 			utils.LavaFormatError("checkVersion failed", err)
 			return
 		}
-		utils.LavaFormatInfo("Protocol version updated", utils.Attribute{Key: "version", Value: version})
+		utils.LavaFormatInfo("Protocol version has been successfully updated!", utils.Attribute{Key: "version", Value: version})
 	}
 	// monitor protocol version on each new block
 	err := vu.versionStateQuery.CheckProtocolVersion(context.Background())

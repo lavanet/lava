@@ -59,22 +59,22 @@ func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.V
 }
 
 func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
-	networkVersion, err := csq.GetProtocolVersion(ctx)
+	consensusVersion, err := csq.GetProtocolVersion(ctx)
 	if err != nil {
 		return utils.LavaFormatError("could not get protocol version from network", err)
 
 	}
-	currentProtocolVersion := upgrade.LavaProtocolVersion
+	protocolBinaryVersion := upgrade.LavaProtocolVersion
 	// check lavad major version
 	lavadVersion, err := upgrade.ParseLavadVersion(version.Version)
 	if err != nil {
 		return err
 	}
-	networkVersions, err := upgrade.ParseMultipleVersions([]string{networkVersion.ProviderMin, networkVersion.ConsumerMin, networkVersion.ProviderTarget, networkVersion.ConsumerTarget})
+	consensusVersions, err := upgrade.ParseMultipleVersions([]string{consensusVersion.ProviderMin, consensusVersion.ConsumerMin, consensusVersion.ProviderTarget, consensusVersion.ConsumerTarget})
 	if err != nil {
 		return err
 	}
-	currentProtocolVersions, err := upgrade.ParseMultipleVersions([]string{currentProtocolVersion.ProviderMin, currentProtocolVersion.ConsumerMin, currentProtocolVersion.ProviderTarget, currentProtocolVersion.ConsumerTarget})
+	protocolBinaryVersions, err := upgrade.ParseMultipleVersions([]string{protocolBinaryVersion.ProviderMin, protocolBinaryVersion.ConsumerMin, protocolBinaryVersion.ProviderTarget, protocolBinaryVersion.ConsumerTarget})
 	if err != nil {
 		return err
 	}
@@ -83,20 +83,22 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 		return lavadVersion.Major == otherVersion.Major && lavadVersion.Middle == otherVersion.Middle
 	}
 	// Check if all versions match with lavadVersion
-	for _, v := range append(networkVersions, currentProtocolVersions...) {
+	for _, v := range append(consensusVersions, protocolBinaryVersions...) {
 		if !isMajorAndMiddleMatch(lavadVersion, v) {
-			utils.LavaFormatFatal("protocol lavad version mismatch!", nil)
+			utils.LavaFormatFatal("protocol lavad version mismatch!", nil, utils.Attribute{Key: "lavad version:", Value: version.Version}, utils.Attribute{Key: "protocol binary version: ", Value: v})
 		}
 	}
 
 	// check min version
-	if networkVersion.ConsumerMin != currentProtocolVersion.ConsumerMin || networkVersion.ProviderMin != currentProtocolVersion.ProviderMin {
-		utils.LavaFormatFatal("minimum protocol version mismatch!", nil)
+	if consensusVersion.ConsumerMin != protocolBinaryVersion.ConsumerMin || consensusVersion.ProviderMin != protocolBinaryVersion.ProviderMin {
+		utils.LavaFormatFatal("minimum protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerMin:", Value: consensusVersion.ConsumerMin}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerMin: ", Value: protocolBinaryVersion.ConsumerMin},
+			utils.Attribute{Key: "consensusVersion.ProviderMin:", Value: consensusVersion.ProviderMin}, utils.Attribute{Key: "protocolBinaryVersion.ProviderMin: ", Value: protocolBinaryVersion.ProviderMin})
 	}
 	// check target version
-	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
+	if consensusVersion.ConsumerTarget != protocolBinaryVersion.ConsumerTarget || consensusVersion.ProviderTarget != protocolBinaryVersion.ProviderTarget {
 		// don't return this error since we don't need to panic exit on target version mismatch
-		return utils.LavaFormatError("target protocol version mismatch", nil)
+		return utils.LavaFormatError("target protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerTarget:", Value: consensusVersion.ConsumerTarget}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerTarget: ", Value: protocolBinaryVersion.ConsumerTarget},
+			utils.Attribute{Key: "consensusVersion.ProviderTarget:", Value: consensusVersion.ProviderTarget}, utils.Attribute{Key: "protocolBinaryVersion.ProviderTarget: ", Value: protocolBinaryVersion.ProviderTarget})
 	}
 	return err
 }
