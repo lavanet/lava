@@ -19,7 +19,7 @@ type VersionGetter interface {
 }
 
 type VersionUpdatable interface {
-	SetProtocolVersion(*upgrade.ProtocolVersion)
+	SetProtocolVersion(*protocoltypes.Version)
 }
 
 type VersionUpdater struct {
@@ -37,52 +37,56 @@ func (vu *VersionUpdater) UpdaterKey() string {
 	return CallbackKeyForVersionUpdate
 }
 
-// deprecate this:
-// Note: purpose of updatables is send callback
-// call it InitializeVersionUpdatable : use it to fetch version when rpcprovider / rpcconsumer starts
-// @audit validate version taken from protocol version and consensus
 func (vu *VersionUpdater) RegisterVersionUpdatable(ctx context.Context, versionUpdatable VersionUpdatable) {
 	vu.lock.Lock()
 	defer vu.lock.Unlock()
-	version, err := vu.versionGetter.GetVersion(ctx)
-	if err != nil {
-		utils.LavaFormatFatal("could not get version for updater", err)
-	}
-	fmt.Println("GetVersion - version: ", version)
 	vu.versionUpdatables = append(vu.versionUpdatables, &versionUpdatable)
 }
 
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	fmt.Println("VERSION UPDATE ENTERED!")
+
 	fmt.Println("initVer: ", upgrade.LavaProtocolVersion)
 
-	version, err := vu.eventTracker.getLatestVersionEvents()
-	fmt.Println("Update funct- version: ", version)
-	if err != nil {
-		return
-	}
-	if version != nil {
-		// we already get the version with param parsing, but let's fetch it again from blockchain
-		// version, err := vu.versionGetter.GetVersion(context.Background())
-		// if err != nil {
-		// 	utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
-		// 	return
-		// }
-
-		//@audit check version here again!
-
-		// deprecate this:
+	versionUpdated := vu.eventTracker.getLatestVersionEvents()
+	if versionUpdated {
+		// fetch updated version from consensus
+		version, err := vu.versionGetter.GetVersion(context.Background())
+		if err != nil {
+			utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
+			return
+		}
+		// set version
 		for _, versionUpdatable := range vu.versionUpdatables {
 			if versionUpdatable == nil {
 				continue
 			}
 			(*versionUpdatable).SetProtocolVersion(version)
 		}
+		// validate version
+		err = vu.CheckProtocolVersion()
+		if err != nil {
+			utils.LavaFormatError("checkVersion failed", err)
+			return
+		}
+		utils.LavaFormatInfo("Protocol version updated", utils.Attribute{Key: "version", Value: version})
+	}
+}
 
-		// check if we are correlation with minimum version: fatal panic (throw enough info for lavaVisor / user to catch the cause)
+func (vu *VersionUpdater) CheckProtocolVersion() error {
+	networkVersion, err := vu.versionGetter.GetVersion(context.Background())
+	if err != nil {
+		return utils.LavaFormatError("could not get protocol version from network", err)
 
 	}
-	// add print if target version doesn't matched, create a warning (every block): target version is not met, cur. version, target version.
+	currentProtocolVersion := upgrade.LavaProtocolVersion
+	// check min version
+	if networkVersion.ConsumerMin != currentProtocolVersion.ConsumerMin || networkVersion.ProviderMin != currentProtocolVersion.ProviderMin {
+		return utils.LavaFormatError("minimum protocol version mismatch!", nil)
+	}
+	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
+		utils.LavaFormatWarning("target protocol version mismatch", nil)
+	}
+	return err
 }
