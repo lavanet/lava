@@ -14,8 +14,9 @@ const (
 	CallbackKeyForVersionUpdate = "version-update"
 )
 
-type VersionGetter interface {
-	GetVersion(ctx context.Context) (*protocoltypes.Version, error)
+type VersionStateQuery interface {
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	CheckProtocolVersion(cx context.Context) error
 }
 
 type VersionUpdatable interface {
@@ -25,12 +26,12 @@ type VersionUpdatable interface {
 type VersionUpdater struct {
 	lock              sync.RWMutex
 	eventTracker      *EventTracker
-	versionGetter     VersionGetter
+	versionStateQuery VersionStateQuery
 	versionUpdatables []*VersionUpdatable
 }
 
-func NewVersionUpdater(versionGetter VersionGetter, eventTracker *EventTracker) *VersionUpdater {
-	return &VersionUpdater{versionGetter: versionGetter, eventTracker: eventTracker, versionUpdatables: []*VersionUpdatable{}}
+func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker) *VersionUpdater {
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, versionUpdatables: []*VersionUpdatable{}}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
@@ -52,7 +53,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	versionUpdated := vu.eventTracker.getLatestVersionEvents()
 	if versionUpdated {
 		// fetch updated version from consensus
-		version, err := vu.versionGetter.GetVersion(context.Background())
+		version, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
 		if err != nil {
 			utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
 			return
@@ -65,28 +66,11 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 			(*versionUpdatable).SetProtocolVersion(version)
 		}
 		// validate version
-		err = vu.CheckProtocolVersion()
+		err = vu.versionStateQuery.CheckProtocolVersion(context.Background())
 		if err != nil {
 			utils.LavaFormatError("checkVersion failed", err)
 			return
 		}
 		utils.LavaFormatInfo("Protocol version updated", utils.Attribute{Key: "version", Value: version})
 	}
-}
-
-func (vu *VersionUpdater) CheckProtocolVersion() error {
-	networkVersion, err := vu.versionGetter.GetVersion(context.Background())
-	if err != nil {
-		return utils.LavaFormatError("could not get protocol version from network", err)
-
-	}
-	currentProtocolVersion := upgrade.LavaProtocolVersion
-	// check min version
-	if networkVersion.ConsumerMin != currentProtocolVersion.ConsumerMin || networkVersion.ProviderMin != currentProtocolVersion.ProviderMin {
-		return utils.LavaFormatError("minimum protocol version mismatch!", nil)
-	}
-	if networkVersion.ConsumerTarget != currentProtocolVersion.ConsumerTarget || networkVersion.ProviderTarget != currentProtocolVersion.ProviderTarget {
-		utils.LavaFormatWarning("target protocol version mismatch", nil)
-	}
-	return err
 }
