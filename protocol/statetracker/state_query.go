@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/upgrade"
@@ -64,29 +63,6 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 		return utils.LavaFormatError("could not get protocol version from network", err)
 	}
 	protocolBinaryVersion := upgrade.LavaProtocolVersion
-	// check lavad major version
-	lavadVersion, err := upgrade.ParseLavadVersion(version.Version)
-	if err != nil {
-		return err
-	}
-	consensusVersions, err := upgrade.ParseMultipleVersions([]string{consensusVersion.ProviderMin, consensusVersion.ConsumerMin, consensusVersion.ProviderTarget, consensusVersion.ConsumerTarget})
-	if err != nil {
-		return err
-	}
-	protocolBinaryVersions, err := upgrade.ParseMultipleVersions([]string{protocolBinaryVersion.ProviderMin, protocolBinaryVersion.ConsumerMin, protocolBinaryVersion.ProviderTarget, protocolBinaryVersion.ConsumerTarget})
-	if err != nil {
-		return err
-	}
-	// Helper function to check major and middle version
-	isMajorAndMiddleMatch := func(lavadVersion, otherVersion upgrade.ParsedVersion) bool {
-		return lavadVersion.Major == otherVersion.Major && lavadVersion.Middle == otherVersion.Middle
-	}
-	// Check if all versions match with lavadVersion
-	for _, v := range append(consensusVersions, protocolBinaryVersions...) {
-		if !isMajorAndMiddleMatch(lavadVersion, v) {
-			utils.LavaFormatFatal("protocol lavad version mismatch!", nil, utils.Attribute{Key: "lavad version:", Value: version.Version}, utils.Attribute{Key: "protocol binary version: ", Value: v})
-		}
-	}
 
 	// check min version
 	if consensusVersion.ConsumerMin != protocolBinaryVersion.ConsumerMin || consensusVersion.ProviderMin != protocolBinaryVersion.ProviderMin {
