@@ -1,10 +1,8 @@
 package upgrade
 
 import (
-	"encoding/json"
 	"sync"
 
-	"github.com/lavanet/lava/utils"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -38,27 +36,23 @@ func (um *UpgradeManager) SetProtocolVersion(newVersion *ProtocolVersion) {
 	LavaProtocolVersion.ConsumerMin = newVersion.ConsumerMin
 }
 
-// @audit return boolean here
-func BuildVersionFromParamChangeEvent(event terderminttypes.Event) (*ProtocolVersion, error) {
-	attributes := map[string]string{}
-	// slices contains
+func BuildVersionFromParamChangeEvent(event terderminttypes.Event) bool {
+	expectedVersionKeys := map[string]bool{
+		"Version.ProviderTarget": false,
+		"Version.ProviderMin":    false,
+		"Version.ConsumerTarget": false,
+		"Version.ConsumerMin":    false,
+	}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		key := string(attribute.Key)
+		if _, ok := expectedVersionKeys[key]; ok {
+			expectedVersionKeys[key] = true
+		}
 	}
-	paramValue, ok := attributes["param"]
-	if !ok || paramValue != "Version" {
-		return nil, utils.LavaFormatError("failed building BuildVersionFromParamChangeEvent", nil, utils.Attribute{Key: "attributes", Value: attributes})
+	for _, found := range expectedVersionKeys {
+		if !found {
+			return false
+		}
 	}
-
-	versionValue, ok := attributes["value"]
-	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVersionFromParamChangeEvent", nil, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-	var version *ProtocolVersion
-	err := json.Unmarshal([]byte(versionValue), &version)
-	if !ok {
-		return nil, utils.LavaFormatError("failed building BuildVersionFromParamChangeEvent", err, utils.Attribute{Key: "attributes", Value: attributes})
-	}
-
-	return version, nil
+	return true
 }
