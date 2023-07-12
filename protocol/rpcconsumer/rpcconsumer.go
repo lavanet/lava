@@ -78,6 +78,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+	CheckProtocolVersion(ctx context.Context) error
 }
 
 type RPCConsumer struct {
@@ -131,6 +132,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
+
+	// check version
+	err = consumerStateTracker.CheckProtocolVersion(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("consumer version check failed ", err)
+	}
+	utils.LavaFormatInfo("RPCConsumer version OK!")
 
 	upgradeManager := upgrade.NewUpdateManager()
 	consumerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)

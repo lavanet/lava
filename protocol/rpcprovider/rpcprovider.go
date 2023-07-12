@@ -62,6 +62,7 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	CheckProtocolVersion(ctx context.Context) error
 }
 
 type RPCProvider struct {
@@ -88,13 +89,20 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
+	// check version
+	err = rpcp.providerStateTracker.CheckProtocolVersion(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("provider version check failed ", err)
+	}
+	utils.LavaFormatInfo("RPCProvider version OK!")
+
+	upgradeManager := upgrade.NewUpdateManager()
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
+
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
-
-	upgradeManager := upgrade.NewUpdateManager()
-	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
 
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
