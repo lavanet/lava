@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -31,28 +30,14 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 var (
 	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface"}
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 )
-
-var consumerVersion = struct {
-	minVersion    string
-	targetVersion string
-}{
-	minVersion:    "0.0.0",
-	targetVersion: "0.0.1",
-}
-
-type ParamsQueryResponse struct {
-	Params protocoltypes.Params `yaml:"params"`
-}
 
 type strategyValue struct {
 	provideroptimizer.Strategy
@@ -240,43 +225,6 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	return
 }
 
-func fetchVersionFromConsensus() (string, string, error) {
-	cmd := exec.Command("lavad", "q", "protocol", "params")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", "", err
-	}
-	queryResponse := &ParamsQueryResponse{}
-	// Unmarshal the response into the QueryResponse struct
-	if err := yaml.Unmarshal(output, queryResponse); err != nil {
-		return "", "", err
-	}
-	version := queryResponse.Params.Version
-	consumerMin := version.ConsumerMin
-	consumerTarget := version.ConsumerTarget
-	// Check if the required values are present
-	if consumerMin == "" || consumerTarget == "" {
-		return "", "", utils.LavaFormatError("consumer_min or consumer_target not found in the response", nil)
-	}
-	return consumerMin, consumerTarget, nil
-}
-
-func CheckVersion() (err error) {
-	consumerMinVersionResp, consumerTargetVersionResp, err := fetchVersionFromConsensus()
-	if err != nil {
-		return err
-	}
-	if consumerMinVersionResp != consumerVersion.minVersion {
-		err := fmt.Errorf("version mismatch")
-		utils.LavaFormatFatal("minimum version mismatch for rpcconsumer", err)
-		return err
-	}
-	if consumerTargetVersionResp != consumerVersion.targetVersion {
-		utils.LavaFormatWarning("target version mismatch for rpcconsumer", nil)
-	}
-	return nil
-}
-
 func CreateRPCConsumerCobraCommand() *cobra.Command {
 	cmdRPCConsumer := &cobra.Command{
 		Use:   "rpcconsumer [config-file] | { {listen-ip:listen-port spec-chain-id api-interface} ... }",
@@ -322,13 +270,6 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			if err != nil {
 				return err
 			}
-
-			// // validate consumer version
-			// err = CheckVersion()
-			// if err != nil {
-			// 	return err
-			// }
-			// utils.LavaFormatInfo("RPCConsumer version check OK")
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
