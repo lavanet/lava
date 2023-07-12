@@ -2,10 +2,8 @@ package statetracker
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -47,9 +45,6 @@ func (vu *VersionUpdater) RegisterVersionUpdatable(ctx context.Context, versionU
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-
-	fmt.Println("initVer: ", upgrade.LavaProtocolVersion)
-
 	versionUpdated := vu.eventTracker.getLatestVersionEvents()
 	if versionUpdated {
 		// fetch updated version from consensus

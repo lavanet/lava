@@ -62,7 +62,6 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 	consensusVersion, err := csq.GetProtocolVersion(ctx)
 	if err != nil {
 		return utils.LavaFormatError("could not get protocol version from network", err)
-
 	}
 	protocolBinaryVersion := upgrade.LavaProtocolVersion
 	// check lavad major version
