@@ -169,7 +169,11 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 	}
 
 	var scoreSum uint64
-	for _, providerScore := range scores {
+	for idx, providerScore := range scores {
+		if chosenProvidersIdx[idx] {
+			// skip index of providers already selected
+			continue
+		}
 		scoreSum += providerScore.Score
 	}
 	if scoreSum == 0 {
