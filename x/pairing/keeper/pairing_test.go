@@ -11,7 +11,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
 	"github.com/lavanet/lava/x/pairing/types"
-	pairingscorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -709,9 +708,9 @@ func TestGeolocationPairingScores(t *testing.T) {
 			providersRes, err := ts.keepers.Pairing.Providers(ts.ctx, &types.QueryProvidersRequest{ChainID: ts.spec.Name})
 			require.Nil(t, err)
 			stakeEntries := providersRes.StakeEntry
-			providerScores := []*pairingscorestypes.PairingScore{}
+			providerScores := []*pairingscores.PairingScore{}
 			for i := range stakeEntries {
-				providerScore := pairingscorestypes.NewPairingScore(&stakeEntries[i])
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
 				providerScores = append(providerScores, providerScore)
 			}
 
@@ -733,7 +732,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot, minStake)
 				require.Nil(t, err)
 
-				ok := pairingscorestypes.VerifyGeoScoreForTesting(providerScores, slot, geoSeen)
+				ok := pairingscores.VerifyGeoScoreForTesting(providerScores, slot, geoSeen)
 				require.True(t, ok)
 			}
 

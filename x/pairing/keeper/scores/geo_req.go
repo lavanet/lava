@@ -1,8 +1,7 @@
-package score
+package scores
 
 import (
 	"fmt"
-	"math"
 	"sort"
 
 	commontypes "github.com/lavanet/lava/common/types"
@@ -18,7 +17,7 @@ type GeoReq struct {
 }
 
 const (
-	GEO_REQ_NAME  = "geo-req"
+	geoReqName    = "geo-req"
 	maxGeoLatency = 10000 // highest geo cost < 300
 	minGeoLatency = 1
 )
@@ -26,7 +25,7 @@ const (
 // Score calculates the geo score of a provider (using the GEO_LATENCY_MAP)
 // The score is (maxGeoLatency / minLatency)^geoWeight
 // Note: the geo slots are created so that the GeoReq has a single bit geolocation. This function assumes that this is the case
-func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
+func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) uint64 {
 	if !types.IsGeoEnumSingleBit(int32(gr.Geo)) {
 		utils.LavaFormatError("provider geo req is not single bit", fmt.Errorf("invalid geo req"),
 			utils.Attribute{Key: "geoReq", Value: gr.Geo},
@@ -36,18 +35,17 @@ func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uin
 
 	// check if the provider supports the required geolocation
 	if gr.Geo&^provider.Geolocation == 0 {
-		cost := calculateCostFromLatency(minGeoLatency)
-		return uint64(math.Pow(float64(cost), float64(weight)))
+		return calculateCostFromLatency(minGeoLatency)
 	}
 
 	providerGeoEnums := types.GetGeolocationsFromUint(int32(provider.Geolocation))
 	_, cost := GetGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
 
-	return commontypes.SafePow(cost, weight)
+	return cost
 }
 
 func (gr GeoReq) GetName() string {
-	return GEO_REQ_NAME
+	return geoReqName
 }
 
 // Equal() used to compare slots to determine slot groups
@@ -186,7 +184,7 @@ func VerifyGeoScoreForTesting(providerScores []*PairingScore, slot *PairingSlot,
 		return providerScores[i].Score > providerScores[j].Score
 	})
 
-	geoReq, ok := slot.Reqs[GEO_REQ_NAME].(GeoReq)
+	geoReq, ok := slot.Reqs[geoReqName].(GeoReq)
 	if !ok {
 		return false
 	}

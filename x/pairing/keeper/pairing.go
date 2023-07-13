@@ -10,7 +10,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	pairingscorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -115,7 +114,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
+	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
@@ -131,12 +130,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	if providersType == spectypes.Spec_static {
-		return possibleProviders, allowedCU, project.Index, nil
+		return stakeEntries, allowedCU, project.Index, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
 
-	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
+	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -148,26 +147,32 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	slotGroups := pairingscores.GroupSlots(slots)
 
 	// create providerScore array with all possible providers
-	providerScores := []*pairingscorestypes.PairingScore{}
-	for i := range possibleProviders {
-		providerScore := pairingscorestypes.NewPairingScore(&possibleProviders[i])
+	providerScores := []*pairingscores.PairingScore{}
+	for i := range stakeEntries {
+		providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
 		providerScores = append(providerScores, providerScore)
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscorestypes.NewPairingSlot(map[string]pairingscorestypes.ScoreReq{}) // init dummy slot to compare to
-	indexToSkipMapPtr := make(map[int]bool)                                                      // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
+	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
+	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
+	indexToSkip := make(map[int]bool) // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
 	for _, group := range slotGroups {
-		diffSlot := group.Slot.Diff(prevGroupSlot)
+		// no more providers to pick from
+		if len(indexToSkip) == len(providerScores) {
+			break
+		}
+
+		diffSlot := group.Subtract(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot, minStake)
 		if err != nil {
 			return nil, 0, "", err
 		}
-
-		pickedProviders := pairingscores.PickProviders(ctx, project.Index, providerScores, group.Count, block, chainID, epochHash, &indexToSkipMapPtr)
+		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash)
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData, indexToSkip)
 		providers = append(providers, pickedProviders...)
 
-		prevGroupSlot = group.Slot
+		prevGroupSlot = group
 	}
 
 	return providers, allowedCU, project.Index, err
