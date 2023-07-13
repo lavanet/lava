@@ -101,6 +101,7 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 				Latency:      averageLatency,
 				RelayCounts:  apiTypeData.RelaysCount,
 				SuccessCount: apiTypeData.SuccessCount,
+				Source:       "Sdk",
 			})
 		}
 	}
