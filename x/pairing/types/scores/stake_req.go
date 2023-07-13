@@ -2,6 +2,7 @@ package score
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -16,7 +17,8 @@ const (
 
 // calculates the stake score of a provider (which is simply the normalized stake)
 func (sr StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	return stakeEntry.Stake.Amount.Quo(sr.MinStake).Uint64()
+	normalizedStake := stakeEntry.Stake.Amount.Quo(sr.MinStake).Uint64()
+	return commontypes.SafePow(normalizedStake, weight)
 }
 
 func (sr StakeReq) GetName() string {

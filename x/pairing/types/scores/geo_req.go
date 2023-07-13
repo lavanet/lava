@@ -42,9 +42,8 @@ func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uin
 
 	providerGeoEnums := types.GetGeolocationsFromUint(int32(provider.Geolocation))
 	_, cost := GetGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
-	score := uint64(math.Pow(float64(cost), float64(weight)))
 
-	return score
+	return commontypes.SafePow(cost, weight)
 }
 
 func (gr GeoReq) GetName() string {
