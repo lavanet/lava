@@ -1,6 +1,7 @@
 package types
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/constraints"
 )
 
@@ -62,4 +63,13 @@ func Intersection[T comparable](arrays ...[]T) []T {
 	}
 
 	return intersection
+}
+
+// SafePow implements a deterministic power function
+// Go's math.Pow() doesn't guarantee determinism when executed on different hardwares
+func SafePow(base uint64, exponent uint64) uint64 {
+	baseInt := sdk.NewIntFromUint64(base)
+	baseDec := sdk.NewDecFromInt(baseInt)
+
+	return baseDec.Power(exponent).TruncateInt().Uint64()
 }

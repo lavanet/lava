@@ -38,10 +38,10 @@ package scores
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -133,7 +133,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 				err := fmt.Errorf("score component is zero. score component name: %s, provider address: %s", reqName, score.Provider.Address)
 				panic(err)
 			}
-			newScoreComp = uint64(math.Pow(float64(newScoreComp), float64(weight)))
+			newScoreComp = commontypes.SafePow(newScoreComp, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
