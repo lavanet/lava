@@ -166,7 +166,6 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 	// Scenario 6 (another chain id)
 	t.Run("SuccessRelay_WithNewSource_EmptyMap", func(t *testing.T) {
 		metricData.Success = true
-		metricData.APIType = "testApiType2"
 		metricData.Source = SdkSource
 		expectedMetricData = RelayAnalyticsDTO{
 			ProjectHash:  "2",
@@ -188,7 +187,6 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 	// Scenario 6 (another chain id)
 	t.Run("SuccessRelay_WithNewSource_NonEmptyMap", func(t *testing.T) {
 		metricData.Success = true
-		metricData.APIType = "testApiType2"
 		metricData.Source = SdkSource
 		expectedMetricData = RelayAnalyticsDTO{
 			ProjectHash:  "2",

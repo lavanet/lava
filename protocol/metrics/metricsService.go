@@ -105,7 +105,6 @@ func prepareArrayForProject(projectData map[string]map[string]map[RelaySource]*A
 					Source:       sourceKey,
 				})
 			}
-
 		}
 	}
 	return toSendData
@@ -200,6 +199,7 @@ func (m *MetricService) storeApiTypeData(chainIdData map[string]map[RelaySource]
 		}
 	}
 }
+
 func (m *MetricService) storeSourceData(sourceData map[RelaySource]*AggregatedMetric, data RelayMetrics, successCount int64, successLatencyValue uint64) {
 	existingData, exists := sourceData[data.Source]
 	if exists {
