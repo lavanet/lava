@@ -804,3 +804,48 @@ func TestDuplicateProviders(t *testing.T) {
 		}
 	}
 }
+
+// TestNoRequiredGeo checks that if no providers have the required geo, we still get a pairing list
+func TestNoRequiredGeo(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+
+	freePlanPolicy := planstypes.Policy{
+		GeolocationProfile: 4, // USE
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 5,
+	}
+
+	freePlan := planstypes.Plan{
+		Index:      "free",
+		Block:      uint64(_ctx.BlockHeight()),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: freePlanPolicy,
+	}
+
+	freeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000)
+
+	err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{freePlan})
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, freeUser, freePlan.Index)
+
+	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
+	err = ts.addProviderGeolocation(5, uint64(planstypes.Geolocation_value["AS"]))
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	pairingRes, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+		ChainID: ts.spec.Index,
+		Client:  freeUser.Addr.String(),
+	})
+	require.Nil(t, err)
+	require.Equal(t, freePlanPolicy.MaxProvidersToPair, uint64(len(pairingRes.Providers)))
+	for _, provider := range pairingRes.Providers {
+		require.NotEqual(t, freePlanPolicy.GeolocationProfile, provider.Geolocation)
+	}
+}
