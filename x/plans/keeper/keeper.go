@@ -18,6 +18,7 @@ type (
 		paramstore paramtypes.Subspace
 
 		epochstorageKeeper types.EpochStorageKeeper
+		specKeeper         types.SpecKeeper
 
 		plansFS common.FixationStore
 	}
@@ -29,6 +30,7 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 	epochstorageKeeper types.EpochStorageKeeper,
+	specKeeper types.SpecKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -42,6 +44,7 @@ func NewKeeper(
 		paramstore:         ps,
 		epochstorageKeeper: epochstorageKeeper,
 		plansFS:            fs,
+		specKeeper:         specKeeper,
 	}
 }
 

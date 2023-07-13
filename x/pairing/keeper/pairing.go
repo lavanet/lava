@@ -157,9 +157,9 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if project.AdminPolicy != nil {
 		policies = append(policies, project.AdminPolicy)
 	}
-
-	if !planstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return planstypes.Policy{}, 0, fmt.Errorf("chain ID not found in any of the policies")
+	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
+	if !allowed {
+		return planstypes.Policy{}, 0, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
@@ -182,6 +182,7 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,
 		SelectedProviders:     selectedProvidersList,
+		ChainPolicies:         []planstypes.ChainPolicy{chainPolicy},
 	}
 
 	return strictestPolicy, allowedCU, nil

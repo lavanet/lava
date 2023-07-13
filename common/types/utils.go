@@ -63,3 +63,25 @@ func Intersection[T comparable](arrays ...[]T) []T {
 
 	return intersection
 }
+
+func Union[T comparable](arrays ...[]T) []T {
+	// store seen elements in a map
+	arrElements := make(map[T]struct{})
+	// Iterate through each array
+	for _, arr := range arrays {
+		// Create a map to store the elements of the current array
+
+		// Populate the map with elements from the current array
+		for _, elem := range arr {
+			arrElements[elem] = struct{}{}
+		}
+	}
+
+	var union []T
+	// Check the occurrence count of each element
+	for elem := range arrElements {
+		union = append(union, elem)
+	}
+
+	return union
+}

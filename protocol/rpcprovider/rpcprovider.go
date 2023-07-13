@@ -359,6 +359,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil || len(rpcProviderEndpoints) == 0 {
 				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
 			}
+			for _, endpoint := range rpcProviderEndpoints {
+				for _, nodeUrl := range endpoint.NodeUrls {
+					if nodeUrl.Url == "" {
+						utils.LavaFormatError("invalid endpoint definition, empty url in nodeUrl", err, utils.Attribute{Key: "endpoint", Value: endpoint})
+					}
+				}
+			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
 

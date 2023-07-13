@@ -5,6 +5,7 @@ option go_package = "github.com/lavanet/lava/x/plans/types";
 option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "spec/api_collection.proto";
 
 message Plan {
     reserved 10;
@@ -43,8 +44,9 @@ message Policy {
 }
 
 message ChainPolicy {
-    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\""];
-    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\""];
+    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\"", (gogoproto.jsontag) = "chain_id"];
+    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\"", (gogoproto.jsontag) = "apis"];
+    repeated  lavanet.lava.spec.CollectionData collections = 3 [(gogoproto.nullable) = false,  (gogoproto.moretags) = "mapstructure:\"collections\"", (gogoproto.jsontag) = "collections"];
 }
 
 // The geolocation values are encoded as bits in a bitmask, with two special values:

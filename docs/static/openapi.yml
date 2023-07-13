@@ -30264,14 +30264,14 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          api_interfaces:
-                            type: array
-                            items:
-                              type: string
                           geolocation:
                             type: string
                             format: uint64
                           addons:
+                            type: array
+                            items:
+                              type: string
+                          api_interfaces:
                             type: array
                             items:
                               type: string
@@ -30612,14 +30612,14 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          api_interfaces:
-                            type: array
-                            items:
-                              type: string
                           geolocation:
                             type: string
                             format: uint64
                           addons:
+                            type: array
+                            items:
+                              type: string
+                          api_interfaces:
                             type: array
                             items:
                               type: string
@@ -30703,14 +30703,14 @@ paths:
                         properties:
                           iPPORT:
                             type: string
-                          api_interfaces:
-                            type: array
-                            items:
-                              type: string
                           geolocation:
                             type: string
                             format: uint64
                           addons:
+                            type: array
+                            items:
+                              type: string
+                          api_interfaces:
                             type: array
                             items:
                               type: string
@@ -30959,14 +30959,14 @@ paths:
                       properties:
                         iPPORT:
                           type: string
-                        api_interfaces:
-                          type: array
-                          items:
-                            type: string
                         geolocation:
                           type: string
                           format: uint64
                         addons:
+                          type: array
+                          items:
+                            type: string
+                        api_interfaces:
                           type: array
                           items:
                             type: string
@@ -31136,6 +31136,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31819,6 +31832,12 @@ paths:
                       type: array
                       items:
                         type: string
+                    addon:
+                      type: string
+              optional_interfaces:
+                type: array
+                items:
+                  type: string
         default:
           description: An unexpected error response.
           schema:
@@ -54722,7 +54741,9 @@ definitions:
             value:
               type: string
       addon:
-        type: string
+        type: array
+        items:
+          type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -54853,7 +54874,9 @@ definitions:
                 value:
                   type: string
           addon:
-            type: string
+            type: array
+            items:
+              type: string
   lavanet.lava.pairing.RelaySession:
     type: object
     properties:
@@ -55395,14 +55418,14 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  api_interfaces:
-                    type: array
-                    items:
-                      type: string
                   geolocation:
                     type: string
                     format: uint64
                   addons:
+                    type: array
+                    items:
+                      type: string
+                  api_interfaces:
                     type: array
                     items:
                       type: string
@@ -55644,14 +55667,14 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  api_interfaces:
-                    type: array
-                    items:
-                      type: string
                   geolocation:
                     type: string
                     format: uint64
                   addons:
+                    type: array
+                    items:
+                      type: string
+                  api_interfaces:
                     type: array
                     items:
                       type: string
@@ -55774,14 +55797,14 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  api_interfaces:
-                    type: array
-                    items:
-                      type: string
                   geolocation:
                     type: string
                     format: uint64
                   addons:
+                    type: array
+                    items:
+                      type: string
+                  api_interfaces:
                     type: array
                     items:
                       type: string
@@ -55829,14 +55852,14 @@ definitions:
                 properties:
                   iPPORT:
                     type: string
-                  api_interfaces:
-                    type: array
-                    items:
-                      type: string
                   geolocation:
                     type: string
                     format: uint64
                   addons:
+                    type: array
+                    items:
+                      type: string
+                  api_interfaces:
                     type: array
                     items:
                       type: string
@@ -55880,14 +55903,14 @@ definitions:
               properties:
                 iPPORT:
                   type: string
-                api_interfaces:
-                  type: array
-                  items:
-                    type: string
                 geolocation:
                   type: string
                   format: uint64
                 addons:
+                  type: array
+                  items:
+                    type: string
+                api_interfaces:
                   type: array
                   items:
                     type: string
@@ -55932,6 +55955,19 @@ definitions:
         type: array
         items:
           type: string
+      collections:
+        type: array
+        items:
+          type: object
+          properties:
+            api_interface:
+              type: string
+            internal_path:
+              type: string
+            type:
+              type: string
+            add_on:
+              type: string
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -56007,6 +56043,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56054,6 +56103,19 @@ definitions:
               type: array
               items:
                 type: string
+            collections:
+              type: array
+              items:
+                type: object
+                properties:
+                  api_interface:
+                    type: string
+                  internal_path:
+                    type: string
+                  type:
+                    type: string
+                  add_on:
+                    type: string
       geolocation_profile:
         type: string
         format: uint64
@@ -56146,6 +56208,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56231,6 +56306,17 @@ definitions:
     title: >-
       the enum below determines the pairing algorithm's behaviour with the
       selected providers feature
+  lavanet.lava.spec.CollectionData:
+    type: object
+    properties:
+      api_interface:
+        type: string
+      internal_path:
+        type: string
+      type:
+        type: string
+      add_on:
+        type: string
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
   lavanet.lava.projects.MsgDelKeysResponse:
@@ -56948,6 +57034,8 @@ definitions:
         type: array
         items:
           type: string
+      addon:
+        type: string
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -56984,17 +57072,6 @@ definitions:
       encoding:
         type: string
         title: 'used to parse byte responses: base64,hex,bech32'
-  lavanet.lava.spec.CollectionData:
-    type: object
-    properties:
-      api_interface:
-        type: string
-      internal_path:
-        type: string
-      type:
-        type: string
-      add_on:
-        type: string
   lavanet.lava.spec.FUNCTION_TAG:
     type: string
     enum:
@@ -57707,6 +57784,12 @@ definitions:
               type: array
               items:
                 type: string
+            addon:
+              type: string
+      optional_interfaces:
+        type: array
+        items:
+          type: string
   lavanet.lava.spec.ShowAllChainsInfoStruct:
     type: object
     properties:

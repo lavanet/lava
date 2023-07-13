@@ -161,8 +161,11 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
-	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
-	allowedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, false)
+	expectedInterfaces, found := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
+	if !found {
+		return nil, fmt.Errorf("spec not found for getting expected interfaces %s", chainID)
+	}
+	allowedInterfaces, _ := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, false)
 	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocations := k.specKeeper.GeolocationCount(ctx)

@@ -205,9 +205,10 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 }
 
 // returns map[apiInterface][]addons
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) {
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, found bool) {
 	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
-	spec, found := k.GetSpec(ctx, chainID)
+	var spec types.Spec
+	spec, found = k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
 		if err != nil { // should not happen! (all specs on chain must be valid)

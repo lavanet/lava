@@ -306,6 +306,290 @@ func TestPairingStatic(t *testing.T) {
 	}
 }
 
+func TestAddonPairing(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	specId := ts.spec.Index
+
+	mandatory := spectypes.CollectionData{
+		ApiInterface: "mandatory",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "",
+	}
+	mandatoryAddon := spectypes.CollectionData{
+		ApiInterface: "mandatory",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "addon",
+	}
+	optional := spectypes.CollectionData{
+		ApiInterface: "optional",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "optional",
+	}
+	ts.spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled:        true,
+			CollectionData: mandatory,
+		},
+		{
+			Enabled:        true,
+			CollectionData: optional,
+		},
+		{
+			Enabled:        true,
+			CollectionData: mandatoryAddon,
+		},
+	}
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	mandatoryChainPolicy := &planstypes.ChainPolicy{
+		ChainId:     specId,
+		Collections: []spectypes.CollectionData{mandatory},
+	}
+	mandatoryAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:     specId,
+		Collections: []spectypes.CollectionData{mandatoryAddon},
+	}
+	optionalAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:     specId,
+		Collections: []spectypes.CollectionData{optional},
+	}
+	optionalAndMandatoryAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:     specId,
+		Collections: []spectypes.CollectionData{mandatoryAddon, optional},
+	}
+	templates := []struct {
+		name              string
+		planChainPolicy   *planstypes.ChainPolicy
+		subscChainPolicy  *planstypes.ChainPolicy
+		projChainPolicy   *planstypes.ChainPolicy
+		expectedProviders int
+	}{
+		{
+			name:              "empty",
+			expectedProviders: 12,
+		},
+		{
+			name:              "mandatory in plan",
+			planChainPolicy:   mandatoryChainPolicy,
+			expectedProviders: 12, // stub provider also gets picked
+		},
+		{
+			name:              "mandatory in subsc",
+			subscChainPolicy:  mandatoryChainPolicy,
+			projChainPolicy:   nil,
+			expectedProviders: 12, // stub provider also gets picked
+		},
+		{
+			name:              "mandatory in proj",
+			projChainPolicy:   mandatoryChainPolicy,
+			expectedProviders: 12, // stub provider also gets picked
+		},
+		{
+			name:              "addon in plan",
+			planChainPolicy:   mandatoryAddonChainPolicy,
+			subscChainPolicy:  nil,
+			projChainPolicy:   nil,
+			expectedProviders: 6,
+		},
+		{
+			name:              "addon in subsc",
+			subscChainPolicy:  mandatoryAddonChainPolicy,
+			expectedProviders: 6,
+		},
+		{
+			name:              "addon in proj",
+			projChainPolicy:   mandatoryAddonChainPolicy,
+			expectedProviders: 6,
+		},
+		{
+			name:              "optional in plan",
+			planChainPolicy:   optionalAddonChainPolicy,
+			expectedProviders: 7,
+		},
+		{
+			name:              "optional in subsc",
+			subscChainPolicy:  optionalAddonChainPolicy,
+			expectedProviders: 7,
+		},
+		{
+			name:              "optional in proj",
+			projChainPolicy:   optionalAddonChainPolicy,
+			expectedProviders: 7,
+		},
+		{
+			name:              "optional and addon in plan",
+			planChainPolicy:   optionalAndMandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional and addon in subsc",
+			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional and addon in proj",
+			projChainPolicy:   optionalAndMandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional and addon in plan, addon in subsc",
+			planChainPolicy:   optionalAndMandatoryAddonChainPolicy,
+			subscChainPolicy:  mandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional and addon in subsc, addon in plan",
+			planChainPolicy:   mandatoryAddonChainPolicy,
+			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional and addon in subsc, addon in proj",
+			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:   mandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+		{
+			name:              "optional in subsc, addon in proj",
+			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:   mandatoryAddonChainPolicy,
+			expectedProviders: 4,
+		},
+	}
+	mandatorySupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+	}}
+	mandatoryAddonSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{mandatoryAddon.AddOn},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
+	}}
+	mandatoryAndMandatoryAddonSupportingEndpoints := append(mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints...)
+	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{optional.AddOn},
+		ApiInterfaces: []string{optional.ApiInterface},
+	}}
+	optionalAndMandatorySupportingEndpoints := append(mandatorySupportingEndpoints, optionalSupportingEndpoints...)
+	optionalAndMandatoryAddonSupportingEndpoints := append(mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints...)
+	allSupportingEndpoints := append(mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints...)
+	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface, optional.ApiInterface},
+	}}
+
+	err := ts.addProviderEndpoints(2, mandatorySupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, mandatoryAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, optionalAndMandatorySupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(1, mandatoryAndOptionalSingleEndpoint)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, optionalAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, allSupportingEndpoints)
+	require.NoError(t, err)
+	require.NoError(t, err)
+	// total 11 providers
+
+	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints)
+	require.Error(t, err)
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			// create plan, propose it and buy subscription
+			plan := common.CreateMockPlan()
+			defaultPolicy := func() planstypes.Policy {
+				return planstypes.Policy{
+					ChainPolicies:      []planstypes.ChainPolicy{},
+					GeolocationProfile: math.MaxUint64,
+					MaxProvidersToPair: 12,
+					TotalCuLimit:       math.MaxUint64,
+					EpochCuLimit:       math.MaxUint64,
+				}
+			}
+			plan.PlanPolicy = defaultPolicy()
+
+			if tt.planChainPolicy != nil {
+				plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.planChainPolicy}
+			}
+			subAddr := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000).Addr.String()
+
+			err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []planstypes.Plan{plan})
+			require.Nil(t, err)
+
+			_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subscriptiontypes.MsgBuy{
+				Creator:  subAddr,
+				Consumer: subAddr,
+				Index:    plan.Index,
+				Duration: 1,
+			})
+			require.Nil(t, err)
+
+			// get the admin project and set its policies
+			subProjects, err := ts.keepers.Subscription.ListProjects(ts.ctx, &subscriptiontypes.QueryListProjectsRequest{
+				Subscription: subAddr,
+			})
+			require.Nil(t, err)
+			require.Equal(t, 1, len(subProjects.Projects))
+
+			adminProject, err := ts.keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ts.ctx), subProjects.Projects[0], uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+			require.Nil(t, err)
+			if tt.projChainPolicy != nil {
+				projPolicy := defaultPolicy()
+				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
+				_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
+					Creator: subAddr,
+					Project: adminProject.Index,
+					Policy:  projPolicy,
+				})
+			}
+
+			require.Nil(t, err)
+
+			// apply policy change
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			if tt.subscChainPolicy != nil {
+				subscPolicy := defaultPolicy()
+				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
+				_, err = ts.servers.ProjectServer.SetSubscriptionPolicy(ts.ctx, &projectstypes.MsgSetSubscriptionPolicy{
+					Creator:  subAddr,
+					Projects: []string{adminProject.Index},
+					Policy:   subscPolicy,
+				})
+				require.Nil(t, err)
+			}
+
+			// apply policy change
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+			// get pairing of two consecutive epochs
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+				ChainID: ts.spec.Index,
+				Client:  subAddr,
+			})
+			if tt.expectedProviders > 0 {
+				require.Nil(t, err)
+				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
 func TestSelectedProvidersPairing(t *testing.T) {
 	ts := setupForPaymentTest(t)
 	_ctx := sdk.UnwrapSDKContext(ts.ctx)
