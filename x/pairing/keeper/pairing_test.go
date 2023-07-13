@@ -9,7 +9,9 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
 	"github.com/lavanet/lava/x/pairing/types"
+	pairingscorestypes "github.com/lavanet/lava/x/pairing/types/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -577,4 +579,177 @@ func IsSubset(subset, superset []string) bool {
 	}
 
 	return true
+}
+
+func TestGeolocationPairingScores(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+
+	// for convinience
+	GL := uint64(planstypes.Geolocation_value["GL"])
+	USE := uint64(planstypes.Geolocation_value["USE"])
+	EU := uint64(planstypes.Geolocation_value["EU"])
+	AS := uint64(planstypes.Geolocation_value["AS"])
+	AF := uint64(planstypes.Geolocation_value["AF"])
+	AU := uint64(planstypes.Geolocation_value["AU"])
+	USC := uint64(planstypes.Geolocation_value["USC"])
+	USW := uint64(planstypes.Geolocation_value["USW"])
+	USE_EU := USE + EU
+
+	minStake := sdk.NewInt(10)
+
+	freePlanPolicy := planstypes.Policy{
+		GeolocationProfile: 4, // USE
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 5,
+	}
+
+	basicPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 0, // GLS
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	premiumPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 65535, // GL
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	// propose all plans and buy subscriptions
+	freePlan := planstypes.Plan{
+		Index:      "free",
+		Block:      uint64(_ctx.BlockHeight()),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: freePlanPolicy,
+	}
+
+	basicPlan := planstypes.Plan{
+		Index:      "basic",
+		Block:      uint64(_ctx.BlockHeight()),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: basicPlanPolicy,
+	}
+
+	premiumPlan := planstypes.Plan{
+		Index:      "premium",
+		Block:      uint64(_ctx.BlockHeight()),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: premiumPlanPolicy,
+	}
+
+	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
+	err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, plans)
+	require.Nil(t, err)
+
+	freeUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000)
+	basicUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000)
+	premiumUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000)
+
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, freeUser, freePlan.Index)
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, basicUser, basicPlan.Index)
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, premiumUser, premiumPlan.Index)
+
+	for geoName, geo := range planstypes.Geolocation_value {
+		if geoName != "GL" && geoName != "GLS" {
+			err = ts.addProviderGeolocation(5, uint64(geo))
+			require.Nil(t, err)
+		}
+	}
+
+	templates := []struct {
+		name         string
+		dev          common.Account
+		planPolicy   planstypes.Policy
+		changePolicy bool
+		newGeo       uint64
+		expectedGeo  []uint64
+	}{
+		// free plan (cannot change geolocation - verified in another test)
+		{"default free plan", freeUser, freePlanPolicy, false, 0, []uint64{USE}},
+
+		// basic plan (cannot change geolocation - verified in another test)
+		{"default basic plan", basicUser, basicPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+
+		// premium plan (geolocation can change)
+		{"default premium plan", premiumUser, premiumPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+		{"premium plan - set policy regular geo", premiumUser, premiumPlanPolicy, true, EU, []uint64{EU}},
+		{"premium plan - set policy multiple geo", premiumUser, premiumPlanPolicy, true, USE_EU, []uint64{EU, USE}},
+		{"premium plan - set policy global geo", premiumUser, premiumPlanPolicy, true, GL, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			devResponse, err := ts.keepers.Projects.Developer(ts.ctx, &projectstypes.QueryDeveloperRequest{
+				Developer: tt.dev.Addr.String(),
+			})
+			require.Nil(t, err)
+
+			projIndex := devResponse.Project.Index
+			policies := []*planstypes.Policy{&tt.planPolicy}
+
+			newPolicy := planstypes.Policy{}
+			if tt.changePolicy {
+				newPolicy = tt.planPolicy
+				newPolicy.GeolocationProfile = tt.newGeo
+				_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
+					Creator: tt.dev.Addr.String(),
+					Project: projIndex,
+					Policy:  newPolicy,
+				})
+				require.Nil(t, err)
+				policies = append(policies, &newPolicy)
+			}
+
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // apply the new policy
+
+			providersRes, err := ts.keepers.Pairing.Providers(ts.ctx, &types.QueryProvidersRequest{ChainID: ts.spec.Name})
+			require.Nil(t, err)
+			stakeEntries := providersRes.StakeEntry
+			providerScores := []*pairingscorestypes.PairingScore{}
+			for i := range stakeEntries {
+				providerScore := pairingscorestypes.NewPairingScore(&stakeEntries[i])
+				providerScores = append(providerScores, providerScore)
+			}
+
+			effectiveGeo, err := ts.keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
+			require.Nil(t, err)
+
+			slots := pairingscores.CalcSlots(planstypes.Policy{
+				GeolocationProfile: effectiveGeo,
+				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
+			}, minStake)
+
+			geoSeen := map[uint64]bool{}
+			for _, geo := range tt.expectedGeo {
+				geoSeen[geo] = false
+			}
+
+			// calc scores and verify the scores are as expected
+			for _, slot := range slots {
+				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot, minStake)
+				require.Nil(t, err)
+
+				ok := pairingscorestypes.VerifyGeoScoreForTesting(providerScores, slot, geoSeen)
+				require.True(t, ok)
+			}
+
+			// verify that the slots have all the expected geos
+			for _, found := range geoSeen {
+				require.True(t, found)
+			}
+		})
+	}
+}
+
+func isGeoInList(geo uint64, geoList []uint64) bool {
+	for _, geoElem := range geoList {
+		if geoElem == geo {
+			return true
+		}
+	}
+	return false
 }
