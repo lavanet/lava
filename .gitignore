@@ -22,6 +22,7 @@ vue/dist
 # Logs and debug
 scripts/automation_scripts/automation_results*
 testutil/e2e/logs/
+testutil/e2e/rewardServerStorage/
 testutil/debugging/
 
 # Misc
