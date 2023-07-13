@@ -76,10 +76,13 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 
 	// all slots should consider the stake, so we init them with stakeReq
 	stakeReq := StakeReq{MinStake: minStake}
-	slotReqs := map[string]ScoreReq{stakeReq.GetName(): stakeReq}
+	stakeReqName := stakeReq.GetName()
+
 	for i := range slots {
+		reqMap := make(map[string]ScoreReq)
+		reqMap[stakeReqName] = stakeReq
 		slots[i] = NewPairingSlot()
-		slots[i].Reqs = slotReqs
+		slots[i].Reqs = reqMap
 	}
 
 	return slots
