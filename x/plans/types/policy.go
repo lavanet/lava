@@ -85,7 +85,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	return nil
 }
 
-func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (ChainPolicyRet ChainPolicy, allowed bool) {
+func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPolicyRet ChainPolicy, allowed bool) {
 	allowedCollectionData := []spectypes.CollectionData{}
 	for _, policy := range policies {
 		chainPolicy, allowdChain := policy.ChainPolicy(chainID)
