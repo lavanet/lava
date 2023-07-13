@@ -470,16 +470,22 @@ func TestAddonPairing(t *testing.T) {
 		Addons:        []string{mandatoryAddon.AddOn},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
 	}}
-	mandatoryAndMandatoryAddonSupportingEndpoints := append(mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints...)
+	mandatoryAndMandatoryAddonSupportingEndpoints := mandatorySupportingEndpoints
+	mandatoryAndMandatoryAddonSupportingEndpoints = append(mandatoryAndMandatoryAddonSupportingEndpoints, mandatoryAddonSupportingEndpoints...)
 	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
 		IPPORT:        "123",
 		Geolocation:   1,
 		Addons:        []string{optional.AddOn},
 		ApiInterfaces: []string{optional.ApiInterface},
 	}}
-	optionalAndMandatorySupportingEndpoints := append(mandatorySupportingEndpoints, optionalSupportingEndpoints...)
-	optionalAndMandatoryAddonSupportingEndpoints := append(mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints...)
-	allSupportingEndpoints := append(mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints...)
+	optionalAndMandatorySupportingEndpoints := mandatorySupportingEndpoints
+	optionalAndMandatorySupportingEndpoints = append(optionalAndMandatorySupportingEndpoints, optionalSupportingEndpoints...)
+
+	optionalAndMandatoryAddonSupportingEndpoints := mandatoryAddonSupportingEndpoints
+	optionalAndMandatoryAddonSupportingEndpoints = append(optionalAndMandatoryAddonSupportingEndpoints, optionalSupportingEndpoints...)
+
+	allSupportingEndpoints := mandatorySupportingEndpoints
+	allSupportingEndpoints = append(allSupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints...)
 	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
 		IPPORT:        "123",
 		Geolocation:   1,

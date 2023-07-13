@@ -26,7 +26,6 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	for _, spec := range allSpec {
 		// get info by chain name
 		if spec.GetName() == req.GetChainName() {
-
 			// get chain ID
 			chainID = spec.GetIndex()
 
