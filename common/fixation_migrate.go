@@ -187,7 +187,7 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 			// if StaleAt is set, then replace old style timer with new style timer
 			if entry.StaleAt != math.MaxUint && entry.StaleAt > ctxBlock {
 				fs.tstore.DelTimerByBlockHeight(ctx, entry.StaleAt, []byte{})
-				key := encodeForTimer(entry.Index, entry.Block, timerStaleEntry)
+				key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 				fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 			}
 

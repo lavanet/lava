@@ -71,22 +71,68 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 // from the imported Spec(s). It returns the expanded Spec.
 func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error) {
 	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
 
-	details, err := k.doExpandSpec(ctx, &spec, depends, spec.Index)
+	details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index)
 	if err != nil {
 		return spec, utils.LavaFormatError("spec expand failed", err,
 			utils.Attribute{Key: "imports", Value: details},
 		)
 	}
+
 	return spec, nil
 }
 
+// RefreshSpec checks which one Spec inherits from another (just recently
+// updated) Spec, and if so updates the the BlockLastUpdated of the former.
+func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.Spec) ([]string, error) {
+	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
+
+	if details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index); err != nil {
+		return nil, utils.LavaFormatWarning("spec refresh failed (import)", err,
+			utils.Attribute{Key: "imports", Value: details},
+		)
+	}
+
+	if details, err := spec.ValidateSpec(k.MaxCU(ctx)); err != nil {
+		details["invalidates"] = spec.Index
+		attrs := utils.StringMapToAttributes(details)
+		return nil, utils.LavaFormatWarning("spec refresh failed (invalidate)", err, attrs...)
+	}
+
+	var inherited []string
+	for _, ancestor := range ancestors {
+		if _, ok := inherit[ancestor.Index]; ok {
+			inherited = append(inherited, ancestor.Index)
+		}
+	}
+
+	if len(inherited) > 0 {
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+		k.SetSpec(ctx, spec)
+	}
+
+	return inherited, nil
+}
+
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
-func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
+func (k Keeper) doExpandSpec(
+	ctx sdk.Context,
+	spec *types.Spec,
+	depends map[string]bool,
+	inherit *map[string]bool,
+	details string,
+) (string, error) {
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 
 	if len(spec.Imports) != 0 {
 		var parents []types.Spec
+
+		// update (cumulative) inherit
+		for _, index := range spec.Imports {
+			(*inherit)[index] = true
+		}
 
 		// visual markers when import deepens
 		details += "->["
@@ -109,7 +155,7 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 			}
 
 			depends[index] = true
-			details, err := k.doExpandSpec(ctx, &imported, depends, details)
+			details, err := k.doExpandSpec(ctx, &imported, depends, inherit, details)
 			if err != nil {
 				return details, err
 			}
@@ -205,16 +251,24 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 }
 
 // returns map[apiInterface][]addons
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, found bool) {
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
 	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
 	var spec types.Spec
-	spec, found = k.GetSpec(ctx, chainID)
+	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
-		if err != nil { // should not happen! (all specs on chain must be valid)
-			panic(err)
+		if err != nil {
+			// spec expansion should work because all specs on chain must be valid;
+			// to avoid panic return an error so the caller can bail.
+			return nil, utils.LavaFormatError("critical: failed to expand spec on chain", err,
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
 		}
 		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
+	} else {
+		return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedInterfacesForSpec", nil,
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
 	}
 	return
 }

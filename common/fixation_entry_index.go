@@ -30,21 +30,21 @@ func (fs *FixationStore) getEntryIndexStore(ctx sdk.Context) *prefix.Store {
 }
 
 // setEntryIndex stores an Entry index in the store
-func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex string, live bool) {
+func (fs FixationStore) setEntryIndex(ctx sdk.Context, safeIndex types.SafeIndex, live bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
 	value := types.EntryIndexLive
 	if !live {
 		value = types.EntryIndexDead
 	}
-	store.Set(types.KeyPrefix(safeIndex), value)
+	store.Set(types.KeyPrefix(string(safeIndex)), value)
 }
 
 // removeEntryIndex removes an Entry index from the store
-func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex string) {
+func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex types.SafeIndex) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
-	store.Delete(types.KeyPrefix(safeIndex))
+	store.Delete(types.KeyPrefix(string(safeIndex)))
 }
 
 // AllEntryIndicesFilter returns all Entry indices with a given prefix and filtered
@@ -59,7 +59,7 @@ func (fs FixationStore) AllEntryIndicesFilter(ctx sdk.Context, prefix string, fi
 	indexList := []string{}
 	for ; iterator.Valid(); iterator.Next() {
 		key, value := iterator.Key(), iterator.Value()
-		safeIndex := string(key)
+		safeIndex := types.SafeIndex(key)
 		types.AssertSanitizedIndex(safeIndex, fs.prefix)
 		if filter == nil || filter(key, value) {
 			indexList = append(indexList, types.DesanitizeIndex(safeIndex))

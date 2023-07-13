@@ -12,7 +12,9 @@ func Serialize(data any) []byte {
 		binary.LittleEndian.PutUint64(res, castedData)
 		return res
 	}
-	panic(fmt.Sprintf("Lava can't Serialize typetype %T!\n", data))
+	// panic:ok: validates that the data is of known type; would fail
+	// on start when all parameters are read in.
+	panic(fmt.Sprintf("unable to Serialize type %T", data))
 }
 
 func Deserialize(raw []byte, data any) {
@@ -21,5 +23,7 @@ func Deserialize(raw []byte, data any) {
 		*casted = binary.LittleEndian.Uint64(raw)
 		return
 	}
-	panic(fmt.Sprintf("Lava can't DeSerialize typetype %T!\n", data))
+	// panic:ok: validates that the data is of known type; would fail
+	// on start when all parameters are read in.
+	panic(fmt.Sprintf("unable to DeSerialize type %T", data))
 }

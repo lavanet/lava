@@ -11,8 +11,8 @@ message ApiCollection {
   CollectionData collection_data =2 [(gogoproto.nullable) = false];
   repeated Api apis = 3;
   repeated Header headers = 4;
-	repeated CollectionData inheritance_apis = 5; // by collectionKey
-	repeated ParseDirective parse_directives = 6;
+  repeated CollectionData inheritance_apis = 5; // by collectionKey
+  repeated ParseDirective parse_directives = 6;
 }
 
 message CollectionData {
@@ -23,16 +23,16 @@ message CollectionData {
 }
 
 message Header {
-	string name = 1;
+  string name = 1;
 	
-	enum HeaderType {
+  enum HeaderType {
     pass_send = 0;
     pass_reply = 1;
     pass_both = 2;
     pass_ignore = 3; // allows it to pass around but is not signed
   }
 
-	HeaderType kind = 2;
+  HeaderType kind = 2;
   FUNCTION_TAG function_tag = 3;
 }
 
@@ -42,7 +42,7 @@ message Api {
   uint64 compute_units = 3; 
   uint64 extra_compute_units = 4;
   SpecCategory category = 6 [(gogoproto.nullable) = false];
-	BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
+  BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
 }
 
 message ParseDirective {

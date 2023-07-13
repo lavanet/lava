@@ -145,6 +145,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	// register v2 -> v3 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.Migrate2to3); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
 }

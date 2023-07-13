@@ -849,8 +849,7 @@ func TestBadgeValidation(t *testing.T) {
 				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 
 				// remove past payments to avoid double spending error (first test had a successful payment)
-				err = ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
-				require.Nil(t, err)
+				ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
 			}
 			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
 			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)

@@ -6,7 +6,42 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// IsStale tests whether an entry is stale, i.e. has refcount zero _and_
+// SafeIndex is a sanitized string, i.e. contains only visible ascii characters
+// (i.e. Ascii 32-126), and terminates with (ascii) DEL; this ensures that an
+// index can never be a prefix of another index.
+type SafeIndex string
+
+// sanitizeIndex checks that a string contains only visible ascii characters
+// (i.e. Ascii 32-126), and appends a (ascii) DEL to the index; this ensures
+// that an index can never be a prefix of another index.
+func SanitizeIndex(index string) (SafeIndex, error) {
+	for i := 0; i < len(index); i++ {
+		if index[i] < ASCII_MIN || index[i] > ASCII_MAX {
+			return SafeIndex(""), ErrInvalidIndex
+		}
+	}
+	return SafeIndex(index + string([]byte{ASCII_DEL})), nil
+}
+
+// desantizeIndex reverts the effect of SanitizeIndex - removes the trailing
+// (ascii) DEL terminator.
+func DesanitizeIndex(safeIndex SafeIndex) string {
+	return string(safeIndex[0 : len(safeIndex)-1])
+}
+
+func AssertSanitizedIndex(safeIndex SafeIndex, prefix string) {
+	if []byte(safeIndex)[len(safeIndex)-1] != ASCII_DEL {
+		// panic:ok: intended assertion
+		panic("Fixation: prefix " + prefix + ": unsanitized safeIndex: " + string(safeIndex))
+	}
+}
+
+// SafeIndex returns the entry's index
+func (entry Entry) SafeIndex() SafeIndex {
+	return SafeIndex(entry.Index)
+}
+
+// IsStaleBy tests whether an entry is stale, i.e. has refcount zero _and_
 // has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
 func (entry Entry) IsStaleBy(block uint64) bool {
 	if entry.GetRefcount() == 0 {
@@ -15,6 +50,12 @@ func (entry Entry) IsStaleBy(block uint64) bool {
 		}
 	}
 	return false
+}
+
+// IsStale tests whether an entry is currently stale, i.e. has refcount zero _and_
+// has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
+func (entry Entry) IsStale(ctx sdk.Context) bool {
+	return entry.IsStaleBy(uint64(ctx.BlockHeight()))
 }
 
 // IsDeletedBy tests whether an entry is deleted, with respect to a given
