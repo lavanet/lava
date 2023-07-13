@@ -86,7 +86,7 @@ func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 		epochRewards, ok := result[re.Epoch]
 		if !ok {
 			proofs := map[uint64]*pairingtypes.RelaySession{re.SessionId: re.Proof}
-			consumerRewards := map[string]*ConsumerRewards{re.ConsumerKey: &ConsumerRewards{epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}}
+			consumerRewards := map[string]*ConsumerRewards{re.ConsumerKey: {epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}}
 			result[re.Epoch] = &EpochRewards{epoch: re.Epoch, consumerRewards: consumerRewards}
 			continue
 		}

@@ -135,7 +135,7 @@ func TestSendNewProof(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		var existingCU, updatedWithProf = uint64(0), false
+		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
 			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB)
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
