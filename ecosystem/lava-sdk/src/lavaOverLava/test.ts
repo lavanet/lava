@@ -32,7 +32,13 @@ it("Test convertRestApiName method", () => {
     },
   ];
 
-  const lavaProviders = new LavaProviders("", "", null, DEFAULT_GEOLOCATION);
+  const options = {
+    accountAddress: "",
+    network: "",
+    relayer: null,
+    geolocation: DEFAULT_GEOLOCATION,
+  };
+  const lavaProviders = new LavaProviders(options);
 
   testCasses.map((test) => {
     expect(lavaProviders.convertRestApiName(test.name)).toBe(test.output);
@@ -62,7 +68,13 @@ it("Test pickRandomProvider method", () => {
     },
   ];
 
-  const lavaProviders = new LavaProviders("", "", null, DEFAULT_GEOLOCATION);
+  const options = {
+    accountAddress: "",
+    network: "",
+    relayer: null,
+    geolocation: DEFAULT_GEOLOCATION,
+  };
+  const lavaProviders = new LavaProviders(options);
 
   testCasses.map((test) => {
     const consumerSessionWithProviderArr = [

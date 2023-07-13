@@ -21,7 +21,7 @@ class SessionManager {
 exports.SessionManager = SessionManager;
 class ConsumerSessionWithProvider {
     constructor(acc, endpoints, session, maxComputeUnits, usedComputeUnits, reliabilitySent) {
-        this.Acc = acc;
+        this.ConsumerAddress = acc;
         this.Endpoints = endpoints;
         this.Session = session;
         this.MaxComputeUnits = maxComputeUnits;
