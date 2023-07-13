@@ -753,3 +753,54 @@ func isGeoInList(geo uint64, geoList []uint64) bool {
 	}
 	return false
 }
+
+func TestDuplicateProviders(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+
+	basicPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 0, // GLS
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	basicPlan := planstypes.Plan{
+		Index:      "basic",
+		Block:      uint64(_ctx.BlockHeight()),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: basicPlanPolicy,
+	}
+
+	basicUser := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000)
+
+	err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{basicPlan})
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, basicUser, basicPlan.Index)
+
+	for geoName, geo := range planstypes.Geolocation_value {
+		if geoName != "GL" && geoName != "GLS" {
+			err := ts.addProviderGeolocation(5, uint64(geo))
+			require.Nil(t, err)
+		}
+	}
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	for i := 0; i < 100; i++ {
+		pairingRes, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
+			ChainID: ts.spec.Index,
+			Client:  basicUser.Addr.String(),
+		})
+		require.Nil(t, err)
+		providerSeen := map[string]struct{}{}
+		for _, provider := range pairingRes.Providers {
+			_, found := providerSeen[provider.Address]
+			require.False(t, found)
+			providerSeen[provider.Address] = struct{}{}
+		}
+	}
+}
