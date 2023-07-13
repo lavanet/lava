@@ -184,7 +184,9 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		panic(err)
 	}
 
-	for it := 0; it < groupCount; it++ {
+	iterationNum := commontypes.FindMin([]int{groupCount, len(scores) - len(chosenProvidersIdx)})
+
+	for it := 0; it < iterationNum; it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
 		hashAsNumber := sdk.NewUintFromBigInt(bigIntNum)
@@ -207,10 +209,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				chosenProvidersIdx[idx] = true
 				break
 			}
-		}
-
-		if scoreSum == 0 {
-			break
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
