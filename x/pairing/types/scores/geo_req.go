@@ -1,9 +1,12 @@
 package score
 
 import (
+	"fmt"
 	"math"
+	"sort"
 
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -22,28 +25,24 @@ const (
 
 // Score calculates the geo score of a provider (using the GEO_LATENCY_MAP)
 // The score is (maxGeoLatency / minLatency)^geoWeight
+// Note: the geo slots are created so that the GeoReq has a single bit geolocation. This function assumes that this is the case
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry, weight uint64) uint64 {
-	if gr.Geo == provider.Geolocation {
-		return calculateCostFromLatency(minGeoLatency)
+	if !types.IsGeoEnumSingleBit(int32(gr.Geo)) {
+		utils.LavaFormatError("provider geo req is not single bit", fmt.Errorf("invalid geo req"),
+			utils.Attribute{Key: "geoReq", Value: gr.Geo},
+		)
+		return calculateCostFromLatency(maxGeoLatency)
 	}
 
-	providerGeo := int32(provider.Geolocation)
-	missingGeos := providerGeo ^ int32(gr.Geo)
-
-	providerGeoEnums := types.GetGeolocationsFromUint(providerGeo)
-	missingGeoEnums := types.GetGeolocationsFromUint(missingGeos)
-
-	costs := []uint64{}
-	for _, reqGeo := range missingGeoEnums {
-		_, latency := GetGeoCost(reqGeo, providerGeoEnums)
-		costs = append(costs, latency)
+	// check if the provider supports the required geolocation
+	if gr.Geo&^provider.Geolocation == 0 {
+		cost := calculateCostFromLatency(minGeoLatency)
+		return uint64(math.Pow(float64(cost), float64(weight)))
 	}
 
-	score := uint64(0)
-	for _, cost := range costs {
-		cost = uint64(math.Pow(float64(cost), float64(weight)))
-		score += cost
-	}
+	providerGeoEnums := types.GetGeolocationsFromUint(int32(provider.Geolocation))
+	_, cost := GetGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
+	score := uint64(math.Pow(float64(cost), float64(weight)))
 
 	return score
 }
@@ -174,4 +173,47 @@ var GEO_LATENCY_MAP = map[planstypes.Geolocation][]GeoLatency{
 		{geo: AS, latency: 146},
 		{geo: USW, latency: 179},
 	},
+}
+
+// verifyGeoScoreForTesting is used to testing purposes only!
+// it verifies that the max geo score are for providers that exactly match the geo req
+// this function assumes that all the other reqs are equal (for example, stake req)
+func VerifyGeoScoreForTesting(providerScores []*PairingScore, slot *PairingSlot, expectedGeoSeen map[uint64]bool) bool {
+	if slot == nil || len(providerScores) == 0 {
+		return false
+	}
+
+	sort.Slice(providerScores, func(i, j int) bool {
+		return providerScores[i].Score > providerScores[j].Score
+	})
+
+	geoReq, ok := slot.Reqs[GEO_REQ_NAME].(GeoReq)
+	if !ok {
+		return false
+	}
+
+	// verify that the geo is part of the expected geo
+	_, ok = expectedGeoSeen[geoReq.Geo]
+	if !ok {
+		return false
+	}
+	expectedGeoSeen[geoReq.Geo] = true
+
+	// verify that only providers that match with req geo have max score
+	maxScore := providerScores[0].Score
+	for _, score := range providerScores {
+		if score.Provider.Geolocation == geoReq.Geo {
+			if score.Score != maxScore {
+				return false
+			}
+		} else {
+			if score.Score == maxScore {
+				return false
+			} else {
+				break
+			}
+		}
+	}
+
+	return true
 }

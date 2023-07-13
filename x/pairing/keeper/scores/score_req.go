@@ -25,17 +25,20 @@ func init() {
 // CalcSlots gets the overall requirements from the policy and assign slots that'll fulfil them
 func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*scorestypes.PairingSlot {
 	slots := make([]*scorestypes.PairingSlot, policy.MaxProvidersToPair)
-	reqMap := map[string]scorestypes.ScoreReq{}
 
 	// stake requirements
 	stakeReq := scorestypes.StakeReq{MinStake: minStake}
-	reqMap[stakeReq.GetName()] = stakeReq
+	stakeReqName := stakeReq.GetName()
 
 	// geo requirements
 	geoReqsForSlots := scorestypes.GetGeoReqsForSlots(policy)
 	geoReqName := geoReqsForSlots[0].GetName()
+
 	for i := range slots {
+		reqMap := make(map[string]scorestypes.ScoreReq)
+		reqMap[stakeReqName] = stakeReq
 		reqMap[geoReqName] = geoReqsForSlots[i]
+
 		slots[i] = scorestypes.NewPairingSlot(reqMap)
 	}
 
