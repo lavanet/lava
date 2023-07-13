@@ -2,7 +2,6 @@ package provideroptimizer
 
 import (
 	"math"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/score"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	"gonum.org/v1/gonum/mathext"
 )
 

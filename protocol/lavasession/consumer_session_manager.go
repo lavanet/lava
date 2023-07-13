@@ -3,7 +3,6 @@ package lavasession
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/rand"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
