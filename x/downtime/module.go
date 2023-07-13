@@ -65,6 +65,13 @@ func (a AppModuleBasic) GetQueryCmd() *cobra.Command { return cli.NewQueryCmd() 
 
 // ---- AppModule
 
+func NewAppModule(k keeper.Keeper) AppModule {
+	return AppModule{
+		AppModuleBasic: AppModuleBasic{},
+		k:              k,
+	}
+}
+
 type AppModule struct {
 	AppModuleBasic
 
