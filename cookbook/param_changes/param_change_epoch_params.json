@@ -6,10 +6,10 @@
           "subspace": "protocol",
           "key": "Version",
           "value": {
-            "ProviderTarget": "1.18.2",
-            "ProviderMin": "1.18.2",
-            "ConsumerTarget": "1.17.2",
-            "ConsumerMin": "1.16.2"
+            "provider_target": "1.18.2",
+            "consumer_target": "1.18.2",
+            "provider_min": "1.16.2",
+            "consumer_min": "1.16.2"
           }
         }
     ],
