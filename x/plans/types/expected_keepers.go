@@ -11,5 +11,5 @@ type EpochStorageKeeper interface {
 }
 
 type SpecKeeper interface {
-	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, found bool)
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error)
 }
