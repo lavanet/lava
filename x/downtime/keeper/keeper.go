@@ -138,7 +138,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// we fetch the last block time
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
 	// if no last block time is known then it means that
-	// this is the first time we're recording a block time
+	// this is the first time we're recording a block time,
 	// so we just store the current block time and exit.
 	if !ok {
 		k.SetLastBlockTime(ctx)
@@ -158,6 +158,6 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		return
 	}
 	// if the current block time is greater than the max downtime duration
-	// it means that we had a downtime period and we need to record it.
+	// it means that we had a downtime period, so we need to record it.
 	k.RecordDowntime(ctx, elapsedDuration)
 }
