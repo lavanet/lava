@@ -1,9 +1,13 @@
 package keeper
 
 import (
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	gogowellknown "github.com/gogo/protobuf/types"
+	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
@@ -25,6 +29,8 @@ type Keeper struct {
 	paramstore paramtypes.Subspace
 }
 
+// ------ STATE -------
+
 func (k Keeper) GetParams(ctx sdk.Context) (params v1.Params) {
 	k.paramstore.GetParamSet(ctx, &params)
 	return
@@ -41,6 +47,33 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 func (k Keeper) ImportGenesis(ctx sdk.Context, gs *v1.GenesisState) error {
 	return nil
 }
+
+func (k Keeper) GetLastBlockTime(ctx sdk.Context) (time.Time, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastBlockTimeKey)
+	if bz == nil {
+		return time.Time{}, false
+	}
+	protoTime := &gogowellknown.Timestamp{}
+	k.cdc.MustUnmarshal(bz, protoTime)
+	stdTime, err := gogowellknown.TimestampFromProto(protoTime)
+	if err != nil {
+		panic(err)
+	}
+	return stdTime, true
+}
+
+func (k Keeper) SetLastBlockTime(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	protoTime, err := gogowellknown.TimestampProto(ctx.BlockTime())
+	if err != nil {
+		panic(err)
+	}
+	bz := k.cdc.MustMarshal(protoTime)
+	store.Set(types.LastBlockTimeKey, bz)
+}
+
+// ------ STATE END -------
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 }

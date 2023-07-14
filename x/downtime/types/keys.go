@@ -6,3 +6,7 @@ const (
 	// StoreKey is the default store key for the module.
 	StoreKey = ModuleName
 )
+
+var (
+	LastBlockTimeKey = []byte{0x01}
+)

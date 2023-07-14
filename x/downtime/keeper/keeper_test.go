@@ -15,3 +15,20 @@ func TestParams(t *testing.T) {
 	keeper.SetParams(ctx, v1.DefaultParams())
 	require.Equal(t, v1.DefaultParams(), keeper.GetParams(ctx))
 }
+
+func TestLastBlockTime(t *testing.T) {
+	app, ctx := app.TestSetup()
+	keeper := app.DowntimeKeeper
+
+	// no last block time set
+	_, ok := keeper.GetLastBlockTime(ctx)
+	require.False(t, ok)
+
+	// set last block time
+	keeper.SetLastBlockTime(ctx)
+
+	// last block time set
+	lastBlockTime, ok := keeper.GetLastBlockTime(ctx)
+	require.True(t, ok)
+	require.Equal(t, ctx.BlockTime(), lastBlockTime)
+}
