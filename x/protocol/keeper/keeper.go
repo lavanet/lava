@@ -44,9 +44,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-}
-
-func (k Keeper) EndBlock(ctx sdk.Context) {
 	params := k.GetParams(ctx)
 	types.UpdateLatestParams(params)
 }
