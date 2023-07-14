@@ -91,6 +91,12 @@ func (k Keeper) GetDowntime(ctx sdk.Context, height uint64) (time.Duration, bool
 	return k.unmarshalDuration(bz), true
 }
 
+func (k Keeper) DeleteDowntime(ctx sdk.Context, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetDowntimeKey(height)
+	store.Delete(key)
+}
+
 func (k Keeper) unmarshalDuration(bz []byte) time.Duration {
 	protoDuration := &gogowellknown.Duration{}
 	k.cdc.MustUnmarshal(bz, protoDuration)
@@ -127,11 +133,31 @@ func (k Keeper) HadDowntimeBetween(ctx sdk.Context, startHeight, endHeight uint6
 	return true, totalDowntime
 }
 
+func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcTime time.Time) {
+	ctx.KVStore(k.storeKey).
+		Set(
+			types.GetDowntimeGarbageKey(gcTime),
+			sdk.Uint64ToBigEndian(height),
+		)
+}
+
 // ------ STATE END -------
 
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
 	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
+}
+
+// GarbageCollectDowntimes will garbage collect downtimes.
+func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	iter := store.Iterator(types.GetDowntimeGarbageKey(time.Time{}), types.GetDowntimeGarbageKey(ctx.BlockTime()))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		height := sdk.BigEndianToUint64(iter.Value())
+		k.DeleteDowntime(ctx, height) // clear downtime
+		store.Delete(iter.Key())      // clear garbage collector
+	}
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
