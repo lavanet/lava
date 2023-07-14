@@ -97,6 +97,9 @@ import (
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflictmoduletypes "github.com/lavanet/lava/x/conflict/types"
+	downtimemodule "github.com/lavanet/lava/x/downtime"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
+	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
 	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -227,6 +230,7 @@ var (
 		projectsmodule.AppModuleBasic{},
 		protocolmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
+		downtimemodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -326,6 +330,7 @@ func New(
 		conflictmoduletypes.StoreKey,
 		projectsmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
+		downtimemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -530,6 +535,10 @@ func New(
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
 
+	// downtime module
+	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName))
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -577,6 +586,7 @@ func New(
 		projectsModule,
 		plansModule,
 		protocolModule,
+		downtimeModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -602,6 +612,7 @@ func New(
 		epochstoragemoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
+		downtimemoduletypes.ModuleName, // downtime needs to run before pairing
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
@@ -636,7 +647,8 @@ func New(
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName)
+		paramstypes.ModuleName,
+		downtimemoduletypes.ModuleName) // downtime has no end block but module manager requires it.
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -660,6 +672,7 @@ func New(
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		subscriptionmoduletypes.ModuleName,
+		downtimemoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
@@ -922,6 +935,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(projectsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(protocolmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
+	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
