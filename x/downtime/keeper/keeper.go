@@ -88,16 +88,51 @@ func (k Keeper) GetDowntime(ctx sdk.Context, height uint64) (time.Duration, bool
 	if bz == nil {
 		return 0, false
 	}
+	return k.unmarshalDuration(bz), true
+}
+
+func (k Keeper) unmarshalDuration(bz []byte) time.Duration {
 	protoDuration := &gogowellknown.Duration{}
 	k.cdc.MustUnmarshal(bz, protoDuration)
 	stdDuration, err := gogowellknown.DurationFromProto(protoDuration)
 	if err != nil {
 		panic(err)
 	}
-	return stdDuration, true
+	return stdDuration
+}
+
+// HadDowntimeBetween will return true if we had downtimes between the provided heights.
+// The query is inclusive on both ends. The duration returned is the total downtime duration.
+func (k Keeper) HadDowntimeBetween(ctx sdk.Context, startHeight, endHeight uint64) (bool, time.Duration) {
+	if startHeight > endHeight {
+		panic("start height must be less than or equal to end height")
+	}
+
+	endHeightForQuery := endHeight + 1 // NOTE: KVStore Iterator end is exclusive, so we need to add 1.
+	iter := ctx.KVStore(k.storeKey).
+		Iterator(
+			types.GetDowntimeKey(startHeight),
+			types.GetDowntimeKey(endHeightForQuery),
+		)
+	defer iter.Close()
+	// if iter is not valid then there are no downtimes between the provided heights.
+	if !iter.Valid() {
+		return false, time.Duration(0)
+	}
+	// we had downtimes.
+	totalDowntime := time.Duration(0)
+	for ; iter.Valid(); iter.Next() {
+		totalDowntime += k.unmarshalDuration(iter.Value())
+	}
+	return true, totalDowntime
 }
 
 // ------ STATE END -------
+
+// RecordDowntime will record a downtime for the current block
+func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
+	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
+}
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// we fetch the last block time
@@ -115,7 +150,8 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// using the max downtime duration parameter.
 	params := k.GetParams(ctx)
 	maxDowntimeDuration := params.DowntimeDuration
-	if ctx.BlockTime().Sub(lastBlockTime) < maxDowntimeDuration {
+	elapsedDuration := ctx.BlockTime().Sub(lastBlockTime)
+	if elapsedDuration < maxDowntimeDuration {
 		// if the current block time is less than the max downtime duration
 		// then we just store the current block time and exit.
 		k.SetLastBlockTime(ctx)
@@ -123,5 +159,5 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	}
 	// if the current block time is greater than the max downtime duration
 	// it means that we had a downtime period and we need to record it.
-	panic("TODO: record downtime period")
+	k.RecordDowntime(ctx, elapsedDuration)
 }

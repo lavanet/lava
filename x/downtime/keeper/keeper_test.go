@@ -49,3 +49,30 @@ func TestDowntime(t *testing.T) {
 	_, ok = keeper.GetDowntime(ctx, 2)
 	require.False(t, ok)
 }
+
+func TestHadDowntimes(t *testing.T) {
+	app, ctx := app.TestSetup()
+	keeper := app.DowntimeKeeper
+
+	// no downtime
+	has, _ := keeper.HadDowntimeBetween(ctx, 1, 2)
+	require.False(t, has)
+
+	// set downtime
+	keeper.SetDowntime(ctx, 1, 1*time.Minute)
+	// set another downtime
+	keeper.SetDowntime(ctx, 2, 1*time.Minute)
+	has, duration := keeper.HadDowntimeBetween(ctx, 1, 2)
+	require.True(t, has)
+	require.Equal(t, 2*time.Minute, duration)
+
+	// test same block
+	has, duration = keeper.HadDowntimeBetween(ctx, 1, 1)
+	require.True(t, has)
+	require.Equal(t, 1*time.Minute, duration)
+
+	// out of range
+	has, duration = keeper.HadDowntimeBetween(ctx, 1, 3)
+	require.True(t, has)
+	require.Equal(t, 2*time.Minute, duration)
+}
