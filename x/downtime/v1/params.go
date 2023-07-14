@@ -37,3 +37,8 @@ func validateDowntimeDuration(value interface{}) error {
 	}
 	return nil
 }
+
+// ParamKeyTable the param key table for launch module
+func ParamKeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+}
