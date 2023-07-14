@@ -76,3 +76,40 @@ func TestHadDowntimes(t *testing.T) {
 	require.True(t, has)
 	require.Equal(t, 2*time.Minute, duration)
 }
+
+func TestBeginBlock(t *testing.T) {
+	app, ctx := app.TestSetup()
+	currHeight := int64(1)
+	currTime := time.Now().UTC()
+	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+	keeper := app.DowntimeKeeper
+	keeper.SetParams(ctx, v1.DefaultParams())
+
+	// start with no block time recorded as of now
+	keeper.BeginBlock(ctx)
+	lbt, ok := keeper.GetLastBlockTime(ctx)
+	require.True(t, ok)
+	require.Equal(t, currTime, lbt)
+
+	// move into next block
+	currHeight++
+	currTime = currTime.Add(time.Minute)
+	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+
+	// run begin block again to check if block time is updated
+	keeper.BeginBlock(ctx)
+	lbt, ok = keeper.GetLastBlockTime(ctx)
+	require.True(t, ok)
+	require.Equal(t, currTime, lbt)
+
+	// move into next block –– forcing a downtime
+	currHeight++
+	currTime = currTime.Add(keeper.GetParams(ctx).DowntimeDuration)
+	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+
+	// run begin block again to check if downtime is recorded
+	keeper.BeginBlock(ctx)
+	hadDowntimes, duration := keeper.HadDowntimeBetween(ctx, 0, uint64(currHeight+1))
+	require.True(t, hadDowntimes)
+	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
+}
