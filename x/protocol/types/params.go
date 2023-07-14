@@ -44,17 +44,9 @@ const (
 var latestParams Params = DefaultParams()
 
 // UpdateLatestParams updates the local (in memory) copy of the params from the store
-func UpdateLatestParams(params Params) bool {
-	if params != latestParams {
-		latestParams = params
-		return true
-	}
-	return false
+func UpdateLatestParams(params Params) {
+	latestParams = params
 }
-
-const (
-	ParamChangeEventName = "protocol_params_change_event"
-)
 
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {

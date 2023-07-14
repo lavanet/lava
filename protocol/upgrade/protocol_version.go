@@ -1,6 +1,7 @@
 package upgrade
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,24 +44,33 @@ func (um *UpgradeManager) SetProtocolVersion(newVersion *protocoltypes.Version) 
 }
 
 func BuildVersionFromParamChangeEvent(event terderminttypes.Event) bool {
-	expectedVersionKeys := map[string]bool{
-		"Version.ProviderTarget": false,
-		"Version.ProviderMin":    false,
-		"Version.ConsumerTarget": false,
-		"Version.ConsumerMin":    false,
-	}
+	foundVersionParam := false
+	var versionValue []byte
+
 	for _, attribute := range event.Attributes {
 		key := string(attribute.Key)
-		if _, ok := expectedVersionKeys[key]; ok {
-			expectedVersionKeys[key] = true
+		value := string(attribute.Value)
+
+		if key == "param" {
+			if value == "Version" {
+				foundVersionParam = true
+			} else {
+				// Reset the flag if we encounter a "param" not equal to "Version"
+				foundVersionParam = false
+			}
+		} else if key == "value" && foundVersionParam {
+			versionValue = attribute.Value
+			break
 		}
 	}
-	for _, found := range expectedVersionKeys {
-		if !found {
-			return false
-		}
+	// if versionValue not found, return false
+	if versionValue == nil {
+		return false
 	}
-	return true
+	var version *ProtocolVersion
+	// We are making sure that proposal value can be unmarshalled with ProtocolVersion type
+	err := json.Unmarshal(versionValue, &version)
+	return err == nil
 }
 
 // helper function to parse version major/middle/minor fields

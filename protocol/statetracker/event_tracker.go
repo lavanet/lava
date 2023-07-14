@@ -74,7 +74,7 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 	et.lock.RLock()
 	defer et.lock.RUnlock()
 	for _, event := range et.blockResults.EndBlockEvents {
-		if event.Type == utils.EventPrefix+"protocol_params_change_event" {
+		if event.Type == utils.EventPrefix+"param_change" {
 			updated = upgrade.BuildVersionFromParamChangeEvent(event)
 		}
 	}
