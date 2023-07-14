@@ -73,6 +73,30 @@ func (k Keeper) SetLastBlockTime(ctx sdk.Context) {
 	store.Set(types.LastBlockTimeKey, bz)
 }
 
+func (k Keeper) SetDowntime(ctx sdk.Context, height uint64, duration time.Duration) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetDowntimeKey(height)
+	value := gogowellknown.DurationProto(duration)
+	bz := k.cdc.MustMarshal(value)
+	store.Set(key, bz)
+}
+
+func (k Keeper) GetDowntime(ctx sdk.Context, height uint64) (time.Duration, bool) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetDowntimeKey(height)
+	bz := store.Get(key)
+	if bz == nil {
+		return 0, false
+	}
+	protoDuration := &gogowellknown.Duration{}
+	k.cdc.MustUnmarshal(bz, protoDuration)
+	stdDuration, err := gogowellknown.DurationFromProto(protoDuration)
+	if err != nil {
+		panic(err)
+	}
+	return stdDuration, true
+}
+
 // ------ STATE END -------
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
