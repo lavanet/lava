@@ -11,6 +11,10 @@ import (
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
+const (
+	GarbageCollectionDuration = 24 * time.Hour * 30 // 30 days
+)
+
 func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -146,21 +150,30 @@ func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcT
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
 	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
+	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), ctx.BlockTime().Add(GarbageCollectionDuration))
 }
 
 // GarbageCollectDowntimes will garbage collect downtimes.
 func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	iter := store.Iterator(types.GetDowntimeGarbageKey(time.Time{}), types.GetDowntimeGarbageKey(ctx.BlockTime()))
+	iter := store.Iterator(
+		types.GetDowntimeGarbageKey(time.Unix(0, 0)),
+		types.GetDowntimeGarbageKey(ctx.BlockTime()))
+
 	defer iter.Close()
+	keysToDelete := make([][]byte, 0) // this guarantees that we don't delete keys while iterating.
 	for ; iter.Valid(); iter.Next() {
 		height := sdk.BigEndianToUint64(iter.Value())
 		k.DeleteDowntime(ctx, height) // clear downtime
-		store.Delete(iter.Key())      // clear garbage collector
+		keysToDelete = append(keysToDelete, iter.Key())
+	}
+	for _, key := range keysToDelete {
+		store.Delete(key)
 	}
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.GarbageCollectDowntimes(ctx)
 	// we fetch the last block time
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
 	// if no last block time is known then it means that

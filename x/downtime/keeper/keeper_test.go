@@ -4,7 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
+	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	"github.com/stretchr/testify/require"
 )
@@ -78,10 +82,13 @@ func TestHadDowntimes(t *testing.T) {
 }
 
 func TestBeginBlock(t *testing.T) {
+	// anonymous function to move into next block with provided duration
+	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
+		return ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
+	}
+
 	app, ctx := app.TestSetup()
-	currHeight := int64(1)
-	currTime := time.Now().UTC()
-	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
 	keeper := app.DowntimeKeeper
 	keeper.SetParams(ctx, v1.DefaultParams())
 
@@ -89,27 +96,38 @@ func TestBeginBlock(t *testing.T) {
 	keeper.BeginBlock(ctx)
 	lbt, ok := keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, currTime, lbt)
+	require.Equal(t, ctx.BlockTime(), lbt)
 
 	// move into next block
-	currHeight++
-	currTime = currTime.Add(time.Minute)
-	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+	ctx = nextBlock(ctx, 1*time.Minute)
 
 	// run begin block again to check if block time is updated
 	keeper.BeginBlock(ctx)
 	lbt, ok = keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, currTime, lbt)
+	require.Equal(t, ctx.BlockTime(), lbt)
 
 	// move into next block –– forcing a downtime
-	currHeight++
-	currTime = currTime.Add(keeper.GetParams(ctx).DowntimeDuration)
-	ctx = ctx.WithBlockTime(currTime).WithBlockHeight(currHeight)
+	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
 
 	// run begin block again to check if downtime is recorded
 	keeper.BeginBlock(ctx)
-	hadDowntimes, duration := keeper.HadDowntimeBetween(ctx, 0, uint64(currHeight+1))
+	hadDowntimes, duration := keeper.HadDowntimeBetween(ctx, 0, uint64(ctx.BlockHeight()))
 	require.True(t, hadDowntimes)
 	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
+
+	// now check garbage collection
+	// we extend the downtime duration in order not to have another downtime
+	// since we're making time elapse by a lot in order to trigger garbage collection!
+	keeper.SetParams(ctx, v1.Params{DowntimeDuration: downtimekeeper.GarbageCollectionDuration*2 + keeper.GetParams(ctx).DowntimeDuration})
+	ctx = nextBlock(ctx, downtimekeeper.GarbageCollectionDuration+1*time.Second)
+	keeper.BeginBlock(ctx)
+	_, ok = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()-1)) // currHeight-1 because we're checking the downtime of the previous block
+	require.False(t, ok)
+	// now we check the garbage collection store prefix, which should be empty
+	sk := app.GetKey(types.ModuleName)
+	store := prefix.NewStore(ctx.KVStore(sk), types.DowntimeHeightGarbageKey)
+	iter := store.Iterator(nil, nil)
+	defer iter.Close()
+	require.False(t, iter.Valid())
 }
