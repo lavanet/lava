@@ -25,6 +25,15 @@ type Keeper struct {
 	paramstore paramtypes.Subspace
 }
 
+func (k Keeper) GetParams(ctx sdk.Context) (params v1.Params) {
+	k.paramstore.GetParamSet(ctx, &params)
+	return
+}
+
+func (k Keeper) SetParams(ctx sdk.Context, params v1.Params) {
+	k.paramstore.SetParamSet(ctx, &params)
+}
+
 func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 	return new(v1.GenesisState), nil
 }
