@@ -77,7 +77,7 @@ func LoggingLevel(logLevel string) {
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
-func GetLogger() zerolog.Logger {
+func GetZeroLogger() zerolog.Logger {
 	if JsonFormat {
 		return zerologlog.Output(os.Stderr)
 	} else {
@@ -87,7 +87,7 @@ func GetLogger() zerolog.Logger {
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerologlog.Logger = GetLogger()
+	zerologlog.Logger = GetZeroLogger()
 
 	var logEvent *zerolog.Event
 	switch severity {
