@@ -109,24 +109,6 @@ func (ts *tester) delProjectKeys(index, creator string, projectKeys ...types.Pro
 	return err
 }
 
-func (ts *tester) txSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetPolicyResponse, error) {
-	msg := types.MsgSetPolicy{
-		Creator: subkey,
-		Policy:  policy,
-		Project: projectID,
-	}
-	return ts.Servers.ProjectServer.SetPolicy(ts.GoCtx, &msg)
-}
-
-func (ts *tester) txSetSubscriptionPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetSubscriptionPolicyResponse, error) {
-	msg := types.MsgSetSubscriptionPolicy{
-		Creator:  subkey,
-		Policy:   policy,
-		Projects: []string{projectID},
-	}
-	return ts.Servers.ProjectServer.SetSubscriptionPolicy(ts.GoCtx, &msg)
-}
-
 func TestCreateDefaultProject(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
@@ -577,7 +559,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			}
 
 			if testAdminPolicy {
-				_, err := ts.txSetProjectPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetProjectPolicy(tt.projectID, tt.creator, newPolicy)
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -588,7 +570,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 					require.NotNil(t, err)
 				}
 			} else {
-				_, err := ts.txSetSubscriptionPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetSubscriptionPolicy(tt.projectID, tt.creator, newPolicy)
 				if tt.setSubscriptionPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -1042,7 +1024,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.txSetProjectPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetProjectPolicy(admProject.Index, sub1Addr, policy)
 			if tt.projPolicyValid {
 				require.Nil(t, err)
 			} else {
@@ -1052,7 +1034,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.subMode
 			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.txSetSubscriptionPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(admProject.Index, sub1Addr, policy)
 			if tt.subPolicyValid {
 				require.Nil(t, err)
 			} else {

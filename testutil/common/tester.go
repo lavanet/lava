@@ -214,6 +214,24 @@ func (ts *Tester) TxSubscriptionDelProject(creator string, projectID string) err
 	return err
 }
 
+func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
+	msg := projectstypes.MsgSetSubscriptionPolicy{
+		Creator:  subkey,
+		Policy:   policy,
+		Projects: []string{projectID},
+	}
+	return ts.Servers.ProjectServer.SetSubscriptionPolicy(ts.GoCtx, &msg)
+}
+
+func (ts *Tester) TxProjectSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
+	msg := projectstypes.MsgSetPolicy{
+		Creator: subkey,
+		Policy:  policy,
+		Project: projectID,
+	}
+	return ts.Servers.ProjectServer.SetPolicy(ts.GoCtx, &msg)
+}
+
 // QuerySubscriptionListProjects: implement 'q subscription list-projects'
 func (ts *Tester) QuerySubscriptionListProjects(subkey string) (*subscriptiontypes.QueryListProjectsResponse, error) {
 	msg := &subscriptiontypes.QueryListProjectsRequest{
