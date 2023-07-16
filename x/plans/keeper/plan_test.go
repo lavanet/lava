@@ -22,10 +22,6 @@ func newTester(t *testing.T) *tester {
 	return &tester{Tester: *common.NewTester(t)}
 }
 
-func (ts *tester) findPlan(index string, block uint64) (types.Plan, bool) {
-	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
-}
-
 func TestPlanEntryGet(t *testing.T) {
 	ts := newTester(t)
 
@@ -35,7 +31,7 @@ func TestPlanEntryGet(t *testing.T) {
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
-	res, found := ts.findPlan(plan.Index, ts.BlockHeight())
+	res, found := ts.FindPlan(plan.Index, ts.BlockHeight())
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&plan),
@@ -102,7 +98,7 @@ func TestAddAndUpdateOtherEpoch(t *testing.T) {
 	require.Equal(t, 1, len(indices))
 
 	// updated plan should be the latest
-	plan, found := ts.findPlan(indices[0], ts.BlockHeight())
+	plan, found := ts.FindPlan(indices[0], ts.BlockHeight())
 	require.True(t, found)
 	require.Equal(t, plans[1].OveruseRate, plan.GetOveruseRate())
 }
@@ -118,7 +114,7 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
 	require.Nil(t, err)
 
-	plan, found := ts.findPlan(plans[0].Index, ts.BlockHeight())
+	plan, found := ts.FindPlan(plans[0].Index, ts.BlockHeight())
 	require.True(t, found)
 	require.Equal(t, plans[1].GetOveruseRate(), plan.GetOveruseRate())
 }
@@ -260,10 +256,10 @@ func TestPlansStaleRemoval(t *testing.T) {
 	ts.AdvanceEpochUntilStale()
 
 	// the first two plans should not be deleted (refcount > 0)
-	res, found = ts.findPlan(plans[0].Index, plans[0].Block)
+	res, found = ts.FindPlan(plans[0].Index, plans[0].Block)
 	require.True(t, found)
 	require.Equal(t, plans[0], res)
-	res, found = ts.findPlan(plans[1].Index, plans[1].Block)
+	res, found = ts.FindPlan(plans[1].Index, plans[1].Block)
 	require.True(t, found)
 	require.Equal(t, plans[1], res)
 
@@ -274,13 +270,13 @@ func TestPlansStaleRemoval(t *testing.T) {
 	ts.AdvanceEpochUntilStale()
 
 	// check that the old plans were removed
-	_, found = ts.findPlan(plans[0].Index, plans[0].Block)
+	_, found = ts.FindPlan(plans[0].Index, plans[0].Block)
 	require.False(t, found)
-	_, found = ts.findPlan(plans[1].Index, plans[1].Block)
+	_, found = ts.FindPlan(plans[1].Index, plans[1].Block)
 	require.False(t, found)
 
 	// verify that the newest is still there
-	res, found = ts.findPlan(plan.Index, plan.Block)
+	res, found = ts.FindPlan(plan.Index, plan.Block)
 	require.True(t, found)
 	require.Equal(t, plan, res)
 }
@@ -306,7 +302,7 @@ func TestAddAndDelete(t *testing.T) {
 
 	// delete only takes effect next epoch, so for now still visible
 	block2 := ts.BlockHeight()
-	_, found := ts.findPlan(index, block2)
+	_, found := ts.FindPlan(index, block2)
 	require.True(t, found)
 
 	// advance an epoch (so the delete will take effect)
@@ -319,17 +315,17 @@ func TestAddAndDelete(t *testing.T) {
 	require.False(t, found)
 
 	// but the plan is not stale yet, so can be found (until block2 + ~epoch)
-	_, found = ts.findPlan(index, block1)
+	_, found = ts.FindPlan(index, block1)
 	require.True(t, found)
-	_, found = ts.findPlan(index, block2+30)
+	_, found = ts.FindPlan(index, block2+30)
 	require.False(t, found)
 
 	// advance epoch until the plan becomes stale
 	ts.AdvanceEpochUntilStale()
 
-	_, found = ts.findPlan(index, block1)
+	_, found = ts.FindPlan(index, block1)
 	require.False(t, found)
-	_, found = ts.findPlan(index, block2)
+	_, found = ts.FindPlan(index, block2)
 	require.False(t, found)
 
 	// fail attempt to delete the plan again

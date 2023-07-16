@@ -30,10 +30,6 @@ func (ts *tester) getSubscription(consumer string) (types.Subscription, bool) {
 	return ts.Keepers.Subscription.GetSubscription(ts.Ctx, consumer)
 }
 
-func (ts *tester) findPlan(index string, block uint64) (planstypes.Plan, bool) {
-	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
-}
-
 func TestCreateSubscription(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(2, 0, 4) // 2 sub, 0 adm, 4 dev
@@ -233,7 +229,7 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(9), sub.DurationTotal)
 
 	// get the subscription's plan and make sure it uses the old plan
-	plan, found = ts.findPlan(sub.PlanIndex, sub.PlanBlock)
+	plan, found = ts.FindPlan(sub.PlanIndex, sub.PlanBlock)
 	require.True(t, found)
 	require.Equal(t, cuPerEpoch, plan.PlanPolicy.EpochCuLimit)
 

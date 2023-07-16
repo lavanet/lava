@@ -144,6 +144,12 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 	return spec
 }
 
+// keeper helpers
+
+func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
+	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
+}
+
 // proposals, transactions, queries
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
