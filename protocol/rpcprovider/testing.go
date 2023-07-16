@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
@@ -25,6 +23,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingcli "github.com/lavanet/lava/x/pairing/client/cli"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	grpc "google.golang.org/grpc"
@@ -244,7 +243,7 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 			ctx := context.Background()
 			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			caCert, err := ioutil.ReadFile(cert)
+			caCert, err := os.ReadFile(cert)
 			if err != nil {
 				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
 			}

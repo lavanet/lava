@@ -3,7 +3,6 @@ package reliabilitymanager
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/exp/slices"

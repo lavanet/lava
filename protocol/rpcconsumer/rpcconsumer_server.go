@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -18,6 +17,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 

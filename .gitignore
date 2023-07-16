@@ -22,6 +22,7 @@ vue/dist
 # Logs and debug
 scripts/automation_scripts/automation_results*
 testutil/e2e/logs/
+testutil/e2e/rewardServerStorage/
 testutil/debugging/
 
 # Misc
@@ -54,3 +55,7 @@ ecosystem/lava-sdk/bin/examples/restAPI_test.js
 ecosystem/lava-sdk/bin/examples/tendermintRPC_test.js
 ecosystem/lava-sdk/bin/examples/jsonRPC_badge_test.js
 ecosystem/lava-sdk/pairingList.json
+
+# Reward server ignores
+.storage/
+badger_test

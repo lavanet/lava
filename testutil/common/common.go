@@ -81,16 +81,25 @@ func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepe
 }
 
 func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+	return BuildRelayRequestWithBadge(ctx, provider, contentHash, uint64(1), cuSum, spec, qos, nil)
+}
+
+func BuildRelayRequestWithSession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+	return BuildRelayRequestWithBadge(ctx, provider, contentHash, sessionId, cuSum, spec, qos, nil)
+}
+
+func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport, badge *types.Badge) *types.RelaySession {
 	relaySession := &types.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
-		SessionId:   uint64(1),
+		SessionId:   sessionId,
 		SpecId:      spec,
 		CuSum:       cuSum,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
 		QosReport:   qos,
 		LavaChainId: sdk.UnwrapSDKContext(ctx).BlockHeader().ChainID,
+		Badge:       badge,
 	}
 	if qos != nil {
 		qos.ComputeQoS()
