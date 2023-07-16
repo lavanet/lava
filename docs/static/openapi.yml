@@ -30064,7 +30064,67 @@ paths:
             type: object
             properties:
               policy:
-                type: string
+                type: object
+                properties:
+                  chain_policies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        chain_id:
+                          type: string
+                        apis:
+                          type: array
+                          items:
+                            type: string
+                        collections:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              api_interface:
+                                type: string
+                              internal_path:
+                                type: string
+                              type:
+                                type: string
+                              add_on:
+                                type: string
+                  geolocation_profile:
+                    type: string
+                    format: uint64
+                  total_cu_limit:
+                    type: string
+                    format: uint64
+                  epoch_cu_limit:
+                    type: string
+                    format: uint64
+                  max_providers_to_pair:
+                    type: string
+                    format: uint64
+                  selected_providers_mode:
+                    type: string
+                    enum:
+                      - ALLOWED
+                      - MIXED
+                      - EXCLUSIVE
+                      - DISABLED
+                    default: ALLOWED
+                    description: |-
+                      - ALLOWED: no providers restrictions
+                       - MIXED: use the selected providers mixed with randomly chosen providers
+                       - EXCLUSIVE: use only the selected providers
+                       - DISABLED: selected providers feature is disabled
+                    title: >-
+                      the enum below determines the pairing algorithm's
+                      behaviour with the selected providers feature
+                  selected_providers:
+                    type: array
+                    items:
+                      type: string
+                title: >-
+                  protobuf expected in YAML format: used "moretags" to simplify
+                  parsing
         default:
           description: An unexpected error response.
           schema:
@@ -30087,6 +30147,10 @@ paths:
         - name: consumer
           in: path
           required: true
+          type: string
+        - name: spec_id
+          in: query
+          required: false
           type: string
       tags:
         - Query
@@ -55661,7 +55725,65 @@ definitions:
     type: object
     properties:
       policy:
-        type: string
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
     type: object
     properties:
@@ -56010,6 +56132,93 @@ definitions:
               type: string
             add_on:
               type: string
+  lavanet.lava.plans.Policy:
+    type: object
+    properties:
+      chain_policies:
+        type: array
+        items:
+          type: object
+          properties:
+            chain_id:
+              type: string
+            apis:
+              type: array
+              items:
+                type: string
+            collections:
+              type: array
+              items:
+                type: object
+                properties:
+                  api_interface:
+                    type: string
+                  internal_path:
+                    type: string
+                  type:
+                    type: string
+                  add_on:
+                    type: string
+      geolocation_profile:
+        type: string
+        format: uint64
+      total_cu_limit:
+        type: string
+        format: uint64
+      epoch_cu_limit:
+        type: string
+        format: uint64
+      max_providers_to_pair:
+        type: string
+        format: uint64
+      selected_providers_mode:
+        type: string
+        enum:
+          - ALLOWED
+          - MIXED
+          - EXCLUSIVE
+          - DISABLED
+        default: ALLOWED
+        description: |-
+          - ALLOWED: no providers restrictions
+           - MIXED: use the selected providers mixed with randomly chosen providers
+           - EXCLUSIVE: use only the selected providers
+           - DISABLED: selected providers feature is disabled
+        title: >-
+          the enum below determines the pairing algorithm's behaviour with the
+          selected providers feature
+      selected_providers:
+        type: array
+        items:
+          type: string
+    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.plans.SELECTED_PROVIDERS_MODE:
+    type: string
+    enum:
+      - ALLOWED
+      - MIXED
+      - EXCLUSIVE
+      - DISABLED
+    default: ALLOWED
+    description: |-
+      - ALLOWED: no providers restrictions
+       - MIXED: use the selected providers mixed with randomly chosen providers
+       - EXCLUSIVE: use only the selected providers
+       - DISABLED: selected providers feature is disabled
+    title: >-
+      the enum below determines the pairing algorithm's behaviour with the
+      selected providers feature
+  lavanet.lava.spec.CollectionData:
+    type: object
+    properties:
+      api_interface:
+        type: string
+      internal_path:
+        type: string
+      type:
+        type: string
+      add_on:
+        type: string
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -56131,66 +56340,6 @@ definitions:
             items:
               type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
-  lavanet.lava.plans.Policy:
-    type: object
-    properties:
-      chain_policies:
-        type: array
-        items:
-          type: object
-          properties:
-            chain_id:
-              type: string
-            apis:
-              type: array
-              items:
-                type: string
-            collections:
-              type: array
-              items:
-                type: object
-                properties:
-                  api_interface:
-                    type: string
-                  internal_path:
-                    type: string
-                  type:
-                    type: string
-                  add_on:
-                    type: string
-      geolocation_profile:
-        type: string
-        format: uint64
-      total_cu_limit:
-        type: string
-        format: uint64
-      epoch_cu_limit:
-        type: string
-        format: uint64
-      max_providers_to_pair:
-        type: string
-        format: uint64
-      selected_providers_mode:
-        type: string
-        enum:
-          - ALLOWED
-          - MIXED
-          - EXCLUSIVE
-          - DISABLED
-        default: ALLOWED
-        description: |-
-          - ALLOWED: no providers restrictions
-           - MIXED: use the selected providers mixed with randomly chosen providers
-           - EXCLUSIVE: use only the selected providers
-           - DISABLED: selected providers feature is disabled
-        title: >-
-          the enum below determines the pairing algorithm's behaviour with the
-          selected providers feature
-      selected_providers:
-        type: array
-        items:
-          type: string
-    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
@@ -56332,33 +56481,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.plans.SELECTED_PROVIDERS_MODE:
-    type: string
-    enum:
-      - ALLOWED
-      - MIXED
-      - EXCLUSIVE
-      - DISABLED
-    default: ALLOWED
-    description: |-
-      - ALLOWED: no providers restrictions
-       - MIXED: use the selected providers mixed with randomly chosen providers
-       - EXCLUSIVE: use only the selected providers
-       - DISABLED: selected providers feature is disabled
-    title: >-
-      the enum below determines the pairing algorithm's behaviour with the
-      selected providers feature
-  lavanet.lava.spec.CollectionData:
-    type: object
-    properties:
-      api_interface:
-        type: string
-      internal_path:
-        type: string
-      type:
-        type: string
-      add_on:
-        type: string
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
   lavanet.lava.projects.MsgDelKeysResponse:

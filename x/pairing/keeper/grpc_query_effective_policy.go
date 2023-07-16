@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -18,8 +19,13 @@ func (k Keeper) EffectivePolicy(goCtx context.Context, req *types.QueryEffective
 
 	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, req.Consumer, uint64(ctx.BlockHeight()))
 	if err != nil {
-		return nil, err
+		origErr := err
+		// support giving a project-id
+		project, err = k.projectsKeeper.GetProjectForBlock(ctx, req.Consumer, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return nil, fmt.Errorf("failed getting project for key %s errors %s, %s", req.Consumer, origErr, err)
+		}
 	}
-	strictestPolicy, _, err := k.getProjectStrictestPolicy(ctx, project, req.SpecId)
+	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecId)
 	return &types.QueryEffectivePolicyResponse{Policy: &strictestPolicy}, err
 }

@@ -360,11 +360,12 @@ func TestAddonPairing(t *testing.T) {
 		Collections: []spectypes.CollectionData{mandatoryAddon, optional},
 	}
 	templates := []struct {
-		name              string
-		planChainPolicy   *planstypes.ChainPolicy
-		subscChainPolicy  *planstypes.ChainPolicy
-		projChainPolicy   *planstypes.ChainPolicy
-		expectedProviders int
+		name                      string
+		planChainPolicy           *planstypes.ChainPolicy
+		subscChainPolicy          *planstypes.ChainPolicy
+		projChainPolicy           *planstypes.ChainPolicy
+		expectedProviders         int
+		expectedStrictestPolicies []string
 	}{
 		{
 			name:              "empty",
@@ -387,75 +388,88 @@ func TestAddonPairing(t *testing.T) {
 			expectedProviders: 12, // stub provider also gets picked
 		},
 		{
-			name:              "addon in plan",
-			planChainPolicy:   mandatoryAddonChainPolicy,
-			subscChainPolicy:  nil,
-			projChainPolicy:   nil,
-			expectedProviders: 6,
+			name:                      "addon in plan",
+			planChainPolicy:           mandatoryAddonChainPolicy,
+			subscChainPolicy:          nil,
+			projChainPolicy:           nil,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"addon"},
 		},
 		{
-			name:              "addon in subsc",
-			subscChainPolicy:  mandatoryAddonChainPolicy,
-			expectedProviders: 6,
+			name:                      "addon in subsc",
+			subscChainPolicy:          mandatoryAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"addon"},
 		},
 		{
-			name:              "addon in proj",
-			projChainPolicy:   mandatoryAddonChainPolicy,
-			expectedProviders: 6,
+			name:                      "addon in proj",
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"addon"},
 		},
 		{
-			name:              "optional in plan",
-			planChainPolicy:   optionalAddonChainPolicy,
-			expectedProviders: 7,
+			name:                      "optional in plan",
+			planChainPolicy:           optionalAddonChainPolicy,
+			expectedProviders:         7,
+			expectedStrictestPolicies: []string{"optional"},
 		},
 		{
-			name:              "optional in subsc",
-			subscChainPolicy:  optionalAddonChainPolicy,
-			expectedProviders: 7,
+			name:                      "optional in subsc",
+			subscChainPolicy:          optionalAddonChainPolicy,
+			expectedProviders:         7,
+			expectedStrictestPolicies: []string{"optional"},
 		},
 		{
-			name:              "optional in proj",
-			projChainPolicy:   optionalAddonChainPolicy,
-			expectedProviders: 7,
+			name:                      "optional in proj",
+			projChainPolicy:           optionalAddonChainPolicy,
+			expectedProviders:         7,
+			expectedStrictestPolicies: []string{"optional"},
 		},
 		{
-			name:              "optional and addon in plan",
-			planChainPolicy:   optionalAndMandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in plan",
+			planChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional and addon in subsc",
-			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in subsc",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional and addon in proj",
-			projChainPolicy:   optionalAndMandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in proj",
+			projChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional and addon in plan, addon in subsc",
-			planChainPolicy:   optionalAndMandatoryAddonChainPolicy,
-			subscChainPolicy:  mandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in plan, addon in subsc",
+			planChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			subscChainPolicy:          mandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional and addon in subsc, addon in plan",
-			planChainPolicy:   mandatoryAddonChainPolicy,
-			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in subsc, addon in plan",
+			planChainPolicy:           mandatoryAddonChainPolicy,
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional and addon in subsc, addon in proj",
-			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
-			projChainPolicy:   mandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional and addon in subsc, addon in proj",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		{
-			name:              "optional in subsc, addon in proj",
-			subscChainPolicy:  optionalAndMandatoryAddonChainPolicy,
-			projChainPolicy:   mandatoryAddonChainPolicy,
-			expectedProviders: 4,
+			name:                      "optional in subsc, addon in proj",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 	}
 	mandatorySupportingEndpoints := []epochstoragetypes.Endpoint{{
@@ -581,6 +595,24 @@ func TestAddonPairing(t *testing.T) {
 
 			// get pairing of two consecutive epochs
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			project, err := ts.keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ts.ctx), adminProject.Index, uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+			require.NoError(t, err)
+			strictestPolicy, err := ts.keepers.Pairing.GetProjectStrictestPolicy(sdk.UnwrapSDKContext(ts.ctx), project, ts.spec.Index)
+			require.NoError(t, err)
+			if len(tt.expectedStrictestPolicies) > 0 {
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Collections))
+				addons := map[string]struct{}{}
+				for _, collection := range strictestPolicy.ChainPolicies[0].Collections {
+					if collection.AddOn != "" {
+						addons[collection.AddOn] = struct{}{}
+					}
+				}
+				for _, expected := range tt.expectedStrictestPolicies {
+					_, ok := addons[expected]
+					require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, strictestPolicy)
+				}
+			}
 
 			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
 				ChainID: ts.spec.Index,

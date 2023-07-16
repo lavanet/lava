@@ -126,11 +126,11 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
-
+	allowedCU = strictestPolicy.EpochCuLimit
 	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
@@ -149,10 +149,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, allowedCU, project.Index, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, uint64, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return planstypes.Policy{}, 0, err
+		return planstypes.Policy{}, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -165,21 +165,21 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
 	if !allowed {
-		return planstypes.Policy{}, 0, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
+		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
-
+	utils.LavaFormatError("BANANABIG,", nil, utils.Attribute{Key: "chainPolicy", Value: chainPolicy}, utils.Attribute{Key: "policies", Value: policies}, utils.Attribute{Key: "policiesLen", Value: len(policies)})
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, 0, err
+		return planstypes.Policy{}, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return planstypes.Policy{}, 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return planstypes.Policy{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
@@ -189,9 +189,11 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		SelectedProvidersMode: selectedProvidersMode,
 		SelectedProviders:     selectedProvidersList,
 		ChainPolicies:         []planstypes.ChainPolicy{chainPolicy},
+		EpochCuLimit:          allowedCUEpoch,
+		TotalCuLimit:          allowedCUTotal,
 	}
 
-	return strictestPolicy, allowedCU, nil
+	return strictestPolicy, nil
 }
 
 func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Policy) (planstypes.SELECTED_PROVIDERS_MODE, []string) {
@@ -242,7 +244,7 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) (allowedCUThisEpoch uint64, allowedCUTotal uint64) {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
@@ -257,7 +259,7 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 
 	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
 
-	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
+	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}), effectiveTotalCuOfProject
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
