@@ -3,7 +3,6 @@ package rpcprovider
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
@@ -32,6 +31,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -71,7 +71,7 @@ type RPCProvider struct {
 	lock                 sync.Mutex
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string) (err error) {
+func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -97,7 +97,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version)
 
 	// single reward server
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDB(rewardserver.NewLocalDB(rewardStoragePath)))
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
@@ -451,8 +451,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
+			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr)
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr, rewardStoragePath)
 			return err
 		},
 	}
@@ -469,6 +470,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
 
 	return cmdRPCProvider
 }

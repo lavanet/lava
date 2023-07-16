@@ -1,13 +1,13 @@
 package keeper_test
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/stretchr/testify/require"
 )
 

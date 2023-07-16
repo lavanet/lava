@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
@@ -22,6 +21,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

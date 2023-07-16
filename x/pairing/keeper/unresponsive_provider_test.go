@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"encoding/json"
-	"math/rand"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +9,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/stretchr/testify/require"
 )
 
