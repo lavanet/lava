@@ -72,8 +72,6 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
-	utils.LavaFormatDebug("Headers filtering", utils.Attribute{Key: "received", Value: metadata}, utils.Attribute{Key: "filtered", Value: retMeatadata})
-
 	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
 }
 
