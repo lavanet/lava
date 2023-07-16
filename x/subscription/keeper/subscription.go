@@ -47,7 +47,7 @@ func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
 	return k.subsFS.Export(ctx)
 }
 
-// ExportSubscriptions exports subscriptions timers data (for genesis)
+// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
 func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
 	return k.subsTS.Export(ctx)
 }
