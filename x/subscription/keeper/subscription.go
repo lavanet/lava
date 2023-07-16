@@ -47,9 +47,19 @@ func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
 	return k.subsFS.Export(ctx)
 }
 
+// ExportSubscriptions exports subscriptions timers data (for genesis)
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsTS.Export(ctx)
+}
+
 // InitSubscriptions imports subscriptions data (from genesis)
 func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
 	k.subsFS.Init(ctx, data)
+}
+
+// InitSubscriptions imports subscriptions timers data (from genesis)
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsTS.Init(ctx, data)
 }
 
 // GetSubscription returns the subscription of a given consumer
