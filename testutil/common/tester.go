@@ -144,7 +144,19 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 	return spec
 }
 
-// transactions and queries
+// proposals, transactions, queries
+
+func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
+	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+}
+
+func (ts *Tester) TxProposalDelPlans(indices ...string) error {
+	return testkeeper.SimulatePlansDelProposal(ts.Ctx, ts.Keepers.Plans, indices)
+}
+
+func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
+	return testkeeper.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, specs)
+}
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
 func (ts *Tester) TxSubscriptionBuy(creator, consumer string, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
