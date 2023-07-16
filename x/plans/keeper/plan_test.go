@@ -29,12 +29,11 @@ func (ts *tester) findPlan(index string, block uint64) (types.Plan, bool) {
 func TestPlanEntryGet(t *testing.T) {
 	ts := newTester(t)
 
-	ts.AddPlan("mock", common.CreateMockPlan())
-	plan := ts.Plan("mock")
-
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
-	require.Nil(t, err)
+	plan := common.CreateMockPlan()
 	plan.Block = ts.BlockHeight()
+
+	err := ts.TxProposalAddPlans(plan)
+	require.Nil(t, err)
 
 	res, found := ts.findPlan(plan.Index, ts.BlockHeight())
 	require.True(t, found)
@@ -91,12 +90,12 @@ func TestAddAndUpdateOtherEpoch(t *testing.T) {
 
 	// proposal with a plan
 	ts.AdvanceEpoch()
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans[0:1])
+	err := ts.TxProposalAddPlans(plans[0])
 	require.Nil(t, err)
 
 	// proposal with plan update
 	ts.AdvanceEpoch()
-	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans[1:2])
+	err = ts.TxProposalAddPlans(plans[1])
 	require.Nil(t, err)
 
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
@@ -231,7 +230,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	plans := ts.createTestPlans(1, true, 0)
 
 	// add 1st plan and keep a reference
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plans[0])
+	err := ts.TxProposalAddPlans(plans[0])
 	require.Nil(t, err)
 	plans[0].Block = ts.BlockHeight()
 	res, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
@@ -241,7 +240,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// add 2nd plan and keep a reference
-	err = ts.Keepers.Plans.AddPlan(ts.Ctx, plans[1])
+	err = ts.TxProposalAddPlans(plans[1])
 	require.Nil(t, err)
 	plans[1].Block = ts.BlockHeight()
 	res, found = ts.Keepers.Plans.GetPlan(ts.Ctx, plans[1].Index)
@@ -253,7 +252,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	// add 3rd plan
 	plan := plans[1]
 	plan.OveruseRate += 20
-	err = ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+	err = ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 	plan.Block = ts.BlockHeight()
 

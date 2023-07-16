@@ -8,7 +8,7 @@ import (
 )
 
 func CreateMockSpec() spectypes.Spec {
-	specName := "mockSpec"
+	specName := "mock_spec"
 	spec := spectypes.Spec{}
 	spec.Name = specName
 	spec.Index = specName
@@ -25,7 +25,7 @@ func CreateMockSpec() spectypes.Spec {
 
 func CreateMockPlan() plantypes.Plan {
 	plan := plantypes.Plan{
-		Index:                    "mockPlan",
+		Index:                    "mock_plan",
 		Description:              "plan for testing",
 		Type:                     "rpc",
 		Block:                    100,

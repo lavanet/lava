@@ -52,13 +52,13 @@ func TestCreateSubscription(t *testing.T) {
 		plan := ts.Plan("mock")
 		plan.Index += strconv.Itoa(i + 1)
 		plan.Block = ts.BlockHeight()
-		err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+		err := ts.TxProposalAddPlans(plan)
 		require.Nil(t, err)
 		plans = append(plans, plan)
 	}
 
 	// delete one plan, and advance to next epoch to take effect
-	err := ts.Keepers.Plans.DelPlan(ts.Ctx, plans[2].Index)
+	err := ts.TxProposalDelPlans(plans[2].Index)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -238,7 +238,7 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, cuPerEpoch, plan.PlanPolicy.EpochCuLimit)
 
 	// delete the plan, and try to renew the subscription again
-	err = ts.Keepers.Plans.DelPlan(ts.Ctx, plan.Index)
+	err = ts.TxProposalDelPlans(plan.Index)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -488,9 +488,10 @@ func TestPrice(t *testing.T) {
 			plan := ts.Plan("mock")
 			plan.AnnualDiscountPercentage = tt.discount
 			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
-			ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+			err := ts.TxProposalAddPlans(plan)
+			require.Nil(t, err)
 
-			_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.duration)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.duration)
 			require.Nil(t, err)
 
 			_, found := ts.getSubscription(sub1Addr)

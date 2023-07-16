@@ -256,7 +256,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	_, dev2Addr := ts.Account("dev2")
 
 	plan := ts.Plan("mock")
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
