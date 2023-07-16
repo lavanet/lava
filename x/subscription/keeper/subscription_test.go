@@ -259,7 +259,7 @@ func TestSubscriptionAdminProject(t *testing.T) {
 
 	// a newly created subscription is expected to have one default project,
 	// with the subscription address as its developer key
-	_, err = ts.Keepers.Projects.GetProjectDeveloperData(ts.Ctx, sub1Addr, ts.BlockHeight())
+	_, err = ts.GetProjectDeveloperData(sub1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 }
 
@@ -317,14 +317,14 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal-tt.usedCuPerProject)
 
 			// charge the project
-			proj, err := ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, tt.developer, block1)
+			proj, err := ts.GetProjectForDeveloper(tt.developer, block1)
 			require.Nil(t, err)
 			err = ts.Keepers.Projects.ChargeComputeUnitsToProject(
 				ts.Ctx, proj, block1, tt.usedCuPerProject)
 			require.Nil(t, err)
 
 			// verify that project used the CU
-			proj, err = ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, tt.developer, block1)
+			proj, err = ts.GetProjectForDeveloper(tt.developer, block1)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
 
@@ -348,13 +348,13 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			require.True(t, found)
 			require.Equal(t, sub.MonthCuLeft, sub.MonthCuTotal)
 
-			proj, err = ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, tt.developer, block1)
+			proj, err = ts.GetProjectForDeveloper(tt.developer, block1)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
-			proj, err = ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, tt.developer, block2)
+			proj, err = ts.GetProjectForDeveloper(tt.developer, block2)
 			require.Nil(t, err)
 			require.Equal(t, tt.usedCuPerProject, proj.UsedCu)
-			proj, err = ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, tt.developer, block3)
+			proj, err = ts.GetProjectForDeveloper(tt.developer, block3)
 			require.Nil(t, err)
 			require.Equal(t, uint64(0), proj.UsedCu)
 		})
@@ -541,7 +541,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 			err = ts.TxSubscriptionAddProject(tt.subscription, projectData)
 			if tt.success {
 				require.Nil(t, err)
-				proj, err := ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, ts.BlockHeight())
+				proj, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 				require.Nil(t, err)
 				require.Equal(t, tt.subscription, proj.Subscription)
 			} else {

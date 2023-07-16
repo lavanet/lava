@@ -150,6 +150,25 @@ func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
 }
 
+func (ts *Tester) GetProjectForBlock(projectID string, block uint64) (projectstypes.Project, error) {
+	return ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, block)
+}
+
+func (ts *Tester) GetProjectForDeveloper(devkey string, optional ...uint64) (projectstypes.Project, error) {
+	block := ts.BlockHeight()
+	if len(optional) > 1 {
+		panic("GetProjectForDeveloper: more than one optional arg")
+	}
+	if len(optional) > 0 {
+		block = optional[0]
+	}
+	return ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, devkey, block)
+}
+
+func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projectstypes.ProtoDeveloperData, error) {
+	return ts.Keepers.Projects.GetProjectDeveloperData(ts.Ctx, devkey, block)
+}
+
 // proposals, transactions, queries
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {

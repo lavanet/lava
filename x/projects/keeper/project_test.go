@@ -109,14 +109,6 @@ func (ts *tester) delProjectKeys(index, creator string, projectKeys ...types.Pro
 	return err
 }
 
-func (ts *tester) getProjectForBlock(projectID string, block uint64) (types.Project, error) {
-	return ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, block)
-}
-
-func (ts *tester) getProjectForDeveloper(devkey string) (types.Project, error) {
-	return ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, devkey, ts.BlockHeight())
-}
-
 func (ts *tester) txSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetPolicyResponse, error) {
 	msg := types.MsgSetPolicy{
 		Creator: subkey,
@@ -223,7 +215,7 @@ func TestCreateProject(t *testing.T) {
 
 	require.Equal(t, res1.Project, res2.Project)
 
-	_, err = ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, res1.Project.Index, ts.BlockHeight())
+	_, err = ts.GetProjectForBlock(res1.Project.Index, ts.BlockHeight())
 	require.Nil(t, err)
 
 	// there should be one project key
@@ -294,7 +286,7 @@ func TestDeleteProject(t *testing.T) {
 
 	ts.AdvanceBlock()
 
-	_, err = ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, ts.BlockHeight())
+	_, err = ts.GetProjectForBlock(projectID, ts.BlockHeight())
 	require.Nil(t, err)
 
 	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, "nonsense")
@@ -303,12 +295,12 @@ func TestDeleteProject(t *testing.T) {
 	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectID)
 	require.Nil(t, err)
 
-	_, err = ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, ts.BlockHeight())
+	_, err = ts.GetProjectForBlock(projectID, ts.BlockHeight())
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
 
-	_, err = ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, ts.BlockHeight())
+	_, err = ts.GetProjectForBlock(projectID, ts.BlockHeight())
 	require.NotNil(t, err)
 }
 
@@ -589,7 +581,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
-					proj, err := ts.getProjectForBlock(tt.projectID, ts.BlockHeight())
+					proj, err := ts.GetProjectForBlock(tt.projectID, ts.BlockHeight())
 					require.Nil(t, err)
 					require.Equal(t, newPolicy, *proj.AdminPolicy)
 				} else {
@@ -600,7 +592,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 				if tt.setSubscriptionPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
-					proj, err := ts.getProjectForBlock(tt.projectID, ts.BlockHeight())
+					proj, err := ts.GetProjectForBlock(tt.projectID, ts.BlockHeight())
 					require.Nil(t, err)
 					require.Equal(t, newPolicy, *proj.SubscriptionPolicy)
 				} else {
@@ -629,7 +621,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	block1 := ts.BlockHeight()
 
 	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
-	project, err := ts.getProjectForBlock(projectID, block1)
+	project, err := ts.GetProjectForBlock(projectID, block1)
 	require.Nil(t, err)
 
 	// first epoch to add some delay before adding the developer key.
@@ -655,26 +647,26 @@ func TestChargeComputeUnits(t *testing.T) {
 	err = ts.Keepers.Projects.ChargeComputeUnitsToProject(ts.Ctx, project, block1, 1000)
 	require.Nil(t, err)
 
-	proj, err := ts.getProjectForBlock(project.Index, block1)
+	proj, err := ts.GetProjectForBlock(project.Index, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = ts.getProjectForBlock(project.Index, block2)
+	proj, err = ts.GetProjectForBlock(project.Index, block2)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = ts.getProjectForBlock(project.Index, block3)
+	proj, err = ts.GetProjectForBlock(project.Index, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
 
 	err = ts.Keepers.Projects.ChargeComputeUnitsToProject(ts.Ctx, project, block2, 1000)
 	require.Nil(t, err)
 
-	proj, err = ts.getProjectForBlock(project.Index, block1)
+	proj, err = ts.GetProjectForBlock(project.Index, block1)
 	require.Nil(t, err)
 	require.Equal(t, uint64(1000), proj.UsedCu)
-	proj, err = ts.getProjectForBlock(project.Index, block2)
+	proj, err = ts.GetProjectForBlock(project.Index, block2)
 	require.Nil(t, err)
 	require.Equal(t, uint64(2000), proj.UsedCu)
-	proj, err = ts.getProjectForBlock(project.Index, block3)
+	proj, err = ts.GetProjectForBlock(project.Index, block3)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), proj.UsedCu)
 }
@@ -728,7 +720,7 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
 
-	proj, err := ts.getProjectForDeveloper(sub1Addr)
+	proj, err := ts.GetProjectForDeveloper(sub1Addr)
 	require.Nil(t, err)
 	require.Equal(t, 3, len(proj.ProjectKeys))
 
@@ -863,21 +855,21 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[1])
 	require.Nil(t, err)
 
-	proj, err := ts.getProjectForBlock(projectsID[0], ts.BlockHeight())
+	proj, err := ts.GetProjectForBlock(projectsID[0], ts.BlockHeight())
 	require.Nil(t, err)
 	require.Equal(t, 1, len(proj.ProjectKeys))
 
-	proj, err = ts.getProjectForBlock(projectsID[1], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[1], ts.BlockHeight())
 	require.Nil(t, err)
 	require.Equal(t, 1, len(proj.ProjectKeys))
 
 	// wait for next epoch for delete(s) to take effect
 	ts.AdvanceEpoch()
 
-	proj, err = ts.getProjectForBlock(projectsID[0], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[0], ts.BlockHeight())
 	require.NotNil(t, err)
 
-	proj, err = ts.getProjectForBlock(projectsID[1], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[1], ts.BlockHeight())
 	require.NotNil(t, err)
 
 	// should not panic
@@ -897,21 +889,21 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	err = ts.delProjectKeys(projectsID[3], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.NotNil(t, err)
 
-	proj, err = ts.getProjectForBlock(projectsID[2], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[2], ts.BlockHeight())
 	require.Nil(t, err)
 	require.Equal(t, 1, len(proj.ProjectKeys))
 
-	proj, err = ts.getProjectForBlock(projectsID[3], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[3], ts.BlockHeight())
 	require.Nil(t, err)
 	require.Equal(t, 1, len(proj.ProjectKeys))
 
 	// wait for next epoch for delete(s) to take effect
 	ts.AdvanceEpoch()
 
-	proj, err = ts.getProjectForBlock(projectsID[2], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[2], ts.BlockHeight())
 	require.NotNil(t, err)
 
-	proj, err = ts.getProjectForBlock(projectsID[3], ts.BlockHeight())
+	proj, err = ts.GetProjectForBlock(projectsID[3], ts.BlockHeight())
 	require.NotNil(t, err)
 
 	// should not panic
@@ -962,9 +954,9 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	proj1, err := ts.getProjectForDeveloper(sub1Addr)
+	proj1, err := ts.GetProjectForDeveloper(sub1Addr)
 	require.Nil(t, err)
-	proj2, err := ts.getProjectForDeveloper(sub2Addr)
+	proj2, err := ts.GetProjectForDeveloper(sub2Addr)
 	require.Nil(t, err)
 
 	require.Equal(t, 2, len(proj1.ProjectKeys))
@@ -1044,7 +1036,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, 1, len(res.Projects))
 
-			admProject, err := ts.getProjectForBlock(res.Projects[0], ts.BlockHeight())
+			admProject, err := ts.GetProjectForBlock(res.Projects[0], ts.BlockHeight())
 			require.Nil(t, err)
 
 			policy.SelectedProvidersMode = tt.projMode
