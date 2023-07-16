@@ -62,7 +62,7 @@ func ConnectgRPCClient(ctx context.Context, address string) (*grpc.ClientConn, e
 
 func GenerateSelfSignedCertificate() (tls.Certificate, error) {
 	// Generate a private key
-	utils.LavaFormatWarning("Warning: Using Self signed certificate is not recommended, this will not allow https connections to be established", nil)
+	utils.LavaFormatWarning("Warning: Using Self signed certificate is not allowed in production, this will not allow https connections to be established and is used only for testing purposes", nil)
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return tls.Certificate{}, err
