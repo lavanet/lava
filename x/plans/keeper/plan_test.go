@@ -245,7 +245,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	// add 3rd plan
+	// add 3rd plan (so the prevous two would become stale)
 	plan := plans[1]
 	plan.OveruseRate += 20
 	err = ts.TxProposalAddPlans(plan)

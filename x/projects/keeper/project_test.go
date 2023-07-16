@@ -74,7 +74,7 @@ func (ts *tester) setupProjectData() *tester {
 			Name:        tt.name,
 			Enabled:     tt.enabled,
 			ProjectKeys: tt.keys,
-			Policy:      &policy,
+			Policy:      tt.policy,
 		}
 		ts.AddProjectData(tt.code, pd)
 	}

@@ -175,7 +175,7 @@ func TestSubscriptionExpiration(t *testing.T) {
 	_, found := ts.getSubscription(sub1Addr)
 	require.True(t, found)
 
-	// advance 1 month + epoch, subscriptiokn should expire
+	// advance 1 month + epoch, subscription should expire
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 
