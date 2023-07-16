@@ -139,6 +139,16 @@ func (tstore *TimerStore) Export(ctx sdk.Context) []types.RawMessage {
 	return data
 }
 
+func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
+	store := prefix.NewStore(
+		ctx.KVStore(tstore.storeKey),
+		types.KeyPrefix(tstore.prefix))
+
+	for _, data := range data {
+		store.Set(data.Key, data.Value)
+	}
+}
+
 func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
 
