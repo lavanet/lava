@@ -202,7 +202,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 
 		geoloc, err := types.ParseGeoEnum(split[1])
 		if err != nil {
-			return nil, 0, fmt.Errorf("invalid endpoint format: %w", err)
+			return nil, 0, fmt.Errorf("invalid endpoint format: %w, format: %s", err, strings.Join(split, ";"))
 		}
 
 		if geoloc == int32(planstypes.Geolocation_GL) {

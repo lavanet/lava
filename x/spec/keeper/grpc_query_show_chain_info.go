@@ -25,7 +25,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
 		// get info by chain name
-		if spec.GetName() == req.GetChainName() {
+		if spec.GetName() == req.GetChainName() || spec.GetIndex() == req.GetChainName() {{
 			// get chain ID
 			chainID = spec.GetIndex()
 
@@ -52,6 +52,9 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 					optionalInterfaceList = append(optionalInterfaceList, apiInterface)
 				}
 				for _, api := range apiCollection.Apis {
+					if !api.Enabled {
+						continue
+					}
 					apiMethods = append(apiMethods, api.GetName())
 				}
 				apiInterfacesStructList = append(apiInterfacesStructList, &types.ApiList{

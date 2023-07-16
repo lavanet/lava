@@ -49,7 +49,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 	goodChains := []string{}
 	badChains := []string{}
 	for _, providerEntry := range providerEntries {
-		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain})
+		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
@@ -86,6 +86,9 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				return relayLatency, nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
+			if len(endpointServices) == 0 {
+				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
+			}
 			for _, endpointService := range endpointServices {
 				probeLatency, err := checkOneProvider(endpointService.ApiInterface, []string{endpointService.Addon})
 				if err != nil {
@@ -175,17 +178,31 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 					}
 					chainID := splitted[len(splitted)-1]
 					// add dummy geoloc
-					firstElement := splitted[0]
-					splitted[0] = "1" // add dummpy geoLoc
-					endpointsToParse := []string{firstElement}
-					endpointsToParseJoin := []string{strings.Join(append(endpointsToParse, splitted[len(splitted)-1]), ",")}
+					splitted[0] = splitted[0] + "," + "1" // add dummy geoLoc
+
+					endpointsToParseJoin := []string{strings.Join(splitted[:len(splitted)-1], ",")}
 					endpoints, _, err := pairingcli.HandleEndpointsAndGeolocationArgs(endpointsToParseJoin, "*")
 					if err != nil {
 						return err
 					}
+					if len(endpoints) == 0 {
+						return fmt.Errorf("returned empty endpoints list from HandleEndpointsAndGeolocationArgs parsing: %s", endpointsToParseJoin)
+					}
+					if len(endpoints[0].ApiInterfaces) == 0 {
+						// need to read required apiInterfaces from on chain
+						chainInfoResponse, err := specQuerier.ShowChainInfo(ctx, &spectypes.QueryShowChainInfoRequest{
+							ChainName: chainID,
+						})
+						if err != nil {
+							return utils.LavaFormatError("failed reading on chain data in order to resolve endpoint", err, utils.Attribute{Key: "endpoint", Value: endpoints[0]})
+						}
+						endpoints[0].ApiInterfaces = chainInfoResponse.Interfaces
+					}
+					utils.LavaFormatDebug("endpoints to check", utils.Attribute{Key: "endpoints", Value: endpoints})
 					providerEntry := epochstoragetypes.StakeEntry{
-						Endpoints: endpoints,
-						Chain:     chainID,
+						Endpoints:   endpoints,
+						Chain:       chainID,
+						Geolocation: 1,
 					}
 					stakedProviderChains = append(stakedProviderChains, providerEntry)
 				}
@@ -212,6 +229,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if len(stakedProviderChains) == 0 {
 				utils.LavaFormatError("no active chains for provider", nil, utils.Attribute{Key: "address", Value: address})
 			}
+			utils.LavaFormatDebug("checking chain entries", utils.Attribute{Key: "stakedProviderChains", Value: stakedProviderChains})
 			return startTesting(ctx, clientCtx, txFactory, stakedProviderChains)
 		},
 	}
