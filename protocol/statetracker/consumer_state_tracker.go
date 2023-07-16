@@ -72,3 +72,7 @@ func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	}
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
+
+func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress string) {
+
+}

@@ -30053,6 +30053,43 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/pairing/effective_policy/{consumer}':
+    get:
+      summary: Queries a list of EffectivePolicy items.
+      operationId: LavanetLavaPairingEffectivePolicy
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              policy:
+                type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: consumer
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/pairing/epoch_payments:
     get:
       summary: Queries a list of EpochPayments items.
@@ -55620,6 +55657,11 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  lavanet.lava.pairing.QueryEffectivePolicyResponse:
+    type: object
+    properties:
+      policy:
+        type: string
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
     type: object
     properties:
