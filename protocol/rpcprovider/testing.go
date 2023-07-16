@@ -27,6 +27,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -100,7 +101,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			}
 		}
 	}
-	fmt.Printf("----------------------------------------SUMMARY----------------------------------------\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
+	if len(badChains) == 0 {
+		badChains = []string{"None 🎉! all tests passed ✅"}
+	}
+	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
 	return nil
 }
 
@@ -132,6 +136,12 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
+			// setting the insecure option on provider dial, this should be used in development only!
+			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
+			if lavasession.AllowInsecureConnectionToProviders {
+				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
+			}
+
 			var address string
 			if len(args) == 0 {
 				keyName, err := sigs.GetKeyName(clientCtx)
@@ -237,6 +247,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
 	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
 }
