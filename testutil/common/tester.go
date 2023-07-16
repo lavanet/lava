@@ -203,7 +203,13 @@ func (ts *Tester) QuerySubscriptionListProjects(subkey string) (*subscriptiontyp
 	return ts.Keepers.Subscription.ListProjects(ts.GoCtx, msg)
 }
 
-// QueryProjectDeveloper implements 'q project develop'
+// QueryProjectInfo implements 'q project info'
+func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
+	msg := &projectstypes.QueryInfoRequest{Project: projectID}
+	return ts.Keepers.Projects.Info(ts.GoCtx, msg)
+}
+
+// QueryProjectDeveloper implements 'q project developer'
 func (ts *Tester) QueryProjectDeveloper(devkey string) (*projectstypes.QueryDeveloperResponse, error) {
 	msg := &projectstypes.QueryDeveloperRequest{Developer: devkey}
 	return ts.Keepers.Projects.Developer(ts.GoCtx, msg)

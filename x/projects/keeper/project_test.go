@@ -117,16 +117,6 @@ func (ts *tester) getProjectForDeveloper(devkey string) (types.Project, error) {
 	return ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, devkey, ts.BlockHeight())
 }
 
-func (ts *tester) queryDeveloper(devkey string) (*types.QueryDeveloperResponse, error) {
-	msg := &types.QueryDeveloperRequest{Developer: devkey}
-	return ts.Keepers.Projects.Developer(ts.GoCtx, msg)
-}
-
-func (ts *tester) queryInfo(projectID string) (*types.QueryInfoResponse, error) {
-	msg := &types.QueryInfoRequest{Project: projectID}
-	return ts.Keepers.Projects.Info(ts.GoCtx, msg)
-}
-
 func (ts *tester) txSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetPolicyResponse, error) {
 	msg := types.MsgSetPolicy{
 		Creator: subkey,
@@ -158,10 +148,10 @@ func TestCreateDefaultProject(t *testing.T) {
 	ts.AdvanceBlock()
 
 	// subscription key is a developer in the default project
-	res1, err := ts.queryDeveloper(sub1Addr)
+	res1, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
 
-	res2, err := ts.queryInfo(res1.Project.Index)
+	res2, err := ts.QueryProjectInfo(res1.Project.Index)
 	require.Nil(t, err)
 
 	require.Equal(t, res2.Project, res1.Project)
@@ -223,12 +213,12 @@ func TestCreateProject(t *testing.T) {
 	require.NotNil(t, err)
 
 	// subscription key is not a developer
-	_, err = ts.queryDeveloper(sub1Addr)
+	_, err = ts.QueryProjectDeveloper(sub1Addr)
 	require.NotNil(t, err)
 
-	res1, err := ts.queryDeveloper(adm1Addr)
+	res1, err := ts.QueryProjectDeveloper(adm1Addr)
 	require.Nil(t, err)
-	res2, err := ts.queryInfo(res1.Project.Index)
+	res2, err := ts.QueryProjectInfo(res1.Project.Index)
 	require.Nil(t, err)
 
 	require.Equal(t, res1.Project, res2.Project)
@@ -283,7 +273,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	require.True(t, ts.isKeyInProject(projectID, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID, dev2Addr, types.ProjectKey_DEVELOPER))
 
-	res, err := ts.queryDeveloper(sub1Addr)
+	res, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(res.Project.ProjectKeys))
 }
@@ -341,7 +331,7 @@ func TestAddDelKeys(t *testing.T) {
 
 	ts.AdvanceBlock()
 
-	res, err := ts.queryDeveloper(dev1Addr)
+	res, err := ts.QueryProjectDeveloper(dev1Addr)
 	require.Nil(t, err)
 
 	project := res.Project
@@ -384,7 +374,7 @@ func TestAddDelKeys(t *testing.T) {
 	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
 
 	// fetch project with new developer
-	_, err = ts.queryDeveloper(dev3Addr)
+	_, err = ts.QueryProjectDeveloper(dev3Addr)
 	require.Nil(t, err)
 
 	// developer delete admin (should fail)
@@ -444,9 +434,9 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 
 	ts.AdvanceBlock()
 
-	_, err = ts.queryDeveloper(adm1Addr)
+	_, err = ts.QueryProjectDeveloper(adm1Addr)
 	require.NotNil(t, err)
-	res, err := ts.queryDeveloper(sub1Addr)
+	res, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
 
 	projectID := types.ProjectIndex(sub1Addr, types.ADMIN_PROJECT_NAME)
