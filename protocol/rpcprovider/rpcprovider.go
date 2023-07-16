@@ -244,7 +244,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		disabledEndpointsList = append(disabledEndpointsList, disabledEndpoint)
 	}
 	if len(disabledEndpointsList) > 0 {
-		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", disabledEndpointsList), nil)
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsList), nil)
 		if len(disabledEndpointsList) == parallelJobs {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
