@@ -231,7 +231,7 @@ func TestCreateProject(t *testing.T) {
 
 func TestProjectsServerAPI(t *testing.T) {
 	ts := newTester(t)
-	ts.SetupAccounts(1, 0, 2) // 0 sub, 0 adm, 2 dev
+	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 2 dev
 
 	_, sub1Addr := ts.Account("sub1")
 	_, dev1Addr := ts.Account("dev1")
@@ -272,7 +272,7 @@ func TestProjectsServerAPI(t *testing.T) {
 
 func TestDeleteProject(t *testing.T) {
 	ts := newTester(t)
-	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 0 dev
+	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 2 dev
 	ts.setupProjectData()
 
 	plan := ts.Plan("mock")
@@ -306,7 +306,7 @@ func TestDeleteProject(t *testing.T) {
 
 func TestAddDelKeys(t *testing.T) {
 	ts := newTester(t)
-	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 0 dev
+	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 2 dev
 	ts.setupProjectData()
 
 	projectData := ts.ProjectData("pd3")
@@ -673,7 +673,7 @@ func TestChargeComputeUnits(t *testing.T) {
 
 func TestAddDelKeysSameEpoch(t *testing.T) {
 	ts := newTester(t)
-	ts.SetupAccounts(2, 2, 6) // 2 sub, 1 adm, 5 dev
+	ts.SetupAccounts(2, 2, 6) // 2 sub, 2 adm, 6 dev
 
 	_, sub1Addr := ts.Account("sub1")
 	_, sub2Addr := ts.Account("sub2")
