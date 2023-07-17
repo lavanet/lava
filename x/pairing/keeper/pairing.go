@@ -299,17 +299,14 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 		}
 	}
 
-	minIndex := commontypes.FindMin(policyTotalCuLimit)
-	effectiveTotalCuOfProject := policyTotalCuLimit[minIndex]
+	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
 	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
 
-	minIndex = commontypes.FindMin(policyEpochCuLimit)
-	effectiveEpochCuOfProject := policyEpochCuLimit[minIndex]
+	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
 
 	cuList := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
-	minIndex = commontypes.FindMin(cuList)
 
-	return cuList[minIndex]
+	return commontypes.FindMin(cuList)
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {

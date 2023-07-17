@@ -199,9 +199,7 @@ func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, provider
 func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) *ProviderSessionsEpochData {
 	providerSessionsWithConsumer.Lock.Lock()
 	defer providerSessionsWithConsumer.Lock.Unlock()
-	cusToCompare := []uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation}
-	minCuIdx := commontypes.FindMin(cusToCompare)
-	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: cusToCompare[minCuIdx]}
+	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: commontypes.FindMin([]uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation})}
 	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
 }
 

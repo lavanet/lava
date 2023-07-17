@@ -5,7 +5,17 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func FindMin[T constraints.Ordered](s []T) int {
+func FindMin[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMin(s)
+	if ind == -1 {
+		var zero T
+		return zero
+	}
+
+	return s[ind]
+}
+
+func FindIndexOfMin[T constraints.Ordered](s []T) int {
 	if len(s) == 0 {
 		return -1
 	}
@@ -19,7 +29,17 @@ func FindMin[T constraints.Ordered](s []T) int {
 	return mInd
 }
 
-func FindMax[T constraints.Ordered](s []T) int {
+func FindMax[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMax(s)
+	if ind == -1 {
+		var zero T
+		return zero
+	}
+
+	return s[ind]
+}
+
+func FindIndexOfMax[T constraints.Ordered](s []T) int {
 	if len(s) == 0 {
 		return -1
 	}

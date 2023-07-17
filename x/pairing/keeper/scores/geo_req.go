@@ -102,7 +102,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 		return -1, calculateCostFromLatency(maxGeoLatency)
 	}
 
-	minIndex := commontypes.FindMin(latencies)
+	minIndex := commontypes.FindIndexOfMin(latencies)
 	minLatencyGeo = geoLatencies[minIndex].geo
 	minLatencyCost = calculateCostFromLatency(geoLatencies[minIndex].latency)
 	return minLatencyGeo, minLatencyCost
