@@ -53,14 +53,8 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 			utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
 			return
 		}
-		// set version
-		for _, versionUpdatable := range vu.versionUpdatables {
-			if versionUpdatable == nil {
-				continue
-			}
-			(*versionUpdatable).SetProtocolVersion(version)
-		}
-		// validate version
+
+		// validate version and potentially throw panic due to version mismatch - this will trigger LavaVisor!
 		err = vu.versionStateQuery.CheckProtocolVersion(context.Background())
 		if err != nil {
 			utils.LavaFormatError("checkVersion failed", err)
