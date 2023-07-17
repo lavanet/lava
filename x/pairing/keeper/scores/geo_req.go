@@ -54,7 +54,7 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 		return false
 	}
 
-	return otherGeoReq.Geo == gr.Geo
+	return otherGeoReq == gr
 }
 
 func GetGeoReqsForSlots(policy planstypes.Policy) []GeoReq {
@@ -80,9 +80,9 @@ type GeoLatency struct {
 	latency uint64
 }
 
-func (gl GeoLatency) Less(other GeoLatency) bool {
-	return gl.latency < other.latency
-}
+// func (gl GeoLatency) Less(other GeoLatency) bool {
+// 	return gl.latency < other.latency
+// }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
 func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost uint64) {
@@ -97,7 +97,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 		latencies = append(latencies, geoLatency.latency)
 	}
 
-	// no geo latencies found -> provider can't support this geo (score = 1 -> max latency)
+	// no geo latencies found -> provider can't support this geo
 	if len(geoLatencies) == 0 {
 		return -1, calculateCostFromLatency(maxGeoLatency)
 	}
