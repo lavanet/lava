@@ -8,13 +8,16 @@ import (
 )
 
 var (
-	ParamKeyDowntimeDuration        = []byte("DowntimeDuration")
-	DefaultParamKeyDowntimeDuration = 30 * time.Minute
+	ParamKeyDowntimeDuration                 = []byte("DowntimeDuration")
+	DefaultParamKeyDowntimeDuration          = 30 * time.Minute
+	ParamKeyGarbageCollectionDuration        = []byte("GarbageCollection")
+	DefaultParamKeyGarbageCollectionDuration = 24 * time.Hour * 30 // 30 days
 )
 
 func DefaultParams() Params {
 	return Params{
-		DowntimeDuration: DefaultParamKeyDowntimeDuration,
+		DowntimeDuration:          DefaultParamKeyDowntimeDuration,
+		GarbageCollectionDuration: DefaultParamKeyGarbageCollectionDuration,
 	}
 }
 
@@ -23,6 +26,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 func (m *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamKeyDowntimeDuration, &m.DowntimeDuration, validateDowntimeDuration),
+		paramtypes.NewParamSetPair(ParamKeyGarbageCollectionDuration, &m.GarbageCollectionDuration, validateDowntimeDuration),
 	}
 }
 

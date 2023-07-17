@@ -12,4 +12,7 @@ message Params {
   // downtime_duration defines the minimum time elapsed between blocks
   // that we consider the chain to be down.
   google.protobuf.Duration downtime_duration = 1 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // garbage_collection_duration defines the time a downtime will be recorded
+  // on the chain before it goes through garbage collection.
+  google.protobuf.Duration garbage_collection_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }

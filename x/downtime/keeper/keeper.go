@@ -11,10 +11,6 @@ import (
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
-const (
-	GarbageCollectionDuration = 24 * time.Hour * 30 // 30 days
-)
-
 func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -150,7 +146,7 @@ func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcT
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
 	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
-	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), ctx.BlockTime().Add(GarbageCollectionDuration))
+	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), ctx.BlockTime().Add(k.GetParams(ctx).GarbageCollectionDuration))
 }
 
 // GarbageCollectDowntimes will garbage collect downtimes.

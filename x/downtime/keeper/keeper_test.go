@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
-	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	"github.com/stretchr/testify/require"
@@ -119,8 +118,9 @@ func TestBeginBlock(t *testing.T) {
 	// now check garbage collection
 	// we extend the downtime duration in order not to have another downtime
 	// since we're making time elapse by a lot in order to trigger garbage collection!
-	keeper.SetParams(ctx, v1.Params{DowntimeDuration: downtimekeeper.GarbageCollectionDuration*2 + keeper.GetParams(ctx).DowntimeDuration})
-	ctx = nextBlock(ctx, downtimekeeper.GarbageCollectionDuration+1*time.Second)
+	gcDuration := keeper.GetParams(ctx).GarbageCollectionDuration
+	keeper.SetParams(ctx, v1.Params{DowntimeDuration: gcDuration*2 + keeper.GetParams(ctx).DowntimeDuration, GarbageCollectionDuration: gcDuration})
+	ctx = nextBlock(ctx, gcDuration+1*time.Second)
 	keeper.BeginBlock(ctx)
 	_, ok = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()-1)) // currHeight-1 because we're checking the downtime of the previous block
 	require.False(t, ok)
