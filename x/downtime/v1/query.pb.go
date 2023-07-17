@@ -9,7 +9,12 @@ import (
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -23,18 +28,141 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryDowntimeRequest is the request type for the Query/QueryDowntime RPC method.
+type QueryDowntimeRequest struct {
+	StartBlock uint64 `protobuf:"varint,1,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	EndBlock   uint64 `protobuf:"varint,2,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+}
+
+func (m *QueryDowntimeRequest) Reset()         { *m = QueryDowntimeRequest{} }
+func (m *QueryDowntimeRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDowntimeRequest) ProtoMessage()    {}
+func (*QueryDowntimeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f0b6d2a2f25b3e8b, []int{0}
+}
+func (m *QueryDowntimeRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDowntimeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDowntimeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDowntimeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDowntimeRequest.Merge(m, src)
+}
+func (m *QueryDowntimeRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDowntimeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDowntimeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDowntimeRequest proto.InternalMessageInfo
+
+func (m *QueryDowntimeRequest) GetStartBlock() uint64 {
+	if m != nil {
+		return m.StartBlock
+	}
+	return 0
+}
+
+func (m *QueryDowntimeRequest) GetEndBlock() uint64 {
+	if m != nil {
+		return m.EndBlock
+	}
+	return 0
+}
+
+// QueryDowntimeResponse is the response type for the Query/QueryDowntime RPC method.
+type QueryDowntimeResponse struct {
+	Downtime                   []*Downtime          `protobuf:"bytes,1,rep,name=downtime,proto3" json:"downtime,omitempty"`
+	CumulativeDowntimeDuration *durationpb.Duration `protobuf:"bytes,2,opt,name=cumulative_downtime_duration,json=cumulativeDowntimeDuration,proto3" json:"cumulative_downtime_duration,omitempty"`
+}
+
+func (m *QueryDowntimeResponse) Reset()         { *m = QueryDowntimeResponse{} }
+func (m *QueryDowntimeResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDowntimeResponse) ProtoMessage()    {}
+func (*QueryDowntimeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f0b6d2a2f25b3e8b, []int{1}
+}
+func (m *QueryDowntimeResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryDowntimeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryDowntimeResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryDowntimeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDowntimeResponse.Merge(m, src)
+}
+func (m *QueryDowntimeResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryDowntimeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDowntimeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryDowntimeResponse proto.InternalMessageInfo
+
+func (m *QueryDowntimeResponse) GetDowntime() []*Downtime {
+	if m != nil {
+		return m.Downtime
+	}
+	return nil
+}
+
+func (m *QueryDowntimeResponse) GetCumulativeDowntimeDuration() *durationpb.Duration {
+	if m != nil {
+		return m.CumulativeDowntimeDuration
+	}
+	return nil
+}
+
+func init() {
+	proto.RegisterType((*QueryDowntimeRequest)(nil), "lavanet.lava.downtime.v1.QueryDowntimeRequest")
+	proto.RegisterType((*QueryDowntimeResponse)(nil), "lavanet.lava.downtime.v1.QueryDowntimeResponse")
+}
+
 func init() { proto.RegisterFile("downtime/v1/query.proto", fileDescriptor_f0b6d2a2f25b3e8b) }
 
 var fileDescriptor_f0b6d2a2f25b3e8b = []byte{
-	// 128 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x4f, 0xc9, 0x2f, 0xcf,
-	0x2b, 0xc9, 0xcc, 0x4d, 0xd5, 0x2f, 0x33, 0xd4, 0x2f, 0x2c, 0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28,
-	0xca, 0x2f, 0xc9, 0x17, 0x92, 0xc8, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a,
-	0x30, 0x55, 0x7a, 0x65, 0x86, 0x46, 0xec, 0x5c, 0xac, 0x81, 0x20, 0x85, 0x4e, 0xf6, 0x27, 0x1e,
-	0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17,
-	0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0xa5, 0x9a, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4,
-	0x97, 0x9c, 0x9f, 0xab, 0x0f, 0x35, 0x07, 0x4c, 0xeb, 0x57, 0xe8, 0x23, 0xd9, 0x97, 0xc4, 0x06,
-	0xb6, 0xca, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x3e, 0x40, 0xd0, 0x74, 0x85, 0x00, 0x00, 0x00,
+	// 318 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x51, 0xcd, 0x4a, 0xc3, 0x30,
+	0x1c, 0x5f, 0xfc, 0x62, 0x66, 0x78, 0x09, 0x8a, 0xb3, 0x4a, 0x1c, 0x03, 0x61, 0xa7, 0x84, 0xcd,
+	0xbb, 0xc2, 0xd8, 0x0b, 0x38, 0x3c, 0xe9, 0xa1, 0xf4, 0x23, 0xd6, 0x62, 0x9b, 0x74, 0x6d, 0x52,
+	0xdd, 0x5b, 0xf8, 0x30, 0x3e, 0x84, 0xc7, 0x1d, 0x3d, 0x4a, 0xfb, 0x22, 0xd2, 0xb4, 0xa9, 0x53,
+	0x1c, 0x78, 0x0a, 0xfc, 0xbe, 0xfa, 0xfb, 0xff, 0x0a, 0x8f, 0x7d, 0xf1, 0xcc, 0x65, 0x18, 0x33,
+	0x9a, 0x8f, 0xe9, 0x42, 0xb1, 0x74, 0x49, 0x92, 0x54, 0x48, 0x81, 0xfa, 0x91, 0x93, 0x3b, 0x9c,
+	0x49, 0x52, 0xbd, 0xc4, 0xa8, 0x48, 0x3e, 0xb6, 0x70, 0x20, 0x44, 0x10, 0x31, 0xaa, 0x75, 0xae,
+	0x7a, 0xa0, 0xbe, 0x4a, 0x1d, 0x19, 0x0a, 0x5e, 0x3b, 0x2d, 0x6b, 0x3d, 0xb2, 0x35, 0x6a, 0x6e,
+	0x78, 0x0b, 0x0f, 0x6f, 0xaa, 0x8f, 0xcc, 0x1a, 0x78, 0xce, 0x16, 0x8a, 0x65, 0x12, 0x9d, 0xc3,
+	0x5e, 0x26, 0x9d, 0x54, 0xda, 0x6e, 0x24, 0xbc, 0xa7, 0x3e, 0x18, 0x80, 0xd1, 0xce, 0x1c, 0x6a,
+	0x68, 0x5a, 0x21, 0xe8, 0x14, 0xee, 0x33, 0xee, 0x37, 0xf4, 0x96, 0xa6, 0xbb, 0x8c, 0xfb, 0x9a,
+	0x1c, 0xbe, 0x01, 0x78, 0xf4, 0x2b, 0x36, 0x4b, 0x04, 0xcf, 0x18, 0xba, 0x82, 0x5d, 0xd3, 0xa0,
+	0x0f, 0x06, 0xdb, 0xa3, 0xde, 0x64, 0x48, 0x36, 0x1d, 0x46, 0x5a, 0x77, 0xeb, 0x41, 0xf7, 0xf0,
+	0xcc, 0x53, 0xb1, 0x8a, 0x1c, 0x19, 0xe6, 0xcc, 0x36, 0xb0, 0x6d, 0x2e, 0xd6, 0x4d, 0x7a, 0x93,
+	0x13, 0x52, 0x4f, 0x42, 0xcc, 0x24, 0x64, 0xd6, 0x08, 0xe6, 0xd6, 0xb7, 0xdd, 0xc4, 0x1b, 0x6e,
+	0xb2, 0x84, 0xbb, 0xba, 0x35, 0x4a, 0xe0, 0xc1, 0x8f, 0xfa, 0x88, 0x6c, 0x2e, 0xf9, 0xd7, 0x7c,
+	0x16, 0xfd, 0xb7, 0xbe, 0xde, 0x65, 0x7a, 0xfd, 0x5e, 0x60, 0xb0, 0x2a, 0x30, 0xf8, 0x2c, 0x30,
+	0x78, 0x2d, 0x71, 0x67, 0x55, 0xe2, 0xce, 0x47, 0x89, 0x3b, 0x77, 0x17, 0x41, 0x28, 0x1f, 0x95,
+	0x4b, 0x3c, 0x11, 0xd3, 0x26, 0x54, 0xbf, 0xf4, 0x85, 0xae, 0xfd, 0x57, 0x77, 0x4f, 0x9f, 0x7a,
+	0xf9, 0x15, 0x00, 0x00, 0xff, 0xff, 0x76, 0xab, 0x6b, 0x3c, 0x40, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -49,6 +177,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
+	QueryDowntime(ctx context.Context, in *QueryDowntimeRequest, opts ...grpc.CallOption) (*QueryDowntimeResponse, error)
 }
 
 type queryClient struct {
@@ -59,22 +188,485 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
+func (c *queryClient) QueryDowntime(ctx context.Context, in *QueryDowntimeRequest, opts ...grpc.CallOption) (*QueryDowntimeResponse, error) {
+	out := new(QueryDowntimeResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.downtime.v1.Query/QueryDowntime", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
+	QueryDowntime(context.Context, *QueryDowntimeRequest) (*QueryDowntimeResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
+func (*UnimplementedQueryServer) QueryDowntime(ctx context.Context, req *QueryDowntimeRequest) (*QueryDowntimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryDowntime not implemented")
+}
+
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
+}
+
+func _Query_QueryDowntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDowntimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryDowntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.downtime.v1.Query/QueryDowntime",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryDowntime(ctx, req.(*QueryDowntimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.downtime.v1.Query",
 	HandlerType: (*QueryServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "downtime/v1/query.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "QueryDowntime",
+			Handler:    _Query_QueryDowntime_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "downtime/v1/query.proto",
 }
+
+func (m *QueryDowntimeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDowntimeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDowntimeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.EndBlock != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.EndBlock))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.StartBlock != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.StartBlock))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDowntimeResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDowntimeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDowntimeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.CumulativeDowntimeDuration != nil {
+		{
+			size, err := m.CumulativeDowntimeDuration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Downtime) > 0 {
+		for iNdEx := len(m.Downtime) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Downtime[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
+	offset -= sovQuery(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *QueryDowntimeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.StartBlock != 0 {
+		n += 1 + sovQuery(uint64(m.StartBlock))
+	}
+	if m.EndBlock != 0 {
+		n += 1 + sovQuery(uint64(m.EndBlock))
+	}
+	return n
+}
+
+func (m *QueryDowntimeResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Downtime) > 0 {
+		for _, e := range m.Downtime {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.CumulativeDowntimeDuration != nil {
+		l = m.CumulativeDowntimeDuration.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func sovQuery(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozQuery(x uint64) (n int) {
+	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *QueryDowntimeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDowntimeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDowntimeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartBlock", wireType)
+			}
+			m.StartBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartBlock |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndBlock", wireType)
+			}
+			m.EndBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EndBlock |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDowntimeResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDowntimeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDowntimeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Downtime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Downtime = append(m.Downtime, &Downtime{})
+			if err := m.Downtime[len(m.Downtime)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CumulativeDowntimeDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CumulativeDowntimeDuration == nil {
+				m.CumulativeDowntimeDuration = &durationpb.Duration{}
+			}
+			if err := m.CumulativeDowntimeDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipQuery(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthQuery
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupQuery
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthQuery
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthQuery        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowQuery          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupQuery = fmt.Errorf("proto: unexpected end of group")
+)
