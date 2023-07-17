@@ -21,6 +21,6 @@ message QueryDowntimeRequest {
 
 // QueryDowntimeResponse is the response type for the Query/QueryDowntime RPC method.
 message QueryDowntimeResponse {
-  repeated Downtime downtime = 1;
+  repeated Downtime downtimes = 1;
   google.protobuf.Duration cumulative_downtime_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
