@@ -244,8 +244,7 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 		}
 	}
 
-	maxIndex := commontypes.FindMax(selectedProvidersModeList)
-	effectiveMode := selectedProvidersModeList[maxIndex]
+	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
 	effectiveSelectedProviders := commontypes.Intersection(selectedProvidersList...)
 
 	return effectiveMode, effectiveSelectedProviders
