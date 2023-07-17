@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType) error {
+func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType) (missingFields []string, err error) {
 	configPath, configName := filepath.Split(filePath)
 	if configPath == "" {
 		configPath = "."
@@ -32,17 +32,77 @@ func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []E
 		opts = append(opts, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(hookFuncs...)))
 	}
 
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil {
-		return err
+		return missingFields, err
 	}
 
 	err = viper.GetViper().UnmarshalKey(primaryKey, content, opts...)
 	if err != nil {
-		return err
+		return missingFields, err
 	}
 
-	return nil
+	missingFields = findMissingFields(content)
+	return missingFields, nil
+}
+
+func findMissingFields(content interface{}) []string {
+	var missingFields []string
+
+	expectedFields := make(map[string]bool)
+	contentValue := reflect.ValueOf(content)
+	contentType := contentValue.Type()
+
+	// Ensure content is a struct or a pointer to a struct
+	if contentType.Kind() != reflect.Struct && (contentType.Kind() != reflect.Ptr || contentType.Elem().Kind() != reflect.Struct) {
+		return missingFields
+	}
+
+	// Get the type of the struct
+	if contentType.Kind() == reflect.Ptr {
+		contentType = contentType.Elem()
+		contentValue = contentValue.Elem()
+	}
+
+	// Extract the expected field names from the struct
+	for i := 0; i < contentType.NumField(); i++ {
+		field := contentType.Field(i)
+		fieldName := field.Name
+		expectedFields[fieldName] = true
+	}
+
+	// Check if each expected field is present in the unmarshaled content
+	for fieldName := range expectedFields {
+		fieldValue := contentValue.FieldByName(fieldName)
+		if !fieldValue.IsValid() || fieldValue.IsZero() {
+			missingFields = append(missingFields, fieldName)
+		}
+	}
+
+	return missingFields
+}
+
+func SetDefaultValues(content interface{}, defaultValues map[string]interface{}) {
+	contentValue := reflect.ValueOf(content).Elem()
+	contentType := contentValue.Type()
+
+	for fieldName, fieldValue := range defaultValues {
+		field, found := contentType.FieldByName(fieldName)
+		if found {
+			fieldValue := reflect.ValueOf(fieldValue)
+			fieldType := field.Type
+
+			if fieldValue.IsValid() && fieldValue.Type().AssignableTo(fieldType) {
+				contentFieldValue := contentValue.FieldByName(fieldName)
+				if contentFieldValue.IsValid() && contentFieldValue.CanSet() {
+					if fieldValue.Type() != fieldType {
+						fieldValue = fieldValue.Convert(fieldType)
+					}
+					contentFieldValue.Set(fieldValue)
+				}
+			}
+		}
+	}
 }
 
 // EnumDecodeHookFuncType represents the signature of enum decode hook functions.

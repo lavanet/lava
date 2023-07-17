@@ -45,7 +45,7 @@ func CmdAddProject() *cobra.Command {
 
 			creator := clientCtx.GetFromAddress().String()
 
-			policy := &planstypes.Policy{}
+			var policy *planstypes.Policy
 
 			policyFilePath, err := cmd.Flags().GetString("policy-file")
 			if err != nil {
@@ -53,17 +53,10 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if policyFilePath != "" {
-				enumHooks := []commontypes.EnumDecodeHookFuncType{
-					commontypes.EnumDecodeHook(uint64(0), planstypes.ParsePolicyEnumValue), // for geolocation
-					commontypes.EnumDecodeHook(planstypes.SELECTED_PROVIDERS_MODE(0), planstypes.ParsePolicyEnumValue),
-					// Add more enum hook functions for other enum types as needed
-				}
-				err = commontypes.ReadYaml(policyFilePath, "Policy", &policy, enumHooks)
+				policy, err = planstypes.ParsePolicyFromYaml(policyFilePath)
 				if err != nil {
 					return err
 				}
-			} else {
-				policy = nil
 			}
 
 			var projectKeys []projectstypes.ProjectKey
@@ -73,7 +66,7 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if projectKeysFilePath != "" {
-				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil)
+				_, err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil)
 				if err != nil {
 					return err
 				}

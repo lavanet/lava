@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/spf13/cobra"
@@ -33,13 +32,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 
 			subscriptionPolicyFilePath := args[1]
 
-			var policy planstypes.Policy
-			enumHooks := []commontypes.EnumDecodeHookFuncType{
-				commontypes.EnumDecodeHook(uint64(0), planstypes.ParsePolicyEnumValue), // for geolocation
-				commontypes.EnumDecodeHook(planstypes.SELECTED_PROVIDERS_MODE(0), planstypes.ParsePolicyEnumValue),
-				// Add more enum hook functions for other enum types as needed
-			}
-			err = commontypes.ReadYaml(subscriptionPolicyFilePath, "Policy", &policy, enumHooks)
+			policy, err := planstypes.ParsePolicyFromYaml(subscriptionPolicyFilePath)
 			if err != nil {
 				return err
 			}
@@ -47,7 +40,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 			msg := types.NewMsgSetSubscriptionPolicy(
 				clientCtx.GetFromAddress().String(),
 				argProjects,
-				policy,
+				*policy,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

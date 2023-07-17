@@ -4,10 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	fmt "fmt"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 )
+
+var policyDefaultValues map[string]interface{}
+
+// init policy default values (for fields that their natural zero value is not good)
+// the values were chosen in a way that they will not influence the strictest policy calculation
+func init() {
+	policyDefaultValues = make(map[string]interface{})
+
+	policyDefaultValues["GeolocationProfile"] = uint64(Geolocation_value["GL"])
+	policyDefaultValues["MaxProvidersToPair"] = uint64(math.MaxUint64)
+}
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
 	if len(policy.ChainPolicies) == 0 {
@@ -116,17 +129,42 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
-	mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
-	if found {
-		return SELECTED_PROVIDERS_MODE(mode), nil
-	} else {
-		return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+func ParsePolicyFromYaml(filePath string) (*Policy, error) {
+	var policy Policy
+	enumHooks := []commontypes.EnumDecodeHookFuncType{
+		commontypes.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		commontypes.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
+		// Add more enum hook functions for other enum types as needed
 	}
+
+	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks)
+	if err != nil {
+		return &policy, err
+	}
+
+	handleMissingPolicyFields(missingFields, &policy)
+
+	return &policy, nil
+}
+
+// handleMissingPolicyFields sets default values to missing fields
+func handleMissingPolicyFields(missingFields []string, policy *Policy) {
+	missingFieldsDefaultValues := make(map[string]interface{})
+
+	for _, field := range missingFields {
+		defValue, ok := policyDefaultValues[field]
+		// not checking if not ok because fields without default values can use
+		// their natural default value (it's not an error)
+		if ok {
+			missingFieldsDefaultValues[field] = defValue
+		}
+	}
+
+	commontypes.SetDefaultValues(policy, missingFieldsDefaultValues)
 }
 
 // parseEnumValue is a helper function to parse the enum value based on the provided enumType.
-func ParsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
+func parsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
 	switch v := enumType.(type) {
 	case uint64:
 		geo, err := ParseGeoEnum(strVal)
@@ -139,5 +177,14 @@ func ParsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, err
 	// Add cases for other enum types as needed
 	default:
 		return nil, fmt.Errorf("unsupported enum type: %T", v)
+	}
+}
+
+func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
+	mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
+	if found {
+		return SELECTED_PROVIDERS_MODE(mode), nil
+	} else {
+		return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
 	}
 }
