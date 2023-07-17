@@ -2,8 +2,8 @@ package scores
 
 import (
 	"fmt"
+	"math"
 
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -80,43 +80,25 @@ type GeoLatency struct {
 	latency uint64
 }
 
-// func (gl GeoLatency) Less(other GeoLatency) bool {
-// 	return gl.latency < other.latency
-// }
-
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
 func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost uint64) {
-	geoLatencies := []GeoLatency{}
-	latencies := []uint64{}
+	var minGeo planstypes.Geolocation
+	minLatency := uint64(math.MaxUint64)
 	for _, pGeo := range providerGeos {
-		geoLatency := getGeoLatency(reqGeo, pGeo)
-		if geoLatency.latency == 0 {
-			continue
+		if inner, ok := GEO_LATENCY_MAP[reqGeo]; ok {
+			if latency, ok := inner[pGeo]; ok {
+				if latency < minLatency {
+					minGeo = pGeo
+					minLatency = latency
+				}
+			}
 		}
-		geoLatencies = append(geoLatencies, geoLatency)
-		latencies = append(latencies, geoLatency.latency)
 	}
-
-	// no geo latencies found -> provider can't support this geo
-	if len(geoLatencies) == 0 {
+	if minLatency == math.MaxUint64 {
 		return -1, calculateCostFromLatency(maxGeoLatency)
 	}
 
-	minIndex := commontypes.FindIndexOfMin(latencies)
-	minLatencyGeo = geoLatencies[minIndex].geo
-	minLatencyCost = calculateCostFromLatency(geoLatencies[minIndex].latency)
-	return minLatencyGeo, minLatencyCost
-}
-
-func getGeoLatency(from planstypes.Geolocation, to planstypes.Geolocation) GeoLatency {
-	costList := GEO_LATENCY_MAP[from]
-	for _, geoLatency := range costList {
-		if geoLatency.geo == to {
-			return geoLatency
-		}
-	}
-
-	return GeoLatency{}
+	return minGeo, calculateCostFromLatency(minLatency)
 }
 
 func calculateCostFromLatency(latency uint64) uint64 {
@@ -138,35 +120,35 @@ var (
 // for each single geolocation. The map key is a single geolocation and the value is an
 // ordered list of neighbors and their latency (ordered by latency)
 // latency data from: https://wondernetwork.com/pings (July 2023)
-var GEO_LATENCY_MAP = map[planstypes.Geolocation][]GeoLatency{
+var GEO_LATENCY_MAP = map[planstypes.Geolocation]map[planstypes.Geolocation]uint64{
 	AS: {
-		{geo: AU, latency: 146},
-		{geo: EU, latency: 155},
+		AU: 146,
+		EU: 155,
 	},
 	USE: {
-		{geo: USC, latency: 42},
-		{geo: USW, latency: 68},
+		USC: 42,
+		USW: 68,
 	},
 	USW: {
-		{geo: USC, latency: 45},
-		{geo: USE, latency: 68},
+		USC: 45,
+		USE: 68,
 	},
 	USC: {
-		{geo: USE, latency: 42},
-		{geo: USW, latency: 45},
+		USE: 42,
+		USW: 45,
 	},
 	EU: {
-		{geo: USE, latency: 116},
-		{geo: AF, latency: 138},
-		{geo: AS, latency: 155},
+		USE: 116,
+		AF:  138,
+		AS:  155,
 	},
 	AF: {
-		{geo: EU, latency: 138},
-		{geo: USE, latency: 203},
-		{geo: AS, latency: 263},
+		EU:  138,
+		USE: 203,
+		AS:  263,
 	},
 	AU: {
-		{geo: AS, latency: 146},
-		{geo: USW, latency: 179},
+		AS:  146,
+		USW: 179,
 	},
 }
