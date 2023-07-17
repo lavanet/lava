@@ -127,6 +127,8 @@ class LavaProviders {
             }
         });
     }
+    // private getLavaProvidersInBatches() {
+    // }
     // GetLavaProviders returns lava providers list
     GetLavaProviders() {
         if (this.providers.length == 0) {
@@ -359,6 +361,7 @@ class LavaProviders {
     SendRelayToAllProvidersAndRace(options, relayCu, rpcInterface) {
         return __awaiter(this, void 0, void 0, function* () {
             let lastError;
+            // let lavaProviders = this.GetLavaProviders();
             for (let retryAttempt = 0; retryAttempt < BOOT_RETRY_ATTEMPTS; retryAttempt++) {
                 const allRelays = new Map();
                 let response;

@@ -16,6 +16,7 @@ const (
 	ParamChangeEventName = "param_change"
 	SpecAddEventName     = "spec_add"
 	SpecModifyEventName  = "spec_modify"
+	SpecRefreshEventName = "spec_refresh"
 )
 
 const (
