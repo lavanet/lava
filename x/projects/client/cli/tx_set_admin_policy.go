@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -10,7 +9,6 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
 
@@ -33,16 +31,16 @@ func CmdSetPolicy() *cobra.Command {
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
 
-			fmt.Println("hi")
-
 			var policy planstypes.Policy
-			hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
-			err = commontypes.ReadYaml(adminPolicyFilePath, "Policy", &policy, hooks)
+			enumHooks := []commontypes.EnumDecodeHookFuncType{
+				commontypes.EnumDecodeHook(uint64(0), planstypes.ParsePolicyEnumValue), // for geolocation
+				commontypes.EnumDecodeHook(planstypes.SELECTED_PROVIDERS_MODE(0), planstypes.ParsePolicyEnumValue),
+				// Add more enum hook functions for other enum types as needed
+			}
+			err = commontypes.ReadYaml(adminPolicyFilePath, "Policy", &policy, enumHooks)
 			if err != nil {
 				return err
 			}
-
-			fmt.Println("hello")
 
 			msg := types.NewMsgSetPolicy(
 				clientCtx.GetFromAddress().String(),

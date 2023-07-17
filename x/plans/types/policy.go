@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	fmt "fmt"
-	"reflect"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/mitchellh/mapstructure"
 )
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
@@ -118,31 +116,28 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// hook function to allow correct SELECTED_PROVIDERS_MODE enum read from yaml
-func SelectedProvidersModeHookFunc() mapstructure.DecodeHookFuncType {
-	return DecodeSelectedProvidersMode
+func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
+	mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
+	if found {
+		return SELECTED_PROVIDERS_MODE(mode), nil
+	} else {
+		return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+	}
 }
 
-func DecodeSelectedProvidersMode(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-	// Check that the data is string
-	if f.Kind() != reflect.String {
-		return data, nil
-	}
-
-	// Check that the target type is policy
-	if t != reflect.TypeOf(SELECTED_PROVIDERS_MODE(0)) {
-		return data, nil
-	}
-
-	dataStr, ok := data.(string)
-	if ok {
-		mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
-		if found {
-			return SELECTED_PROVIDERS_MODE(mode), nil
-		} else {
-			return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+// parseEnumValue is a helper function to parse the enum value based on the provided enumType.
+func ParsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
+	switch v := enumType.(type) {
+	case uint64:
+		geo, err := ParseGeoEnum(strVal)
+		if err != nil {
+			return 0, fmt.Errorf("invalid geolocation %s", strVal)
 		}
+		return geo, nil
+	case SELECTED_PROVIDERS_MODE:
+		return DecodeSelectedProvidersMode(strVal)
+	// Add cases for other enum types as needed
+	default:
+		return nil, fmt.Errorf("unsupported enum type: %T", v)
 	}
-
-	return data, nil
 }

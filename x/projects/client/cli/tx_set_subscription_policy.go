@@ -10,7 +10,6 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
 
@@ -35,8 +34,12 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 			subscriptionPolicyFilePath := args[1]
 
 			var policy planstypes.Policy
-			hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
-			err = commontypes.ReadYaml(subscriptionPolicyFilePath, "Policy", &policy, hooks)
+			enumHooks := []commontypes.EnumDecodeHookFuncType{
+				commontypes.EnumDecodeHook(uint64(0), planstypes.ParsePolicyEnumValue), // for geolocation
+				commontypes.EnumDecodeHook(planstypes.SELECTED_PROVIDERS_MODE(0), planstypes.ParsePolicyEnumValue),
+				// Add more enum hook functions for other enum types as needed
+			}
+			err = commontypes.ReadYaml(subscriptionPolicyFilePath, "Policy", &policy, enumHooks)
 			if err != nil {
 				return err
 			}
