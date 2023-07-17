@@ -1050,7 +1050,7 @@ func runE2E(timeout time.Duration) {
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
 		protocolPath: gopath + "/bin/lava-protocol",
-		lavadArgs:    "--geolocation 1 --log_level debug",
+		lavadArgs:    "--geolocation 1 --log_level debug --allow-insecure-provider-dialing",
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
