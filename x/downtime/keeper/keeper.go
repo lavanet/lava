@@ -110,6 +110,19 @@ func (k Keeper) unmarshalDuration(bz []byte) time.Duration {
 // HadDowntimeBetween will return true if we had downtimes between the provided heights.
 // The query is inclusive on both ends. The duration returned is the total downtime duration.
 func (k Keeper) HadDowntimeBetween(ctx sdk.Context, startHeight, endHeight uint64) (bool, time.Duration) {
+	var totalDuration time.Duration
+	var hadDowntime bool
+	k.IterateDowntimes(ctx, startHeight, endHeight, func(height uint64, duration time.Duration) bool {
+		hadDowntime = true
+		totalDuration += duration
+		return false
+	})
+	return hadDowntime, totalDuration
+}
+
+// IterateDowntimes will iterate over all downtimes between the provided heights, it is inclusive on both ends.
+// Will stop iteration when the callback returns true.
+func (k Keeper) IterateDowntimes(ctx sdk.Context, startHeight, endHeight uint64, onResult func(height uint64, duration time.Duration) (stop bool)) {
 	if startHeight > endHeight {
 		panic("start height must be less than or equal to end height")
 	}
@@ -121,16 +134,13 @@ func (k Keeper) HadDowntimeBetween(ctx sdk.Context, startHeight, endHeight uint6
 			types.GetDowntimeKey(endHeightForQuery),
 		)
 	defer iter.Close()
-	// if iter is not valid then there are no downtimes between the provided heights.
-	if !iter.Valid() {
-		return false, time.Duration(0)
-	}
-	// we had downtimes.
-	totalDowntime := time.Duration(0)
 	for ; iter.Valid(); iter.Next() {
-		totalDowntime += k.unmarshalDuration(iter.Value())
+		height := types.ParseDowntimeKey(iter.Key())
+		duration := k.unmarshalDuration(iter.Value())
+		if onResult(height, duration) {
+			break
+		}
 	}
-	return true, totalDowntime
 }
 
 func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcTime time.Time) {
