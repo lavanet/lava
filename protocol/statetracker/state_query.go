@@ -66,7 +66,7 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 
 	// check min version
 	if consensusVersion.ConsumerMin != protocolBinaryVersion.ConsumerMin || consensusVersion.ProviderMin != protocolBinaryVersion.ProviderMin {
-		utils.LavaFormatFatal("minimum protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerMin:", Value: consensusVersion.ConsumerMin}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerMin: ", Value: protocolBinaryVersion.ConsumerMin},
+		utils.LavaFormatPanic("minimum protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerMin:", Value: consensusVersion.ConsumerMin}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerMin: ", Value: protocolBinaryVersion.ConsumerMin},
 			utils.Attribute{Key: "consensusVersion.ProviderMin:", Value: consensusVersion.ProviderMin}, utils.Attribute{Key: "protocolBinaryVersion.ProviderMin: ", Value: protocolBinaryVersion.ProviderMin})
 	}
 	// check target version
