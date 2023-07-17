@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"math"
+	"sort"
 	"testing"
 	"time"
 
@@ -732,7 +733,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot, minStake)
 				require.Nil(t, err)
 
-				ok := pairingscores.VerifyGeoScoreForTesting(providerScores, slot, geoSeen)
+				ok := verifyGeoScoreForTesting(providerScores, slot, geoSeen)
 				require.True(t, ok)
 			}
 
@@ -751,6 +752,50 @@ func isGeoInList(geo uint64, geoList []uint64) bool {
 		}
 	}
 	return false
+}
+
+// verifyGeoScoreForTesting is used to testing purposes only!
+// it verifies that the max geo score are for providers that exactly match the geo req
+// this function assumes that all the other reqs are equal (for example, stake req)
+func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot *pairingscores.PairingSlot, expectedGeoSeen map[uint64]bool) bool {
+	if slot == nil || len(providerScores) == 0 {
+		return false
+	}
+
+	sort.Slice(providerScores, func(i, j int) bool {
+		return providerScores[i].Score > providerScores[j].Score
+	})
+
+	geoReqObject := pairingscores.GeoReq{}
+	geoReq, ok := slot.Reqs[geoReqObject.GetName()].(pairingscores.GeoReq)
+	if !ok {
+		return false
+	}
+
+	// verify that the geo is part of the expected geo
+	_, ok = expectedGeoSeen[geoReq.Geo]
+	if !ok {
+		return false
+	}
+	expectedGeoSeen[geoReq.Geo] = true
+
+	// verify that only providers that match with req geo have max score
+	maxScore := providerScores[0].Score
+	for _, score := range providerScores {
+		if score.Provider.Geolocation == geoReq.Geo {
+			if score.Score != maxScore {
+				return false
+			}
+		} else {
+			if score.Score == maxScore {
+				return false
+			} else {
+				break
+			}
+		}
+	}
+
+	return true
 }
 
 func TestDuplicateProviders(t *testing.T) {

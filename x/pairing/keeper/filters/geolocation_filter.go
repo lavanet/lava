@@ -6,7 +6,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-// TODO: This is a filter is disabled (InitFilter always returns false)
+// TODO: This filter is disabled (InitFilter always returns false)
 // will be used in the future to exclude geolocations (thus keeping this code)
 
 type GeolocationFilter struct {
