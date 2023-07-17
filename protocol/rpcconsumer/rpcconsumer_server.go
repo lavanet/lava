@@ -18,6 +18,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -40,10 +41,12 @@ type RPCConsumerServer struct {
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	lavaChainID            string
 	consumerAddress        sdk.AccAddress
+	consumerAddons         map[string]struct{}
 }
 
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+	GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error)
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -69,6 +72,18 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
+	consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
+	if err != nil {
+		return err
+	}
+	consumerAddons, err := consumerPolicy.GetSupportedAddons(listenEndpoint.ChainID)
+	if err != nil {
+		return err
+	}
+	rpccs.consumerAddons = make(map[string]struct{})
+	for _, consumerAddon := range consumerAddons {
+		rpccs.consumerAddons[consumerAddon] = struct{}{}
+	}
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
@@ -98,6 +113,13 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, nil, err
 	}
+	if _, ok := rpccs.consumerAddons[chainMessage.GetApiCollection().CollectionData.AddOn]; !ok {
+		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
+			utils.Attribute{Key: "addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn},
+			utils.Attribute{Key: "allowed", Value: rpccs.consumerAddons},
+		)
+	}
+
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
@@ -213,7 +235,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock(), chainMessage.GetApiCollection().CollectionData.AddOn)
 	if err != nil {
 		return &lavaprotocol.RelayResult{ProviderAddress: ""}, err
 	}

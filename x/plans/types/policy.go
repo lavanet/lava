@@ -36,6 +36,17 @@ func (policy *Policy) ChainPolicy(chainID string) (chainPolicy ChainPolicy, allo
 	return ChainPolicy{}, false
 }
 
+func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err error) {
+	chainPolicy, allowed := policy.ChainPolicy(specID)
+	if !allowed {
+		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
+	}
+	for _, collection := range chainPolicy.Collections {
+		addons = append(addons, collection.AddOn)
+	}
+	return addons, nil
+}
+
 func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	// plan policy checks
 	if isPlanPolicy {
