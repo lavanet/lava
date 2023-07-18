@@ -56,21 +56,13 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 	return otherGeoReq == gr
 }
 
-func GetGeoReqsForSlots(policy planstypes.Policy) []GeoReq {
-	geoReqsForSlots := []GeoReq{}
-
+// GetGeoReqsForSlot creates a geo req for a slot by its index
+// TODO: this function doesn't return the optimal geo reqs for the case
+// that there are more required geos than providers to pair
+func GetGeoReqsForSlot(policy planstypes.Policy, slotIdx int) GeoReq {
 	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
-	switch {
-	// TODO: implement the case below
-	// case len(policyGeoEnums) > int(policy.MaxProvidersToPair):
-	default:
-		for i := 0; i < int(policy.MaxProvidersToPair); i++ {
-			geoReq := GeoReq{Geo: uint64(policyGeoEnums[i%len(policyGeoEnums)])}
-			geoReqsForSlots = append(geoReqsForSlots, geoReq)
-		}
-	}
 
-	return geoReqsForSlots
+	return GeoReq{Geo: uint64(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // a single geolocation and the latency to it (in millieseconds)

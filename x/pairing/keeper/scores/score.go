@@ -78,13 +78,12 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 	stakeReqName := stakeReq.GetName()
 
 	// geo requirements
-	geoReqsForSlots := GetGeoReqsForSlots(policy)
-	geoReqName := geoReqsForSlots[0].GetName()
+	geoReqName := GeoReq{}.GetName()
 
 	for i := range slots {
 		reqMap := make(map[string]ScoreReq)
 		reqMap[stakeReqName] = stakeReq
-		reqMap[geoReqName] = geoReqsForSlots[i]
+		reqMap[geoReqName] = GetGeoReqsForSlot(policy, i)
 
 		slots[i] = NewPairingSlot()
 		slots[i].Reqs = reqMap
