@@ -15,7 +15,6 @@ func CmdEffectivePolicy() *cobra.Command {
 		Short: "Query to show the effective policy of a consumer taking into account plan policy and subscription policy, consumer/project can also be defined as --from walletName",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			specID := args[0]
 
 			var address string

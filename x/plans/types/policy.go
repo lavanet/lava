@@ -41,7 +41,7 @@ func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err er
 	if !allowed {
 		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
 	}
-	addons = []string{""} //always allow an empty addon
+	addons = []string{""} // always allow an empty addon
 	for _, collection := range chainPolicy.Collections {
 		addons = append(addons, collection.AddOn)
 	}
