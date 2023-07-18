@@ -166,7 +166,7 @@ class LavaProviders {
             // Set when will next epoch start
             const nextEpochStart = new Date();
             nextEpochStart.setSeconds(nextEpochStart.getSeconds() +
-                parseInt(pairingResponse.timeLeftToNextPairing));
+                (0, common_1.parseLong)(pairingResponse.timeLeftToNextPairing));
             // Extract providers from pairing response
             const providers = pairingResponse.providers;
             // Initialize ConsumerSessionWithProvider array
@@ -196,8 +196,8 @@ class LavaProviders {
                 // Only take into account endpoints that use the same api interface
                 // And geolocation
                 for (const endpoint of provider.endpoints) {
-                    if (endpoint.useType == rpcInterface &&
-                        endpoint.geolocation == this.geolocation) {
+                    if (endpoint.apiInterfaces.includes(rpcInterface) &&
+                        (0, common_1.parseLong)(endpoint.geolocation) == Number(this.geolocation)) {
                         const convertedEndpoint = new types_1.Endpoint(endpoint.iPPORT, true, 0);
                         relevantEndpoints.push(convertedEndpoint);
                     }
@@ -209,7 +209,7 @@ class LavaProviders {
                 const singleConsumerSession = new types_1.SingleConsumerSession(0, // cuSum
                 0, // latestRelayCuSum
                 1, // relayNumber
-                relevantEndpoints[0], parseInt(pairingResponse.currentEpoch), provider.address);
+                relevantEndpoints[0], (0, common_1.parseLong)(pairingResponse.currentEpoch), provider.address);
                 // Create a new pairing object
                 const newPairing = new types_1.ConsumerSessionWithProvider(this.accountAddress, relevantEndpoints, singleConsumerSession, maxcu, 0, // used compute units
                 false);
@@ -306,7 +306,7 @@ class LavaProviders {
                 throw errors_1.default.errMaxCuNotFound;
             }
             // return maxCu from userEntry
-            return response.maxCU.low;
+            return (0, common_1.parseLong)(response.maxCU);
         });
     }
     getServiceApis(request, rpcInterface, lavaApis) {
@@ -347,11 +347,11 @@ class LavaProviders {
                     if (((_b = element.collectionData) === null || _b === void 0 ? void 0 : _b.apiInterface) == "rest") {
                         // handle REST apis
                         const name = this.convertRestApiName(api.name);
-                        apis.set(name, api.computeUnits.low);
+                        apis.set(name, (0, common_1.parseLong)(api.computeUnits));
                     }
                     else {
                         // Handle RPC apis
-                        apis.set(api.name, api.computeUnits.low);
+                        apis.set(api.name, (0, common_1.parseLong)(api.computeUnits));
                     }
                 }
             }

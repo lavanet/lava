@@ -15,7 +15,7 @@ import { QueryGetSpecRequest, QueryGetSpecResponse } from "../codec/spec/query";
 import { fetchLavaPairing } from "../util/lavaPairing";
 import Relayer from "../relayer/relayer";
 import ProvidersErrors from "./errors";
-import { base64ToUint8Array, generateRPCData } from "../util/common";
+import { base64ToUint8Array, generateRPCData, parseLong } from "../util/common";
 import { Badge } from "../grpc_web_services/pairing/relay_pb";
 import { QueryShowAllChainsResponse } from "../codec/spec/query";
 
@@ -242,7 +242,7 @@ export class LavaProviders {
     const nextEpochStart = new Date();
     nextEpochStart.setSeconds(
       nextEpochStart.getSeconds() +
-        parseInt(pairingResponse.timeLeftToNextPairing)
+        parseLong(pairingResponse.timeLeftToNextPairing)
     );
 
     // Extract providers from pairing response
@@ -280,8 +280,8 @@ export class LavaProviders {
       // And geolocation
       for (const endpoint of provider.endpoints) {
         if (
-          endpoint.useType == rpcInterface &&
-          endpoint.geolocation == this.geolocation
+          endpoint.apiInterfaces.includes(rpcInterface) &&
+          parseLong(endpoint.geolocation) == Number(this.geolocation)
         ) {
           const convertedEndpoint = new Endpoint(endpoint.iPPORT, true, 0);
           relevantEndpoints.push(convertedEndpoint);
@@ -298,7 +298,7 @@ export class LavaProviders {
         0, // latestRelayCuSum
         1, // relayNumber
         relevantEndpoints[0],
-        parseInt(pairingResponse.currentEpoch),
+        parseLong(pairingResponse.currentEpoch),
         provider.address
       );
 
@@ -375,7 +375,7 @@ export class LavaProviders {
   private async getPairingFromChain(
     request: QueryGetPairingRequest,
     lavaApis: Map<string, number>
-  ): Promise<any> {
+  ): Promise<QueryGetPairingResponse> {
     const requestData = QueryGetPairingRequest.encode(request).finish();
 
     const hexData = Buffer.from(requestData).toString("hex");
@@ -452,7 +452,7 @@ export class LavaProviders {
     }
 
     // return maxCu from userEntry
-    return response.maxCU.low;
+    return parseLong(response.maxCU);
   }
 
   private async getServiceApis(
@@ -508,10 +508,10 @@ export class LavaProviders {
         if (element.collectionData?.apiInterface == "rest") {
           // handle REST apis
           const name = this.convertRestApiName(api.name);
-          apis.set(name, api.computeUnits.low);
+          apis.set(name, parseLong(api.computeUnits));
         } else {
           // Handle RPC apis
-          apis.set(api.name, api.computeUnits.low);
+          apis.set(api.name, parseLong(api.computeUnits));
         }
       }
     }
