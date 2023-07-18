@@ -14,8 +14,24 @@ func NewQueryCmd() *cobra.Command {
 		Use: types.ModuleName + "query commands",
 	}
 
-	cmd.AddCommand(CmdQueryDowntime())
+	cmd.AddCommand(CmdQueryDowntime(), CmdQueryParams())
 	return cmd
+}
+
+func CmdQueryParams() *cobra.Command {
+	return &cobra.Command{
+		Use:   "params",
+		Short: "Query downtime module params",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			queryClient := v1.NewQueryClient(clientCtx)
+			resp, err := queryClient.QueryParams(cmd.Context(), &v1.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(resp)
+		},
+	}
 }
 
 func CmdQueryDowntime() *cobra.Command {
