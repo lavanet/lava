@@ -13,13 +13,13 @@ import (
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 
 type JsonrpcMessage struct {
-	Version string               `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage      `json:"id,omitempty"`
-	Method  string               `json:"method,omitempty"`
-	Params  interface{}          `json:"params,omitempty"`
-	Error   *rpcclient.JsonError `json:"error,omitempty"`
-	Result  json.RawMessage      `json:"result,omitempty"`
-	chainproxy.BaseMessage
+	Version                string               `json:"jsonrpc,omitempty"`
+	ID                     json.RawMessage      `json:"id,omitempty"`
+	Method                 string               `json:"method,omitempty"`
+	Params                 interface{}          `json:"params,omitempty"`
+	Error                  *rpcclient.JsonError `json:"error,omitempty"`
+	Result                 json.RawMessage      `json:"result,omitempty"`
+	chainproxy.BaseMessage `json:"-"`
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
