@@ -56,7 +56,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 		return false
 	})
 
-	return new(v1.GenesisState), nil
+	// get last block time
+	lastBlockTime, ok := k.GetLastBlockTime(ctx)
+	if ok {
+		gs.LastBlockTime = &lastBlockTime
+	}
+
+	return &gs, nil
 }
 
 func (k Keeper) ImportGenesis(ctx sdk.Context, gs *v1.GenesisState) error {
