@@ -10,6 +10,7 @@ import "gogoproto/gogo.proto";
 
 // Query represents the query service API for the downtime module.
 service Query {
+  rpc QueryParams(QueryParamsRequest) returns (QueryParamsResponse);
   rpc QueryDowntime(QueryDowntimeRequest) returns (QueryDowntimeResponse);
 }
 
@@ -23,4 +24,9 @@ message QueryDowntimeRequest {
 message QueryDowntimeResponse {
   repeated Downtime downtimes = 1;
   google.protobuf.Duration cumulative_downtime_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
+
+message QueryParamsRequest {}
+message QueryParamsResponse {
+  Params params = 1;
 }
