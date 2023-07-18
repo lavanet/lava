@@ -56,3 +56,16 @@ func TestQueryServer_QueryDowntime(t *testing.T) {
 		require.Nil(t, resp)
 	})
 }
+
+func TestQueryServer_QueryParams(t *testing.T) {
+	app, ctx := app.TestSetup()
+	dk := app.DowntimeKeeper
+	qs := keeper.NewQueryServer(dk)
+
+	wantParams := v1.DefaultParams()
+	dk.SetParams(ctx, wantParams)
+
+	resp, err := qs.QueryParams(sdk.WrapSDKContext(ctx), &v1.QueryParamsRequest{})
+	require.NoError(t, err)
+	require.Equal(t, &v1.QueryParamsResponse{Params: &wantParams}, resp)
+}
