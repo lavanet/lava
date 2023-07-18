@@ -30053,7 +30053,7 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/effective_policy/{consumer}':
+  '/lavanet/lava/pairing/effective_policy/{consumer}/{specID}':
     get:
       summary: Queries a list of EffectivePolicy items.
       operationId: LavanetLavaPairingEffectivePolicy
@@ -30148,9 +30148,9 @@ paths:
           in: path
           required: true
           type: string
-        - name: spec_id
-          in: query
-          required: false
+        - name: specID
+          in: path
+          required: true
           type: string
       tags:
         - Query
@@ -31450,6 +31450,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31502,6 +31515,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31616,6 +31642,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31668,6 +31707,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -56532,6 +56584,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56582,6 +56647,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56671,6 +56749,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56723,6 +56814,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56805,6 +56909,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56857,6 +56974,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64

@@ -7,12 +7,12 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
 // this line is used by starport scaffolding # 1
+import "plans/policy.proto";
 import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "epochstorage/stake_entry.proto";
 import "subscription/subscription.proto";
 import "projects/project.proto";
-import "plans/plan.proto"; 
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 

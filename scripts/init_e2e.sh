@@ -22,8 +22,6 @@ sleep 6
 lavad tx gov submit-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-sleep_until_next_epoch
-
 STAKE="500000000000ulava"
 # Ethereum providers
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
