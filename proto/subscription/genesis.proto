@@ -12,5 +12,6 @@ option go_package = "github.com/lavanet/lava/x/subscription/types";
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   repeated lavanet.lava.common.RawMessage subsFS = 2 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.common.RawMessage subsTS = 3 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

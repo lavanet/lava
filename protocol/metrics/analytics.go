@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+type RelaySource int
+
+const (
+	SdkSource RelaySource = iota + 1
+	GatewaySource
+	BadgesSource
+)
+
 type RelayMetrics struct {
 	ProjectHash  string
 	Timestamp    time.Time
@@ -12,6 +20,7 @@ type RelayMetrics struct {
 	Latency      int64
 	Success      bool
 	ComputeUnits uint64
+	Source       RelaySource
 }
 
 type RelayAnalyticsDTO struct {
@@ -22,6 +31,7 @@ type RelayAnalyticsDTO struct {
 	Latency      uint64
 	SuccessCount int64
 	RelayCounts  int64
+	Source       RelaySource
 }
 
 func NewRelayAnalytics(projectHash string, chainId string, apiType string) *RelayMetrics {
@@ -30,5 +40,6 @@ func NewRelayAnalytics(projectHash string, chainId string, apiType string) *Rela
 		ProjectHash: projectHash,
 		ChainID:     chainId,
 		APIType:     apiType,
+		Source:      GatewaySource,
 	}
 }

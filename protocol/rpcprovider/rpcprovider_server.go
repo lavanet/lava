@@ -1,6 +1,7 @@
 package rpcprovider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
@@ -131,6 +132,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		// On successful relay
 		pairingEpoch := relaySession.PairingEpoch
 		sendRewards := relaySession.IsPayingRelay() // when consumer mismatch causes this relay not to provide cu
+		replyBlock := reply.LatestBlock
 		go rpcps.metrics.AddRelay(consumerAddress.String(), relaySession.LatestRelayCu, request.RelaySession.QosReport)
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 		if relayError != nil {
@@ -140,11 +142,14 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			// Therefore the signature changes, so we need the original copy to extract the address from it.
 			// we want this code to run in parallel so it doesn't stop the flow
 
-			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
+			go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
 			utils.LavaFormatDebug("Provider Finished Relay Successfully",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock},
+				utils.Attribute{Key: "replyBlock", Value: replyBlock},
+				utils.Attribute{Key: "method", Value: chainMessage.GetApi().Name},
 			)
 		}
 	}
@@ -163,13 +168,19 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	defer func(relaySession *lavasession.SingleProviderSession) {
+		// if we error in here until PrepareSessionForUsage was called successfully we can't call OnSessionFailure
+		if err != nil {
+			relaySession.DisbandSession()
+		}
+	}(relaySession) // lock in the session address
 	// parse the message to extract the cu and chainMessage for sending it
 	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata())
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	relayCU := chainMessage.GetServiceApi().ComputeUnits
 
+	relayCU := chainMessage.GetApi().ComputeUnits
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
@@ -178,6 +189,20 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, utils.LavaFormatError("Session Out of sync", lavasession.SessionOutOfSyncError, utils.Attribute{Key: "PrepareSessionForUsage_Error", Value: err.Error()}, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	return relaySession, consumerAddress, chainMessage, nil
+}
+
+func (*RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
+	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
+		// the consumer eiuther configured an invalid value or is modifying the requested block as part of a data reliability message
+		// see if this modification is supported
+		providerRequestedBlockPreUpdate := chainMessage.RequestedBlock()
+		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock, true)
+		// if after UpdateLatestBlockInMessage it's not aligned we have a problem
+		if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
+			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
+		}
+	}
+	return nil
 }
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
@@ -200,7 +225,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		// meaning we created a subscription and used it for at least a message
 		pairingEpoch := relaySession.PairingEpoch
 		// no need to perform on session done as we did it in try relay subscribe
-		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetServiceApi().ApiInterfaces[0].Interface)
+		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
 		utils.LavaFormatDebug("Provider Finished Relay Successfully",
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 			utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
@@ -238,6 +263,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
 		// return the response to the user, and close the session.
@@ -319,6 +345,8 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		errorMessage := "user reported invalid lava block height"
 		if request.RelaySession.Epoch > latestBlock {
 			errorMessage = "provider is behind user's block height"
+		} else if request.RelaySession.Epoch == 0 {
+			errorMessage = "user reported lava block 0, either it's test rpcprovider or a consumer that has no node access"
 		}
 		return nil, nil, utils.LavaFormatWarning(errorMessage, lavasession.EpochMismatchError,
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
@@ -329,7 +357,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 	}
 
 	// Check data
-	err = rpcps.verifyRelayRequestMetaData(ctx, request.RelaySession)
+	err = rpcps.verifyRelayRequestMetaData(ctx, request.RelaySession, request.RelayData)
 	if err != nil {
 		return nil, nil, utils.LavaFormatWarning("did not pass relay validation", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -443,7 +471,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 	return singleProviderSession, nil
 }
 
-func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, requestSession *pairingtypes.RelaySession) error {
+func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, requestSession *pairingtypes.RelaySession, relayData *pairingtypes.RelayPrivateData) error {
 	providerAddress := rpcps.providerAddress.String()
 	if requestSession.Provider != providerAddress {
 		return utils.LavaFormatError("request had the wrong provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
@@ -454,6 +482,17 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, 
 	if requestSession.LavaChainId != rpcps.lavaChainID {
 		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
 	}
+
+	if !bytes.Equal(requestSession.ContentHash, sigs.CalculateContentHashForRelayData(relayData)) {
+		return utils.LavaFormatError("content hash mismatch between consumer and provider", nil,
+			utils.Attribute{Key: "ApiInterface", Value: relayData.ApiInterface},
+			utils.Attribute{Key: "ApiUrl", Value: relayData.ApiUrl},
+			utils.Attribute{Key: "RequestBlock", Value: relayData.RequestBlock},
+			utils.Attribute{Key: "ConnectionType", Value: relayData.ConnectionType},
+			utils.Attribute{Key: "Metadata", Value: relayData.Metadata},
+			utils.Attribute{Key: "GUID", Value: ctx})
+	}
+
 	return nil
 }
 
@@ -470,6 +509,10 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 }
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
+	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
+	if errV != nil {
+		return nil, errV
+	}
 	// Send
 	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
 	var reqParams interface{}
@@ -504,20 +547,19 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
 			}
 		}
+
+		chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
+
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
-		for _, block := range requestedHashes {
-			if block.Block == request.RelayData.RequestBlock {
-				requestedBlockHash = []byte(block.Hash)
-				if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
-					finalizedBlockHashes[block.Block] = block.Hash
-				}
-			} else {
-				finalizedBlockHashes[block.Block] = block.Hash
-			}
-		}
+		requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
 		if requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
-			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			reqHashesAttr := utils.Attribute{Key: "hashes", Value: requestedHashes}
+			elementsToTake := 10
+			if len(requestedHashes) > elementsToTake {
+				reqHashesAttr = utils.Attribute{Key: "hashes", Value: requestedHashes[len(requestedHashes)-elementsToTake:]}
+			}
+			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
 		}
 
 		// TODO: add a mechanism to handle this
@@ -532,6 +574,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply = nil
 	var err error = nil
+	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
 		reply, err = cache.GetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized)
 	}
@@ -544,6 +587,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
+		// TODO: use overwriteReqBlock to set the correct latest block
 		if requestedBlockHash != nil || finalized {
 			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
@@ -552,14 +597,13 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 	}
 
-	apiName := chainMsg.GetServiceApi().Name
+	apiName := chainMsg.GetApi().Name
 	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
 		err := rpcps.processUnsubscribe(ctx, apiName, consumerAddr, reqParams, uint64(request.RelayData.RequestBlock))
 		if err != nil {
 			return nil, err
 		}
 	}
-	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
 
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {
@@ -568,12 +612,11 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	}
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
-
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err
 	}
-
+	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
 	// return reply to user
 	return reply, nil
 }

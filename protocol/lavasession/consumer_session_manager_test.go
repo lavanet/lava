@@ -18,7 +18,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -41,6 +41,7 @@ const (
 var grpcListener = "localhost:0"
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
+	AllowInsecureConnectionToProviders = true // set to allow insecure for tests purposes
 	rand.Seed(time.Now().UnixNano())
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1))
@@ -82,7 +83,8 @@ func createGRPCServer(serverStarted chan struct{}) error {
 	grpcListener = lis.Addr().String()
 
 	// Create a new server with insecure credentials
-	s := grpc.NewServer()
+	tlsConfig := GetTlsConfig(NetworkAddressData{})
+	s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -106,7 +108,6 @@ func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*C
 			Endpoints:         pairingEndpoints,
 			Sessions:          map[int64]*SingleConsumerSession{},
 			MaxComputeUnits:   200,
-			ReliabilitySent:   false,
 			PairingEpoch:      firstEpochHeight,
 		}
 	}
@@ -127,7 +128,7 @@ func TestHappyFlow(t *testing.T) {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 		require.Nil(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -151,7 +152,7 @@ func TestPairingReset(t *testing.T) {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 		require.Nil(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -237,7 +238,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		require.NotNil(t, cs)
 		require.Equal(t, cs.Epoch, csm.currentEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 		require.Nil(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
@@ -283,7 +284,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 		require.Equal(t, epoch, csm.currentEpoch)
 
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.Nil(t, err)
 			require.Equal(t, cs.CuSum, cuForFirstRequest)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -316,9 +317,8 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 
 	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
 		cs := sessionList[j].cs
-		epoch := sessionList[j].epoch
 		if rand.Intn(2) > 0 {
-			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+			err = csm.OnSessionDone(cs, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.Nil(t, err)
 			require.Equal(t, sessionListData[j].cuSum+cuForFirstRequest, cs.CuSum)
 			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -341,7 +341,7 @@ func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *test
 	for _, cs := range css {
 		require.NotNil(t, cs)
 		time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
-		err = csm.OnSessionDone(cs.Session, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 		require.Nil(t, err)
 		ch <- p
 	}
@@ -577,14 +577,14 @@ func TestGetSession(t *testing.T) {
 func TestContext(t *testing.T) {
 	ctx := context.Background()
 	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
-	time.Sleep(3 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
 	cancel()
 }
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, grpcListener, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := ConnectgRPCClient(ctx, grpcListener, true)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()

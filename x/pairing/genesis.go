@@ -25,6 +25,9 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.BadgeUsedCuList {
 		k.SetBadgeUsedCu(ctx, elem)
 	}
+
+	k.InitBadgeTimers(ctx, genState.BadgesTS)
+
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -38,6 +41,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.ProviderPaymentStorageList = k.GetAllProviderPaymentStorage(ctx)
 	genesis.EpochPaymentsList = k.GetAllEpochPayments(ctx)
 	genesis.BadgeUsedCuList = k.GetAllBadgeUsedCu(ctx)
+	genesis.BadgesTS = k.ExportBadgesTimers(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

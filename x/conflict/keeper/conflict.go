@@ -98,14 +98,14 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("conflict data 1: %s", err)
 	}
 	// 3. validate providers signatures and stakeEntry for that epoch
-	providerAddressFromRelayReplyAndVerifyStakeEntry := func(request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply, first bool) (providerAddress sdk.AccAddress, err error) {
+	providerAddressFromRelayReplyAndVerifyStakeEntry := func(requestData *pairingtypes.RelayPrivateData, reply *types.ReplyMetadata, first bool) (providerAddress sdk.AccAddress, err error) {
 		print_st := "first"
 		if !first {
 			print_st = "second"
 		}
-		pubKey, err := sigs.RecoverPubKeyFromRelayReply(reply, request)
+		pubKey, err := sigs.RecoverPubKeyFromReplyMetadata(reply)
 		if err != nil {
-			return nil, fmt.Errorf("RecoverProviderPubKeyFromQueryAndAllDataHash %s provider: %w", print_st, err)
+			return nil, fmt.Errorf("RecoverPubKeyFromReplyMetadata %s provider: %w", print_st, err)
 		}
 		providerAddress, err = sdk.AccAddressFromHex(pubKey.Address().String())
 		if err != nil {
@@ -117,22 +117,22 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 		return providerAddress, nil
 	}
-	providerAccAddress0, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData0.Request, conflictData.ConflictRelayData0.Reply, true)
+	providerAccAddress0, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData0.Request.RelayData, conflictData.ConflictRelayData0.Reply, true)
 	if err != nil {
 		return err
 	}
-	providerAccAddress1, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData1.Request, conflictData.ConflictRelayData1.Reply, false)
+	providerAccAddress1, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData1.Request.RelayData, conflictData.ConflictRelayData1.Reply, false)
 	if err != nil {
 		return err
 	}
 	// 4. validate finalization
-	validateResponseFinalizationData := func(expectedAddress sdk.AccAddress, response *pairingtypes.RelayReply, request *pairingtypes.RelayRequest, first bool) (err error) {
+	validateResponseFinalizationData := func(expectedAddress sdk.AccAddress, response *types.ReplyMetadata, request *pairingtypes.RelayRequest, first bool) (err error) {
 		print_st := "first"
 		if !first {
 			print_st = "second"
 		}
 
-		pubKey, err := sigs.RecoverPubKeyFromResponseFinalizationData(response, request, clientAddr)
+		pubKey, err := sigs.RecoverPubKeyFromReplyMetadataFinalizationData(response, request, clientAddr)
 		if err != nil {
 			return fmt.Errorf("RecoverPubKey %s provider ResponseFinalizationData: %w", print_st, err)
 		}
@@ -158,7 +158,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return err
 	}
 	// 5. validate mismatching responses
-	if bytes.Equal(conflictData.ConflictRelayData0.Reply.Data, conflictData.ConflictRelayData1.Reply.Data) {
+	if bytes.Equal(conflictData.ConflictRelayData0.Reply.HashAllDataHash, conflictData.ConflictRelayData1.Reply.HashAllDataHash) {
 		return fmt.Errorf("no conflict between providers data responses, its the same")
 	}
 	return nil

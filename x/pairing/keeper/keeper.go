@@ -30,6 +30,16 @@ type (
 	}
 )
 
+// sanity checks at start time
+func init() {
+	if types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER == 0 {
+		panic("types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS == 0")
+	}
+	if types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS == 0 {
+		panic("types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS == 0")
+	}
+}
+
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey,
@@ -80,8 +90,15 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.badgeTimerStore.Tick(ctx)
+
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
-		// run functions that are supposed to run in epoch start
-		k.EpochStart(ctx, types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
+		// remove old session payments
+		k.RemoveOldEpochPayment(ctx)
+		// unstake any unstaking providers
+		k.CheckUnstakingForCommit(ctx)
+		// unstake/jail unresponsive providers
+		k.UnstakeUnresponsiveProviders(ctx,
+			types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER,
+			types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
 }

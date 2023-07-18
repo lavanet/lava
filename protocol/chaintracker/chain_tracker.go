@@ -428,3 +428,17 @@ func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
 	}
 	return backoff
 }
+
+func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock int64, toBlock int64, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
+	for _, block := range requestedHashes {
+		if block.Block == requestBlock {
+			requestedBlockHash = []byte(block.Hash)
+			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
+				finalizedBlockHashes[block.Block] = block.Hash
+			}
+		} else {
+			finalizedBlockHashes[block.Block] = block.Hash
+		}
+	}
+	return requestedBlockHash, finalizedBlockHashes
+}

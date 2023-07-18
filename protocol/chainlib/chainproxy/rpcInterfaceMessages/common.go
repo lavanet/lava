@@ -3,11 +3,13 @@ package rpcInterfaceMessages
 import (
 	"encoding/json"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
 )
 
 type ParsableRPCInput struct {
 	Result json.RawMessage
+	chainproxy.BaseMessage
 }
 
 func (pri ParsableRPCInput) ParseBlock(inp string) (int64, error) {

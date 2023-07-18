@@ -7,10 +7,13 @@ import (
 	"sync"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/score"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -25,6 +28,7 @@ const (
 	RELAY_UPDATE_WEIGHT        = 1
 	DEFAULT_EXPLORATION_CHANCE = 0.1
 	COST_EXPLORATION_CHANCE    = 0.01
+	WANTED_PRECISION           = int64(8)
 )
 
 type ConcurrentBlockStore struct {
@@ -138,7 +142,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 
 		if debug {
-			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent})
+			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "latencyScore", Value: latencyScore}, utils.Attribute{Key: "syncScore", Value: syncScore})
 		}
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
@@ -162,13 +166,19 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block
+// for the first block difference we take the minimum between the time passed since block arrived and the average block time
+// for any other block we take the averageBlockTime
 func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.Time, providerBlock uint64, sampleTime time.Time) time.Duration {
-	if latestSync < providerBlock {
+	// check gap is >=1
+	if latestSync <= providerBlock {
 		return 0
 	}
-	timeLag := sampleTime.Sub(timeSync)                                        // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
-	blocksGap := time.Duration(latestSync-providerBlock) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
-	timeLag += blocksGap
+	// lag on first block
+	timeLag := sampleTime.Sub(timeSync) // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
+	firstBlockLag := commontypes.FindMin([]time.Duration{po.averageBlockTime, timeLag})
+	blocksGap := latestSync - providerBlock - 1                     // latestSync > providerBlock
+	blocksGapTime := time.Duration(blocksGap) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
+	timeLag = firstBlockLag + blocksGapTime
 	return timeLag
 }
 
@@ -425,4 +435,29 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
 	perturb := rand.NormFloat64() * percentage * orig
 	return orig + perturb
+}
+
+func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) *pairingtypes.QualityOfServiceReport {
+	providerData, found := po.getProviderData(providerAddress)
+	if !found {
+		return nil
+	}
+	precision := WANTED_PRECISION
+	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
+	syncScore := turnFloatToDec(providerData.Sync.Num/providerData.Sync.Denom, precision)
+	availabilityScore := turnFloatToDec(providerData.Availability.Num/providerData.Availability.Denom, precision)
+	ret := &pairingtypes.QualityOfServiceReport{
+		Latency:      latencyScore,
+		Availability: availabilityScore,
+		Sync:         syncScore,
+	}
+	if debug {
+		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
+	}
+	return ret
+}
+
+func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {
+	integerNum := int64(math.Round(floatNum * math.Pow(10, float64(precision))))
+	return sdk.NewDecWithPrec(integerNum, precision)
 }

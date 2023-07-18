@@ -24,7 +24,93 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": []
+                "apis": [],
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "/node_info",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
+                                },
+                                "api_name": "/node_info"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "defaultNodeInfo",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
+                                },
+                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "cosmoshub-4"
+                                },
+                                "api_name": "status"
+                            }
+                        ]
+                    }
+                ]
             },
             {
                 "index": "COS5T",
@@ -46,7 +132,93 @@
                 "min_stake_client": {
                     "denom": "ulava",
                     "amount": "5000000000"
-                }
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "/node_info",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
+                                },
+                                "api_name": "/node_info"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "defaultNodeInfo",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
+                                },
+                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "node_info",
+                                        "network"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value":  "theta-testnet-001"
+                                },
+                                "api_name": "status"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     },

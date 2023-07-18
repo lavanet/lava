@@ -58,10 +58,10 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		// create relay request
 		relayRequest := &types.RelaySession{
 			Provider:              providerAddress,
-			ContentHash:           []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:             uint64(0),
 			SpecId:                ts.spec.Name,
-			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
+			CuSum:                 ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex),
 			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveDataList[clientIndex%unresponsiveProviderAmount], // create the complaint
@@ -150,10 +150,10 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 		var Relays []*types.RelaySession
 		relayRequest := &types.RelaySession{
 			Provider:              provider0_addr.String(),
-			ContentHash:           []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:             uint64(0),
 			SpecId:                ts.spec.Name,
-			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
+			CuSum:                 ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex),
 			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
@@ -254,10 +254,10 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	var Relays []*types.RelaySession
 	relayRequest := &types.RelaySession{
 		Provider:              provider0_addr.String(),
-		ContentHash:           []byte(ts.spec.Apis[0].Name),
+		ContentHash:           []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 		SessionId:             uint64(0),
 		SpecId:                ts.spec.Name,
-		CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+		CuSum:                 ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 		Epoch:                 relayEpoch,
 		RelayNum:              0,
 		UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
@@ -301,10 +301,10 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		var RelaysAfter []*types.RelaySession
 		relayRequest := &types.RelaySession{
 			Provider:              provider0_addr.String(),
-			ContentHash:           []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:             uint64(2),
 			SpecId:                ts.spec.Name,
-			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			CuSum:                 ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
 			Epoch:                 sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
@@ -376,10 +376,10 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		var Relays []*types.RelaySession
 		relayRequest := &types.RelaySession{
 			Provider:              provider0_addr.String(),
-			ContentHash:           []byte(ts.spec.Apis[0].Name),
+			ContentHash:           []byte(ts.spec.ApiCollections[0].Apis[0].Name),
 			SessionId:             uint64(0),
 			SpecId:                ts.spec.Name,
-			CuSum:                 ts.spec.Apis[0].ComputeUnits*10 + uint64(clientIndex),
+			CuSum:                 ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex),
 			Epoch:                 relayEpoch,
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint

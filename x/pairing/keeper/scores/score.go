@@ -55,8 +55,9 @@ var (
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
 	// gather all req names to a list
-	allReqNames = append(allReqNames, stakeReqName)
-	allReqNames = append(allReqNames, geoReqName)
+	allReqNames = []string{stakeReqName}
+  allReqNames = append(allReqNames, geoReqName)
+
 
 	// init strategy
 	uniformStrategy = make(ScoreStrategy)
@@ -188,6 +189,14 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		panic(err)
 	}
 
+	if groupCount >= len(scores)-len(chosenProvidersIdx) {
+		providers := []epochstoragetypes.StakeEntry{}
+		for _, score := range scores {
+			providers = append(providers, *score.Provider)
+		}
+		return providers
+	}
+
 	for it := 0; it < groupCount; it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
@@ -211,10 +220,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				chosenProvidersIdx[idx] = true
 				break
 			}
-		}
-
-		if scoreSum == 0 {
-			break
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}

@@ -8,7 +8,7 @@ import (
 func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 	// setup
 	metricService := MetricService{
-		AggregatedMetricMap: &map[string]map[string]map[string]*AggregatedMetric{},
+		AggregatedMetricMap: &map[string]map[string]map[string]map[RelaySource]*AggregatedMetric{},
 	}
 	metricData := RelayMetrics{
 		ProjectHash: "1",
@@ -16,6 +16,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		APIType:     "testApiType",
 		Success:     true,
 		Latency:     50,
+		Source:      GatewaySource,
 	}
 	expectedMetricData := RelayAnalyticsDTO{
 		ProjectHash:  "1",
@@ -24,6 +25,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 		SuccessCount: 1,
 		Latency:      50,
 		RelayCounts:  1,
+		Source:       GatewaySource,
 	}
 	t.Run("SuccessRelay_EmptyMap", func(t *testing.T) {
 		// arrange
@@ -44,6 +46,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 2,
 			Latency:      100,
 			RelayCounts:  2,
+			Source:       GatewaySource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -63,6 +66,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 3,
 			Latency:      150,
 			RelayCounts:  3,
+			Source:       GatewaySource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -83,6 +87,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 3,
 			Latency:      150,
 			RelayCounts:  4,
+			Source:       GatewaySource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -104,6 +109,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 1,
 			Latency:      50,
 			RelayCounts:  1,
+			Source:       GatewaySource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -125,6 +131,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 1,
 			Latency:      50,
 			RelayCounts:  1,
+			Source:       GatewaySource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -146,6 +153,49 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			SuccessCount: 1,
 			Latency:      50,
 			RelayCounts:  1,
+			Source:       GatewaySource,
+		}
+		// arrange
+		metricService.storeAggregatedData(metricData)
+		// assertion
+		err := checkThatMetricDtoInAggregatedMetricMap(*metricService.AggregatedMetricMap, expectedMetricData)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	// Scenario 6 (another chain id)
+	t.Run("SuccessRelay_WithNewSource_EmptyMap", func(t *testing.T) {
+		metricData.Success = true
+		metricData.Source = SdkSource
+		expectedMetricData = RelayAnalyticsDTO{
+			ProjectHash:  "2",
+			ChainID:      "testChain2",
+			APIType:      "testApiType2",
+			SuccessCount: 1,
+			Latency:      50,
+			RelayCounts:  1,
+			Source:       SdkSource,
+		}
+		// arrange
+		metricService.storeAggregatedData(metricData)
+		// assertion
+		err := checkThatMetricDtoInAggregatedMetricMap(*metricService.AggregatedMetricMap, expectedMetricData)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	// Scenario 6 (another chain id)
+	t.Run("SuccessRelay_WithNewSource_NonEmptyMap", func(t *testing.T) {
+		metricData.Success = true
+		metricData.Source = SdkSource
+		expectedMetricData = RelayAnalyticsDTO{
+			ProjectHash:  "2",
+			ChainID:      "testChain2",
+			APIType:      "testApiType2",
+			SuccessCount: 2,
+			Latency:      100,
+			RelayCounts:  2,
+			Source:       SdkSource,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -160,12 +210,14 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 	t.Run("Check_PrepareArrayForProject", func(t *testing.T) {
 		// setup
-		projectData := map[string]map[string]*AggregatedMetric{
+		projectData := map[string]map[string]map[RelaySource]*AggregatedMetric{
 			"testChain": {
 				"testApiType": {
-					TotalLatency: 100,
-					RelaysCount:  2,
-					SuccessCount: 1,
+					GatewaySource: {
+						TotalLatency: 100,
+						RelaysCount:  2,
+						SuccessCount: 1,
+					},
 				},
 			},
 		}
@@ -176,6 +228,7 @@ func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 			SuccessCount: 1,
 			Latency:      100,
 			RelayCounts:  2,
+			Source:       GatewaySource,
 		}
 
 		// arrange
@@ -208,7 +261,7 @@ func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {
 	})
 }
 
-func checkThatMetricDtoInAggregatedMetricMap(mapData map[string]map[string]map[string]*AggregatedMetric, expectedData RelayAnalyticsDTO) error {
+func checkThatMetricDtoInAggregatedMetricMap(mapData map[string]map[string]map[string]map[RelaySource]*AggregatedMetric, expectedData RelayAnalyticsDTO) error {
 	projectData, projectExists := mapData[expectedData.ProjectHash]
 	if !projectExists {
 		return fmt.Errorf("Couldn't find project data with key '%s'! ", expectedData.ProjectHash)
@@ -221,15 +274,18 @@ func checkThatMetricDtoInAggregatedMetricMap(mapData map[string]map[string]map[s
 	if !apiTypeExists {
 		return fmt.Errorf("Couldn't find apiType data with key '%s'! ", expectedData.APIType)
 	}
-
-	if apiTypeData.RelaysCount != expectedData.RelayCounts {
-		return fmt.Errorf("Invalid relayCounts data. expected: '%d' got: '%d'! ", expectedData.RelayCounts, apiTypeData.RelaysCount)
+	sourceData, sourceExists := apiTypeData[expectedData.Source]
+	if !sourceExists {
+		return fmt.Errorf("Couldn't find apiType data with key '%s'! ", expectedData.APIType)
 	}
-	if apiTypeData.TotalLatency != expectedData.Latency {
-		return fmt.Errorf("Invalid latency data. expected: '%d' got: '%d'! ", expectedData.Latency, apiTypeData.TotalLatency)
+	if sourceData.RelaysCount != expectedData.RelayCounts {
+		return fmt.Errorf("Invalid relayCounts data. expected: '%d' got: '%d'! ", expectedData.RelayCounts, sourceData.RelaysCount)
 	}
-	if apiTypeData.SuccessCount != expectedData.SuccessCount {
-		return fmt.Errorf("Invalid successCount data. expected: '%d' got: '%d'! ", expectedData.SuccessCount, apiTypeData.SuccessCount)
+	if sourceData.TotalLatency != expectedData.Latency {
+		return fmt.Errorf("Invalid latency data. expected: '%d' got: '%d'! ", expectedData.Latency, sourceData.TotalLatency)
+	}
+	if sourceData.SuccessCount != expectedData.SuccessCount {
+		return fmt.Errorf("Invalid successCount data. expected: '%d' got: '%d'! ", expectedData.SuccessCount, sourceData.SuccessCount)
 	}
 	return nil
 }

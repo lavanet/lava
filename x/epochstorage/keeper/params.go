@@ -91,6 +91,10 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	return blockInEpoch == 0
 }
 
+func (k Keeper) BlocksToSaveRaw(ctx sdk.Context) (res uint64) {
+	return k.EpochsToSaveRaw(ctx) * k.EpochBlocksRaw(ctx)
+}
+
 func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error) {
 	epochsToSave, err := k.EpochsToSave(ctx, block)
 	epochBlocks, err2 := k.EpochBlocks(ctx, block)
