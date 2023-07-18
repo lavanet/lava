@@ -127,6 +127,8 @@ class LavaProviders {
             }
         });
     }
+    // private getLavaProvidersInBatches() {
+    // }
     // GetLavaProviders returns lava providers list
     GetLavaProviders() {
         if (this.providers.length == 0) {
@@ -147,92 +149,76 @@ class LavaProviders {
     // getSession returns providers for current epoch
     getSession(chainID, rpcInterface, badge) {
         return __awaiter(this, void 0, void 0, function* () {
-            let lastRelayResponse = null;
             if (this.providers == null) {
                 throw errors_1.default.errLavaProvidersNotInitialized;
             }
-            // Get lava providers list
-            const lavaProviders = this.GetLavaProviders();
-            // Iterate over each and try to return pairing list
-            for (let i = 0; i < lavaProviders.length; i++) {
-                try {
-                    // Fetch lava provider which will be used for fetching pairing list
-                    const lavaRPCEndpoint = lavaProviders[i];
-                    // Create request for fetching api methods for LAV1
-                    const lavaApis = yield this.getServiceApis(lavaRPCEndpoint, { ChainID: "LAV1" }, "grpc", new Map([["lavanet.lava.spec.Query/Spec", 10]]));
-                    // Create request for getServiceApis method for chainID
-                    const apis = yield this.getServiceApis(lavaRPCEndpoint, { ChainID: chainID }, rpcInterface, lavaApis);
-                    // Create pairing request for getPairing method
-                    const pairingRequest = {
-                        chainID: chainID,
-                        client: this.accountAddress,
-                    };
-                    // Get pairing from the chain
-                    const pairingResponse = yield this.getPairingFromChain(lavaRPCEndpoint, pairingRequest, lavaApis);
-                    // Set when will next epoch start
-                    const nextEpochStart = new Date();
-                    nextEpochStart.setSeconds(nextEpochStart.getSeconds() +
-                        parseInt(pairingResponse.timeLeftToNextPairing));
-                    // Extract providers from pairing response
-                    const providers = pairingResponse.providers;
-                    // Initialize ConsumerSessionWithProvider array
-                    const pairing = [];
-                    // Create request for getting userEntity
-                    const userEntityRequest = {
-                        address: this.accountAddress,
-                        chainID: chainID,
-                        block: pairingResponse.currentEpoch,
-                    };
-                    // Fetch max compute units
-                    let maxcu;
-                    if (badge) {
-                        maxcu = badge.getCuAllocation();
-                    }
-                    else {
-                        maxcu = yield this.getMaxCuForUser(lavaRPCEndpoint, userEntityRequest, lavaApis);
-                    }
-                    // Iterate over providers to populate pairing list
-                    for (const provider of providers) {
-                        // Skip providers with no endpoints
-                        if (provider.endpoints.length == 0) {
-                            continue;
-                        }
-                        // Initialize relevantEndpoints array
-                        const relevantEndpoints = [];
-                        // Only take into account endpoints that use the same api interface
-                        // And geolocation
-                        for (const endpoint of provider.endpoints) {
-                            if (endpoint.useType == rpcInterface &&
-                                endpoint.geolocation == this.geolocation) {
-                                const convertedEndpoint = new types_1.Endpoint(endpoint.iPPORT, true, 0);
-                                relevantEndpoints.push(convertedEndpoint);
-                            }
-                        }
-                        // Skip providers with no relevant endpoints
-                        if (relevantEndpoints.length == 0) {
-                            continue;
-                        }
-                        const singleConsumerSession = new types_1.SingleConsumerSession(0, // cuSum
-                        0, // latestRelayCuSum
-                        1, // relayNumber
-                        relevantEndpoints[0], parseInt(pairingResponse.currentEpoch), provider.address);
-                        // Create a new pairing object
-                        const newPairing = new types_1.ConsumerSessionWithProvider(this.accountAddress, relevantEndpoints, singleConsumerSession, maxcu, 0, // used compute units
-                        false);
-                        // Add newly created pairing in the pairing list
-                        pairing.push(newPairing);
-                    }
-                    // Create session object
-                    const sessionManager = new types_1.SessionManager(pairing, nextEpochStart, apis);
-                    return sessionManager;
-                }
-                catch (err) {
-                    if (err instanceof Error) {
-                        lastRelayResponse = err;
-                    }
-                }
+            // Create request for fetching api methods for LAV1
+            const lavaApis = yield this.getServiceApis({ ChainID: "LAV1" }, "grpc", new Map([["lavanet.lava.spec.Query/Spec", 10]]));
+            // Create request for getServiceApis method for chainID
+            const apis = yield this.getServiceApis({ ChainID: chainID }, rpcInterface, lavaApis);
+            // Create pairing request for getPairing method
+            const pairingRequest = {
+                chainID: chainID,
+                client: this.accountAddress,
+            };
+            // Get pairing from the chain
+            const pairingResponse = yield this.getPairingFromChain(pairingRequest, lavaApis);
+            // Set when will next epoch start
+            const nextEpochStart = new Date();
+            nextEpochStart.setSeconds(nextEpochStart.getSeconds() +
+                (0, common_1.parseLong)(pairingResponse.timeLeftToNextPairing));
+            // Extract providers from pairing response
+            const providers = pairingResponse.providers;
+            // Initialize ConsumerSessionWithProvider array
+            const pairing = [];
+            // Create request for getting userEntity
+            const userEntityRequest = {
+                address: this.accountAddress,
+                chainID: chainID,
+                block: pairingResponse.currentEpoch,
+            };
+            // Fetch max compute units
+            let maxcu;
+            if (badge) {
+                maxcu = badge.getCuAllocation();
             }
-            throw lastRelayResponse;
+            else {
+                maxcu = yield this.getMaxCuForUser(userEntityRequest, lavaApis);
+            }
+            // Iterate over providers to populate pairing list
+            for (const provider of providers) {
+                // Skip providers with no endpoints
+                if (provider.endpoints.length == 0) {
+                    continue;
+                }
+                // Initialize relevantEndpoints array
+                const relevantEndpoints = [];
+                // Only take into account endpoints that use the same api interface
+                // And geolocation
+                for (const endpoint of provider.endpoints) {
+                    if (endpoint.apiInterfaces.includes(rpcInterface) &&
+                        (0, common_1.parseLong)(endpoint.geolocation) == Number(this.geolocation)) {
+                        const convertedEndpoint = new types_1.Endpoint(endpoint.iPPORT, true, 0);
+                        relevantEndpoints.push(convertedEndpoint);
+                    }
+                }
+                // Skip providers with no relevant endpoints
+                if (relevantEndpoints.length == 0) {
+                    continue;
+                }
+                const singleConsumerSession = new types_1.SingleConsumerSession(0, // cuSum
+                0, // latestRelayCuSum
+                1, // relayNumber
+                relevantEndpoints[0], (0, common_1.parseLong)(pairingResponse.currentEpoch), provider.address);
+                // Create a new pairing object
+                const newPairing = new types_1.ConsumerSessionWithProvider(this.accountAddress, relevantEndpoints, singleConsumerSession, maxcu, 0, // used compute units
+                false);
+                // Add newly created pairing in the pairing list
+                pairing.push(newPairing);
+            }
+            // Create session object
+            const sessionManager = new types_1.SessionManager(pairing, nextEpochStart, apis);
+            return sessionManager;
         });
     }
     debugPrint(message, ...optionalParams) {
@@ -268,7 +254,7 @@ class LavaProviders {
         const random = Math.floor(Math.random() * validProviders.length);
         return validProviders[random];
     }
-    getPairingFromChain(lavaRPCEndpoint, request, lavaApis) {
+    getPairingFromChain(request, lavaApis) {
         return __awaiter(this, void 0, void 0, function* () {
             const requestData = query_1.QueryGetPairingRequest.encode(request).finish();
             const hexData = Buffer.from(requestData).toString("hex");
@@ -286,7 +272,7 @@ class LavaProviders {
             if (relayCu == undefined) {
                 throw errors_1.default.errApiNotFound;
             }
-            const jsonResponse = yield this.SendRelayWithRetry(sendRelayOptions, lavaRPCEndpoint, relayCu, "tendermintrpc");
+            const jsonResponse = yield this.SendRelayToAllProvidersAndRace(sendRelayOptions, relayCu, "tendermintrpc");
             const byteArrayResponse = (0, common_1.base64ToUint8Array)(jsonResponse.result.response.value);
             const decodedResponse = query_1.QueryGetPairingResponse.decode(byteArrayResponse);
             if (decodedResponse.providers == undefined) {
@@ -295,7 +281,7 @@ class LavaProviders {
             return decodedResponse;
         });
     }
-    getMaxCuForUser(lavaRPCEndpoint, request, lavaApis) {
+    getMaxCuForUser(request, lavaApis) {
         return __awaiter(this, void 0, void 0, function* () {
             const requestData = query_1.QueryUserEntryRequest.encode(request).finish();
             const hexData = Buffer.from(requestData).toString("hex");
@@ -313,17 +299,18 @@ class LavaProviders {
             if (relayCu == undefined) {
                 throw errors_1.default.errApiNotFound;
             }
-            const jsonResponse = yield this.SendRelayWithRetry(sendRelayOptions, lavaRPCEndpoint, relayCu, "tendermintrpc");
+            const jsonResponse = yield this.SendRelayToAllProvidersAndRace(sendRelayOptions, relayCu, "tendermintrpc");
             const byteArrayResponse = (0, common_1.base64ToUint8Array)(jsonResponse.result.response.value);
             const response = query_1.QueryUserEntryResponse.decode(byteArrayResponse);
             if (response.maxCU == undefined) {
                 throw errors_1.default.errMaxCuNotFound;
             }
             // return maxCu from userEntry
-            return response.maxCU.low;
+            return (0, common_1.parseLong)(response.maxCU);
         });
     }
-    getServiceApis(lavaRPCEndpoint, request, rpcInterface, lavaApis) {
+    getServiceApis(request, rpcInterface, lavaApis) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const requestData = query_2.QueryGetSpecRequest.encode(request).finish();
             const hexData = Buffer.from(requestData).toString("hex");
@@ -341,7 +328,7 @@ class LavaProviders {
             if (relayCu == undefined) {
                 throw errors_1.default.errApiNotFound;
             }
-            const jsonResponse = yield this.SendRelayWithRetry(sendRelayOptions, lavaRPCEndpoint, relayCu, "tendermintrpc");
+            const jsonResponse = yield this.SendRelayToAllProvidersAndRace(sendRelayOptions, relayCu, "tendermintrpc");
             const byteArrayResponse = (0, common_1.base64ToUint8Array)(jsonResponse.result.response.value);
             const response = query_2.QueryGetSpecResponse.decode(byteArrayResponse);
             if (response.Spec == undefined) {
@@ -349,19 +336,22 @@ class LavaProviders {
             }
             const apis = new Map();
             // Extract apis from response
-            for (const element of response.Spec.apis) {
-                for (const apiInterface of element.apiInterfaces) {
-                    // Skip if interface which does not match
-                    if (apiInterface.interface != rpcInterface)
-                        continue;
-                    if (apiInterface.interface == "rest") {
+            for (const element of response.Spec.apiCollections) {
+                if (!element.enabled) {
+                    continue;
+                }
+                // Skip if interface which does not match
+                if (((_a = element.collectionData) === null || _a === void 0 ? void 0 : _a.apiInterface) != rpcInterface)
+                    continue;
+                for (const api of element.apis) {
+                    if (((_b = element.collectionData) === null || _b === void 0 ? void 0 : _b.apiInterface) == "rest") {
                         // handle REST apis
-                        const name = this.convertRestApiName(element.name);
-                        apis.set(name, element.computeUnits.low);
+                        const name = this.convertRestApiName(api.name);
+                        apis.set(name, (0, common_1.parseLong)(api.computeUnits));
                     }
                     else {
                         // Handle RPC apis
-                        apis.set(element.name, element.computeUnits.low);
+                        apis.set(api.name, (0, common_1.parseLong)(api.computeUnits));
                     }
                 }
             }
@@ -374,6 +364,8 @@ class LavaProviders {
     }
     SendRelayToAllProvidersAndRace(options, relayCu, rpcInterface) {
         return __awaiter(this, void 0, void 0, function* () {
+            let lastError;
+            // let lavaProviders = this.GetLavaProviders();
             for (let retryAttempt = 0; retryAttempt < BOOT_RETRY_ATTEMPTS; retryAttempt++) {
                 const allRelays = new Map();
                 let response;
@@ -388,6 +380,7 @@ class LavaProviders {
                     })
                         .catch((err) => {
                         this.debugPrint("one of the promises failed in SendRelayToAllProvidersAndRace reason:", err, uniqueKey);
+                        lastError = err;
                         allRelays.delete(uniqueKey);
                     });
                     allRelays.set(uniqueKey, providerRelayPromise);
@@ -397,12 +390,13 @@ class LavaProviders {
                     const returnedPromise = yield Promise.race(allRelays);
                     yield returnedPromise[1];
                     if (response) {
+                        this.debugPrint("SendRelayToAllProvidersAndRace, got response from one provider", response);
                         return response;
                     }
                 }
                 this.debugPrint("Failed all promises SendRelayToAllProvidersAndRace, trying again", retryAttempt, "out of", BOOT_RETRY_ATTEMPTS);
             }
-            throw new Error("Failed all promises SendRelayToAllProvidersAndRace");
+            throw new Error("Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError));
         });
     }
     SendRelayWithRetry(options, lavaRPCEndpoint, relayCu, rpcInterface) {

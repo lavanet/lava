@@ -59,8 +59,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -232,8 +233,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -247,8 +249,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -336,15 +339,16 @@ export declare const GenerateBadgeResponse: {
             } & { [K_4 in Exclude<keyof I["pairingList"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -417,10 +421,13 @@ export declare const GenerateBadgeResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_5 in Exclude<keyof I["pairingList"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_6 in Exclude<keyof I["pairingList"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_7 in Exclude<keyof I["pairingList"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_6 in Exclude<keyof I["pairingList"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_7 in Exclude<keyof I["pairingList"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_8 in Exclude<keyof I["pairingList"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_9 in Exclude<keyof I["pairingList"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -493,10 +500,10 @@ export declare const GenerateBadgeResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_8 in Exclude<keyof I["pairingList"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_10 in Exclude<keyof I["pairingList"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_9 in Exclude<keyof I["pairingList"][number], keyof StakeEntry>]: never; })[] & { [K_10 in Exclude<keyof I["pairingList"], keyof {
+        } & { [K_11 in Exclude<keyof I["pairingList"][number], keyof StakeEntry>]: never; })[] & { [K_12 in Exclude<keyof I["pairingList"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -505,15 +512,16 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         badgeSignerAddress?: string | undefined;
-    } & { [K_11 in Exclude<keyof I, keyof GenerateBadgeResponse>]: never; }>(base?: I | undefined): GenerateBadgeResponse;
+    } & { [K_13 in Exclude<keyof I, keyof GenerateBadgeResponse>]: never; }>(base?: I | undefined): GenerateBadgeResponse;
     fromPartial<I_1 extends {
         badge?: {
             cuAllocation?: string | number | Long | undefined;
@@ -531,8 +539,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -618,7 +627,7 @@ export declare const GenerateBadgeResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_12 in Exclude<keyof I_1["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_14 in Exclude<keyof I_1["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
             epoch?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -690,11 +699,11 @@ export declare const GenerateBadgeResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_13 in Exclude<keyof I_1["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["badge"]["epoch"], keyof Long>]: never; }) | undefined;
             address?: string | undefined;
             lavaChainId?: string | undefined;
             projectSig?: Uint8Array | undefined;
-        } & { [K_14 in Exclude<keyof I_1["badge"], keyof Badge>]: never; }) | undefined;
+        } & { [K_16 in Exclude<keyof I_1["badge"], keyof Badge>]: never; }) | undefined;
         pairingList?: ({
             stake?: {
                 denom?: string | undefined;
@@ -704,8 +713,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -719,8 +729,9 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -732,7 +743,7 @@ export declare const GenerateBadgeResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_15 in Exclude<keyof I_1["pairingList"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_17 in Exclude<keyof I_1["pairingList"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -805,18 +816,19 @@ export declare const GenerateBadgeResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_16 in Exclude<keyof I_1["pairingList"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["pairingList"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -888,11 +900,14 @@ export declare const GenerateBadgeResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_17 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_18 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_19 in Exclude<keyof I_1["pairingList"][number]["endpoints"], keyof {
+                } & { [K_19 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_20 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_21 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_22 in Exclude<keyof I_1["pairingList"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_23 in Exclude<keyof I_1["pairingList"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -965,10 +980,10 @@ export declare const GenerateBadgeResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_20 in Exclude<keyof I_1["pairingList"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_24 in Exclude<keyof I_1["pairingList"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_21 in Exclude<keyof I_1["pairingList"][number], keyof StakeEntry>]: never; })[] & { [K_22 in Exclude<keyof I_1["pairingList"], keyof {
+        } & { [K_25 in Exclude<keyof I_1["pairingList"][number], keyof StakeEntry>]: never; })[] & { [K_26 in Exclude<keyof I_1["pairingList"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -977,15 +992,16 @@ export declare const GenerateBadgeResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         badgeSignerAddress?: string | undefined;
-    } & { [K_23 in Exclude<keyof I_1, keyof GenerateBadgeResponse>]: never; }>(object: I_1): GenerateBadgeResponse;
+    } & { [K_27 in Exclude<keyof I_1, keyof GenerateBadgeResponse>]: never; }>(object: I_1): GenerateBadgeResponse;
 };
 export interface BadgeGenerator {
     GenerateBadge(request: GenerateBadgeRequest): Promise<GenerateBadgeResponse>;

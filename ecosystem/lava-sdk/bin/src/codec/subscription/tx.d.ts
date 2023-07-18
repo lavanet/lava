@@ -17,6 +17,12 @@ export interface MsgAddProject {
 }
 export interface MsgAddProjectResponse {
 }
+export interface MsgDelProject {
+    creator: string;
+    name: string;
+}
+export interface MsgDelProjectResponse {
+}
 export declare const MsgBuy: {
     encode(message: MsgBuy, writer?: _m0.Writer): _m0.Writer;
     decode(input: _m0.Reader | Uint8Array, length?: number): MsgBuy;
@@ -204,7 +210,6 @@ export declare const MsgAddProject: {
         creator?: string | undefined;
         projectData?: {
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -219,13 +224,14 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
         projectData?: ({
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -240,10 +246,11 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
         } & {
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: ({
                 key?: string | undefined;
@@ -267,6 +274,8 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -277,7 +286,7 @@ export declare const MsgAddProject: {
                 } & {
                     chainId?: string | undefined;
                     apis?: (string[] & string[] & { [K_2 in Exclude<keyof I["projectData"]["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_3 in Exclude<keyof I["projectData"]["policy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_4 in Exclude<keyof I["projectData"]["policy"]["chainPolicies"], keyof {
+                } & { [K_3 in Exclude<keyof I["projectData"]["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_4 in Exclude<keyof I["projectData"]["policy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -569,14 +578,15 @@ export declare const MsgAddProject: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_8 in Exclude<keyof I["projectData"]["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_9 in Exclude<keyof I["projectData"]["policy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
-        } & { [K_10 in Exclude<keyof I["projectData"], keyof ProjectData>]: never; }) | undefined;
-    } & { [K_11 in Exclude<keyof I, keyof MsgAddProject>]: never; }>(base?: I | undefined): MsgAddProject;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_9 in Exclude<keyof I["projectData"]["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_10 in Exclude<keyof I["projectData"]["policy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
+        } & { [K_11 in Exclude<keyof I["projectData"], keyof ProjectData>]: never; }) | undefined;
+    } & { [K_12 in Exclude<keyof I, keyof MsgAddProject>]: never; }>(base?: I | undefined): MsgAddProject;
     fromPartial<I_1 extends {
         creator?: string | undefined;
         projectData?: {
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -591,13 +601,14 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
         projectData?: ({
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -612,10 +623,11 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
         } & {
             name?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: ({
                 key?: string | undefined;
@@ -626,7 +638,7 @@ export declare const MsgAddProject: {
             } & {
                 key?: string | undefined;
                 kinds?: number | undefined;
-            } & { [K_12 in Exclude<keyof I_1["projectData"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_13 in Exclude<keyof I_1["projectData"]["projectKeys"], keyof {
+            } & { [K_13 in Exclude<keyof I_1["projectData"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_14 in Exclude<keyof I_1["projectData"]["projectKeys"], keyof {
                 key?: string | undefined;
                 kinds?: number | undefined;
             }[]>]: never; }) | undefined;
@@ -639,6 +651,8 @@ export declare const MsgAddProject: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -648,8 +662,8 @@ export declare const MsgAddProject: {
                     apis?: string[] | undefined;
                 } & {
                     chainId?: string | undefined;
-                    apis?: (string[] & string[] & { [K_14 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_15 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_16 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"], keyof {
+                    apis?: (string[] & string[] & { [K_15 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+                } & { [K_16 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_17 in Exclude<keyof I_1["projectData"]["policy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -724,7 +738,7 @@ export declare const MsgAddProject: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_17 in Exclude<keyof I_1["projectData"]["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+                } & { [K_18 in Exclude<keyof I_1["projectData"]["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
                 totalCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -796,7 +810,7 @@ export declare const MsgAddProject: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_18 in Exclude<keyof I_1["projectData"]["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_19 in Exclude<keyof I_1["projectData"]["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
                 epochCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -868,7 +882,7 @@ export declare const MsgAddProject: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_19 in Exclude<keyof I_1["projectData"]["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_20 in Exclude<keyof I_1["projectData"]["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
                 maxProvidersToPair?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -940,10 +954,12 @@ export declare const MsgAddProject: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_20 in Exclude<keyof I_1["projectData"]["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_21 in Exclude<keyof I_1["projectData"]["policy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
-        } & { [K_22 in Exclude<keyof I_1["projectData"], keyof ProjectData>]: never; }) | undefined;
-    } & { [K_23 in Exclude<keyof I_1, keyof MsgAddProject>]: never; }>(object: I_1): MsgAddProject;
+                } & { [K_21 in Exclude<keyof I_1["projectData"]["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_22 in Exclude<keyof I_1["projectData"]["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_23 in Exclude<keyof I_1["projectData"]["policy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
+        } & { [K_24 in Exclude<keyof I_1["projectData"], keyof ProjectData>]: never; }) | undefined;
+    } & { [K_25 in Exclude<keyof I_1, keyof MsgAddProject>]: never; }>(object: I_1): MsgAddProject;
 };
 export declare const MsgAddProjectResponse: {
     encode(_: MsgAddProjectResponse, writer?: _m0.Writer): _m0.Writer;
@@ -953,11 +969,40 @@ export declare const MsgAddProjectResponse: {
     create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgAddProjectResponse;
     fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgAddProjectResponse;
 };
+export declare const MsgDelProject: {
+    encode(message: MsgDelProject, writer?: _m0.Writer): _m0.Writer;
+    decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelProject;
+    fromJSON(object: any): MsgDelProject;
+    toJSON(message: MsgDelProject): unknown;
+    create<I extends {
+        creator?: string | undefined;
+        name?: string | undefined;
+    } & {
+        creator?: string | undefined;
+        name?: string | undefined;
+    } & { [K in Exclude<keyof I, keyof MsgDelProject>]: never; }>(base?: I | undefined): MsgDelProject;
+    fromPartial<I_1 extends {
+        creator?: string | undefined;
+        name?: string | undefined;
+    } & {
+        creator?: string | undefined;
+        name?: string | undefined;
+    } & { [K_1 in Exclude<keyof I_1, keyof MsgDelProject>]: never; }>(object: I_1): MsgDelProject;
+};
+export declare const MsgDelProjectResponse: {
+    encode(_: MsgDelProjectResponse, writer?: _m0.Writer): _m0.Writer;
+    decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelProjectResponse;
+    fromJSON(_: any): MsgDelProjectResponse;
+    toJSON(_: MsgDelProjectResponse): unknown;
+    create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgDelProjectResponse;
+    fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgDelProjectResponse;
+};
 /** Msg defines the Msg service. */
 export interface Msg {
     Buy(request: MsgBuy): Promise<MsgBuyResponse>;
-    /** this line is used by starport scaffolding # proto/tx/rpc */
     AddProject(request: MsgAddProject): Promise<MsgAddProjectResponse>;
+    /** this line is used by starport scaffolding # proto/tx/rpc */
+    DelProject(request: MsgDelProject): Promise<MsgDelProjectResponse>;
 }
 export declare class MsgClientImpl implements Msg {
     private readonly rpc;
@@ -967,6 +1012,7 @@ export declare class MsgClientImpl implements Msg {
     });
     Buy(request: MsgBuy): Promise<MsgBuyResponse>;
     AddProject(request: MsgAddProject): Promise<MsgAddProjectResponse>;
+    DelProject(request: MsgDelProject): Promise<MsgDelProjectResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

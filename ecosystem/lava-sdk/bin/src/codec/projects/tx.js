@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MsgClientImpl = exports.MsgSetSubscriptionPolicyResponse = exports.MsgSetSubscriptionPolicy = exports.MsgSetPolicyResponse = exports.MsgSetPolicy = exports.MsgAddKeysResponse = exports.MsgAddKeys = exports.protobufPackage = void 0;
+exports.MsgClientImpl = exports.MsgSetSubscriptionPolicyResponse = exports.MsgSetSubscriptionPolicy = exports.MsgSetPolicyResponse = exports.MsgSetPolicy = exports.MsgDelKeysResponse = exports.MsgDelKeys = exports.MsgAddKeysResponse = exports.MsgAddKeys = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
+const plan_1 = require("../plans/plan");
 const project_1 = require("./project");
 exports.protobufPackage = "lavanet.lava.projects";
 function createBaseMsgAddKeys() {
@@ -33,25 +34,25 @@ exports.MsgAddKeys = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.project = reader.string();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.projectKeys.push(project_1.ProjectKey.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -104,7 +105,7 @@ exports.MsgAddKeysResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -126,6 +127,123 @@ exports.MsgAddKeysResponse = {
         return message;
     },
 };
+function createBaseMsgDelKeys() {
+    return { creator: "", project: "", projectKeys: [] };
+}
+exports.MsgDelKeys = {
+    encode(message, writer = minimal_1.default.Writer.create()) {
+        if (message.creator !== "") {
+            writer.uint32(10).string(message.creator);
+        }
+        if (message.project !== "") {
+            writer.uint32(18).string(message.project);
+        }
+        for (const v of message.projectKeys) {
+            project_1.ProjectKey.encode(v, writer.uint32(26).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseMsgDelKeys();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if (tag != 10) {
+                        break;
+                    }
+                    message.creator = reader.string();
+                    continue;
+                case 2:
+                    if (tag != 18) {
+                        break;
+                    }
+                    message.project = reader.string();
+                    continue;
+                case 3:
+                    if (tag != 26) {
+                        break;
+                    }
+                    message.projectKeys.push(project_1.ProjectKey.decode(reader, reader.uint32()));
+                    continue;
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            creator: isSet(object.creator) ? String(object.creator) : "",
+            project: isSet(object.project) ? String(object.project) : "",
+            projectKeys: Array.isArray(object === null || object === void 0 ? void 0 : object.projectKeys) ? object.projectKeys.map((e) => project_1.ProjectKey.fromJSON(e)) : [],
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        message.creator !== undefined && (obj.creator = message.creator);
+        message.project !== undefined && (obj.project = message.project);
+        if (message.projectKeys) {
+            obj.projectKeys = message.projectKeys.map((e) => e ? project_1.ProjectKey.toJSON(e) : undefined);
+        }
+        else {
+            obj.projectKeys = [];
+        }
+        return obj;
+    },
+    create(base) {
+        return exports.MsgDelKeys.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(object) {
+        var _a, _b, _c;
+        const message = createBaseMsgDelKeys();
+        message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
+        message.project = (_b = object.project) !== null && _b !== void 0 ? _b : "";
+        message.projectKeys = ((_c = object.projectKeys) === null || _c === void 0 ? void 0 : _c.map((e) => project_1.ProjectKey.fromPartial(e))) || [];
+        return message;
+    },
+};
+function createBaseMsgDelKeysResponse() {
+    return {};
+}
+exports.MsgDelKeysResponse = {
+    encode(_, writer = minimal_1.default.Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseMsgDelKeysResponse();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(_) {
+        return {};
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    create(base) {
+        return exports.MsgDelKeysResponse.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(_) {
+        const message = createBaseMsgDelKeysResponse();
+        return message;
+    },
+};
 function createBaseMsgSetPolicy() {
     return { creator: "", project: "", policy: undefined };
 }
@@ -138,7 +256,7 @@ exports.MsgSetPolicy = {
             writer.uint32(18).string(message.project);
         }
         if (message.policy !== undefined) {
-            project_1.Policy.encode(message.policy, writer.uint32(26).fork()).ldelim();
+            plan_1.Policy.encode(message.policy, writer.uint32(26).fork()).ldelim();
         }
         return writer;
     },
@@ -150,25 +268,25 @@ exports.MsgSetPolicy = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.project = reader.string();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
-                    message.policy = project_1.Policy.decode(reader, reader.uint32());
+                    message.policy = plan_1.Policy.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -179,14 +297,14 @@ exports.MsgSetPolicy = {
         return {
             creator: isSet(object.creator) ? String(object.creator) : "",
             project: isSet(object.project) ? String(object.project) : "",
-            policy: isSet(object.policy) ? project_1.Policy.fromJSON(object.policy) : undefined,
+            policy: isSet(object.policy) ? plan_1.Policy.fromJSON(object.policy) : undefined,
         };
     },
     toJSON(message) {
         const obj = {};
         message.creator !== undefined && (obj.creator = message.creator);
         message.project !== undefined && (obj.project = message.project);
-        message.policy !== undefined && (obj.policy = message.policy ? project_1.Policy.toJSON(message.policy) : undefined);
+        message.policy !== undefined && (obj.policy = message.policy ? plan_1.Policy.toJSON(message.policy) : undefined);
         return obj;
     },
     create(base) {
@@ -198,7 +316,7 @@ exports.MsgSetPolicy = {
         message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
         message.project = (_b = object.project) !== null && _b !== void 0 ? _b : "";
         message.policy = (object.policy !== undefined && object.policy !== null)
-            ? project_1.Policy.fromPartial(object.policy)
+            ? plan_1.Policy.fromPartial(object.policy)
             : undefined;
         return message;
     },
@@ -218,7 +336,7 @@ exports.MsgSetPolicyResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -252,7 +370,7 @@ exports.MsgSetSubscriptionPolicy = {
             writer.uint32(18).string(v);
         }
         if (message.policy !== undefined) {
-            project_1.Policy.encode(message.policy, writer.uint32(26).fork()).ldelim();
+            plan_1.Policy.encode(message.policy, writer.uint32(26).fork()).ldelim();
         }
         return writer;
     },
@@ -264,25 +382,25 @@ exports.MsgSetSubscriptionPolicy = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.projects.push(reader.string());
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
-                    message.policy = project_1.Policy.decode(reader, reader.uint32());
+                    message.policy = plan_1.Policy.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -293,7 +411,7 @@ exports.MsgSetSubscriptionPolicy = {
         return {
             creator: isSet(object.creator) ? String(object.creator) : "",
             projects: Array.isArray(object === null || object === void 0 ? void 0 : object.projects) ? object.projects.map((e) => String(e)) : [],
-            policy: isSet(object.policy) ? project_1.Policy.fromJSON(object.policy) : undefined,
+            policy: isSet(object.policy) ? plan_1.Policy.fromJSON(object.policy) : undefined,
         };
     },
     toJSON(message) {
@@ -305,7 +423,7 @@ exports.MsgSetSubscriptionPolicy = {
         else {
             obj.projects = [];
         }
-        message.policy !== undefined && (obj.policy = message.policy ? project_1.Policy.toJSON(message.policy) : undefined);
+        message.policy !== undefined && (obj.policy = message.policy ? plan_1.Policy.toJSON(message.policy) : undefined);
         return obj;
     },
     create(base) {
@@ -317,7 +435,7 @@ exports.MsgSetSubscriptionPolicy = {
         message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
         message.projects = ((_b = object.projects) === null || _b === void 0 ? void 0 : _b.map((e) => e)) || [];
         message.policy = (object.policy !== undefined && object.policy !== null)
-            ? project_1.Policy.fromPartial(object.policy)
+            ? plan_1.Policy.fromPartial(object.policy)
             : undefined;
         return message;
     },
@@ -337,7 +455,7 @@ exports.MsgSetSubscriptionPolicyResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -364,6 +482,7 @@ class MsgClientImpl {
         this.service = (opts === null || opts === void 0 ? void 0 : opts.service) || "lavanet.lava.projects.Msg";
         this.rpc = rpc;
         this.AddKeys = this.AddKeys.bind(this);
+        this.DelKeys = this.DelKeys.bind(this);
         this.SetPolicy = this.SetPolicy.bind(this);
         this.SetSubscriptionPolicy = this.SetSubscriptionPolicy.bind(this);
     }
@@ -371,6 +490,11 @@ class MsgClientImpl {
         const data = exports.MsgAddKeys.encode(request).finish();
         const promise = this.rpc.request(this.service, "AddKeys", data);
         return promise.then((data) => exports.MsgAddKeysResponse.decode(minimal_1.default.Reader.create(data)));
+    }
+    DelKeys(request) {
+        const data = exports.MsgDelKeys.encode(request).finish();
+        const promise = this.rpc.request(this.service, "DelKeys", data);
+        return promise.then((data) => exports.MsgDelKeysResponse.decode(minimal_1.default.Reader.create(data)));
     }
     SetPolicy(request) {
         const data = exports.MsgSetPolicy.encode(request).finish();

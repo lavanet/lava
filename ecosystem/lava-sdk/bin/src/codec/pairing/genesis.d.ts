@@ -1,5 +1,6 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { RawMessage } from "../common/fixationEntry";
 import { EpochPayments } from "./epoch_payments";
 import { Params } from "./params";
 import { ProviderPaymentStorage } from "./provider_payment_storage";
@@ -15,8 +16,9 @@ export interface GenesisState {
     uniquePaymentStorageClientProviderList: UniquePaymentStorageClientProvider[];
     providerPaymentStorageList: ProviderPaymentStorage[];
     epochPaymentsList: EpochPayments[];
-    /** this line is used by starport scaffolding # genesis/proto/state */
     badgeUsedCuList: BadgeUsedCu[];
+    /** this line is used by starport scaffolding # genesis/proto/state */
+    badgesTS: RawMessage[];
 }
 export declare const BadgeUsedCu: {
     encode(message: BadgeUsedCu, writer?: _m0.Writer): _m0.Writer;
@@ -188,12 +190,9 @@ export declare const GenesisState: {
     create<I extends {
         params?: {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -219,15 +218,16 @@ export declare const GenesisState: {
             badgeUsedCuKey?: Uint8Array | undefined;
             usedCu?: string | number | Long | undefined;
         }[] | undefined;
+        badgesTS?: {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[] | undefined;
     } & {
         params?: ({
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -235,7 +235,6 @@ export declare const GenesisState: {
             recommendedEpochNumToCollectPayment?: string | number | Long | undefined;
         } & {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | (Long & {
                 high: number;
@@ -309,78 +308,6 @@ export declare const GenesisState: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K in Exclude<keyof I["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
-            servicersToPairCount?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_1 in Exclude<keyof I["params"]["servicersToPairCount"], keyof Long>]: never; }) | undefined;
             epochBlocksOverlap?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -452,8 +379,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_2 in Exclude<keyof I["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
-            stakeToMaxCUList?: string | undefined;
+            } & { [K_1 in Exclude<keyof I["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -529,8 +455,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_3 in Exclude<keyof I["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
-        } & { [K_4 in Exclude<keyof I["params"], keyof Params>]: never; }) | undefined;
+            } & { [K_2 in Exclude<keyof I["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
+        } & { [K_3 in Exclude<keyof I["params"], keyof Params>]: never; }) | undefined;
         uniquePaymentStorageClientProviderList?: ({
             index?: string | undefined;
             block?: string | number | Long | undefined;
@@ -612,7 +538,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number]["block"], keyof Long>]: never; }) | undefined;
+            } & { [K_4 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number]["block"], keyof Long>]: never; }) | undefined;
             usedCU?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -684,8 +610,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_6 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number]["usedCU"], keyof Long>]: never; }) | undefined;
-        } & { [K_7 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number], keyof UniquePaymentStorageClientProvider>]: never; })[] & { [K_8 in Exclude<keyof I["uniquePaymentStorageClientProviderList"], keyof {
+            } & { [K_5 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number]["usedCU"], keyof Long>]: never; }) | undefined;
+        } & { [K_6 in Exclude<keyof I["uniquePaymentStorageClientProviderList"][number], keyof UniquePaymentStorageClientProvider>]: never; })[] & { [K_7 in Exclude<keyof I["uniquePaymentStorageClientProviderList"], keyof {
             index?: string | undefined;
             block?: string | number | Long | undefined;
             usedCU?: string | number | Long | undefined;
@@ -773,8 +699,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_9 in Exclude<keyof I["providerPaymentStorageList"][number]["epoch"], keyof Long>]: never; }) | undefined;
-            uniquePaymentStorageClientProviderKeys?: (string[] & string[] & { [K_10 in Exclude<keyof I["providerPaymentStorageList"][number]["uniquePaymentStorageClientProviderKeys"], keyof string[]>]: never; }) | undefined;
+            } & { [K_8 in Exclude<keyof I["providerPaymentStorageList"][number]["epoch"], keyof Long>]: never; }) | undefined;
+            uniquePaymentStorageClientProviderKeys?: (string[] & string[] & { [K_9 in Exclude<keyof I["providerPaymentStorageList"][number]["uniquePaymentStorageClientProviderKeys"], keyof string[]>]: never; }) | undefined;
             complainersTotalCu?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -846,8 +772,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_11 in Exclude<keyof I["providerPaymentStorageList"][number]["complainersTotalCu"], keyof Long>]: never; }) | undefined;
-        } & { [K_12 in Exclude<keyof I["providerPaymentStorageList"][number], keyof ProviderPaymentStorage>]: never; })[] & { [K_13 in Exclude<keyof I["providerPaymentStorageList"], keyof {
+            } & { [K_10 in Exclude<keyof I["providerPaymentStorageList"][number]["complainersTotalCu"], keyof Long>]: never; }) | undefined;
+        } & { [K_11 in Exclude<keyof I["providerPaymentStorageList"][number], keyof ProviderPaymentStorage>]: never; })[] & { [K_12 in Exclude<keyof I["providerPaymentStorageList"], keyof {
             index?: string | undefined;
             epoch?: string | number | Long | undefined;
             uniquePaymentStorageClientProviderKeys?: string[] | undefined;
@@ -861,8 +787,8 @@ export declare const GenesisState: {
             providerPaymentStorageKeys?: string[] | undefined;
         } & {
             index?: string | undefined;
-            providerPaymentStorageKeys?: (string[] & string[] & { [K_14 in Exclude<keyof I["epochPaymentsList"][number]["providerPaymentStorageKeys"], keyof string[]>]: never; }) | undefined;
-        } & { [K_15 in Exclude<keyof I["epochPaymentsList"][number], keyof EpochPayments>]: never; })[] & { [K_16 in Exclude<keyof I["epochPaymentsList"], keyof {
+            providerPaymentStorageKeys?: (string[] & string[] & { [K_13 in Exclude<keyof I["epochPaymentsList"][number]["providerPaymentStorageKeys"], keyof string[]>]: never; }) | undefined;
+        } & { [K_14 in Exclude<keyof I["epochPaymentsList"][number], keyof EpochPayments>]: never; })[] & { [K_15 in Exclude<keyof I["epochPaymentsList"], keyof {
             index?: string | undefined;
             providerPaymentStorageKeys?: string[] | undefined;
         }[]>]: never; }) | undefined;
@@ -945,21 +871,31 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_17 in Exclude<keyof I["badgeUsedCuList"][number]["usedCu"], keyof Long>]: never; }) | undefined;
-        } & { [K_18 in Exclude<keyof I["badgeUsedCuList"][number], keyof BadgeUsedCu>]: never; })[] & { [K_19 in Exclude<keyof I["badgeUsedCuList"], keyof {
+            } & { [K_16 in Exclude<keyof I["badgeUsedCuList"][number]["usedCu"], keyof Long>]: never; }) | undefined;
+        } & { [K_17 in Exclude<keyof I["badgeUsedCuList"][number], keyof BadgeUsedCu>]: never; })[] & { [K_18 in Exclude<keyof I["badgeUsedCuList"], keyof {
             badgeUsedCuKey?: Uint8Array | undefined;
             usedCu?: string | number | Long | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_20 in Exclude<keyof I, keyof GenesisState>]: never; }>(base?: I | undefined): GenesisState;
+        badgesTS?: ({
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[] & ({
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        } & {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        } & { [K_19 in Exclude<keyof I["badgesTS"][number], keyof RawMessage>]: never; })[] & { [K_20 in Exclude<keyof I["badgesTS"], keyof {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[]>]: never; }) | undefined;
+    } & { [K_21 in Exclude<keyof I, keyof GenesisState>]: never; }>(base?: I | undefined): GenesisState;
     fromPartial<I_1 extends {
         params?: {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -985,15 +921,16 @@ export declare const GenesisState: {
             badgeUsedCuKey?: Uint8Array | undefined;
             usedCu?: string | number | Long | undefined;
         }[] | undefined;
+        badgesTS?: {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[] | undefined;
     } & {
         params?: ({
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -1001,7 +938,6 @@ export declare const GenesisState: {
             recommendedEpochNumToCollectPayment?: string | number | Long | undefined;
         } & {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | (Long & {
                 high: number;
@@ -1074,79 +1010,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_21 in Exclude<keyof I_1["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
-            servicersToPairCount?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_22 in Exclude<keyof I_1["params"]["servicersToPairCount"], keyof Long>]: never; }) | undefined;
+            } & { [K_22 in Exclude<keyof I_1["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
             epochBlocksOverlap?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1219,7 +1083,6 @@ export declare const GenesisState: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K_23 in Exclude<keyof I_1["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -1716,7 +1579,20 @@ export declare const GenesisState: {
             badgeUsedCuKey?: Uint8Array | undefined;
             usedCu?: string | number | Long | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_41 in Exclude<keyof I_1, keyof GenesisState>]: never; }>(object: I_1): GenesisState;
+        badgesTS?: ({
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[] & ({
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        } & {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        } & { [K_41 in Exclude<keyof I_1["badgesTS"][number], keyof RawMessage>]: never; })[] & { [K_42 in Exclude<keyof I_1["badgesTS"], keyof {
+            key?: Uint8Array | undefined;
+            value?: Uint8Array | undefined;
+        }[]>]: never; }) | undefined;
+    } & { [K_43 in Exclude<keyof I_1, keyof GenesisState>]: never; }>(object: I_1): GenesisState;
 };
 declare type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 export declare type DeepPartial<T> = T extends Builtin ? T : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : T extends {} ? {

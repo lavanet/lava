@@ -34,20 +34,19 @@ export const BitArray = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.bits = reader.int64() as Long;
           continue;
         case 2:
-          if (tag === 16) {
+          if (tag == 16) {
             message.elems.push(reader.uint64() as Long);
-
             continue;
           }
 
-          if (tag === 18) {
+          if (tag == 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.elems.push(reader.uint64() as Long);
@@ -58,7 +57,7 @@ export const BitArray = {
 
           break;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

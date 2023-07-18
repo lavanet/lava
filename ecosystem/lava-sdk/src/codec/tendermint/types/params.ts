@@ -107,35 +107,35 @@ export const ConsensusParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.block = BlockParams.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.evidence = EvidenceParams.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.validator = ValidatorParams.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.version = VersionParams.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -209,21 +209,21 @@ export const BlockParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.maxBytes = reader.int64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.maxGas = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -287,28 +287,28 @@ export const EvidenceParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.maxAgeNumBlocks = reader.int64() as Long;
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.maxAgeDuration = Duration.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.maxBytes = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -372,14 +372,14 @@ export const ValidatorParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.pubKeyTypes.push(reader.string());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -432,14 +432,14 @@ export const VersionParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.app = reader.uint64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -491,21 +491,21 @@ export const HashedParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.blockMaxBytes = reader.int64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.blockMaxGas = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
