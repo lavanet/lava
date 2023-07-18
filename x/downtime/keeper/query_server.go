@@ -16,6 +16,11 @@ type queryServer struct {
 	k Keeper
 }
 
+func (q queryServer) QueryParams(ctx context.Context, request *v1.QueryParamsRequest) (*v1.QueryParamsResponse, error) {
+	params := q.k.GetParams(sdk.UnwrapSDKContext(ctx))
+	return &v1.QueryParamsResponse{Params: &params}, nil
+}
+
 func (q queryServer) QueryDowntime(ctx context.Context, request *v1.QueryDowntimeRequest) (*v1.QueryDowntimeResponse, error) {
 	resp := new(v1.QueryDowntimeResponse)
 	resp.CumulativeDowntimeDuration = 0 * time.Second
