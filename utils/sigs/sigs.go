@@ -5,14 +5,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -96,49 +97,51 @@ func ExtractSignerAddressFromBadge(badge pairingtypes.Badge) (sdk.AccAddress, er
 	return extractedConsumerAddress, nil
 }
 
-func AllDataHash(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (data_hash []byte) {
-	nonceBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
-	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.Data, nonceBytes, []byte(relayReq.String())}, nil))
+func AllDataHash(relayResponse *pairingtypes.RelayReply, relayData pairingtypes.RelayPrivateData) (data_hash []byte) {
+	metadataBytes := make([]byte, 0)
+	for _, metadata := range relayResponse.GetMetadata() {
+		data, err := metadata.Marshal()
+		if err != nil {
+			utils.LavaFormatError("metadata can't be marshaled to bytes", err)
+		}
+		metadataBytes = append(metadataBytes, data...)
+	}
+	// we remove the salt from the signature because it can be different
+	relayData.Salt = []byte{}
+	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.GetData(), []byte(relayData.String()), metadataBytes}, nil))
 	return
 }
 
-func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
-	// sign the data hash+query hash+nonce
-	queryHash := utils.CalculateQueryHash(*relayReq.RelayData)
-	data_hash := AllDataHash(relayResponse, relayReq)
-	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
-	dataToSign = HashMsg(dataToSign)
-	return
+func DataToSignRequestResponse(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
+	// we do another hash here so we can verify sig without revealing the allDataHash in conflict detection tx
+	return HashMsg(AllDataHash(relayResponse, *relayReq.RelayData))
 }
 
-func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byte) (dataToSign []byte) {
-	queryHash := utils.CalculateQueryHash(*request.RelayData)
-	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
-	dataToSign = HashMsg(dataToSign)
-	return
-}
-
-func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
+func DataToSignResponseFinalizationData(latestBlock int64, finalizedBlocksHashes []byte, relaySession *pairingtypes.RelaySession, clientAddress sdk.AccAddress) (dataToSign []byte) {
 	// sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.RelaySession.SessionId, relayReq.RelaySession.Epoch, relayReq.RelaySession.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
+	relaySessionHash := CalculateRelaySessionHashForFinalization(relaySession)
+	return DataToSignResponseFinalizationDataInner(latestBlock, finalizedBlocksHashes, clientAddress, relaySessionHash)
 }
 
-func DataToSignResponseFinalizationDataInner(latestBlock int64, sessionID uint64, blockHeight int64, relayNum uint64, finalizedBlockHashes []byte, clientAddress sdk.AccAddress) (dataToSign []byte) {
+func CalculateRelaySessionHashForFinalization(relaySession *pairingtypes.RelaySession) (hash []byte) {
+	sessionIdBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(sessionIdBytes, relaySession.SessionId)
+	blockHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(relaySession.Epoch))
+	relayNumBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(relayNumBytes, relaySession.RelayNum)
+	return HashMsg(bytes.Join([][]byte{sessionIdBytes, blockHeightBytes, relayNumBytes}, nil))
+}
+
+func DataToSignResponseFinalizationDataInner(latestBlock int64, finalizedBlockHashes []byte, clientAddress sdk.AccAddress, relaySessionHash []byte) (dataToSign []byte) {
 	latestBlockBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(latestBlock))
-	sessionIdBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(sessionIdBytes, sessionID)
-	blockHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(blockHeight))
-	relayNumBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(relayNumBytes, relayNum)
-	return bytes.Join([][]byte{latestBlockBytes, finalizedBlockHashes, sessionIdBytes, blockHeightBytes, relayNumBytes, clientAddress}, nil)
+	return HashMsg(bytes.Join([][]byte{latestBlockBytes, finalizedBlockHashes, clientAddress, relaySessionHash}, nil))
 }
 
 func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
 	relayResponse.Sig = []byte{}
-	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	dataToSign := DataToSignRequestResponse(relayResponse, relayReq)
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
 	if err != nil {
@@ -149,7 +152,7 @@ func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtype
 }
 
 func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) ([]byte, error) {
-	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, clientAddress)
+	dataToSign := DataToSignResponseFinalizationData(relayResponse.LatestBlock, relayResponse.FinalizedBlocksHashes, relayReq.RelaySession, clientAddress)
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
 	if err != nil {
@@ -171,15 +174,6 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
-}
-
-func RecoverProviderPubKeyFromQueryAndAllDataHash(request *pairingtypes.RelayRequest, allDataHash []byte, providerSig []byte) (secp256k1.PubKey, error) {
-	dataToSign := DataToVerifyProviderSig(request, allDataHash)
-	pubKey, err := RecoverPubKey(providerSig, dataToSign)
-	if err != nil {
-		return nil, err
-	}
-	return pubKey, nil
 }
 
 func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, error) {
@@ -207,7 +201,7 @@ func ExtractSignerAddress(in *pairingtypes.RelaySession) (sdk.AccAddress, error)
 }
 
 func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	dataToSign := DataToSignRequestResponse(relayResponse, relayReq)
 	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
 	if err != nil {
 		return nil, err
@@ -215,8 +209,26 @@ func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayRe
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, addr sdk.AccAddress) (secp256k1.PubKey, error) {
-	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, addr)
+func RecoverPubKeyFromReplyMetadata(relayResponse *conflicttypes.ReplyMetadata) (secp256k1.PubKey, error) {
+	dataToSign := relayResponse.HashAllDataHash
+	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse.LatestBlock, relayResponse.FinalizedBlocksHashes, relayReq.RelaySession, consumerAddr)
+	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func RecoverPubKeyFromReplyMetadataFinalizationData(relayResponse *conflicttypes.ReplyMetadata, relayReq *pairingtypes.RelayRequest, addr sdk.AccAddress) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse.LatestBlock, relayResponse.FinalizedBlocksHashes, relayReq.RelaySession, addr)
 	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
 	if err != nil {
 		return nil, err
@@ -239,6 +251,10 @@ func CalculateContentHashForRelayData(relayRequestData *pairingtypes.RelayPrivat
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
 	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(relayRequestData.RequestBlock))
-	msgData := bytes.Join([][]byte{metadataBytes, []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
+	addon := relayRequestData.Addon
+	if addon == nil {
+		addon = []string{}
+	}
+	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(addon, "")), []byte(relayRequestData.ApiInterface), []byte(relayRequestData.ConnectionType), []byte(relayRequestData.ApiUrl), relayRequestData.Data, requestBlockBytes, relayRequestData.Salt}, nil)
 	return HashMsg(msgData)
 }

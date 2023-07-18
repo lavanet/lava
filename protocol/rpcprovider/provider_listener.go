@@ -49,11 +49,11 @@ func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
 	return nil
 }
 
-func NewProviderListener(ctx context.Context, networkAddress string) *ProviderListener {
-	pl := &ProviderListener{networkAddress: networkAddress}
+func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData) *ProviderListener {
+	pl := &ProviderListener{networkAddress: networkAddress.Address}
 
 	// GRPC
-	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress)
+	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress.Address)
 	grpcServer := grpc.NewServer()
 
 	wrappedServer := grpcweb.WrapServer(grpcServer)
@@ -68,12 +68,22 @@ func NewProviderListener(ctx context.Context, networkAddress string) *ProviderLi
 	pl.httpServer = http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
+
+	var serveExecutor func() error
+	if networkAddress.DisableTLS {
+		utils.LavaFormatWarning("Running with disabled TLS configuration", nil)
+		serveExecutor = func() error { return pl.httpServer.Serve(lis) }
+	} else {
+		pl.httpServer.TLSConfig = lavasession.GetTlsConfig(networkAddress)
+		serveExecutor = func() error { return pl.httpServer.ServeTLS(lis, "", "") }
+	}
+
 	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
 		utils.LavaFormatInfo("New provider listener active", utils.Attribute{Key: "address", Value: networkAddress})
-		if err := pl.httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 			utils.LavaFormatFatal("provider failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr().String()})
 		}
 		utils.LavaFormatInfo("listener closed server", utils.Attribute{Key: "address", Value: networkAddress})

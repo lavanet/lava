@@ -44,6 +44,7 @@ func main() {
 	rootCmd.AddCommand(testCmd)
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
+	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCACertificateCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -79,68 +78,50 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
 func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) // we take the epochs memory size at earliestEpochBlock, and not the current one
-	deletedEpochs := []uint64{}
+
+	// we take the epochs memory size at earliestEpochBlock, and not the current one
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock)
 	if err != nil {
-		// this is critical, no recovery from this
-		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
+		// panic:ok: critical, no recovery, avoid further corruption
+		utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+			utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+			utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+		)
 	}
+
 	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
+
 	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
-	changed := false
+
+	deletedEpochs := []uint64{}
 	for earliestEpochBlock < lastBlockInMemory {
 		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
 		if err != nil {
-			// this is critical, no recovery from this
-			panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+			// panic:ok: critical, no recovery, avoid further corruption
+			utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+				utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+				utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+			)
 		}
-		changed = true
 	}
 
-	if !changed {
+	if len(deletedEpochs) == 0 {
 		return
 	}
 
-	logger := k.Logger(ctx)
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.EarliestEpochEventName,
+		map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)},
+		"updated earliest epoch block")
+
 	// now update the earliest epoch start
-	utils.LogLavaEvent(ctx, logger, types.EarliestEpochEventName, map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock, deletedEpochs)
 }
 
 func (k Keeper) StakeStorageKey(block uint64, chainID string) string {
 	return strconv.FormatUint(block, 10) + chainID
-}
-
-func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64, allChainID []string) {
-	allStorage := k.GetAllStakeStorage(ctx)
-	for _, chainId := range allChainID {
-		for _, entry := range allStorage {
-			if strings.Contains(entry.Index, chainId) {
-				if (len(chainId)) > len(entry.Index) {
-					panic(fmt.Sprintf("storageType + chainId length out of range %d vs %d\n more info: entry.Index: %s, chainId: %s", len(chainId), len(entry.Index), entry.Index, chainId))
-				}
-				storageBlock := entry.Index[:(len(entry.Index) - len(chainId))]
-				blockHeight, err := strconv.ParseUint(storageBlock, 10, 64)
-				if err != nil {
-					if storageBlock == "" {
-						// if storageBlock is empty its stake entry current. so we dont remove it.
-						continue
-					}
-					panic("failed to convert storage block to int: " + storageBlock)
-				}
-				if blockHeight < block {
-					k.RemoveStakeStorage(ctx, entry.Index)
-				}
-			}
-		}
-	}
-}
-
-func (k Keeper) RemoveAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64, allChainID []string) {
-	k.removeAllEntriesPriorToBlockNumber(ctx, block, allChainID)
 }
 
 func (k Keeper) RemoveStakeStorageByBlockAndChain(ctx sdk.Context, block uint64, chainID string) {
@@ -170,14 +151,17 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	for idx, entry := range entries {
 		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
 		if err != nil {
-			panic("invalid account address inside StakeStorage: " + entry.Address)
+			// this should not happen; to avoid panic we simply skip this one (thus
+			// freeze the situation so it can be investigated and orderly resolved).
+			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
+				utils.LogAttr("address", entry.Address),
+				utils.LogAttr("chainID", entry.Chain),
+			)
+			continue
 		}
 		if entryAddr.Equals(address) {
 			// found the right thing
-			index = uint64(idx)
-			found = true
-			// remove from the stakeStorage, i checked it supports idx == length-1
-			return
+			return uint64(idx), true
 		}
 	}
 	return 0, false
@@ -258,7 +242,13 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
 	if !found {
-		panic("called modify when there is no stakeStorage")
+		// should not happen since caller is expected to validate chainID first;
+		// do nothing and return to avoid panic.
+		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", errors.ErrNotFound,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
+		)
+		return
 	}
 	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
@@ -315,7 +305,11 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry,
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
 	if !found {
-		panic("called modify when there is no stakeStorage")
+		// should not happen since stake storage must always exist; do nothing to avoid panic
+		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", errors.ErrNotFound,
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
+		)
+		return
 	}
 	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place

@@ -129,7 +129,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 			for idx := range modifiedProviderEndpoints {
 				endpoint := rpcEndpoints[idx]
 				modifiedProviderEndpoints[idx] = &lavasession.RPCProviderEndpoint{
-					NetworkAddress: "",
+					NetworkAddress: lavasession.NetworkAddressData{Address: ""},
 					ChainID:        endpoint.ChainID,
 					ApiInterface:   endpoint.ApiInterface,
 					Geolocation:    1, // doesn't matter

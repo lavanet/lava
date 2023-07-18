@@ -9,6 +9,7 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	"github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -99,7 +100,7 @@ func TestDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, err := common.CreateMsgDetection(ts.ctx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
+			msg, _, reply, err := common.CreateMsgDetectionTest(ts.ctx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
 			require.Nil(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
@@ -120,18 +121,16 @@ func TestDetection(t *testing.T) {
 			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
-
-			// changes to reply1 according to test
-			msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, tt.ReplyData...)
-			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request)
+			reply.Data = append(reply.Data, tt.ReplyData...)
+			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			require.Nil(t, err)
-			msg.ResponseConflict.ConflictRelayData1.Reply.Sig = sig
-			sigBlocks, err := sigs.SignResponseFinalizationData(tt.Provider1.SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request, ts.consumer.Addr)
+			reply.Sig = sig
+			sigBlocks, err := sigs.SignResponseFinalizationData(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request, ts.consumer.Addr)
 			require.Nil(t, err)
-			msg.ResponseConflict.ConflictRelayData1.Reply.SigBlocks = sigBlocks
-
+			reply.SigBlocks = sigBlocks
+			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request.RelayData)
 			// send detection msg
-			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
+			_, err = ts.servers.ConflictServer.Detection(ts.ctx, msg)
 			if tt.Valid {
 				require.Nil(t, err)
 				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)

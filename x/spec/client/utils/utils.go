@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -30,6 +31,15 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret 
 			return proposal, err
 		}
 		if len(ret.Proposal.Specs) > 0 {
+			for _, spec := range proposal.Proposal.Specs {
+				if spec.Name == "" {
+					utils.LavaFormatFatal("invalid spec name for spec", nil,
+						utils.Attribute{Key: "spec", Value: spec},
+						utils.Attribute{Key: "filename", Value: fileName},
+						utils.Attribute{Key: "other specs", Value: proposal.Proposal.Specs},
+					)
+				}
+			}
 			ret.Proposal.Specs = append(ret.Proposal.Specs, proposal.Proposal.Specs...)
 			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
 			ret.Proposal.Title = "Multi_Spec_Add"

@@ -47,9 +47,19 @@ func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
 	return k.subsFS.Export(ctx)
 }
 
+// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsTS.Export(ctx)
+}
+
 // InitSubscriptions imports subscriptions data (from genesis)
 func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
 	k.subsFS.Init(ctx, data)
+}
+
+// InitSubscriptions imports subscriptions timers data (from genesis)
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsTS.Init(ctx, data)
 }
 
 // GetSubscription returns the subscription of a given consumer
@@ -210,7 +220,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		// subscription (monthly) timer has expired for an unknown subscription:
 		// either the timer was set wrongly, or the subscription was incorrectly
 		// removed; and we cannot even return an error about it.
-		utils.LavaFormatError("critical: month expirty for unknown subscription, skipping",
+		utils.LavaFormatError("critical: month expiry for unknown subscription, skipping",
 			fmt.Errorf("subscription not found"),
 			utils.Attribute{Key: "consumer", Value: consumer},
 			utils.Attribute{Key: "block", Value: block},
@@ -219,6 +229,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	}
 
 	if sub.DurationLeft == 0 {
+		// subscription duration has already reached zero before and should have
+		// been removed before. Extend duration by another month (without adding
+		// CUs) to allow smooth operation.
 		utils.LavaFormatError("critical: negative duration for subscription, extend by 1 month",
 			fmt.Errorf("negative duration in AdvanceMonth()"),
 			utils.Attribute{Key: "consumer", Value: consumer},
@@ -278,11 +291,13 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
-		err := utils.LavaFormatError("can't find plan from subscription with consumer address", sdkerrors.ErrKeyNotFound,
+		// normally would panic! but can "recover" by ignoring and returning error
+		err := utils.LavaFormatError("critical: failed to find existing subscription plan", sdkerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
-			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
+			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
 		)
-		panic(err)
+		return plan, err
 	}
 
 	return plan, nil
@@ -296,11 +311,12 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, proje
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
-		err := utils.LavaFormatError("can't get plan with subscription", sdkerrors.ErrKeyNotFound,
-			utils.Attribute{Key: "subscription", Value: sub.Creator},
-			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+		err := utils.LavaFormatError("critical: failed to find existing subscriptio plan", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: sub.Creator},
+			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
+			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
 		)
-		panic(err)
+		return err
 	}
 
 	return k.projectsKeeper.CreateProject(ctx, consumer, projectData, plan)

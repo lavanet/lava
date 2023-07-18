@@ -78,10 +78,16 @@ func testWithTimerTemplate(t *testing.T, playbook []timerTemplate, countTS int) 
 		switch play.op {
 		case "addheight":
 			tstore[play.store].AddTimerByBlockHeight(ctx, play.value, key, data)
+		case "hasheight":
+			has := tstore[play.store].HasTimerByBlockHeight(ctx, play.value, key)
+			require.Equal(t, play.data == "has", has)
 		case "delheight":
 			tstore[play.store].DelTimerByBlockHeight(ctx, play.value, key)
 		case "addtime":
 			tstore[play.store].AddTimerByBlockTime(ctx, play.value, key, data)
+		case "hastime":
+			has := tstore[play.store].HasTimerByBlockTime(ctx, play.value, key)
+			require.Equal(t, play.data == "has", has)
 		case "deltime":
 			tstore[play.store].DelTimerByBlockTime(ctx, play.value, key)
 		case "nextheight":
@@ -118,11 +124,14 @@ func TestTimerBlockHeight(t *testing.T) {
 		{op: "nextheight", name: "next timeout infinity", value: math.MaxUint64},
 		{op: "tickheight", name: "tick without timers", value: 100, fire: 0},
 		{op: "addheight", name: "add timer no-1", value: 120, key: "a", data: "no-1."},
+		{op: "hasheight", name: "has timer no-1", value: 120, key: "a", data: "has"},
 		{op: "nextheight", name: "next timeout no-1", value: 120},
 		{op: "tickheight", name: "tick before timer no-1", value: 110, fire: 0},
 		{op: "tickheight", name: "tick after timer no-1", value: 130, key: "a", fire: 1, data: "no-1."},
+		{op: "hasheight", name: "gone timer no-1", value: 120, key: "a", data: "gone"},
 		{op: "nextheight", name: "next timeout no-1", value: math.MaxUint64},
-		{op: "addheight", name: "add timer no-2", value: 140, data: "no-2.", key: "a"},
+		{op: "addheight", name: "add timer no-2", value: 140, key: "a", data: "no-2."},
+		{op: "hasheight", name: "has timer no-2", value: 140, key: "a", data: "has"},
 		{op: "tickheight", name: "tick exactly on timer no-2", value: 140, key: "a", fire: 1, data: "no-2."},
 		{op: "nextheight", name: "next timeout infinity again", value: math.MaxUint64},
 	}
@@ -136,9 +145,11 @@ func TestTimerBlockTime(t *testing.T) {
 		{op: "nexttime", name: "next timeout infinity", value: math.MaxUint64},
 		{op: "ticktime", name: "tick without timers", value: 100, fire: 0},
 		{op: "addtime", name: "add timer no-1", value: 120, key: "b", data: "no-1."},
+		{op: "hastime", name: "has timer no-1", value: 120, key: "b", data: "has"},
 		{op: "nexttime", name: "next timeout no-1", value: 120},
 		{op: "ticktime", name: "tick before timer no-1", value: 110, fire: 0},
 		{op: "ticktime", name: "tick after timer no-1", value: 130, key: "b", fire: 1, data: "no-1."},
+		{op: "hastime", name: "gone timer no-1", value: 120, key: "b", data: "gone"},
 	}
 
 	testWithTimerTemplate(t, playbook, 1)
@@ -192,8 +203,10 @@ func TestDeleteTimers(t *testing.T) {
 		{op: "addheight", name: "add timer no 3", value: 140, key: "c", data: "no-3."},
 		{op: "tickheight", name: "tick before all", value: 110, fire: 0},
 		{op: "delheight", name: "del timer no 2a", value: 130, key: "bx"},
+		{op: "hasheight", name: "gone timer no 2a", value: 130, key: "bx", data: "gone"},
 		{op: "tickheight", name: "tick between no-2,no-3", value: 135, key: "aby", fire: 2, data: "no-1.no-2b."},
 		{op: "delheight", name: "del timer no 3", value: 140, key: "c"},
+		{op: "hasheight", name: "gone timer no 3", value: 140, key: "c", data: "gone"},
 		{op: "nextheight", name: "next timeout no-3", value: 140},
 		{op: "tickheight", name: "tick after all", value: 155, fire: 0, key: "", data: ""},
 	}

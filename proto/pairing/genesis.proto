@@ -6,6 +6,8 @@ import "pairing/params.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "pairing/provider_payment_storage.proto";
 import "pairing/epoch_payments.proto";
+import "common/fixationEntry.proto";
+
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
@@ -22,5 +24,6 @@ message GenesisState {
   repeated ProviderPaymentStorage providerPaymentStorageList = 3 [(gogoproto.nullable) = false];
   repeated EpochPayments epochPaymentsList = 4 [(gogoproto.nullable) = false];
   repeated BadgeUsedCu badgeUsedCuList = 5 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.common.RawMessage badgesTS = 6 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

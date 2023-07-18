@@ -65,8 +65,10 @@ func (ts *testStruct) blockHeight() uint64 {
 	return uint64(ts.ctx.BlockHeight())
 }
 
-func (ts *testStruct) advanceBlock(delta ...time.Duration) {
-	ts._ctx = keepertest.AdvanceBlock(ts._ctx, ts.keepers, delta...)
+func (ts *testStruct) advanceBlock(count int, delta ...time.Duration) {
+	for i := 0; i < count; i += 1 {
+		ts._ctx = keepertest.AdvanceBlock(ts._ctx, ts.keepers, delta...)
+	}
 	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
 }
 
@@ -77,17 +79,17 @@ func (ts *testStruct) advanceEpoch(delta ...time.Duration) {
 
 func (ts *testStruct) advanceUntilStale(delta ...time.Duration) {
 	for i := 0; i < int(commontypes.STALE_ENTRY_TIME); i += 1 {
-		ts.advanceBlock()
+		ts.advanceBlock(1)
 	}
 }
 
 // advance block time by given months (minus 1 second) from a given time
-// (make sure to trigger begin-epoch for each such month)
+// and then trigger begin-epoch for each such month
 func (ts *testStruct) advanceMonths(from time.Time, months int) {
 	for next := from; months > 0; months -= 1 {
 		next = subscriptionkeeper.NextMonth(next)
 		delta := next.Sub(ts.ctx.BlockTime()) - time.Second
-		ts.advanceBlock(delta)
+		ts.advanceBlock(1, delta)
 		ts.advanceEpoch()
 	}
 }
@@ -251,7 +253,7 @@ func TestSubscriptionExpiration(t *testing.T) {
 
 	// fill memory
 	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
-		ts.advanceBlock()
+		ts.advanceBlock(1)
 	}
 
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 1)
@@ -279,7 +281,7 @@ func TestRenewSubscription(t *testing.T) {
 
 	// fill memory
 	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
-		ts.advanceBlock()
+		ts.advanceBlock(1)
 	}
 
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 6)
@@ -376,7 +378,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 	// fill memory
 	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
-		ts.advanceBlock()
+		ts.advanceBlock(1)
 	}
 
 	err = keeper.CreateSubscription(ts.ctx, creator, creator, ts.plans[0].Index, 3)
@@ -481,7 +483,7 @@ func TestExpiryTime(t *testing.T) {
 	// AdvanceBlock() always uses the current time for the first block (and
 	// (ignores the time delta arg if given); So call it here first to avoid
 	// the call below being the first and having the delta are ignored.
-	ts.advanceBlock()
+	ts.advanceBlock(1)
 
 	template := []struct {
 		now    [3]int // year, month, day
@@ -521,7 +523,7 @@ func TestExpiryTime(t *testing.T) {
 			creator := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
 
 			delta := now.Sub(ts.ctx.BlockTime())
-			ts.advanceBlock(delta)
+			ts.advanceBlock(1, delta)
 
 			err := keeper.CreateSubscription(ts.ctx, creator, creator, plan.Index, tt.months)
 			require.Nil(t, err)
@@ -559,7 +561,7 @@ func TestSubscriptionExpire(t *testing.T) {
 
 	// fill memory
 	for uint64(ts.ctx.BlockHeight()) < blocksToSave {
-		ts.advanceBlock()
+		ts.advanceBlock(1)
 	}
 
 	_, found := keeper.GetSubscription(ts.ctx, consumer)
@@ -806,4 +808,67 @@ func TestAddDelProjectForSubscription(t *testing.T) {
 	})
 	require.Nil(t, err)
 	require.Equal(t, 1, len(res.Projects))
+}
+
+func TestDelProjectEndSubscription(t *testing.T) {
+	ts := setupTestStruct(t, 1)
+	plan := ts.plans[0]
+
+	subAcc := common.CreateNewAccount(ts._ctx, *ts.keepers, 10000).Addr.String()
+
+	// buy subscription
+	_, err := ts.servers.SubscriptionServer.Buy(ts._ctx, &types.MsgBuy{
+		Creator:  subAcc,
+		Consumer: subAcc,
+		Index:    plan.Index,
+		Duration: 1,
+	})
+	require.Nil(t, err)
+
+	// time of buy subscription
+	start := ts.ctx.BlockTime()
+
+	// add project to the subscription
+	projData := projectstypes.ProjectData{
+		Name:    "proj",
+		Enabled: true,
+		Policy:  &plan.PlanPolicy,
+	}
+	_, err = ts.servers.SubscriptionServer.AddProject(ts._ctx, &types.MsgAddProject{
+		Creator:     subAcc,
+		ProjectData: projData,
+	})
+	require.Nil(t, err)
+
+	ts.advanceEpoch()
+
+	res, err := ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc,
+	})
+	require.Nil(t, err)
+	require.Equal(t, 2, len(res.Projects))
+
+	// advance time to just before subscription expiry, so project deletion and	the
+	// subsequent expiry will occur in the same epoch
+	next := subscriptionkeeper.NextMonth(start)
+	delta := next.Sub(ts.ctx.BlockTime()) - time.Second
+	ts.advanceBlock(1, delta)
+
+	// del project to the subscription
+	_, err = ts.servers.SubscriptionServer.DelProject(ts._ctx, &types.MsgDelProject{
+		Creator: subAcc,
+		Name:    projData.Name,
+	})
+	require.Nil(t, err)
+
+	// expire subscription (by advancing an epoch, we are close enough to expiry)
+	ts.advanceEpoch()
+
+	_, err = ts.keepers.Subscription.ListProjects(ts._ctx, &types.QueryListProjectsRequest{
+		Subscription: subAcc,
+	})
+	require.NotNil(t, err)
+
+	// should not panic
+	ts.advanceBlock(2 * int(commontypes.STALE_ENTRY_TIME))
 }

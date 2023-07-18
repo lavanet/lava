@@ -88,6 +88,12 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			} else {
 				require.False(t, found, what)
 			}
+		case "has": //nolint:goconst
+			has := fs[play.store].HasEntry(ctx, index, block)
+			require.Equal(t, !play.fail, has, what)
+		case "stale":
+			stale := fs[play.store].IsEntryStale(ctx, index, block)
+			require.Equal(t, play.fail, stale, what)
 		case "get":
 			found := fs[play.store].GetEntry(ctx, index, &dummy)
 			if !play.fail {
@@ -145,12 +151,18 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
+		{op: "has", name: "entry #1", count: block0, coin: 0},
+		{op: "stale", name: "entry #1", count: block0, coin: 0},
 		{op: "getall", name: "to check exactly one index", count: 1},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
+		{op: "has", name: "entry #1 (again)", count: block0, coin: 0},
+		{op: "has", name: "entry #2", count: block1, coin: 0},
 		// entry #1 not deleted because not enough time with refcount = zero
+		{op: "has", name: "entry #1 (not stale yet)", count: block0},
 		{op: "find", name: "entry #1 (not stale yet)", count: block0},
 		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
+		{op: "has", name: "entry #1 (now stale/gone)", count: block0, fail: true},
 		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},
 		{op: "find", name: "latest entry", coin: 1},
 		{op: "getall", name: "to check again exactly one index", count: 1},
@@ -223,13 +235,19 @@ func TestEntryStale(t *testing.T) {
 		{op: "append", name: "entry #3", count: block2, coin: 2},
 		// entry #1 should not be deleted because it has refcount != zero);
 		// entry #2 (refcount = zero) also not deleted because it is not oldest
+		{op: "has", name: "entry #1", count: block0, coin: 0},
+		{op: "has", name: "entry #2", count: block1, coin: 1},
 		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
 		{op: "find", name: "entry #2", count: block1 + 1, coin: 1},
 		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
 		// entry #2 now stale and therefore should not be visible
 		{op: "find", name: "entry #2", count: block1 + 1, fail: true},
+		// but should still be positive for HasEntry()
+		{op: "has", name: "entry #2 (still positive)", count: block1},
+		{op: "stale", name: "entry #2 (still positive)", count: block1, fail: true},
 		// entry #3 (refcount = zero) is old, but being the latest it always
 		// remains visible (despite of refcount and age).
+		{op: "has", name: "entry #3", count: block2, coin: 2},
 		{op: "find", name: "entry #3", count: block2 + 1, coin: 2},
 	}
 
@@ -323,7 +341,8 @@ func TestDelEntry(t *testing.T) {
 		{op: "find", name: "entry #1 version 0", coin: 0, count: block0},
 		{op: "find", name: "entry #1 version 1", coin: 1, count: block1},
 		// entry #1 find beyond the delete should fail
-		{op: "find", name: "entry #1 version 1", count: block2, fail: true},
+		{op: "has", name: "entry #1 version 1 (deleted)", count: block2, fail: true},
+		{op: "find", name: "entry #1 version 1 (deleted)", count: block2, fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)

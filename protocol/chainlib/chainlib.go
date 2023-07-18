@@ -52,19 +52,22 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
-	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)
-	CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error)
+	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
+	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
+	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 }
 
 type ChainMessage interface {
 	RequestedBlock() int64
+	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
+	AppendHeader(metadata []pairingtypes.Metadata)
 	ChainMessageForSend
 }
 
 type ChainMessageForSend interface {
-	GetServiceApi() *spectypes.ServiceApi
-	GetInterface() *spectypes.ApiInterface
+	GetApi() *spectypes.Api
 	GetRPCMessage() parser.RPCInput
+	GetApiCollection() *spectypes.ApiCollection
 }
 
 type RelaySender interface {
