@@ -13,7 +13,7 @@ func DefaultGenesisState() *GenesisState {
 
 func (m *GenesisState) Validate() error {
 	if err := m.Params.Validate(); err != nil {
-		return err
+		return fmt.Errorf("invalid params: %w", err)
 	}
 	for i, d := range m.Downtimes {
 		if err := d.Validate(); err != nil {

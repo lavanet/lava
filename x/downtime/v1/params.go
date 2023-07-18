@@ -31,10 +31,11 @@ func (m *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 }
 
 func (m *Params) Validate() error {
-	for _, ps := range m.ParamSetPairs() {
-		if err := ps.ValidatorFn(ps.Value); err != nil {
-			return err
-		}
+	if err := validateDowntimeDuration(m.DowntimeDuration); err != nil {
+		return err
+	}
+	if err := validateDowntimeDuration(m.GarbageCollectionDuration); err != nil {
+		return err
 	}
 	return nil
 }
