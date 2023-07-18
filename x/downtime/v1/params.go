@@ -30,6 +30,15 @@ func (m *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
+func (m *Params) Validate() error {
+	for _, ps := range m.ParamSetPairs() {
+		if err := ps.ValidatorFn(ps.Value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func validateDowntimeDuration(value interface{}) error {
 	concrete, ok := value.(time.Duration)
 	if !ok {
