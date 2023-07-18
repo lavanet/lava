@@ -108,7 +108,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
 
 	// check pairing in the same epoch (key added retroactively to this epoch)
-	_, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr, epoch)
+	_, _, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr, epoch)
 
 	require.Nil(t, err)
 
