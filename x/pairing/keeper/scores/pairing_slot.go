@@ -16,9 +16,10 @@ func (s PairingSlot) Subtract(other *PairingSlot) *PairingSlot {
 	reqsDiff := make(map[string]ScoreReq)
 	for key := range s.Reqs {
 		req := s.Reqs[key]
-		if _, found := other.Reqs[key]; !found {
+		otherReq, found := other.Reqs[key]
+		if !found {
 			reqsDiff[key] = req
-		} else if !req.Equal(other.Reqs[key]) {
+		} else if !req.Equal(otherReq) {
 			reqsDiff[key] = req
 		}
 	}
