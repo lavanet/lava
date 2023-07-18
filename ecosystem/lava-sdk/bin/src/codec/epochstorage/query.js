@@ -28,7 +28,7 @@ exports.QueryParamsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -68,13 +68,13 @@ exports.QueryParamsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.params = params_1.Params.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -118,13 +118,13 @@ exports.QueryGetStakeStorageRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.index = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -167,13 +167,13 @@ exports.QueryGetStakeStorageResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.stakeStorage = stake_storage_1.StakeStorage.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -218,13 +218,13 @@ exports.QueryAllStakeStorageRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.pagination = pagination_1.PageRequest.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -272,19 +272,19 @@ exports.QueryAllStakeStorageResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.stakeStorage.push(stake_storage_1.StakeStorage.decode(reader, reader.uint32()));
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.pagination = pagination_1.PageResponse.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -339,7 +339,7 @@ exports.QueryGetEpochDetailsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -379,13 +379,13 @@ exports.QueryGetEpochDetailsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.EpochDetails = epoch_details_1.EpochDetails.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -430,13 +430,13 @@ exports.QueryGetFixatedParamsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.index = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -479,13 +479,13 @@ exports.QueryGetFixatedParamsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.fixatedParams = fixated_params_1.FixatedParams.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -530,13 +530,13 @@ exports.QueryAllFixatedParamsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.pagination = pagination_1.PageRequest.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -584,19 +584,19 @@ exports.QueryAllFixatedParamsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.fixatedParams.push(fixated_params_1.FixatedParams.decode(reader, reader.uint32()));
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.pagination = pagination_1.PageResponse.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);

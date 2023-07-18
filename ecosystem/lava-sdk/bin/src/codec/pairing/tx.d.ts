@@ -14,25 +14,11 @@ export interface MsgStakeProvider {
 }
 export interface MsgStakeProviderResponse {
 }
-export interface MsgStakeClient {
-    creator: string;
-    chainID: string;
-    amount?: Coin;
-    geolocation: Long;
-}
-export interface MsgStakeClientResponse {
-}
 export interface MsgUnstakeProvider {
     creator: string;
     chainID: string;
 }
 export interface MsgUnstakeProviderResponse {
-}
-export interface MsgUnstakeClient {
-    creator: string;
-    chainID: string;
-}
-export interface MsgUnstakeClientResponse {
 }
 export interface MsgRelayPayment {
     creator: string;
@@ -68,8 +54,9 @@ export declare const MsgStakeProvider: {
         } | undefined;
         endpoints?: {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[] | undefined;
         geolocation?: string | number | Long | undefined;
         moniker?: string | undefined;
@@ -85,15 +72,16 @@ export declare const MsgStakeProvider: {
         } & { [K in Exclude<keyof I["amount"], keyof Coin>]: never; }) | undefined;
         endpoints?: ({
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[] & ({
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         } & {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -166,10 +154,13 @@ export declare const MsgStakeProvider: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K_1 in Exclude<keyof I["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-        } & { [K_2 in Exclude<keyof I["endpoints"][number], keyof Endpoint>]: never; })[] & { [K_3 in Exclude<keyof I["endpoints"], keyof {
+            addons?: (string[] & string[] & { [K_2 in Exclude<keyof I["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+            apiInterfaces?: (string[] & string[] & { [K_3 in Exclude<keyof I["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+        } & { [K_4 in Exclude<keyof I["endpoints"][number], keyof Endpoint>]: never; })[] & { [K_5 in Exclude<keyof I["endpoints"], keyof {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[]>]: never; }) | undefined;
         geolocation?: string | number | (Long & {
             high: number;
@@ -242,9 +233,9 @@ export declare const MsgStakeProvider: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_4 in Exclude<keyof I["geolocation"], keyof Long>]: never; }) | undefined;
+        } & { [K_6 in Exclude<keyof I["geolocation"], keyof Long>]: never; }) | undefined;
         moniker?: string | undefined;
-    } & { [K_5 in Exclude<keyof I, keyof MsgStakeProvider>]: never; }>(base?: I | undefined): MsgStakeProvider;
+    } & { [K_7 in Exclude<keyof I, keyof MsgStakeProvider>]: never; }>(base?: I | undefined): MsgStakeProvider;
     fromPartial<I_1 extends {
         creator?: string | undefined;
         chainID?: string | undefined;
@@ -254,8 +245,9 @@ export declare const MsgStakeProvider: {
         } | undefined;
         endpoints?: {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[] | undefined;
         geolocation?: string | number | Long | undefined;
         moniker?: string | undefined;
@@ -268,18 +260,19 @@ export declare const MsgStakeProvider: {
         } & {
             denom?: string | undefined;
             amount?: string | undefined;
-        } & { [K_6 in Exclude<keyof I_1["amount"], keyof Coin>]: never; }) | undefined;
+        } & { [K_8 in Exclude<keyof I_1["amount"], keyof Coin>]: never; }) | undefined;
         endpoints?: ({
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[] & ({
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         } & {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -351,11 +344,14 @@ export declare const MsgStakeProvider: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_7 in Exclude<keyof I_1["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-        } & { [K_8 in Exclude<keyof I_1["endpoints"][number], keyof Endpoint>]: never; })[] & { [K_9 in Exclude<keyof I_1["endpoints"], keyof {
+            } & { [K_9 in Exclude<keyof I_1["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            addons?: (string[] & string[] & { [K_10 in Exclude<keyof I_1["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+            apiInterfaces?: (string[] & string[] & { [K_11 in Exclude<keyof I_1["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+        } & { [K_12 in Exclude<keyof I_1["endpoints"][number], keyof Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["endpoints"], keyof {
             iPPORT?: string | undefined;
-            useType?: string | undefined;
             geolocation?: string | number | Long | undefined;
+            addons?: string[] | undefined;
+            apiInterfaces?: string[] | undefined;
         }[]>]: never; }) | undefined;
         geolocation?: string | number | (Long & {
             high: number;
@@ -428,9 +424,9 @@ export declare const MsgStakeProvider: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_10 in Exclude<keyof I_1["geolocation"], keyof Long>]: never; }) | undefined;
+        } & { [K_14 in Exclude<keyof I_1["geolocation"], keyof Long>]: never; }) | undefined;
         moniker?: string | undefined;
-    } & { [K_11 in Exclude<keyof I_1, keyof MsgStakeProvider>]: never; }>(object: I_1): MsgStakeProvider;
+    } & { [K_15 in Exclude<keyof I_1, keyof MsgStakeProvider>]: never; }>(object: I_1): MsgStakeProvider;
 };
 export declare const MsgStakeProviderResponse: {
     encode(_: MsgStakeProviderResponse, writer?: _m0.Writer): _m0.Writer;
@@ -439,202 +435,6 @@ export declare const MsgStakeProviderResponse: {
     toJSON(_: MsgStakeProviderResponse): unknown;
     create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgStakeProviderResponse;
     fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgStakeProviderResponse;
-};
-export declare const MsgStakeClient: {
-    encode(message: MsgStakeClient, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): MsgStakeClient;
-    fromJSON(object: any): MsgStakeClient;
-    toJSON(message: MsgStakeClient): unknown;
-    create<I extends {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-        amount?: {
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } | undefined;
-        geolocation?: string | number | Long | undefined;
-    } & {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-        amount?: ({
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } & {
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } & { [K in Exclude<keyof I["amount"], keyof Coin>]: never; }) | undefined;
-        geolocation?: string | number | (Long & {
-            high: number;
-            low: number;
-            unsigned: boolean;
-            add: (addend: string | number | Long) => Long;
-            and: (other: string | number | Long) => Long;
-            compare: (other: string | number | Long) => number;
-            comp: (other: string | number | Long) => number;
-            divide: (divisor: string | number | Long) => Long;
-            div: (divisor: string | number | Long) => Long;
-            equals: (other: string | number | Long) => boolean;
-            eq: (other: string | number | Long) => boolean;
-            getHighBits: () => number;
-            getHighBitsUnsigned: () => number;
-            getLowBits: () => number;
-            getLowBitsUnsigned: () => number;
-            getNumBitsAbs: () => number;
-            greaterThan: (other: string | number | Long) => boolean;
-            gt: (other: string | number | Long) => boolean;
-            greaterThanOrEqual: (other: string | number | Long) => boolean;
-            gte: (other: string | number | Long) => boolean;
-            ge: (other: string | number | Long) => boolean;
-            isEven: () => boolean;
-            isNegative: () => boolean;
-            isOdd: () => boolean;
-            isPositive: () => boolean;
-            isZero: () => boolean;
-            eqz: () => boolean;
-            lessThan: (other: string | number | Long) => boolean;
-            lt: (other: string | number | Long) => boolean;
-            lessThanOrEqual: (other: string | number | Long) => boolean;
-            lte: (other: string | number | Long) => boolean;
-            le: (other: string | number | Long) => boolean;
-            modulo: (other: string | number | Long) => Long;
-            mod: (other: string | number | Long) => Long;
-            rem: (other: string | number | Long) => Long;
-            multiply: (multiplier: string | number | Long) => Long;
-            mul: (multiplier: string | number | Long) => Long;
-            negate: () => Long;
-            neg: () => Long;
-            not: () => Long;
-            countLeadingZeros: () => number;
-            clz: () => number;
-            countTrailingZeros: () => number;
-            ctz: () => number;
-            notEquals: (other: string | number | Long) => boolean;
-            neq: (other: string | number | Long) => boolean;
-            ne: (other: string | number | Long) => boolean;
-            or: (other: string | number | Long) => Long;
-            shiftLeft: (numBits: number | Long) => Long;
-            shl: (numBits: number | Long) => Long;
-            shiftRight: (numBits: number | Long) => Long;
-            shr: (numBits: number | Long) => Long;
-            shiftRightUnsigned: (numBits: number | Long) => Long;
-            shru: (numBits: number | Long) => Long;
-            shr_u: (numBits: number | Long) => Long;
-            rotateLeft: (numBits: number | Long) => Long;
-            rotl: (numBits: number | Long) => Long;
-            rotateRight: (numBits: number | Long) => Long;
-            rotr: (numBits: number | Long) => Long;
-            subtract: (subtrahend: string | number | Long) => Long;
-            sub: (subtrahend: string | number | Long) => Long;
-            toInt: () => number;
-            toNumber: () => number;
-            toBytes: (le?: boolean | undefined) => number[];
-            toBytesLE: () => number[];
-            toBytesBE: () => number[];
-            toSigned: () => Long;
-            toString: (radix?: number | undefined) => string;
-            toUnsigned: () => Long;
-            xor: (other: string | number | Long) => Long;
-        } & { [K_1 in Exclude<keyof I["geolocation"], keyof Long>]: never; }) | undefined;
-    } & { [K_2 in Exclude<keyof I, keyof MsgStakeClient>]: never; }>(base?: I | undefined): MsgStakeClient;
-    fromPartial<I_1 extends {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-        amount?: {
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } | undefined;
-        geolocation?: string | number | Long | undefined;
-    } & {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-        amount?: ({
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } & {
-            denom?: string | undefined;
-            amount?: string | undefined;
-        } & { [K_3 in Exclude<keyof I_1["amount"], keyof Coin>]: never; }) | undefined;
-        geolocation?: string | number | (Long & {
-            high: number;
-            low: number;
-            unsigned: boolean;
-            add: (addend: string | number | Long) => Long;
-            and: (other: string | number | Long) => Long;
-            compare: (other: string | number | Long) => number;
-            comp: (other: string | number | Long) => number;
-            divide: (divisor: string | number | Long) => Long;
-            div: (divisor: string | number | Long) => Long;
-            equals: (other: string | number | Long) => boolean;
-            eq: (other: string | number | Long) => boolean;
-            getHighBits: () => number;
-            getHighBitsUnsigned: () => number;
-            getLowBits: () => number;
-            getLowBitsUnsigned: () => number;
-            getNumBitsAbs: () => number;
-            greaterThan: (other: string | number | Long) => boolean;
-            gt: (other: string | number | Long) => boolean;
-            greaterThanOrEqual: (other: string | number | Long) => boolean;
-            gte: (other: string | number | Long) => boolean;
-            ge: (other: string | number | Long) => boolean;
-            isEven: () => boolean;
-            isNegative: () => boolean;
-            isOdd: () => boolean;
-            isPositive: () => boolean;
-            isZero: () => boolean;
-            eqz: () => boolean;
-            lessThan: (other: string | number | Long) => boolean;
-            lt: (other: string | number | Long) => boolean;
-            lessThanOrEqual: (other: string | number | Long) => boolean;
-            lte: (other: string | number | Long) => boolean;
-            le: (other: string | number | Long) => boolean;
-            modulo: (other: string | number | Long) => Long;
-            mod: (other: string | number | Long) => Long;
-            rem: (other: string | number | Long) => Long;
-            multiply: (multiplier: string | number | Long) => Long;
-            mul: (multiplier: string | number | Long) => Long;
-            negate: () => Long;
-            neg: () => Long;
-            not: () => Long;
-            countLeadingZeros: () => number;
-            clz: () => number;
-            countTrailingZeros: () => number;
-            ctz: () => number;
-            notEquals: (other: string | number | Long) => boolean;
-            neq: (other: string | number | Long) => boolean;
-            ne: (other: string | number | Long) => boolean;
-            or: (other: string | number | Long) => Long;
-            shiftLeft: (numBits: number | Long) => Long;
-            shl: (numBits: number | Long) => Long;
-            shiftRight: (numBits: number | Long) => Long;
-            shr: (numBits: number | Long) => Long;
-            shiftRightUnsigned: (numBits: number | Long) => Long;
-            shru: (numBits: number | Long) => Long;
-            shr_u: (numBits: number | Long) => Long;
-            rotateLeft: (numBits: number | Long) => Long;
-            rotl: (numBits: number | Long) => Long;
-            rotateRight: (numBits: number | Long) => Long;
-            rotr: (numBits: number | Long) => Long;
-            subtract: (subtrahend: string | number | Long) => Long;
-            sub: (subtrahend: string | number | Long) => Long;
-            toInt: () => number;
-            toNumber: () => number;
-            toBytes: (le?: boolean | undefined) => number[];
-            toBytesLE: () => number[];
-            toBytesBE: () => number[];
-            toSigned: () => Long;
-            toString: (radix?: number | undefined) => string;
-            toUnsigned: () => Long;
-            xor: (other: string | number | Long) => Long;
-        } & { [K_4 in Exclude<keyof I_1["geolocation"], keyof Long>]: never; }) | undefined;
-    } & { [K_5 in Exclude<keyof I_1, keyof MsgStakeClient>]: never; }>(object: I_1): MsgStakeClient;
-};
-export declare const MsgStakeClientResponse: {
-    encode(_: MsgStakeClientResponse, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): MsgStakeClientResponse;
-    fromJSON(_: any): MsgStakeClientResponse;
-    toJSON(_: MsgStakeClientResponse): unknown;
-    create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgStakeClientResponse;
-    fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgStakeClientResponse;
 };
 export declare const MsgUnstakeProvider: {
     encode(message: MsgUnstakeProvider, writer?: _m0.Writer): _m0.Writer;
@@ -663,34 +463,6 @@ export declare const MsgUnstakeProviderResponse: {
     toJSON(_: MsgUnstakeProviderResponse): unknown;
     create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgUnstakeProviderResponse;
     fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgUnstakeProviderResponse;
-};
-export declare const MsgUnstakeClient: {
-    encode(message: MsgUnstakeClient, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): MsgUnstakeClient;
-    fromJSON(object: any): MsgUnstakeClient;
-    toJSON(message: MsgUnstakeClient): unknown;
-    create<I extends {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-    } & {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-    } & { [K in Exclude<keyof I, keyof MsgUnstakeClient>]: never; }>(base?: I | undefined): MsgUnstakeClient;
-    fromPartial<I_1 extends {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-    } & {
-        creator?: string | undefined;
-        chainID?: string | undefined;
-    } & { [K_1 in Exclude<keyof I_1, keyof MsgUnstakeClient>]: never; }>(object: I_1): MsgUnstakeClient;
-};
-export declare const MsgUnstakeClientResponse: {
-    encode(_: MsgUnstakeClientResponse, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): MsgUnstakeClientResponse;
-    fromJSON(_: any): MsgUnstakeClientResponse;
-    toJSON(_: MsgUnstakeClientResponse): unknown;
-    create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgUnstakeClientResponse;
-    fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgUnstakeClientResponse;
 };
 export declare const MsgRelayPayment: {
     encode(message: MsgRelayPayment, writer?: _m0.Writer): _m0.Writer;
@@ -722,6 +494,11 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         }[] | undefined;
         descriptionString?: string | undefined;
     } & {
@@ -749,6 +526,11 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         }[] & ({
             specId?: string | undefined;
             contentHash?: Uint8Array | undefined;
@@ -771,6 +553,11 @@ export declare const MsgRelayPayment: {
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
+            } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
             } | undefined;
         } & {
             specId?: string | undefined;
@@ -1231,7 +1018,16 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } & { [K_7 in Exclude<keyof I["relays"][number]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-        } & { [K_8 in Exclude<keyof I["relays"][number], keyof RelaySession>]: never; })[] & { [K_9 in Exclude<keyof I["relays"], keyof {
+            qosExcellenceReport?: ({
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & { [K_8 in Exclude<keyof I["relays"][number]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+        } & { [K_9 in Exclude<keyof I["relays"][number], keyof RelaySession>]: never; })[] & { [K_10 in Exclude<keyof I["relays"], keyof {
             specId?: string | undefined;
             contentHash?: Uint8Array | undefined;
             sessionId?: string | number | Long | undefined;
@@ -1254,9 +1050,14 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         }[]>]: never; }) | undefined;
         descriptionString?: string | undefined;
-    } & { [K_10 in Exclude<keyof I, keyof MsgRelayPayment>]: never; }>(base?: I | undefined): MsgRelayPayment;
+    } & { [K_11 in Exclude<keyof I, keyof MsgRelayPayment>]: never; }>(base?: I | undefined): MsgRelayPayment;
     fromPartial<I_1 extends {
         creator?: string | undefined;
         relays?: {
@@ -1281,6 +1082,11 @@ export declare const MsgRelayPayment: {
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
+            } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
             } | undefined;
         }[] | undefined;
         descriptionString?: string | undefined;
@@ -1309,6 +1115,11 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         }[] & ({
             specId?: string | undefined;
             contentHash?: Uint8Array | undefined;
@@ -1331,6 +1142,11 @@ export declare const MsgRelayPayment: {
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
+            } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
             } | undefined;
         } & {
             specId?: string | undefined;
@@ -1406,7 +1222,7 @@ export declare const MsgRelayPayment: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_11 in Exclude<keyof I_1["relays"][number]["sessionId"], keyof Long>]: never; }) | undefined;
+            } & { [K_12 in Exclude<keyof I_1["relays"][number]["sessionId"], keyof Long>]: never; }) | undefined;
             cuSum?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1478,7 +1294,7 @@ export declare const MsgRelayPayment: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_12 in Exclude<keyof I_1["relays"][number]["cuSum"], keyof Long>]: never; }) | undefined;
+            } & { [K_13 in Exclude<keyof I_1["relays"][number]["cuSum"], keyof Long>]: never; }) | undefined;
             provider?: string | undefined;
             relayNum?: string | number | (Long & {
                 high: number;
@@ -1551,7 +1367,7 @@ export declare const MsgRelayPayment: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_13 in Exclude<keyof I_1["relays"][number]["relayNum"], keyof Long>]: never; }) | undefined;
+            } & { [K_14 in Exclude<keyof I_1["relays"][number]["relayNum"], keyof Long>]: never; }) | undefined;
             qosReport?: ({
                 latency?: string | undefined;
                 availability?: string | undefined;
@@ -1560,7 +1376,7 @@ export declare const MsgRelayPayment: {
                 latency?: string | undefined;
                 availability?: string | undefined;
                 sync?: string | undefined;
-            } & { [K_14 in Exclude<keyof I_1["relays"][number]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["relays"][number]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
             epoch?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1632,7 +1448,7 @@ export declare const MsgRelayPayment: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_15 in Exclude<keyof I_1["relays"][number]["epoch"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["relays"][number]["epoch"], keyof Long>]: never; }) | undefined;
             unresponsiveProviders?: Uint8Array | undefined;
             lavaChainId?: string | undefined;
             sig?: Uint8Array | undefined;
@@ -1714,7 +1530,7 @@ export declare const MsgRelayPayment: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_16 in Exclude<keyof I_1["relays"][number]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+                } & { [K_17 in Exclude<keyof I_1["relays"][number]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
                 epoch?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -1786,12 +1602,21 @@ export declare const MsgRelayPayment: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_17 in Exclude<keyof I_1["relays"][number]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+                } & { [K_18 in Exclude<keyof I_1["relays"][number]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
-            } & { [K_18 in Exclude<keyof I_1["relays"][number]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-        } & { [K_19 in Exclude<keyof I_1["relays"][number], keyof RelaySession>]: never; })[] & { [K_20 in Exclude<keyof I_1["relays"], keyof {
+            } & { [K_19 in Exclude<keyof I_1["relays"][number]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
+            qosExcellenceReport?: ({
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & { [K_20 in Exclude<keyof I_1["relays"][number]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+        } & { [K_21 in Exclude<keyof I_1["relays"][number], keyof RelaySession>]: never; })[] & { [K_22 in Exclude<keyof I_1["relays"], keyof {
             specId?: string | undefined;
             contentHash?: Uint8Array | undefined;
             sessionId?: string | number | Long | undefined;
@@ -1814,9 +1639,14 @@ export declare const MsgRelayPayment: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         }[]>]: never; }) | undefined;
         descriptionString?: string | undefined;
-    } & { [K_21 in Exclude<keyof I_1, keyof MsgRelayPayment>]: never; }>(object: I_1): MsgRelayPayment;
+    } & { [K_23 in Exclude<keyof I_1, keyof MsgRelayPayment>]: never; }>(object: I_1): MsgRelayPayment;
 };
 export declare const MsgRelayPaymentResponse: {
     encode(_: MsgRelayPaymentResponse, writer?: _m0.Writer): _m0.Writer;
@@ -1889,9 +1719,7 @@ export declare const MsgUnfreezeProviderResponse: {
 /** Msg defines the Msg service. */
 export interface Msg {
     StakeProvider(request: MsgStakeProvider): Promise<MsgStakeProviderResponse>;
-    StakeClient(request: MsgStakeClient): Promise<MsgStakeClientResponse>;
     UnstakeProvider(request: MsgUnstakeProvider): Promise<MsgUnstakeProviderResponse>;
-    UnstakeClient(request: MsgUnstakeClient): Promise<MsgUnstakeClientResponse>;
     RelayPayment(request: MsgRelayPayment): Promise<MsgRelayPaymentResponse>;
     FreezeProvider(request: MsgFreezeProvider): Promise<MsgFreezeProviderResponse>;
     /** this line is used by starport scaffolding # proto/tx/rpc */
@@ -1904,9 +1732,7 @@ export declare class MsgClientImpl implements Msg {
         service?: string;
     });
     StakeProvider(request: MsgStakeProvider): Promise<MsgStakeProviderResponse>;
-    StakeClient(request: MsgStakeClient): Promise<MsgStakeClientResponse>;
     UnstakeProvider(request: MsgUnstakeProvider): Promise<MsgUnstakeProviderResponse>;
-    UnstakeClient(request: MsgUnstakeClient): Promise<MsgUnstakeClientResponse>;
     RelayPayment(request: MsgRelayPayment): Promise<MsgRelayPaymentResponse>;
     FreezeProvider(request: MsgFreezeProvider): Promise<MsgFreezeProviderResponse>;
     UnfreezeProvider(request: MsgUnfreezeProvider): Promise<MsgUnfreezeProviderResponse>;

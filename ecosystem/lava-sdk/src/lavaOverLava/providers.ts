@@ -497,21 +497,25 @@ export class LavaProviders {
     const apis = new Map<string, number>();
 
     // Extract apis from response
-    for (const element of response.Spec.apis) {
-      for (const apiInterface of element.apiInterfaces) {
-        // Skip if interface which does not match
-        if (apiInterface.interface != rpcInterface) continue;
+    for (const element of response.Spec.apiCollections) {
+      if (!element.enabled) {
+        continue;
+      }
+      // Skip if interface which does not match
+      if (element.collectionData?.apiInterface != rpcInterface) continue;
 
-        if (apiInterface.interface == "rest") {
+      for (const api of element.apis) {
+        if (element.collectionData?.apiInterface == "rest") {
           // handle REST apis
-          const name = this.convertRestApiName(element.name);
-          apis.set(name, element.computeUnits.low);
+          const name = this.convertRestApiName(api.name);
+          apis.set(name, api.computeUnits.low);
         } else {
           // Handle RPC apis
-          apis.set(element.name, element.computeUnits.low);
+          apis.set(api.name, api.computeUnits.low);
         }
       }
     }
+
     return apis;
   }
 

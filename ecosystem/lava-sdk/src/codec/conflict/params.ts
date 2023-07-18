@@ -47,35 +47,35 @@ export const Params = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.majorityPercent = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.voteStartSpan = reader.uint64() as Long;
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.votePeriod = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.Rewards = Rewards.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -147,28 +147,28 @@ export const Rewards = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.winnerRewardPercent = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.clientRewardPercent = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.votersRewardPercent = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

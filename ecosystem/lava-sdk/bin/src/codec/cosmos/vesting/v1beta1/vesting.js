@@ -40,37 +40,37 @@ exports.BaseVestingAccount = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.baseAccount = auth_1.BaseAccount.decode(reader, reader.uint32());
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.originalVesting.push(coin_1.Coin.decode(reader, reader.uint32()));
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.delegatedFree.push(coin_1.Coin.decode(reader, reader.uint32()));
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.delegatedVesting.push(coin_1.Coin.decode(reader, reader.uint32()));
                     continue;
                 case 5:
-                    if (tag !== 40) {
+                    if (tag != 40) {
                         break;
                     }
                     message.endTime = reader.int64();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -154,19 +154,19 @@ exports.ContinuousVestingAccount = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.baseVestingAccount = exports.BaseVestingAccount.decode(reader, reader.uint32());
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.startTime = reader.int64();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -221,13 +221,13 @@ exports.DelayedVestingAccount = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.baseVestingAccount = exports.BaseVestingAccount.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -280,19 +280,19 @@ exports.Period = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 8) {
+                    if (tag != 8) {
                         break;
                     }
                     message.length = reader.int64();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.amount.push(coin_1.Coin.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -353,25 +353,25 @@ exports.PeriodicVestingAccount = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.baseVestingAccount = exports.BaseVestingAccount.decode(reader, reader.uint32());
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.startTime = reader.int64();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.vestingPeriods.push(exports.Period.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -437,13 +437,13 @@ exports.PermanentLockedAccount = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.baseVestingAccount = exports.BaseVestingAccount.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);

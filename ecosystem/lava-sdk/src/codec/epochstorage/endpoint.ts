@@ -6,12 +6,13 @@ export const protobufPackage = "lavanet.lava.epochstorage";
 
 export interface Endpoint {
   iPPORT: string;
-  useType: string;
   geolocation: Long;
+  addons: string[];
+  apiInterfaces: string[];
 }
 
 function createBaseEndpoint(): Endpoint {
-  return { iPPORT: "", useType: "", geolocation: Long.UZERO };
+  return { iPPORT: "", geolocation: Long.UZERO, addons: [], apiInterfaces: [] };
 }
 
 export const Endpoint = {
@@ -19,11 +20,14 @@ export const Endpoint = {
     if (message.iPPORT !== "") {
       writer.uint32(10).string(message.iPPORT);
     }
-    if (message.useType !== "") {
-      writer.uint32(18).string(message.useType);
-    }
     if (!message.geolocation.isZero()) {
       writer.uint32(24).uint64(message.geolocation);
+    }
+    for (const v of message.addons) {
+      writer.uint32(34).string(v!);
+    }
+    for (const v of message.apiInterfaces) {
+      writer.uint32(42).string(v!);
     }
     return writer;
   },
@@ -36,28 +40,35 @@ export const Endpoint = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.iPPORT = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.useType = reader.string();
-          continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.geolocation = reader.uint64() as Long;
           continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.addons.push(reader.string());
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.apiInterfaces.push(reader.string());
+          continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -68,16 +79,26 @@ export const Endpoint = {
   fromJSON(object: any): Endpoint {
     return {
       iPPORT: isSet(object.iPPORT) ? String(object.iPPORT) : "",
-      useType: isSet(object.useType) ? String(object.useType) : "",
       geolocation: isSet(object.geolocation) ? Long.fromValue(object.geolocation) : Long.UZERO,
+      addons: Array.isArray(object?.addons) ? object.addons.map((e: any) => String(e)) : [],
+      apiInterfaces: Array.isArray(object?.apiInterfaces) ? object.apiInterfaces.map((e: any) => String(e)) : [],
     };
   },
 
   toJSON(message: Endpoint): unknown {
     const obj: any = {};
     message.iPPORT !== undefined && (obj.iPPORT = message.iPPORT);
-    message.useType !== undefined && (obj.useType = message.useType);
     message.geolocation !== undefined && (obj.geolocation = (message.geolocation || Long.UZERO).toString());
+    if (message.addons) {
+      obj.addons = message.addons.map((e) => e);
+    } else {
+      obj.addons = [];
+    }
+    if (message.apiInterfaces) {
+      obj.apiInterfaces = message.apiInterfaces.map((e) => e);
+    } else {
+      obj.apiInterfaces = [];
+    }
     return obj;
   },
 
@@ -88,10 +109,11 @@ export const Endpoint = {
   fromPartial<I extends Exact<DeepPartial<Endpoint>, I>>(object: I): Endpoint {
     const message = createBaseEndpoint();
     message.iPPORT = object.iPPORT ?? "";
-    message.useType = object.useType ?? "";
     message.geolocation = (object.geolocation !== undefined && object.geolocation !== null)
       ? Long.fromValue(object.geolocation)
       : Long.UZERO;
+    message.addons = object.addons?.map((e) => e) || [];
+    message.apiInterfaces = object.apiInterfaces?.map((e) => e) || [];
     return message;
   },
 };

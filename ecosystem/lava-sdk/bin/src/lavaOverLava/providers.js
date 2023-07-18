@@ -310,6 +310,7 @@ class LavaProviders {
         });
     }
     getServiceApis(request, rpcInterface, lavaApis) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const requestData = query_2.QueryGetSpecRequest.encode(request).finish();
             const hexData = Buffer.from(requestData).toString("hex");
@@ -335,19 +336,22 @@ class LavaProviders {
             }
             const apis = new Map();
             // Extract apis from response
-            for (const element of response.Spec.apis) {
-                for (const apiInterface of element.apiInterfaces) {
-                    // Skip if interface which does not match
-                    if (apiInterface.interface != rpcInterface)
-                        continue;
-                    if (apiInterface.interface == "rest") {
+            for (const element of response.Spec.apiCollections) {
+                if (!element.enabled) {
+                    continue;
+                }
+                // Skip if interface which does not match
+                if (((_a = element.collectionData) === null || _a === void 0 ? void 0 : _a.apiInterface) != rpcInterface)
+                    continue;
+                for (const api of element.apis) {
+                    if (((_b = element.collectionData) === null || _b === void 0 ? void 0 : _b.apiInterface) == "rest") {
                         // handle REST apis
-                        const name = this.convertRestApiName(element.name);
-                        apis.set(name, element.computeUnits.low);
+                        const name = this.convertRestApiName(api.name);
+                        apis.set(name, api.computeUnits.low);
                     }
                     else {
                         // Handle RPC apis
-                        apis.set(element.name, element.computeUnits.low);
+                        apis.set(api.name, api.computeUnits.low);
                     }
                 }
             }

@@ -1,8 +1,4 @@
-import {
-  createWallet,
-  createDynamicWallet,
-  LavaWallet,
-} from "../wallet/wallet";
+import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import Relayer from "../relayer/relayer";
@@ -19,7 +15,7 @@ import {
   fetchRpcInterface,
   validateRpcInterfaceWithChainID,
 } from "../util/chains";
-import { base64ToUint8Array, generateRPCData } from "../util/common";
+import { generateRPCData } from "../util/common";
 import { LavaProviders } from "../lavaOverLava/providers";
 import {
   LAVA_CHAIN_ID as LAVA_SPEC_ID,
@@ -60,6 +56,7 @@ export interface LavaSDKOptions {
   geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
   lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
   secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
+  allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
   debug?: boolean; // Optional for debugging the LavaSDK mostly prints to speed up development
 }
 
@@ -79,6 +76,7 @@ export class LavaSDK {
   private account: AccountData | Error;
   private relayer: Relayer | Error;
   private secure: boolean;
+  private allowInsecureTransport: boolean;
   private debugMode: boolean;
 
   private activeSessionManager: SessionManager | Error;
@@ -117,7 +115,18 @@ export class LavaSDK {
     }
 
     // Initialize local attributes
-    this.secure = options.secure ? options.secure : false;
+    this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
+    this.secure = options.secure !== undefined ? options.secure : true;
+    this.allowInsecureTransport =
+      options.allowInsecureTransport !== undefined
+        ? options.allowInsecureTransport
+        : true;
+    this.debugPrint(
+      "secure",
+      this.secure,
+      "allowInsecureTransport",
+      this.allowInsecureTransport
+    );
     this.chainID = chainID;
     this.rpcInterface = rpcInterface ? rpcInterface : "";
     this.privKey = privateKey ? privateKey : "";
@@ -131,7 +140,6 @@ export class LavaSDK {
     this.relayer = SDKErrors.errRelayerServiceNotInitialized;
     this.lavaProviders = SDKErrors.errLavaProvidersNotInitialized;
     this.activeSessionManager = SDKErrors.errSessionNotInitialized;
-    this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
 
     // Init sdk
     return (async (): Promise<LavaSDK> => {
@@ -150,9 +158,7 @@ export class LavaSDK {
   }
 
   private debugPrint(message?: any, ...optionalParams: any[]) {
-    if (this.debugMode) {
-      console.log(message, ...optionalParams);
-    }
+    this.debugMode && console.log(message, ...optionalParams);
   }
 
   private async fetchNewBadge(): Promise<GenerateBadgeResponse> {
@@ -178,6 +184,7 @@ export class LavaSDK {
         this.privKey,
         this.lavaChainId,
         this.secure,
+        this.allowInsecureTransport,
         this.currentEpochBadge
       ),
       geolocation: this.geolocation,
@@ -255,6 +262,7 @@ export class LavaSDK {
       this.privKey,
       this.lavaChainId,
       this.secure,
+      this.allowInsecureTransport,
       this.currentEpochBadge
     );
 
