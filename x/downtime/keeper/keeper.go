@@ -56,7 +56,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 		return false
 	})
 
-	// get last block time
+	// get last block time, we report it only if it's set
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
 	if ok {
 		gs.LastBlockTime = &lastBlockTime
