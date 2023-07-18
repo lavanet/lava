@@ -22,7 +22,6 @@ const (
 )
 
 // Score calculates the geo score of a provider based on preset latency data
-// The score is (maxGeoLatency / minLatency)^geoWeight
 // Note: each GeoReq must have exactly a single geolocation (bit)
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) uint64 {
 	if !types.IsGeoEnumSingleBit(int32(gr.Geo)) {
@@ -105,50 +104,39 @@ func calculateCostFromLatency(latency uint64) uint64 {
 	return maxGeoLatency / latency
 }
 
-// define shortened names for geolocations (for convinience only)
-var (
-	USC = planstypes.Geolocation_USC
-	EU  = planstypes.Geolocation_EU
-	USE = planstypes.Geolocation_USE
-	USW = planstypes.Geolocation_USW
-	AF  = planstypes.Geolocation_AF
-	AS  = planstypes.Geolocation_AS
-	AU  = planstypes.Geolocation_AU
-)
-
 // GEO_LATENCY_MAP is a map of lists of GeoLatency that defines the cost of geo mismatch
 // for each single geolocation. The map key is a single geolocation and the value is an
 // ordered list of neighbors and their latency (ordered by latency)
 // latency data from: https://wondernetwork.com/pings (July 2023)
 var GEO_LATENCY_MAP = map[planstypes.Geolocation]map[planstypes.Geolocation]uint64{
-	AS: {
-		AU: 146,
-		EU: 155,
+	planstypes.Geolocation_AS: {
+		planstypes.Geolocation_AU: 146,
+		planstypes.Geolocation_EU: 155,
 	},
-	USE: {
-		USC: 42,
-		USW: 68,
+	planstypes.Geolocation_USE: {
+		planstypes.Geolocation_USC: 42,
+		planstypes.Geolocation_USW: 68,
 	},
-	USW: {
-		USC: 45,
-		USE: 68,
+	planstypes.Geolocation_USW: {
+		planstypes.Geolocation_USC: 45,
+		planstypes.Geolocation_USE: 68,
 	},
-	USC: {
-		USE: 42,
-		USW: 45,
+	planstypes.Geolocation_USC: {
+		planstypes.Geolocation_USE: 42,
+		planstypes.Geolocation_USW: 45,
 	},
-	EU: {
-		USE: 116,
-		AF:  138,
-		AS:  155,
+	planstypes.Geolocation_EU: {
+		planstypes.Geolocation_USE: 116,
+		planstypes.Geolocation_AF:  138,
+		planstypes.Geolocation_AS:  155,
 	},
-	AF: {
-		EU:  138,
-		USE: 203,
-		AS:  263,
+	planstypes.Geolocation_AF: {
+		planstypes.Geolocation_EU:  138,
+		planstypes.Geolocation_USE: 203,
+		planstypes.Geolocation_AS:  263,
 	},
-	AU: {
-		AS:  146,
-		USW: 179,
+	planstypes.Geolocation_AU: {
+		planstypes.Geolocation_AS:  146,
+		planstypes.Geolocation_USW: 179,
 	},
 }
