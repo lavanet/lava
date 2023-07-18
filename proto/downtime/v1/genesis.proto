@@ -17,5 +17,5 @@ message GenesisState {
   // last_block_time keeps track of when the last block time was set.
   // it's nullable because we might want it to be non existent.
   // we want it to exist when we have a genesis export-import migration scenario.
-  google.protobuf.Timestamp last_block_time = 4 [(gogoproto.nullable) = true, (gogoproto.stdduration) = true];
+  google.protobuf.Timestamp last_block_time = 4 [(gogoproto.nullable) = true, (gogoproto.stdtime) = true];
 }
