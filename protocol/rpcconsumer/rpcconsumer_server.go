@@ -123,7 +123,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
@@ -488,7 +488,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}
