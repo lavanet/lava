@@ -29,7 +29,7 @@ func TestLastBlockTime(t *testing.T) {
 	require.False(t, ok)
 
 	// set last block time
-	keeper.SetLastBlockTime(ctx)
+	keeper.SetLastBlockTime(ctx, ctx.BlockTime())
 
 	// last block time set
 	lastBlockTime, ok := keeper.GetLastBlockTime(ctx)

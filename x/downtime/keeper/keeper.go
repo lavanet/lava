@@ -66,6 +66,23 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 }
 
 func (k Keeper) ImportGenesis(ctx sdk.Context, gs *v1.GenesisState) error {
+	// set params
+	k.SetParams(ctx, gs.Params)
+	// set downtimes
+	for _, downtime := range gs.Downtimes {
+		k.SetDowntime(ctx, downtime.Block, downtime.Duration)
+	}
+	// set garbage collection
+	for _, gc := range gs.DowntimesGarbageCollection {
+		k.SetDowntimeGarbageCollection(ctx, gc.Block, gc.GcTime)
+	}
+	// set last block time, only if it's present in genesis
+	// otherwise it means we don't care about it. This can
+	// happen when we are creating a new chain from scratch
+	// for testing for example.
+	if gs.LastBlockTime != nil {
+		k.SetLastBlockTime(ctx, *gs.LastBlockTime)
+	}
 	return nil
 }
 
@@ -84,9 +101,9 @@ func (k Keeper) GetLastBlockTime(ctx sdk.Context) (time.Time, bool) {
 	return stdTime, true
 }
 
-func (k Keeper) SetLastBlockTime(ctx sdk.Context) {
+func (k Keeper) SetLastBlockTime(ctx sdk.Context, t time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	protoTime, err := gogowellknown.TimestampProto(ctx.BlockTime())
+	protoTime, err := gogowellknown.TimestampProto(t)
 	if err != nil {
 		panic(err)
 	}
@@ -223,7 +240,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// this is the first time we're recording a block time,
 	// so we just store the current block time and exit.
 	if !ok {
-		k.SetLastBlockTime(ctx)
+		k.SetLastBlockTime(ctx, ctx.BlockTime())
 		return
 	}
 
@@ -236,7 +253,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if elapsedDuration < maxDowntimeDuration {
 		// if the current block time is less than the max downtime duration
 		// then we just store the current block time and exit.
-		k.SetLastBlockTime(ctx)
+		k.SetLastBlockTime(ctx, ctx.BlockTime())
 		return
 	}
 	// if the current block time is greater than the max downtime duration
