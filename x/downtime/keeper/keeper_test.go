@@ -131,3 +131,52 @@ func TestBeginBlock(t *testing.T) {
 	defer iter.Close()
 	require.False(t, iter.Valid())
 }
+
+func TestImportExportGenesis(t *testing.T) {
+	app, ctx := app.TestSetup()
+	keeper := app.DowntimeKeeper
+	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
+
+	t.Run("import export – no last block time", func(t *testing.T) {
+		ctx, _ = ctx.CacheContext()
+		wantGs := &v1.GenesisState{
+			Params: v1.DefaultParams(),
+			Downtimes: []*v1.Downtime{
+				{
+					Block:    1,
+					Duration: 50 * time.Minute,
+				},
+			},
+			DowntimesGarbageCollection: []*v1.DowntimeGarbageCollection{
+				{
+					Block:  1,
+					GcTime: ctx.BlockTime().Add(2 * time.Hour),
+				},
+			},
+			LastBlockTime: nil,
+		}
+		err := keeper.ImportGenesis(ctx, wantGs)
+		require.NoError(t, err)
+		// we don't want to see LastBlockTime to be set
+		_, ok := keeper.GetLastBlockTime(ctx)
+		require.False(t, ok)
+		// we check that if we export we have the same genesis state
+		gotGs, err := keeper.ExportGenesis(ctx)
+		require.NoError(t, err)
+		require.Equal(t, wantGs, gotGs)
+	})
+
+	t.Run("import export – last block time", func(t *testing.T) {
+		ctx, _ = ctx.CacheContext()
+		wantLastBlockTime := ctx.BlockTime().Add(-1 * time.Hour)
+		err := keeper.ImportGenesis(ctx, &v1.GenesisState{
+			Params:        v1.DefaultParams(),
+			LastBlockTime: &wantLastBlockTime,
+		})
+		require.NoError(t, err)
+
+		gotLastBlockTime, ok := keeper.GetLastBlockTime(ctx)
+		require.True(t, ok)
+		require.Equal(t, wantLastBlockTime, gotLastBlockTime)
+	})
+}
