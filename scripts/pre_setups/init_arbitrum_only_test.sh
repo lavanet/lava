@@ -35,7 +35,7 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | 
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3348 ARB1 jsonrpc \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls
