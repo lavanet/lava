@@ -152,6 +152,7 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 			// no collections enabled to combine, we skip this
 			continue
 		}
+		// we are skipping headers and parseDirective combinations, because we are assuming that they are the same
 		err := combined.CombineWithOthers(others, false, false, make(map[string]struct{}, 0), nil, nil)
 		if err != nil {
 			return err
