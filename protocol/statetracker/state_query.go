@@ -80,7 +80,7 @@ func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerA
 
 	resp, err := csq.PairingQueryClient.EffectivePolicy(ctx, &pairingtypes.QueryEffectivePolicyRequest{
 		Consumer: consumerAddress,
-		SpecId:   specID,
+		SpecID:   specID,
 	})
 	if err != nil || resp.GetPolicy() == nil {
 		return nil, err

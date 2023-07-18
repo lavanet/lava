@@ -26,6 +26,6 @@ func (k Keeper) EffectivePolicy(goCtx context.Context, req *types.QueryEffective
 			return nil, fmt.Errorf("failed getting project for key %s errors %s, %s", req.Consumer, origErr, err)
 		}
 	}
-	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecId)
+	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecID)
 	return &types.QueryEffectivePolicyResponse{Policy: &strictestPolicy}, err
 }

@@ -79,7 +79,7 @@ service Query {
 
 // Queries a list of EffectivePolicy items.
 	rpc EffectivePolicy(QueryEffectivePolicyRequest) returns (QueryEffectivePolicyResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}";
+		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -215,7 +215,7 @@ message QueryAccountInfoResponse {
 }
 message QueryEffectivePolicyRequest {
   string consumer = 1;
-  string spec_id = 2;
+  string specID = 2;
 }
 
 message QueryEffectivePolicyResponse {

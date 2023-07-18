@@ -45,7 +45,7 @@ func CmdEffectivePolicy() *cobra.Command {
 
 			params := &types.QueryEffectivePolicyRequest{
 				Consumer: address,
-				SpecId:   specID,
+				SpecID:   specID,
 			}
 
 			res, err := queryClient.EffectivePolicy(cmd.Context(), params)
