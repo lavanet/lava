@@ -23,10 +23,14 @@ type chainRouterImpl struct {
 }
 
 func (cri *chainRouterImpl) routerKey(addons []string) string {
-	if addons == nil {
+	if len(addons) == 0 {
 		return sep + sep
 	}
 	sort.Strings(addons)
+	if addons[0] != "" {
+		// add support for empty addon in all routers
+		addons = append([]string{""}, addons...)
+	}
 	return sep + strings.Join(addons, sep) + sep
 }
 
@@ -46,7 +50,11 @@ func (cri *chainRouterImpl) getChainProxySupporting(addons []string) ChainProxy 
 possibilitiesLoop:
 	for routerKey, chainProxy := range cri.chainProxyRouter {
 		for _, addon := range addons {
-			if !strings.Contains(routerKey, sep+addon+sep) {
+			addonToSearch := sep + addon + sep
+			if !strings.Contains(routerKey, addonToSearch) {
+				if debug {
+					utils.LavaFormatDebug("chainProxy not supporting", utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addonToSearch", Value: addonToSearch})
+				}
 				continue possibilitiesLoop
 			}
 		}
