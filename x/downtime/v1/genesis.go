@@ -8,6 +8,7 @@ func DefaultGenesisState() *GenesisState {
 		Params:                     DefaultParams(),
 		Downtimes:                  nil,
 		DowntimesGarbageCollection: nil,
+		LastBlockTime:              nil,
 	}
 }
 
