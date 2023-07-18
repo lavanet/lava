@@ -190,8 +190,9 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	if groupCount >= len(scores)-len(chosenProvidersIdx) {
 		providers := []epochstoragetypes.StakeEntry{}
-		for _, score := range scores {
+		for idx, score := range scores {
 			providers = append(providers, *score.Provider)
+			chosenProvidersIdx[idx] = true
 		}
 		return providers
 	}
@@ -222,5 +223,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
+
 	return returnedProviders
 }
