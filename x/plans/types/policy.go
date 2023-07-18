@@ -34,14 +34,14 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 
 		if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_DISABLED && len(policy.SelectedProviders) != 0 {
-			return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
+			return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) and non-empty list of selected providers`)
 		}
 
 		// non-plan policy checks
 
 	} else if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_DISABLED {
-		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
+		return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) for a policy that is not plan policy`)
 	}
 
@@ -54,9 +54,8 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		return sdkerrors.Wrapf(ErrInvalidPolicyMaxProvidersToPair, "invalid policy's MaxProvidersToPair fields (MaxProvidersToPair = %v)", policy.MaxProvidersToPair)
 	}
 
-
 	if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_ALLOWED && len(policy.SelectedProviders) != 0 {
-		return sdkerrors.Wrap(ErrInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no 
+		return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 0 (no 
 			providers restrictions) and non-empty list of selected providers`)
 	}
 
