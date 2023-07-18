@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -41,6 +42,20 @@ func (k Keeper) SetParams(ctx sdk.Context, params v1.Params) {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
+	gs := v1.GenesisState{}
+	// get params
+	gs.Params = k.GetParams(ctx)
+	// get downtimes
+	k.IterateDowntimes(ctx, 0, math.MaxUint64, func(height uint64, downtime time.Duration) (stop bool) {
+		gs.Downtimes = append(gs.Downtimes, &v1.Downtime{Block: height, Duration: downtime})
+		return false
+	})
+	// get garbage collection
+	k.IterateGarbageCollections(ctx, func(height uint64, gcTime time.Time) (stop bool) {
+		gs.DowntimesGarbageCollection = append(gs.DowntimesGarbageCollection, &v1.DowntimeGarbageCollection{Block: height, GcTime: gcTime})
+		return false
+	})
+
 	return new(v1.GenesisState), nil
 }
 
@@ -149,6 +164,22 @@ func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcT
 			types.GetDowntimeGarbageKey(gcTime),
 			sdk.Uint64ToBigEndian(height),
 		)
+}
+
+func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height uint64, gcTime time.Time) (stop bool)) {
+	store := ctx.KVStore(k.storeKey)
+	iter := store.Iterator(
+		types.GetDowntimeGarbageKey(time.Unix(0, 0)),
+		types.GetDowntimeGarbageKey(ctx.BlockTime()))
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		height := sdk.BigEndianToUint64(iter.Value())
+		gcTime := types.ParseDowntimeGarbageKey(iter.Key())
+		if onResult(height, gcTime) {
+			break
+		}
+	}
 }
 
 // ------ STATE END -------

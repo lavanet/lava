@@ -33,3 +33,12 @@ func ParseDowntimeKey(key []byte) uint64 {
 func GetDowntimeGarbageKey(time time.Time) []byte {
 	return append(DowntimeHeightGarbageKey, sdk.FormatTimeBytes(time)...)
 }
+
+// ParseDowntimeGarbageKey returns the downtime garbage time given the key.
+func ParseDowntimeGarbageKey(key []byte) time.Time {
+	r, err := sdk.ParseTimeBytes(key[1:])
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
