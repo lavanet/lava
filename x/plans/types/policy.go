@@ -13,7 +13,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const WILDCARD_CHAIN_POLICY = "*"
+const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
 
 // gets the chainPolicy if exists, null safe
 func (policy *Policy) ChainPolicy(chainID string) (chainPolicy ChainPolicy, allowed bool) {

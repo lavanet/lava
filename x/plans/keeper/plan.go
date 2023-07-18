@@ -95,6 +95,7 @@ func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error
 		}
 		for _, collection := range chainPolicy.Collections {
 			addon := collection.AddOn
+			// an addon is the same as apiInterface for optional apiInterfaces
 			if addon == collection.ApiInterface {
 				addon = ""
 			}
