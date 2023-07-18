@@ -56,8 +56,7 @@ var (
 func init() {
 	// gather all req names to a list
 	allReqNames = []string{stakeReqName}
-  allReqNames = append(allReqNames, geoReqName)
-
+	allReqNames = append(allReqNames, geoReqName)
 
 	// init strategy
 	uniformStrategy = make(ScoreStrategy)

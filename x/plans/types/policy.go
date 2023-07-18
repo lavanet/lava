@@ -39,7 +39,6 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 
 		// non-plan policy checks
-
 	} else if policy.SelectedProvidersMode == SELECTED_PROVIDERS_MODE_DISABLED {
 		return sdkerrors.Wrap(ErrPolicyInvalidSelectedProvidersConfig, `cannot configure mode = 3 (selected 
 				providers feature is disabled) for a policy that is not plan policy`)
