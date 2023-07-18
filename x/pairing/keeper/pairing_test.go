@@ -893,3 +893,27 @@ func TestNoRequiredGeo(t *testing.T) {
 		require.NotEqual(t, freePlanPolicy.GeolocationProfile, provider.Geolocation)
 	}
 }
+
+// TestGeoSlotCalc checks that the calculated slots always hold a single bit geo req
+func TestGeoSlotCalc(t *testing.T) {
+	minStake := sdk.NewInt(0)
+	geoReqName := pairingscores.GeoReq{}.GetName()
+
+	// iterate over all possible geolocations, create a policy and calc slots
+	for i := 0; i <= int(planstypes.Geolocation_GL); i++ {
+		policy := planstypes.Policy{GeolocationProfile: uint64(i)}
+
+		slots := pairingscores.CalcSlots(policy, minStake)
+		for _, slot := range slots {
+			geoReqFromMap := slot.Reqs[geoReqName]
+			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+			if !ok {
+				require.Fail(t, "slot geo req is not of GeoReq type")
+			}
+
+			if !types.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+				require.Fail(t, "slot geo is not single bit")
+			}
+		}
+	}
+}

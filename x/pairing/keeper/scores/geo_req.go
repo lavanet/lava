@@ -1,10 +1,8 @@
 package scores
 
 import (
-	"fmt"
 	"math"
 
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -24,13 +22,6 @@ const (
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
 func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) uint64 {
-	if !types.IsGeoEnumSingleBit(int32(gr.Geo)) {
-		utils.LavaFormatError("critical: provider geo req is not single bit", fmt.Errorf("invalid geo req"),
-			utils.Attribute{Key: "geoReq", Value: gr.Geo},
-		)
-		return calculateCostFromLatency(maxGeoLatency)
-	}
-
 	// check if the provider supports the required geolocation
 	if gr.Geo&^provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
