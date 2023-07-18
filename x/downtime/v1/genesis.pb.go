@@ -5,6 +5,7 @@ package v1
 
 import (
 	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
@@ -24,6 +25,9 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState is the genesis state of the downtime module.
 type GenesisState struct {
+	Params                     Params                       `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	Downtimes                  []*Downtime                  `protobuf:"bytes,2,rep,name=downtimes,proto3" json:"downtimes,omitempty"`
+	DowntimesGarbageCollection []*DowntimeGarbageCollection `protobuf:"bytes,3,rep,name=downtimes_garbage_collection,json=downtimesGarbageCollection,proto3" json:"downtimes_garbage_collection,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -59,6 +63,27 @@ func (m *GenesisState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GenesisState proto.InternalMessageInfo
 
+func (m *GenesisState) GetParams() Params {
+	if m != nil {
+		return m.Params
+	}
+	return Params{}
+}
+
+func (m *GenesisState) GetDowntimes() []*Downtime {
+	if m != nil {
+		return m.Downtimes
+	}
+	return nil
+}
+
+func (m *GenesisState) GetDowntimesGarbageCollection() []*DowntimeGarbageCollection {
+	if m != nil {
+		return m.DowntimesGarbageCollection
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*GenesisState)(nil), "lavanet.lava.downtime.v1.GenesisState")
 }
@@ -66,16 +91,24 @@ func init() {
 func init() { proto.RegisterFile("downtime/v1/genesis.proto", fileDescriptor_a2acc27bef320760) }
 
 var fileDescriptor_a2acc27bef320760 = []byte{
-	// 135 bytes of a gzipped FileDescriptorProto
+	// 260 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4c, 0xc9, 0x2f, 0xcf,
 	0x2b, 0xc9, 0xcc, 0x4d, 0xd5, 0x2f, 0x33, 0xd4, 0x4f, 0x4f, 0xcd, 0x4b, 0x2d, 0xce, 0x2c, 0xd6,
 	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x92, 0xc8, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03,
-	0xd1, 0x7a, 0x30, 0x75, 0x7a, 0x65, 0x86, 0x4a, 0x7c, 0x5c, 0x3c, 0xee, 0x10, 0xa5, 0xc1, 0x25,
-	0x89, 0x25, 0xa9, 0x4e, 0xf6, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91,
-	0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0xa5,
-	0x9a, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x0f, 0x35, 0x0e, 0x4c, 0xeb,
-	0x57, 0xe8, 0x23, 0x59, 0x9c, 0xc4, 0x06, 0xb6, 0xd1, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x52,
-	0x4b, 0x60, 0xec, 0x8e, 0x00, 0x00, 0x00,
+	0xd1, 0x7a, 0x30, 0x75, 0x7a, 0x65, 0x86, 0x52, 0x52, 0xc8, 0x9a, 0xe0, 0x12, 0x60, 0x5d, 0x52,
+	0x22, 0xe9, 0xf9, 0xe9, 0xf9, 0x60, 0xa6, 0x3e, 0x88, 0x05, 0x11, 0x55, 0x6a, 0x67, 0xe2, 0xe2,
+	0x71, 0x87, 0x98, 0x1e, 0x5c, 0x92, 0x58, 0x92, 0x2a, 0x64, 0xc7, 0xc5, 0x56, 0x90, 0x58, 0x94,
+	0x98, 0x5b, 0x2c, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x6d, 0xa4, 0xa0, 0x87, 0xcb, 0x36, 0xbd, 0x00,
+	0xb0, 0x3a, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82, 0xa0, 0xba, 0x84, 0x1c, 0xb8, 0x38, 0x61,
+	0x6a, 0x8a, 0x25, 0x98, 0x14, 0x98, 0x35, 0xb8, 0x8d, 0x94, 0x70, 0x1b, 0xe1, 0x02, 0x65, 0x07,
+	0x21, 0x34, 0x09, 0x95, 0x72, 0xc9, 0xc0, 0x39, 0xf1, 0xe9, 0x89, 0x45, 0x49, 0x89, 0xe9, 0xa9,
+	0xf1, 0xc9, 0xf9, 0x39, 0x39, 0xa9, 0xc9, 0x25, 0x99, 0xf9, 0x79, 0x12, 0xcc, 0x60, 0x43, 0x8d,
+	0x09, 0x1b, 0xea, 0x0e, 0xd1, 0xeb, 0x0c, 0xd7, 0x1a, 0x04, 0x0f, 0x9f, 0x62, 0x0c, 0x39, 0x27,
+	0xfb, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63,
+	0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0x52, 0x4d, 0xcf, 0x2c, 0xc9,
+	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x87, 0x5a, 0x0a, 0xa6, 0xf5, 0x2b, 0xf4, 0x91, 0xc2,
+	0x3b, 0x89, 0x0d, 0x1c, 0xa2, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7e, 0x12, 0x3f, 0x8d,
+	0xba, 0x01, 0x00, 0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -98,6 +131,44 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.DowntimesGarbageCollection) > 0 {
+		for iNdEx := len(m.DowntimesGarbageCollection) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DowntimesGarbageCollection[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Downtimes) > 0 {
+		for iNdEx := len(m.Downtimes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Downtimes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	{
+		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -118,6 +189,20 @@ func (m *GenesisState) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = m.Params.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.Downtimes) > 0 {
+		for _, e := range m.Downtimes {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.DowntimesGarbageCollection) > 0 {
+		for _, e := range m.DowntimesGarbageCollection {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -156,6 +241,107 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: GenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Downtimes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Downtimes = append(m.Downtimes, &Downtime{})
+			if err := m.Downtimes[len(m.Downtimes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DowntimesGarbageCollection", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DowntimesGarbageCollection = append(m.DowntimesGarbageCollection, &DowntimeGarbageCollection{})
+			if err := m.DowntimesGarbageCollection[len(m.DowntimesGarbageCollection)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenesis(dAtA[iNdEx:])
