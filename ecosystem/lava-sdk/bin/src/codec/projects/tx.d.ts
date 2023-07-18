@@ -1,6 +1,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Policy, ProjectKey } from "./project";
+import { Policy } from "../plans/plan";
+import { ProjectKey } from "./project";
 export declare const protobufPackage = "lavanet.lava.projects";
 export interface MsgAddKeys {
     creator: string;
@@ -8,6 +9,13 @@ export interface MsgAddKeys {
     projectKeys: ProjectKey[];
 }
 export interface MsgAddKeysResponse {
+}
+export interface MsgDelKeys {
+    creator: string;
+    project: string;
+    projectKeys: ProjectKey[];
+}
+export interface MsgDelKeysResponse {
 }
 export interface MsgSetPolicy {
     creator: string;
@@ -85,6 +93,68 @@ export declare const MsgAddKeysResponse: {
     create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgAddKeysResponse;
     fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgAddKeysResponse;
 };
+export declare const MsgDelKeys: {
+    encode(message: MsgDelKeys, writer?: _m0.Writer): _m0.Writer;
+    decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelKeys;
+    fromJSON(object: any): MsgDelKeys;
+    toJSON(message: MsgDelKeys): unknown;
+    create<I extends {
+        creator?: string | undefined;
+        project?: string | undefined;
+        projectKeys?: {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[] | undefined;
+    } & {
+        creator?: string | undefined;
+        project?: string | undefined;
+        projectKeys?: ({
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[] & ({
+            key?: string | undefined;
+            kinds?: number | undefined;
+        } & {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        } & { [K in Exclude<keyof I["projectKeys"][number], keyof ProjectKey>]: never; })[] & { [K_1 in Exclude<keyof I["projectKeys"], keyof {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[]>]: never; }) | undefined;
+    } & { [K_2 in Exclude<keyof I, keyof MsgDelKeys>]: never; }>(base?: I | undefined): MsgDelKeys;
+    fromPartial<I_1 extends {
+        creator?: string | undefined;
+        project?: string | undefined;
+        projectKeys?: {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[] | undefined;
+    } & {
+        creator?: string | undefined;
+        project?: string | undefined;
+        projectKeys?: ({
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[] & ({
+            key?: string | undefined;
+            kinds?: number | undefined;
+        } & {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        } & { [K_3 in Exclude<keyof I_1["projectKeys"][number], keyof ProjectKey>]: never; })[] & { [K_4 in Exclude<keyof I_1["projectKeys"], keyof {
+            key?: string | undefined;
+            kinds?: number | undefined;
+        }[]>]: never; }) | undefined;
+    } & { [K_5 in Exclude<keyof I_1, keyof MsgDelKeys>]: never; }>(object: I_1): MsgDelKeys;
+};
+export declare const MsgDelKeysResponse: {
+    encode(_: MsgDelKeysResponse, writer?: _m0.Writer): _m0.Writer;
+    decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelKeysResponse;
+    fromJSON(_: any): MsgDelKeysResponse;
+    toJSON(_: MsgDelKeysResponse): unknown;
+    create<I extends {} & {} & { [K in Exclude<keyof I, never>]: never; }>(base?: I | undefined): MsgDelKeysResponse;
+    fromPartial<I_1 extends {} & {} & { [K_1 in Exclude<keyof I_1, never>]: never; }>(_: I_1): MsgDelKeysResponse;
+};
 export declare const MsgSetPolicy: {
     encode(message: MsgSetPolicy, writer?: _m0.Writer): _m0.Writer;
     decode(input: _m0.Reader | Uint8Array, length?: number): MsgSetPolicy;
@@ -102,6 +172,8 @@ export declare const MsgSetPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
@@ -115,6 +187,8 @@ export declare const MsgSetPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } & {
             chainPolicies?: ({
                 chainId?: string | undefined;
@@ -125,7 +199,7 @@ export declare const MsgSetPolicy: {
             } & {
                 chainId?: string | undefined;
                 apis?: (string[] & string[] & { [K in Exclude<keyof I["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-            } & { [K_1 in Exclude<keyof I["policy"]["chainPolicies"][number], keyof import("./project").ChainPolicy>]: never; })[] & { [K_2 in Exclude<keyof I["policy"]["chainPolicies"], keyof {
+            } & { [K_1 in Exclude<keyof I["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_2 in Exclude<keyof I["policy"]["chainPolicies"], keyof {
                 chainId?: string | undefined;
                 apis?: string[] | undefined;
             }[]>]: never; }) | undefined;
@@ -417,8 +491,10 @@ export declare const MsgSetPolicy: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K_6 in Exclude<keyof I["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-        } & { [K_7 in Exclude<keyof I["policy"], keyof Policy>]: never; }) | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof MsgSetPolicy>]: never; }>(base?: I | undefined): MsgSetPolicy;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: (string[] & string[] & { [K_7 in Exclude<keyof I["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+        } & { [K_8 in Exclude<keyof I["policy"], keyof Policy>]: never; }) | undefined;
+    } & { [K_9 in Exclude<keyof I, keyof MsgSetPolicy>]: never; }>(base?: I | undefined): MsgSetPolicy;
     fromPartial<I_1 extends {
         creator?: string | undefined;
         project?: string | undefined;
@@ -431,6 +507,8 @@ export declare const MsgSetPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
@@ -444,6 +522,8 @@ export declare const MsgSetPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } & {
             chainPolicies?: ({
                 chainId?: string | undefined;
@@ -453,8 +533,8 @@ export declare const MsgSetPolicy: {
                 apis?: string[] | undefined;
             } & {
                 chainId?: string | undefined;
-                apis?: (string[] & string[] & { [K_9 in Exclude<keyof I_1["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-            } & { [K_10 in Exclude<keyof I_1["policy"]["chainPolicies"][number], keyof import("./project").ChainPolicy>]: never; })[] & { [K_11 in Exclude<keyof I_1["policy"]["chainPolicies"], keyof {
+                apis?: (string[] & string[] & { [K_10 in Exclude<keyof I_1["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I_1["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_12 in Exclude<keyof I_1["policy"]["chainPolicies"], keyof {
                 chainId?: string | undefined;
                 apis?: string[] | undefined;
             }[]>]: never; }) | undefined;
@@ -529,7 +609,7 @@ export declare const MsgSetPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_12 in Exclude<keyof I_1["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+            } & { [K_13 in Exclude<keyof I_1["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
             totalCuLimit?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -601,7 +681,7 @@ export declare const MsgSetPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_13 in Exclude<keyof I_1["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+            } & { [K_14 in Exclude<keyof I_1["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
             epochCuLimit?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -673,7 +753,7 @@ export declare const MsgSetPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
             maxProvidersToPair?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -745,9 +825,11 @@ export declare const MsgSetPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_15 in Exclude<keyof I_1["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-        } & { [K_16 in Exclude<keyof I_1["policy"], keyof Policy>]: never; }) | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof MsgSetPolicy>]: never; }>(object: I_1): MsgSetPolicy;
+            } & { [K_16 in Exclude<keyof I_1["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: (string[] & string[] & { [K_17 in Exclude<keyof I_1["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+        } & { [K_18 in Exclude<keyof I_1["policy"], keyof Policy>]: never; }) | undefined;
+    } & { [K_19 in Exclude<keyof I_1, keyof MsgSetPolicy>]: never; }>(object: I_1): MsgSetPolicy;
 };
 export declare const MsgSetPolicyResponse: {
     encode(_: MsgSetPolicyResponse, writer?: _m0.Writer): _m0.Writer;
@@ -774,6 +856,8 @@ export declare const MsgSetSubscriptionPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
@@ -787,6 +871,8 @@ export declare const MsgSetSubscriptionPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } & {
             chainPolicies?: ({
                 chainId?: string | undefined;
@@ -797,7 +883,7 @@ export declare const MsgSetSubscriptionPolicy: {
             } & {
                 chainId?: string | undefined;
                 apis?: (string[] & string[] & { [K_1 in Exclude<keyof I["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-            } & { [K_2 in Exclude<keyof I["policy"]["chainPolicies"][number], keyof import("./project").ChainPolicy>]: never; })[] & { [K_3 in Exclude<keyof I["policy"]["chainPolicies"], keyof {
+            } & { [K_2 in Exclude<keyof I["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_3 in Exclude<keyof I["policy"]["chainPolicies"], keyof {
                 chainId?: string | undefined;
                 apis?: string[] | undefined;
             }[]>]: never; }) | undefined;
@@ -1089,8 +1175,10 @@ export declare const MsgSetSubscriptionPolicy: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K_7 in Exclude<keyof I["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-        } & { [K_8 in Exclude<keyof I["policy"], keyof Policy>]: never; }) | undefined;
-    } & { [K_9 in Exclude<keyof I, keyof MsgSetSubscriptionPolicy>]: never; }>(base?: I | undefined): MsgSetSubscriptionPolicy;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: (string[] & string[] & { [K_8 in Exclude<keyof I["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+        } & { [K_9 in Exclude<keyof I["policy"], keyof Policy>]: never; }) | undefined;
+    } & { [K_10 in Exclude<keyof I, keyof MsgSetSubscriptionPolicy>]: never; }>(base?: I | undefined): MsgSetSubscriptionPolicy;
     fromPartial<I_1 extends {
         creator?: string | undefined;
         projects?: string[] | undefined;
@@ -1103,10 +1191,12 @@ export declare const MsgSetSubscriptionPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } | undefined;
     } & {
         creator?: string | undefined;
-        projects?: (string[] & string[] & { [K_10 in Exclude<keyof I_1["projects"], keyof string[]>]: never; }) | undefined;
+        projects?: (string[] & string[] & { [K_11 in Exclude<keyof I_1["projects"], keyof string[]>]: never; }) | undefined;
         policy?: ({
             chainPolicies?: {
                 chainId?: string | undefined;
@@ -1116,6 +1206,8 @@ export declare const MsgSetSubscriptionPolicy: {
             totalCuLimit?: string | number | Long | undefined;
             epochCuLimit?: string | number | Long | undefined;
             maxProvidersToPair?: string | number | Long | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: string[] | undefined;
         } & {
             chainPolicies?: ({
                 chainId?: string | undefined;
@@ -1125,8 +1217,8 @@ export declare const MsgSetSubscriptionPolicy: {
                 apis?: string[] | undefined;
             } & {
                 chainId?: string | undefined;
-                apis?: (string[] & string[] & { [K_11 in Exclude<keyof I_1["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["policy"]["chainPolicies"][number], keyof import("./project").ChainPolicy>]: never; })[] & { [K_13 in Exclude<keyof I_1["policy"]["chainPolicies"], keyof {
+                apis?: (string[] & string[] & { [K_12 in Exclude<keyof I_1["policy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+            } & { [K_13 in Exclude<keyof I_1["policy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_14 in Exclude<keyof I_1["policy"]["chainPolicies"], keyof {
                 chainId?: string | undefined;
                 apis?: string[] | undefined;
             }[]>]: never; }) | undefined;
@@ -1201,7 +1293,7 @@ export declare const MsgSetSubscriptionPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["policy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
             totalCuLimit?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1273,7 +1365,7 @@ export declare const MsgSetSubscriptionPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_15 in Exclude<keyof I_1["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["policy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
             epochCuLimit?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1345,7 +1437,7 @@ export declare const MsgSetSubscriptionPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_16 in Exclude<keyof I_1["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+            } & { [K_17 in Exclude<keyof I_1["policy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
             maxProvidersToPair?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1417,9 +1509,11 @@ export declare const MsgSetSubscriptionPolicy: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_17 in Exclude<keyof I_1["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-        } & { [K_18 in Exclude<keyof I_1["policy"], keyof Policy>]: never; }) | undefined;
-    } & { [K_19 in Exclude<keyof I_1, keyof MsgSetSubscriptionPolicy>]: never; }>(object: I_1): MsgSetSubscriptionPolicy;
+            } & { [K_18 in Exclude<keyof I_1["policy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+            selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+            selectedProviders?: (string[] & string[] & { [K_19 in Exclude<keyof I_1["policy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+        } & { [K_20 in Exclude<keyof I_1["policy"], keyof Policy>]: never; }) | undefined;
+    } & { [K_21 in Exclude<keyof I_1, keyof MsgSetSubscriptionPolicy>]: never; }>(object: I_1): MsgSetSubscriptionPolicy;
 };
 export declare const MsgSetSubscriptionPolicyResponse: {
     encode(_: MsgSetSubscriptionPolicyResponse, writer?: _m0.Writer): _m0.Writer;
@@ -1432,6 +1526,7 @@ export declare const MsgSetSubscriptionPolicyResponse: {
 /** Msg defines the Msg service. */
 export interface Msg {
     AddKeys(request: MsgAddKeys): Promise<MsgAddKeysResponse>;
+    DelKeys(request: MsgDelKeys): Promise<MsgDelKeysResponse>;
     SetPolicy(request: MsgSetPolicy): Promise<MsgSetPolicyResponse>;
     /** this line is used by starport scaffolding # proto/tx/rpc */
     SetSubscriptionPolicy(request: MsgSetSubscriptionPolicy): Promise<MsgSetSubscriptionPolicyResponse>;
@@ -1443,6 +1538,7 @@ export declare class MsgClientImpl implements Msg {
         service?: string;
     });
     AddKeys(request: MsgAddKeys): Promise<MsgAddKeysResponse>;
+    DelKeys(request: MsgDelKeys): Promise<MsgDelKeysResponse>;
     SetPolicy(request: MsgSetPolicy): Promise<MsgSetPolicyResponse>;
     SetSubscriptionPolicy(request: MsgSetSubscriptionPolicy): Promise<MsgSetSubscriptionPolicyResponse>;
 }

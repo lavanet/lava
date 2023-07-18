@@ -34,23 +34,23 @@ exports.EpochDetails = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 8) {
+                    if (tag != 8) {
                         break;
                     }
                     message.startBlock = reader.uint64();
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.earliestStart = reader.uint64();
                     continue;
                 case 3:
-                    if (tag === 24) {
+                    if (tag == 24) {
                         message.deletedEpochs.push(reader.uint64());
                         continue;
                     }
-                    if (tag === 26) {
+                    if (tag == 26) {
                         const end2 = reader.uint32() + reader.pos;
                         while (reader.pos < end2) {
                             message.deletedEpochs.push(reader.uint64());
@@ -59,7 +59,7 @@ exports.EpochDetails = {
                     }
                     break;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);

@@ -15,6 +15,10 @@ export interface Entry {
     /** block when the entry becomes deleted */
     deleteAt: Long;
 }
+export interface RawMessage {
+    key: Uint8Array;
+    value: Uint8Array;
+}
 export declare const Entry: {
     encode(message: Entry, writer?: _m0.Writer): _m0.Writer;
     decode(input: _m0.Reader | Uint8Array, length?: number): Entry;
@@ -618,6 +622,26 @@ export declare const Entry: {
             xor: (other: string | number | Long) => Long;
         } & { [K_8 in Exclude<keyof I_1["deleteAt"], keyof Long>]: never; }) | undefined;
     } & { [K_9 in Exclude<keyof I_1, keyof Entry>]: never; }>(object: I_1): Entry;
+};
+export declare const RawMessage: {
+    encode(message: RawMessage, writer?: _m0.Writer): _m0.Writer;
+    decode(input: _m0.Reader | Uint8Array, length?: number): RawMessage;
+    fromJSON(object: any): RawMessage;
+    toJSON(message: RawMessage): unknown;
+    create<I extends {
+        key?: Uint8Array | undefined;
+        value?: Uint8Array | undefined;
+    } & {
+        key?: Uint8Array | undefined;
+        value?: Uint8Array | undefined;
+    } & { [K in Exclude<keyof I, keyof RawMessage>]: never; }>(base?: I | undefined): RawMessage;
+    fromPartial<I_1 extends {
+        key?: Uint8Array | undefined;
+        value?: Uint8Array | undefined;
+    } & {
+        key?: Uint8Array | undefined;
+        value?: Uint8Array | undefined;
+    } & { [K_1 in Exclude<keyof I_1, keyof RawMessage>]: never; }>(object: I_1): RawMessage;
 };
 declare type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 export declare type DeepPartial<T> = T extends Builtin ? T : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : T extends {} ? {

@@ -223,8 +223,13 @@ func (rpcps *RPCProviderServer) VerifyAddons(addons []string, chainMessage chain
 }
 
 func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
+	// TODO: remove this if case, the reason its here is because lava-sdk does't have data reliability + block parsing.
+	// this is a temporary solution until we have a working block parsing in lava-sdk
+	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
+		return nil
+	}
 	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
-		// the consumer eiuther configured an invalid value or is modifying the requested block as part of a data reliability message
+		// the consumer either configured an invalid value or is modifying the requested block as part of a data reliability message
 		// see if this modification is supported
 		providerRequestedBlockPreUpdate := chainMessage.RequestedBlock()
 		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock, true)

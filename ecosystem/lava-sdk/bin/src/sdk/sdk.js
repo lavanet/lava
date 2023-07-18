@@ -51,7 +51,13 @@ class LavaSDK {
             throw errors_1.default.errPrivKeyAndBadgeBothInitialized;
         }
         // Initialize local attributes
-        this.secure = options.secure ? options.secure : false;
+        this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
+        this.secure = options.secure !== undefined ? options.secure : true;
+        this.allowInsecureTransport =
+            options.allowInsecureTransport !== undefined
+                ? options.allowInsecureTransport
+                : true;
+        this.debugPrint("secure", this.secure, "allowInsecureTransport", this.allowInsecureTransport);
         this.chainID = chainID;
         this.rpcInterface = rpcInterface ? rpcInterface : "";
         this.privKey = privateKey ? privateKey : "";
@@ -65,7 +71,6 @@ class LavaSDK {
         this.relayer = errors_1.default.errRelayerServiceNotInitialized;
         this.lavaProviders = errors_1.default.errLavaProvidersNotInitialized;
         this.activeSessionManager = errors_1.default.errSessionNotInitialized;
-        this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
         // Init sdk
         return (() => __awaiter(this, void 0, void 0, function* () {
             yield this.init();
@@ -82,9 +87,7 @@ class LavaSDK {
         });
     }
     debugPrint(message, ...optionalParams) {
-        if (this.debugMode) {
-            console.log(message, ...optionalParams);
-        }
+        this.debugMode && console.log(message, ...optionalParams);
     }
     fetchNewBadge() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -104,7 +107,7 @@ class LavaSDK {
             this.lavaProviders = yield new providers_1.LavaProviders({
                 accountAddress: this.account.address,
                 network: this.network,
-                relayer: new relayer_1.default(default_1.LAVA_CHAIN_ID, this.privKey, this.lavaChainId, this.secure, this.currentEpochBadge),
+                relayer: new relayer_1.default(default_1.LAVA_CHAIN_ID, this.privKey, this.lavaChainId, this.secure, this.allowInsecureTransport, this.currentEpochBadge),
                 geolocation: this.geolocation,
                 debug: this.debugMode,
             });
@@ -146,6 +149,7 @@ class LavaSDK {
                     pubkey: new Uint8Array([]),
                 };
                 this.debugPrint("time took to get badge from badge server", performance.now() - start);
+                this.debugPrint("Badge:", badgeResponse);
                 // this.debugPrint("badge", badge);
             }
             else {
@@ -153,7 +157,7 @@ class LavaSDK {
                 this.account = yield wallet.getConsumerAccount();
             }
             // Create relayer for querying network
-            this.relayer = new relayer_1.default(this.chainID, this.privKey, this.lavaChainId, this.secure, this.currentEpochBadge);
+            this.relayer = new relayer_1.default(this.chainID, this.privKey, this.lavaChainId, this.secure, this.allowInsecureTransport, this.currentEpochBadge);
             yield this.initLavaProviders(start);
         });
     }

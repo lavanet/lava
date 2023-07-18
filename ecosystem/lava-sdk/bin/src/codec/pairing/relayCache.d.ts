@@ -360,6 +360,11 @@ export declare const RelayCacheGet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -372,6 +377,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } | undefined;
         apiInterface?: string | undefined;
@@ -403,6 +409,11 @@ export declare const RelayCacheGet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -415,6 +426,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } & {
             relaySession?: ({
@@ -439,6 +451,11 @@ export declare const RelayCacheGet: {
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
+                } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
                 } | undefined;
             } & {
                 specId?: string | undefined;
@@ -899,7 +916,16 @@ export declare const RelayCacheGet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } & { [K_7 in Exclude<keyof I["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-            } & { [K_8 in Exclude<keyof I["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
+                qosExcellenceReport?: ({
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & { [K_8 in Exclude<keyof I["request"]["relaySession"]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_9 in Exclude<keyof I["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
             relayData?: ({
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -911,6 +937,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } & {
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -986,7 +1013,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_9 in Exclude<keyof I["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+                } & { [K_10 in Exclude<keyof I["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
                 apiInterface?: string | undefined;
                 salt?: Uint8Array | undefined;
                 metadata?: ({
@@ -998,17 +1025,18 @@ export declare const RelayCacheGet: {
                 } & {
                     name?: string | undefined;
                     value?: string | undefined;
-                } & { [K_10 in Exclude<keyof I["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_11 in Exclude<keyof I["request"]["relayData"]["metadata"], keyof {
+                } & { [K_11 in Exclude<keyof I["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_12 in Exclude<keyof I["request"]["relayData"]["metadata"], keyof {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[]>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
-        } & { [K_13 in Exclude<keyof I["request"], keyof RelayRequest>]: never; }) | undefined;
+                addon?: (string[] & string[] & { [K_13 in Exclude<keyof I["request"]["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+            } & { [K_14 in Exclude<keyof I["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
+        } & { [K_15 in Exclude<keyof I["request"], keyof RelayRequest>]: never; }) | undefined;
         apiInterface?: string | undefined;
         blockHash?: Uint8Array | undefined;
         chainID?: string | undefined;
         finalized?: boolean | undefined;
-    } & { [K_14 in Exclude<keyof I, keyof RelayCacheGet>]: never; }>(base?: I | undefined): RelayCacheGet;
+    } & { [K_16 in Exclude<keyof I, keyof RelayCacheGet>]: never; }>(base?: I | undefined): RelayCacheGet;
     fromPartial<I_1 extends {
         request?: {
             relaySession?: {
@@ -1034,6 +1062,11 @@ export declare const RelayCacheGet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -1046,6 +1079,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } | undefined;
         apiInterface?: string | undefined;
@@ -1077,6 +1111,11 @@ export declare const RelayCacheGet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -1089,6 +1128,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } & {
             relaySession?: ({
@@ -1113,6 +1153,11 @@ export declare const RelayCacheGet: {
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
+                } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
                 } | undefined;
             } & {
                 specId?: string | undefined;
@@ -1188,7 +1233,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_15 in Exclude<keyof I_1["request"]["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
+                } & { [K_17 in Exclude<keyof I_1["request"]["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
                 cuSum?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -1260,7 +1305,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_16 in Exclude<keyof I_1["request"]["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
+                } & { [K_18 in Exclude<keyof I_1["request"]["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
                 provider?: string | undefined;
                 relayNum?: string | number | (Long & {
                     high: number;
@@ -1333,7 +1378,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_17 in Exclude<keyof I_1["request"]["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
+                } & { [K_19 in Exclude<keyof I_1["request"]["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
                 qosReport?: ({
                     latency?: string | undefined;
                     availability?: string | undefined;
@@ -1342,7 +1387,7 @@ export declare const RelayCacheGet: {
                     latency?: string | undefined;
                     availability?: string | undefined;
                     sync?: string | undefined;
-                } & { [K_18 in Exclude<keyof I_1["request"]["relaySession"]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+                } & { [K_20 in Exclude<keyof I_1["request"]["relaySession"]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
                 epoch?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -1414,7 +1459,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_19 in Exclude<keyof I_1["request"]["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
+                } & { [K_21 in Exclude<keyof I_1["request"]["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
                 unresponsiveProviders?: Uint8Array | undefined;
                 lavaChainId?: string | undefined;
                 sig?: Uint8Array | undefined;
@@ -1496,7 +1541,7 @@ export declare const RelayCacheGet: {
                         toString: (radix?: number | undefined) => string;
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
-                    } & { [K_20 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+                    } & { [K_22 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
                     epoch?: string | number | (Long & {
                         high: number;
                         low: number;
@@ -1568,12 +1613,21 @@ export declare const RelayCacheGet: {
                         toString: (radix?: number | undefined) => string;
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
-                    } & { [K_21 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+                    } & { [K_23 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
-                } & { [K_22 in Exclude<keyof I_1["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-            } & { [K_23 in Exclude<keyof I_1["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
+                } & { [K_24 in Exclude<keyof I_1["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
+                qosExcellenceReport?: ({
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & { [K_25 in Exclude<keyof I_1["request"]["relaySession"]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_26 in Exclude<keyof I_1["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
             relayData?: ({
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -1585,6 +1639,7 @@ export declare const RelayCacheGet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } & {
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -1660,7 +1715,7 @@ export declare const RelayCacheGet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_24 in Exclude<keyof I_1["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+                } & { [K_27 in Exclude<keyof I_1["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
                 apiInterface?: string | undefined;
                 salt?: Uint8Array | undefined;
                 metadata?: ({
@@ -1672,17 +1727,18 @@ export declare const RelayCacheGet: {
                 } & {
                     name?: string | undefined;
                     value?: string | undefined;
-                } & { [K_25 in Exclude<keyof I_1["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_26 in Exclude<keyof I_1["request"]["relayData"]["metadata"], keyof {
+                } & { [K_28 in Exclude<keyof I_1["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_29 in Exclude<keyof I_1["request"]["relayData"]["metadata"], keyof {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[]>]: never; }) | undefined;
-            } & { [K_27 in Exclude<keyof I_1["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
-        } & { [K_28 in Exclude<keyof I_1["request"], keyof RelayRequest>]: never; }) | undefined;
+                addon?: (string[] & string[] & { [K_30 in Exclude<keyof I_1["request"]["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+            } & { [K_31 in Exclude<keyof I_1["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
+        } & { [K_32 in Exclude<keyof I_1["request"], keyof RelayRequest>]: never; }) | undefined;
         apiInterface?: string | undefined;
         blockHash?: Uint8Array | undefined;
         chainID?: string | undefined;
         finalized?: boolean | undefined;
-    } & { [K_29 in Exclude<keyof I_1, keyof RelayCacheGet>]: never; }>(object: I_1): RelayCacheGet;
+    } & { [K_33 in Exclude<keyof I_1, keyof RelayCacheGet>]: never; }>(object: I_1): RelayCacheGet;
 };
 export declare const RelayCacheSet: {
     encode(message: RelayCacheSet, writer?: _m0.Writer): _m0.Writer;
@@ -1714,6 +1770,11 @@ export declare const RelayCacheSet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -1726,6 +1787,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } | undefined;
         apiInterface?: string | undefined;
@@ -1735,7 +1797,6 @@ export declare const RelayCacheSet: {
         response?: {
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | Long | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
@@ -1770,6 +1831,11 @@ export declare const RelayCacheSet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -1782,6 +1848,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } & {
             relaySession?: ({
@@ -1806,6 +1873,11 @@ export declare const RelayCacheSet: {
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
+                } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
                 } | undefined;
             } & {
                 specId?: string | undefined;
@@ -2266,7 +2338,16 @@ export declare const RelayCacheSet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } & { [K_7 in Exclude<keyof I["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-            } & { [K_8 in Exclude<keyof I["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
+                qosExcellenceReport?: ({
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & { [K_8 in Exclude<keyof I["request"]["relaySession"]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_9 in Exclude<keyof I["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
             relayData?: ({
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -2278,6 +2359,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } & {
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -2353,7 +2435,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_9 in Exclude<keyof I["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+                } & { [K_10 in Exclude<keyof I["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
                 apiInterface?: string | undefined;
                 salt?: Uint8Array | undefined;
                 metadata?: ({
@@ -2365,12 +2447,13 @@ export declare const RelayCacheSet: {
                 } & {
                     name?: string | undefined;
                     value?: string | undefined;
-                } & { [K_10 in Exclude<keyof I["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_11 in Exclude<keyof I["request"]["relayData"]["metadata"], keyof {
+                } & { [K_11 in Exclude<keyof I["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_12 in Exclude<keyof I["request"]["relayData"]["metadata"], keyof {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[]>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
-        } & { [K_13 in Exclude<keyof I["request"], keyof RelayRequest>]: never; }) | undefined;
+                addon?: (string[] & string[] & { [K_13 in Exclude<keyof I["request"]["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+            } & { [K_14 in Exclude<keyof I["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
+        } & { [K_15 in Exclude<keyof I["request"], keyof RelayRequest>]: never; }) | undefined;
         apiInterface?: string | undefined;
         blockHash?: Uint8Array | undefined;
         chainID?: string | undefined;
@@ -2378,7 +2461,6 @@ export declare const RelayCacheSet: {
         response?: ({
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | Long | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
@@ -2389,7 +2471,6 @@ export declare const RelayCacheSet: {
         } & {
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -2461,7 +2542,7 @@ export declare const RelayCacheSet: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I["response"]["latestBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I["response"]["latestBlock"], keyof Long>]: never; }) | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
             metadata?: ({
@@ -2473,13 +2554,13 @@ export declare const RelayCacheSet: {
             } & {
                 name?: string | undefined;
                 value?: string | undefined;
-            } & { [K_15 in Exclude<keyof I["response"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_16 in Exclude<keyof I["response"]["metadata"], keyof {
+            } & { [K_17 in Exclude<keyof I["response"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_18 in Exclude<keyof I["response"]["metadata"], keyof {
                 name?: string | undefined;
                 value?: string | undefined;
             }[]>]: never; }) | undefined;
-        } & { [K_17 in Exclude<keyof I["response"], keyof RelayReply>]: never; }) | undefined;
+        } & { [K_19 in Exclude<keyof I["response"], keyof RelayReply>]: never; }) | undefined;
         finalized?: boolean | undefined;
-    } & { [K_18 in Exclude<keyof I, keyof RelayCacheSet>]: never; }>(base?: I | undefined): RelayCacheSet;
+    } & { [K_20 in Exclude<keyof I, keyof RelayCacheSet>]: never; }>(base?: I | undefined): RelayCacheSet;
     fromPartial<I_1 extends {
         request?: {
             relaySession?: {
@@ -2505,6 +2586,11 @@ export declare const RelayCacheSet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -2517,6 +2603,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } | undefined;
         apiInterface?: string | undefined;
@@ -2526,7 +2613,6 @@ export declare const RelayCacheSet: {
         response?: {
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | Long | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
@@ -2561,6 +2647,11 @@ export declare const RelayCacheSet: {
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
                 } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } | undefined;
             } | undefined;
             relayData?: {
                 connectionType?: string | undefined;
@@ -2573,6 +2664,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } | undefined;
         } & {
             relaySession?: ({
@@ -2597,6 +2689,11 @@ export declare const RelayCacheSet: {
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
+                } | undefined;
+                qosExcellenceReport?: {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
                 } | undefined;
             } & {
                 specId?: string | undefined;
@@ -2672,7 +2769,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_19 in Exclude<keyof I_1["request"]["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
+                } & { [K_21 in Exclude<keyof I_1["request"]["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
                 cuSum?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -2744,7 +2841,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_20 in Exclude<keyof I_1["request"]["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
+                } & { [K_22 in Exclude<keyof I_1["request"]["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
                 provider?: string | undefined;
                 relayNum?: string | number | (Long & {
                     high: number;
@@ -2817,7 +2914,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_21 in Exclude<keyof I_1["request"]["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
+                } & { [K_23 in Exclude<keyof I_1["request"]["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
                 qosReport?: ({
                     latency?: string | undefined;
                     availability?: string | undefined;
@@ -2826,7 +2923,7 @@ export declare const RelayCacheSet: {
                     latency?: string | undefined;
                     availability?: string | undefined;
                     sync?: string | undefined;
-                } & { [K_22 in Exclude<keyof I_1["request"]["relaySession"]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+                } & { [K_24 in Exclude<keyof I_1["request"]["relaySession"]["qosReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
                 epoch?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -2898,7 +2995,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_23 in Exclude<keyof I_1["request"]["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
+                } & { [K_25 in Exclude<keyof I_1["request"]["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
                 unresponsiveProviders?: Uint8Array | undefined;
                 lavaChainId?: string | undefined;
                 sig?: Uint8Array | undefined;
@@ -2980,7 +3077,7 @@ export declare const RelayCacheSet: {
                         toString: (radix?: number | undefined) => string;
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
-                    } & { [K_24 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+                    } & { [K_26 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
                     epoch?: string | number | (Long & {
                         high: number;
                         low: number;
@@ -3052,12 +3149,21 @@ export declare const RelayCacheSet: {
                         toString: (radix?: number | undefined) => string;
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
-                    } & { [K_25 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+                    } & { [K_27 in Exclude<keyof I_1["request"]["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
                     address?: string | undefined;
                     lavaChainId?: string | undefined;
                     projectSig?: Uint8Array | undefined;
-                } & { [K_26 in Exclude<keyof I_1["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
-            } & { [K_27 in Exclude<keyof I_1["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
+                } & { [K_28 in Exclude<keyof I_1["request"]["relaySession"]["badge"], keyof import("./relay").Badge>]: never; }) | undefined;
+                qosExcellenceReport?: ({
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & {
+                    latency?: string | undefined;
+                    availability?: string | undefined;
+                    sync?: string | undefined;
+                } & { [K_29 in Exclude<keyof I_1["request"]["relaySession"]["qosExcellenceReport"], keyof import("./relay").QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_30 in Exclude<keyof I_1["request"]["relaySession"], keyof import("./relay").RelaySession>]: never; }) | undefined;
             relayData?: ({
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -3069,6 +3175,7 @@ export declare const RelayCacheSet: {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[] | undefined;
+                addon?: string[] | undefined;
             } & {
                 connectionType?: string | undefined;
                 apiUrl?: string | undefined;
@@ -3144,7 +3251,7 @@ export declare const RelayCacheSet: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_28 in Exclude<keyof I_1["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+                } & { [K_31 in Exclude<keyof I_1["request"]["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
                 apiInterface?: string | undefined;
                 salt?: Uint8Array | undefined;
                 metadata?: ({
@@ -3156,12 +3263,13 @@ export declare const RelayCacheSet: {
                 } & {
                     name?: string | undefined;
                     value?: string | undefined;
-                } & { [K_29 in Exclude<keyof I_1["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_30 in Exclude<keyof I_1["request"]["relayData"]["metadata"], keyof {
+                } & { [K_32 in Exclude<keyof I_1["request"]["relayData"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_33 in Exclude<keyof I_1["request"]["relayData"]["metadata"], keyof {
                     name?: string | undefined;
                     value?: string | undefined;
                 }[]>]: never; }) | undefined;
-            } & { [K_31 in Exclude<keyof I_1["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
-        } & { [K_32 in Exclude<keyof I_1["request"], keyof RelayRequest>]: never; }) | undefined;
+                addon?: (string[] & string[] & { [K_34 in Exclude<keyof I_1["request"]["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+            } & { [K_35 in Exclude<keyof I_1["request"]["relayData"], keyof import("./relay").RelayPrivateData>]: never; }) | undefined;
+        } & { [K_36 in Exclude<keyof I_1["request"], keyof RelayRequest>]: never; }) | undefined;
         apiInterface?: string | undefined;
         blockHash?: Uint8Array | undefined;
         chainID?: string | undefined;
@@ -3169,7 +3277,6 @@ export declare const RelayCacheSet: {
         response?: ({
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | Long | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
@@ -3180,7 +3287,6 @@ export declare const RelayCacheSet: {
         } & {
             data?: Uint8Array | undefined;
             sig?: Uint8Array | undefined;
-            nonce?: number | undefined;
             latestBlock?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -3252,7 +3358,7 @@ export declare const RelayCacheSet: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_33 in Exclude<keyof I_1["response"]["latestBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_37 in Exclude<keyof I_1["response"]["latestBlock"], keyof Long>]: never; }) | undefined;
             finalizedBlocksHashes?: Uint8Array | undefined;
             sigBlocks?: Uint8Array | undefined;
             metadata?: ({
@@ -3264,13 +3370,13 @@ export declare const RelayCacheSet: {
             } & {
                 name?: string | undefined;
                 value?: string | undefined;
-            } & { [K_34 in Exclude<keyof I_1["response"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_35 in Exclude<keyof I_1["response"]["metadata"], keyof {
+            } & { [K_38 in Exclude<keyof I_1["response"]["metadata"][number], keyof import("./relay").Metadata>]: never; })[] & { [K_39 in Exclude<keyof I_1["response"]["metadata"], keyof {
                 name?: string | undefined;
                 value?: string | undefined;
             }[]>]: never; }) | undefined;
-        } & { [K_36 in Exclude<keyof I_1["response"], keyof RelayReply>]: never; }) | undefined;
+        } & { [K_40 in Exclude<keyof I_1["response"], keyof RelayReply>]: never; }) | undefined;
         finalized?: boolean | undefined;
-    } & { [K_37 in Exclude<keyof I_1, keyof RelayCacheSet>]: never; }>(object: I_1): RelayCacheSet;
+    } & { [K_41 in Exclude<keyof I_1, keyof RelayCacheSet>]: never; }>(object: I_1): RelayCacheSet;
 };
 export interface RelayerCache {
     GetRelay(request: RelayCacheGet): Promise<RelayReply>;

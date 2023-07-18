@@ -1,7 +1,8 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Policy, ProjectKey } from "./project";
+import { Policy } from "../plans/plan";
+import { ProjectKey } from "./project";
 
 export const protobufPackage = "lavanet.lava.projects";
 
@@ -12,6 +13,15 @@ export interface MsgAddKeys {
 }
 
 export interface MsgAddKeysResponse {
+}
+
+export interface MsgDelKeys {
+  creator: string;
+  project: string;
+  projectKeys: ProjectKey[];
+}
+
+export interface MsgDelKeysResponse {
 }
 
 export interface MsgSetPolicy {
@@ -58,28 +68,28 @@ export const MsgAddKeys = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.project = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.projectKeys.push(ProjectKey.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -137,7 +147,7 @@ export const MsgAddKeysResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -160,6 +170,138 @@ export const MsgAddKeysResponse = {
 
   fromPartial<I extends Exact<DeepPartial<MsgAddKeysResponse>, I>>(_: I): MsgAddKeysResponse {
     const message = createBaseMsgAddKeysResponse();
+    return message;
+  },
+};
+
+function createBaseMsgDelKeys(): MsgDelKeys {
+  return { creator: "", project: "", projectKeys: [] };
+}
+
+export const MsgDelKeys = {
+  encode(message: MsgDelKeys, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.project !== "") {
+      writer.uint32(18).string(message.project);
+    }
+    for (const v of message.projectKeys) {
+      ProjectKey.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelKeys {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDelKeys();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.projectKeys.push(ProjectKey.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgDelKeys {
+    return {
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      project: isSet(object.project) ? String(object.project) : "",
+      projectKeys: Array.isArray(object?.projectKeys) ? object.projectKeys.map((e: any) => ProjectKey.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: MsgDelKeys): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.project !== undefined && (obj.project = message.project);
+    if (message.projectKeys) {
+      obj.projectKeys = message.projectKeys.map((e) => e ? ProjectKey.toJSON(e) : undefined);
+    } else {
+      obj.projectKeys = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MsgDelKeys>, I>>(base?: I): MsgDelKeys {
+    return MsgDelKeys.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MsgDelKeys>, I>>(object: I): MsgDelKeys {
+    const message = createBaseMsgDelKeys();
+    message.creator = object.creator ?? "";
+    message.project = object.project ?? "";
+    message.projectKeys = object.projectKeys?.map((e) => ProjectKey.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMsgDelKeysResponse(): MsgDelKeysResponse {
+  return {};
+}
+
+export const MsgDelKeysResponse = {
+  encode(_: MsgDelKeysResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelKeysResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDelKeysResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgDelKeysResponse {
+    return {};
+  },
+
+  toJSON(_: MsgDelKeysResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MsgDelKeysResponse>, I>>(base?: I): MsgDelKeysResponse {
+    return MsgDelKeysResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MsgDelKeysResponse>, I>>(_: I): MsgDelKeysResponse {
+    const message = createBaseMsgDelKeysResponse();
     return message;
   },
 };
@@ -190,28 +332,28 @@ export const MsgSetPolicy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.project = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.policy = Policy.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -267,7 +409,7 @@ export const MsgSetPolicyResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -320,28 +462,28 @@ export const MsgSetSubscriptionPolicy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.projects.push(reader.string());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.policy = Policy.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -401,7 +543,7 @@ export const MsgSetSubscriptionPolicyResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -435,6 +577,7 @@ export const MsgSetSubscriptionPolicyResponse = {
 /** Msg defines the Msg service. */
 export interface Msg {
   AddKeys(request: MsgAddKeys): Promise<MsgAddKeysResponse>;
+  DelKeys(request: MsgDelKeys): Promise<MsgDelKeysResponse>;
   SetPolicy(request: MsgSetPolicy): Promise<MsgSetPolicyResponse>;
   /** this line is used by starport scaffolding # proto/tx/rpc */
   SetSubscriptionPolicy(request: MsgSetSubscriptionPolicy): Promise<MsgSetSubscriptionPolicyResponse>;
@@ -447,6 +590,7 @@ export class MsgClientImpl implements Msg {
     this.service = opts?.service || "lavanet.lava.projects.Msg";
     this.rpc = rpc;
     this.AddKeys = this.AddKeys.bind(this);
+    this.DelKeys = this.DelKeys.bind(this);
     this.SetPolicy = this.SetPolicy.bind(this);
     this.SetSubscriptionPolicy = this.SetSubscriptionPolicy.bind(this);
   }
@@ -454,6 +598,12 @@ export class MsgClientImpl implements Msg {
     const data = MsgAddKeys.encode(request).finish();
     const promise = this.rpc.request(this.service, "AddKeys", data);
     return promise.then((data) => MsgAddKeysResponse.decode(_m0.Reader.create(data)));
+  }
+
+  DelKeys(request: MsgDelKeys): Promise<MsgDelKeysResponse> {
+    const data = MsgDelKeys.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DelKeys", data);
+    return promise.then((data) => MsgDelKeysResponse.decode(_m0.Reader.create(data)));
   }
 
   SetPolicy(request: MsgSetPolicy): Promise<MsgSetPolicyResponse> {
