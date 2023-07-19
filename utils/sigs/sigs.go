@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -56,9 +57,35 @@ func prepareRelaySessionForSignature(request *pairingtypes.RelaySession) {
 	request.Sig = []byte{}
 }
 
-func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelaySession) ([]byte, error) {
-	prepareRelaySessionForSignature(&request)
-	msgData := []byte(request.String())
+func PrepareRelaySession(request interface{}) {
+	// Type assertion to convert the interface{} parameter to RelaySession
+	rs, ok := request.(*pairingtypes.RelaySession)
+	if !ok {
+		// Handle incorrect type assertion
+		return
+	}
+
+	prepareRelaySessionForSignature(rs)
+}
+
+func prepareBadgeForSignature(badge *pairingtypes.Badge) {
+	badge.ProjectSig = []byte{}
+}
+
+func PrepareBadgeSession(request interface{}) {
+	// Type assertion to convert the interface{} parameter to RelaySession
+	b, ok := request.(*pairingtypes.Badge)
+	if !ok {
+		// Handle incorrect type assertion
+		return
+	}
+
+	prepareBadgeForSignature(b)
+}
+
+func SignBadge(pkey *btcSecp256k1.PrivateKey, badge pairingtypes.Badge) ([]byte, error) {
+	badge.ProjectSig = []byte{}
+	msgData := []byte(badge.String())
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
 	if err != nil {
@@ -68,9 +95,17 @@ func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelaySession)
 	return sig, nil
 }
 
-func SignBadge(pkey *btcSecp256k1.PrivateKey, badge pairingtypes.Badge) ([]byte, error) {
-	badge.ProjectSig = []byte{}
-	msgData := []byte(badge.String())
+type PrepareFunc func(interface{})
+
+// SignStruct creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature
+func SignStruct(pkey *btcSecp256k1.PrivateKey, data interface{}, prepareFunc PrepareFunc) ([]byte, error) {
+	if prepareFunc != nil {
+		prepareFunc(data)
+	}
+
+	// Convert struct to string representation
+	msgData := []byte(reflect.ValueOf(data).String())
+
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
 	if err != nil {
