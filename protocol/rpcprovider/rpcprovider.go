@@ -148,7 +148,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 
-			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
+			chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
@@ -176,7 +176,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 					}
 					var chainFetcher chainlib.ChainFetcherIf
 					if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-						chainFetcher = chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+						chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 					} else {
 						chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
 					}
@@ -210,11 +210,11 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 			providerMetrics := providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
 
-			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
+			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rpcProviderServer := &RPCProviderServer{}
-			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
+			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
 			// set up grpc listener
 			var listener *ProviderListener
 			func() {
@@ -358,6 +358,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcProviderEndpoints) == 0 {
 				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+			}
+			for _, endpoint := range rpcProviderEndpoints {
+				for _, nodeUrl := range endpoint.NodeUrls {
+					if nodeUrl.Url == "" {
+						utils.LavaFormatError("invalid endpoint definition, empty url in nodeUrl", err, utils.Attribute{Key: "endpoint", Value: endpoint})
+					}
+				}
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()

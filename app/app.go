@@ -428,6 +428,7 @@ func New(
 		keys[plansmoduletypes.MemStoreKey],
 		app.GetSubspace(plansmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
+		app.SpecKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 

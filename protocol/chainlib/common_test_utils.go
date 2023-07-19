@@ -66,7 +66,7 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string) (cpar ChainParser, cprox ChainProxy, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -80,7 +80,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	var chainProxy ChainProxy
+	var chainRouter ChainRouter
 	chainParser.SetSpec(spec)
 	endpoint := &lavasession.RPCProviderEndpoint{
 		NetworkAddress: lavasession.NetworkAddressData{},
@@ -107,7 +107,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			}
 		}()
 		time.Sleep(10 * time.Millisecond)
-		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, err
 		}
@@ -115,15 +115,15 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		mockServer := httptest.NewServer(serverCallback)
 		closeServer = mockServer.Close
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
-		chainProxy, err = GetChainProxy(ctx, 1, endpoint, chainParser)
+		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, err
 		}
 	}
 
-	chainFetcher := NewChainFetcher(ctx, chainProxy, chainParser, endpoint)
+	chainFetcher := NewChainFetcher(ctx, chainRouter, chainParser, endpoint)
 
-	return chainParser, chainProxy, chainFetcher, closeServer, err
+	return chainParser, chainRouter, chainFetcher, closeServer, err
 }
 
 type TestStruct struct {

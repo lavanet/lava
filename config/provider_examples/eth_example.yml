@@ -5,3 +5,5 @@ endpoints:
         address: "127.0.0.1:2221"
       node-urls:
         - url: wss://eth-rpc/ws
+          Addons:
+            - debug

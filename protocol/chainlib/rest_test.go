@@ -160,7 +160,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 		}
 	})
-	chainParser, chainProxy, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../")
+	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../")
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -202,7 +202,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 		}
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 	})
-	chainParser, chainProxy, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../")
+	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../")
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -273,7 +273,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
 			chainMessage.UpdateLatestBlockInMessage(test.block, true)   // will update the block only if it's a latest request
 			require.Equal(t, test.block, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
-			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)

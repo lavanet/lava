@@ -18,6 +18,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -40,10 +41,12 @@ type RPCConsumerServer struct {
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	lavaChainID            string
 	consumerAddress        sdk.AccAddress
+	consumerAddons         map[string]struct{}
 }
 
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+	GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error)
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -69,6 +72,18 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
+	consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
+	if err != nil {
+		return err
+	}
+	consumerAddons, err := consumerPolicy.GetSupportedAddons(listenEndpoint.ChainID)
+	if err != nil {
+		return err
+	}
+	rpccs.consumerAddons = make(map[string]struct{})
+	for _, consumerAddon := range consumerAddons {
+		rpccs.consumerAddons[consumerAddon] = struct{}{}
+	}
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
@@ -98,10 +113,17 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, nil, err
 	}
+	if _, ok := rpccs.consumerAddons[chainMessage.GetApiCollection().CollectionData.AddOn]; !ok {
+		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
+			utils.Attribute{Key: "addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn},
+			utils.Attribute{Key: "allowed", Value: rpccs.consumerAddons},
+		)
+	}
+
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
@@ -213,7 +235,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock())
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock(), chainMessage.GetApiCollection().CollectionData.AddOn)
 	if err != nil {
 		return &lavaprotocol.RelayResult{ProviderAddress: ""}, err
 	}
@@ -466,7 +488,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders())
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}
@@ -476,6 +498,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		}
 		errAttributes = append(errAttributes, utils.Attribute{Key: "relayRequestData", Value: relayRequestData})
 		return utils.LavaFormatWarning("failed data reliability relay to provider", err, errAttributes...)
+	}
+	if !relayResultDataReliability.Finalized {
+		utils.LavaFormatInfo("skipping data reliability check since response from second provider was not finalized", utils.Attribute{Key: "providerAddress", Value: relayResultDataReliability.ProviderAddress})
+		return nil
 	}
 	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDataReliability, chainMessage.GetApiCollection(), rpccs.chainParser)
 	if conflict != nil {

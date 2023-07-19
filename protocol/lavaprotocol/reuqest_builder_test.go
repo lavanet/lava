@@ -32,7 +32,7 @@ func TestSignAndExtract(t *testing.T) {
 		Name:  "x-cosmos-block-height:",
 		Value: "55",
 	}
-	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc", metadataValue)
+	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 10, "tendermintrpc", metadataValue, []string{"test"})
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, sk, "lava", specId, relayRequestData, "lava@stubProviderAddress", singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)

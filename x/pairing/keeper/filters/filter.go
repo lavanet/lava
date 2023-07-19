@@ -18,8 +18,9 @@ func GetAllFilters() []Filter {
 	var selectedProvidersFilter SelectedProvidersFilter
 	var frozenProvidersFilter FrozenProvidersFilter
 	var geolocationFilter GeolocationFilter
+	var addonFilter AddonFilter
 
-	filters := []Filter{&selectedProvidersFilter, &frozenProvidersFilter, &geolocationFilter}
+	filters := []Filter{&selectedProvidersFilter, &frozenProvidersFilter, &geolocationFilter, &addonFilter}
 	return filters
 }
 

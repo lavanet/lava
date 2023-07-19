@@ -49,7 +49,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	if !found {
 		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCU, _ := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	if !planstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
 		allowedCU = 0
