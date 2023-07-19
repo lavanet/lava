@@ -6,8 +6,8 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -208,8 +208,8 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 		}
 	}
 
-	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
-	effectiveSelectedProviders := commontypes.Intersection(selectedProvidersList...)
+	effectiveMode := slices.Max(selectedProvidersModeList)
+	effectiveSelectedProviders := slices.Intersection(selectedProvidersList...)
 
 	return effectiveMode, effectiveSelectedProviders
 }
@@ -254,12 +254,13 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 		}
 	}
 
-	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
+	effectiveTotalCuOfProject := slices.Min(policyTotalCuLimit)
 	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
 
-	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+	effectiveEpochCuOfProject := slices.Min(policyEpochCuLimit)
 
-	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}), effectiveTotalCuOfProject
+	slice := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
+	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
