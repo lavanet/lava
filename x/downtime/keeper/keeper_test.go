@@ -138,12 +138,6 @@ func TestBeginBlock(t *testing.T) {
 	require.False(t, iter.Valid())
 }
 
-func TestBeginBlock_DowntimeReset(t *testing.T) {
-	// we test that after a downtime the last block
-	// time is correctly reset.
-
-}
-
 func TestImportExportGenesis(t *testing.T) {
 	app, ctx := app.TestSetup()
 	keeper := app.DowntimeKeeper
