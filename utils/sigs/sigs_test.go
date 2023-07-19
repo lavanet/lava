@@ -21,7 +21,7 @@ func TestExtractSignerAddressFromBadge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			badge := pairingtypes.CreateBadge(100, 0, addr, "lava", tt.predefinedSig)
-			sig, err := SignStruct(pkey, *badge, PrepareBadgeForSignature)
+			sig, err := Sign(pkey, *badge)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
 

@@ -105,7 +105,7 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaC
 		RelayData:    relayRequestData,
 		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
 	}
-	sig, err := sigs.SignStruct(privKey, *relayRequest.RelaySession, sigs.PrepareRelaySessionForSignature)
+	sig, err := sigs.Sign(privKey, *relayRequest.RelaySession)
 	if err != nil {
 		return nil, err
 	}

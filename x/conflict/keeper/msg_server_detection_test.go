@@ -118,7 +118,7 @@ func TestDetection(t *testing.T) {
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SessionId += tt.SeassionID
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
-			sig, err := sigs.SignStruct(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession, sigs.PrepareRelaySessionForSignature)
+			sig, err := sigs.Sign(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 			reply.Data = append(reply.Data, tt.ReplyData...)

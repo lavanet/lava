@@ -126,7 +126,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), tt.cu, ts.spec.Name, nil)
 			relayRequest.SessionId = uint64(i)
-			relayRequest.Sig, err = sigs.SignStruct(consumer.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+			relayRequest.Sig, err = sigs.Sign(consumer.SK, *relayRequest)
 			require.Nil(t, err)
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 			require.Equal(t, tt.valid, err == nil, "results incorrect for usage of %d err == nil: %t", tt.cu, err == nil)
@@ -192,7 +192,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	for ; uint64(i) < ts.plan.PlanPolicy.GetTotalCuLimit()/ts.plan.PlanPolicy.GetEpochCuLimit(); i++ {
 		relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
-		relayRequest.Sig, err = sigs.SignStruct(consumerA.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+		relayRequest.Sig, err = sigs.Sign(consumerA.SK, *relayRequest)
 		require.Nil(t, err)
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 		require.Nil(t, err)
@@ -204,7 +204,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	// last iteration should finish the plan and subscription quota
 	relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), ts.plan.PlanPolicy.GetEpochCuLimit(), ts.spec.Name, nil)
 	relayRequest.SessionId = uint64(i + 1)
-	relayRequest.Sig, err = sigs.SignStruct(consumerA.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+	relayRequest.Sig, err = sigs.Sign(consumerA.SK, *relayRequest)
 	require.Nil(t, err)
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 	require.NotNil(t, err)
@@ -220,7 +220,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	// try to use CU on projB. Should fail because A wasted it all
 	relayRequest.SessionId += 1
-	relayRequest.Sig, err = sigs.SignStruct(consumerB.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+	relayRequest.Sig, err = sigs.Sign(consumerB.SK, *relayRequest)
 	require.Nil(t, err)
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 	require.NotNil(t, err)
@@ -452,7 +452,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 				relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), sub.MonthCuLeft, ts.spec.Name, nil)
 				relayRequest.SessionId = uint64(100)
-				relayRequest.Sig, err = sigs.SignStruct(consumerToWasteCu.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+				relayRequest.Sig, err = sigs.Sign(consumerToWasteCu.SK, *relayRequest)
 				require.Nil(t, err)
 				_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 				require.Nil(t, err)
@@ -512,7 +512,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 					relayRequest := common.BuildRelayRequest(ts.ctx, ts.providers[0].Addr.String(), []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 					relayRequest.SessionId = uint64(i)
-					relayRequest.Sig, err = sigs.SignStruct(consumer.SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+					relayRequest.Sig, err = sigs.Sign(consumer.SK, *relayRequest)
 					require.Nil(t, err)
 					_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].Addr.String(), Relays: []*types.RelaySession{relayRequest}})
 					require.Nil(t, err)
@@ -557,7 +557,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
 		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
-		relayRequest.Sig, err = sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+		relayRequest.Sig, err = sigs.Sign(ts.clients[0].SK, *relayRequest)
 		require.Nil(t, err)
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: res.Providers[0].Address, Relays: []*types.RelaySession{relayRequest}})
 		require.Nil(t, err)
@@ -586,7 +586,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		cuSum := ts.plan.PlanPolicy.GetEpochCuLimit()
 		relayRequest := common.BuildRelayRequest(ts.ctx, res.Providers[0].Address, []byte(ts.spec.ApiCollections[0].Apis[0].Name), cuSum, ts.spec.Name, nil)
 		relayRequest.SessionId = uint64(i)
-		relayRequest.Sig, err = sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
+		relayRequest.Sig, err = sigs.Sign(ts.clients[0].SK, *relayRequest)
 		require.Nil(t, err)
 		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: res.Providers[0].Address, Relays: []*types.RelaySession{relayRequest}})
 		require.NotNil(t, err)
