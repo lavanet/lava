@@ -37,7 +37,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 		RelayNum:    0,
 	}
 
-	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
+	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -55,7 +55,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	// make another request
 	relayRequest.SessionId++
 
-	sig, err = sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
+	sig, err = sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 

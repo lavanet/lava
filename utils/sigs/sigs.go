@@ -52,12 +52,7 @@ func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func prepareRelaySessionForSignature(request *pairingtypes.RelaySession) {
-	request.Badge = nil // its not a part of the signature, its a separate part
-	request.Sig = []byte{}
-}
-
-func PrepareRelaySession(request interface{}) {
+func PrepareRelaySessionForSignature(request interface{}) {
 	// Type assertion to convert the interface{} parameter to RelaySession
 	rs, ok := request.(*pairingtypes.RelaySession)
 	if !ok {
@@ -65,14 +60,11 @@ func PrepareRelaySession(request interface{}) {
 		return
 	}
 
-	prepareRelaySessionForSignature(rs)
+	rs.Badge = nil // its not a part of the signature, its a separate part
+	rs.Sig = []byte{}
 }
 
-func prepareBadgeForSignature(badge *pairingtypes.Badge) {
-	badge.ProjectSig = []byte{}
-}
-
-func PrepareBadgeSession(request interface{}) {
+func PrepareBadgeForSignature(request interface{}) {
 	// Type assertion to convert the interface{} parameter to RelaySession
 	b, ok := request.(*pairingtypes.Badge)
 	if !ok {
@@ -80,7 +72,7 @@ func PrepareBadgeSession(request interface{}) {
 		return
 	}
 
-	prepareBadgeForSignature(b)
+	b.ProjectSig = []byte{}
 }
 
 func SignBadge(pkey *btcSecp256k1.PrivateKey, badge pairingtypes.Badge) ([]byte, error) {
@@ -213,7 +205,7 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 
 func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, error) {
 	signature := relay.Sig // save sig
-	prepareRelaySessionForSignature(&relay)
+	PrepareRelaySessionForSignature(&relay)
 	hash := HashMsg([]byte(relay.String()))
 
 	pubKey, err := RecoverPubKey(signature, hash)

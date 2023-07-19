@@ -146,7 +146,7 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 func signTheResponse(privateKeyString string, response *pairingtypes.GenerateBadgeResponse) error {
 	privateKeyBytes, _ := hex.DecodeString(privateKeyString)
 	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privateKeyBytes)
-	signature, err := sigs.SignBadge(privateKey, *response.Badge)
+	signature, err := sigs.SignStruct(privateKey, *response.Badge, sigs.PrepareBadgeForSignature)
 	if err != nil {
 		return err
 	}

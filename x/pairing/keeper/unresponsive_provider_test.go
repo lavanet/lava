@@ -67,7 +67,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 			UnresponsiveProviders: unresponsiveDataList[clientIndex%unresponsiveProviderAmount], // create the complaint
 		}
 
-		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySession)
+		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
@@ -159,7 +159,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySession)
+		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
@@ -263,7 +263,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 	}
 
-	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
+	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 	Relays = append(Relays, relayRequest)
@@ -309,7 +309,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			RelayNum:              0,
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
-		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySession)
+		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		RelaysAfter = append(RelaysAfter, relayRequest)
@@ -385,7 +385,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
 		}
 
-		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySession)
+		sig, err := sigs.SignStruct(ts.clients[clientIndex].SK, *relayRequest, sigs.PrepareRelaySessionForSignature)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 		Relays = append(Relays, relayRequest)
