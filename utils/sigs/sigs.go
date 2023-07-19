@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -70,21 +69,8 @@ func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 	return sig, nil
 }
 
-func ExtractStructSignerAddress(pkey *btcSecp256k1.PrivateKey, data interface{}, prepareFunc PrepareFunc) (sdk.AccAddress, error) {
-	if prepareFunc != nil {
-		prepareFunc(data)
-	}
-
-	// Convert struct to string representation
-	msgData := []byte(reflect.ValueOf(data).String())
-
-	// Sign
-	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
-	if err != nil {
-		return nil, err
-	}
-
-	pubKey, err := RecoverPubKey(sig, HashMsg(msgData))
+func ExtractSignerAddress(data Signable) (sdk.AccAddress, error) {
+	pubKey, err := RecoverPubKey(data)
 	if err != nil {
 		return nil, err
 	}
@@ -92,35 +78,6 @@ func ExtractStructSignerAddress(pkey *btcSecp256k1.PrivateKey, data interface{},
 	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
 	if err != nil {
 		return nil, fmt.Errorf("get relay consumer address: %s", err.Error())
-	}
-
-	return extractedConsumerAddress, nil
-}
-
-func ExtractSignerAddress(in *pairingtypes.RelaySession) (sdk.AccAddress, error) {
-	pubKey, err := RecoverPubKeyFromRelay(*in)
-	if err != nil {
-		return nil, err
-	}
-	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
-	if err != nil {
-		return nil, utils.LavaFormatError("get relay consumer address", err)
-	}
-	return extractedConsumerAddress, nil
-}
-
-func ExtractSignerAddressFromBadge(badge pairingtypes.Badge) (sdk.AccAddress, error) {
-	sig := badge.ProjectSig
-	badge.ProjectSig = nil
-	hash := HashMsg([]byte(badge.String()))
-	pubKey, err := RecoverPubKey(sig, hash)
-	if err != nil {
-		return nil, err
-	}
-
-	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
-	if err != nil {
-		return nil, fmt.Errorf("get relay consumer address %s", err.Error())
 	}
 
 	return extractedConsumerAddress, nil
@@ -191,30 +148,20 @@ func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *
 	return sig, nil
 }
 
-func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
-	//
+func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
+	sig := data.GetSignature()
+	hash := HashMsg(data.PrepareForSignature())
+
 	// Recover public key from signature
-	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
+	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, hash)
 	if err != nil {
-		return nil, utils.LavaFormatError("RecoverCompact", err, utils.Attribute{
-			Key: "sigLen", Value: len(sig),
-		})
+		return nil, utils.LavaFormatError("RecoverCompact", err,
+			utils.Attribute{Key: "sigLen", Value: len(sig)},
+		)
 	}
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
-}
-
-func RecoverPubKeyFromRelay(relay pairingtypes.RelaySession) (secp256k1.PubKey, error) {
-	signature := relay.Sig // save sig
-	msgData := relay.PrepareForSignature()
-	hash := HashMsg(msgData)
-
-	pubKey, err := RecoverPubKey(signature, hash)
-	if err != nil {
-		return nil, err
-	}
-	return pubKey, nil
 }
 
 func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {

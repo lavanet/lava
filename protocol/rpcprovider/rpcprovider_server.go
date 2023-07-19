@@ -386,7 +386,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, relaySession *pairingtypes.RelaySession) (extractedConsumerAddress sdk.AccAddress, err error) {
 	if relaySession.Badge != nil {
-		extractedConsumerAddress, err = sigs.ExtractSignerAddressFromBadge(*relaySession.Badge)
+		extractedConsumerAddress, err = sigs.ExtractSignerAddress(*relaySession.Badge)
 		if err != nil {
 			return nil, err
 		}

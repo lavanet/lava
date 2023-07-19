@@ -25,7 +25,7 @@ func TestExtractSignerAddressFromBadge(t *testing.T) {
 			require.Nil(t, err)
 			badge.ProjectSig = sig
 
-			extractedAddr, err := ExtractSignerAddressFromBadge(*badge)
+			extractedAddr, err := ExtractSignerAddress(*badge)
 			require.Nil(t, err)
 			require.Equal(t, addr, extractedAddr)
 		})
