@@ -77,7 +77,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			}
 
 			// Sign and send the payment requests for block 0 tx
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -153,7 +153,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -232,7 +232,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -316,7 +316,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -389,7 +389,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -481,7 +481,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			}
 
 			// Sign and send the payment requests
-			sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+			sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -527,7 +527,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	}
 
 	// Sign and send the payment requests for block 20 (=epochBeforeChange)
-	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -600,7 +600,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		}
 
 		// Sign the payment request
-		sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+		sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 		relayRequest.Sig = sig
 		require.Nil(t, err)
 

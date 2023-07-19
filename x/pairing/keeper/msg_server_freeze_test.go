@@ -254,7 +254,7 @@ func TestPaymentFrozen(t *testing.T) {
 		RelayNum:  0,
 	}
 
-	sig, err := sigs.SignRelay(ts.clients[0].SK, *relayRequest)
+	sig, err := sigs.SignStruct(ts.clients[0].SK, *relayRequest, sigs.PrepareRelaySession)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 

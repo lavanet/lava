@@ -122,7 +122,7 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
 
-	sig, err := sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
+	sig, err := sigs.SignStruct(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession, sigs.PrepareRelaySession)
 	if err != nil {
 		return msg, nil, nil, err
 	}
@@ -134,7 +134,7 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = provider1.Addr.String()
 	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
-	sig, err = sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
+	sig, err = sigs.SignStruct(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession, sigs.PrepareRelaySession)
 	if err != nil {
 		return msg, nil, nil, err
 	}
