@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	fmt "fmt"
-	"github.com/lavanet/lava/protocol/common"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lavanet/lava/protocol/common"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"

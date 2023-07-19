@@ -2,11 +2,12 @@ package chainlib
 
 import (
 	"context"
-	"github.com/lavanet/lava/protocol/common"
 	"io"
 	"net"
 	"os"
 	"syscall"
+
+	"github.com/lavanet/lava/protocol/common"
 
 	"github.com/lavanet/lava/utils"
 )
