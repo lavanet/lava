@@ -836,7 +836,7 @@ func TestBadgeValidation(t *testing.T) {
 				ts.keepers.Pairing.RemoveAllEpochPaymentsForBlock(sdk.UnwrapSDKContext(ts.ctx), tt.epoch)
 			}
 			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
-			sig, err := sigs.SignBadge(tt.badgeSigner.SK, *badge)
+			sig, err := sigs.SignStruct(tt.badgeSigner.SK, *badge, sigs.PrepareBadgeForSignature)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
 
@@ -875,7 +875,7 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	badge := types.CreateBadge(10, currentEpoch, badgeUser.Addr, "", []byte{})
-	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	sig, err := sigs.SignStruct(projectDeveloper.SK, *badge, sigs.PrepareBadgeForSignature)
 	require.Nil(t, err)
 	badge.ProjectSig = sig
 
@@ -921,7 +921,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
 	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
-	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	sig, err := sigs.SignStruct(projectDeveloper.SK, *badge, sigs.PrepareBadgeForSignature)
 	require.Nil(t, err)
 	badge.ProjectSig = sig
 
@@ -991,7 +991,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
 	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
-	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	sig, err := sigs.SignStruct(projectDeveloper.SK, *badge, sigs.PrepareBadgeForSignature)
 	require.Nil(t, err)
 	badge.ProjectSig = sig
 
@@ -1072,7 +1072,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit / 2
 
 	badge := types.CreateBadge(badgeCuAllocation, currentEpoch, badgeUser.Addr, "", []byte{})
-	sig, err := sigs.SignBadge(projectDeveloper.SK, *badge)
+	sig, err := sigs.SignStruct(projectDeveloper.SK, *badge, sigs.PrepareBadgeForSignature)
 	require.Nil(t, err)
 	badge.ProjectSig = sig
 

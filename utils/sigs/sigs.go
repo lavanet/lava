@@ -75,18 +75,6 @@ func PrepareBadgeForSignature(request interface{}) {
 	b.ProjectSig = []byte{}
 }
 
-func SignBadge(pkey *btcSecp256k1.PrivateKey, badge pairingtypes.Badge) ([]byte, error) {
-	badge.ProjectSig = []byte{}
-	msgData := []byte(badge.String())
-	// Sign
-	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
-	if err != nil {
-		return nil, err
-	}
-
-	return sig, nil
-}
-
 type PrepareFunc func(interface{})
 
 // SignStruct creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature
