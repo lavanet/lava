@@ -1,8 +1,6 @@
 package scores
 
 import (
-	"math"
-
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -64,8 +62,8 @@ type GeoLatency struct {
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
 func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost uint64) {
-	var minGeo planstypes.Geolocation
-	minLatency := uint64(math.MaxUint64)
+	minGeo := planstypes.Geolocation(-1)
+	minLatency := uint64(maxGeoLatency)
 	for _, pGeo := range providerGeos {
 		if inner, ok := GEO_LATENCY_MAP[reqGeo]; ok {
 			if latency, ok := inner[pGeo]; ok {
@@ -75,9 +73,6 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 				}
 			}
 		}
-	}
-	if minLatency == math.MaxUint64 {
-		return -1, calculateCostFromLatency(maxGeoLatency)
 	}
 
 	return minGeo, calculateCostFromLatency(minLatency)
