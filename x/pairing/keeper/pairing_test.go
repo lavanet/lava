@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -899,9 +900,16 @@ func TestGeoSlotCalc(t *testing.T) {
 	minStake := sdk.NewInt(0)
 	geoReqName := pairingscores.GeoReq{}.GetName()
 
+	allGeos := types.GetAllGeolocations()
+	maxGeo := commontypes.FindMax(allGeos)
+
 	// iterate over all possible geolocations, create a policy and calc slots
-	for i := 0; i <= int(planstypes.Geolocation_GL); i++ {
-		policy := planstypes.Policy{GeolocationProfile: uint64(i)}
+	// not checking 0 because there can never be a policy with geo=0
+	for i := 1; i <= int(maxGeo); i++ {
+		policy := planstypes.Policy{
+			GeolocationProfile: uint64(i),
+			MaxProvidersToPair: 14,
+		}
 
 		slots := pairingscores.CalcSlots(policy, minStake)
 		for _, slot := range slots {
@@ -914,6 +922,24 @@ func TestGeoSlotCalc(t *testing.T) {
 			if !types.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
 				require.Fail(t, "slot geo is not single bit")
 			}
+		}
+	}
+
+	// make sure the geo "GL" also works
+	policy := planstypes.Policy{
+		GeolocationProfile: uint64(planstypes.Geolocation_GL),
+		MaxProvidersToPair: 14,
+	}
+	slots := pairingscores.CalcSlots(policy, minStake)
+	for _, slot := range slots {
+		geoReqFromMap := slot.Reqs[geoReqName]
+		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+		if !ok {
+			require.Fail(t, "slot geo req is not of GeoReq type")
+		}
+
+		if !types.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+			require.Fail(t, "slot geo is not single bit")
 		}
 	}
 }
