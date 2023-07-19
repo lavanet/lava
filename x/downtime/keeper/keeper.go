@@ -231,6 +231,12 @@ func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
+	// this ensures that no matter the outcome, we will
+	// reset the last block time to the current block time.
+	defer func() {
+		k.SetLastBlockTime(ctx, ctx.BlockTime())
+	}()
+
 	k.GarbageCollectDowntimes(ctx)
 	// we fetch the last block time
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
@@ -238,7 +244,6 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// this is the first time we're recording a block time,
 	// so we just store the current block time and exit.
 	if !ok {
-		k.SetLastBlockTime(ctx, ctx.BlockTime())
 		return
 	}
 
@@ -248,10 +253,8 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	params := k.GetParams(ctx)
 	maxDowntimeDuration := params.DowntimeDuration
 	elapsedDuration := ctx.BlockTime().Sub(lastBlockTime)
+	// we didn't find any downtimes. So we exit.
 	if elapsedDuration < maxDowntimeDuration {
-		// if the current block time is less than the max downtime duration
-		// then we just store the current block time and exit.
-		k.SetLastBlockTime(ctx, ctx.BlockTime())
 		return
 	}
 	// if the current block time is greater than the max downtime duration

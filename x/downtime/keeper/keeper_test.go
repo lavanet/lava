@@ -115,6 +115,12 @@ func TestBeginBlock(t *testing.T) {
 	require.True(t, hadDowntimes)
 	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
+	// move into next block, it shouldn't have downtimes.
+	ctx = nextBlock(ctx, 1*time.Second)
+	keeper.BeginBlock(ctx)
+	_, hadDowntimes = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()))
+	require.False(t, hadDowntimes)
+
 	// now check garbage collection
 	// we extend the downtime duration in order not to have another downtime
 	// since we're making time elapse by a lot in order to trigger garbage collection!
@@ -130,6 +136,12 @@ func TestBeginBlock(t *testing.T) {
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 	require.False(t, iter.Valid())
+}
+
+func TestBeginBlock_DowntimeReset(t *testing.T) {
+	// we test that after a downtime the last block
+	// time is correctly reset.
+
 }
 
 func TestImportExportGenesis(t *testing.T) {
