@@ -111,9 +111,10 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		ApiInterface:   "",
 		Salt:           []byte{1},
 	}
+
 	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession = &types.RelaySession{
 		Provider:    provider0.Addr.String(),
-		ContentHash: sigs.CalculateContentHashForRelayData(msg.ResponseConflict.ConflictRelayData0.Request.RelayData),
+		ContentHash: sigs.HashMsg(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.GetContentHashData()),
 		SessionId:   uint64(1),
 		SpecId:      spec.Index,
 		CuSum:       0,
@@ -149,12 +150,23 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		SigBlocks:             sig,
 		Metadata:              []types.Metadata{},
 	}
-	sig, err = sigs.SignRelayResponse(provider0.SK, reply, msg.ResponseConflict.ConflictRelayData0.Request)
+	relayExchange := types.RelayExchange{
+		Request: *msg.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *reply,
+	}
+	sig, err = sigs.Sign(provider0.SK, relayExchange)
 	if err != nil {
 		return msg, nil, nil, err
 	}
 	reply.Sig = sig
-	sigBlocks, err := sigs.SignResponseFinalizationData(provider0.SK, reply, msg.ResponseConflict.ConflictRelayData0.Request, consumer.Addr)
+	relayFinalization := types.RelayFinalization{
+		Exchange: types.RelayExchange{
+			Request: *msg.ResponseConflict.ConflictRelayData0.Request,
+			Reply:   *reply,
+		},
+		Addr: consumer.Addr,
+	}
+	sigBlocks, err := sigs.Sign(provider0.SK, relayFinalization)
 	if err != nil {
 		return msg, nil, nil, err
 	}
@@ -165,12 +177,23 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 	reply2 = &types.RelayReply{}
 	reply2.Unmarshal(temp)
 	reply2.Data = append(reply2.Data, []byte("DIFF")...)
-	sig, err = sigs.SignRelayResponse(provider1.SK, reply2, msg.ResponseConflict.ConflictRelayData1.Request)
+	relayExchange2 := types.RelayExchange{
+		Request: *msg.ResponseConflict.ConflictRelayData1.Request,
+		Reply:   *reply2,
+	}
+	sig, err = sigs.Sign(provider1.SK, relayExchange2)
 	if err != nil {
 		return msg, nil, nil, err
 	}
 	reply2.Sig = sig
-	sigBlocks, err = sigs.SignResponseFinalizationData(provider1.SK, reply2, msg.ResponseConflict.ConflictRelayData1.Request, consumer.Addr)
+	relayFinalization2 := types.RelayFinalization{
+		Exchange: types.RelayExchange{
+			Request: *msg.ResponseConflict.ConflictRelayData1.Request,
+			Reply:   *reply2,
+		},
+		Addr: consumer.Addr,
+	}
+	sigBlocks, err = sigs.Sign(provider1.SK, relayFinalization2)
 	if err != nil {
 		return msg, nil, nil, err
 	}

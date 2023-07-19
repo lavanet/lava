@@ -77,7 +77,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relay.RelayData)))
+	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
 	// provider handling the response
 	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
@@ -111,7 +111,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 	extractedConsumerAddress, err = sigs.ExtractSignerAddress(relayDR.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relayDR.RelayData)))
+	require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 	latestBlock = int64(123)
 	// provider handling the response
 	finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}
@@ -219,7 +219,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relay.RelayData)))
+	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
 	// provider handling the response
 	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}
@@ -244,7 +244,11 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		Finalized:       true,
 	}
 
-	allDataHash := sigs.AllDataHash(reply, *relay.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *relay,
+		Reply:   *reply,
+	}
+	allDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	utils.LavaFormatDebug("honest provider allDataHash", utils.Attribute{Key: "hash", Value: fmt.Sprintf("%#v", allDataHash)})
 
 	// now send this to another provider
@@ -256,7 +260,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	extractedConsumerAddress, err = sigs.ExtractSignerAddress(relayDR.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relayDR.RelayData)))
+	require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 	latestBlock = int64(123)
 	// provider handling the response
 	finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}

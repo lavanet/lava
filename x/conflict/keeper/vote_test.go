@@ -56,7 +56,11 @@ func TestCommit(t *testing.T) {
 
 			nonce := rand.Int63()
 
-			replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+			relayExchange := pairingtypes.RelayExchange{
+				Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+				Reply:   *relay0,
+			}
+			replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 			msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 			_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
@@ -77,7 +81,11 @@ func TestDoubleCommit(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
@@ -98,7 +106,11 @@ func TestNotVotersProviders(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
@@ -115,7 +127,7 @@ func TestNotVotersProviders(t *testing.T) {
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.Creator = notVoterProvider.Addr.String()
 	msgReveal.VoteID = voteID
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = replyDataHash
 	msgReveal.Nonce = 0
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
@@ -137,7 +149,11 @@ func TestNewVoterOldVote(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
@@ -154,7 +170,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.Creator = notVoterProvider.Addr.String()
 	msgReveal.VoteID = voteID
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = sigs.HashMsg(relayExchange.PrepareForSignature())
 	msgReveal.Nonce = 0
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
@@ -169,7 +185,11 @@ func TestCommitAfterDeadline(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
@@ -188,7 +208,11 @@ func TestReveal(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
@@ -217,7 +241,11 @@ func TestReveal(t *testing.T) {
 			msg := conflicttypes.MsgConflictVoteReveal{}
 			msg.Creator = tt.creator
 			msg.VoteID = tt.voteID
-			msg.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+			relayExchange := pairingtypes.RelayExchange{
+				Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+				Reply:   *relay0,
+			}
+			msg.Hash = sigs.HashMsg(relayExchange.PrepareForSignature())
 			msg.Nonce = tt.nonce
 
 			_, err := ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msg)
@@ -238,7 +266,11 @@ func TestPreRevealAndDoubleReveal(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
@@ -247,7 +279,7 @@ func TestPreRevealAndDoubleReveal(t *testing.T) {
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.Creator = ts.Providers[2].Addr.String()
 	msgReveal.VoteID = voteID
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = replyDataHash
 	msgReveal.Nonce = nonce
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal) // test reveal before commit finished
@@ -272,7 +304,11 @@ func TestRevealExpired(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
@@ -285,7 +321,7 @@ func TestRevealExpired(t *testing.T) {
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.Creator = ts.Providers[2].Addr.String()
 	msgReveal.VoteID = voteID
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = replyDataHash
 	msgReveal.Nonce = nonce
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
@@ -297,7 +333,11 @@ func TestFullMajorityVote(t *testing.T) {
 
 	nonce := rand.Int63()
 	// first 2 voters
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msgs := make([]conflicttypes.MsgConflictVoteCommit, NUM_OF_PROVIDERS)
 	for i := 2; i < NUM_OF_PROVIDERS-1; i++ {
 		msg := conflicttypes.MsgConflictVoteCommit{}
@@ -310,7 +350,11 @@ func TestFullMajorityVote(t *testing.T) {
 	}
 
 	// last voter
-	replyDataHash = sigs.AllDataHash(relay1, *detection.ResponseConflict.ConflictRelayData1.Request.RelayData)
+	relayExchange2 := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData1.Request,
+		Reply:   *relay1,
+	}
+	replyDataHash = sigs.HashMsg(relayExchange2.PrepareForSignature())
 	msg := conflicttypes.MsgConflictVoteCommit{}
 	msg.VoteID = voteID
 	msg.Creator = ts.Providers[NUM_OF_PROVIDERS-1].Addr.String()
@@ -330,13 +374,21 @@ func TestFullMajorityVote(t *testing.T) {
 
 	for i := 2; i < NUM_OF_PROVIDERS-1; i++ {
 		msgReveal.Creator = ts.Providers[i].Addr.String()
-		msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+		relayExchange := pairingtypes.RelayExchange{
+			Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+			Reply:   *relay0,
+		}
+		msgReveal.Hash = sigs.HashMsg(relayExchange.PrepareForSignature())
 		_, err := ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 		require.Nil(t, err)
 	}
 
 	// last voter
-	msgReveal.Hash = sigs.AllDataHash(relay1, *detection.ResponseConflict.ConflictRelayData1.Request.RelayData)
+	relayExchange = pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData1.Request,
+		Reply:   *relay1,
+	}
+	msgReveal.Hash = sigs.HashMsg(relayExchange.PrepareForSignature())
 	msgReveal.Creator = ts.Providers[NUM_OF_PROVIDERS-1].Addr.String()
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
@@ -363,7 +415,11 @@ func TestFullStrongMajorityVote(t *testing.T) {
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	for i := 2; i < NUM_OF_PROVIDERS; i++ {
 		msg.Creator = ts.Providers[i].Addr.String()
 		msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
@@ -378,7 +434,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 	// vote reveal with all voters
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.VoteID = voteID
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = replyDataHash
 	msgReveal.Nonce = nonce
 
 	for i := 2; i < NUM_OF_PROVIDERS; i++ {
@@ -424,7 +480,11 @@ func TestNoDecisionVote(t *testing.T) {
 	nonce := rand.Int63()
 
 	// first vote for provider 0
-	replyDataHash := sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	relayExchange := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData0.Request,
+		Reply:   *relay0,
+	}
+	replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	msg.Creator = ts.Providers[2].Addr.String()
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
@@ -432,7 +492,11 @@ func TestNoDecisionVote(t *testing.T) {
 	require.Nil(t, err)
 
 	// first vote for provider 1
-	replyDataHash = sigs.AllDataHash(relay1, *detection.ResponseConflict.ConflictRelayData1.Request.RelayData)
+	relayExchange1 := pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData1.Request,
+		Reply:   *relay1,
+	}
+	replyDataHash = sigs.HashMsg(relayExchange1.PrepareForSignature())
 	msg.Creator = ts.Providers[3].Addr.String()
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
@@ -459,13 +523,17 @@ func TestNoDecisionVote(t *testing.T) {
 
 	// reveal vote provider 0
 	msgReveal.Creator = ts.Providers[2].Addr.String()
-	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
+	msgReveal.Hash = sigs.HashMsg(relayExchange.PrepareForSignature())
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 
 	// reveal vote provider 1
 	msgReveal.Creator = ts.Providers[3].Addr.String()
-	msgReveal.Hash = sigs.AllDataHash(relay1, *detection.ResponseConflict.ConflictRelayData1.Request.RelayData)
+	relayExchange1 = pairingtypes.RelayExchange{
+		Request: *detection.ResponseConflict.ConflictRelayData1.Request,
+		Reply:   *relay1,
+	}
+	msgReveal.Hash = sigs.HashMsg(relayExchange1.PrepareForSignature())
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.Nil(t, err)
 

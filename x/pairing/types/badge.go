@@ -39,3 +39,7 @@ func (b Badge) PrepareForSignature() []byte {
 	b.ProjectSig = []byte{}
 	return []byte(b.String())
 }
+
+func (b Badge) HashCount() int {
+	return 1
+}

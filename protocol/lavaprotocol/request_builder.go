@@ -85,7 +85,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
-		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
+		ContentHash:           sigs.HashMsg(relayRequestData.GetContentHashData()),
 		SessionId:             uint64(singleConsumerSession.SessionId),
 		CuSum:                 singleConsumerSession.CuSum + singleConsumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,

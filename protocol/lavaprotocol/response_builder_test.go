@@ -47,7 +47,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relay.RelayData)))
+	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	finalizedBlockHashes := map[int64]interface{}{123: "AAA"}
 	reply := &pairingtypes.RelayReply{}
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
@@ -96,7 +96,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
 	require.Nil(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
-	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.CalculateContentHashForRelayData(relay.RelayData)))
+	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
 	// provider handling the response
 	finalizedBlockHashes := map[int64]interface{}{latestBlock: "AAA"}

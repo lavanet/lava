@@ -122,13 +122,24 @@ func TestDetection(t *testing.T) {
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 			reply.Data = append(reply.Data, tt.ReplyData...)
-			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request)
+			relayExchange := types.RelayExchange{
+				Request: *msg.ResponseConflict.ConflictRelayData1.Request,
+				Reply:   *reply,
+			}
+			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.Nil(t, err)
 			reply.Sig = sig
-			sigBlocks, err := sigs.SignResponseFinalizationData(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request, ts.consumer.Addr)
+			relayFinalization := types.RelayFinalization{
+				Exchange: types.RelayExchange{
+					Request: *msg.ResponseConflict.ConflictRelayData1.Request,
+					Reply:   *reply,
+				},
+				Addr: ts.consumer.Addr,
+			}
+			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.Nil(t, err)
 			reply.SigBlocks = sigBlocks
-			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request.RelayData)
+			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			// send detection msg
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, msg)
 			if tt.Valid {

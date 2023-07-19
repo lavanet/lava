@@ -111,7 +111,11 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		reply.Metadata, _, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		relayData := BuildRelayDataFromVoteParams(voteParams)
-		replyDataHash := sigs.AllDataHash(reply, *relayData)
+		relayExchange := pairingtypes.RelayExchange{
+			Request: pairingtypes.RelayRequest{RelayData: relayData},
+			Reply:   *reply,
+		}
+		replyDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash, rm.publicAddress)
 
 		vote = &VoteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}

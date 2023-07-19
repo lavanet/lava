@@ -488,7 +488,7 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, 
 		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
 	}
 
-	if !bytes.Equal(requestSession.ContentHash, sigs.CalculateContentHashForRelayData(relayData)) {
+	if !bytes.Equal(requestSession.ContentHash, sigs.HashMsg(relayData.GetContentHashData())) {
 		return utils.LavaFormatError("content hash mismatch between consumer and provider", nil,
 			utils.Attribute{Key: "ApiInterface", Value: relayData.ApiInterface},
 			utils.Attribute{Key: "ApiUrl", Value: relayData.ApiUrl},
