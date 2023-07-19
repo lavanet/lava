@@ -86,13 +86,6 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 	appparams "github.com/lavanet/lava/app/params"
 	"github.com/lavanet/lava/app/upgrades"
-	"github.com/lavanet/lava/app/upgrades/v0_5_0"
-	"github.com/lavanet/lava/app/upgrades/v0_5_1"
-	"github.com/lavanet/lava/app/upgrades/v0_5_2"
-	"github.com/lavanet/lava/app/upgrades/v0_9_1"
-	"github.com/lavanet/lava/app/upgrades/v0_9_6"
-	"github.com/lavanet/lava/app/upgrades/v0_9_7"
-	"github.com/lavanet/lava/app/upgrades/v0_9_8"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -136,40 +129,7 @@ const (
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
 var Upgrades = []upgrades.Upgrade{
-	upgrades.Upgrade_0_4_0,
-	upgrades.Upgrade_0_4_3,
-	upgrades.Upgrade_0_4_4,
-	upgrades.Upgrade_0_4_5,
-	v0_5_0.Upgrade,
-	v0_5_1.Upgrade,
-	v0_5_2.Upgrade,
-	upgrades.Upgrade_0_6_0_RC3,
-	upgrades.Upgrade_0_6_0,
-	upgrades.Upgrade_0_6_1,
-	upgrades.Upgrade_0_7_0,
-	upgrades.Upgrade_0_7_1,
-	// upgrades.Upgrade_0_8_0,
-	upgrades.Upgrade_0_8_1,
-	v0_9_1.Upgrade,
-	upgrades.Upgrade_0_9_2,
-	upgrades.Upgrade_0_9_3,
-	upgrades.Upgrade_0_9_5,
-	v0_9_6.Upgrade,
-	v0_9_7.Upgrade,
-	v0_9_8.Upgrade,
-	upgrades.Upgrade_0_10_0,
-	upgrades.Upgrade_0_10_1,
-	upgrades.Upgrade_0_11_0,
-	upgrades.Upgrade_0_11_1,
-	upgrades.Upgrade_0_11_2,
-	upgrades.Upgrade_0_12_0,
-	upgrades.Upgrade_0_12_1,
-	upgrades.Upgrade_0_13_0,
-	upgrades.Upgrade_0_13_1,
-	upgrades.Upgrade_0_14_0,
-	upgrades.Upgrade_0_15_0,
-	upgrades.Upgrade_0_15_1,
-	upgrades.Upgrade_0_16_0,
+	upgrades.Upgrade_0_20_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
