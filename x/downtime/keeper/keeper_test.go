@@ -121,15 +121,14 @@ func TestBeginBlock(t *testing.T) {
 	_, hadDowntimes = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()))
 	require.False(t, hadDowntimes)
 
-	// now check garbage collection
-	// we extend the downtime duration in order not to have another downtime
-	// since we're making time elapse by a lot in order to trigger garbage collection!
-	gcDuration := keeper.GetParams(ctx).GarbageCollectionDuration
-	keeper.SetParams(ctx, v1.Params{DowntimeDuration: gcDuration*2 + keeper.GetParams(ctx).DowntimeDuration, GarbageCollectionDuration: gcDuration})
-	ctx = nextBlock(ctx, gcDuration+1*time.Second)
+	// we check garbage collection by advancing blocks until the garbage collection blocks are reached
+	gcBlocks := keeper.GetParams(ctx).GarbageCollectionBlocks
+	for i := 0; i < int(gcBlocks); i++ {
+		ctx = nextBlock(ctx, 1*time.Second)
+		keeper.BeginBlock(ctx)
+	}
 	keeper.BeginBlock(ctx)
-	_, ok = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()-1)) // currHeight-1 because we're checking the downtime of the previous block
-	require.False(t, ok)
+
 	// now we check the garbage collection store prefix, which should be empty
 	sk := app.GetKey(types.ModuleName)
 	store := prefix.NewStore(ctx.KVStore(sk), types.DowntimeHeightGarbageKey)
@@ -155,8 +154,8 @@ func TestImportExportGenesis(t *testing.T) {
 			},
 			DowntimesGarbageCollection: []*v1.DowntimeGarbageCollection{
 				{
-					Block:  1,
-					GcTime: ctx.BlockTime().Add(2 * time.Hour),
+					Block:   1,
+					GcBlock: 100,
 				},
 			},
 			LastBlockTime: nil,
@@ -169,7 +168,7 @@ func TestImportExportGenesis(t *testing.T) {
 		// we check that if we export we have the same genesis state
 		gotGs, err := keeper.ExportGenesis(ctx)
 		require.NoError(t, err)
-		require.Equal(t, wantGs, gotGs)
+		require.Equal(t, wantGs, gotGs, wantGs.String(), "-", gotGs.String())
 	})
 
 	t.Run("import export – last block time", func(t *testing.T) {

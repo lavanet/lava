@@ -51,8 +51,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 		return false
 	})
 	// get garbage collection
-	k.IterateGarbageCollections(ctx, func(height uint64, gcTime time.Time) (stop bool) {
-		gs.DowntimesGarbageCollection = append(gs.DowntimesGarbageCollection, &v1.DowntimeGarbageCollection{Block: height, GcTime: gcTime})
+	k.IterateGarbageCollections(ctx, func(height uint64, gcBlock uint64) (stop bool) {
+		gs.DowntimesGarbageCollection = append(gs.DowntimesGarbageCollection, &v1.DowntimeGarbageCollection{Block: height, GcBlock: gcBlock})
 		return false
 	})
 
@@ -74,7 +74,7 @@ func (k Keeper) ImportGenesis(ctx sdk.Context, gs *v1.GenesisState) error {
 	}
 	// set garbage collection
 	for _, gc := range gs.DowntimesGarbageCollection {
-		k.SetDowntimeGarbageCollection(ctx, gc.Block, gc.GcTime)
+		k.SetDowntimeGarbageCollection(ctx, gc.Block, gc.GcBlock)
 	}
 	// set last block time, only if it's present in genesis
 	// otherwise it means we don't care about it. This can
@@ -181,23 +181,23 @@ func (k Keeper) IterateDowntimes(ctx sdk.Context, startHeight, endHeight uint64,
 	}
 }
 
-func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcTime time.Time) {
+func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcBlock uint64) {
 	ctx.KVStore(k.storeKey).
 		Set(
-			types.GetDowntimeGarbageKey(gcTime),
+			types.GetDowntimeGarbageKey(gcBlock),
 			sdk.Uint64ToBigEndian(height),
 		)
 }
 
-func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height uint64, gcTime time.Time) (stop bool)) {
+func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height uint64, gcBlock uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := store.Iterator(types.DowntimeHeightGarbageKey, sdk.PrefixEndBytes(types.DowntimeHeightGarbageKey))
 
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		height := sdk.BigEndianToUint64(iter.Value())
-		gcTime := types.ParseDowntimeGarbageKey(iter.Key())
-		if onResult(height, gcTime) {
+		gcBlock := types.ParseDowntimeGarbageKey(iter.Key())
+		if onResult(height, gcBlock) {
 			break
 		}
 	}
@@ -208,15 +208,16 @@ func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height 
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
 	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
-	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), ctx.BlockTime().Add(k.GetParams(ctx).GarbageCollectionDuration))
+	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), uint64(ctx.BlockHeight())+k.GetParams(ctx).GarbageCollectionBlocks)
 }
 
 // GarbageCollectDowntimes will garbage collect downtimes.
 func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	iter := store.Iterator(
-		types.GetDowntimeGarbageKey(time.Unix(0, 0)),
-		types.GetDowntimeGarbageKey(ctx.BlockTime()))
+		types.GetDowntimeGarbageKey(0),
+		types.GetDowntimeGarbageKey(uint64(ctx.BlockHeight())+1), // NOTE: +1 because prefix end is exclusive.
+	)
 
 	defer iter.Close()
 	keysToDelete := make([][]byte, 0) // this guarantees that we don't delete keys while iterating.

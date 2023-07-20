@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -30,15 +28,11 @@ func ParseDowntimeKey(key []byte) uint64 {
 }
 
 // GetDowntimeGarbageKey returns the downtime garbage storage key given the height.
-func GetDowntimeGarbageKey(time time.Time) []byte {
-	return append(DowntimeHeightGarbageKey, sdk.FormatTimeBytes(time)...)
+func GetDowntimeGarbageKey(block uint64) []byte {
+	return append(DowntimeHeightGarbageKey, sdk.Uint64ToBigEndian(block)...)
 }
 
 // ParseDowntimeGarbageKey returns the downtime garbage time given the key.
-func ParseDowntimeGarbageKey(key []byte) time.Time {
-	r, err := sdk.ParseTimeBytes(key[1:])
-	if err != nil {
-		panic(err)
-	}
-	return r
+func ParseDowntimeGarbageKey(key []byte) uint64 {
+	return sdk.BigEndianToUint64(key[1:])
 }

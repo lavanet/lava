@@ -11,13 +11,13 @@ var (
 	ParamKeyDowntimeDuration                 = []byte("DowntimeDuration")
 	DefaultParamKeyDowntimeDuration          = 30 * time.Minute
 	ParamKeyGarbageCollectionDuration        = []byte("GarbageCollection")
-	DefaultParamKeyGarbageCollectionDuration = 24 * time.Hour * 30 // 30 days
+	DefaultParamKeyGarbageCollectionDuration = uint64(10 * 20) // epochs to save * epoch blocks
 )
 
 func DefaultParams() Params {
 	return Params{
-		DowntimeDuration:          DefaultParamKeyDowntimeDuration,
-		GarbageCollectionDuration: DefaultParamKeyGarbageCollectionDuration,
+		DowntimeDuration:        DefaultParamKeyDowntimeDuration,
+		GarbageCollectionBlocks: DefaultParamKeyGarbageCollectionDuration,
 	}
 }
 
@@ -26,7 +26,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 func (m *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamKeyDowntimeDuration, &m.DowntimeDuration, validateDowntimeDuration),
-		paramtypes.NewParamSetPair(ParamKeyGarbageCollectionDuration, &m.GarbageCollectionDuration, validateDowntimeDuration),
+		paramtypes.NewParamSetPair(ParamKeyGarbageCollectionDuration, &m.GarbageCollectionBlocks, validateGarbageCollectionBlocks),
 	}
 }
 
@@ -34,7 +34,7 @@ func (m *Params) Validate() error {
 	if err := validateDowntimeDuration(m.DowntimeDuration); err != nil {
 		return err
 	}
-	if err := validateDowntimeDuration(m.GarbageCollectionDuration); err != nil {
+	if err := validateDowntimeDuration(m.GarbageCollectionBlocks); err != nil {
 		return err
 	}
 	return nil
@@ -48,6 +48,14 @@ func validateDowntimeDuration(value interface{}) error {
 
 	if concrete <= 0 {
 		return fmt.Errorf("invalid downtime duration: %s", concrete)
+	}
+	return nil
+}
+
+func validateGarbageCollectionBlocks(value interface{}) error {
+	_, ok := value.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T, wanted: %T", value, uint64(0))
 	}
 	return nil
 }
