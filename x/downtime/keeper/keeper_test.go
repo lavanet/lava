@@ -168,7 +168,7 @@ func TestImportExportGenesis(t *testing.T) {
 		// we check that if we export we have the same genesis state
 		gotGs, err := keeper.ExportGenesis(ctx)
 		require.NoError(t, err)
-		require.Equal(t, wantGs, gotGs, wantGs.String(), "-", gotGs.String())
+		require.Equal(t, wantGs, gotGs)
 	})
 
 	t.Run("import export – last block time", func(t *testing.T) {
