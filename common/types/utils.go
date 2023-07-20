@@ -68,8 +68,7 @@ func Intersection[T comparable](arrays ...[]T) []T {
 // SafePow implements a deterministic power function
 // Go's math.Pow() doesn't guarantee determinism when executed on different hardwares
 func SafePow(base uint64, exponent uint64) uint64 {
-	baseInt := sdk.NewIntFromUint64(base)
-	baseDec := sdk.NewDecFromInt(baseInt)
+	baseDec := sdk.NewDecWithPrec(int64(base), 2)
 
 	return baseDec.Power(exponent).TruncateInt().Uint64()
 }

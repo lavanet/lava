@@ -42,6 +42,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -96,8 +97,7 @@ func GroupSlots(slots []*PairingSlot) []*PairingSlot {
 		panic("no pairing slots available")
 	}
 
-	uniqueSlots = append(uniqueSlots, slots[0])
-	for k := 1; k < len(slots); k++ {
+	for k := 0; k < len(slots); k++ {
 		isUnique := true
 
 		for i := range uniqueSlots {
@@ -124,11 +124,16 @@ func GetStrategy() ScoreStrategy {
 // CalcPairingScore calculates the final pairing score for a pairing slot (with strategy)
 // For efficiency purposes, we calculate the score on a diff slot which represents the diff reqs of the current slot
 // and the previous slot
-func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot, minStake sdk.Int) error {
+func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
 	// calculate the score for each req for each provider
 	for _, req := range diffSlot.Reqs {
 		reqName := req.GetName()
-		weight := strategy[reqName] // not checking if key is found because it's verified in init()
+		weight, ok := strategy[reqName]
+		if !ok {
+			return utils.LavaFormatError("req not found in strategy", fmt.Errorf("cannot calculate pairing score"),
+				utils.Attribute{Key: "req", Value: reqName},
+			)
+		}
 
 		for _, score := range scores {
 			newScoreComp := req.Score(*score.Provider)
