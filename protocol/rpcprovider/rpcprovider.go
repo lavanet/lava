@@ -60,6 +60,7 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	GetEpochsToSave(ctx context.Context) (uint64, error)
 }
 
 type RPCProvider struct {
@@ -84,6 +85,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		return err
 	}
+
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
 	// single reward server

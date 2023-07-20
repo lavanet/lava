@@ -183,35 +183,65 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 }
 
 func TestUpdateEpoch(t *testing.T) {
-	privKey, acc := sigs.GenerateFloatingKey()
+	setupRewardsServer := func() (*rewardserver.RewardServer, *rewardsTxSenderDouble) {
+		stubRewardsTxSender := rewardsTxSenderDouble{}
+		db := rewardserver.NewMemoryDB()
+		rewardDB := rewardserver.NewRewardDB(db)
+		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB)
 
-	stubRewardsTxSender := rewardsTxSenderDouble{}
-	db := rewardserver.NewMemoryDB()
-	rewardDB := rewardserver.NewRewardDB(db)
-	rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB)
-
-	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
-		epoch := sessionId%2 + 1
-		proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
-		proof.Epoch = int64(epoch)
-
-		sig, err := sigs.SignRelay(privKey, *proof)
-		proof.Sig = sig
-		require.NoError(t, err)
-
-		_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
+		return rws, &stubRewardsTxSender
 	}
 
-	rws.UpdateEpoch(1)
+	t.Run("sends payment when epoch is updated", func(t *testing.T) {
+		rws, stubRewardsTxSender := setupRewardsServer()
+		privKey, acc := sigs.GenerateFloatingKey()
 
-	// 2 payments for epoch 1
-	require.Len(t, stubRewardsTxSender.sentPayments, 2)
+		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
+			epoch := sessionId%2 + 1
+			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
+			proof.Epoch = int64(epoch)
 
-	rws.UpdateEpoch(2)
+			sig, err := sigs.SignRelay(privKey, *proof)
+			proof.Sig = sig
+			require.NoError(t, err)
 
-	// another 3 payments for epoch 2
-	require.Len(t, stubRewardsTxSender.sentPayments, 5)
+			_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
+		}
+
+		rws.UpdateEpoch(1)
+
+		// 2 payments for epoch 1
+		require.Len(t, stubRewardsTxSender.sentPayments, 2)
+
+		rws.UpdateEpoch(2)
+
+		// another 3 payments for epoch 2
+		require.Len(t, stubRewardsTxSender.sentPayments, 5)
+	})
+
+	t.Run("does not send payment if too many epochs have passed", func(t *testing.T) {
+		rws, stubRewardsTxSender := setupRewardsServer()
+		privKey, acc := sigs.GenerateFloatingKey()
+
+		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
+			epoch := sessionId%2 + 1
+			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
+			proof.Epoch = int64(epoch)
+
+			sig, err := sigs.SignRelay(privKey, *proof)
+			proof.Sig = sig
+			require.NoError(t, err)
+
+			_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
+		}
+
+		rws.UpdateEpoch(20)
+
+		// another 3 payments for epoch 2
+		require.Len(t, stubRewardsTxSender.sentPayments, 0)
+	})
 }
 
 func BenchmarkSendNewProofInMemory(b *testing.B) {
@@ -260,6 +290,7 @@ func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *r
 }
 
 type rewardsTxSenderDouble struct {
+	epochsToSave uint64
 	sentPayments []*pairingtypes.RelaySession
 }
 
@@ -275,4 +306,8 @@ func (rts *rewardsTxSenderDouble) GetEpochSizeMultipliedByRecommendedEpochNumToC
 
 func (rts *rewardsTxSenderDouble) EarliestBlockInMemory(_ context.Context) (uint64, error) {
 	return 1, nil
+}
+
+func (rts *rewardsTxSenderDouble) GetEpochsToSave(_ context.Context) (uint64, error) {
+	return rts.epochsToSave, nil
 }
