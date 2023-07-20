@@ -14,7 +14,7 @@ type StakeReq struct {
 
 // Score calculates the the provider score as the normalized stake
 func (sr StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry) uint64 {
-	return stakeEntry.Stake.Amount.Quo(sr.MinStake).Uint64()
+	return stakeEntry.Stake.Amount.Quo(sr.MinStake.QuoRaw(16)).Uint64()
 }
 
 func (sr StakeReq) GetName() string {

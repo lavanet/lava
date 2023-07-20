@@ -37,6 +37,7 @@
 package scores
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 
@@ -138,14 +139,22 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 		for _, score := range scores {
 			newScoreComp := req.Score(*score.Provider)
 			if newScoreComp == 0 {
-				err := fmt.Errorf("score component is zero. score component name: %s, provider address: %s", reqName, score.Provider.Address)
-				panic(err)
+				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
+					utils.Attribute{Key: "score component", Value: reqName},
+					utils.Attribute{Key: "provider", Value: score.Provider.Address},
+				)
 			}
 			newScoreComp = commontypes.SafePow(newScoreComp, weight)
 
 			// divide by previous score component (if exists) and multiply by new score
 			prevReqScoreComp, ok := score.ScoreComponents[reqName]
 			if ok {
+				if prevReqScoreComp == 0 {
+					return utils.LavaFormatError("prev score component is zero", fmt.Errorf("cannot calculate pairing score"),
+						utils.Attribute{Key: "score component", Value: reqName},
+						utils.Attribute{Key: "provider", Value: score.Provider.Address},
+					)
+				}
 				score.Score /= prevReqScoreComp
 			}
 			score.Score *= newScoreComp
@@ -160,14 +169,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 
 // PrepareHashData prepares the hash needed in the pseudo-random choice of providers
 func PrepareHashData(projectIndex string, chainID string, epochHash []byte) []byte {
-	hashData := []byte{}
-
-	// add the session start block hash to the function to make it as unpredictable as we can
-	hashData = append(hashData, epochHash...)
-	hashData = append(hashData, chainID...)      // to make this pairing unique per chainID
-	hashData = append(hashData, projectIndex...) // to make this pairing unique per consumer
-
-	return hashData
+	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex)}, nil)
 }
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
@@ -185,8 +187,8 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		scoreSum += providerScore.Score
 	}
 	if scoreSum == 0 {
-		err := fmt.Errorf("score sum is zero. Cannot pick providers for pairing")
-		panic(err)
+		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
+		return returnedProviders
 	}
 
 	if groupCount >= len(scores)-len(chosenProvidersIdx) {
