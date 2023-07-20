@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -14,7 +15,8 @@ import (
 const keySeparator = "."
 
 type RewardDB struct {
-	db DB
+	db  DB
+	ttl time.Duration
 }
 
 type RewardEntity struct {
@@ -41,7 +43,7 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 		return false, utils.LavaFormatError("failed to encode proof: %s", err)
 	}
 
-	rs.db.Save(key, buf)
+	rs.db.Save(key, buf, rs.ttl)
 
 	return true, nil
 }
@@ -139,8 +141,13 @@ func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
 }
 
 func NewRewardDB(db DB) *RewardDB {
+	return NewRewardDBWithTTL(db, DefaultRewardTTL)
+}
+
+func NewRewardDBWithTTL(db DB, ttl time.Duration) *RewardDB {
 	return &RewardDB{
-		db: db,
+		db:  db,
+		ttl: ttl,
 	}
 }
 

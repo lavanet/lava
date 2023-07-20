@@ -2,6 +2,7 @@ package rewardserver_test
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -84,6 +85,29 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.NoError(t, err)
 
 	err = rs.DeleteEpochRewards(uint64(proof.Epoch))
+	require.NoError(t, err)
+
+	rewards, err := rs.FindAll()
+	require.NoError(t, err)
+	require.Equal(t, 0, len(rewards))
+}
+
+func TestRewardsWithTTL(t *testing.T) {
+	db := rewardserver.NewMemoryDB()
+	// really really short TTL to make sure the rewards are not queryable
+	ttl := 10 * time.Microsecond
+	rs := rewardserver.NewRewardDBWithTTL(db, ttl)
+	privKey, addr := sigs.GenerateFloatingKey()
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+
+	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof.Epoch = 1
+
+	sig, err := sigs.SignRelay(privKey, *proof)
+	require.NoError(t, err)
+	proof.Sig = sig
+
+	_, _ = rs.Save(addr.String(), "consumerKey", proof)
 	require.NoError(t, err)
 
 	rewards, err := rs.FindAll()

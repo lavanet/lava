@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -21,6 +22,8 @@ import (
 const (
 	RewardServerStorageFlagName = "reward-server-storage"
 	DefaultRewardServerStorage  = ".storage/rewardserver"
+	RewardTTLFlagName           = "reward-ttl"
+	DefaultRewardTTL            = 24 * 60 * time.Minute
 )
 
 type PaymentRequest struct {
