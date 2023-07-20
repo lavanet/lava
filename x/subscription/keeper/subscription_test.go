@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -27,7 +25,12 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) getSubscription(consumer string) (types.Subscription, bool) {
-	return ts.Keepers.Subscription.GetSubscription(ts.Ctx, consumer)
+	sub, err := ts.QuerySubscriptionCurrent(consumer)
+	require.Nil(ts.T, err)
+	if sub.Sub == nil {
+		return types.Subscription{}, false
+	}
+	return *sub.Sub, true
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -493,8 +496,8 @@ func TestPrice(t *testing.T) {
 			_, found := ts.getSubscription(sub1Addr)
 			require.True(t, found)
 
-			balance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sub1Acct.Addr, epochstoragetypes.TokenDenom)
-			require.Equal(t, balance.Amount.Int64(), 10000-tt.cost)
+			balance := ts.GetBalance(sub1Acct.Addr)
+			require.Equal(t, balance, 10000-tt.cost)
 
 			// will expire and remove
 			ts.AdvanceMonths(tt.duration)
