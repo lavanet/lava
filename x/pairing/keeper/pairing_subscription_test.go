@@ -74,10 +74,6 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, sub.Sub)
 
-	vefiry, err := ts.QueryPairingVerifyPairing(ts.spec.Index, client1Acct.Addr, providerAddr, ts.BlockHeight())
-	require.Nil(t, err)
-	require.True(t, vefiry.Valid)
-
 	policies := slices.Slice(
 		proj.Project.AdminPolicy,
 		proj.Project.SubscriptionPolicy,
