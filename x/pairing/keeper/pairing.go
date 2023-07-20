@@ -167,7 +167,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	for _, group := range slotGroups {
 		diffSlot := group.Subtract(prevGroupSlot)
-		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot, minStake)
+		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
 			return nil, 0, "", err
 		}

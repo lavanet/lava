@@ -127,16 +127,16 @@ func GetStrategy() ScoreStrategy {
 // and the previous slot
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
 	// calculate the score for each req for each provider
-	for _, req := range diffSlot.Reqs {
-		reqName := req.GetName()
-		weight, ok := strategy[reqName]
-		if !ok {
-			return utils.LavaFormatError("req not found in strategy", fmt.Errorf("cannot calculate pairing score"),
-				utils.Attribute{Key: "req", Value: reqName},
-			)
-		}
+	for _, score := range scores {
+		for _, req := range diffSlot.Reqs {
+			reqName := req.GetName()
+			weight, ok := strategy[reqName]
+			if !ok {
+				return utils.LavaFormatError("req not found in strategy", fmt.Errorf("cannot calculate pairing score"),
+					utils.Attribute{Key: "req", Value: reqName},
+				)
+			}
 
-		for _, score := range scores {
 			newScoreComp := req.Score(*score.Provider)
 			if newScoreComp == 0 {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
@@ -146,22 +146,16 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			}
 			newScoreComp = commontypes.SafePow(newScoreComp, weight)
 
-			// divide by previous score component (if exists) and multiply by new score
-			prevReqScoreComp, ok := score.ScoreComponents[reqName]
-			if ok {
-				if prevReqScoreComp == 0 {
-					return utils.LavaFormatError("prev score component is zero", fmt.Errorf("cannot calculate pairing score"),
-						utils.Attribute{Key: "score component", Value: reqName},
-						utils.Attribute{Key: "provider", Value: score.Provider.Address},
-					)
-				}
-				score.Score /= prevReqScoreComp
-			}
-			score.Score *= newScoreComp
-
 			// update the score component map
 			score.ScoreComponents[reqName] = newScoreComp
 		}
+
+		// calc new score
+		newScore := uint64(1)
+		for _, scoreComp := range score.ScoreComponents {
+			newScore *= scoreComp
+		}
+		score.Score = newScore
 	}
 
 	return nil
