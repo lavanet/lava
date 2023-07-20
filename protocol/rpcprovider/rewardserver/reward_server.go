@@ -70,6 +70,7 @@ type RewardServer struct {
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	GetEpochsToSave(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
@@ -203,6 +204,11 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
 	}
 
+	epochsToSave, err := rws.rewardsTxSender.GetEpochsToSave(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochsToSave", err)
+	}
+
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
 	}
@@ -219,6 +225,11 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 			continue
 		}
 
+		if rws.isEpochTooOld(epoch, currentEpoch, epochsToSave) {
+			// Epoch is too old, we can't claim the rewards anymore.
+			continue
+		}
+
 		for _, consumerRewards := range epochRewards.consumerRewards {
 			claimables, err := consumerRewards.PrepareRewardsForClaim()
 			if err != nil {
@@ -229,6 +240,10 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		}
 	}
 	return rewardsForClaim, errRet
+}
+
+func (rws *RewardServer) isEpochTooOld(rewardsEpoch, currentEpoch, epochsToSave uint64) bool {
+	return rewardsEpoch+epochsToSave < currentEpoch
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
