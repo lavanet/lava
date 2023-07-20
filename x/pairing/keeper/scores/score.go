@@ -31,8 +31,7 @@
 //
 // To add a new requirement, one should create a new object that satisfies the ScoreReq interface and update the
 // CalcSlots() function so the new requirement will be assigned to the pairing slots (according to some logic).
-// Lastly, append the new requirement object to the allReqTypes var in the init() function in this file. Use
-// StakeReq or GeoReq as examples.
+// Lastly, append the new requirement object in the GetAllReqs() function. Use StakeReq or GeoReq as examples.
 
 package scores
 
@@ -42,32 +41,28 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-var (
-	uniformStrategy ScoreStrategy
-	allReqNames     []string
-)
+var uniformStrategy ScoreStrategy
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
 func init() {
-	// gather all req names to a list
-	allReqNames = []string{stakeReqName}
+	reqs := GetAllReqs()
 
 	// init strategy
 	uniformStrategy = make(ScoreStrategy)
-	for _, reqName := range allReqNames {
-		uniformStrategy[reqName] = 1
+	for _, req := range reqs {
+		uniformStrategy[req.GetName()] = 1
 	}
+}
 
-	if len(allReqNames) != len(uniformStrategy) {
-		panic("uniform strategy does not contain all score reqs")
-	}
+func GetAllReqs() []ScoreReq {
+	stakeReq := StakeReq{}
+	return []ScoreReq{&stakeReq}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -76,13 +71,16 @@ func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
 	// init slot array (should be as the number of providers to pair)
 	slots := make([]*PairingSlot, policy.MaxProvidersToPair)
 
-	// all slots should consider the stake, so we init them with stakeReq
-	stakeReq := StakeReq{MinStake: minStake}
-	stakeReqName := stakeReq.GetName()
-
+	reqs := GetAllReqs()
 	for i := range slots {
 		reqMap := make(map[string]ScoreReq)
-		reqMap[stakeReqName] = stakeReq
+		for _, req := range reqs {
+			active := req.Init()
+			if active {
+				reqMap[req.GetName()] = req.GetReqForSlot(i)
+			}
+		}
+
 		slots[i] = NewPairingSlot()
 		slots[i].Reqs = reqMap
 	}
@@ -110,7 +108,8 @@ func GroupSlots(slots []*PairingSlot) []*PairingSlot {
 		}
 
 		if isUnique {
-			uniqueSlots = append(uniqueSlots, slots[k])
+			uniqueSlot := *slots[k]
+			uniqueSlots = append(uniqueSlots, &uniqueSlot)
 		}
 	}
 
@@ -138,22 +137,24 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			}
 
 			newScoreComp := req.Score(*score.Provider)
-			if newScoreComp == 0 {
+			if newScoreComp == sdk.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreComp = commontypes.SafePow(newScoreComp, weight)
+			newScoreCompDec := sdk.NewDecFromInt(sdk.Int(newScoreComp))
+			newScoreCompDec = newScoreCompDec.Power(weight)
+			newScoreComp = sdk.Uint(newScoreCompDec.TruncateInt())
 
 			// update the score component map
 			score.ScoreComponents[reqName] = newScoreComp
 		}
 
 		// calc new score
-		newScore := uint64(1)
+		newScore := sdk.OneUint()
 		for _, scoreComp := range score.ScoreComponents {
-			newScore *= scoreComp
+			newScore = newScore.Mul(scoreComp)
 		}
 		score.Score = newScore
 	}
@@ -172,15 +173,15 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	var scoreSum uint64
+	scoreSum := sdk.ZeroUint()
 	for idx, providerScore := range scores {
 		if chosenProvidersIdx[idx] {
 			// skip index of providers already selected
 			continue
 		}
-		scoreSum += providerScore.Score
+		scoreSum = scoreSum.Add(providerScore.Score)
 	}
-	if scoreSum == 0 {
+	if scoreSum == sdk.ZeroUint() {
 		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 		return returnedProviders
 	}
@@ -195,12 +196,11 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	for it := 0; it < groupCount; it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
-		bigIntNum := new(big.Int).SetBytes(hash)
-		hashAsNumber := sdk.NewUintFromBigInt(bigIntNum)
-		scoreSumUint := sdk.NewUint(scoreSum)
-		modRes := hashAsNumber.Mod(scoreSumUint).Uint64()
+		bigIntHash := new(big.Int).SetBytes(hash)
+		uintHash := sdk.NewUintFromBigInt(bigIntHash)
+		modRes := uintHash.Mod(scoreSum)
 
-		newScoreSum := uint64(0)
+		newScoreSum := sdk.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if chosenProvidersIdx[idx] {
@@ -208,11 +208,11 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				continue
 			}
 			providerScore := scores[idx]
-			newScoreSum += providerScore.Score
-			if modRes < newScoreSum {
+			newScoreSum = newScoreSum.Add(providerScore.Score)
+			if modRes.LT(newScoreSum) {
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				scoreSum -= providerScore.Score // we remove this provider from the random pool, so the sum is lower now
+				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
 				chosenProvidersIdx[idx] = true
 				break
 			}

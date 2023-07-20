@@ -1,6 +1,7 @@
 package scores
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -12,15 +13,15 @@ const (
 // PairingScore holds a provider's score with respect to a set of requirements (ScoreReq), indexed by their unique name.
 type PairingScore struct {
 	Provider        *epochstoragetypes.StakeEntry
-	Score           uint64
-	ScoreComponents map[string]uint64
+	Score           sdk.Uint
+	ScoreComponents map[string]sdk.Uint
 }
 
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
 		Provider:        stakeEntry,
-		Score:           1,
-		ScoreComponents: map[string]uint64{},
+		Score:           sdk.OneUint(),
+		ScoreComponents: map[string]sdk.Uint{},
 	}
 	return &score
 }
