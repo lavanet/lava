@@ -26,15 +26,10 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) setupProjectData() *tester {
-	ts.AddAccount("pd1_adm", 10000)
-	ts.AddAccount("pd2_both", 10000)
-	ts.AddAccount("pd3_adm", 10000)
-	ts.AddAccount("pd3_dev", 10000)
-
-	_, pd1adm := ts.Account("pd1_adm")
-	_, pd2both := ts.Account("pd2_both")
-	_, pd3adm := ts.Account("pd3_adm")
-	_, pd3dev := ts.Account("pd3_dev")
+	_, pd1adm := ts.AddAccount("pd_adm_", 1, 10000)
+	_, pd2both := ts.AddAccount("pd_both_", 2, 10000)
+	_, pd3adm := ts.AddAccount("pd_adm_", 3, 10000)
+	_, pd3dev := ts.AddAccount("pd_dev_", 3, 10000)
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
@@ -140,7 +135,7 @@ func TestCreateProject(t *testing.T) {
 	projectData := ts.ProjectData("pd2")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd2_both")
+	_, adm1Addr := ts.Account("pd_both_2")
 
 	err := ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData, plan)
 	require.Nil(t, err)
@@ -295,8 +290,8 @@ func TestAddDelKeys(t *testing.T) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd3_adm")
-	_, dev1Addr := ts.Account("pd3_dev")
+	_, adm1Addr := ts.Account("pd_adm_3")
+	_, dev1Addr := ts.Account("pd_dev_3")
 	_, dev2Addr := ts.Account("dev1")
 	_, dev3Addr := ts.Account("dev2")
 
@@ -398,7 +393,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd1_adm")
+	_, adm1Addr := ts.Account("pd_adm_1")
 
 	err := ts.Keepers.Projects.CreateAdminProject(ts.Ctx, sub1Addr, plan)
 	require.Nil(t, err)
@@ -434,7 +429,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd1_adm")
+	_, adm1Addr := ts.Account("pd_adm_1")
 	_, dev1Addr := ts.Account("dev1")
 
 	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
@@ -593,7 +588,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	projectData := ts.ProjectData("pd1")
 	plan := ts.Plan("mock")
 
-	_, sub1Addr := ts.Account("pd1_adm")
+	_, sub1Addr := ts.Account("pd_adm_1")
 	_, dev1Addr := ts.Account("dev1")
 
 	err := ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData, plan)

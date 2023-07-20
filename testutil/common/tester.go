@@ -2,13 +2,18 @@ package common
 
 import (
 	"context"
+	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/slices"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -57,34 +62,87 @@ func NewTester(t *testing.T) *Tester {
 	return ts
 }
 
-func (ts *Tester) AddAccount(name string, balance int64) *Tester {
-	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
-	return ts
+func (ts *Tester) SetChainID(chainID string) {
+	blockHeader := ts.Ctx.BlockHeader()
+	blockHeader.ChainID = chainID
+	ts.Ctx = ts.Ctx.WithBlockHeader(blockHeader)
+	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
 }
 
 func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
-	for i := 0; i < numSub; i++ {
-		name := "sub" + strconv.Itoa(i+1)
-		ts.AddAccount(name, 20000)
+	for i := 1; i <= numSub; i++ {
+		ts.AddAccount("sub", i, 20000)
 	}
-	for i := 0; i < numAdm; i++ {
-		name := "adm" + strconv.Itoa(i+1)
-		ts.AddAccount(name, 10000)
+	for i := 1; i <= numAdm; i++ {
+		ts.AddAccount("adm", i, 10000)
 	}
-	for i := 0; i < numDev; i++ {
-		name := "dev" + strconv.Itoa(i+1)
-		ts.AddAccount(name, 10000)
+	for i := 1; i <= numDev; i++ {
+		ts.AddAccount("dev", i, 10000)
 	}
 
 	return ts
+}
+
+func (ts *Tester) AddAccount(kind string, idx int, balance int64) (Account, string) {
+	name := kind + strconv.Itoa(idx)
+	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	return ts.Account(name)
+}
+
+func (ts *Tester) GetAccount(kind string, idx int) (Account, string) {
+	name := kind + strconv.Itoa(idx)
+	return ts.Account(name)
 }
 
 func (ts *Tester) Account(name string) (Account, string) {
 	account, ok := ts.accounts[name]
 	if !ok {
-		panic("tester: unknown account: '" + name + "'")
+		panic("tester: unknown account name: '" + name + "'")
 	}
 	return account, account.Addr.String()
+}
+
+func (ts *Tester) Accounts(name string) []Account {
+	var names []string
+	for k := range ts.accounts {
+		if strings.HasPrefix(k, name) {
+			names = append(names, k)
+		}
+	}
+	sort.Strings(names)
+	var accounts []Account
+	for _, k := range names {
+		accounts = append(accounts, ts.accounts[k])
+	}
+	return accounts
+}
+
+func (ts *Tester) StakeAccount(acct Account, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
+	addr := acct.Addr.String()
+	return ts.StakeProvider(addr, spec, amount, geoloc, moniker)
+}
+
+func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
+	apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
+	endpoint := epochstoragetypes.Endpoint{
+		IPPORT:        "123",
+		ApiInterfaces: []string{apiInterface},
+		Geolocation:   geoloc,
+	}
+	endpoints := []epochstoragetypes.Endpoint{endpoint}
+	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+
+	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
+	return err
+}
+
+func (ts *Tester) AccountByAddr(addr string) (Account, string) {
+	for _, account := range ts.accounts {
+		if account.Addr.String() == addr {
+			return account, addr
+		}
+	}
+	panic("tester: unknown account address: '" + addr + "'")
 }
 
 func (ts *Tester) AddPlan(name string, plan planstypes.Plan) *Tester {
@@ -146,22 +204,24 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 
 // keeper helpers
 
+func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
+	denom := epochstoragetypes.TokenDenom
+	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
+}
+
 func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
+}
+
+func (ts *Tester) GetPlanFromSubscription(addr string) (planstypes.Plan, error) {
+	return ts.Keepers.Subscription.GetPlanFromSubscription(ts.Ctx, addr)
 }
 
 func (ts *Tester) GetProjectForBlock(projectID string, block uint64) (projectstypes.Project, error) {
 	return ts.Keepers.Projects.GetProjectForBlock(ts.Ctx, projectID, block)
 }
 
-func (ts *Tester) GetProjectForDeveloper(devkey string, optional ...uint64) (projectstypes.Project, error) {
-	block := ts.BlockHeight()
-	if len(optional) > 1 {
-		panic("GetProjectForDeveloper: more than one optional arg")
-	}
-	if len(optional) > 0 {
-		block = optional[0]
-	}
+func (ts *Tester) GetProjectForDeveloper(devkey string, block uint64) (projectstypes.Project, error) {
 	return ts.Keepers.Projects.GetProjectForDeveloper(ts.Ctx, devkey, block)
 }
 
@@ -170,6 +230,10 @@ func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projects
 }
 
 // proposals, transactions, queries
+
+func (ts *Tester) TxProposalChangeParam(module string, paramKey string, paramVal string) error {
+	return testkeeper.SimulateParamChange(ts.Ctx, ts.Keepers.ParamsKeeper, module, paramKey, paramVal)
+}
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
 	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
@@ -214,22 +278,113 @@ func (ts *Tester) TxSubscriptionDelProject(creator string, projectID string) err
 	return err
 }
 
+// TxProjectAddKeys: implement 'tx project add-keys'
+func (ts *Tester) TxProjectAddKeys(projectID, creator string, projectKeys ...projectstypes.ProjectKey) error {
+	msg := projectstypes.MsgAddKeys{
+		Creator:     creator,
+		Project:     projectID,
+		ProjectKeys: projectKeys,
+	}
+	_, err := ts.Servers.ProjectServer.AddKeys(ts.GoCtx, &msg)
+	return err
+}
+
+// TxProjectDelKeys: implement 'tx project del-keys'
+func (ts *Tester) TxProjectDelKeys(projectID, creator string, projectKeys ...projectstypes.ProjectKey) error {
+	msg := projectstypes.MsgDelKeys{
+		Creator:     creator,
+		Project:     projectID,
+		ProjectKeys: projectKeys,
+	}
+	_, err := ts.Servers.ProjectServer.DelKeys(ts.GoCtx, &msg)
+	return err
+}
+
+// TxProjectSetSubscriptionPolicy: implement 'tx project set-subscription-policy'
 func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
-	msg := projectstypes.MsgSetSubscriptionPolicy{
+	msg := &projectstypes.MsgSetSubscriptionPolicy{
 		Creator:  subkey,
 		Policy:   policy,
 		Projects: []string{projectID},
 	}
-	return ts.Servers.ProjectServer.SetSubscriptionPolicy(ts.GoCtx, &msg)
+	return ts.Servers.ProjectServer.SetSubscriptionPolicy(ts.GoCtx, msg)
 }
 
-func (ts *Tester) TxProjectSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
-	msg := projectstypes.MsgSetPolicy{
+// TxProjectSetPolicy: implement 'tx project set-policy'
+func (ts *Tester) TxProjectSetPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
+	msg := &projectstypes.MsgSetPolicy{
 		Creator: subkey,
 		Policy:  policy,
 		Project: projectID,
 	}
-	return ts.Servers.ProjectServer.SetPolicy(ts.GoCtx, &msg)
+	return ts.Servers.ProjectServer.SetPolicy(ts.GoCtx, msg)
+}
+
+// TxPairingStakeProvider: implement 'tx pairing stake-provider'
+func (ts *Tester) TxPairingStakeProvider(
+	addr string,
+	chainID string,
+	amount sdk.Coin,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc uint64,
+	moniker string,
+) (*pairingtypes.MsgStakeProviderResponse, error) {
+	msg := &pairingtypes.MsgStakeProvider{
+		Creator:     addr,
+		ChainID:     chainID,
+		Amount:      amount,
+		Geolocation: geoloc,
+		Endpoints:   endpoints,
+		Moniker:     moniker,
+	}
+	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
+}
+
+// TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
+func (ts *Tester) TxPairingUnstakeProvider(
+	addr string,
+	chainID string,
+) (*pairingtypes.MsgUnstakeProviderResponse, error) {
+	msg := &pairingtypes.MsgUnstakeProvider{
+		Creator: addr,
+		ChainID: chainID,
+	}
+	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
+}
+
+// TxPairingRelayPayment: implement 'tx pairing relay-payment'
+func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
+	msg := &pairingtypes.MsgRelayPayment{
+		Creator: addr,
+		Relays:  rs,
+	}
+	return ts.Servers.PairingServer.RelayPayment(ts.GoCtx, msg)
+}
+
+// TxPairingFreezeProvider: implement 'tx pairing freeze'
+func (ts *Tester) TxPairingFreezeProvider(addr string, chainID string) (*pairingtypes.MsgFreezeProviderResponse, error) {
+	msg := &pairingtypes.MsgFreezeProvider{
+		Creator:  addr,
+		ChainIds: slices.Slice(chainID),
+	}
+	return ts.Servers.PairingServer.FreezeProvider(ts.GoCtx, msg)
+}
+
+// TxPairingUnfreezeProvider: implement 'tx pairing unfreeze'
+func (ts *Tester) TxPairingUnfreezeProvider(addr string, chainID string) (*pairingtypes.MsgUnfreezeProviderResponse, error) {
+	msg := &pairingtypes.MsgUnfreezeProvider{
+		Creator:  addr,
+		ChainIds: slices.Slice(chainID),
+	}
+	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
+}
+
+// QuerySubscriptionCurrent: implement 'q subscription current'
+func (ts *Tester) QuerySubscriptionCurrent(subkey string) (*subscriptiontypes.QueryCurrentResponse, error) {
+	msg := &subscriptiontypes.QueryCurrentRequest{
+		Consumer: subkey,
+	}
+	return ts.Keepers.Subscription.Current(ts.GoCtx, msg)
 }
 
 // QuerySubscriptionListProjects: implement 'q subscription list-projects'
@@ -252,6 +407,42 @@ func (ts *Tester) QueryProjectDeveloper(devkey string) (*projectstypes.QueryDeve
 	return ts.Keepers.Projects.Developer(ts.GoCtx, msg)
 }
 
+// QueryPairingGetPairing implements 'q pairing get-pairing'
+func (ts *Tester) QueryPairingGetPairing(chainID string, client string) (*pairingtypes.QueryGetPairingResponse, error) {
+	msg := &pairingtypes.QueryGetPairingRequest{
+		ChainID: chainID,
+		Client:  client,
+	}
+	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
+}
+
+func (ts *Tester) QueryPairingListEpochPayments() (*pairingtypes.QueryAllEpochPaymentsResponse, error) {
+	msg := &pairingtypes.QueryAllEpochPaymentsRequest{}
+	return ts.Keepers.Pairing.EpochPaymentsAll(ts.GoCtx, msg)
+}
+
+// QueryPairingProviders: implement 'q pairing providers'
+func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
+	msg := &pairingtypes.QueryProvidersRequest{
+		ChainID:    chainID,
+		ShowFrozen: frozen,
+	}
+	return ts.Keepers.Pairing.Providers(ts.GoCtx, msg)
+}
+
+// QueryPairingVerifyPairing implements 'q pairing verfy-pairing'
+func (ts *Tester) QueryPairingVerifyPairing(chainID string, client string, provider string, block uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
+	msg := &pairingtypes.QueryVerifyPairingRequest{
+		ChainID:  chainID,
+		Client:   client,
+		Provider: provider,
+		Block:    block,
+	}
+	return ts.Keepers.Pairing.VerifyPairing(ts.GoCtx, msg)
+}
+
+// block/epoch helpers
+
 func (ts *Tester) BlockHeight() uint64 {
 	return uint64(ts.Ctx.BlockHeight())
 }
@@ -268,6 +459,37 @@ func (ts *Tester) BlocksToSave() uint64 {
 		panic("BlocksToSave: failed to fetch: " + err.Error())
 	}
 	return blocksToSave
+}
+
+func (ts *Tester) EpochsToSave() uint64 {
+	epochsToSave, err := ts.Keepers.Epochstorage.EpochsToSave(ts.Ctx, ts.BlockHeight())
+	if err != nil {
+		panic("EpochsToSave: failed to fetch: " + err.Error())
+	}
+	return epochsToSave
+}
+
+func (ts *Tester) EpochBlocks(block ...uint64) uint64 {
+	if len(block) == 0 {
+		return ts.Keepers.Epochstorage.EpochBlocksRaw(ts.Ctx)
+	}
+	epoch, err := ts.Keepers.Epochstorage.EpochBlocks(ts.Ctx, block[0])
+	if err != nil {
+		panic("EpochBlocks: failed to fetch: " + err.Error())
+	}
+	return epoch
+}
+
+func (ts *Tester) EpochStart() uint64 {
+	return ts.Keepers.Epochstorage.GetEpochStart(ts.Ctx)
+}
+
+func (ts *Tester) GetNextEpoch() uint64 {
+	epoch, err := ts.Keepers.Epochstorage.GetNextEpoch(ts.Ctx, ts.BlockHeight())
+	if err != nil {
+		panic("GetNextEpoch: failed to fetch: " + err.Error())
+	}
+	return epoch
 }
 
 func (ts *Tester) AdvanceBlocks(count uint64, delta ...time.Duration) *Tester {

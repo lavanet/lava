@@ -399,7 +399,7 @@ func TestExpiryTime(t *testing.T) {
 
 		t.Run(now.Format("2006-01-02"), func(t *testing.T) {
 			// new account per attempt
-			_, sub1Addr := ts.AddAccount("tmp", 10000).Account("tmp")
+			_, sub1Addr := ts.AddAccount("tmp", 0, 10000)
 
 			delta := now.Sub(ts.BlockTime())
 			ts.AdvanceBlock(delta)
@@ -479,7 +479,7 @@ func TestPrice(t *testing.T) {
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			// new account per attempt
-			sub1Acct, sub1Addr := ts.AddAccount("tmp", 10000).Account("tmp")
+			sub1Acct, sub1Addr := ts.AddAccount("tmp", 0, 10000)
 
 			plan := ts.Plan("mock")
 			plan.AnnualDiscountPercentage = tt.discount
