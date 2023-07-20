@@ -554,7 +554,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			}
 
 			if testAdminPolicy {
-				_, err := ts.TxProjectSetProjectPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetPolicy(tt.projectID, tt.creator, newPolicy)
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -697,9 +697,9 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
 
-	proj, err := ts.GetProjectForDeveloper(sub1Addr)
+	res, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
-	require.Equal(t, 3, len(proj.ProjectKeys))
+	require.Equal(t, 3, len(res.Project.ProjectKeys))
 
 	// add twice - ok
 	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
@@ -931,13 +931,13 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	proj1, err := ts.GetProjectForDeveloper(sub1Addr)
+	res1, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
-	proj2, err := ts.GetProjectForDeveloper(sub2Addr)
+	res2, err := ts.QueryProjectDeveloper(sub2Addr)
 	require.Nil(t, err)
 
-	require.Equal(t, 2, len(proj1.ProjectKeys))
-	require.Equal(t, 1, len(proj2.ProjectKeys))
+	require.Equal(t, 2, len(res1.Project.ProjectKeys))
+	require.Equal(t, 1, len(res2.Project.ProjectKeys))
 }
 
 func TestSetPolicySelectedProviders(t *testing.T) {
@@ -1019,7 +1019,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.TxProjectSetProjectPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetPolicy(admProject.Index, sub1Addr, policy)
 			if tt.projPolicyValid {
 				require.Nil(t, err)
 			} else {
