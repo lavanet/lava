@@ -28,8 +28,10 @@ const (
 	LAVA_LOG_PANIC
 )
 
-var JsonFormat = false
-var NoColor = true
+var (
+	JsonFormat = false
+	NoColor    = true
+)
 
 type Attribute struct {
 	Key   string

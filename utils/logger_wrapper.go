@@ -21,12 +21,15 @@ func (lw LoggerWrapper) getAttributes(extraInfo ...interface{}) []Attribute {
 func (lw LoggerWrapper) Errorf(msg string, extraInfo ...interface{}) {
 	LavaFormatError(lw.LoggerName+msg, nil, lw.getAttributes(extraInfo)...)
 }
+
 func (lw LoggerWrapper) Warningf(msg string, extraInfo ...interface{}) {
 	LavaFormatWarning(lw.LoggerName+msg, nil, lw.getAttributes(extraInfo)...)
 }
+
 func (lw LoggerWrapper) Infof(msg string, extraInfo ...interface{}) {
 	LavaFormatInfo(lw.LoggerName+msg, lw.getAttributes(extraInfo)...)
 }
+
 func (lw LoggerWrapper) Debugf(msg string, extraInfo ...interface{}) {
 	LavaFormatDebug(lw.LoggerName+msg, lw.getAttributes(extraInfo)...)
 }
