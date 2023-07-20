@@ -66,3 +66,27 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, len(rewards))
 }
+
+func TestDeleteEpochRewards(t *testing.T) {
+	db := rewardserver.NewMemoryDB()
+	rs := rewardserver.NewRewardDB(db)
+	privKey, addr := sigs.GenerateFloatingKey()
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+
+	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof.Epoch = 1
+
+	sig, err := sigs.SignRelay(privKey, *proof)
+	require.NoError(t, err)
+	proof.Sig = sig
+
+	_, err = rs.Save(addr.String(), "consumerKey", proof)
+	require.NoError(t, err)
+
+	err = rs.DeleteEpochRewards(uint64(proof.Epoch))
+	require.NoError(t, err)
+
+	rewards, err := rs.FindAll()
+	require.NoError(t, err)
+	require.Equal(t, 0, len(rewards))
+}

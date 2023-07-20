@@ -133,6 +133,11 @@ func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySes
 	return nil
 }
 
+func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
+	prefix := strconv.FormatUint(epoch, 10)
+	return rs.db.DeletePrefix(prefix)
+}
+
 func NewRewardDB(db DB) *RewardDB {
 	return &RewardDB{
 		db: db,

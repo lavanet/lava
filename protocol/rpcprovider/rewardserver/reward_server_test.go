@@ -183,17 +183,17 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 }
 
 func TestUpdateEpoch(t *testing.T) {
-	setupRewardsServer := func() (*rewardserver.RewardServer, *rewardsTxSenderDouble) {
+	setupRewardsServer := func() (*rewardserver.RewardServer, *rewardsTxSenderDouble, *rewardserver.RewardDB) {
 		stubRewardsTxSender := rewardsTxSenderDouble{}
 		db := rewardserver.NewMemoryDB()
 		rewardDB := rewardserver.NewRewardDB(db)
 		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB)
 
-		return rws, &stubRewardsTxSender
+		return rws, &stubRewardsTxSender, rewardDB
 	}
 
 	t.Run("sends payment when epoch is updated", func(t *testing.T) {
-		rws, stubRewardsTxSender := setupRewardsServer()
+		rws, stubRewardsTxSender, _ := setupRewardsServer()
 		privKey, acc := sigs.GenerateFloatingKey()
 
 		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
@@ -221,12 +221,12 @@ func TestUpdateEpoch(t *testing.T) {
 	})
 
 	t.Run("does not send payment if too many epochs have passed", func(t *testing.T) {
-		rws, stubRewardsTxSender := setupRewardsServer()
+		rws, stubRewardsTxSender, db := setupRewardsServer()
 		privKey, acc := sigs.GenerateFloatingKey()
 
 		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
-			epoch := sessionId%2 + 1
+			epoch := uint64(1)
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
 			proof.Epoch = int64(epoch)
 
@@ -239,8 +239,13 @@ func TestUpdateEpoch(t *testing.T) {
 
 		rws.UpdateEpoch(20)
 
-		// another 3 payments for epoch 2
+		// ensure no payments have been sent
 		require.Len(t, stubRewardsTxSender.sentPayments, 0)
+
+		rewards, err := db.FindAll()
+		require.NoError(t, err)
+		// ensure rewards have been deleted
+		require.Len(t, rewards, 0)
 	})
 }
 
