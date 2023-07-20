@@ -8,7 +8,7 @@ exports.Spec = exports.spec_ProvidersTypesToJSON = exports.spec_ProvidersTypesFr
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
 const coin_1 = require("../cosmos/base/v1beta1/coin");
-const service_api_1 = require("./service_api");
+const api_collection_1 = require("./api_collection");
 exports.protobufPackage = "lavanet.lava.spec";
 var Spec_ProvidersTypes;
 (function (Spec_ProvidersTypes) {
@@ -47,8 +47,6 @@ function createBaseSpec() {
     return {
         index: "",
         name: "",
-        imports: [],
-        apis: [],
         enabled: false,
         reliabilityThreshold: 0,
         dataReliabilityEnabled: false,
@@ -60,6 +58,8 @@ function createBaseSpec() {
         minStakeProvider: undefined,
         minStakeClient: undefined,
         providersTypes: 0,
+        imports: [],
+        apiCollections: [],
     };
 }
 exports.Spec = {
@@ -69,12 +69,6 @@ exports.Spec = {
         }
         if (message.name !== "") {
             writer.uint32(18).string(message.name);
-        }
-        for (const v of message.imports) {
-            writer.uint32(122).string(v);
-        }
-        for (const v of message.apis) {
-            service_api_1.ServiceApi.encode(v, writer.uint32(26).fork()).ldelim();
         }
         if (message.enabled === true) {
             writer.uint32(32).bool(message.enabled);
@@ -109,6 +103,12 @@ exports.Spec = {
         if (message.providersTypes !== 0) {
             writer.uint32(112).int32(message.providersTypes);
         }
+        for (const v of message.imports) {
+            writer.uint32(122).string(v);
+        }
+        for (const v of message.apiCollections) {
+            api_collection_1.ApiCollection.encode(v, writer.uint32(130).fork()).ldelim();
+        }
         return writer;
     },
     decode(input, length) {
@@ -119,97 +119,97 @@ exports.Spec = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.index = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.name = reader.string();
                     continue;
-                case 15:
-                    if (tag !== 122) {
-                        break;
-                    }
-                    message.imports.push(reader.string());
-                    continue;
-                case 3:
-                    if (tag !== 26) {
-                        break;
-                    }
-                    message.apis.push(service_api_1.ServiceApi.decode(reader, reader.uint32()));
-                    continue;
                 case 4:
-                    if (tag !== 32) {
+                    if (tag != 32) {
                         break;
                     }
                     message.enabled = reader.bool();
                     continue;
                 case 5:
-                    if (tag !== 40) {
+                    if (tag != 40) {
                         break;
                     }
                     message.reliabilityThreshold = reader.uint32();
                     continue;
                 case 6:
-                    if (tag !== 48) {
+                    if (tag != 48) {
                         break;
                     }
                     message.dataReliabilityEnabled = reader.bool();
                     continue;
                 case 7:
-                    if (tag !== 56) {
+                    if (tag != 56) {
                         break;
                     }
                     message.blockDistanceForFinalizedData = reader.uint32();
                     continue;
                 case 8:
-                    if (tag !== 64) {
+                    if (tag != 64) {
                         break;
                     }
                     message.blocksInFinalizationProof = reader.uint32();
                     continue;
                 case 9:
-                    if (tag !== 72) {
+                    if (tag != 72) {
                         break;
                     }
                     message.averageBlockTime = reader.int64();
                     continue;
                 case 10:
-                    if (tag !== 80) {
+                    if (tag != 80) {
                         break;
                     }
                     message.allowedBlockLagForQosSync = reader.int64();
                     continue;
                 case 11:
-                    if (tag !== 88) {
+                    if (tag != 88) {
                         break;
                     }
                     message.blockLastUpdated = reader.uint64();
                     continue;
                 case 12:
-                    if (tag !== 98) {
+                    if (tag != 98) {
                         break;
                     }
                     message.minStakeProvider = coin_1.Coin.decode(reader, reader.uint32());
                     continue;
                 case 13:
-                    if (tag !== 106) {
+                    if (tag != 106) {
                         break;
                     }
                     message.minStakeClient = coin_1.Coin.decode(reader, reader.uint32());
                     continue;
                 case 14:
-                    if (tag !== 112) {
+                    if (tag != 112) {
                         break;
                     }
                     message.providersTypes = reader.int32();
                     continue;
+                case 15:
+                    if (tag != 122) {
+                        break;
+                    }
+                    message.imports.push(reader.string());
+                    continue;
+                case 16:
+                    if (tag != 130) {
+                        break;
+                    }
+                    message.apiCollections.push(api_collection_1.ApiCollection.decode(reader, reader.uint32()));
+                    continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -220,8 +220,6 @@ exports.Spec = {
         return {
             index: isSet(object.index) ? String(object.index) : "",
             name: isSet(object.name) ? String(object.name) : "",
-            imports: Array.isArray(object === null || object === void 0 ? void 0 : object.imports) ? object.imports.map((e) => String(e)) : [],
-            apis: Array.isArray(object === null || object === void 0 ? void 0 : object.apis) ? object.apis.map((e) => service_api_1.ServiceApi.fromJSON(e)) : [],
             enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
             reliabilityThreshold: isSet(object.reliabilityThreshold) ? Number(object.reliabilityThreshold) : 0,
             dataReliabilityEnabled: isSet(object.dataReliabilityEnabled) ? Boolean(object.dataReliabilityEnabled) : false,
@@ -237,24 +235,16 @@ exports.Spec = {
             minStakeProvider: isSet(object.minStakeProvider) ? coin_1.Coin.fromJSON(object.minStakeProvider) : undefined,
             minStakeClient: isSet(object.minStakeClient) ? coin_1.Coin.fromJSON(object.minStakeClient) : undefined,
             providersTypes: isSet(object.providersTypes) ? spec_ProvidersTypesFromJSON(object.providersTypes) : 0,
+            imports: Array.isArray(object === null || object === void 0 ? void 0 : object.imports) ? object.imports.map((e) => String(e)) : [],
+            apiCollections: Array.isArray(object === null || object === void 0 ? void 0 : object.apiCollections)
+                ? object.apiCollections.map((e) => api_collection_1.ApiCollection.fromJSON(e))
+                : [],
         };
     },
     toJSON(message) {
         const obj = {};
         message.index !== undefined && (obj.index = message.index);
         message.name !== undefined && (obj.name = message.name);
-        if (message.imports) {
-            obj.imports = message.imports.map((e) => e);
-        }
-        else {
-            obj.imports = [];
-        }
-        if (message.apis) {
-            obj.apis = message.apis.map((e) => e ? service_api_1.ServiceApi.toJSON(e) : undefined);
-        }
-        else {
-            obj.apis = [];
-        }
         message.enabled !== undefined && (obj.enabled = message.enabled);
         message.reliabilityThreshold !== undefined && (obj.reliabilityThreshold = Math.round(message.reliabilityThreshold));
         message.dataReliabilityEnabled !== undefined && (obj.dataReliabilityEnabled = message.dataReliabilityEnabled);
@@ -273,6 +263,18 @@ exports.Spec = {
         message.minStakeClient !== undefined &&
             (obj.minStakeClient = message.minStakeClient ? coin_1.Coin.toJSON(message.minStakeClient) : undefined);
         message.providersTypes !== undefined && (obj.providersTypes = spec_ProvidersTypesToJSON(message.providersTypes));
+        if (message.imports) {
+            obj.imports = message.imports.map((e) => e);
+        }
+        else {
+            obj.imports = [];
+        }
+        if (message.apiCollections) {
+            obj.apiCollections = message.apiCollections.map((e) => e ? api_collection_1.ApiCollection.toJSON(e) : undefined);
+        }
+        else {
+            obj.apiCollections = [];
+        }
         return obj;
     },
     create(base) {
@@ -283,13 +285,11 @@ exports.Spec = {
         const message = createBaseSpec();
         message.index = (_a = object.index) !== null && _a !== void 0 ? _a : "";
         message.name = (_b = object.name) !== null && _b !== void 0 ? _b : "";
-        message.imports = ((_c = object.imports) === null || _c === void 0 ? void 0 : _c.map((e) => e)) || [];
-        message.apis = ((_d = object.apis) === null || _d === void 0 ? void 0 : _d.map((e) => service_api_1.ServiceApi.fromPartial(e))) || [];
-        message.enabled = (_e = object.enabled) !== null && _e !== void 0 ? _e : false;
-        message.reliabilityThreshold = (_f = object.reliabilityThreshold) !== null && _f !== void 0 ? _f : 0;
-        message.dataReliabilityEnabled = (_g = object.dataReliabilityEnabled) !== null && _g !== void 0 ? _g : false;
-        message.blockDistanceForFinalizedData = (_h = object.blockDistanceForFinalizedData) !== null && _h !== void 0 ? _h : 0;
-        message.blocksInFinalizationProof = (_j = object.blocksInFinalizationProof) !== null && _j !== void 0 ? _j : 0;
+        message.enabled = (_c = object.enabled) !== null && _c !== void 0 ? _c : false;
+        message.reliabilityThreshold = (_d = object.reliabilityThreshold) !== null && _d !== void 0 ? _d : 0;
+        message.dataReliabilityEnabled = (_e = object.dataReliabilityEnabled) !== null && _e !== void 0 ? _e : false;
+        message.blockDistanceForFinalizedData = (_f = object.blockDistanceForFinalizedData) !== null && _f !== void 0 ? _f : 0;
+        message.blocksInFinalizationProof = (_g = object.blocksInFinalizationProof) !== null && _g !== void 0 ? _g : 0;
         message.averageBlockTime = (object.averageBlockTime !== undefined && object.averageBlockTime !== null)
             ? long_1.default.fromValue(object.averageBlockTime)
             : long_1.default.ZERO;
@@ -306,7 +306,9 @@ exports.Spec = {
         message.minStakeClient = (object.minStakeClient !== undefined && object.minStakeClient !== null)
             ? coin_1.Coin.fromPartial(object.minStakeClient)
             : undefined;
-        message.providersTypes = (_k = object.providersTypes) !== null && _k !== void 0 ? _k : 0;
+        message.providersTypes = (_h = object.providersTypes) !== null && _h !== void 0 ? _h : 0;
+        message.imports = ((_j = object.imports) === null || _j === void 0 ? void 0 : _j.map((e) => e)) || [];
+        message.apiCollections = ((_k = object.apiCollections) === null || _k === void 0 ? void 0 : _k.map((e) => api_collection_1.ApiCollection.fromPartial(e))) || [];
         return message;
     },
 };

@@ -24,6 +24,14 @@ export interface MsgAddProject {
 export interface MsgAddProjectResponse {
 }
 
+export interface MsgDelProject {
+  creator: string;
+  name: string;
+}
+
+export interface MsgDelProjectResponse {
+}
+
 function createBaseMsgBuy(): MsgBuy {
   return { creator: "", consumer: "", index: "", duration: Long.UZERO };
 }
@@ -53,35 +61,35 @@ export const MsgBuy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.consumer = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.index = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.duration = reader.uint64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -140,7 +148,7 @@ export const MsgBuyResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -190,21 +198,21 @@ export const MsgAddProject = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.projectData = ProjectData.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -258,7 +266,7 @@ export const MsgAddProjectResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -285,11 +293,127 @@ export const MsgAddProjectResponse = {
   },
 };
 
+function createBaseMsgDelProject(): MsgDelProject {
+  return { creator: "", name: "" };
+}
+
+export const MsgDelProject = {
+  encode(message: MsgDelProject, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.creator !== "") {
+      writer.uint32(10).string(message.creator);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelProject {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDelProject();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MsgDelProject {
+    return {
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+    };
+  },
+
+  toJSON(message: MsgDelProject): unknown {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MsgDelProject>, I>>(base?: I): MsgDelProject {
+    return MsgDelProject.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MsgDelProject>, I>>(object: I): MsgDelProject {
+    const message = createBaseMsgDelProject();
+    message.creator = object.creator ?? "";
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseMsgDelProjectResponse(): MsgDelProjectResponse {
+  return {};
+}
+
+export const MsgDelProjectResponse = {
+  encode(_: MsgDelProjectResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MsgDelProjectResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDelProjectResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): MsgDelProjectResponse {
+    return {};
+  },
+
+  toJSON(_: MsgDelProjectResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MsgDelProjectResponse>, I>>(base?: I): MsgDelProjectResponse {
+    return MsgDelProjectResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MsgDelProjectResponse>, I>>(_: I): MsgDelProjectResponse {
+    const message = createBaseMsgDelProjectResponse();
+    return message;
+  },
+};
+
 /** Msg defines the Msg service. */
 export interface Msg {
   Buy(request: MsgBuy): Promise<MsgBuyResponse>;
-  /** this line is used by starport scaffolding # proto/tx/rpc */
   AddProject(request: MsgAddProject): Promise<MsgAddProjectResponse>;
+  /** this line is used by starport scaffolding # proto/tx/rpc */
+  DelProject(request: MsgDelProject): Promise<MsgDelProjectResponse>;
 }
 
 export class MsgClientImpl implements Msg {
@@ -300,6 +424,7 @@ export class MsgClientImpl implements Msg {
     this.rpc = rpc;
     this.Buy = this.Buy.bind(this);
     this.AddProject = this.AddProject.bind(this);
+    this.DelProject = this.DelProject.bind(this);
   }
   Buy(request: MsgBuy): Promise<MsgBuyResponse> {
     const data = MsgBuy.encode(request).finish();
@@ -311,6 +436,12 @@ export class MsgClientImpl implements Msg {
     const data = MsgAddProject.encode(request).finish();
     const promise = this.rpc.request(this.service, "AddProject", data);
     return promise.then((data) => MsgAddProjectResponse.decode(_m0.Reader.create(data)));
+  }
+
+  DelProject(request: MsgDelProject): Promise<MsgDelProjectResponse> {
+    const data = MsgDelProject.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DelProject", data);
+    return promise.then((data) => MsgDelProjectResponse.decode(_m0.Reader.create(data)));
   }
 }
 

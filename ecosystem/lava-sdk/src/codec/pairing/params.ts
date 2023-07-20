@@ -7,12 +7,9 @@ export const protobufPackage = "lavanet.lava.pairing";
 /** Params defines the parameters for the module. */
 export interface Params {
   mintCoinsPerCU: string;
-  burnCoinsPerCU: string;
   fraudStakeSlashingFactor: string;
   fraudSlashingAmount: Long;
-  servicersToPairCount: Long;
   epochBlocksOverlap: Long;
-  stakeToMaxCUList: string;
   unpayLimit: string;
   slashLimit: string;
   dataReliabilityReward: string;
@@ -23,12 +20,9 @@ export interface Params {
 function createBaseParams(): Params {
   return {
     mintCoinsPerCU: "",
-    burnCoinsPerCU: "",
     fraudStakeSlashingFactor: "",
     fraudSlashingAmount: Long.UZERO,
-    servicersToPairCount: Long.UZERO,
     epochBlocksOverlap: Long.UZERO,
-    stakeToMaxCUList: "",
     unpayLimit: "",
     slashLimit: "",
     dataReliabilityReward: "",
@@ -42,23 +36,14 @@ export const Params = {
     if (message.mintCoinsPerCU !== "") {
       writer.uint32(26).string(message.mintCoinsPerCU);
     }
-    if (message.burnCoinsPerCU !== "") {
-      writer.uint32(34).string(message.burnCoinsPerCU);
-    }
     if (message.fraudStakeSlashingFactor !== "") {
       writer.uint32(42).string(message.fraudStakeSlashingFactor);
     }
     if (!message.fraudSlashingAmount.isZero()) {
       writer.uint32(48).uint64(message.fraudSlashingAmount);
     }
-    if (!message.servicersToPairCount.isZero()) {
-      writer.uint32(56).uint64(message.servicersToPairCount);
-    }
     if (!message.epochBlocksOverlap.isZero()) {
       writer.uint32(64).uint64(message.epochBlocksOverlap);
-    }
-    if (message.stakeToMaxCUList !== "") {
-      writer.uint32(74).string(message.stakeToMaxCUList);
     }
     if (message.unpayLimit !== "") {
       writer.uint32(82).string(message.unpayLimit);
@@ -86,91 +71,70 @@ export const Params = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.mintCoinsPerCU = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.burnCoinsPerCU = reader.string();
-          continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.fraudStakeSlashingFactor = reader.string();
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.fraudSlashingAmount = reader.uint64() as Long;
           continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.servicersToPairCount = reader.uint64() as Long;
-          continue;
         case 8:
-          if (tag !== 64) {
+          if (tag != 64) {
             break;
           }
 
           message.epochBlocksOverlap = reader.uint64() as Long;
           continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.stakeToMaxCUList = reader.string();
-          continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.unpayLimit = reader.string();
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.slashLimit = reader.string();
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag != 98) {
             break;
           }
 
           message.dataReliabilityReward = reader.string();
           continue;
         case 13:
-          if (tag !== 106) {
+          if (tag != 106) {
             break;
           }
 
           message.QoSWeight = reader.string();
           continue;
         case 14:
-          if (tag !== 112) {
+          if (tag != 112) {
             break;
           }
 
           message.recommendedEpochNumToCollectPayment = reader.uint64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -181,14 +145,9 @@ export const Params = {
   fromJSON(object: any): Params {
     return {
       mintCoinsPerCU: isSet(object.mintCoinsPerCU) ? String(object.mintCoinsPerCU) : "",
-      burnCoinsPerCU: isSet(object.burnCoinsPerCU) ? String(object.burnCoinsPerCU) : "",
       fraudStakeSlashingFactor: isSet(object.fraudStakeSlashingFactor) ? String(object.fraudStakeSlashingFactor) : "",
       fraudSlashingAmount: isSet(object.fraudSlashingAmount) ? Long.fromValue(object.fraudSlashingAmount) : Long.UZERO,
-      servicersToPairCount: isSet(object.servicersToPairCount)
-        ? Long.fromValue(object.servicersToPairCount)
-        : Long.UZERO,
       epochBlocksOverlap: isSet(object.epochBlocksOverlap) ? Long.fromValue(object.epochBlocksOverlap) : Long.UZERO,
-      stakeToMaxCUList: isSet(object.stakeToMaxCUList) ? String(object.stakeToMaxCUList) : "",
       unpayLimit: isSet(object.unpayLimit) ? String(object.unpayLimit) : "",
       slashLimit: isSet(object.slashLimit) ? String(object.slashLimit) : "",
       dataReliabilityReward: isSet(object.dataReliabilityReward) ? String(object.dataReliabilityReward) : "",
@@ -202,15 +161,11 @@ export const Params = {
   toJSON(message: Params): unknown {
     const obj: any = {};
     message.mintCoinsPerCU !== undefined && (obj.mintCoinsPerCU = message.mintCoinsPerCU);
-    message.burnCoinsPerCU !== undefined && (obj.burnCoinsPerCU = message.burnCoinsPerCU);
     message.fraudStakeSlashingFactor !== undefined && (obj.fraudStakeSlashingFactor = message.fraudStakeSlashingFactor);
     message.fraudSlashingAmount !== undefined &&
       (obj.fraudSlashingAmount = (message.fraudSlashingAmount || Long.UZERO).toString());
-    message.servicersToPairCount !== undefined &&
-      (obj.servicersToPairCount = (message.servicersToPairCount || Long.UZERO).toString());
     message.epochBlocksOverlap !== undefined &&
       (obj.epochBlocksOverlap = (message.epochBlocksOverlap || Long.UZERO).toString());
-    message.stakeToMaxCUList !== undefined && (obj.stakeToMaxCUList = message.stakeToMaxCUList);
     message.unpayLimit !== undefined && (obj.unpayLimit = message.unpayLimit);
     message.slashLimit !== undefined && (obj.slashLimit = message.slashLimit);
     message.dataReliabilityReward !== undefined && (obj.dataReliabilityReward = message.dataReliabilityReward);
@@ -228,18 +183,13 @@ export const Params = {
   fromPartial<I extends Exact<DeepPartial<Params>, I>>(object: I): Params {
     const message = createBaseParams();
     message.mintCoinsPerCU = object.mintCoinsPerCU ?? "";
-    message.burnCoinsPerCU = object.burnCoinsPerCU ?? "";
     message.fraudStakeSlashingFactor = object.fraudStakeSlashingFactor ?? "";
     message.fraudSlashingAmount = (object.fraudSlashingAmount !== undefined && object.fraudSlashingAmount !== null)
       ? Long.fromValue(object.fraudSlashingAmount)
       : Long.UZERO;
-    message.servicersToPairCount = (object.servicersToPairCount !== undefined && object.servicersToPairCount !== null)
-      ? Long.fromValue(object.servicersToPairCount)
-      : Long.UZERO;
     message.epochBlocksOverlap = (object.epochBlocksOverlap !== undefined && object.epochBlocksOverlap !== null)
       ? Long.fromValue(object.epochBlocksOverlap)
       : Long.UZERO;
-    message.stakeToMaxCUList = object.stakeToMaxCUList ?? "";
     message.unpayLimit = object.unpayLimit ?? "";
     message.slashLimit = object.slashLimit ?? "";
     message.dataReliabilityReward = object.dataReliabilityReward ?? "";

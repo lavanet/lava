@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MsgClientImpl = exports.MsgAddProjectResponse = exports.MsgAddProject = exports.MsgBuyResponse = exports.MsgBuy = exports.protobufPackage = void 0;
+exports.MsgClientImpl = exports.MsgDelProjectResponse = exports.MsgDelProject = exports.MsgAddProjectResponse = exports.MsgAddProject = exports.MsgBuyResponse = exports.MsgBuy = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
@@ -36,31 +36,31 @@ exports.MsgBuy = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.consumer = reader.string();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.index = reader.string();
                     continue;
                 case 4:
-                    if (tag !== 32) {
+                    if (tag != 32) {
                         break;
                     }
                     message.duration = reader.uint64();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -113,7 +113,7 @@ exports.MsgBuyResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -156,19 +156,19 @@ exports.MsgAddProject = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.projectData = project_1.ProjectData.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -216,7 +216,7 @@ exports.MsgAddProjectResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -238,12 +238,113 @@ exports.MsgAddProjectResponse = {
         return message;
     },
 };
+function createBaseMsgDelProject() {
+    return { creator: "", name: "" };
+}
+exports.MsgDelProject = {
+    encode(message, writer = minimal_1.default.Writer.create()) {
+        if (message.creator !== "") {
+            writer.uint32(10).string(message.creator);
+        }
+        if (message.name !== "") {
+            writer.uint32(18).string(message.name);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseMsgDelProject();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if (tag != 10) {
+                        break;
+                    }
+                    message.creator = reader.string();
+                    continue;
+                case 2:
+                    if (tag != 18) {
+                        break;
+                    }
+                    message.name = reader.string();
+                    continue;
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            creator: isSet(object.creator) ? String(object.creator) : "",
+            name: isSet(object.name) ? String(object.name) : "",
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        message.creator !== undefined && (obj.creator = message.creator);
+        message.name !== undefined && (obj.name = message.name);
+        return obj;
+    },
+    create(base) {
+        return exports.MsgDelProject.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(object) {
+        var _a, _b;
+        const message = createBaseMsgDelProject();
+        message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
+        message.name = (_b = object.name) !== null && _b !== void 0 ? _b : "";
+        return message;
+    },
+};
+function createBaseMsgDelProjectResponse() {
+    return {};
+}
+exports.MsgDelProjectResponse = {
+    encode(_, writer = minimal_1.default.Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseMsgDelProjectResponse();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(_) {
+        return {};
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    create(base) {
+        return exports.MsgDelProjectResponse.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(_) {
+        const message = createBaseMsgDelProjectResponse();
+        return message;
+    },
+};
 class MsgClientImpl {
     constructor(rpc, opts) {
         this.service = (opts === null || opts === void 0 ? void 0 : opts.service) || "lavanet.lava.subscription.Msg";
         this.rpc = rpc;
         this.Buy = this.Buy.bind(this);
         this.AddProject = this.AddProject.bind(this);
+        this.DelProject = this.DelProject.bind(this);
     }
     Buy(request) {
         const data = exports.MsgBuy.encode(request).finish();
@@ -254,6 +355,11 @@ class MsgClientImpl {
         const data = exports.MsgAddProject.encode(request).finish();
         const promise = this.rpc.request(this.service, "AddProject", data);
         return promise.then((data) => exports.MsgAddProjectResponse.decode(minimal_1.default.Reader.create(data)));
+    }
+    DelProject(request) {
+        const data = exports.MsgDelProject.encode(request).finish();
+        const promise = this.rpc.request(this.service, "DelProject", data);
+        return promise.then((data) => exports.MsgDelProjectResponse.decode(minimal_1.default.Reader.create(data)));
     }
 }
 exports.MsgClientImpl = MsgClientImpl;
