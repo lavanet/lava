@@ -23,8 +23,9 @@ message Extension {
 }
 
 message Verification {
-  ParseDirective parse_directive =1;
-  repeated ParseValue values=2;
+  string name =1;
+  ParseDirective parse_directive =2;
+  repeated ParseValue values=3;
 }
 
 message ParseValue {

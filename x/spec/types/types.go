@@ -60,7 +60,7 @@ func (s *PARSER_FUNC) UnmarshalJSON(b []byte) error {
 // allows unmarshaling parser func
 func (s FUNCTION_TAG) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
-	buffer.WriteString(FUNCTION_TAG_name[int32(s)])
+	buffer.WriteString(s.String())
 	buffer.WriteString(`"`)
 	return buffer.Bytes(), nil
 }
