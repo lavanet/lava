@@ -37,6 +37,18 @@ type Tester struct {
 }
 
 func NewTester(t *testing.T) *Tester {
+	ts := NewTesterRaw(t)
+
+	// AdvanceBlock() and AdvanceEpoch() always use the current time for the
+	// first block (and ignores the time delta arg if given); So call it here
+	// to generate a first timestamp and avoid any subsequent call with detla
+	// argument call having the delta ignored.
+	ts.AdvanceEpoch()
+
+	return ts
+}
+
+func NewTesterRaw(t *testing.T) *Tester {
 	servers, keepers, GoCtx := testkeeper.InitAllKeepers(t)
 
 	ts := &Tester{
@@ -52,12 +64,6 @@ func NewTester(t *testing.T) *Tester {
 		projects: make(map[string]projectstypes.ProjectData),
 		specs:    make(map[string]spectypes.Spec),
 	}
-
-	// AdvanceBlock() and AdvanceEpoch() always use the current time for the
-	// first block (and ignores the time delta arg if given); So call it here
-	// to generate a first timestamp and avoid any subsequent call with detla
-	// argument call having the delta ignored.
-	ts.AdvanceEpoch()
 
 	return ts
 }
@@ -475,7 +481,10 @@ func (ts *Tester) BlocksToSave() uint64 {
 	return blocksToSave
 }
 
-func (ts *Tester) EpochsToSave() uint64 {
+func (ts *Tester) EpochsToSave(block ...uint64) uint64 {
+	if len(block) == 0 {
+		return ts.Keepers.Epochstorage.EpochsToSaveRaw(ts.Ctx)
+	}
 	epochsToSave, err := ts.Keepers.Epochstorage.EpochsToSave(ts.Ctx, ts.BlockHeight())
 	if err != nil {
 		panic("EpochsToSave: failed to fetch: " + err.Error())
@@ -494,8 +503,15 @@ func (ts *Tester) EpochBlocks(block ...uint64) uint64 {
 	return epoch
 }
 
-func (ts *Tester) EpochStart() uint64 {
-	return ts.Keepers.Epochstorage.GetEpochStart(ts.Ctx)
+func (ts *Tester) EpochStart(block ...uint64) uint64 {
+	if len(block) == 0 {
+		return ts.Keepers.Epochstorage.GetEpochStart(ts.Ctx)
+	}
+	epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, block[0])
+	if err != nil {
+		panic("EpochStart: failed to fetch: " + err.Error())
+	}
+	return epoch
 }
 
 func (ts *Tester) GetNextEpoch() uint64 {
@@ -504,6 +520,14 @@ func (ts *Tester) GetNextEpoch() uint64 {
 		panic("GetNextEpoch: failed to fetch: " + err.Error())
 	}
 	return epoch
+}
+
+func (ts *Tester) AdvanceToBlock(block uint64) {
+	if block < ts.BlockHeight() {
+		panic("AdvanceToBlock: block in the past: " +
+			strconv.Itoa(int(block)) + "<" + strconv.Itoa(int(ts.BlockHeight())))
+	}
+	ts.AdvanceBlocks(block - ts.BlockHeight())
 }
 
 func (ts *Tester) AdvanceBlocks(count uint64, delta ...time.Duration) *Tester {
