@@ -27,7 +27,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	// shorten memory
 	paramKey := string(epochstoragetypes.KeyEpochsToSave)
-	paramVal := "\""+strconv.FormatUint(epochsToSave/2, 10)+"\""
+	paramVal := "\"" + strconv.FormatUint(epochsToSave/2, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
 	require.Nil(t, err)
 
