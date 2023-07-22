@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -430,7 +428,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	sub1Acct, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("mock")
 
-	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000)))
+	coins := common.NewCoins(10000)
 	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
@@ -488,7 +486,7 @@ func TestPrice(t *testing.T) {
 
 			plan := ts.Plan("mock")
 			plan.AnnualDiscountPercentage = tt.discount
-			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
+			plan.Price = common.NewCoin(tt.price)
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 

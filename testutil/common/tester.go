@@ -202,6 +202,16 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 	return spec
 }
 
+// misc shortcuts
+
+func NewCoin(amount int64) sdk.Coin {
+	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+}
+
+func NewCoins(amount ...int64) []sdk.Coin {
+	return slices.Filter(amount, NewCoin)
+}
+
 // keeper helpers
 
 func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {

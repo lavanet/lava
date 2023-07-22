@@ -3,10 +3,10 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/client/cli"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/x/pairing/client/cli"
 	"github.com/stretchr/testify/require"
 )
 
@@ -530,7 +530,7 @@ func TestStakeEndpoints(t *testing.T) {
 		},
 	}
 
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+	amount := common.NewCoin(testStake)
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
