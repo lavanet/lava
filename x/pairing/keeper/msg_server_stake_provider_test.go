@@ -5,8 +5,8 @@ import (
 
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
