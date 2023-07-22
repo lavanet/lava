@@ -239,6 +239,10 @@ func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projects
 	return ts.Keepers.Projects.GetProjectDeveloperData(ts.Ctx, devkey, block)
 }
 
+func (ts *Tester) VotePeriod() uint64 {
+	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
+}
+
 // proposals, transactions, queries
 
 func (ts *Tester) TxProposalChangeParam(module string, paramKey string, paramVal string) error {
