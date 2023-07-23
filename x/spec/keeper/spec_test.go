@@ -1,12 +1,13 @@
 package keeper_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	common "github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
@@ -794,7 +795,9 @@ func TestCookbookSpecs(t *testing.T) {
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.Nil(t, err)
 
-		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
+		decoder := json.NewDecoder(bytes.NewReader(contents))
+		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
+		err = decoder.Decode(&proposal)
 		require.Nil(t, err)
 
 		for _, sp := range proposal.Proposal.Specs {
