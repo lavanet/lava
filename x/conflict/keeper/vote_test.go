@@ -103,11 +103,10 @@ func TestNotVotersProviders(t *testing.T) {
 	ts := newTester(t)
 	voteID, detection, relay0, _ := ts.setupForCommit()
 
-	var notVoterProvider common.Account
-	notVoterProvider, _ = ts.AddAccount("provider", 10, 10000) // create new provider not in stake
+	_, notVoterProvider := ts.AddAccount("provider", 10, 10000) // create new provider not in stake
 
 	msg := conflicttypes.MsgConflictVoteCommit{}
-	msg.Creator = notVoterProvider.Addr.String()
+	msg.Creator = notVoterProvider
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
@@ -122,7 +121,7 @@ func TestNotVotersProviders(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
-	msgReveal.Creator = notVoterProvider.Addr.String()
+	msgReveal.Creator = notVoterProvider
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
 	msgReveal.Nonce = 0
@@ -137,15 +136,15 @@ func TestNewVoterOldVote(t *testing.T) {
 
 	// add a staked provider
 	balance := int64(10000)
-	notVoterProvider, _ := ts.AddAccount("provider", 10, balance)
-	err := ts.StakeAccount(notVoterProvider, ts.spec, balance/10)
+	_, notVoterProvider := ts.AddAccount("provider", 10, balance)
+	err := ts.StakeProvider(notVoterProvider, ts.spec, balance/10)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
 
 	// try to vote with the new provider: will be on the next voting list but not in the old one
 	msg := conflicttypes.MsgConflictVoteCommit{}
-	msg.Creator = notVoterProvider.Addr.String()
+	msg.Creator = notVoterProvider
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
@@ -160,7 +159,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
-	msgReveal.Creator = notVoterProvider.Addr.String()
+	msgReveal.Creator = notVoterProvider
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.AllDataHash(relay0, *detection.ResponseConflict.ConflictRelayData0.Request.RelayData)
 	msgReveal.Nonce = 0

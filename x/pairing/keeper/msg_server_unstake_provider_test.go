@@ -17,7 +17,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
 	providerAcct, providerAddr := ts.AddAccount("provider", 0, balance)
 
-	err := ts.StakeAccount(providerAcct, ts.spec, balance/2)
+	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()

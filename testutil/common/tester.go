@@ -123,11 +123,6 @@ func (ts *Tester) Accounts(name string) []Account {
 	return accounts
 }
 
-func (ts *Tester) StakeAccount(acct Account, spec spectypes.Spec, amount int64) error {
-	addr := acct.Addr.String()
-	return ts.StakeProvider(addr, spec, amount)
-}
-
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
 	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
 }

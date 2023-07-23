@@ -28,8 +28,8 @@ func TestPairingUniqueness(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		acct, _ := ts.AddAccount("provider", i, balance)
-		err := ts.StakeAccount(acct, ts.spec, stake)
+		_, addr := ts.AddAccount("provider", i, balance)
+		err := ts.StakeProvider(addr, ts.spec, stake)
 		require.Nil(t, err)
 	}
 
@@ -92,8 +92,8 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 1; i <= 10; i++ {
-		acct, _ := ts.AddAccount("provider", i, balance)
-		err := ts.StakeAccount(acct, ts.spec, stake)
+		_, addr := ts.AddAccount("provider", i, balance)
+		err := ts.StakeProvider(addr, ts.spec, stake)
 		require.Nil(t, err)
 	}
 
@@ -241,8 +241,8 @@ func TestPairingStatic(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
-		acct, _ := ts.AddAccount("provider", i, testBalance)
-		err := ts.StakeAccount(acct, ts.spec, testStake+int64(i))
+		_, addr := ts.AddAccount("provider", i, testBalance)
+		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
 		require.Nil(t, err)
 	}
 
