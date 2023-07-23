@@ -196,6 +196,28 @@ func TestFixationEntryAppendFuture(t *testing.T) {
 	testWithFixationTemplate(t, playbook, 3, 1)
 }
 
+// Test append of past entries (latest and non-latest)
+func TestFixationRetroactiveAppend(t *testing.T) {
+	block0 := int64(100)
+	block1 := int64(200)
+	block2 := int64(300)
+	block3 := int64(400)
+
+	playbook := []fixationTemplate{
+		{op: "block", name: "advance to block0", count: block3},
+		{op: "append", name: "entry #1 retroactive", count: block0, coin: 0},
+		{op: "get", name: "get entry #1", coin: 0},
+		{op: "append", name: "entry #2 retroactive", count: block2, coin: 2},
+		{op: "get", name: "get entry #2", coin: 2},
+		{op: "getvers", name: "to check 2 versions (a)", count: 2},
+		{op: "append", name: "entry #3 retoactive bad", count: block1, coin: 1, fail: true},
+		{op: "getvers", name: "to check 2 versions (b)", count: 2},
+		{op: "get", name: "get entry #2 (again)", coin: 2},
+	}
+
+	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
 // Test addition of same entry twice within the same block
 func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	block0 := int64(10)
@@ -540,6 +562,25 @@ func TestRemoveStaleEntries(t *testing.T) {
 	testWithFixationTemplate(t, playbook, 5, 1)
 }
 
+func TestIllegalPutLatestEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "block", name: "advance a bit", count: block1 - block0},
+		{op: "getvers", name: "to check 1 versions left", count: 1},
+		// this is illegal, because there isn't a prior matching "get"
+		{op: "put", name: "refcount entry #1", count: block0},
+		// normally, refcount would decrement and the entry released;
+		// because this was illegal the refcount decrement was skipped
+		{op: "getvers", name: "to check 1 versions left", count: 1},
+		{op: "find", name: "try to find entry #1", coin: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 1, 1)
+}
+
 func TestRemoveLastEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
@@ -548,7 +589,7 @@ func TestRemoveLastEntry(t *testing.T) {
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "block", name: "advance a bit", count: block1 - block0},
-		{op: "put", name: "refcount entry #1", count: block0},
+		{op: "del", name: "refcount entry #1"},
 		// expect 1 (stale) entry versions left
 		{op: "getvers", name: "to check 1 versions left", count: 1},
 		{op: "block", name: "wait for entry #1 stale", count: block2 - block1},
