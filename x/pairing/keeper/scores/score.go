@@ -63,7 +63,8 @@ func init() {
 
 func GetAllReqs() []ScoreReq {
 	stakeReq := StakeReq{}
-	return []ScoreReq{&stakeReq}
+	geoReq := GeoReq{}
+	return []ScoreReq{&stakeReq, &geoReq}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
