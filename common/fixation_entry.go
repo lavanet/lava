@@ -40,7 +40,7 @@ import (
 //    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
 // Note:
 //    - methods marked with (*) expect an exact existing method, or otherwise will panic
-//    - methods marked with (**) will match an entry with the nearest-smaller block version
+//    - methods marked with (**) will match an entry with the nearest-no-later block version
 //
 // Usage and behavior:
 //
@@ -48,32 +48,52 @@ import (
 // version is the one with the highest block that is not greater than the current (ctx) block
 // height. If an entry version is in the future (with respect to current block height), then
 // it will become the new latest entry when its block is reached.
-// A new entry version is added using AppendEntry().The version must be the current or future
+//
+// A new entry version is added using AppendEntry(). The version must be the current or future
 // block, and higher than the latest entry's. Appending the same version again will override
 // its previous data. An entry version can be modified using ModifyEntry().
+//
+// GetEntry() returns the latest (with respect to current, not future) version of an entry. A
+// nearest-no-later (than a given block) entry version can be obtained with FindEntry().
+//
 // Entry versions maintain reference count (refcount) that determine their lifetime. New entry
 // versions (appended) start with refcount 1. The refcount of the latest version is incremented
 // using GetEntry(). The refcount of any version is decremented using PutEntry(). The refcount
 // of the latest version is also decremented when a newer version is appended.
-// When an entry's refcount reaches 0, it remains alive (visible) for a predefined period of
-// blocks (stale-period), and then becomes stale (insvisible). Stale entries eventually get
-// cleaned up.
-// A nearest-smaller entry version can be obtained using FindEntry(). If the nearest smaller
-// entry is stale, FindEntry() will return not-found. A specific entry version can be obtained
-// using ReadEntry(), including of stale entries. (Thus, ReadEntry() is suitable for testing
-// and migrations, or when the caller knows that the entry version is not stale).
+//
+// When an entry's refcount reaches 0, it remains partly visible for a predefined period of
+// blocks (stale-period), and then becomes stale and fully invisible. During the stale-period
+// GetEntry() will ignore the entry, however FindEntry() will find it. If the nearest-no-later
+// (then a given block) entry is already stale, FindEntry() will return not-found. ReadEntry()
+// will fetch any specific entry version, including of stale entries. (Thus, it is suitable for
+// testing and migrations, or when the caller knows that the entry version exists, being stale
+// or not). Stale entries eventually get cleaned up automatically.
+//
 // An entry can be deleted using DelEntry(), after which is will not possible to GetEntry(),
-// and calls to FindEntry() for a block beyond that at time of deletion (or later) would fail.
-// Until the data has been fully cleaned up (i.e. no refcount and beyond all stale-periods),
+// and calls to FindEntry() for a block beyond that time of deletion (at or later) would fail
+// too. Until the data has been fully cleaned up (i.e. no refcount and past all stale-periods),
 // calls to AppendEntry() with that entry's index will fail.
+//
+// The per-entry APIs are and their actions are summarized below:
+//
+// o AppendEntry() adds a new version of an entry (could be a future version)
+// o ModifyEntry() updates an existing version of an entry (could be a future version)
+// o DelEntry() deletes and entry and make it invisible to GetEntry()
+// o GetEntry() gets the latest (up to current) version of an entry, except if in stale-period
+// o FindEntry() gets the nearest-no-later version of an entry, including if in stale-period
+// o ReadEntry() gets a specific entry version (stale or not)
+// o PutEntry() drops reference counts taken by GetEntry()
+//
 // GetAllEntryVersions() and GetEntryVersionsRange() give the all -or some- versions (blocks)
 // of an entry. GetAllEntryIndices() return all the entry indices (names).
+//
 // On every new block, AdvanceBlock() should be called.
 //
 // Entry names (index) must contain only visible ascii characters (ascii values 32-125).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
 // when stored, to ensure that no two indices can ever overlap, i.e. one being the prefix
 // of the other.
+//
 // (Note that this properly supports Bech32 addresses, which are limited to use only
 // visible ascii characters as per https://en.bitcoin.it/wiki/BIP_0173#Specification).
 //
@@ -539,7 +559,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 }
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
-// nearest-smaller block version for the given block arg.
+// nearest-no-later block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) (types.Entry, bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryStore(ctx, safeIndex)
@@ -646,6 +666,7 @@ func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) b
 }
 
 // GetEntry returns the latest entry by index and increments the refcount
+// (while ignoring entries in stale-period)
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
@@ -825,7 +846,7 @@ func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, b
 	return blocks
 }
 
-// GetEntryVersionsRange returns a list of versions from nearest-smaller block
+// GetEntryVersionsRange returns a list of versions from nearest-no-later block
 // and onward, and not more than delta blocks further (skip stale entries).
 func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, block, delta uint64) (blocks []uint64) {
 	filter := func(entry *types.Entry) bool {
