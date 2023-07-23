@@ -48,27 +48,37 @@ func (ts *tester) addClient(count int) {
 	}
 }
 
-// addProvider: with mock endpoints, and default geolocation, moniker
-func (ts *tester) addProvider(count int) {
-	ts.addProviderExtra(count, 1, "") // geolocation 1, moniker default
+// addProvider: with default endpoints, geolocation, moniker
+func (ts *tester) addProvider(count int) error {
+	return ts.addProviderExtra(count, nil, 0, "") // default: endpoints, geolocation, moniker
+}
+
+// addProviderGelocation: with geolocation, and default endpoints, moniker
+func (ts *tester) addProviderGeolocation(count int, geolocation uint64) error {
+	return ts.addProviderExtra(count, nil, geolocation, "")
+}
+
+// addProviderEndpoints: with endpoints, and default geolocation, moniker
+func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
+	return ts.addProviderExtra(count, endpoints, 0, "")
+}
+
+// addProviderMoniker: with moniker, and default endpoints, geolocation
+func (ts *tester) addProviderMoniker(count int, moniker string) error {
+	return ts.addProviderExtra(count, nil, 0, moniker)
 }
 
 // addProviderExtra: with mock endpoints, and preset geolocation, moniker
-func (ts *tester) addProviderExtra(count int, geolocation uint64, moniker string) {
-	start := len(ts.Accounts("provider"))
-	for i := 0; i < count; i++ {
-		acct, _ := ts.AddAccount("provider", start+i, testBalance)
-		ts.StakeAccount(acct, ts.spec, testStake, geolocation, moniker)
-	}
-}
-
-// addProviderEndpoints: with present endpoints, and default geolocation, moniker
-func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+func (ts *tester) addProviderExtra(
+	count int,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc uint64,
+	moniker string,
+) error {
 	start := len(ts.Accounts("provider"))
 	for i := 0; i < count; i++ {
 		_, addr := ts.AddAccount("provider", start+i, testBalance)
-		_, err := ts.TxPairingStakeProvider(addr, ts.spec.Name, stake, endpoints, 1, "")
+		err := ts.StakeProviderExtra(addr, ts.spec, testStake, endpoints, geoloc, moniker)
 		if err != nil {
 			return err
 		}

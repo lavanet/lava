@@ -138,7 +138,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	// add a staked provider
 	balance := int64(10000)
 	notVoterProvider, _ := ts.AddAccount("provider", 10, balance)
-	err := ts.StakeAccount(notVoterProvider, ts.spec, balance/10, 1, "")
+	err := ts.StakeAccount(notVoterProvider, ts.spec, balance/10)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()

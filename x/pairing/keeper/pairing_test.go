@@ -29,7 +29,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	for i := 1; i <= 1000; i++ {
 		acct, _ := ts.AddAccount("provider", i, balance)
-		err := ts.StakeAccount(acct, ts.spec, stake, 1, "")
+		err := ts.StakeAccount(acct, ts.spec, stake)
 		require.Nil(t, err)
 	}
 
@@ -93,7 +93,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		acct, _ := ts.AddAccount("provider", i, balance)
-		err := ts.StakeAccount(acct, ts.spec, stake, 1, "")
+		err := ts.StakeAccount(acct, ts.spec, stake)
 		require.Nil(t, err)
 	}
 
@@ -242,7 +242,7 @@ func TestPairingStatic(t *testing.T) {
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
 		acct, _ := ts.AddAccount("provider", i, testBalance)
-		err := ts.StakeAccount(acct, ts.spec, testStake+int64(i), 1, "")
+		err := ts.StakeAccount(acct, ts.spec, testStake+int64(i))
 		require.Nil(t, err)
 	}
 
@@ -715,7 +715,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.Nil(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, ts.spec, 10000000, 1, "")
+				err := ts.StakeProvider(p1, ts.spec, 10000000)
 				require.Nil(t, err)
 			}
 

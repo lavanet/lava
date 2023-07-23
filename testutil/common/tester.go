@@ -123,22 +123,42 @@ func (ts *Tester) Accounts(name string) []Account {
 	return accounts
 }
 
-func (ts *Tester) StakeAccount(acct Account, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
+func (ts *Tester) StakeAccount(acct Account, spec spectypes.Spec, amount int64) error {
 	addr := acct.Addr.String()
-	return ts.StakeProvider(addr, spec, amount, geoloc, moniker)
+	return ts.StakeProvider(addr, spec, amount)
 }
 
-func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
-	apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
-	endpoint := epochstoragetypes.Endpoint{
-		IPPORT:        "123",
-		ApiInterfaces: []string{apiInterface},
-		Geolocation:   geoloc,
-	}
-	endpoints := []epochstoragetypes.Endpoint{endpoint}
-	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
+	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
+}
 
+func (ts *Tester) StakeProviderExtra(
+	addr string,
+	spec spectypes.Spec,
+	amount int64,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc uint64,
+	moniker string,
+) error {
+	// if geoloc left zero, use default 1
+	if geoloc == 0 {
+		geoloc = 1
+	}
+
+	// if necessary, generate mock endpoints
+	if endpoints == nil {
+		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
+		endpoint := epochstoragetypes.Endpoint{
+			IPPORT:        "123",
+			ApiInterfaces: []string{apiInterface},
+			Geolocation:   geoloc,
+		}
+		endpoints = []epochstoragetypes.Endpoint{endpoint}
+	}
+
+	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
+
 	return err
 }
 
