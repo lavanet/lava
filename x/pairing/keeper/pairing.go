@@ -137,12 +137,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	if providersType == spectypes.Spec_static {
 		return stakeEntries, allowedCU, project.Index, nil
+	}
 
 	allowedCU = strictestPolicy.EpochCuLimit
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
-	if !found {
-		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
-	}
 
 	filters := pairingfilters.GetAllFilters()
 
