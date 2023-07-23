@@ -1,6 +1,8 @@
 package rewardserver
 
 import (
+	"time"
+
 	"github.com/dgraph-io/badger/v4"
 	"github.com/lavanet/lava/utils"
 )
@@ -11,9 +13,10 @@ type BadgerDB struct {
 
 var _ DB = (*BadgerDB)(nil)
 
-func (mdb *BadgerDB) Save(key string, data []byte) error {
+func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(key), data)
+		e := badger.NewEntry([]byte(key), data).WithTTL(ttl)
+		return txn.SetEntry(e)
 	})
 
 	return err
