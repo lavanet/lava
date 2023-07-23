@@ -393,31 +393,8 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 	fs.setEntryIndex(ctx, safeIndex, false)
 	fs.putEntry(ctx, entry)
 
-	// forcefully remove all future entries: they were never referenced hence do not
-	// require stale-period.
-
-	store := fs.getEntryStore(ctx, safeIndex)
-
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
-	defer iterator.Close()
-
-	var entriesToRemove []types.Entry
-	for ; iterator.Valid(); iterator.Next() {
-		var entry types.Entry
-		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
-
-		if entry.Block <= ctxBlock {
-			break
-		}
-
-		entriesToRemove = append(entriesToRemove, entry)
-	}
-
-	for _, entry := range entriesToRemove {
-		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
-		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
-		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
-	}
+	// no need to trim future entries: they were trimmed at the time of DelEntry,
+	// and since then new entries (beyond DeleteAt block) could not be appended.
 }
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.SafeIndex, _ uint64) {
@@ -494,6 +471,37 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 	if safeToDeleteIndex {
 		// non was skipped - so all were removed: delete the entry index
 		fs.removeEntryIndex(ctx, safeIndex)
+	}
+}
+
+// trimFutureEntries discards all future entries (relative to the current block)
+func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry types.Entry) {
+	store := fs.getEntryStore(ctx, lastEntry.SafeIndex())
+
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	// first collect all the candidates, and later remove them (as the iterator
+	// logic gets confused with ongoing changes)
+	var entriesToRemove []types.Entry
+	for ; iterator.Valid(); iterator.Next() {
+		var entry types.Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
+
+		if entry.Block <= lastEntry.DeleteAt {
+			break
+		}
+
+		entriesToRemove = append(entriesToRemove, entry)
+	}
+
+	// forcefully remove the future entries:
+	// they were never referenced hence do not require stale-period.
+
+	for _, entry := range entriesToRemove {
+		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
+		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
+		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
 	}
 }
 
@@ -676,8 +684,18 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	entry.Refcount -= 1
 
 	if entry.Refcount == 0 {
-		// never overflows because ctx.BlockHeight is int64
-		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
+		block := uint64(ctx.BlockHeight())
+
+		// future entries (i.e. cancel of a future append) are deleted immediately:
+		// they were never in use so they need not undergo stale-period.
+		if entry.Block > block {
+			fs.cancelEntry(ctx, entry.SafeIndex(), entry.Block)
+			return
+		}
+
+		// non-future entries must pass "stale period"; setup a timer for that
+		// (the computation never overflows because ctx.BlockHeight is int64)
+		entry.StaleAt = block + uint64(types.STALE_ENTRY_TIME)
 		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
@@ -737,6 +755,12 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 	}
 
+	// discard all future entries beyond the DeleteAt block, since they will never
+	// become the latest; and there will be no new entries beyond DeleteAt block
+	// as AppendEntry() does not allow such additions.
+
+	fs.trimFutureEntries(ctx, entry)
+
 	return nil
 }
 
@@ -744,6 +768,25 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 func (fs *FixationStore) removeEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 	store.Delete(types.EncodeKey(block))
+}
+
+// cancelEntry cancels a future entry from the store
+func (fs *FixationStore) cancelEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
+	fs.removeEntry(ctx, safeIndex, block)
+
+	// in the unusual case that a future entry is added and then removed without
+	// having turned latest or having another non-future entry added (i.e. there
+	// has not yet been a "latest" entry), then we need to remove the EntryIndex
+	// if we are the last in the chain.
+
+	store := fs.getEntryStore(ctx, safeIndex)
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		fs.removeEntryIndex(ctx, safeIndex)
+	}
 }
 
 func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
