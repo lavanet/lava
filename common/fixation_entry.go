@@ -149,7 +149,7 @@ func FixationVersion() uint64 {
 // when a delete of entry becomes in effect, and when the stale-period ends and an
 // entry should become stale.
 // for the timers, we use <block,kind,index> tuple as a unique key to identify some
-// entry version and the desited timeout type. this choice ensures timeouts will
+// entry version and the desired timeout type. this choice ensures timeouts will
 // fire in order of expiry blocks, and in order of timeout kind.
 
 const (
@@ -188,7 +188,7 @@ func (fs *FixationStore) getEntryStore(ctx sdk.Context, safeIndex types.SafeInde
 }
 
 // transferTimer moves a timer (unexpired) from a previous entry to a new entry, with
-// the same expirty block. Useful, for example, when a newer entry takes responsibility
+// the same expiry block. Useful, for example, when a newer entry takes responsibility
 // for a pending deletion from the previous owner.
 func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, block uint64, kind byte) {
 	key := encodeForTimer(prev.SafeIndex(), prev.Block, kind)
@@ -198,7 +198,7 @@ func (fs *FixationStore) transferTimer(ctx sdk.Context, prev, next types.Entry, 
 	fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 }
 
-// hasEntry returns wether a specific entry exists in the store
+// hasEntry returns whether a specific entry exists in the store
 // (any kind of entry, even deleted or stale)
 func (fs *FixationStore) hasEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) bool {
 	store := fs.getEntryStore(ctx, safeIndex)
@@ -252,10 +252,14 @@ func (fs *FixationStore) AppendEntry(
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 
 	var deleteAt uint64 = math.MaxUint64
+	var latest bool
 
 	// if latest entry is not found, this is a first version entry
 	if !found {
 		fs.setEntryIndex(ctx, safeIndex, true)
+		if block <= ctxBlock {
+			latest = true
+		}
 	} else {
 		if block < latestEntry.Block {
 			// how come getUnmarshaledEntryForBlock lied to us?!
@@ -265,6 +269,20 @@ func (fs *FixationStore) AppendEntry(
 				utils.Attribute{Key: "index", Value: index},
 				utils.Attribute{Key: "block", Value: block},
 				utils.Attribute{Key: "latest", Value: latestEntry.Block},
+			)
+		}
+
+		// the latestEntry we found is actually the nearest-no-later entry with respect to
+		// our block; if it is not marked IsLatest, it means that the real latest entry is
+		// still ahead of us (thus: entry-found < entry-appended < latest entry). however,
+		// appending an entry, while can happen with a past block, must not succeed if it
+		// precedes en existing latest entry.
+
+		if block <= ctxBlock && !latestEntry.IsLatest {
+			return utils.LavaFormatWarning("AppendEntry",
+				fmt.Errorf("entry is older than existing latest entry"),
+				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "block", Value: block},
 			)
 		}
 
@@ -300,7 +318,11 @@ func (fs *FixationStore) AppendEntry(
 		// the new latest entry.
 
 		if block <= ctxBlock {
-			// the new entry is now the latest, put reference on the previous entry
+			// the new entry is becoming the latest, put reference on the previous entry.
+			// (the latestEntry must be marked with IsLatest, because the test above would
+			// have returned an error otherwise.
+			latest = true
+			latestEntry.IsLatest = false
 			fs.putEntry(ctx, latestEntry)
 		} else {
 			// the new entry is not yet in effect, create a timer to put reference back to the latest once this is changed
@@ -319,6 +341,7 @@ func (fs *FixationStore) AppendEntry(
 		StaleAt:  math.MaxUint64,
 		DeleteAt: deleteAt,
 		Data:     marshaledEntryData,
+		IsLatest: latest,
 		Refcount: 1,
 	}
 
@@ -355,7 +378,7 @@ func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, da
 }
 
 func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
-	// sanity check: future entries should get timeout on their block reachs now
+	// sanity check: future entries should get timeout on their block reaches now
 	ctxBlock := uint64(ctx.BlockHeight())
 	if block != ctxBlock {
 		// panic:ok: state is badly invalid, because we expect the expiry block of a
@@ -391,8 +414,15 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.Safe
 		// latest entry had extra refcount for being the latest; so drop that refcount
 		// because from now on it is no longer so.
 
+		latestEntry.IsLatest = false
 		fs.putEntry(ctx, latestEntry)
 	}
+
+	// we are now the latest entry - make it official by setting IsLatest
+
+	entry := fs.getEntry(ctx, safeIndex, block)
+	entry.IsLatest = true
+	fs.setEntry(ctx, entry)
 }
 
 func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
@@ -425,7 +455,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 
 	// "stale" entry versions are ones that reached refcount zero at least
 	// STALE_TIME blocks ago; they are not visible in lookups, hence may be
-	// discarded. specifically, a stale entry version becomes "elgibile for
+	// discarded. specifically, a stale entry version becomes "eligible for
 	// removal", if either it is:
 	//   the oldest entry version, -OR-
 	//   one that follows a stale entry version (but not marked deleted)
@@ -456,7 +486,7 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 	safeToDeleteIndex := true
 
 	for ; iterator.Valid(); iterator.Next() {
-		// umarshal the old entry version
+		// unmarshal the old entry version
 		var entry types.Entry
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
@@ -584,7 +614,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 			// (non stale) entry is valid. So if we meet one, we bail.
 			// however if that stale entry is also deleted (which means, it is the
 			// latest too) then we need to not bail, and do return that entry, to
-			// comply with the expecations of AppendEntry(). thus, we may return an
+			// comply with the expectations of AppendEntry(). thus, we may return an
 			// entry that is both stale and deleted.
 			// for this reason, we explicitly test for a deleted entry in GetEntry()
 			// and AppendEntry(), and for stale entry in GetEntry(). so GetEntry()
@@ -593,7 +623,7 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 			// Note that we test for stale-ness against ctx.BlockHeight since it is
 			// meant to mark when an unreferenced only entry becomes invisible; and
 			// we test for delete-ness against the target block since it would mark
-			// that entry immediately (as in: at deleition block) invisible.
+			// that entry immediately (as in: at deletion block) invisible.
 
 			if entry.IsStaleBy(ctxBlock) && !entry.IsDeletedBy(block) {
 				break
@@ -737,6 +767,20 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 	}
 
 	entry := fs.getEntry(ctx, safeIndex, block)
+
+	// every call to PutEntry() must match a prior call to GetEntry(); Therefore
+	// it is illegal to call PutEntry() on the last reference of the latest entry.
+	// if this happens, we complain loudly (instead of panic) and refuse to drop
+	// the reference count.
+	if entry.IsLatest && entry.Refcount == 1 {
+		utils.LavaFormatError("critical: last PutEntry on latest entry",
+			fmt.Errorf("PutEntry requested on latest entry with refcount 1"),
+			utils.Attribute{Key: "index", Value: index},
+			utils.Attribute{Key: "block", Value: block},
+		)
+		return
+	}
+
 	fs.putEntry(ctx, entry)
 }
 
